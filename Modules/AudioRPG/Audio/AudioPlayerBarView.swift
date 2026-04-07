@@ -19,8 +19,7 @@ struct AudioPlayerBarView: View {
     
     @State private var isHovering = false
     @State private var isHoveringVolume = false
-    @State private var isMuted = false
-    @State private var previousVolume: Float = 0.25
+    @State private var previousVolume: Double = 0.25
     @State private var albumArtwork: Image?
     @State private var artworkLoadTask: Task<Void, Never>?
     
@@ -214,7 +213,7 @@ private extension AudioPlayerBarView {
             ), in: 0...max(root.audioPlayerModel.playerTime.totalDuration, 1))
             .tint(.primary)
             .accessibilityLabel(Text("Playback Position", bundle: .module))
-            .accessibilityValue(Text("\(Int(root.audioPlayerModel.currentTime)) seconds of \(Int(root.audioPlayerModel.playerTime.totalDuration)) seconds", bundle: .module))
+            .accessibilityValue(Text("\(formatAccessibilityTime(root.audioPlayerModel.currentTime)) seconds of \(formatAccessibilityTime(root.audioPlayerModel.playerTime.totalDuration)) seconds", bundle: .module))
 #endif
             
             Text(formatTotalTime(root.audioPlayerModel.playerTime.totalDuration))
@@ -252,29 +251,22 @@ private extension AudioPlayerBarView {
         return Image(systemName: "music.note")
     }
     
-    var volumeControl: some View {
+    @ViewBuilder var volumeControl: some View {
+        @Bindable var audioPlayerModel = root.audioPlayerModel
+        
         HStack(spacing: 0) {
 #if !os(tvOS)
-            // Volume slider (fades in horizontally from button)
+            // Volume slider (visible when hovering)
             if isHoveringVolume {
-                Slider(value: Binding(
-                    get: { Double(root.audioPlayerModel.volume) },
-                    set: { newValue in
-                        root.audioPlayerModel.volume = Float(newValue)
-                        if newValue > 0 {
-                            isMuted = false
-                        }
-                    }
-                ), in: 0...1)
+                Slider(value: $audioPlayerModel.volume, in: 0...1)
                 .frame(width: 100)
                 .tint(.primary)
                 .padding(.leading, 12)
-                .transition(.asymmetric(
-                    insertion: .scale(scale: 0.9, anchor: .trailing).combined(with: .opacity),
-                    removal: .scale(scale: 0.95, anchor: .trailing).combined(with: .opacity)
-                ))
+                .padding(.trailing, 4)
+                .transition(.opacity)
             }
 #endif
+
             // Volume button
             Button {
                 if isHoveringVolume {
@@ -291,16 +283,34 @@ private extension AudioPlayerBarView {
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(Text(isMuted ? "Unmute" : "Mute", bundle: .module))
-            .accessibilityValue(Text("\(Int(root.audioPlayerModel.volume * 100)) percent", bundle: .module))
+            .accessibilityLabel(Text(root.audioPlayerModel.isMuted ? "Unmute" : "Mute", bundle: .module))
+            .accessibilityValue(Text("\(formatAccessibilityTime(root.audioPlayerModel.volume * 100)) percent", bundle: .module))
             .padding(.horizontal, 8)
         }
         .padding(.vertical, 6)
+        .frame(height: 44)
         .background {
             Capsule()
-                .fill(.black.opacity(0.25))
-                .glassEffect(.regular.tint(.black.opacity(0.1)).interactive())
-                .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 2)
+                .fill(.ultraThinMaterial.opacity(0.8))
+                .background {
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    .white.opacity(0.12),
+                                    .white.opacity(0.05)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .glassEffect(.regular.tint(.white.opacity(0.03)).interactive())
+                }
+                .overlay {
+                    Capsule()
+                        .strokeBorder(.white.opacity(0.15), lineWidth: 0.5)
+                }
+                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
         }
         .contentShape(Rectangle())
 #if !os(tvOS)
@@ -315,7 +325,7 @@ private extension AudioPlayerBarView {
     }
     
     var volumeIcon: String {
-        if isMuted || root.audioPlayerModel.volume == 0 {
+        if root.audioPlayerModel.isMuted || root.audioPlayerModel.volume == 0 {
             return "speaker.slash.fill"
         } else if root.audioPlayerModel.volume < 0.33 {
             return "speaker.wave.1.fill"
@@ -328,13 +338,11 @@ private extension AudioPlayerBarView {
     
     func toggleMute() {
         withAnimation(Animation.muteSpring) {
-            if isMuted {
+            if root.audioPlayerModel.isMuted {
                 root.audioPlayerModel.volume = previousVolume
-                isMuted = false
             } else {
                 previousVolume = root.audioPlayerModel.volume
                 root.audioPlayerModel.volume = 0
-                isMuted = true
             }
         }
     }
@@ -414,22 +422,27 @@ private extension AudioPlayerBarView {
         var seconds = Int(ceil(time))
         var hours = 0
         var mins = 0
-        
+
         if seconds > TimeConstant.secsPerHour {
             hours = seconds / TimeConstant.secsPerHour
             seconds -= hours * TimeConstant.secsPerHour
         }
-        
+
         if seconds > TimeConstant.secsPerMin {
             mins = seconds / TimeConstant.secsPerMin
             seconds -= mins * TimeConstant.secsPerMin
         }
-        
+
         if hours > 0 {
             return String(format: "%02d:%02d:%02d", hours, mins, seconds)
         } else {
             return String(format: "%02d:%02d", mins, seconds)
         }
+    }
+
+    func formatAccessibilityTime(_ time: Double) -> String {
+        guard !time.isNaN && time.isFinite else { return "0" }
+        return "\(Int(time.rounded()))"
     }
 }
 

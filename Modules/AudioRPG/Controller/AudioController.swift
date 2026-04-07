@@ -199,7 +199,7 @@ private extension AudioController {
         MediaPlayerCoordinator.handleRemoteCommands(using: self)
 
         observePlayback()
-        model.player.volume = model.volume
+        model.player.volume = Float(model.volume)
         model.isInitialized = true
     }
 

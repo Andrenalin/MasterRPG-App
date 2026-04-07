@@ -14,8 +14,11 @@ public final class AudioPlayerModel {
     var currentTime: Double {
         player.currentTime().seconds
     }
-    var volume: Float = 0.25 {
-        didSet { player.volume = volume }
+    var volume: Double = 0.25 {
+        didSet { player.volume = Float(volume) }
+    }
+    var isMuted: Bool {
+        volume == 0
     }
     var isPlaybackComplete = false
 
