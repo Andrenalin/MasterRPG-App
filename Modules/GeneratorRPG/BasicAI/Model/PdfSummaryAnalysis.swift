@@ -36,7 +36,9 @@ public struct PdfSummaryAnalysis: Equatable, Sendable, Identifiable {
 
 /// A section or chapter within the PDF
 @Generable(description: "A major section or chapter in the PDF document")
-public struct PdfSection: Equatable, Sendable {
+public struct PdfSection: Equatable, Sendable, Identifiable {
+
+    public var id: String { heading + (pageNumber.map { "\($0)" } ?? "") }
 
     @Guide(description: "The section heading or chapter title")
     public var heading: String
