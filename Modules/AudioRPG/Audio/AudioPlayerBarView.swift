@@ -65,13 +65,13 @@ struct AudioPlayerBarView: View {
     }
     
     var content: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .center, spacing: 8) {
             playbackControls
                 .padding(.horizontal, 8)
-                        
+
             musicArtTitleTimeline
                 .frame(maxWidth: .infinity, alignment: .leading)
-            
+
             volumeControl
                 .padding(.horizontal, 8)
         }
@@ -121,40 +121,72 @@ private extension AudioPlayerBarView {
     
     @ViewBuilder
     var musicArtTitleTimeline: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: Layout.horizontalSpacing) {
-                // Album art
-                albumArtView
-                
-                // Song Info / Progress Scrubber
-                ZStack {
-                    // Song Info (blurred when hovering)
-                    songInfoView
-                        .blur(radius: isHovering ? Layout.blurRadius : 0, opaque: false)
-                        .opacity(isHovering ? Layout.hoverOpacity : 1)
-                        .allowsHitTesting(!isHovering)
-                    
-                    // Interactive scrubber (visible when hovering)
-                    if isHovering {
-                        scrubberView
-                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .frame(height: Layout.contentHeight)
-            
-            // Always-visible thin progress bar
-            progressBarView
+#if os(iOS)
+        // iPad: Always show scrubber (touch-first design)
+        if horizontalSizeClass != .compact {
+            iPadMusicArtTitleTimeline
+        } else {
+            // Should not reach here as compact uses AudioPlayerMiniBarView
+            EmptyView()
         }
-        .contentShape(Rectangle())
-#if !os(tvOS)
-        .onHover { hovering in
-            withAnimation(Animation.hoverSpring) {
-                isHovering = hovering
-            }
-        }
+#else
+        // macOS: Hover-based scrubber
+        macMusicArtTitleTimeline
 #endif
+    }
+
+    @ViewBuilder
+    var iPadMusicArtTitleTimeline: some View {
+        // Base content layer (album art + song info)
+        HStack(spacing: Layout.horizontalSpacing) {
+            // Album art
+            albumArtView
+                .blur(radius: isHovering ? Layout.blurRadius : 0, opaque: false)
+
+            // Song Info
+            songInfoView
+                .blur(radius: isHovering ? Layout.blurRadius : 0, opaque: false)
+        }
+        .frame(height: Layout.contentHeight, alignment: .center)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .opacity(isHovering ? Layout.hoverOpacity : 1)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // Tap artwork/title to reveal scrubber
+            withAnimation(Animation.hoverSpring) {
+                isHovering = true
+            }
+        }
+        .overlay(alignment: .bottom) {
+            // Progress bar (visible when scrubber hidden)
+            if !isHovering {
+                progressBarView
+                    .offset(y: 8)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+        }
+        .overlay {
+            // Scrubber (visible when tapped)
+            if isHovering {
+                scrubberView
+                    .padding(.horizontal, Layout.horizontalSpacing)
+                    .padding(.vertical, 8)
+                    .background {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(.ultraThinMaterial.opacity(0.95))
+                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                // Tap outside (on background) to dismiss
+                                withAnimation(Animation.hoverSpring) {
+                                    isHovering = false
+                                }
+                            }
+                    }
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
+        }
         .onChange(of: currentItem?.id) { _, _ in
             loadAlbumArtwork()
         }
@@ -162,7 +194,60 @@ private extension AudioPlayerBarView {
             loadAlbumArtwork()
         }
     }
-    
+
+    @ViewBuilder
+    var macMusicArtTitleTimeline: some View {
+        // Base content layer (album art + song info)
+        HStack(spacing: Layout.horizontalSpacing) {
+            // Album art
+            albumArtView
+                .blur(radius: isHovering ? Layout.blurRadius : 0, opaque: false)
+
+            // Song Info
+            songInfoView
+                .blur(radius: isHovering ? Layout.blurRadius : 0, opaque: false)
+        }
+        .frame(height: Layout.contentHeight, alignment: .center)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .opacity(isHovering ? Layout.hoverOpacity : 1)
+        .allowsHitTesting(!isHovering)
+        .overlay(alignment: .bottom) {
+            // Progress bar (visible when not hovering)
+            if !isHovering {
+                progressBarView
+                    .offset(y: 8)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+        }
+        .overlay {
+            // Scrubber overlay (visible when hovering)
+            if isHovering {
+                scrubberView
+                    .padding(.horizontal, Layout.horizontalSpacing)
+                    .padding(.vertical, 8)
+                    .background {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(.ultraThinMaterial.opacity(0.95))
+                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
+                    }
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
+        }
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(Animation.hoverSpring) {
+                isHovering = hovering
+            }
+        }
+        .onChange(of: currentItem?.id) { _, _ in
+            loadAlbumArtwork()
+        }
+        .onAppear {
+            loadAlbumArtwork()
+        }
+    }
+
     var albumArtView: some View {
         Group {
             if let albumArtwork {
@@ -230,7 +315,6 @@ private extension AudioPlayerBarView {
             .progressViewStyle(.linear)
             .tint(.primary.opacity(0.7))
             .scaleEffect(y: Layout.progressBarScale)
-            .padding(.horizontal, 2)
     }
     
     var appIconImage: Image {
