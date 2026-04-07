@@ -253,7 +253,7 @@ private extension AudioPlayerBarView {
     
     @ViewBuilder var volumeControl: some View {
         @Bindable var audioPlayerModel = root.audioPlayerModel
-        
+
         HStack(spacing: 0) {
 #if !os(tvOS)
             // Volume slider (visible when hovering)
@@ -269,6 +269,8 @@ private extension AudioPlayerBarView {
 
             // Volume button
             Button {
+#if os(macOS)
+                // macOS: toggle mute if already hovering, otherwise show slider
                 if isHoveringVolume {
                     toggleMute()
                 } else {
@@ -276,6 +278,16 @@ private extension AudioPlayerBarView {
                         isHoveringVolume = true
                     }
                 }
+#else
+                // iOS/visionOS: first tap shows slider, second tap mutes
+                if isHoveringVolume {
+                    toggleMute()
+                } else {
+                    withAnimation(Animation.volumeSpring) {
+                        isHoveringVolume = true
+                    }
+                }
+#endif
             } label: {
                 Image(systemName: volumeIcon)
                     .font(.body)
@@ -313,9 +325,20 @@ private extension AudioPlayerBarView {
                 .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
         }
         .contentShape(Rectangle())
-#if !os(tvOS)
+#if os(macOS)
+        // macOS: use hover behavior
         .onHover { hovering in
             if !hovering && isHoveringVolume {
+                withAnimation(Animation.volumeSpring) {
+                    isHoveringVolume = false
+                }
+            }
+        }
+#else
+        // iOS/visionOS: use tap-outside-to-dismiss
+        .onTapGesture {
+            // Tapping the background (outside button/slider) dismisses
+            if isHoveringVolume {
                 withAnimation(Animation.volumeSpring) {
                     isHoveringVolume = false
                 }

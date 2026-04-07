@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "apple-hig-designer": {
+      "source": "jamesrochabrun/skills",
+      "sourceType": "github",
+      "computedHash": "d6f35edf97a7545d967e4d5bbb5666712d732c9e40328835d8f3f585ae416f0a"
+    },
     "axiom-foundation-models": {
       "source": "charleswiltgen/axiom",
       "sourceType": "github",
@@ -21,6 +26,11 @@
       "sourceType": "github",
       "computedHash": "b8d2829005b1f2fefbaa8af2ea7d7d64e2fbeca2f2172033176ad0780edc3970"
     },
+    "ipados-design-guidelines": {
+      "source": "ehmo/platform-design-skills",
+      "sourceType": "github",
+      "computedHash": "d3c6a09efe0c6a74a08a944d4deb78b1a71595a45a4c25f4b8eedb657d16bca8"
+    },
     "realitykit-visionos-developer": {
       "source": "tomkrikorian/visionosagents",
       "sourceType": "github",
@@ -40,6 +50,16 @@
       "source": "avdlee/swiftui-agent-skill",
       "sourceType": "github",
       "computedHash": "6ee49ef533bac7e930efb2e2e5ae61399de9ffb52645df311740cbe6b4108134"
+    },
+    "tvos-design-guidelines": {
+      "source": "ehmo/platform-design-skills",
+      "sourceType": "github",
+      "computedHash": "7e8751618b4421617d083191150b6324eaa2bdf03509b3cc846763b770ff5b3f"
+    },
+    "visionos-design-guidelines": {
+      "source": "ehmo/platform-design-skills",
+      "sourceType": "github",
+      "computedHash": "88eaf0e697c6b3bf8dd16dbd1d0618b098c94ad18052f892054d64c16f728eac"
     },
     "xcode-compilation-analyzer": {
       "source": "avdlee/xcode-build-optimization-agent-skill",
