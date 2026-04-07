@@ -5,63 +5,47 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View, EntryEditor: View>: View {
-    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
+
+    /// Configuration for ItemDetailRootView behavior
+    public struct Configuration {
+        public var editorAsBackground: Bool
+        public var hasInspector: Bool
+        public var hasOverlay: Bool
+
+        public init(editorAsBackground: Bool = false, hasInspector: Bool = true, hasOverlay: Bool = false) {
+            self.editorAsBackground = editorAsBackground
+            self.hasInspector = hasInspector
+            self.hasOverlay = hasOverlay
+        }
+    }
+
+    public init(
+        detailListController: FolderListControllable,
+        selectedModel: any ItemDataAccessable,
+        configuration: Configuration = Configuration(),
+        @ViewBuilder header: () -> Header = EmptyView.init,
+        @ViewBuilder editor: () -> Editor = EmptyView.init,
+        @ViewBuilder inspector: () -> Inspector = EmptyView.init,
+        @ViewBuilder overlay: () -> Overlay = EmptyView.init,
+        @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init
+    ) {
         self.detailListController = detailListController
         self.selectedModel = selectedModel
-        self.editorAsBackground = editorAsBackground
+        self.editorAsBackground = configuration.editorAsBackground
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
-        self.hasInspector = true
-        self.overlay = { EmptyView() }()
-        self.hasOverlay = false
-        self.entryEditor = entryEditor()
-    }
-    
-    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
-        self.detailListController = detailListController
-        self.selectedModel = selectedModel
-        self.editorAsBackground = editorAsBackground
-        self.header = header()
-        self.editor = editor()
-        self.inspector = inspector()
-        self.hasInspector = true
+        self.hasInspector = configuration.hasInspector
         self.overlay = overlay()
-        self.hasOverlay = true
+        self.hasOverlay = configuration.hasOverlay
         self.entryEditor = entryEditor()
     }
-    
-    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView {
-        self.detailListController = detailListController
-        self.selectedModel = selectedModel
-        self.editorAsBackground = editorAsBackground
-        self.header = header()
-        self.editor = editor()
-        self.inspector = { EmptyView() }()
-        self.hasInspector = false
-        self.overlay = overlay()
-        self.hasOverlay = true
-        self.entryEditor = entryEditor()
-    }
-    
-    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView, Overlay == EmptyView {
-        self.detailListController = detailListController
-        self.selectedModel = selectedModel
-        self.editorAsBackground = editorAsBackground
-        self.header = header()
-        self.editor = editor()
-        self.inspector = { EmptyView() }()
-        self.hasInspector = false
-        self.overlay = { EmptyView() }()
-        self.hasOverlay = false
-        self.entryEditor = entryEditor()
-    }
-    
+
     let selectedModel: any ItemDataAccessable
     let editorAsBackground: Bool
     let header: Header
     let editor: Editor
-    let inspector: Inspector?
+    let inspector: Inspector
     let overlay: Overlay
     let hasOverlay: Bool
     let hasInspector: Bool

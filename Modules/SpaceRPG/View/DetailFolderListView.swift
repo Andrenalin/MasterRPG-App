@@ -69,7 +69,12 @@ struct DetailFolderListView: View {
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: true) {
+        ItemDetailRootView(
+            detailListController: listController,
+            selectedModel: model,
+            configuration: .init(editorAsBackground: true, hasInspector: false, hasOverlay: false)
+        ) {
+            EmptyView()
         } editor: {
             SpaceDetailObjectViewer(editController: root.editController, model: model)
         }

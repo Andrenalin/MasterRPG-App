@@ -69,10 +69,15 @@ struct DetailFolderListView: View {
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
+        ItemDetailRootView(
+            detailListController: listController,
+            selectedModel: model,
+            configuration: .init(editorAsBackground: false, hasInspector: false, hasOverlay: false)
+        ) {
+            EmptyView()
         } editor: {
             fileAndPlayerView(model: model)
-            
+
             SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString, linkTypes: LinkPdfModuleTransferable.self)
         } entryEditor: {
             EntryEditorView(editController: root.editController, model: model, linkTypes: LinkPdfModuleTransferable.self)
