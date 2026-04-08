@@ -294,6 +294,9 @@
         }
       }
     },
+    "Failed to Load 3D Model" : {
+
+    },
     "Finish (Object Capture, Point Cloud)" : {
       "comment" : "Title for finish button on the object capture screen.",
       "extractionState" : "extracted_with_value",

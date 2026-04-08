@@ -84,6 +84,8 @@ struct DetailFolderListView: View {
             DetailEditorView(root: root, model: model)
         } inspector: {
             DetailInspectorView(root: root, model: model)
+        } overlay: {
+            EmptyView()
         } entryEditor: {
             EntryEditorView(editController: root.editController, model: model, linkTypes: LinkCharacterModuleTransferable.self)
         }

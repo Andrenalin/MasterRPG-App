@@ -79,6 +79,10 @@ struct DetailFolderListView: View {
             fileAndPlayerView(model: model)
 
             SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString, linkTypes: LinkPdfModuleTransferable.self)
+        } inspector: {
+            EmptyView()
+        } overlay: {
+            EmptyView()
         } entryEditor: {
             EntryEditorView(editController: root.editController, model: model, linkTypes: LinkPdfModuleTransferable.self)
         }

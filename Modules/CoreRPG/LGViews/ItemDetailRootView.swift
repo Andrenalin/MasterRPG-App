@@ -23,11 +23,11 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         detailListController: FolderListControllable,
         selectedModel: any ItemDataAccessable,
         configuration: Configuration = Configuration(),
-        @ViewBuilder header: () -> Header = EmptyView.init,
-        @ViewBuilder editor: () -> Editor = EmptyView.init,
-        @ViewBuilder inspector: () -> Inspector = EmptyView.init,
-        @ViewBuilder overlay: () -> Overlay = EmptyView.init,
-        @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init
+        @ViewBuilder header: () -> Header,
+        @ViewBuilder editor: () -> Editor,
+        @ViewBuilder inspector: () -> Inspector,
+        @ViewBuilder overlay: () -> Overlay,
+        @ViewBuilder entryEditor: () -> EntryEditor
     ) {
         self.detailListController = detailListController
         self.selectedModel = selectedModel
@@ -68,7 +68,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @State private var lastModelId: UUID?
 
     @State private var detailListController: FolderListControllable
-    @State private var headerFooterModel = HeaderFooterScrollModel()
+    @State private var headerModel = HeaderScrollModel()
     
     @Namespace private var editSheetNamespace
     
@@ -98,12 +98,10 @@ private extension ItemDetailRootView {
     }
     
     @ViewBuilder func contentScrollView(model: any ItemDataAccessable) -> some View {
-        HeaderFooterContentScrollView(model: headerFooterModel) {
+        HeaderContentScrollView(model: headerModel) {
             headerView(model: model)
         } content: {
             contentView(model: model)
-        } footer: {
-            
         } background: {
             Rectangle()
                 .fill(root.configurable.module.color)

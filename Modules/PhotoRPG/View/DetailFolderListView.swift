@@ -76,6 +76,12 @@ struct DetailFolderListView: View {
             EmptyView()
         } editor: {
             SelectedPhotoViewerView(model: model)
+        } inspector: {
+            EmptyView()
+        } overlay: {
+            EmptyView()
+        } entryEditor: {
+            EmptyView()
         }
     }
 }

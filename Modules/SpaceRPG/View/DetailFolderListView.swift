@@ -77,6 +77,12 @@ struct DetailFolderListView: View {
             EmptyView()
         } editor: {
             SpaceDetailObjectViewer(editController: root.editController, model: model)
+        } inspector: {
+            EmptyView()
+        } overlay: {
+            EmptyView()
+        } entryEditor: {
+            EmptyView()
         }
         .overlay {
             if openFileWindowModel.showItem {

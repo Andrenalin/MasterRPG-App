@@ -76,8 +76,12 @@ struct DetailFolderListView: View {
             EmptyView()
         } editor: {
             detailEditorView()
+        } inspector: {
+            EmptyView()
         } overlay: {
             diceOverlay
+        } entryEditor: {
+            EmptyView()
         }
     }
     

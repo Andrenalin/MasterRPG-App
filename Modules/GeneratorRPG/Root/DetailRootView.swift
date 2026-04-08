@@ -57,6 +57,10 @@ struct DetailListView: View {
         } inspector: {
             LinkRootView(type: .inspector)
                 .environment(selection)
+        } overlay: {
+            EmptyView()
+        } entryEditor: {
+            EmptyView()
         }
         .overlay {
             if openFileWindowModel.showItem {

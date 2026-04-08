@@ -86,6 +86,8 @@ struct DetailFolderListView: View {
         } overlay: {
             OverlayViewer(model: model, animate: $animate)
                 .allowsHitTesting(false)
+        } entryEditor: {
+            EmptyView()
         }
         .overlay {
             if openFileWindowModel.showItem {

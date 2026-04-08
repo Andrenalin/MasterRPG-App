@@ -76,8 +76,12 @@ struct DetailFolderListView: View {
             EmptyView()
         } editor: {
             fileAndPlayerView(model: model)
+        } inspector: {
+            EmptyView()
         } overlay: {
             playerView
+        } entryEditor: {
+            EmptyView()
         }
     }
     
