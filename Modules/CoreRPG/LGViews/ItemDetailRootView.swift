@@ -103,7 +103,7 @@ private extension ItemDetailRootView {
         } content: {
             contentView(model: model)
         } footer: {
-            bottomView(model: model)
+            
         } background: {
             Rectangle()
                 .fill(root.configurable.module.color)
@@ -114,58 +114,21 @@ private extension ItemDetailRootView {
         .overlay(alignment: .bottom) {
             if hasOverlay {
                 overlay
-                    .safeAreaInset(edge: .bottom, spacing: -headerFooterModel.footerOffset) {
-                        bottomView(model: model).opacity(0)
-                    }
             }
         }
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id, initial: true) {
-            let isNewSelection = lastModelId != model.id
-            lastModelId = model.id
-
-            // Reset editing state when switching items
-            isEditing = false
-
-            detailListController.resetParentModel(model: model)
-            detailInspectorModel.canShowInspector = canShowInspector(model: model)
-            updateInspectorStates(model: model)
-            // Note: Cannot use .equatable() here as inspectorView returns heterogeneous types
-            // The view is already optimized by onChange(of: model.id) triggering only on ID changes
-            detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
-            withAnimation(.easeInOut) { selection.selectedItem = nil }
-
-            guard model.url != nil else {
-                itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
-                return
-            }
-            itemIdHasUrl = model.id
-
-            // Check if we should show the editor for new items
-            // Only show on actual selection changes, not on view recreation/tab switches
-            // Delay the check to ensure model is fully populated
-            if isNewSelection {
-                Task { @MainActor in
-                    // Wait for next runloop to ensure model is stable
-                    try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
-                    if model.id == lastModelId && model.name.isEmpty && (hasFile(model: model) || model.specialCategory) {
-                        withAnimation(.easeInOut) { isEditing = true }
-                    }
-                }
-            }
+            handleModelIdChange(model: model)
         }
         .onChange(of: openFileWindowModel.showItem) {
             updateInspectorStates(model: model)
         }
         .onChange(of: model.name) {
-            guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
-            withAnimation(.easeInOut) { isEditing = true }
+            handleModelNameChange(model: model)
         }
         .onChange(of: model.url) { oldValue, newValue in
-            guard oldValue == nil else { return }
-            guard itemIdHasUrl != model.id else { return }
-            withAnimation(.easeInOut) { isEditing = true }
+            handleModelUrlChange(model: model, oldValue: oldValue)
         }
 #if !os(tvOS)
         .applyIf(model.category != .folder && !fileTypes.isEmpty) {
@@ -173,18 +136,7 @@ private extension ItemDetailRootView {
         }
 #endif
         .sheet(isPresented: $isEditing) {
-            ItemHeaderEditorView(editControllable: root.editControllable, model: currentModel(model: model))
-                .colorScheme(colorScheme)
-                .preferredColorScheme(colorScheme)
-                .presentationContentInteraction(.resizes)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackgroundInteraction(.enabled)
-                .tint(root.configurable.module.tint)
-                .accentColor(root.configurable.module.tint)
-#if os(iOS)
-                .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
-#endif
+            editingSheet
         }
         .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), module: root.configurable.module))
         .toolbar {
@@ -193,12 +145,73 @@ private extension ItemDetailRootView {
         .environment(selection)
     }
     
+    func handleModelIdChange(model: any ItemDataAccessable) {
+        let isNewSelection = lastModelId != model.id
+        lastModelId = model.id
+
+        // Reset editing state when switching items
+        isEditing = false
+
+        detailListController.resetParentModel(model: model)
+        detailInspectorModel.canShowInspector = canShowInspector(model: model)
+        updateInspectorStates(model: model)
+        // Note: Cannot use .equatable() here as inspectorView returns heterogeneous types
+        // The view is already optimized by onChange(of: model.id) triggering only on ID changes
+        detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
+        withAnimation(.easeInOut) { selection.selectedItem = nil }
+
+        guard model.url != nil else {
+            itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
+            return
+        }
+        itemIdHasUrl = model.id
+
+        // Check if we should show the editor for new items
+        // Only show on actual selection changes, not on view recreation/tab switches
+        // Delay the check to ensure model is fully populated
+        if isNewSelection {
+            Task { @MainActor in
+                // Wait for next runloop to ensure model is stable
+                try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+                if model.id == lastModelId && model.name.isEmpty && (hasFile(model: model) || model.specialCategory) {
+                    withAnimation(.easeInOut) { isEditing = true }
+                }
+            }
+        }
+    }
+
+    func handleModelNameChange(model: any ItemDataAccessable) {
+        guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
+        withAnimation(.easeInOut) { isEditing = true }
+    }
+
+    func handleModelUrlChange(model: any ItemDataAccessable, oldValue: URL?) {
+        guard oldValue == nil else { return }
+        guard itemIdHasUrl != model.id else { return }
+        withAnimation(.easeInOut) { isEditing = true }
+    }
+
     func updateInspectorStates(model: any ItemDataAccessable) {
         withAnimation(.easeInOut) {
             if detailInspectorModel.showInspector && openFileWindowModel.showItem {
                 detailInspectorModel.showInspector = false
             }
         }
+    }
+
+    var editingSheet: some View {
+        ItemHeaderEditorView(editControllable: root.editControllable, model: currentModel(model: selectedModel))
+            .colorScheme(colorScheme)
+            .preferredColorScheme(colorScheme)
+            .presentationContentInteraction(.resizes)
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationBackgroundInteraction(.enabled)
+            .tint(root.configurable.module.tint)
+            .accentColor(root.configurable.module.tint)
+#if os(iOS)
+            .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
+#endif
     }
     
     func headerView(model: any ItemDataAccessable) -> some View {
@@ -232,23 +245,6 @@ private extension ItemDetailRootView {
         .transition(.scale)
     }
     
-    @ViewBuilder func bottomView(model: any ItemDataAccessable) -> some View {
-        if hasFile(model: model) && model.specialCategory == false && root.viewControllable.goupViewType != .none {
-            CarouselItemView(root: root, model: model, selection: selection) {
-                if root.viewControllable.goupViewType == .item {
-                    ItemGroupItemView(root: root, model: model)
-                } else {
-                    if let cacheControllable = root.cacheControllable {
-                        GroupedPhotoView(cacheController: cacheControllable, itemControllable: root.itemControllable, model: model)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .environment(selection)
-            .transition(.move(edge: .bottom))
-        }
-    }
     
     @ViewBuilder func contentView(model: any ItemDataAccessable) -> some View {
         ZStack {

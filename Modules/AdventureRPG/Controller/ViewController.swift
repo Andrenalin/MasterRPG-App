@@ -5,7 +5,6 @@ import SwiftUI
 import DiceRPG
 
 public struct ViewController: Sendable {
-    public let goupViewType: GroupViewType = .none
     public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
 

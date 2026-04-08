@@ -766,6 +766,7 @@
       }
     },
     "Drop %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
