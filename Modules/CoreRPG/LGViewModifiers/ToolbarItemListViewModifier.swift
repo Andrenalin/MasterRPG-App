@@ -32,21 +32,19 @@ struct ToolbarItemListViewModifier: ViewModifier {
 #endif
                 }
 #endif
-                if listDisplayModel.isSelectionMode {
-                    ToolbarItem(placement: .primaryAction) {
+                // Single stable ToolbarItem — avoids _ConditionalContent in the preference tree
+                // which would cause a deep AG graph traversal on every navigation transition.
+                ToolbarItem(placement: .primaryAction) {
+                    if listDisplayModel.isSelectionMode {
                         MenuSelectionButtonView(listDisplayModel: listDisplayModel)
 #if os(visionOS)
                             .foregroundStyle(.primary)
 #endif
-                    }
-                } else {
-                    ToolbarItem(placement: .primaryAction) {
-                        if modal == false || (parentModel != nil && parentModel!.specialCategory) {
-                            addItemButton(for: .item)
+                    } else if modal == false || (parentModel != nil && parentModel!.specialCategory) {
+                        addItemButton(for: .item)
 #if os(visionOS)
-                                .foregroundStyle(.primary)
+                            .foregroundStyle(.primary)
 #endif
-                        }
                     }
                 }
 
@@ -107,17 +105,17 @@ private extension ToolbarItemListViewModifier {
 
     @ViewBuilder
     var secondaryActionMenu: some View {
-        if !listDisplayModel.isSelectionMode && modal == false {
-            MenuSelectionButtonView(listDisplayModel: listDisplayModel)
+        // Use opacity/hidden instead of conditional presence to keep the toolbar preference
+        // tree stable across selection mode changes and navigation transitions.
+        MenuSelectionButtonView(listDisplayModel: listDisplayModel)
+            .opacity(!listDisplayModel.isSelectionMode && modal == false ? 1 : 0)
+        ControlGroup {
+            addItemButton(for: .item)
+            addItemButton(for: .folder)
+                .disabled(parentModel?.category == root.itemControllable.collectionCategory)
+            addItemButton(for: .collection)
         }
-        if modal == false {
-            ControlGroup {
-                addItemButton(for: .item)
-                addItemButton(for: .folder)
-                    .disabled(parentModel?.category == root.itemControllable.collectionCategory)
-                addItemButton(for: .collection)
-            }
-        }
+        .opacity(modal == false ? 1 : 0)
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
             MediumDisplayModeToggle(listDisplayModel: listDisplayModel)

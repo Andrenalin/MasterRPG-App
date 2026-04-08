@@ -24,7 +24,7 @@ struct HorizontalSizeViewModifier: ViewModifier {
         content
             .environment(model)
 #if os(iOS)
-            .onChange(of: horizontalSizeClass) {
+            .onChange(of: horizontalSizeClass, initial: true) {
                 model.mode = mode
             }
 #endif

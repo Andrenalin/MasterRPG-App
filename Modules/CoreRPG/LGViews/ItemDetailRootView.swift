@@ -4,6 +4,16 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
+struct EditingItem: Identifiable {
+    let id: UUID
+    let model: any ItemDataAccessable
+
+    init(_ model: any ItemDataAccessable) {
+        self.id = model.id
+        self.model = model
+    }
+}
+
 public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View, EntryEditor: View>: View {
 
     /// Configuration for ItemDetailRootView behavior
@@ -62,10 +72,9 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @Environment(ItemRootController.self) private var root
     @Environment(DetailInspectorModel.self) private var detailInspectorModel
         
-    @State private var isEditing = false
+    @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
     @State private var selection = GroupItemSelectionModel()
-    @State private var lastModelId: UUID?
 
     @State private var detailListController: FolderListControllable
     @State private var headerModel = HeaderScrollModel()
@@ -75,7 +84,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     public var body: some View {
         contentScrollView(model: selectedModel)
             .tint(root.configurable.module.tint)
-            .accentColor(root.configurable.module.tint)
     }
 }
 
@@ -114,10 +122,13 @@ private extension ItemDetailRootView {
                 overlay
             }
         }
-        .animation(.default, value: model.url)
+        .animation(.easeInOut, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id, initial: true) {
             handleModelIdChange(model: model)
+        }
+        .task(id: model.id) {
+            await openEditorForNewItemIfNeeded(model: model)
         }
         .onChange(of: openFileWindowModel.showItem) {
             updateInspectorStates(model: model)
@@ -133,8 +144,8 @@ private extension ItemDetailRootView {
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: { updateFile(url: $0, model: model)} ))
         }
 #endif
-        .sheet(isPresented: $isEditing) {
-            editingSheet
+        .sheet(item: $editingItem) { item in
+            editingSheet(model: item.model)
         }
         .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), module: root.configurable.module))
         .toolbar {
@@ -143,12 +154,16 @@ private extension ItemDetailRootView {
         .environment(selection)
     }
     
-    func handleModelIdChange(model: any ItemDataAccessable) {
-        let isNewSelection = lastModelId != model.id
-        lastModelId = model.id
+    func openEditorForNewItemIfNeeded(model: any ItemDataAccessable) async {
+        // Yield once to let the view settle before checking model state
+        await Task.yield()
+        guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
+        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
+    }
 
+    func handleModelIdChange(model: any ItemDataAccessable) {
         // Reset editing state when switching items
-        isEditing = false
+        editingItem = nil
 
         detailListController.resetParentModel(model: model)
         detailInspectorModel.canShowInspector = canShowInspector(model: model)
@@ -163,30 +178,17 @@ private extension ItemDetailRootView {
             return
         }
         itemIdHasUrl = model.id
-
-        // Check if we should show the editor for new items
-        // Only show on actual selection changes, not on view recreation/tab switches
-        // Delay the check to ensure model is fully populated
-        if isNewSelection {
-            Task { @MainActor in
-                // Wait for next runloop to ensure model is stable
-                try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
-                if model.id == lastModelId && model.name.isEmpty && (hasFile(model: model) || model.specialCategory) {
-                    withAnimation(.easeInOut) { isEditing = true }
-                }
-            }
-        }
     }
 
     func handleModelNameChange(model: any ItemDataAccessable) {
         guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
-        withAnimation(.easeInOut) { isEditing = true }
+        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
     }
 
     func handleModelUrlChange(model: any ItemDataAccessable, oldValue: URL?) {
         guard oldValue == nil else { return }
         guard itemIdHasUrl != model.id else { return }
-        withAnimation(.easeInOut) { isEditing = true }
+        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
     }
 
     func updateInspectorStates(model: any ItemDataAccessable) {
@@ -197,8 +199,8 @@ private extension ItemDetailRootView {
         }
     }
 
-    var editingSheet: some View {
-        ItemHeaderEditorView(editControllable: root.editControllable, model: currentModel(model: selectedModel))
+    func editingSheet(model: any ItemDataAccessable) -> some View {
+        ItemHeaderEditorView(editControllable: root.editControllable, model: model)
             .colorScheme(colorScheme)
             .preferredColorScheme(colorScheme)
             .presentationContentInteraction(.resizes)
@@ -206,7 +208,6 @@ private extension ItemDetailRootView {
             .presentationDragIndicator(.visible)
             .presentationBackgroundInteraction(.enabled)
             .tint(root.configurable.module.tint)
-            .accentColor(root.configurable.module.tint)
 #if os(iOS)
             .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
 #endif
@@ -422,7 +423,7 @@ private extension ItemDetailRootView {
             ToolbarItem(placement: .primaryAction) {
                 if (hasFile(model: currentModel(model: model)) || currentModel(model: model).specialCategory) {
                     Button {
-                        withAnimation(.easeInOut) { isEditing = true }
+                        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
                     } label: {
                         Label {
                             Text("Edit", bundle: .module)
