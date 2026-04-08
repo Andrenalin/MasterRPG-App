@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@Observable
+@Observable @MainActor
 final class HeaderScrollModel {
     var headerOffset: CGFloat = 0
     var headerSize: CGFloat = 0
@@ -10,18 +10,24 @@ final class HeaderScrollModel {
 }
 
 struct HeaderContentScrollView<Header: View, Content: View, Background: View>: View {
-    init(model: HeaderScrollModel, @ViewBuilder header: () -> Header, @ViewBuilder content: () -> Content, @ViewBuilder background: () -> Background) {
+    let model: HeaderScrollModel
+    let header: Header
+    let content: Content
+    let background: Background
+
+    private let scrollThreshold: CGFloat = 20
+
+    init(
+        model: HeaderScrollModel,
+        @ViewBuilder header: () -> Header,
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder background: () -> Background
+    ) {
         self.model = model
         self.header = header()
         self.content = content()
         self.background = background()
     }
-
-    let model: HeaderScrollModel
-
-    @ViewBuilder var header: Header
-    @ViewBuilder var content: Content
-    @ViewBuilder var background: Background
 
     var body: some View {
         content
@@ -30,15 +36,12 @@ struct HeaderContentScrollView<Header: View, Content: View, Background: View>: V
             .onScrollGeometryChange(for: CGFloat.self) {
                 max($0.contentOffset.y + $0.contentInsets.top, 0)
             } action: { oldValue, newValue in
-                let direction = (newValue - oldValue) > 0 ? true : false
-                if abs(newValue - oldValue) > 20 && model.scrollUp != direction {
-                    model.scrollUp = direction
+                let isScrollingDown = (newValue - oldValue) > 0
+
+                if abs(newValue - oldValue) > scrollThreshold && model.scrollUp != isScrollingDown {
+                    model.scrollUp = isScrollingDown
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        if model.scrollUp {
-                            model.headerOffset = model.headerSize
-                        } else {
-                            model.headerOffset = 0
-                        }
+                        model.headerOffset = isScrollingDown ? model.headerSize : 0
                     }
                 }
             }
@@ -73,7 +76,7 @@ struct HeaderContentScrollView<Header: View, Content: View, Background: View>: V
     HeaderContentScrollView(model: model) {
         HStack(spacing: 15) {
             Button {
-
+                print("Back button tapped")
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.title3)
