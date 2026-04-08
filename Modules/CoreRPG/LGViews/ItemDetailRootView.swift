@@ -65,7 +65,8 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @State private var isEditing = false
     @State private var itemIdHasUrl = UUID()
     @State private var selection = GroupItemSelectionModel()
-    
+    @State private var lastModelId: UUID?
+
     @State private var detailListController: FolderListControllable
     @State private var headerFooterModel = HeaderFooterScrollModel()
     
@@ -121,6 +122,12 @@ private extension ItemDetailRootView {
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id, initial: true) {
+            let isNewSelection = lastModelId != model.id
+            lastModelId = model.id
+
+            // Reset editing state when switching items
+            isEditing = false
+
             detailListController.resetParentModel(model: model)
             detailInspectorModel.canShowInspector = canShowInspector(model: model)
             updateInspectorStates(model: model)
@@ -128,16 +135,30 @@ private extension ItemDetailRootView {
             // The view is already optimized by onChange(of: model.id) triggering only on ID changes
             detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
             withAnimation(.easeInOut) { selection.selectedItem = nil }
+
             guard model.url != nil else {
                 itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
                 return
             }
             itemIdHasUrl = model.id
+
+            // Check if we should show the editor for new items
+            // Only show on actual selection changes, not on view recreation/tab switches
+            // Delay the check to ensure model is fully populated
+            if isNewSelection {
+                Task { @MainActor in
+                    // Wait for next runloop to ensure model is stable
+                    try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+                    if model.id == lastModelId && model.name.isEmpty && (hasFile(model: model) || model.specialCategory) {
+                        withAnimation(.easeInOut) { isEditing = true }
+                    }
+                }
+            }
         }
         .onChange(of: openFileWindowModel.showItem) {
             updateInspectorStates(model: model)
         }
-        .onChange(of: model.name, initial: true) {
+        .onChange(of: model.name) {
             guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
             withAnimation(.easeInOut) { isEditing = true }
         }

@@ -73,7 +73,9 @@ struct AudioPlayerVolumeControl: View {
                             endPoint: .bottomTrailing
                         )
                     )
+#if !os(visionOS)
                     .glassEffect(.regular.tint(.white.opacity(0.03)).interactive())
+#endif
             }
             .overlay {
                 Capsule()
