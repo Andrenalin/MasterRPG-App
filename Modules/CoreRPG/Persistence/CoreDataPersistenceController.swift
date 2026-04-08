@@ -3,7 +3,7 @@
 @preconcurrency import CoreData
 import os.log
 
-public enum CoreDataInitError: Equatable {
+public enum CoreDataInitError: Equatable, Sendable {
     case none
     case loadModel
     case removeFile(message: String)

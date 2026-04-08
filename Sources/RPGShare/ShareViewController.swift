@@ -10,25 +10,46 @@ import UniformTypeIdentifiers
 import UIKit
 
 final class ShareViewController: UIViewController {
-    let appModel = AppModel()
+    // REMOVED: let appModel = AppModel()
+    // The AppModel initialization is too heavy for a share extension
+    // Instead, we now use the lightweight ShareExtensionDatabaseService
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         isModalInPresentation = true
-        if let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem, let itemProviders = extensionItem.attachments {
-            
-            let contentView = UIHostingController(rootView: SharingView(itemProviders: itemProviders, extensionContext: extensionContext))
-            self.addChild(contentView)
-            self.view.addSubview(contentView.view)
-
-            // set up constraints
-            contentView.view.translatesAutoresizingMaskIntoConstraints = false
-            contentView.view.topAnchor.constraint(equalTo: self.view.topAnchor).isActive = true
-            contentView.view.bottomAnchor.constraint (equalTo: self.view.bottomAnchor).isActive = true
-            contentView.view.leftAnchor.constraint(equalTo: self.view.leftAnchor).isActive = true
-            contentView.view.rightAnchor.constraint (equalTo: self.view.rightAnchor).isActive = true
+        
+        guard let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem,
+              let itemProviders = extensionItem.attachments else {
+            completeRequest(returningItems: [])
+            return
         }
+        
+        // Use refactored SharingView with lightweight architecture
+        let contentView = UIHostingController(
+            rootView: SharingView_Refactored(
+                itemProviders: itemProviders,
+                extensionContext: extensionContext
+            )
+        )
+        
+        addChild(contentView)
+        view.addSubview(contentView.view)
+        
+        // Set up constraints
+        contentView.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            contentView.view.topAnchor.constraint(equalTo: view.topAnchor),
+            contentView.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            contentView.view.leftAnchor.constraint(equalTo: view.leftAnchor),
+            contentView.view.rightAnchor.constraint(equalTo: view.rightAnchor)
+        ])
+        
+        contentView.didMove(toParent: self)
+    }
+    
+    private func completeRequest(returningItems items: [Any]?) {
+        extensionContext?.completeRequest(returningItems: items)
     }
 //        // Ensure access to extensionItem and itemProvider
 //        guard let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem, let itemProvider = extensionItem.attachments?.first else {
