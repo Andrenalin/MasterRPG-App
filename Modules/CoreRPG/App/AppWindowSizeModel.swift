@@ -13,23 +13,20 @@ public extension View {
     }
 }
 
-public extension EnvironmentValues {
-#if os(iOS)
-    @Entry var appSizeMode: AppSizeMode = .compact
-#else
-    @Entry var appSizeMode: AppSizeMode = .regular
-#endif
-}
-
 struct HorizontalSizeViewModifier: ViewModifier {
+    @State private var model: AppWindowSizeModel = AppWindowSizeModel()
+    
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
     
     func body(content: Content) -> some View {
         content
+            .environment(model)
 #if os(iOS)
-            .environment(\.appSizeMode, mode)
+            .onChange(of: horizontalSizeClass) {
+                model.mode = mode
+            }
 #endif
     }
     
@@ -38,5 +35,12 @@ struct HorizontalSizeViewModifier: ViewModifier {
         horizontalSizeClass == .compact ? .compact : .regular
     }
 #endif
-    
+}
+
+@MainActor @Observable public final class AppWindowSizeModel {
+#if os(iOS)
+    public internal(set) var mode: AppSizeMode = .compact
+#else
+    public internal(set) var mode: AppSizeMode = .regular
+#endif
 }

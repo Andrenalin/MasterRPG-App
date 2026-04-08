@@ -20,7 +20,6 @@ struct AppGameTypeDestinationView: View {
             switch type {
             case .game:
                 GameFactory.rootGameView(root: appModel.gameRoot)
-                    .setWideMode()
             case .gameSetup:
                 GameFactory.rootSetupView(root: appModel.gameRoot)
             case .editor:

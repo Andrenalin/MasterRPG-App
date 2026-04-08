@@ -50,7 +50,6 @@ struct GameRootSetupView: View {
 
 #Preview {
     GameRootSetupView(root: .preview)
-        .environment(\.wideMode, .small)
         .environment(AppSettingsModel())
         .environment(AppNavigationModel())
 }

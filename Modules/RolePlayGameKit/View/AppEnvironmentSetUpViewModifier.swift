@@ -23,6 +23,7 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
         content
             // Core models
             .environment(appModel)
+            .setAppSizeMode()
             .environment(appModel.appNavigationModel)
             .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)

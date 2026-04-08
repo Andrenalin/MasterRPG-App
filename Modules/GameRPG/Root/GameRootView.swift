@@ -49,6 +49,5 @@ struct GameRootView: View {
 
 #Preview {
     GameRootView(root: .preview)
-        .environment(\.wideMode, .small)
         .environment(AppSettingsModel())
 }

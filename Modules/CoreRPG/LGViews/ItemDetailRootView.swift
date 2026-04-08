@@ -51,7 +51,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     let hasInspector: Bool
     let entryEditor: EntryEditor
     
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
     
@@ -388,7 +388,7 @@ private extension ItemDetailRootView {
 private extension ItemDetailRootView {
     
     func canShowInspector(model: any ItemDataAccessable) -> Bool {
-        valueFor(iOS: appSizeMode == .regular, macOS: true, tvOS: true, visionOS: false)
+        valueFor(iOS: appSizeModel.mode == .regular, macOS: true, tvOS: true, visionOS: false)
     }
 
     func hasAnyInspector(model: any ItemDataAccessable) -> Bool {

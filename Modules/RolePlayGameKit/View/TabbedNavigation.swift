@@ -8,7 +8,7 @@ struct TabbedNavigation: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
 
     @Environment(AppModel.self) private var appModel
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
         
     var body: some View {
         @Bindable var appModel = appModel
@@ -29,7 +29,7 @@ struct TabbedNavigation: View {
         .tabBarMinimizeBehavior26(.onScrollDown)
         .applyIf(appModel.audioRoot.audioPlayerModel.showPlayerToolBar) {
             $0.tabViewBottomAccessory {
-                if appSizeMode == .compact && appModel.audioRoot.audioPlayerModel.showPlayerToolBar {
+                if appSizeModel.mode == .compact && appModel.audioRoot.audioPlayerModel.showPlayerToolBar {
                     AudioPlayerMiniBarView()
                 }
             }

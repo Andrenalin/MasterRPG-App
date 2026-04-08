@@ -15,7 +15,6 @@ struct OverlayPlayerTabBar: View {
     let root: GameRoot
     
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(\.wideMode) private var wideMode
     
     var body: some View {
         ZStack(alignment: .trailing) {

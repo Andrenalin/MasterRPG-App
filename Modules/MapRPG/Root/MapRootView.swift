@@ -24,7 +24,7 @@ struct MapRootView: View {
 struct StateRestorationView: View {
     let root: MapRootModel
 
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     @SceneStorage("MapSelectedItem") private var selectedItemId: String?
     @SceneStorage("MapDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
@@ -35,7 +35,7 @@ struct StateRestorationView: View {
     var body: some View {
         Color.clear
             .syncListDisplay(listControllable: root.folderListController, displayMode: $displayMode, listMode: $listMode)
-            .applyIf(appSizeMode == .compact) {
+            .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $route)
                     .onChange(of: route) {
                         // Detect back navigation: when route becomes nil, user navigated back

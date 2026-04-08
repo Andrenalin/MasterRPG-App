@@ -9,7 +9,7 @@ struct CarouselPhotoView: View {
     
     @Environment(PhotoRootModel.self) private var root
     
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.navigator) private var navigator
 
     enum SheetType: Identifiable {
@@ -68,7 +68,7 @@ private extension CarouselPhotoView {
     
     var areaButton: some View {
         VStack {
-            if appSizeMode == .regular {
+            if appSizeModel.mode == .regular {
                 Text("Drop \(root.configurable.module.title)", bundle: .module)
                 
                 Image(systemName: "square.and.arrow.down")
@@ -79,7 +79,7 @@ private extension CarouselPhotoView {
             } label: {
                 VStack {
                     Text("Select", bundle: .module)
-                    if appSizeMode == .compact {
+                    if appSizeModel.mode == .compact {
                         Text(root.configurable.module.title)
                         Image(systemName: "checkmark.circle")
                             .imageScale(.large)

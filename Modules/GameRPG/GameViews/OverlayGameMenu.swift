@@ -13,7 +13,7 @@ struct OverlayGameMenu: View {
 #if !os(tvOS)
     @Environment(\.openWindow) private var openWindow
 #endif
-    @Environment(\.wideMode) private var wideMode
+    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     
     var body: some View {
 #if os(visionOS)
@@ -85,7 +85,7 @@ private extension OverlayGameMenu {
             titleView
             
             HStack(spacing: marginWidth + 4) {
-                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: wideMode == .small ? .bottom : .bottomTrailing)
+                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: appWindowSizeModel.mode == .compact ? .bottom : .bottomTrailing)
                     .padding(.horizontal, marginWidth)
                     .padding(.leading, marginWidth / 2)
                     .zIndex(2)
@@ -106,12 +106,12 @@ private extension OverlayGameMenu {
     }
     
     var marginWidth: CGFloat {
-        wideMode == .small ? 4 : 8
+        appWindowSizeModel.mode == .compact ? 4 : 8
     }
     
     @ViewBuilder
     var titleView: some View {
-        if isMaster && wideMode != .small {
+        if isMaster && appWindowSizeModel.mode == .regular {
             Text(root.gameModel.startGameTime, style: .relative)
                 .font(.caption)
                 .frame(maxWidth: .infinity)
@@ -266,7 +266,6 @@ private extension OverlayGameMenu {
             .padding()
     }
     .background(Color.brown)
-    .environment(\.wideMode, .wide)
 }
 
 #Preview("small") {
@@ -278,5 +277,4 @@ private extension OverlayGameMenu {
             .padding(.trailing, 8)
     }
     .background(Color.brown)
-    .environment(\.wideMode, .small)
 }

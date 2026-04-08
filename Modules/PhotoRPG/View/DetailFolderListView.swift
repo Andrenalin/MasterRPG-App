@@ -8,7 +8,7 @@ struct DetailFolderListView: View {
     let model: PhotoModel
     
     @Environment(\.navigator) private var navigator
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     
     @State private var detailRoute: PhotoDetailRoute?
     @State private var lastFolderId: UUID?
@@ -27,7 +27,7 @@ struct DetailFolderListView: View {
     
     var body: some View {
         content(listController: detailFolderListController)
-            .applyIf(appSizeMode == .compact) {
+            .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $detailRoute)
                     .onChange(of: detailFolderListController.listModel.subFolderRoute) {
                         guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
@@ -38,7 +38,7 @@ struct DetailFolderListView: View {
                         detailFolderListController.listModel.resetListModel()
                     }
             }
-            .applyIf(appSizeMode == .regular) {
+            .applyIf(appSizeModel.mode == .regular) {
                 $0.onChange(of: root.navigationModel.folderItems) {
                     guard lastFolderId == nil, let subItemId = root.navigationModel.folderItems.last else { return }
                     lastFolderId = subItemId

@@ -7,12 +7,12 @@ struct DetailRootView: View {
     let root: DiceRootModel
     let model: DiceModel
 
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     
     var body: some View {
         DetailListView(root: root, model: model)
             .detailInspectorModifier(folderListControllable: root.folderListController)
-            .applyIf(appSizeMode == .regular) {
+            .applyIf(appSizeModel.mode == .regular) {
                 $0.task(id: model.id) {
                     root.navigationModel.folderItems = []
                     root.navigationModel.folderModels = [:]

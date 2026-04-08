@@ -9,7 +9,7 @@ struct DropChooseView: View {
     let selectionModel: ItemSelectionModel
     
     @Environment(AdventureRootModel.self) private var root
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.navigator) private var navigator
 #if os(macOS)
     @Environment(\.openWindow) private var openWindow
@@ -94,7 +94,7 @@ struct DropChooseView: View {
     }
     
     private var showDrop: Bool {
-        appSizeMode == .regular
+        appSizeModel.mode == .regular
     }
     
     private func addLink(name: String, itemId: UUID, entryId: UUID?) {

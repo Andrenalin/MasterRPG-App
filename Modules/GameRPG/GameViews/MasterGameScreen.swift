@@ -199,12 +199,10 @@ private extension MasterGameScreen {
 
 #Preview("iPad") {
     MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())
-        .environment(\.wideMode, .small)
     //.frame(width: 800)
 }
 
 //#Preview("iPhone") {
 //    MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())
-//        .environment(\.wideMode, .small)
 //    //.frame(width: 800)
 //}

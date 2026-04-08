@@ -18,7 +18,6 @@ struct OverlayMasterTabBar: View {
     let openAction: ((NetworkModules) -> Void)?
 
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(\.wideMode) private var wideMode
 
     var body: some View {
         ZStack(alignment: .trailing) {

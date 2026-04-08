@@ -22,7 +22,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @Environment(ItemRootController.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.navigator) private var navigator
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     
 #if os(macOS) || os(visionOS)
     @Environment(\.openWindow) private var openWindow
@@ -247,7 +247,7 @@ private extension QuickEntryEditorView {
     }
     
     var canShowInspector: Bool {
-        valueFor(iOS: appSizeMode == .regular, macOS: true, tvOS: true, visionOS: false)
+        valueFor(iOS: appSizeModel.mode == .regular, macOS: true, tvOS: true, visionOS: false)
     }
         
     var pdfButton: some View {

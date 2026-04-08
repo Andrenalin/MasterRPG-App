@@ -7,18 +7,18 @@ import SwiftUI
 struct TabRootView: View {
     let appModel: AppModel
 
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     var body: some View {
         layout
             .appExitNotifications(handler: appModel.adventureRoot.save)
-            .onChange(of: appSizeMode) { oldValue, newValue in
+            .onChange(of: appSizeModel.mode) { oldValue, newValue in
                 appModel.resetNavigation()
             }
     }
     
     private var layout: AppNavigationRouteType {
-        valueFor(iOS: appSizeMode == .compact ? .tabbed : .split, macOS: .tabbedSplit, tvOS: .tabbed, visionOS: .tabbedExtSplit)
+        valueFor(iOS: appSizeModel.mode == .compact ? .tabbed : .split, macOS: .tabbedSplit, tvOS: .tabbed, visionOS: .tabbedExtSplit)
     }
 }
 

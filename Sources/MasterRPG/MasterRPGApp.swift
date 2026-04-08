@@ -72,7 +72,6 @@ struct MasterRPGApp: App {
                 .toolbar(removing: .title)
 #endif
                 .modifier(UserSettingsViewModifier(appModel: appModel))
-                .setAppSizeMode()
                 .environmentSetUp(appModel)
 #if os(visionOS)
                 .groupActivityAssociation(.primary(WindowIdentifier.game.rawValue))
