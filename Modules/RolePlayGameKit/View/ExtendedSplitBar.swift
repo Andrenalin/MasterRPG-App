@@ -53,19 +53,13 @@ private extension ExtendedSplitBar {
 #endif
     }
     
-    @ViewBuilder
     func tabView(tab: ExtendedTabRoute) -> some View {
-        @Bindable var model = appModel.itemRootController(for: tab.module)?.folderListControllable.detailInspectorModel ?? DetailInspectorModel()
-
-        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            contentView(tab: tab)
-        } detail: {
-            SplitDetailView(isExtendedRoutes: true)
-                .environment(appModel.itemRootController(for: tab.module))
-        }
-        .inspectorAll(isPresented: $model.showInspector) {
-            model.currentInspectorView
-        }
+        ExtendedSplitWithDetailView(
+            tab: tab,
+            column: $column,
+            preferredCompactColumn: $preferredCompactColumn,
+            appModel: appModel
+        )
     }
 
     func contentView(tab: ExtendedTabRoute) -> some View {
@@ -73,6 +67,38 @@ private extension ExtendedSplitBar {
             tab
         }
         .environment(appModel.itemRootController(for: tab.module))
+    }
+}
+
+/// Extracted so that @State owns the fallback DetailInspectorModel —
+/// prevents a new allocation on every tabView body evaluation.
+private struct ExtendedSplitWithDetailView: View {
+    let tab: ExtendedTabRoute
+    @Binding var column: NavigationSplitViewVisibility
+    @Binding var preferredCompactColumn: NavigationSplitViewColumn
+    let appModel: AppModel
+
+    @State private var fallbackModel = DetailInspectorModel()
+
+    private var inspectorModel: DetailInspectorModel {
+        appModel.itemRootController(for: tab.module)?.folderListControllable.detailInspectorModel ?? fallbackModel
+    }
+
+    var body: some View {
+        let controller = appModel.itemRootController(for: tab.module)
+        @Bindable var model = inspectorModel
+        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
+            ManagedPresentationView {
+                tab
+            }
+            .environment(controller)
+        } detail: {
+            SplitDetailView(isExtendedRoutes: true)
+                .environment(controller)
+        }
+        .inspectorAll(isPresented: $model.showInspector) {
+            model.currentInspectorView
+        }
     }
 }
 

@@ -19,9 +19,8 @@ struct TabbedNavigation: View {
                     ManagedNavigationStack(name: tab.title) { navigator in
                         tab
                     }
-                    .environment(appModel.itemRootController(for: selectedModule))
-                    .tint(selectedModule.tint)
-                    .accentColor(selectedModule.tint)
+                    .environment(appModel.itemRootController(for: tab.module))
+                    .tint(tab.module.tint)
                 }
             }
         }

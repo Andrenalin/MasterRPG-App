@@ -28,8 +28,8 @@ public struct LinkItemListView: View {
     @State private var showDetails: Bool = false
     @State private var showDetailsView: (any NavigationDestination)? = nil
 
-    // Computed once at type level — avoids repeated Image string interpolation on every body update
-    private static let filterPrompt = Text("\(Image(systemName: "magnifyingglass")) Filter", bundle: .module)
+    // Plain text avoids NSTextAttachment re-resolution via UIKit TextField prompt path on every layout pass
+    private static let filterPrompt = Text("Filter", bundle: .module)
 
     public var body: some View {
         ManagedNavigationStack(name: "LinkInspector") { navigator in
@@ -49,8 +49,9 @@ public struct LinkItemListView: View {
                 contentView
                     .onAppear {
                         root.folderLinkControllable.resetItemOnce()
+                        withAnimation { root.folderLinkControllable.resetFilter() }
                     }
-                    .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode, initial: true) {
+                    .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode) {
                         withAnimation { root.folderLinkControllable.resetFilter() }
                     }
                     .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
@@ -262,17 +263,22 @@ private struct LinkItemFilterFieldView: View {
     let onSearchChange: () -> Void
 
     var body: some View {
-        TextField(text: $searchModel.searchText, prompt: prompt) {
-            prompt
-        }
+        HStack(spacing: 4) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .imageScale(.small)
+            TextField(text: $searchModel.searchText, prompt: prompt) {
+                prompt
+            }
 #if os(iOS)
-        .autocapitalization(.none)
-        .textContentType(.name)
+            .autocapitalization(.none)
+            .textContentType(.name)
 #endif
-        .disableAutocorrection(true)
-        .labelsHidden()
-        .submitLabel(.return)
-        .textFieldStyle(.plain)
+            .disableAutocorrection(true)
+            .labelsHidden()
+            .submitLabel(.return)
+            .textFieldStyle(.plain)
+        }
         .padding(6)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
