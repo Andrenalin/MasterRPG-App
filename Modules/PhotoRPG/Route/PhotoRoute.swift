@@ -52,10 +52,12 @@ struct PhotoRouteDestinationView: View {
     @Environment(PhotoRootModel.self) private var root
     
     var body: some View {
-        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.rootController)
+        if let model = root.itemController.itemSync(for: itemId) {
+            DetailRootView(root: root, model: model)
+                .environment(root.listDisplayModel)
+                .environment(root.searchModel)
+                .environment(root.rootController)
+        }
     }
 }
 

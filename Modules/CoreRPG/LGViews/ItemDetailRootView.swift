@@ -89,8 +89,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
 
 private extension ItemDetailRootView {
     func currentModel(model: any ItemDataAccessable) -> any ItemDataAccessable {
-        guard let itemId = selection.selectedItem else { return model }
-        return root.itemControllable.itemOrEmpty(for: itemId)
+        model
     }
     
     var fileTypes: [UTType] {
