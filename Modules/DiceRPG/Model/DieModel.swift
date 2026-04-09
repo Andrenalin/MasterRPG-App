@@ -5,7 +5,7 @@ import RPGResources
 import SwiftUI
 
 public struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked Sendable {
-    internal init(id: UUID, die: RawDie, color: String = ColorCode.Random.rawValue, rotation: Double = 0, result: [Int] = [], displayState: Int = 0) {
+    public init(id: UUID, die: RawDie, color: String = ColorCode.Random.rawValue, rotation: Double = 0, result: [Int] = [], displayState: Int = 0) {
         self.id = id
         self.die = die
         self.color = color
@@ -57,7 +57,7 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked S
 }
 
 extension DieModel {
-    enum ColorCode: String {
+    public enum ColorCode: String {
         case Random
         case A, G
     }
@@ -91,7 +91,7 @@ extension DieModel {
         }
     }
 
-    func diceImage(for number: Int) -> Image {
+    public func diceImage(for number: Int) -> Image {
         Image(name(for: number), bundle: RPGResources.Resources.bundle)
     }
 }

@@ -4,7 +4,7 @@ import CoreRPG
 import CoreData
 import os.log
 
-// Import necessary module bundles
+// Import ALL module bundles - we need the complete database for proper saving
 import PhotoRPG
 import PdfRPG
 import AudioRPG
@@ -15,17 +15,31 @@ import MapRPG
 import CharacterRPG
 import WeatherRPG
 import SpaceRPG
+import GameRPG
 
-/// Lightweight database service specifically for the Share Extension
-/// Only loads necessary modules and skips advanced features like Spotlight indexing
+#if !os(tvOS)
+import GeneratorRPG
+#endif
+
+/// Database service for the Share Extension
+/// Loads the FULL database (all modules) to prevent Core Data corruption
+/// Uses lightweight data controllers instead of full root models
 @MainActor
 public final class ShareExtensionDatabaseService {
     
     // MARK: - Properties
     
     public private(set) var context: NSManagedObjectContext?
+    public private(set) var batchContext: NSManagedObjectContext?
     public private(set) var container: NSPersistentContainer?
     public private(set) var isReady = false
+    
+    // Lightweight data controllers - minimal overhead for share extension
+//    public private(set) var photoDataController: LightDataController?
+//    public private(set) var mapDataController: LightDataController?
+//    public private(set) var adventureDataController: LightDataController?
+//    public private(set) var weatherDataController: LightDataController?
+//    public private(set) var characterDataController: LightDataController?
     
     private let useCloudKit: Bool
     private var persistence: CoreDataPersistenceController?
@@ -38,21 +52,21 @@ public final class ShareExtensionDatabaseService {
     
     // MARK: - Setup
     
-    /// Loads only the necessary modules for the share extension
-    /// - Parameter modules: The specific modules needed (defaults to core modules)
-    public func setup(for modules: [NetworkModules] = [.photo, .pdf, .audio]) async throws {
+    /// Loads ALL modules to ensure database integrity
+    /// Loading partial modules can corrupt the Core Data store
+    public func setup() async throws {
         guard !isReady else { return }
         
-        // Only load bundles for modules we actually need
-        let bundles = moduleBundles(for: modules)
+        // Load ALL module bundles
+        let bundles = allModuleBundles()
         
-        // Create lightweight persistence controller
+        // Create persistence controller
         persistence = CoreDataPersistenceController(
             inMemory: false,
             currentActor: .sharingExtension
         )
         
-        // Load with minimal configuration
+        // Load complete database
         persistence?.loadDatabase(bundles: bundles)
         
         // Wait for context to be available
@@ -65,27 +79,61 @@ public final class ShareExtensionDatabaseService {
             throw ShareExtensionError.databaseError(model.error)
         }
         
-        // Set context
+        // Set contexts
         self.context = model.context
+        self.batchContext = model.batchContext
         self.container = model.container
+        
+        // Initialize lightweight data controllers
+        try await setupDataControllers()
+        
         self.isReady = true
+    }
+    
+    // MARK: - Data Controller Setup
+    
+    private func setupDataControllers() async throws {
+        guard let context else {
+            throw ShareExtensionError.contextNotAvailable
+        }
+        
+        // Create lightweight data controllers for each module
+        // These only handle Core Data operations without the full root model infrastructure
+//        photoDataController = LightDataController(context: context, module: .photo)
+//        mapDataController = LightDataController(context: context, module: .map)
+//        adventureDataController = LightDataController(context: context, module: .adventure)
+//        weatherDataController = LightDataController(context: context, module: .weather)
+//        characterDataController = LightDataController(context: context, module: .value)
     }
     
     // MARK: - Module Management
     
-    private func moduleBundles(for modules: [NetworkModules]) -> [Bundle] {
-        var bundles = [CoreRPG.Resources.bundle] // Always need core
+    private func allModuleBundles() -> [Bundle] {
+        var bundles = [
+            CoreRPG.Resources.bundle,
+            PhotoRPG.Resources.bundle,
+            PdfRPG.Resources.bundle,
+            AudioRPG.Resources.bundle,
+            AdventureRPG.Resources.bundle,
+            DiceRPG.Resources.bundle,
+            TableRPG.Resources.bundle,
+            MapRPG.Resources.bundle,
+            CharacterRPG.Resources.bundle,
+            WeatherRPG.Resources.bundle,
+            SpaceRPG.Resources.bundle,
+            GameRPG.Resources.bundle
+        ]
         
-        for module in modules {
-            bundles.append(module.resourceBundle)
-        }
+        #if !os(tvOS)
+        bundles.append(GeneratorRPG.Resources.bundle)
+        #endif
         
         return bundles
     }
     
     // MARK: - Save Operations
     
-    /// Performs a save operation with proper error handling
+    /// Saves all changes to Core Data
     public func save() async throws {
         guard let context else {
             throw ShareExtensionError.contextNotAvailable
@@ -98,25 +146,7 @@ public final class ShareExtensionDatabaseService {
     }
 }
 
-// MARK: - Supporting Types
-
-extension NetworkModules {
-    var resourceBundle: Bundle {
-        switch self {
-        case .photo: return PhotoRPG.Resources.bundle
-        case .pdf: return PdfRPG.Resources.bundle
-        case .audio: return AudioRPG.Resources.bundle
-        case .adventure: return AdventureRPG.Resources.bundle
-        case .dice: return DiceRPG.Resources.bundle
-        case .table: return TableRPG.Resources.bundle
-        case .map: return MapRPG.Resources.bundle
-        case .value: return CharacterRPG.Resources.bundle
-        case .weather: return WeatherRPG.Resources.bundle
-        case .space: return SpaceRPG.Resources.bundle
-        default: return CoreRPG.Resources.bundle
-        }
-    }
-}
+// MARK: - Error Types
 
 public enum ShareExtensionError: LocalizedError {
     case databaseInitializationFailed

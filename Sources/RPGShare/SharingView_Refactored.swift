@@ -26,7 +26,7 @@ struct SharingView_Refactored: View {
     // MARK: - State
     
     @State private var databaseService: ShareExtensionDatabaseService
-    @State private var moduleFactory: ShareExtensionModuleFactory?
+    @State private var saveController: ShareExtensionSaveController?
     
     @State private var imageListModel = ImageListModel()
     @State private var moduleChooserModel = ModuleChooserModel()
@@ -167,20 +167,14 @@ struct SharingView_Refactored: View {
             // 1. Extract content from item providers
             await extractItems()
             
-            // 2. Determine which modules we need based on content
-            let requiredModules = determineRequiredModules()
+            // 2. Setup database with ALL modules (required for proper Core Data integrity)
+            try await databaseService.setup()
+                        
+            saveController = ShareExtensionSaveController(
+                databaseService: databaseService
+            )
             
-            // 3. Setup database with only required modules
-            try await databaseService.setup(for: requiredModules)
-            
-            // 4. Create factory with context
-            guard let context = databaseService.context else {
-                throw ShareExtensionError.contextNotAvailable
-            }
-            
-            moduleFactory = ShareExtensionModuleFactory(context: context)
-            
-            // 5. Ready to use
+            // 4. Ready to use
             isLoading = false
             
         } catch {
@@ -209,54 +203,25 @@ struct SharingView_Refactored: View {
         }
     }
     
-    private func determineRequiredModules() -> [NetworkModules] {
-        var modules: [NetworkModules] = []
-        
-        // Always include the selected module
-        modules.append(moduleChooserModel.currentModule)
-        
-        // Add modules based on content
-        if !imageListModel.images.isEmpty {
-            modules.append(.photo)
-        }
-        
-        let text = inputModel.text
-        if !text.isEmpty {
-            modules.append(.adventure)
-        }
-        
-        // Remove duplicates
-        return Array(Set(modules))
-    }
-    
     // MARK: - Save Action
     
     @MainActor
     private func saveContent() async {
-        guard let factory = moduleFactory else { return }
+        guard let controller = saveController else { return }
         let selectedModule = moduleChooserModel.currentModule
         
         isSaving = true
         
         do {
-            // Prepare content
-            let content = ShareContent(
-                text: inputModel.text,
-                images: imageListModel.images.compactMap { $0.imageData },
-                data: nil
-            )
-            
-            // Create item
-            let itemId = try await factory.createItem(
-                in: selectedModule,
+            // Save using lightweight data controllers
+            try await controller.saveContent(
+                to: selectedModule,
                 name: inputModel.name,
-                content: content
+                text: inputModel.text,
+                images: imageListModel.images
             )
             
-            // Save to Core Data
-            try await databaseService.save()
-            
-            os.Logger.bootStrap.info("Successfully saved item \(itemId) to \(selectedModule.rawValue)")
+            os.Logger.bootStrap.info("Successfully saved to \(selectedModule.rawValue)")
             
             // Close extension
             close()
