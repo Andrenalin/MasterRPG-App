@@ -14,7 +14,7 @@ struct DiceGameActionBar: View {
     @Environment(DiceRootModel.self) private var root
     @Environment(DiceDisplayModel.self) var diceDisplayModel
     
-    @Environment(\.gameModus) private var gameModus
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     
     var body: some View {
@@ -30,8 +30,8 @@ struct DiceGameActionBar: View {
 #if !os(tvOS)
                     .buttonStyle(.borderedProminent)
 #endif
-                    .disabled(!root.gameController.canEditDice(itemId: itemId, isGameMode: gameModus != .edit))
-                    .opacity(root.gameController.canEditDice(itemId: itemId, isGameMode: gameModus != .edit) ? 1 : 0.5)
+                    .disabled(!root.gameController.canEditDice(itemId: itemId, isGameMode: appGameStateModel.isGameRunning))
+                    .opacity(root.gameController.canEditDice(itemId: itemId, isGameMode: appGameStateModel.isGameRunning) ? 1 : 0.5)
                     .onChange(of: root.gameController.gameItem(for: itemId).entries) {
                         diceRollResult = root.gameController.result(itemId: itemId).checked
                     }
@@ -64,7 +64,7 @@ struct DiceGameActionBar: View {
                     }
                 }
                 
-                if gameModus == .player && root.gameController.gameModel.focusItemIds.count > 1 {
+                if appGameStateModel.gameModus == .player && root.gameController.gameModel.focusItemIds.count > 1 {
                     Button {
                         if let last = root.gameController.gameModel.focusItemIds.last {
                             withAnimation { root.gameController.gameModel.focusItemIds = [last] }

@@ -7,7 +7,7 @@ import AdventureRPG
 struct MasterStartView: View {
     let root: GameRoot
     
-    @Environment(AppSettingsModel.self) private var settingsModel
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     
     var sharePlayStore: RPGSharePlayController {
         root.networkStore.sharePlayStore
@@ -64,7 +64,7 @@ struct MasterStartView: View {
     @MainActor
     func startGame() async {
         await root.startMaster()
-        settingsModel.gameModus = .master
+        appGameStateModel.gameModus = .master
     }
 }
 

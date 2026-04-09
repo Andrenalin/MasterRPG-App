@@ -12,7 +12,7 @@ struct MasterGameScreen: View {
     let playerController: PlayerController
     let adventureId: UUID
     
-    @Environment(AppNavigationModel.self) private var appNavigationModel
+    @Environment(AppGameStateModel.self) private var appGameStateModel
 
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
@@ -32,7 +32,7 @@ struct MasterGameScreen: View {
             
             overlayMenu
         }
-        .environment(\.gameModus, .master)
+        //.environment(\.gameModus, .master)
         .environment(\.mapActions, root.mapRoot.mapActions)
         .environment(\.valueActions, root.characterRoot.valueActions)
         .overlay(alignment: .center) {
@@ -153,7 +153,7 @@ private extension MasterGameScreen {
     }
     
     func endGame() {
-        appNavigationModel.resetAppMode(isGame: false)
+        appGameStateModel.isGameRunning = false
         Task {
             await root.stopGame()
         }

@@ -36,7 +36,7 @@ struct OverlayPlayerTabBar: View {
     var onlyGameView: some View {
         if root.gameModel.gameConfig.type != .observer {
             root.characterRoot.viewController.gameView(root: root.characterRoot, select: root.gameModel.selectedCharacter)
-                .environment(\.gameModus, .player)
+                //.environment(\.gameModus, .player)
                 //.environment(\.showGame, true)
                 .gameOverlayTabBarView(value: NetworkModules.game)
                 .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
@@ -54,7 +54,7 @@ struct OverlayPlayerTabBar: View {
         NavigationStack {
             if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
                 root.characterRoot.viewController.gameView(root: root.characterRoot, select: characterId)
-                    .environment(\.gameModus, .player)
+                    //.environment(\.gameModus, .player)
                     //.environment(\.showGame, true)
             }
         }
@@ -72,7 +72,7 @@ struct OverlayPlayerTabBar: View {
     var tabSecondGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
         root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: true)
-            .environment(\.gameModus, .player)
+            //.environment(\.gameModus, .player)
             //.environment(\.showGame, true)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)

@@ -35,22 +35,21 @@ extension Logger {
 public final class AppModel: Sendable {
     @MainActor public static let shared = AppModel()
     
-    // Other Models
+    // App State Models
+    @ObservationIgnored public let appGameStateModel: AppGameStateModel
     @ObservationIgnored public let optionKeyDownModel: OptionKeyDownModel
     @ObservationIgnored public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
     @ObservationIgnored public let settingsModel: AppSettingsModel
     @ObservationIgnored public let windowStateModel: WindowStateModel
     
-    // Options
+    // Database
     public var coreDataInitModel: CoreDataInitModel?
-    
 #if os(tvOS)
     public let databaseModel: DataBaseModel
 #else
     public let databaseModel: DataBaseModel
 #endif
 
-    
     @ObservationIgnored let inAppModel = InAppModel()
     public let inAppController: InAppController
     
@@ -84,6 +83,8 @@ public final class AppModel: Sendable {
     private let root: RootManager
     
     @MainActor public init() {
+        let gameStateModel = AppGameStateModel()
+        self.appGameStateModel = gameStateModel
         self.optionKeyDownModel = OptionKeyDownModel()
         self.settingsModel = AppSettingsModel()
         self.windowStateModel = WindowStateModel()
@@ -99,7 +100,7 @@ public final class AppModel: Sendable {
             )
         )
         
-        self.appNavigationModel = AppNavigationModel()
+        self.appNavigationModel = AppNavigationModel(appGameStateModel: gameStateModel)
         
         let tagController = TagController()
         self.tagController = tagController
@@ -225,7 +226,7 @@ extension AppModel {
         case .none, .setting, .editor, .game, .generator, .search:
                 return .leading(WindowIdentifier.game.rawValue)
             case .photo:
-                if settingsModel.gameModus == .player {
+                if appGameStateModel.gameModus == .player {
                     return .leading(WindowIdentifier.game.rawValue, fallback: nil)
                 }
                 return
@@ -237,27 +238,27 @@ extension AppModel {
             case .adventure:
                 return .trailing(WindowIdentifier.game.rawValue)
             case .dice:
-                if settingsModel.gameModus == .player {
+                if appGameStateModel.gameModus == .player {
                     return .trailing(NetworkModules.value.linkWindowId, fallback: WindowIdentifier.game.rawValue)
                 }
                 return .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue)
             case .weather:
                 return .above(NetworkModules.map.linkWindowId, fallback: WindowIdentifier.game.rawValue)
             case .value:
-                if settingsModel.gameModus == .player {
+                if appGameStateModel.gameModus == .player {
                     return .trailing(WindowIdentifier.game.rawValue, fallback: nil)
                 }
                 return .above(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue)
 
             case .audio:
-                if settingsModel.gameModus == .player {
+                if appGameStateModel.gameModus == .player {
                     return .leading(NetworkModules.photo.linkWindowId, fallback: WindowIdentifier.game.rawValue)
                 }
                 return .below(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue)
             case .pdf:
                 return .leading(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue)
             case .space:
-                if settingsModel.gameModus == .player {
+                if appGameStateModel.gameModus == .player {
                     return .leading(NetworkModules.photo.linkWindowId, fallback: WindowIdentifier.game.rawValue)
                 }
                 return .below(NetworkModules.map.linkWindowId, fallback: WindowIdentifier.game.rawValue)

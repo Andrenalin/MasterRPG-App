@@ -12,7 +12,7 @@ struct DiceOverlay: View {
 
     @Environment(DiceRootModel.self) private var root
 
-    @Environment(\.gameModus) private var gameModus
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(DiceDisplayModel.self) var diceDisplayModel
 
@@ -87,7 +87,6 @@ struct DiceOverlay: View {
 #Preview(traits: .mockData) {
     ZStack(alignment: .topLeading) {
         DiceOverlay(item: .preview)
-            .environment(\.gameModus, .master)
             .environment(DiceDisplayModel(isEditing: true, showPlayerDice: false, showDiceValueEditor: false))
     }
 }

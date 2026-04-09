@@ -23,6 +23,5 @@ struct RootDiceOverlay: View {
         .overlay {
             RootDiceOverlay(hideDice: false)
         }
-        .environment(\.gameModus, .player)
         .environment(DiceDisplayModel())
 }

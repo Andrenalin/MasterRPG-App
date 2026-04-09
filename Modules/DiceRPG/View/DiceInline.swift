@@ -9,8 +9,7 @@ struct DiceInline: View {
 
     @Environment(DiceRootModel.self) private var root
 
-    @Environment(AppNavigationModel.self) private var appNavigationModel
-    @Environment(\.gameModus) private var gameModus
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingControlActions) private var playerSharingActions
     
@@ -18,7 +17,7 @@ struct DiceInline: View {
 
     var body: some View {
         HStack {
-            if !appNavigationModel.isGameRunning || gameModus == .player {
+            if !appGameStateModel.isGameRunning || appGameStateModel.gameModus == .player {
                 Button {
                     withAnimation {
                         root.gameController.gameModel.focusItemIds <=> [itemId]
@@ -49,7 +48,7 @@ struct DiceInline: View {
                         Label { Text("Add as focus", bundle: .module) } icon: { Image(systemName: "house") }
                     }
 
-                    if gameModus == .master {
+                    if appGameStateModel.gameModus == .master {
                         ForEach(players) { player in
                             Button {
                                 Task {

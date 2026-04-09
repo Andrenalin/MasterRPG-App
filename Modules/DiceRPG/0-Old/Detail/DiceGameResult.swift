@@ -10,7 +10,7 @@ struct DiceGameResult: View {
 
     @Environment(DiceRootModel.self) private var root
 
-    @Environment(\.gameModus) private var gameModus
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(DiceDisplayModel.self) var diceDisplayModel
 
@@ -36,7 +36,7 @@ struct DiceGameResult: View {
     private var resultView: some View {
         if root.gameController.gameItem(for: itemId).sumUp || root.gameController.gameItem(for: itemId).compareOption != .off {
             Button {
-                if gameModus != .edit && root.gameController.canEditDice(itemId: itemId, isGameMode: true){
+                if appGameStateModel.isGameRunning && root.gameController.canEditDice(itemId: itemId, isGameMode: true) {
                     diceDisplayModel.showDiceValueEditor.toggle()
                     diceDisplayModel.showPlayerDice = !diceDisplayModel.showDiceValueEditor
                     diceDisplayModel.isEditing <=> false
@@ -55,7 +55,6 @@ struct DiceGameResult: View {
     ZStack(alignment: .topLeading) {
         DiceGameResult(itemId: DiceModel.previewId, canShowPlayer: true, isTrailing: false)
             .environment(DiceRootModel.preview)
-            .environment(\.gameModus, .master)
             .environment(DiceDisplayModel())
     }
 }

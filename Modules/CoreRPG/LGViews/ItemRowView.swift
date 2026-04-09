@@ -24,9 +24,8 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
     
-    @Environment(\.gameModus) private var gameModus
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
-    @Environment(AppNavigationModel.self) private var appNavigationModel
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
     
     public var body: some View {
@@ -120,26 +119,26 @@ private extension ItemRowView {
     }
     
     var canShare: Bool {
-        if gameModus == .player {
+        if appGameStateModel.gameModus == .player {
             let features = sharingFeatureActions.features()
             switch root.configurable.module {
             case .photo:
-                return features.photoSharing && appNavigationModel.isGameRunning
+                return features.photoSharing && appGameStateModel.isGameRunning
             case .audio:
-                return features.audioSharing && appNavigationModel.isGameRunning
+                return features.audioSharing && appGameStateModel.isGameRunning
             case .space:
-                return features.spaceSharing && appNavigationModel.isGameRunning
+                return features.spaceSharing && appGameStateModel.isGameRunning
             default:
                 return false
             }
         } else {
-            return appNavigationModel.isGameRunning
+            return appGameStateModel.isGameRunning
         }
     }
     
     func shareAction() {
         Task {
-            if gameModus == .master {
+            if appGameStateModel.gameModus == .master {
                 await networkActions?.shareId(root.gameControllable.share(id: model.id))
             } else {
                 if let result = try? await root.gameControllable.createGameData(for: model.id) {

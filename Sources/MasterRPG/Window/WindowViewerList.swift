@@ -173,7 +173,6 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
             .tint(module.tint)
             .accentColor(module.tint)
             .environmentSetUp(model)
-            .environment(\.gameModus, model.settingsModel.gameModus)
             .environment(\.networkActions, model.gameRoot.networkActions())
             .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)
             .environment(\.sharingFeatureActions, model.gameRoot.sharingFeatureActions)

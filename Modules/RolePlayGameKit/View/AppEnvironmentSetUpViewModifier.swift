@@ -24,11 +24,12 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             // Core models
             .environment(appModel)
             .setAppSizeMode()
-            .environment(appModel.appNavigationModel)
+            .environment(appModel.appGameStateModel)
             .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)
             .environment(appModel.windowStateModel)
-
+            .environment(appModel.appNavigationModel)
+        
             // Module roots
             .environment(appModel.adventureRoot)
             .environment(appModel.audioRoot)
@@ -51,7 +52,6 @@ struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .environment(\.gameModus, appModel.settingsModel.gameModus)
             .environment(\.mapActions, appModel.mapRoot.mapActions)
             .environment(\.routeActions, appModel.routeActions)
             .environment(\.valueActions, appModel.characterRoot.valueActions)

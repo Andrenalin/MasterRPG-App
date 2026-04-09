@@ -9,15 +9,14 @@ struct SharingActionView: View, Equatable {
     
     @Environment(AudioRootModel.self) private var root
     
-    @Environment(\.gameModus) private var gameModus
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
-    @Environment(AppNavigationModel.self) private var appNavigationModel
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     
     @State private var waitForSharing: Bool = false
     
     var body: some View {
-        if appNavigationModel.isGameRunning {
+        if appGameStateModel.isGameRunning {
             EmptyView()
                 .shareListItem(isActive: canShare, allReported: root.gameController.allPlayersReported(for: itemId), feedBackEnabled: true, secondActionIcon: playIcon) {
                     shareAudio()
@@ -50,16 +49,16 @@ struct SharingActionView: View, Equatable {
     }
     
     private var canShare: Bool {
-        if gameModus == .player {
+        if appGameStateModel.gameModus == .player {
             let features = sharingFeatureActions.features()
-            return features.audioSharing && appNavigationModel.isGameRunning
+            return features.audioSharing && appGameStateModel.isGameRunning
         } else {
-            return appNavigationModel.isGameRunning
+            return appGameStateModel.isGameRunning
         }
     }
     
     private var playIcon: String {
-        if appNavigationModel.isGameRunning && !root.gameController.allPlayersReported(for: itemId) {
+        if appGameStateModel.isGameRunning && !root.gameController.allPlayersReported(for: itemId) {
             return "square.and.arrow.up"
         }
         return isPlaying ? "pause" : "play"
@@ -71,7 +70,7 @@ struct SharingActionView: View, Equatable {
     
     private func shareAudio() {
         Task {
-            if gameModus == .master {
+            if appGameStateModel.gameModus == .master {
                 await networkActions?.shareId(root.gameController.share(id: itemId))
             } else {
                 if let result = try? await root.gameController.createGameData(for: itemId) {

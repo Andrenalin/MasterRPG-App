@@ -10,7 +10,7 @@ struct PlayerGameScreen: View {
     let root: GameRoot
     let playerController: PlayerController
     
-    @Environment(AppNavigationModel.self) private var appNavigationModel
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
@@ -34,7 +34,7 @@ struct PlayerGameScreen: View {
             overlayMenu
         }
         .focusSectionAll()
-        .environment(\.gameModus, .player)
+        //.environment(\.gameModus, .player)
         .alert(Text("Quit Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
             Button {
                 endGame()
@@ -142,7 +142,7 @@ private extension PlayerGameScreen {
     }
 
     func endGame() {
-        appNavigationModel.resetAppMode(isGame: false)
+        appGameStateModel.isGameRunning = false
         Task {
             await root.stopGame()
         }

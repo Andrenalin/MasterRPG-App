@@ -41,7 +41,7 @@ public struct ControlSharingView: View {
     let alignment: Alignment
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.gameModus) private var gamemodus
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.sharingControlActions) private var sharingControlActions
 
     @State private var sharingSize: CGSize = .init(width: 200, height: 100)
