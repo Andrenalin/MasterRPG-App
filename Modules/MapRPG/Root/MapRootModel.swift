@@ -197,14 +197,6 @@ extension MapRootModel {
 
 public extension MapRootModel {
     @MainActor
-    func addNewMap(name: String, text: String, photoId: UUID?) async {
-        let itemId = await itemController.addNew(type: .item)
-        editController.reset(name: name, itemId: itemId)
-        editController.reset(description: text, itemId: itemId)
-        editController.add(photoId: photoId, itemId: itemId)
-    }
-
-    @MainActor
     func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         SheetController(itemController: itemController).sheet(for: itemId, level: level)
     }

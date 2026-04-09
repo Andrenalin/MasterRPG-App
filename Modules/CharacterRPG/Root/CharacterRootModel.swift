@@ -233,13 +233,3 @@ extension CharacterRootModel {
         await cc.repairHiddenAndFolders(reportModel: reportModel)
     }
 }
-
-public extension CharacterRootModel {
-    @MainActor
-    func addNewValue(name: String, text: String, photoIds: [UUID]) async {
-        let itemId = await itemController.addNew(type: .item)
-        editController.reset(name: name, itemId: itemId)
-        editController.reset(description: text, itemId: itemId)
-        //editController.add(photoId: photoId, itemId: itemId)
-    }
-}

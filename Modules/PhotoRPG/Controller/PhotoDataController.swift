@@ -13,6 +13,7 @@ import UniformTypeIdentifiers
     }
         
     public func addNewPhoto(context: NSManagedObjectContext, data: Data, name: String, text: String) async -> (UUID, String) {
+        let dataController = DataController(context: context, token: NetworkModules.photo.token)
         let model = PhotoModel.empty.copy()
         model.category = .entry
         
@@ -26,10 +27,10 @@ import UniformTypeIdentifiers
 
         model.fileUrl = try? await fileUrlDataController.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
         
-//        context.performAndWait {
-//            context.insert(model)
-//            context.save()
-//        }
+        context.performAndWait {
+            let dbmodel = RPGPhoto(context: context)
+            dataController.mapModel(model, into: dbmodel)
+        }
         return (model.id, model.url(linkNumber: 0))
     }
 }

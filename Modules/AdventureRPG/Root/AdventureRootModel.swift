@@ -318,17 +318,6 @@ public extension AdventureRootModel {
 
 public extension AdventureRootModel {
     @MainActor
-    func addNewAdventure(name: String, text: String, photoIds: [UUID], photoLinks: [String]) async {
-        let itemId = await itemController.addNew(type: .item)
-        let editController = editController
-        editController.reset(name: name, itemId: itemId)
-        editController.reset(description: text, itemId: itemId)
-        editController.add(photoId: photoIds.first, itemId: itemId)
-        let entry = AdventureEntryModel(id: UUID(), name: String(localized: "Photos", bundle: .module).localizedString, content: photoLinks.joined(separator: ", "))
-        editController.add(entry: entry, itemId: itemId)
-    }
-    
-    @MainActor
     func listItems() -> [AdventureModel] {
         itemController.itemDataModel.items.map {
             itemController.itemOrEmpty(for: $0)

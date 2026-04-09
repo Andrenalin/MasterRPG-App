@@ -138,13 +138,6 @@ extension WeatherRootModel {
 }
 
 public extension WeatherRootModel {
-    @MainActor func addNewWeather(name: String, text: String, photoId: UUID?) async {
-        let itemId = await itemController.addNew(type: .item)
-        editController.reset(name: name, itemId: itemId)
-        editController.reset(description: text, itemId: itemId)
-        editController.add(photoId: photoId, itemId: itemId)
-    }
-    
     @MainActor
     func listItems() -> [WeatherModel] {
         itemController.itemDataModel.items.map {
