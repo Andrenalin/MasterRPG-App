@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if os(iOS)
 @preconcurrency import ActivityKit
 import Foundation
 import CoreRPG
@@ -138,3 +139,52 @@ public final class DiceRollerLiveActivityManager {
         currentActivity = nil
     }
 }
+
+#else
+// MARK: - macOS Stub Implementation
+
+import Foundation
+import CoreRPG
+
+/// Stub for macOS - Live Activities are not supported on macOS
+public struct DiceRollerActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        public var lastRoll: DiceResultModel
+        public var rollCount: Int
+
+        public init(lastRoll: DiceResultModel, rollCount: Int) {
+            self.lastRoll = lastRoll
+            self.rollCount = rollCount
+        }
+    }
+
+    public var gameName: String
+    public var startTime: Date
+
+    public init(gameName: String, startTime: Date) {
+        self.gameName = gameName
+        self.startTime = startTime
+    }
+}
+
+@MainActor
+public final class DiceRollerLiveActivityManager {
+    public static let shared = DiceRollerLiveActivityManager()
+
+    private init() {}
+
+    public func startOrUpdate(with result: DiceResultModel) async {
+        // No-op on macOS - Live Activities not supported
+        print("Live Activities are not supported on macOS")
+    }
+
+    public func endActivity() async {
+        // No-op on macOS
+    }
+
+    public func endActivityWithDelay(seconds: TimeInterval = 10) async {
+        // No-op on macOS
+    }
+}
+
+#endif // os(iOS)

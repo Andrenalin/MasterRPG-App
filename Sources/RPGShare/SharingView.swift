@@ -16,7 +16,7 @@ extension Logger {
 /// - Proper Swift concurrency
 /// - Clear separation of concerns
 /// - Efficient module loading
-struct SharingView_Refactored: View {
+struct SharingView: View {
     
     // MARK: - Properties
     

@@ -30,7 +30,9 @@ struct DiceRollerWidget: Widget {
 struct DiceRollerWidgetBundle: WidgetBundle {
     var body: some Widget {
         DiceRollerWidget()
+        #if os(iOS)
         DiceRollerLiveActivity()
+        #endif
     }
 }
 

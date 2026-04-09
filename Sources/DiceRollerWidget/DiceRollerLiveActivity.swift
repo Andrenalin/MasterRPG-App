@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if os(iOS)
 import ActivityKit
 import AppIntents
 import CoreRPG
@@ -247,3 +248,5 @@ struct DiceRollerLiveActivityView: View {
         }
     }
 }
+
+#endif // os(iOS)

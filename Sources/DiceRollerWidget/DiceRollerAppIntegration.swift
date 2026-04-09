@@ -239,7 +239,7 @@ struct DiceRollerView: View {
         }
         .navigationTitle("Dice Roller")
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .automatic) {
                 NavigationLink {
                     DiceRollerWidgetConfiguration()
                 } label: {

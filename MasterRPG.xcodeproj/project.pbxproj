@@ -56,7 +56,10 @@
 		59E299072F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
 		59E299082F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
 		59E2991B2F75438C00700934 /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; platformFilters = (ios, macos, xros, ); };
-		8E0DAFDB2F85EDB80045FE8D /* SharingView_Refactored.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0DAFD72F85EC380045FE8D /* SharingView_Refactored.swift */; };
+		59F140402F87BF940072927B /* RPGShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		59F140462F87C0E40072927B /* RPGShare.appex in Embed Extensions */ = {isa = PBXBuildFile; fileRef = 8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		59F140472F87C7D30072927B /* DiceRollerWidgetExtension.appex in Embed Extensions */ = {isa = PBXBuildFile; fileRef = 8E0DCFB12F8722C80045FE8D /* DiceRollerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8E0DAFDB2F85EDB80045FE8D /* SharingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0DAFD72F85EC380045FE8D /* SharingView.swift */; };
 		8E0DAFE02F85F09C0045FE8D /* AdventureRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E79C4A22E6AEE0400893928 /* AdventureRPG.framework */; };
 		8E0DAFE12F85F09C0045FE8D /* AdventureRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E79C4A22E6AEE0400893928 /* AdventureRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E0DAFE42F85F09C0045FE8D /* AudioRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593D0D2C2E31F2D000410232 /* AudioRPG.framework */; };
@@ -482,6 +485,27 @@
 			proxyType = 1;
 			remoteGlobalIDString = 599DCACF2E8E30C00056E46C;
 			remoteInfo = GeneratorRPG;
+		};
+		59F140412F87BFA10072927B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E13A3FD2BCE88BB00B2FCD4;
+			remoteInfo = RPGShare;
+		};
+		59F140432F87C0BB0072927B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E13A3FD2BCE88BB00B2FCD4;
+			remoteInfo = RPGShare;
+		};
+		59F140482F87C7DD0072927B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E0DCFB02F8722C80045FE8D;
+			remoteInfo = DiceRollerWidgetExtension;
 		};
 		8E00BC632990942C00C484A1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1361,6 +1385,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		59F140452F87C0C70072927B /* Embed Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				59F140472F87C7D30072927B /* DiceRollerWidgetExtension.appex in Embed Extensions */,
+				59F140462F87C0E40072927B /* RPGShare.appex in Embed Extensions */,
+			);
+			name = "Embed Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8E0DB01C2F85F09C0045FE8D /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1392,6 +1428,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				59F140402F87BF940072927B /* RPGShare.appex in Embed Foundation Extensions */,
 				8E0DCFC12F8722C90045FE8D /* DiceRollerWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -1496,7 +1533,7 @@
 		59DC213C2BD75537001140B1 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		59E299052F75313D00700934 /* RealityKitInit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealityKitInit.swift; sourceTree = "<group>"; };
 		8E00BC5D2990942C00C484A1 /* MasterRPGUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MasterRPGUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		8E0DAFD72F85EC380045FE8D /* SharingView_Refactored.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingView_Refactored.swift; sourceTree = "<group>"; };
+		8E0DAFD72F85EC380045FE8D /* SharingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingView.swift; sourceTree = "<group>"; };
 		8E0DCF8F2F86806C0045FE8D /* ShareExtensionSaveController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtensionSaveController.swift; sourceTree = "<group>"; };
 		8E0DCFB12F8722C80045FE8D /* DiceRollerWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DiceRollerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RPGShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2085,17 +2122,17 @@
 		8E13A3FF2BCE88BB00B2FCD4 /* RPGShare */ = {
 			isa = PBXGroup;
 			children = (
-				8E0DAFD72F85EC380045FE8D /* SharingView_Refactored.swift */,
 				8E13A4052BCE88BB00B2FCD4 /* Info.plist */,
 				8E5104EC2BD2440300F10E87 /* ItemProviderImporter.swift */,
+				59DC213C2BD75537001140B1 /* Localizable.xcstrings */,
 				8E5104E02BD20D9E00F10E87 /* ModuleChooser.swift */,
 				8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */,
 				8E13A40E2BCEA66100B2FCD4 /* RPGShare.entitlements */,
+				8E0DCF8F2F86806C0045FE8D /* ShareExtensionSaveController.swift */,
 				8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */,
 				8E5104E42BD23F5000F10E87 /* SharingHeader.swift */,
 				8E5104E82BD2413900F10E87 /* SharingInput.swift */,
-				59DC213C2BD75537001140B1 /* Localizable.xcstrings */,
-				8E0DCF8F2F86806C0045FE8D /* ShareExtensionSaveController.swift */,
+				8E0DAFD72F85EC380045FE8D /* SharingView.swift */,
 			);
 			path = RPGShare;
 			sourceTree = "<group>";
@@ -2682,10 +2719,13 @@
 				8E49F9D62B8F654D00527E6D /* Frameworks */,
 				8E49F9D72B8F654D00527E6D /* Resources */,
 				8E1CF92F2BD14CB800891478 /* Embed Frameworks */,
+				59F140452F87C0C70072927B /* Embed Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				59F140492F87C7DD0072927B /* PBXTargetDependency */,
+				59F140442F87C0BB0072927B /* PBXTargetDependency */,
 				8E8F02592ED1874500A0A6F7 /* PBXTargetDependency */,
 				8E39AC062ED1BD9900076078 /* PBXTargetDependency */,
 				8E39AC712ED1DC6400076078 /* PBXTargetDependency */,
@@ -3258,6 +3298,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				59F140422F87BFA10072927B /* PBXTargetDependency */,
 				8E8F02512ED1873000A0A6F7 /* PBXTargetDependency */,
 				8E39ABFE2ED1BD8700076078 /* PBXTargetDependency */,
 				8E39AC692ED1DC5400076078 /* PBXTargetDependency */,
@@ -3866,7 +3907,7 @@
 				8E5104E92BD2413900F10E87 /* SharingInput.swift in Sources */,
 				8E0DCF902F86806C0045FE8D /* ShareExtensionSaveController.swift in Sources */,
 				8E5104E52BD23F5000F10E87 /* SharingHeader.swift in Sources */,
-				8E0DAFDB2F85EDB80045FE8D /* SharingView_Refactored.swift in Sources */,
+				8E0DAFDB2F85EDB80045FE8D /* SharingView.swift in Sources */,
 				8E13A4012BCE88BB00B2FCD4 /* ShareViewController.swift in Sources */,
 				8E5104E72BD23FBD00F10E87 /* PhotoSection.swift in Sources */,
 				8E5104E32BD21DE400F10E87 /* ModuleChooser.swift in Sources */,
@@ -4266,6 +4307,21 @@
 			);
 			target = 599DCACF2E8E30C00056E46C /* GeneratorRPG */;
 			targetProxy = 59E2991D2F75438C00700934 /* PBXContainerItemProxy */;
+		};
+		59F140422F87BFA10072927B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E13A3FD2BCE88BB00B2FCD4 /* RPGShare */;
+			targetProxy = 59F140412F87BFA10072927B /* PBXContainerItemProxy */;
+		};
+		59F140442F87C0BB0072927B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E13A3FD2BCE88BB00B2FCD4 /* RPGShare */;
+			targetProxy = 59F140432F87C0BB0072927B /* PBXContainerItemProxy */;
+		};
+		59F140492F87C7DD0072927B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */;
+			targetProxy = 59F140482F87C7DD0072927B /* PBXContainerItemProxy */;
 		};
 		8E00BC642990942C00C484A1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
