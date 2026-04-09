@@ -97,7 +97,7 @@ struct DiceConfiguration: Codable {
 
 // MARK: - Dice Type
 
-enum DiceType: String, Codable, CaseIterable, Identifiable, Equatable, Hashable {
+enum DiceType: String, Codable, CaseIterable, Identifiable, Equatable, Hashable, Sendable {
     case d4 = "D4"
     case d6 = "D6"
     case d8 = "D8"

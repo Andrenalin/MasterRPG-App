@@ -1608,6 +1608,9 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				"Temp-AppIntent.swift",
+				"TEMP-DiceRollerWidget.swift",
+				"TEMP-DiceRollerWidgetBundle.swift",
 			);
 			target = 8E33767B2DB1140B00F9C14C /* RPGWidgetExtension */;
 		};
@@ -2179,7 +2182,6 @@
 				8EC4E47C28DDAAF300D0279F /* Sources */,
 				8EBECDFE2CD8EE18004E7103 /* Tests */,
 				8EBECE162CD8EE22004E7103 /* TestPlans */,
-				8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */,
 				8EECE62129D94BD300E52384 /* Frameworks */,
 				8EC4E46A28DDA29600D0279F /* Products */,
 			);
@@ -2235,6 +2237,7 @@
 				8E6BC9CC2AFB0B2200E5E098 /* MasterTV */,
 				8E13A3FF2BCE88BB00B2FCD4 /* RPGShare */,
 				8E33767F2DB1140B00F9C14C /* RPGWidget */,
+				8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -3512,6 +3515,7 @@
 				8E6BC9CA2AFB0B2200E5E098 /* MasterTV */,
 				8E49F9D82B8F654D00527E6D /* MasterMac */,
 				8E13A3FD2BCE88BB00B2FCD4 /* RPGShare */,
+				8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */,
 				8E33767B2DB1140B00F9C14C /* RPGWidgetExtension */,
 				8ED3AB982E2B45AE00FF3AE8 /* RolePlayGameKit */,
 				8E3620AC2E1A80FF00E5C99A /* CoreRPG */,
@@ -3542,7 +3546,6 @@
 				8EBECE642CD8EE9D004E7103 /* RPGValuesTests */,
 				8EBECE852CD8EEA9004E7103 /* RPGWeathersTests */,
 				599DCAD72E8E30C00056E46C /* GeneratorRPGTests */,
-				8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -5246,15 +5249,16 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = Sources/DiceRollerWidget/DiceRollerWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 511;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = DiceRollerWidget/Info.plist;
+				INFOPLIST_FILE = Sources/DiceRollerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DiceRollerWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -5269,9 +5273,10 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.DiceRollerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -5293,15 +5298,16 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = Sources/DiceRollerWidget/DiceRollerWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 511;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = DiceRollerWidget/Info.plist;
+				INFOPLIST_FILE = Sources/DiceRollerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DiceRollerWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -5316,9 +5322,10 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.DiceRollerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

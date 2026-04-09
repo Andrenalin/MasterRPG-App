@@ -61,8 +61,8 @@ struct RollDiceIntent: AppIntent, WidgetConfigurationIntent {
 
 /// App Intent for selecting a dice type
 struct SelectDiceIntent: AppIntent {
-    static var title: LocalizedStringResource = "Select Dice"
-    static var description = IntentDescription("Select which dice to use")
+    static let title: LocalizedStringResource = "Select Dice"
+    static let description = IntentDescription("Select which dice to use")
     
     @Parameter(title: "Dice Type")
     var diceType: DiceType
@@ -82,8 +82,8 @@ struct SelectDiceIntent: AppIntent {
 
 /// App Intent for clearing dice history
 struct ClearDiceHistoryIntent: AppIntent {
-    static var title: LocalizedStringResource = "Clear History"
-    static var description = IntentDescription("Clear dice roll history")
+    static let title: LocalizedStringResource = "Clear History"
+    static let description = IntentDescription("Clear dice roll history")
     
     func perform() async throws -> some IntentResult {
         var config = DiceConfiguration.loadFromUserDefaults()
