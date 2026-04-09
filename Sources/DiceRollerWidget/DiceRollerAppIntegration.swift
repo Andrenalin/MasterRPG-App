@@ -49,20 +49,20 @@ struct DiceRollerWidgetConfiguration: View {
                                 .frame(width: 40, height: 40)
                                 .foregroundStyle(resultColor(for: lastRoll.result))
                         }
-
+                        
                         VStack(alignment: .leading) {
                             Text("\(lastRoll.sum)")
                                 .font(.title)
                                 .fontWeight(.bold)
                                 .foregroundStyle(resultColor(for: lastRoll.result))
-
+                            
                             Text(lastRoll.diceModel.name)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-
+                        
                         Spacer()
-
+                        
                         if let timestamp = lastRoll.timestamp {
                             VStack(alignment: .trailing) {
                                 Text(timestamp, style: .date)
@@ -122,7 +122,9 @@ struct DiceRollerWidgetConfiguration: View {
                                     .font(.caption2)
                             }
                             .frame(width: 60, height: 60)
+#if !os(visionOS)
                             .glassEffect(.regular.interactive())
+#endif
                         }
                     }
                     .padding()
@@ -141,10 +143,10 @@ struct DiceRollerWidgetConfiguration: View {
     }
     
     // MARK: - Helper Methods
-
+    
     private func loadConfiguration() {
         configuration = DiceConfiguration.loadFromUserDefaults()
-
+        
         let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
         isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
         currentGameName = defaults?.string(forKey: "currentGameName") ?? ""
@@ -194,38 +196,20 @@ struct DiceRollerView: View {
     @State private var currentRoll: DiceResultModel?
     @State private var isRolling: Bool = false
     @State private var rollHistory: [DiceResultModel] = []
-
+    
     @Namespace private var glassNamespace
     
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+#if os(visionOS)
+                contentView
+#else
                 // Main dice display with Liquid Glass
                 GlassEffectContainer(spacing: 40) {
-                    VStack(spacing: 16) {
-                        if let roll = currentRoll {
-                            resultDisplay(roll)
-                                .glassEffectID("result", in: glassNamespace)
-                        } else {
-                            diceSelection
-                                .glassEffectID("selection", in: glassNamespace)
-                        }
-                        
-                        // Roll button with Liquid Glass
-                        Button(action: rollDice) {
-                            HStack {
-                                Image(systemName: "dice")
-                                Text("Roll D\(selectedDie.die.max)")
-                            }
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                        }
-                        .buttonStyle(.glassProminent)
-                        .disabled(isRolling)
-                    }
-                    .padding()
+                    contentView
                 }
+#endif
                 
                 // Dice type selector with Liquid Glass
                 diceTypeSelector
@@ -252,6 +236,38 @@ struct DiceRollerView: View {
         }
     }
     
+    var contentView: some View {
+        VStack(spacing: 16) {
+            if let roll = currentRoll {
+                resultDisplay(roll)
+#if !os(visionOS)
+                    .glassEffectID("result", in: glassNamespace)
+#endif
+            } else {
+                diceSelection
+#if !os(visionOS)
+                    .glassEffectID("selection", in: glassNamespace)
+#endif
+            }
+            
+            // Roll button with Liquid Glass
+            Button(action: rollDice) {
+                HStack {
+                    Image(systemName: "dice")
+                    Text("Roll D\(selectedDie.die.max)")
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding()
+            }
+#if !os(visionOS)
+            .buttonStyle(.glassProminent)
+#endif
+            .disabled(isRolling)
+        }
+        .padding()
+    }
+    
     // MARK: - Views
     
     private var diceSelection: some View {
@@ -260,35 +276,38 @@ struct DiceRollerView: View {
                 .resizable()
                 .frame(width: 80, height: 80)
                 .foregroundStyle(.primary)
-
+            
             Text("D\(selectedDie.die.max)")
                 .font(.title)
                 .fontWeight(.semibold)
-
+            
             Text("Tap to roll")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+#if !os(visionOS)
         .glassEffect(.regular.interactive())
+#endif
     }
-
+    
     private func resultDisplay(_ result: DiceResultModel) -> some View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
                     .fill(resultColor(for: result.result).opacity(0.2))
                     .frame(width: 120, height: 120)
-
+                
                 Text("\(result.sum)")
                     .font(.system(size: 60, weight: .bold, design: .rounded))
                     .foregroundStyle(resultColor(for: result.result))
             }
+#if !os(visionOS)
             .glassEffect(.regular.tint(resultColor(for: result.result)).interactive())
-
+#endif
             Text(result.diceModel.name)
                 .font(.title2)
                 .fontWeight(.semibold)
-
+            
             if result.result == .coup {
                 Text("Critical Success!")
                     .font(.headline)
@@ -304,45 +323,55 @@ struct DiceRollerView: View {
             axis: (x: 1, y: 1, z: 0)
         )
     }
-
+    
     private var diceTypeSelector: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Select Dice")
                 .font(.headline)
                 .padding(.horizontal)
-
+            
+#if os(visionOS)
+            gridView
+#else
             GlassEffectContainer(spacing: 16) {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 16) {
-                    ForEach([DieModel.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]) { die in
-                        Button {
-                            withAnimation(.spring()) {
-                                selectedDie = die
-                                currentRoll = nil
-                            }
-                        } label: {
-                            VStack(spacing: 8) {
-                                die.diceImage(for: die.die.max)
-                                    .resizable()
-                                    .frame(width: 40, height: 40)
-                                Text("D\(die.die.max)")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                        }
-                        .buttonStyle(.glass)
-                        .overlay {
-                            if selectedDie.die == die.die {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(.blue, lineWidth: 3)
-                            }
-                        }
+                gridView
+            }
+#endif
+        }
+    }
+    
+    var gridView: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 16) {
+            ForEach([DieModel.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]) { die in
+                Button {
+                    withAnimation(.spring()) {
+                        selectedDie = die
+                        currentRoll = nil
+                    }
+                } label: {
+                    VStack(spacing: 8) {
+                        die.diceImage(for: die.die.max)
+                            .resizable()
+                            .frame(width: 40, height: 40)
+                        Text("D\(die.die.max)")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                }
+#if !os(visionOS)
+                .buttonStyle(.glass)
+#endif
+                .overlay {
+                    if selectedDie.die == die.die {
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.blue, lineWidth: 3)
                     }
                 }
-                .padding()
             }
         }
+        .padding()
     }
     
     private var rollHistoryView: some View {
@@ -371,17 +400,19 @@ struct DiceRollerView: View {
                                 Circle()
                                     .fill(resultColor(for: roll.result).opacity(0.2))
                                     .frame(width: 50, height: 50)
-
+                                
                                 Text("\(roll.sum)")
                                     .font(.title3)
                                     .fontWeight(.bold)
                                     .foregroundStyle(resultColor(for: roll.result))
                             }
-
+                            
                             Text(roll.diceModel.name)
                                 .font(.caption2)
                         }
+#if !os(visionOS)
                         .glassEffect(.regular)
+#endif
                     }
                 }
                 .padding(.horizontal)
@@ -394,15 +425,15 @@ struct DiceRollerView: View {
     private func rollDice() {
         withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
             isRolling = true
-
+            
             // Simulate rolling animation
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 let rolledDie = selectedDie.role(resetResults: true, reroleOptions: [])
                 let value = rolledDie.result.first ?? selectedDie.die.max
-
+                
                 // Create dice model with the rolled die
                 let diceModel = DiceModel(id: UUID(), name: "D\(selectedDie.die.max)", dice: [rolledDie])
-
+                
                 let result = DiceResultModel(
                     diceModel: diceModel,
                     result: .rolled,
@@ -411,36 +442,36 @@ struct DiceRollerView: View {
                     checked: false,
                     timeStamp: Date()
                 )
-
+                
                 withAnimation {
                     currentRoll = result
                     rollHistory.append(result)
                     isRolling = false
                 }
-
+                
                 // Update widget
                 var config = DiceConfiguration.loadFromUserDefaults()
                 config.lastRoll = result
                 config.selectedDice = diceModel
                 config.save()
                 WidgetCenter.shared.reloadAllTimelines()
-
+                
                 // Update Live Activity if game is active
                 Task {
                     let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
                     let isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
-
+                    
                     if isGameActive {
                         await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
                     }
                 }
-
+                
                 // Save history
                 saveHistory()
             }
         }
     }
-
+    
     private func loadHistory() {
         let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
         if let data = defaults?.data(forKey: "rollHistory"),
@@ -448,7 +479,7 @@ struct DiceRollerView: View {
             rollHistory = history
         }
     }
-
+    
     private func saveHistory() {
         let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
         if let data = try? JSONEncoder().encode(rollHistory) {

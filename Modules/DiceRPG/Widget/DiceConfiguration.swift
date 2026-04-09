@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
 import CoreRPG
 import WidgetKit
 
@@ -41,3 +42,5 @@ public struct DiceConfiguration: Codable {
         }
     }
 }
+
+#endif

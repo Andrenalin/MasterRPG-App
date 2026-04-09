@@ -5,7 +5,9 @@ import AVFoundation
 import Foundation
 import Observation
 import RPGResources
+#if !os(tvOS)
 import WidgetKit
+#endif
 
 @MainActor @Observable
 final class DiceGameModel: Sendable {
@@ -537,7 +539,7 @@ extension GameController {
     }
     
     nonisolated private func diceUpdateWidget(diceResult: DiceResultModel) async {
-
+#if !os(tvOS)
         // Update widget
         var config = DiceConfiguration.loadFromUserDefaults()
         config.lastRoll = diceResult
@@ -552,5 +554,6 @@ extension GameController {
         if defaults?.bool(forKey: "isGameActive") == true {
             await DiceRollerLiveActivityManager.shared.startOrUpdate(with: diceResult)
         }
+#endif
     }
 }
