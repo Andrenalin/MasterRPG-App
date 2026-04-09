@@ -27,23 +27,17 @@ struct DiceRollerWidgetView: View {
     }
     
     // MARK: - Small Widget
-    
+
     private var smallWidgetView: some View {
         VStack(spacing: 8) {
             // Dice icon with result
-            ZStack {
-                if let lastRoll = entry.configuration.lastRoll {
-                    // Show last roll result
-                    diceResultView(lastRoll)
-                        .widgetAccentable() // Primary content in accented mode
-                } else {
-                    // Show dice type icon
-                    if let firstDie = entry.configuration.selectedDice.dice.first {
-                        firstDie.diceImage(for: firstDie.die.max)
-                            .resizable()
-                            .frame(width: 40, height: 40)
-                            .widgetAccentable()
-                    }
+            if let lastRoll = entry.configuration.lastRoll {
+                // Show last roll result
+                diceResultView(lastRoll)
+            } else {
+                // Show dice type icon
+                if let firstDie = entry.configuration.selectedDice.dice.first {
+                    dieImageView(firstDie, size: 40, sides: firstDie.die.max)
                 }
             }
 
@@ -51,19 +45,19 @@ struct DiceRollerWidgetView: View {
             Text(entry.configuration.selectedDice.name)
                 .font(.caption)
                 .fontWeight(.medium)
+                .widgetAccentable()
         }
         .padding()
     }
     
     // MARK: - Medium Widget
-    
+
     private var mediumWidgetView: some View {
         HStack(spacing: 16) {
             // Left side - Current dice and result
             VStack(spacing: 8) {
                 if let lastRoll = entry.configuration.lastRoll {
                     diceResultView(lastRoll)
-                        .widgetAccentable()
 
                     if let timestamp = lastRoll.timestamp {
                         Text(timestamp, style: .relative)
@@ -72,10 +66,7 @@ struct DiceRollerWidgetView: View {
                     }
                 } else {
                     if let firstDie = entry.configuration.selectedDice.dice.first {
-                        firstDie.diceImage(for: firstDie.die.max)
-                            .resizable()
-                            .frame(width: 50, height: 50)
-                            .widgetAccentable()
+                        dieImageView(firstDie, size: 50, sides: firstDie.die.max)
 
                         Text(entry.configuration.selectedDice.name)
                             .font(.headline)
@@ -87,7 +78,7 @@ struct DiceRollerWidgetView: View {
 
             Divider()
 
-            // Right side - Quick dice selection using Liquid Glass
+            // Right side - Quick dice selection
             VStack(spacing: 4) {
                 Text("Quick Roll")
                     .font(.caption)
@@ -101,7 +92,7 @@ struct DiceRollerWidgetView: View {
     }
     
     // MARK: - Large Widget
-    
+
     private var largeWidgetView: some View {
         VStack(spacing: 16) {
             // Header
@@ -122,17 +113,13 @@ struct DiceRollerWidgetView: View {
             // Main dice display
             if let lastRoll = entry.configuration.lastRoll {
                 diceResultView(lastRoll)
-                    .widgetAccentable()
 
                 Text("Last Roll")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
                 if let firstDie = entry.configuration.selectedDice.dice.first {
-                    firstDie.diceImage(for: firstDie.die.max)
-                        .resizable()
-                        .frame(width: 60, height: 60)
-                        .widgetAccentable()
+                    dieImageView(firstDie, size: 60, sides: firstDie.die.max)
 
                     Text(entry.configuration.selectedDice.name)
                         .font(.title2)
@@ -143,7 +130,7 @@ struct DiceRollerWidgetView: View {
 
             Divider()
 
-            // Dice selection grid with Liquid Glass
+            // Dice selection grid
             Text("Quick Roll")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -155,20 +142,32 @@ struct DiceRollerWidgetView: View {
     
     // MARK: - Components
 
+    /// Renders a die image that works correctly in both full color and tinted modes
+    @ViewBuilder
+    private func dieImageView(_ die: DieModel, size: CGFloat, sides: Int) -> some View {
+        die.diceImage(for: sides)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: size, height: size)
+            // Don't apply widgetAccentable to images - they should stay in full color
+            .unredacted() // Ensure images always render
+    }
+
     private func diceResultView(_ result: DiceResultModel) -> some View {
         VStack(spacing: 4) {
             ZStack {
-                // Background circle with glass effect
-                Circle()
-                    .fill(resultColor(for: result).opacity(0.2))
-                    .frame(width: 70, height: 70)
+                // Background circle - only show in full color mode
+                if renderingMode == .fullColor {
+                    Circle()
+                        .fill(resultColor(for: result).opacity(0.2))
+                        .frame(width: 70, height: 70)
+                }
 
                 if let firstDie = result.diceModel.dice.first {
-                    firstDie.diceImage(for: result.sum)
-                        .resizable()
-                        .frame(width: 64, height: 64)
+                    dieImageView(firstDie, size: 64, sides: result.sum)
                 }
             }
+            .widgetAccentable() // Mark the entire result as accentable content
 
             Text(result.diceModel.name)
                 .font(.caption)
@@ -182,9 +181,8 @@ struct DiceRollerWidgetView: View {
                 Button(intent: RollDiceIntent(diceType: diceType)) {
                     VStack(spacing: 2) {
                         let die = diceType.toDieModel()
-                        die.diceImage(for: die.die.max)
-                            .resizable()
-                            .frame(width: 32, height: 32)
+                        dieImageView(die, size: 32, sides: die.die.max)
+
                         Text(diceType.rawValue)
                             .font(.system(size: 8))
                     }
@@ -205,7 +203,7 @@ struct DiceRollerWidgetView: View {
         case .rolled:
             return .blue
         case .notRolled:
-            return .secondary
+            return .gray
         }
     }
 }

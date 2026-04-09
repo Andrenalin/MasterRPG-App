@@ -51,7 +51,10 @@ public final class DiceRollerLiveActivityManager {
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         let gameName = defaults?.string(forKey: "currentGameName") ?? "RPG Game"
 
-        if let activity = currentActivity {
+        // Capture activity reference before crossing isolation boundaries
+        let activity = currentActivity
+
+        if let activity {
             // Capture the current state before crossing isolation boundaries
             let currentRollCount = activity.content.state.rollCount
 
@@ -97,7 +100,9 @@ public final class DiceRollerLiveActivityManager {
     }
 
     public func endActivity() async {
-        guard let activity = currentActivity else { return }
+        // Capture activity reference before crossing isolation boundaries
+        let activity = currentActivity
+        guard let activity else { return }
 
         // Capture the current state before crossing isolation boundaries
         let currentState = activity.content.state
@@ -113,7 +118,9 @@ public final class DiceRollerLiveActivityManager {
     }
 
     public func endActivityWithDelay(seconds: TimeInterval = 10) async {
-        guard let activity = currentActivity else { return }
+        // Capture activity reference before crossing isolation boundaries
+        let activity = currentActivity
+        guard let activity else { return }
 
         // Capture the current state before crossing isolation boundaries
         let currentState = activity.content.state
