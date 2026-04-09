@@ -5261,6 +5261,8 @@
 				INFOPLIST_FILE = Sources/DiceRollerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DiceRollerWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -5310,6 +5312,8 @@
 				INFOPLIST_FILE = Sources/DiceRollerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DiceRollerWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -7346,8 +7350,8 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "MasterRPG uses speech recognition to convert your voice into text for AI chat.";
-				INFOPLIST_KEY_NSSupportsLiveActivities = NO;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = NO;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
@@ -7414,8 +7418,8 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "MasterRPG uses speech recognition to convert your voice into text for AI chat.";
-				INFOPLIST_KEY_NSSupportsLiveActivities = NO;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = NO;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;

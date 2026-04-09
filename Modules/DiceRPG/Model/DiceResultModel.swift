@@ -4,14 +4,16 @@ import CoreRPG
 import Foundation
 import os.log
 
-struct DiceResultModel: Equatable, Hashable, Codable {
-    let diceModel: DiceModel
-    var result: DiceResult
-    var values: String
-    var sum: Int
-    var checked: Bool
+public struct DiceResultModel: Equatable, Hashable, Codable, Sendable, Identifiable {
+    public let id: UUID
+    public let diceModel: DiceModel
+    public var result: DiceResult
+    public var values: String
+    public var sum: Int
+    public var checked: Bool
+    public let timestamp: Date?
     
-    enum DiceResult: Equatable, Hashable, Codable {
+    public enum DiceResult: Equatable, Hashable, Codable, Sendable {
         case coup
         case fumble
         case rolled
@@ -27,30 +29,34 @@ struct DiceResultModel: Equatable, Hashable, Codable {
         }
     }
     
-    init(diceModel: DiceModel) {
+    public init(diceModel: DiceModel) {
+        self.id = UUID()
         self.diceModel = diceModel
         self.result = .notRolled
         self.values = ""
         self.sum = 0
         self.checked = false
+        self.timestamp = Date.now
     }
     
-    init(diceModel: DiceModel, result: DiceResult, values: String, sum: Int, checked: Bool) {
+    public init(diceModel: DiceModel, result: DiceResult, values: String, sum: Int, checked: Bool, timeStamp: Date = Date.now) {
+        self.id = UUID()
         self.diceModel = diceModel
         self.result = result
         self.values = values
         self.sum = sum
         self.checked = checked
+        self.timestamp = timeStamp
     }
 }
 
 extension DiceResultModel {
-    func encodeData() -> Data? {
+    public func encodeData() -> Data? {
         let encoder = JSONEncoder()
         return try? encoder.encode(self)
     }
 
-    static func decodeData(of data: Data?) -> Self? {
+    public static func decodeData(of data: Data?) -> Self? {
         guard let data else { return nil }
         let decoder = JSONDecoder()
         do {

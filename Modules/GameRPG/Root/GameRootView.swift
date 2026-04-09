@@ -16,8 +16,12 @@ struct GameRootView: View {
                 appGameStateModel.isGameRunning = root.gameModel.gameConfig.state == .started
                 if root.gameModel.gameConfig.state == .started {
                     appGameStateModel.gameModus = root.gameModel.gameConfig.isMaster ? .master : .player
+                    let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
+                    defaults?.set(true, forKey: "isGameActive")
                 } else {
                     appGameStateModel.gameModus = .edit
+                    let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
+                    defaults?.set(false, forKey: "isGameActive")
                 }
             }
     }

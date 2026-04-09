@@ -1,12 +1,12 @@
 // @copyright André Trettin
 
-import SwiftUI
 import CoreRPG
+import DiceRPG
+import SwiftUI
 import WidgetKit
 
 /// Integration view for managing dice roller widget from the main app
 struct DiceRollerWidgetConfiguration: View {
-    @State private var selectedDice: DiceType = .d20
     @State private var configuration: DiceConfiguration = .default
     @State private var isGameActive: Bool = false
     @State private var currentGameName: String = ""
@@ -14,23 +14,12 @@ struct DiceRollerWidgetConfiguration: View {
     var body: some View {
         Form {
             Section {
-                Picker("Default Dice", selection: $selectedDice) {
-                    ForEach(DiceType.allCases) { diceType in
-                        HStack {
-                            diceType.dieImage
-
-                            Text(diceType.rawValue)
-                        }
-                        .tag(diceType)
-                    }
-                }
-                .onChange(of: selectedDice) { _, newValue in
-                    updateConfiguration(selectedDice: newValue)
-                }
+                Text("Current: \(configuration.selectedDice.name)")
+                    .font(.headline)
             } header: {
                 Text("Widget Settings")
             } footer: {
-                Text("Choose which dice type appears in the widget by default")
+                Text("The widget displays your last rolled dice configuration")
             }
             
             Section {
@@ -54,30 +43,35 @@ struct DiceRollerWidgetConfiguration: View {
             Section {
                 if let lastRoll = configuration.lastRoll {
                     HStack {
-                        lastRoll.diceType.dieImage
-                            .font(.title2)
-                            .foregroundStyle(resultColor(for: lastRoll))
-                        
+                        if let firstDie = lastRoll.diceModel.dice.first {
+                            firstDie.diceImage(for: lastRoll.sum)
+                                .resizable()
+                                .frame(width: 40, height: 40)
+                                .foregroundStyle(resultColor(for: lastRoll.result))
+                        }
+
                         VStack(alignment: .leading) {
-                            Text("\(lastRoll.value)")
+                            Text("\(lastRoll.sum)")
                                 .font(.title)
                                 .fontWeight(.bold)
-                                .foregroundStyle(resultColor(for: lastRoll))
-                            
-                            Text(lastRoll.diceType.rawValue)
+                                .foregroundStyle(resultColor(for: lastRoll.result))
+
+                            Text(lastRoll.diceModel.name)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        
+
                         Spacer()
-                        
-                        VStack(alignment: .trailing) {
-                            Text(lastRoll.timestamp, style: .date)
-                                .font(.caption2)
-                            Text(lastRoll.timestamp, style: .time)
-                                .font(.caption2)
+
+                        if let timestamp = lastRoll.timestamp {
+                            VStack(alignment: .trailing) {
+                                Text(timestamp, style: .date)
+                                    .font(.caption2)
+                                Text(timestamp, style: .time)
+                                    .font(.caption2)
+                            }
+                            .foregroundStyle(.secondary)
                         }
-                        .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
                     
@@ -119,11 +113,12 @@ struct DiceRollerWidgetConfiguration: View {
                     
                     // Preview of Liquid Glass effect
                     HStack(spacing: 16) {
-                        ForEach([DiceType.d20, .d12, .d10], id: \.self) { diceType in
+                        ForEach([DieModel.die20(color: .G), .die12(color: .G), .die10(color: .G)], id: \.id) { die in
                             VStack(spacing: 4) {
-                                diceType.dieImage
+                                die.diceImage(for: die.die.max)
+                                    .resizable()
                                     .frame(width: 32, height: 32)
-                                Text(diceType.rawValue)
+                                Text("D\(die.die.max)")
                                     .font(.caption2)
                             }
                             .frame(width: 60, height: 60)
@@ -146,20 +141,13 @@ struct DiceRollerWidgetConfiguration: View {
     }
     
     // MARK: - Helper Methods
-    
+
     private func loadConfiguration() {
         configuration = DiceConfiguration.loadFromUserDefaults()
-        selectedDice = configuration.selectedDice
-        
+
         let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
         isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
         currentGameName = defaults?.string(forKey: "currentGameName") ?? ""
-    }
-    
-    private func updateConfiguration(selectedDice: DiceType) {
-        configuration.selectedDice = selectedDice
-        configuration.save()
-        WidgetCenter.shared.reloadAllTimelines()
     }
     
     private func updateGameStatus(isActive: Bool) {
@@ -185,13 +173,16 @@ struct DiceRollerWidgetConfiguration: View {
         WidgetCenter.shared.reloadAllTimelines()
     }
     
-    private func resultColor(for result: DiceRollResult) -> Color {
-        if result.isCritical {
+    private func resultColor(for result: DiceResultModel.DiceResult) -> Color {
+        switch result {
+        case .coup:
             return .green
-        } else if result.isCriticalFailure {
+        case .fumble:
             return .red
-        } else {
+        case .rolled:
             return .blue
+        case .notRolled:
+            return .secondary
         }
     }
 }
@@ -199,11 +190,11 @@ struct DiceRollerWidgetConfiguration: View {
 // MARK: - In-App Dice Roller with Widget Integration
 
 struct DiceRollerView: View {
-    @State private var selectedDice: DiceType = .d20
-    @State private var currentRoll: DiceRollResult?
+    @State private var selectedDie: DieModel = .die20(color: .G)
+    @State private var currentRoll: DiceResultModel?
     @State private var isRolling: Bool = false
-    @State private var rollHistory: [DiceRollResult] = []
-    
+    @State private var rollHistory: [DiceResultModel] = []
+
     @Namespace private var glassNamespace
     
     var body: some View {
@@ -224,7 +215,7 @@ struct DiceRollerView: View {
                         Button(action: rollDice) {
                             HStack {
                                 Image(systemName: "dice")
-                                Text("Roll \(selectedDice.rawValue)")
+                                Text("Roll D\(selectedDie.die.max)")
                             }
                             .font(.headline)
                             .frame(maxWidth: .infinity)
@@ -265,43 +256,44 @@ struct DiceRollerView: View {
     
     private var diceSelection: some View {
         VStack(spacing: 12) {
-            selectedDice.dieImage
+            selectedDie.diceImage(for: selectedDie.die.max)
+                .resizable()
                 .frame(width: 80, height: 80)
                 .foregroundStyle(.primary)
-            
-            Text(selectedDice.rawValue)
+
+            Text("D\(selectedDie.die.max)")
                 .font(.title)
                 .fontWeight(.semibold)
-            
+
             Text("Tap to roll")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .glassEffect(.regular.interactive())
     }
-    
-    private func resultDisplay(_ result: DiceRollResult) -> some View {
+
+    private func resultDisplay(_ result: DiceResultModel) -> some View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(resultColor(for: result).opacity(0.2))
+                    .fill(resultColor(for: result.result).opacity(0.2))
                     .frame(width: 120, height: 120)
-                
-                Text("\(result.value)")
+
+                Text("\(result.sum)")
                     .font(.system(size: 60, weight: .bold, design: .rounded))
-                    .foregroundStyle(resultColor(for: result))
+                    .foregroundStyle(resultColor(for: result.result))
             }
-            .glassEffect(.regular.tint(resultColor(for: result)).interactive())
-            
-            Text(result.diceType.rawValue)
+            .glassEffect(.regular.tint(resultColor(for: result.result)).interactive())
+
+            Text(result.diceModel.name)
                 .font(.title2)
                 .fontWeight(.semibold)
-            
-            if result.isCritical {
+
+            if result.result == .coup {
                 Text("Critical Success!")
                     .font(.headline)
                     .foregroundStyle(.green)
-            } else if result.isCriticalFailure {
+            } else if result.result == .fumble {
                 Text("Critical Failure!")
                     .font(.headline)
                     .foregroundStyle(.red)
@@ -312,27 +304,27 @@ struct DiceRollerView: View {
             axis: (x: 1, y: 1, z: 0)
         )
     }
-    
+
     private var diceTypeSelector: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Select Dice")
                 .font(.headline)
                 .padding(.horizontal)
-            
+
             GlassEffectContainer(spacing: 16) {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 16) {
-                    ForEach(DiceType.allCases) { diceType in
+                    ForEach([DieModel.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]) { die in
                         Button {
                             withAnimation(.spring()) {
-                                selectedDice = diceType
+                                selectedDie = die
                                 currentRoll = nil
                             }
                         } label: {
                             VStack(spacing: 8) {
-                                diceType.dieImage
+                                die.diceImage(for: die.die.max)
+                                    .resizable()
                                     .frame(width: 40, height: 40)
-                                    .font(.title)
-                                Text(diceType.rawValue)
+                                Text("D\(die.die.max)")
                                     .font(.caption)
                                     .fontWeight(.medium)
                             }
@@ -341,7 +333,7 @@ struct DiceRollerView: View {
                         }
                         .buttonStyle(.glass)
                         .overlay {
-                            if selectedDice == diceType {
+                            if selectedDie.die == die.die {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(.blue, lineWidth: 3)
                             }
@@ -377,16 +369,16 @@ struct DiceRollerView: View {
                         VStack(spacing: 4) {
                             ZStack {
                                 Circle()
-                                    .fill(resultColor(for: roll).opacity(0.2))
+                                    .fill(resultColor(for: roll.result).opacity(0.2))
                                     .frame(width: 50, height: 50)
-                                
-                                Text("\(roll.value)")
+
+                                Text("\(roll.sum)")
                                     .font(.title3)
                                     .fontWeight(.bold)
-                                    .foregroundStyle(resultColor(for: roll))
+                                    .foregroundStyle(resultColor(for: roll.result))
                             }
-                            
-                            Text(roll.diceType.rawValue)
+
+                            Text(roll.diceModel.name)
                                 .font(.caption2)
                         }
                         .glassEffect(.regular)
@@ -402,53 +394,61 @@ struct DiceRollerView: View {
     private func rollDice() {
         withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
             isRolling = true
-            
+
             // Simulate rolling animation
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                let value = selectedDice.roll()
-                let result = DiceRollResult(
-                    value: value,
-                    diceType: selectedDice,
-                    timestamp: Date()
+                let rolledDie = selectedDie.role(resetResults: true, reroleOptions: [])
+                let value = rolledDie.result.first ?? selectedDie.die.max
+
+                // Create dice model with the rolled die
+                let diceModel = DiceModel(id: UUID(), name: "D\(selectedDie.die.max)", dice: [rolledDie])
+
+                let result = DiceResultModel(
+                    diceModel: diceModel,
+                    result: .rolled,
+                    values: "\(value)",
+                    sum: value,
+                    checked: false,
+                    timeStamp: Date()
                 )
-                
+
                 withAnimation {
                     currentRoll = result
                     rollHistory.append(result)
                     isRolling = false
                 }
-                
+
                 // Update widget
                 var config = DiceConfiguration.loadFromUserDefaults()
                 config.lastRoll = result
-                config.selectedDice = selectedDice
+                config.selectedDice = diceModel
                 config.save()
                 WidgetCenter.shared.reloadAllTimelines()
-                
+
                 // Update Live Activity if game is active
                 Task {
                     let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
                     let isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
-                    
+
                     if isGameActive {
                         await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
                     }
                 }
-                
+
                 // Save history
                 saveHistory()
             }
         }
     }
-    
+
     private func loadHistory() {
         let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
         if let data = defaults?.data(forKey: "rollHistory"),
-           let history = try? JSONDecoder().decode([DiceRollResult].self, from: data) {
+           let history = try? JSONDecoder().decode([DiceResultModel].self, from: data) {
             rollHistory = history
         }
     }
-    
+
     private func saveHistory() {
         let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
         if let data = try? JSONEncoder().encode(rollHistory) {
@@ -456,13 +456,16 @@ struct DiceRollerView: View {
         }
     }
     
-    private func resultColor(for result: DiceRollResult) -> Color {
-        if result.isCritical {
+    private func resultColor(for result: DiceResultModel.DiceResult) -> Color {
+        switch result {
+        case .coup:
             return .green
-        } else if result.isCriticalFailure {
+        case .fumble:
             return .red
-        } else {
+        case .rolled:
             return .blue
+        case .notRolled:
+            return .secondary
         }
     }
 }

@@ -3,7 +3,8 @@
 import Foundation
 
 public extension UserDefaults {
-    @MainActor static let appGroup = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")!
+    static let appGroupString = "group.de.andretrettin.MasterRPG"
+    @MainActor static let appGroup = UserDefaults(suiteName: appGroupString)!
 }
 
 public extension FileManager {

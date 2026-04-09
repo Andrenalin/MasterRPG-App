@@ -5,6 +5,7 @@ import AVFoundation
 import Foundation
 import Observation
 import RPGResources
+import WidgetKit
 
 @MainActor @Observable
 final class DiceGameModel: Sendable {
@@ -529,6 +530,27 @@ extension GameController {
             gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
                 die.role(reroleOptions: item.rerollOptions)
             }
+        }
+        Task {
+            await diceUpdateWidget(diceResult: result(itemId: itemId))
+        }
+    }
+    
+    nonisolated private func diceUpdateWidget(diceResult: DiceResultModel) async {
+
+        // Update widget
+        var config = DiceConfiguration.loadFromUserDefaults()
+        config.lastRoll = diceResult
+        config.selectedDice = diceResult.diceModel
+        config.save()
+
+        // Reload widgets
+        WidgetCenter.shared.reloadAllTimelines()
+
+        // Update Live Activity if game is active
+        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
+        if defaults?.bool(forKey: "isGameActive") == true {
+            await DiceRollerLiveActivityManager.shared.startOrUpdate(with: diceResult)
         }
     }
 }

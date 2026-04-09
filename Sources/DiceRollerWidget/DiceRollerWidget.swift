@@ -1,8 +1,9 @@
 // @copyright André Trettin
 
-import WidgetKit
-import SwiftUI
 import CoreRPG
+import DiceRPG
+import SwiftUI
+import WidgetKit
 
 /// A widget that displays a dice roller with Liquid Glass design
 struct DiceRollerWidget: Widget {

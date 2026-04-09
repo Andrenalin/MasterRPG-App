@@ -20,7 +20,7 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked S
     var color: String = ColorCode.Random.rawValue
     
     var rotation: Double = 0
-    var result: [Int] = []
+    public var result: [Int] = []
     public var displayState: Int = 0
     
     private enum CodingKeys: CodingKey {
@@ -139,7 +139,7 @@ extension DieModel {
         DieModel(id: id, die: die, rotation: RawDie.rolePercent() * 360, result: values)
     }
 
-    func role(resetResults: Bool = false, reroleOptions: [DiceModel.RerollOption]) -> DieModel {
+    public func role(resetResults: Bool = false, reroleOptions: [DiceModel.RerollOption]) -> DieModel {
         var roleResult: [Int] = []
         var role: Int
         repeat {
@@ -156,51 +156,51 @@ extension DieModel {
         return DieModel(id: id, die: die, rotation: (1800 + RawDie.rolePercent() * 360), result: updatedResult)
     }
 
-    static var die4: DieModel {
+    public static var die4: DieModel {
         die4(color: .Random)
     }
 
-    static func die4(color: ColorCode) -> DieModel {
+    public static func die4(color: ColorCode) -> DieModel {
         DieModel(id: UUID(), die: RawDie.four, color: color.rawValue)
     }
 
-    static var die6: DieModel {
+    public static var die6: DieModel {
         die6(color: .Random)
     }
 
-    static func die6(color: ColorCode) -> DieModel {
+    public static func die6(color: ColorCode) -> DieModel {
         DieModel(id: UUID(), die: RawDie.six, color: color.rawValue)
     }
 
-    static var die8: DieModel {
+    public static var die8: DieModel {
         die8(color: .Random)
     }
 
-    static func die8(color: ColorCode) -> DieModel {
+    public static func die8(color: ColorCode) -> DieModel {
         DieModel(id: UUID(), die: RawDie.eight, color: color.rawValue)
     }
 
-    static var die10: DieModel {
+    public static var die10: DieModel {
         die10(color: .Random)
     }
 
-    static func die10(color: ColorCode) -> DieModel {
+    public static func die10(color: ColorCode) -> DieModel {
         DieModel(id: UUID(), die: RawDie.ten, color: color.rawValue)
     }
 
-    static var die12: DieModel {
+    public static var die12: DieModel {
         die12(color: .Random)
     }
 
-    static func die12(color: ColorCode) -> DieModel {
+    public static func die12(color: ColorCode) -> DieModel {
         DieModel(id: UUID(), die: RawDie.twelve, color: color.rawValue)
     }
 
-    static var die20: DieModel {
+    public static var die20: DieModel {
         die20(color: .Random)
     }
     
-    static func die20(color: ColorCode) -> DieModel {
+    public static func die20(color: ColorCode) -> DieModel {
         DieModel(id: UUID(), die: RawDie.twenty, color: color.rawValue)
     }
 }

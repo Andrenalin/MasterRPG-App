@@ -2,6 +2,8 @@
 
 import ActivityKit
 import AppIntents
+import CoreRPG
+import DiceRPG
 import SwiftUI
 import WidgetKit
 
@@ -17,15 +19,15 @@ struct DiceRollerLiveActivity: Widget {
             DynamicIsland {
                 // Expanded UI
                 DynamicIslandExpandedRegion(.leading) {
-                    diceIconView(for: context.state.lastRoll.diceType)
+                    diceIconView(for: context.state.lastRoll)
                 }
-                
+
                 DynamicIslandExpandedRegion(.trailing) {
                     diceResultBadge(for: context.state.lastRoll)
                 }
-                
+
                 DynamicIslandExpandedRegion(.center) {
-                    Text("Roll: \(context.state.lastRoll.value)")
+                    Text("Roll: \(context.state.lastRoll.sum)")
                         .font(.title2)
                         .fontWeight(.bold)
                 }
@@ -36,20 +38,26 @@ struct DiceRollerLiveActivity: Widget {
                 }
             } compactLeading: {
                 // Compact leading UI
-                context.state.lastRoll.diceType.dieImage
-                    .frame(width: 16, height: 16)
-                    .foregroundStyle(compactResultColor(for: context.state.lastRoll))
+                if let firstDie = context.state.lastRoll.diceModel.dice.first {
+                    firstDie.diceImage(for: context.state.lastRoll.sum)
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                        .foregroundStyle(compactResultColor(for: context.state.lastRoll))
+                }
             } compactTrailing: {
                 // Compact trailing UI
-                Text("\(context.state.lastRoll.value)")
+                Text("\(context.state.lastRoll.sum)")
                     .font(.system(.title3, design: .rounded))
                     .fontWeight(.bold)
                     .foregroundStyle(compactResultColor(for: context.state.lastRoll))
             } minimal: {
                 // Minimal UI
-                context.state.lastRoll.diceType.dieImage
-                    .frame(width: 16, height: 16)
-                    .foregroundStyle(compactResultColor(for: context.state.lastRoll))
+                if let firstDie = context.state.lastRoll.diceModel.dice.first {
+                    firstDie.diceImage(for: context.state.lastRoll.sum)
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                        .foregroundStyle(compactResultColor(for: context.state.lastRoll))
+                }
             }
             .widgetURL(URL(string: "masterrpg://dice"))
             .keylineTint(compactResultColor(for: context.state.lastRoll))
@@ -57,32 +65,39 @@ struct DiceRollerLiveActivity: Widget {
     }
     
     // MARK: - Helper Views
-    
-    private func diceIconView(for diceType: DiceType) -> some View {
-        diceType.dieImage
-            .font(.title2)
-            .foregroundStyle(.white)
+
+    private func diceIconView(for result: DiceResultModel) -> some View {
+        Group {
+            if let firstDie = result.diceModel.dice.first {
+                firstDie.diceImage(for: result.sum)
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                    .foregroundStyle(.white)
+            }
+        }
     }
-    
-    private func diceResultBadge(for result: DiceRollResult) -> some View {
+
+    private func diceResultBadge(for result: DiceResultModel) -> some View {
         ZStack {
             Circle()
                 .fill(resultColor(for: result))
                 .frame(width: 40, height: 40)
-            
-            Text("\(result.value)")
+
+            Text("\(result.sum)")
                 .font(.title3)
                 .fontWeight(.bold)
                 .foregroundStyle(.white)
         }
     }
-    
+
     private var quickRollButtons: some View {
         HStack(spacing: 12) {
-            ForEach([DiceType.d4, .d6, .d8, .d10, .d12, .d20], id: \.self) { diceType in
+            ForEach([IntentDiceType.d4, .d6, .d8, .d10, .d12, .d20], id: \.self) { diceType in
                 Button(intent: RollDiceIntent(diceType: diceType)) {
                     VStack(spacing: 2) {
-                        diceType.dieImage
+                        let die = diceType.toDieModel()
+                        die.diceImage(for: die.die.max)
+                            .resizable()
                             .frame(width: 16, height: 16)
                         Text(diceType.rawValue)
                             .font(.system(size: 8))
@@ -94,23 +109,27 @@ struct DiceRollerLiveActivity: Widget {
             }
         }
     }
-    
-    private func resultColor(for result: DiceRollResult) -> Color {
-        if result.isCritical {
+
+    private func resultColor(for result: DiceResultModel) -> Color {
+        switch result.result {
+        case .coup:
             return .green
-        } else if result.isCriticalFailure {
+        case .fumble:
             return .red
-        } else {
+        case .rolled:
             return .blue
+        case .notRolled:
+            return .gray
         }
     }
-    
-    private func compactResultColor(for result: DiceRollResult) -> Color {
-        if result.isCritical {
+
+    private func compactResultColor(for result: DiceResultModel) -> Color {
+        switch result.result {
+        case .coup:
             return .green
-        } else if result.isCriticalFailure {
+        case .fumble:
             return .red
-        } else {
+        case .rolled, .notRolled:
             return .white
         }
     }
@@ -130,14 +149,14 @@ struct DiceRollerLiveActivityView: View {
                         Circle()
                             .fill(resultColor.opacity(0.3))
                             .frame(width: 60, height: 60)
-                        
-                        Text("\(context.state.lastRoll.value)")
+
+                        Text("\(context.state.lastRoll.sum)")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                     }
                     .glassEffect(.regular.tint(resultColor).interactive())
-                    
-                    Text(context.state.lastRoll.diceType.rawValue)
+
+                    Text(context.state.lastRoll.diceModel.name)
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundStyle(.white.opacity(0.8))
@@ -153,10 +172,12 @@ struct DiceRollerLiveActivityView: View {
                         .foregroundStyle(.white.opacity(0.7))
                     
                     HStack(spacing: 8) {
-                        ForEach([DiceType.d20, .d12, .d10], id: \.self) { diceType in
+                        ForEach([IntentDiceType.d20, .d12, .d10], id: \.self) { diceType in
                             Button(intent: RollDiceIntent(diceType: diceType)) {
                                 VStack(spacing: 2) {
-                                    diceType.dieImage
+                                    let die = diceType.toDieModel()
+                                    die.diceImage(for: die.die.max)
+                                        .resizable()
                                         .frame(width: 24, height: 24)
                                     Text(diceType.rawValue)
                                         .font(.system(size: 8))
@@ -187,118 +208,16 @@ struct DiceRollerLiveActivityView: View {
     }
     
     private var resultColor: Color {
-        let result = context.state.lastRoll
-        if result.isCritical {
+        let result = context.state.lastRoll.result
+        switch result {
+        case .coup:
             return .green
-        } else if result.isCriticalFailure {
+        case .fumble:
             return .red
-        } else {
+        case .rolled:
             return .blue
+        case .notRolled:
+            return .gray
         }
-    }
-}
-
-// MARK: - Activity Attributes
-
-struct DiceRollerActivityAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        var lastRoll: DiceRollResult
-        var rollCount: Int
-    }
-    
-    var gameName: String
-    var startTime: Date
-}
-
-// MARK: - Live Activity Manager
-
-@MainActor
-class DiceRollerLiveActivityManager {
-    static let shared = DiceRollerLiveActivityManager()
-    
-    private var currentActivity: Activity<DiceRollerActivityAttributes>?
-    
-    private init() {}
-    
-    func startOrUpdate(with result: DiceRollResult) async {
-        // Check if Live Activities are enabled
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            print("Live Activities are not enabled")
-            return
-        }
-        
-        // Get game name from UserDefaults
-        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
-        let gameName = defaults?.string(forKey: "currentGameName") ?? "RPG Game"
-        
-        if let activity = currentActivity {
-            // Update existing activity
-            let updatedState = DiceRollerActivityAttributes.ContentState(
-                lastRoll: result,
-                rollCount: (activity.content.state.rollCount) + 1
-            )
-            
-            await activity.update(
-                ActivityContent(
-                    state: updatedState,
-                    staleDate: Date().addingTimeInterval(60 * 60) // 1 hour
-                ),
-                alertConfiguration: nil
-            )
-        } else {
-            // Start new activity
-            let attributes = DiceRollerActivityAttributes(
-                gameName: gameName,
-                startTime: Date()
-            )
-            
-            let initialState = DiceRollerActivityAttributes.ContentState(
-                lastRoll: result,
-                rollCount: 1
-            )
-            
-            let content = ActivityContent(
-                state: initialState,
-                staleDate: Date().addingTimeInterval(60 * 60)
-            )
-            
-            do {
-                currentActivity = try Activity.request(
-                    attributes: attributes,
-                    content: content,
-                    pushType: nil
-                )
-            } catch {
-                print("Failed to start Live Activity: \(error)")
-            }
-        }
-    }
-    
-    func endActivity() async {
-        guard let activity = currentActivity else { return }
-        
-        await activity.end(
-            ActivityContent(
-                state: activity.content.state,
-                staleDate: Date()
-            ),
-            dismissalPolicy: .immediate
-        )
-        
-        currentActivity = nil
-    }
-    
-    func endActivityWithDelay(seconds: TimeInterval = 10) async {
-        guard let activity = currentActivity else { return }
-        
-        await activity.end(
-            ActivityContent(
-                state: activity.content.state,
-                staleDate: Date()
-            ),
-            dismissalPolicy: .after(Date().addingTimeInterval(seconds))
-        )
-        
-        currentActivity = nil
     }
 }
