@@ -183,6 +183,16 @@ public final class TableSheetModel: Sendable {
             updateParent()
         }
     }
+
+    func moveEntries(indexSet: IndexSet, to index: Int) {
+        guard let editable = entryDataEditable(for: sheetModel.source) else { return }
+        move(itemId: sheetModel.source.itemId, indexSet: indexSet, to: index)
+        editable.move(itemId: sheetModel.source.itemId, entryIds: sheetModel.entries.compactMap { $0.source.entryId })
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            updateParent()
+        }
+    }
     
     func groupFolders(entryDataEditable: (any EntryDataEditable), entry: SheetModel) -> [FolderRepresentable] {
         guard let entryId = entry.source.entryId else { return [] }
@@ -449,6 +459,119 @@ public final class TableSheetModel: Sendable {
             if case .link = location { return true }
             return false
         }
+    }
+
+    // MARK: - Action Methods (Module-Aware)
+
+    /// Add a new entry to the specified source
+    func addNewEntry(to source: ItemRowModel) -> UUID? {
+        guard let editable = entryDataEditable(for: source) else { return nil }
+        return editable.addNewEntry(itemId: source.itemId)
+    }
+
+    /// Remove an entry from the specified source
+    func removeEntry(source: ItemRowModel) {
+        guard let editable = entryDataEditable(for: source) else { return }
+        editable.removeEntry(source: source)
+    }
+
+    /// Set the current item in the edit controller
+    func setCurrentItem(source: ItemRowModel, entryId: UUID?) {
+        guard let editController = editControllable(for: source) else { return }
+        editController.setCurrentItem(to: ItemRowTreeModel(itemId: source.itemId, entryId: entryId, typeId: source.typeId))
+    }
+
+    /// Set the current entry ID in the editor model
+    func setCurrentEntryId(source: ItemRowModel, entryId: UUID?) {
+        guard let editController = editControllable(for: source) else { return }
+        editController.editorModel.currentEntryId = entryId
+    }
+
+    /// Set the scroll entry ID in the editor model
+    func setScrollEntryId(source: ItemRowModel, entryId: UUID?) {
+        guard let editController = editControllable(for: source) else { return }
+        editController.editorModel.scrollEntryId = entryId
+    }
+
+    /// Add a link to a destination entry
+    func addLink(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, to destination: ItemRowModel) {
+        guard let editable = entryDataEditable(for: destination),
+              let destinationEntryId = destination.entryId else { return }
+        editable.add(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destination.itemId, destinationEntryId: destinationEntryId)
+    }
+
+    /// Get the item name for a source
+    func getItemName(for source: ItemRowModel) -> String {
+        let item = itemControllable(for: source).itemOrEmpty(for: source.itemId)
+        return item.name
+    }
+
+    /// Get the item description for a source
+    func getItemDescription(for source: ItemRowModel) -> String {
+        let item = itemControllable(for: source).itemOrEmpty(for: source.itemId)
+        return item.description
+    }
+
+    /// Get the current entry ID from the editor model
+    func getCurrentEntryId(for source: ItemRowModel) -> UUID? {
+        editControllable(for: source)?.editorModel.currentEntryId
+    }
+
+    /// Get the current item ID from the editor model
+    func getCurrentItemId(for source: ItemRowModel) -> UUID? {
+        editControllable(for: source)?.editorModel.currentItemId
+    }
+
+    /// Check if the editor has changed entries
+    func hasChangedEntries(for source: ItemRowModel) -> Int {
+        editControllable(for: source)?.editorModel.hasChangedEntries ?? 0
+    }
+
+    /// Move an item/entry into a new parent
+    func moveItem(itemId: UUID, entryId: UUID, into destination: ItemRowModel) -> Bool {
+        guard let editable = entryDataEditable(for: destination) else { return false }
+        return editable.move(itemId: itemId, entryId: entryId, into: destination)
+    }
+
+    // MARK: - Module-Aware Controllable Resolution
+
+    /// Get the correct ItemRootController for a given module
+    func rootController(for module: NetworkModules) -> ItemRootController? {
+        linkControllable.rootManager.itemRootController(for: module)
+    }
+
+    /// Get the correct ItemControllable for a source (handles cross-module)
+    func itemControllable(for source: ItemRowModel) -> any ItemControllable {
+        if let root = rootController(for: source.typeId) {
+            return root.itemControllable
+        }
+        // Fallback to current module's controllable
+        return linkControllable.itemControllable
+    }
+
+    /// Get the correct EditControllable for a source (handles cross-module)
+    func editControllable(for source: ItemRowModel) -> (any EditControllable)? {
+        rootController(for: source.typeId)?.editControllable
+    }
+
+    /// Get the correct EntryDataEditable for a source (handles cross-module)
+    func entryDataEditable(for source: ItemRowModel) -> (any EntryDataEditable)? {
+        editControllable(for: source) as? (any EntryDataEditable)
+    }
+
+    /// Get the correct ViewControllable for a source (handles cross-module)
+    func viewControllable(for source: ItemRowModel) -> (any ViewControllable)? {
+        rootController(for: source.typeId)?.viewControllable
+    }
+
+    /// Get the search controllable (uses root since search is cross-module)
+    var searchControllable: any SearchControllable {
+        linkControllable.rootManager.adventureRoot.searchControllable
+    }
+
+    /// Get the module tint color
+    var moduleTint: Color {
+        rootController(for: module)?.configurable.module.tint ?? .blue
     }
 }
 

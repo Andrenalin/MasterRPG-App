@@ -88,9 +88,9 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
 #if !os(tvOS)
         .applyIf(isEditor && entry.sheetType == .item) {
             $0.dropDestination(for: linkTypes, isEnabled: entry.sheetType != .group) { items, sessions in
-                guard let editController = root.editControllable as? (any EntryDataEditable), let entryId = entry.source.entryId else { return }
+                guard let entryId = entry.source.entryId else { return }
                 items.forEach {
-                    editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: entry.source.itemId, destinationEntryId: entryId)
+                    model.addLink(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, to: entry.source)
                     withAnimation {
                         model.update(entryId: entryId)
                         model.updateParent()
@@ -99,7 +99,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
             .contextMenu {
                 editButton(onlyIcon: false)
-                if let entryEditable {
+                if let entryEditable = model.entryDataEditable(for: entry.source) {
                     SheetContextMenuView(root: root, entryEditable: entryEditable, model: model, entry: entry)
                 }
                 deleteButton(onlyIcon: false)
@@ -117,15 +117,11 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
 }
 
 private extension SheetEntryView {
-    var entryEditable: (any EntryDataEditable)? {
-        root.editControllable as? (any EntryDataEditable)
-    }
-    
     func editButton(onlyIcon: Bool) -> some View {
         Button {
             withAnimation {
                 if isEditor {
-                    root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: entry.source.entryId, typeId: entry.source.typeId))
+                    model.setCurrentItem(source: entry.source, entryId: entry.source.entryId)
                 } else {
                     model.toggleEdit(entry: entry)
                 }
@@ -157,7 +153,7 @@ private extension SheetEntryView {
     func deleteButton(onlyIcon: Bool) -> some View {
         Button(role: .destructive) {
             withAnimation {
-                root.editControllable.removeEntry(source: entry.source)
+                model.removeEntry(source: entry.source)
                 model.remove(entry: entry)
                 model.updateParent()
             }

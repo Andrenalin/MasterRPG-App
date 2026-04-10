@@ -32,7 +32,7 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
         .onChange(of: model.id) {
             tableSheetModel.update(with: model)
         }
-        .onChange(of: root.editControllable.editorModel.hasChangedEntries) {
+        .onChange(of: tableSheetModel.hasChangedEntries(for: tableSheetModel.sheetModel.source)) {
             tableSheetModel.update(with: model)
         }
     }

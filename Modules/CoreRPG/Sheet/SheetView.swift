@@ -27,7 +27,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .listRowBackground(rowColor(for: model.sheetModel.level))
                 .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-        } else if let entryDataEditable, model.sheetModel.sheetType == .edit {
+        } else if let entryDataEditable = model.entryDataEditable(for: model.sheetModel.source), model.sheetModel.sheetType == .edit {
             InlineEditorView(entryDataEditable: entryDataEditable, model: model, entry: model.sheetModel)
         } else {
             if model.sheetModel.showHeader || isEditor {
@@ -42,10 +42,9 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                     if isEditor && model.sheetModel.canAdd {
                         dropButton
                             .dropDestination(for: model.sheetModel.source.typeId, isEnabled: isEditor) { name, itemId, entryId in
-                                guard let entryDataEditable else { return }
                                 if let entryId  {
                                     withAnimation {
-                                        let isMoved = entryDataEditable.move(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
+                                        let isMoved = model.moveItem(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
                                         if isMoved {
                                             model.move(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
                                             model.updateParent()
@@ -87,21 +86,21 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             }
             .applyIf(isEditor) {
                 $0.onMove { indexSet, index in
-                    model.move(entryDataEditable: entryDataEditable, indexSet: indexSet, to: index)
+                    model.moveEntries(indexSet: indexSet, to: index)
                 }
             }
-            .onChange(of: root.editControllable.editorModel.currentEntryId) { previousEntryId, newEntryId in
-                if let previousEntryId, root.editControllable.editorModel.currentItemId == model.itemId {
+            .onChange(of: model.getCurrentEntryId(for: model.sheetModel.source)) { previousEntryId, newEntryId in
+                if let previousEntryId, model.getCurrentItemId(for: model.sheetModel.source) == model.itemId {
                     withAnimation { model.update(entryId: previousEntryId) }
                 }
                 if let newEntryId, !model.hasEntry(entryId: newEntryId) {
                     model.updateParent()
                 }
             }
-            .onChange(of: root.itemControllable.itemOrEmpty(for: model.id).name) {
+            .onChange(of: model.getItemName(for: model.sheetModel.source)) {
                 model.reset()
             }
-            .onChange(of: root.itemControllable.itemOrEmpty(for: model.id).description) {
+            .onChange(of: model.getItemDescription(for: model.sheetModel.source)) {
                 model.reset()
             }
         }
@@ -115,10 +114,6 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     func relocate(indexSet: IndexSet, to: Int) -> (IndexSet, Int) {
         let inline = model.filteredEntries.reduce(0) { $0 + $1.inlineEntries.count }
         return (IndexSet(indexSet.map { $0 - inline }), to - inline)
-    }
-
-    var entryDataEditable: (any EntryDataEditable)? {
-        root.editControllable as? (any EntryDataEditable)
     }
 
     var shouldShowDragDrop: Bool {
@@ -142,16 +137,17 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     }
     
     @ViewBuilder var plusButton: some View {
-        if let entryDataEditable {
+        if model.entryDataEditable(for: model.sheetModel.source) != nil {
             Button {
-                let entryId = entryDataEditable.addNewEntry(itemId: model.sheetModel.source.itemId)
-                withAnimation {
-                    root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: model.sheetModel.source.itemId, entryId: entryId, typeId: root.configurable.module))
-                    root.editControllable.editorModel.currentEntryId = entryId
-                    model.add(entryId: entryId)
-                    model.updateParent()
-                } completion: {
-                    root.editControllable.editorModel.scrollEntryId = entryId
+                if let entryId = model.addNewEntry(to: model.sheetModel.source) {
+                    withAnimation {
+                        model.setCurrentItem(source: model.sheetModel.source, entryId: entryId)
+                        model.setCurrentEntryId(source: model.sheetModel.source, entryId: entryId)
+                        model.add(entryId: entryId)
+                        model.updateParent()
+                    } completion: {
+                        model.setScrollEntryId(source: model.sheetModel.source, entryId: entryId)
+                    }
                 }
             } label: {
                 Label {
@@ -173,7 +169,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     }
     
     @ViewBuilder var dropButton: some View {
-        if entryDataEditable != nil {
+        if model.entryDataEditable(for: model.sheetModel.source) != nil {
             Label {
                 Text("Drop Here", bundle: .module)
             } icon: {

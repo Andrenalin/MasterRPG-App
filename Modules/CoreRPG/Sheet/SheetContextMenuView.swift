@@ -40,10 +40,10 @@ private extension SheetContextMenuView {
     var duplicateButton: some View {
         Button {
             guard let entryId = entry.source.entryId, let newId = entryEditable.copy(itemId: entry.source.itemId, entryId: entryId) else { return }
-            
+
             withAnimation {
                 model.add(entryId: newId)
-                root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: newId, typeId: entry.source.typeId))
+                model.setCurrentItem(source: entry.source, entryId: newId)
                 model.updateParent()
             }
         } label: {
