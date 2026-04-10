@@ -55,10 +55,10 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                         }
                         .padding()
 #if !os(visionOS)
-                        .glassEffect(.regular.interactive())
+                        .glassEffectAll(.regular.interactive())
 #endif
                         Spacer()
-                        
+
                         Button {
                             save()
                         } label: {
@@ -67,7 +67,7 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                         }
                         .padding()
 #if !os(visionOS)
-                        .glassEffect(.regular.interactive())
+                        .glassEffectAll(.regular.interactive())
 #endif
                     }
                     .buttonStyle(.borderless)

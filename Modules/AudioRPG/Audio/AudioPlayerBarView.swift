@@ -28,9 +28,9 @@ struct AudioPlayerBarView: View {
 #elseif os(visionOS)
         barContent
 #else
-        GlassEffectContainer {
+        GlassEffectContainerAll {
             barContent
-                .glassEffect(.clear)
+                .glassEffectAll(.clear)
         }
 #endif
     }

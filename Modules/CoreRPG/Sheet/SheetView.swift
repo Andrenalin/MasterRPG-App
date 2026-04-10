@@ -162,9 +162,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             .borderLessTVBottonStyle()
             .padding(4)
             .contentShape(.circle)
-#if !os(visionOS)
-            .glassEffect()
-#endif
+            .glassEffectAll()
         }
     }
     

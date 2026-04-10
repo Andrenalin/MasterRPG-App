@@ -307,28 +307,16 @@ private extension ItemDetailRootView {
         editor
             .id(model.id)
             .overlay(alignment: .top) {
-                Group {
-#if os(visionOS)
+                GlassEffectContainerAll {
                     overlayFileImporter(model: model)
-#else
-                    GlassEffectContainer {
-                        overlayFileImporter(model: model)
-                    }
-#endif
                 }
                 .padding()
                 .opacity(model.specialCategory ? 0 : 1)
             }
             .overlay(alignment: .bottom) {
                 if model.description.isEmpty == false {
-                    Group {
-#if os(visionOS)
+                    GlassEffectContainerAll {
                         overlayDescription(model: model)
-#else
-                        GlassEffectContainer {
-                            overlayDescription(model: model)
-                        }
-#endif
                     }
                     .padding()
                 }
@@ -348,10 +336,10 @@ private extension ItemDetailRootView {
             .padding(.horizontal, 8)
             .padding(6)
 #if !os(visionOS)
-            .glassEffect(.regular)
+            .glassEffectAll(.regular)
 #endif
     }
-    
+
     func overlayFileImporter(model: any ItemDataAccessable) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
             HStack {
@@ -360,7 +348,7 @@ private extension ItemDetailRootView {
             }
             .padding(6)
 #if !os(visionOS)
-            .glassEffect(.regular.interactive())
+            .glassEffectAll(.regular.interactive())
 #endif
             
             Spacer(minLength: 20)

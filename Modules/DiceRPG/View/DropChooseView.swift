@@ -48,9 +48,7 @@ struct DropChooseView: View {
             .borderLessTVBottonStyle()
             .padding(4)
             .contentShape(.circle)
-#if !os(visionOS)
-            .glassEffect()
-#endif
+            .glassEffectAll()
             .opacity(selectionModel.itemId != nil ? 1.0 : 0.0)
         }
     }

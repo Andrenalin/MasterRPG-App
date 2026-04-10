@@ -208,7 +208,7 @@ private extension LinkItemListView {
                     .contentShape(.circle)
                     .frame(width: 32, height: 32)
 #if !os(visionOS)
-                    .glassEffect(.clear.interactive())
+                    .glassEffectAll(.clear.interactive())
 #endif
             }
             .borderLessTVBottonStyle()
