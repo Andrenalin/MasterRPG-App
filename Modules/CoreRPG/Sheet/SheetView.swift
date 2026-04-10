@@ -16,7 +16,11 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     let linkTypes: LinkType.Type
     
     @Environment(\.colorScheme) private var colorScheme
-    
+
+    private var entryDataEditable: (any EntryDataEditable)? {
+        model.entryDataEditable(for: model.sheetModel.source)
+    }
+
     public var body: some View {
         if model.isAtMaxDepth {
             // Maximum nesting depth reached - show fallback
@@ -27,7 +31,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .listRowBackground(rowColor(for: model.sheetModel.level))
                 .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-        } else if let entryDataEditable = model.entryDataEditable(for: model.sheetModel.source), model.sheetModel.sheetType == .edit {
+        } else if let entryDataEditable, model.sheetModel.sheetType == .edit {
             InlineEditorView(entryDataEditable: entryDataEditable, model: model, entry: model.sheetModel)
         } else {
             if model.sheetModel.showHeader || isEditor {
@@ -66,7 +70,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                             LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
                         }
                         ForEach(model.sheetModel.inlineEntries) { inlineEntry in
-                            SheetEntryView(root: root, model: model, entry: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
+                            SheetEntryView(model: model, entry: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
                         }
                     }
                     .font(.subheadline)
@@ -77,7 +81,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             }
             
             ForEach(model.filteredEntries) { entry in
-                SheetEntryView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
+                SheetEntryView(model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
 #if !os(tvOS)
                     .applyIf(!isEditor && shouldShowDragDrop) {
                         $0.draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink())
@@ -111,16 +115,11 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             .listRowBackground(Color.clear)        
     }
     
-    func relocate(indexSet: IndexSet, to: Int) -> (IndexSet, Int) {
-        let inline = model.filteredEntries.reduce(0) { $0 + $1.inlineEntries.count }
-        return (IndexSet(indexSet.map { $0 - inline }), to - inline)
-    }
-
     var shouldShowDragDrop: Bool {
         #if os(tvOS)
-        return false
+        false
         #else
-        return true
+        true
         #endif
     }
 
@@ -135,21 +134,22 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         }
         #endif
     }
+
+    func addNewEntry() {
+        guard let entryId = model.addNewEntry(to: model.sheetModel.source) else { return }
+        withAnimation {
+            model.setCurrentItem(source: model.sheetModel.source, entryId: entryId)
+            model.setCurrentEntryId(source: model.sheetModel.source, entryId: entryId)
+            model.add(entryId: entryId)
+            model.updateParent()
+        } completion: {
+            model.setScrollEntryId(source: model.sheetModel.source, entryId: entryId)
+        }
+    }
     
     @ViewBuilder var plusButton: some View {
-        if model.entryDataEditable(for: model.sheetModel.source) != nil {
-            Button {
-                if let entryId = model.addNewEntry(to: model.sheetModel.source) {
-                    withAnimation {
-                        model.setCurrentItem(source: model.sheetModel.source, entryId: entryId)
-                        model.setCurrentEntryId(source: model.sheetModel.source, entryId: entryId)
-                        model.add(entryId: entryId)
-                        model.updateParent()
-                    } completion: {
-                        model.setScrollEntryId(source: model.sheetModel.source, entryId: entryId)
-                    }
-                }
-            } label: {
+        if entryDataEditable != nil {
+            Button(action: addNewEntry) {
                 Label {
                     Text("Add Entry", bundle: .module)
                 } icon: {
@@ -169,7 +169,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     }
     
     @ViewBuilder var dropButton: some View {
-        if model.entryDataEditable(for: model.sheetModel.source) != nil {
+        if entryDataEditable != nil {
             Label {
                 Text("Drop Here", bundle: .module)
             } icon: {

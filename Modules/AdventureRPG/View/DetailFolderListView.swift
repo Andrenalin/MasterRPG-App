@@ -9,6 +9,7 @@ struct DetailFolderListView: View {
     let root: AdventureRootModel
     let model: AdventureModel
 
+    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
@@ -87,6 +88,13 @@ struct DetailFolderListView: View {
             EmptyView()
         } entryEditor: {
             EntryEditorView(editController: root.editController, model: model, linkControllable: root.linkControllable, linkTypes: LinkAdventureModuleTransferable.self)
+        }
+        .overlay {
+            if openFileWindowModel.showItem {
+                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
+                    openFileWindowModel.showItem = false
+                }
+            }
         }
     }
 

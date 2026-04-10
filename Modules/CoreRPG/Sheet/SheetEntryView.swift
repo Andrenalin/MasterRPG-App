@@ -3,15 +3,13 @@
 import SwiftUI
 
 struct SheetEntryView<LinkType: LinkDataTransferable>: View {
-    init(root: ItemRootController, model: TableSheetModel, entry: SheetModel, isEditor: Bool, linkTypes: LinkType.Type) {
-        self.root = root
+    init(model: TableSheetModel, entry: SheetModel, isEditor: Bool, linkTypes: LinkType.Type) {
         self.model = model
         self.entry = entry
         self.isEditor = isEditor
         self.linkTypes = linkTypes
     }
-    
-    let root: ItemRootController
+
     let model: TableSheetModel
     let entry: SheetModel
     let isEditor: Bool
@@ -21,13 +19,17 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
-    
+
+    private var viewControllable: (any ViewControllable)? {
+        model.viewControllable(for: entry.destination)
+    }
+
     var body: some View {
         VStack(alignment: .leading) {
             ForEach(entry.inlineEntries) { inlineSheet in
                 switch inlineSheet.sheetType {
                 case .photoInline:
-                    root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
+                    viewControllable?.rowViewer(source: entry.source, destination: entry.destination)
                         .frame(height: 96)
                         .frame(maxWidth: .infinity, alignment: .center)
                 default:
@@ -49,15 +51,15 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                         .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entry.level * 4), bottom: 8, trailing: 8))
                     
                 case .dice:
-                    root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
+                    viewControllable?.rowViewer(source: entry.source, destination: entry.destination)
                 case .pdf, .photo, .space, .weather:
-                    root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
+                    viewControllable?.rowViewer(source: entry.source, destination: entry.destination)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowBackground(Color.clear)
                         .frame(height: 256)
                 case .audioInline:
                     HStack {
-                        root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
+                        viewControllable?.rowViewer(source: entry.source, destination: entry.destination)
                         LinkHighlightTextView(model: model.linkTextModel(for: .entry(entry.id), text: text, shareResults: shareResult))
                     }
                     .font(.body)
@@ -75,9 +77,9 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             ForEach(entry.inlineEntries) { inlineSheet in
                 switch inlineSheet.sheetType {
                 case .dice:
-                    root.viewControllable.rowViewer(source: inlineSheet.source, destination: entry.destination)
+                    viewControllable?.rowViewer(source: inlineSheet.source, destination: entry.destination)
                 case .pdf:
-                    root.viewControllable.rowViewer(source: inlineSheet.source, destination: entry.destination)
+                    viewControllable?.rowViewer(source: inlineSheet.source, destination: entry.destination)
                 default:
                     EmptyView()
                 }
@@ -100,7 +102,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             .contextMenu {
                 editButton(onlyIcon: false)
                 if let entryEditable = model.entryDataEditable(for: entry.source) {
-                    SheetContextMenuView(root: root, entryEditable: entryEditable, model: model, entry: entry)
+                    SheetContextMenuView(entryEditable: entryEditable, model: model, entry: entry)
                 }
                 deleteButton(onlyIcon: false)
             }
@@ -109,7 +111,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         
         
         ForEach(entry.sheetIds, id: \.self) { sheetId in
-            if let sheetModel = model.sheets[sheetId] {
+            if let sheetModel = model.sheets[sheetId], let root = model.rootController(for: sheetId.typeId) {
                 SheetView(root: root, model: sheetModel, isEditor: isEditor, linkTypes: linkTypes)
             }
         }

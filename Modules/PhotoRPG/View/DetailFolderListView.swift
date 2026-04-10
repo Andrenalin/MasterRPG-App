@@ -7,6 +7,7 @@ struct DetailFolderListView: View {
     let root: PhotoRootModel
     let model: PhotoModel
     
+    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     
@@ -82,6 +83,13 @@ struct DetailFolderListView: View {
             EmptyView()
         } entryEditor: {
             EmptyView()
+        }
+        .overlay {
+            if openFileWindowModel.showItem {
+                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
+                    openFileWindowModel.showItem = false
+                }
+            }
         }
     }
 }

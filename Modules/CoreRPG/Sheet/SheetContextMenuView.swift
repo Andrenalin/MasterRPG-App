@@ -3,14 +3,12 @@
 import SwiftUI
 
 struct SheetContextMenuView: View {
-    init(root: ItemRootController, entryEditable: any EntryDataEditable, model: TableSheetModel, entry: SheetModel) {
-        self.root = root
+    init(entryEditable: any EntryDataEditable, model: TableSheetModel, entry: SheetModel) {
         self.entryEditable = entryEditable
         self.model = model
         self.entry = entry
     }
-    
-    let root: ItemRootController
+
     let entryEditable: any EntryDataEditable
     let model: TableSheetModel
     let entry: SheetModel

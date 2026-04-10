@@ -527,6 +527,11 @@ public final class TableSheetModel: Sendable {
         editControllable(for: source)?.editorModel.hasChangedEntries ?? 0
     }
 
+    /// Check if the editor has any changes (boolean for more efficient onChange observation)
+    func hasAnyChanges(for source: ItemRowModel) -> Bool {
+        hasChangedEntries(for: source) > 0
+    }
+
     /// Move an item/entry into a new parent
     func moveItem(itemId: UUID, entryId: UUID, into destination: ItemRowModel) -> Bool {
         guard let editable = entryDataEditable(for: destination) else { return false }
