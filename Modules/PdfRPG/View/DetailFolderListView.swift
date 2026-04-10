@@ -84,7 +84,7 @@ struct DetailFolderListView: View {
         } overlay: {
             EmptyView()
         } entryEditor: {
-            EntryEditorView(editController: root.editController, model: model, linkTypes: LinkPdfModuleTransferable.self)
+            EntryEditorView(editController: root.editController, model: model, linkControllable: root.linkControllable, linkTypes: LinkPdfModuleTransferable.self)
         }
         .overlay {
             if openFileWindowModel.showItem {

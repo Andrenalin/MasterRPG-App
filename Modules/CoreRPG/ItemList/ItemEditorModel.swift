@@ -15,6 +15,7 @@ public final class ItemEditorModel: Sendable {
 
     public internal(set) var currentItemId: UUID?
     public var currentEntryId: UUID?
+    public internal(set) var currentModule: NetworkModules?
     public var scrollEntryId: UUID?
 
     public var hasChangedEntries: Int = 0
@@ -31,6 +32,7 @@ public final class ItemEditorModel: Sendable {
         }
         currentItemId = nil
         currentEntryId = nil
+        currentModule = nil
         cacheItemListModel.resetItemLink()
     }
 }
