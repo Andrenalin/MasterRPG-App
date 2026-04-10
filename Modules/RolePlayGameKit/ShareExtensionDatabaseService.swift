@@ -33,14 +33,7 @@ public final class ShareExtensionDatabaseService {
     public private(set) var batchContext: NSManagedObjectContext?
     public private(set) var container: NSPersistentContainer?
     public private(set) var isReady = false
-    
-    // Lightweight data controllers - minimal overhead for share extension
-//    public private(set) var photoDataController: LightDataController?
-//    public private(set) var mapDataController: LightDataController?
-//    public private(set) var adventureDataController: LightDataController?
-//    public private(set) var weatherDataController: LightDataController?
-//    public private(set) var characterDataController: LightDataController?
-    
+        
     private let useCloudKit: Bool
     private var persistence: CoreDataPersistenceController?
     
@@ -84,27 +77,9 @@ public final class ShareExtensionDatabaseService {
         self.batchContext = model.batchContext
         self.container = model.container
         
-        // Initialize lightweight data controllers
-        try await setupDataControllers()
-        
         self.isReady = true
     }
     
-    // MARK: - Data Controller Setup
-    
-    private func setupDataControllers() async throws {
-        guard let context else {
-            throw ShareExtensionError.contextNotAvailable
-        }
-        
-        // Create lightweight data controllers for each module
-        // These only handle Core Data operations without the full root model infrastructure
-//        photoDataController = LightDataController(context: context, module: .photo)
-//        mapDataController = LightDataController(context: context, module: .map)
-//        adventureDataController = LightDataController(context: context, module: .adventure)
-//        weatherDataController = LightDataController(context: context, module: .weather)
-//        characterDataController = LightDataController(context: context, module: .value)
-    }
     
     // MARK: - Module Management
     
