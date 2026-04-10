@@ -20,9 +20,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
 
-    private var viewControllable: (any ViewControllable)? {
-        model.viewControllable(for: entry.destination)
-    }
+    @State private var viewControllable: (any ViewControllable)?
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -99,17 +97,20 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                     }
                 }
             }
-            .contextMenu {
-                editButton(onlyIcon: false)
-                if let entryEditable = model.entryDataEditable(for: entry.source) {
-                    SheetContextMenuView(entryEditable: entryEditable, model: model, entry: entry)
-                }
-                deleteButton(onlyIcon: false)
-            }
         }
 #endif
-        
-        
+        .contextMenuAll {
+            editButton(onlyIcon: false)
+            if let entryEditable = model.entryDataEditable(for: entry.source) {
+                SheetContextMenuView(entryEditable: entryEditable, model: model, entry: entry)
+            }
+            deleteButton(onlyIcon: false)
+        }
+        .task(id: entry.destination) {
+            viewControllable = model.viewControllable(for: entry.destination)
+        }
+
+
         ForEach(entry.sheetIds, id: \.self) { sheetId in
             if let sheetModel = model.sheets[sheetId], let root = model.rootController(for: sheetId.typeId) {
                 SheetView(root: root, model: sheetModel, isEditor: isEditor, linkTypes: linkTypes)
@@ -147,9 +148,7 @@ private extension SheetEntryView {
             }
         }
         .borderLessTVBottonStyle()
-#if !os(tvOS)
-        .keyboardShortcut("e", modifiers: .shift)
-#endif
+        .keyboardShortcutAll("e", modifiers: .shift)
     }
     
     func deleteButton(onlyIcon: Bool) -> some View {
@@ -172,9 +171,7 @@ private extension SheetEntryView {
             }
         }
         .borderLessTVBottonStyle()
-#if !os(tvOS)
-        .keyboardShortcut("r", modifiers: .shift)
-#endif
+        .keyboardShortcutAll("r", modifiers: .shift)
     }
     
     func rowColor(for level: Int) -> Color {

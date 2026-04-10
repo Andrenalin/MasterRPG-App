@@ -17,9 +17,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     
     @Environment(\.colorScheme) private var colorScheme
 
-    private var entryDataEditable: (any EntryDataEditable)? {
-        model.entryDataEditable(for: model.sheetModel.source)
-    }
+    @State private var entryDataEditable: (any EntryDataEditable)?
 
     public var body: some View {
         if model.isAtMaxDepth {
@@ -83,7 +81,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             ForEach(model.filteredEntries) { entry in
                 SheetEntryView(model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
 #if !os(tvOS)
-                    .applyIf(!isEditor && shouldShowDragDrop) {
+                    .applyIf(!isEditor) {
                         $0.draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink())
                     }
 #endif
@@ -112,15 +110,10 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         Color.accentColor.opacity(0.3)
             .frame(height: 8)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            .listRowBackground(Color.clear)        
-    }
-    
-    var shouldShowDragDrop: Bool {
-        #if os(tvOS)
-        false
-        #else
-        true
-        #endif
+            .listRowBackground(Color.clear)
+            .task(id: model.sheetModel.source) {
+                entryDataEditable = model.entryDataEditable(for: model.sheetModel.source)
+            }
     }
 
     func rowColor(for level: Int) -> Color {

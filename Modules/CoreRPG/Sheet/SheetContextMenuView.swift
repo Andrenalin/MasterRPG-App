@@ -51,9 +51,7 @@ private extension SheetContextMenuView {
                 Image(systemName: "doc.on.doc")
             }
         }
-#if !os(tvOS)
-        .keyboardShortcut("d", modifiers: .shift)
-#endif
+        .keyboardShortcutAll("d", modifiers: .shift)
     }
     
     var linkButton: some View {
@@ -121,9 +119,7 @@ private extension SheetContextMenuView {
             }
         }
         .disabled(model.sheetModel.entries.first?.id == entry.id)
-#if !os(tvOS)
-        .keyboardShortcut(.upArrow, modifiers: [.command, .option])
-#endif
+        .keyboardShortcutAll(.upArrow, modifiers: [.command, .option])
     }
 
     var moveDownButton: some View {
@@ -140,8 +136,6 @@ private extension SheetContextMenuView {
             }
         }
         .disabled(model.sheetModel.entries.last?.id == entry.id)
-#if !os(tvOS)
-        .keyboardShortcut(.downArrow, modifiers: [.command, .option])
-#endif
+        .keyboardShortcutAll(.downArrow, modifiers: [.command, .option])
     }
 }

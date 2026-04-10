@@ -49,11 +49,7 @@ private extension TableRootSheet {
             }
         }
     }
-    
-    var shouldShowCloseButton: Bool {
-        valueFor(iOS: (!appGameStateModel.isGameRunning && appSizeModel.mode == .compact) || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
-    }
-    
+
     var closeButton: some View {
         Button {
             if let dismissAction {
