@@ -73,8 +73,6 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
             .frame(minWidth: 350, minHeight: 400)
             .handlesExternalEvents(preferring: [], allowing: [])
             .sceneTracker(for: SceneId.sceneId(for: module))
-            .tint(module.tint)
-            .accentColor(module.tint)
             .environmentSetUp(model)
             .environment(\.networkActions, model.gameRoot.networkActions())
             .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)

@@ -35,7 +35,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
                 // Single stable ToolbarItem — avoids _ConditionalContent in the preference tree
                 // which would cause a deep AG graph traversal on every navigation transition.
                 ToolbarItem(placement: .primaryAction) {
-                    if listDisplayModel.isSelectionMode {
+                    if listDisplayModel.isSelectionMode && modal == false {
                         MenuSelectionButtonView(listDisplayModel: listDisplayModel)
 #if os(visionOS)
                             .foregroundStyle(.primary)
@@ -109,13 +109,15 @@ private extension ToolbarItemListViewModifier {
         // tree stable across selection mode changes and navigation transitions.
         MenuSelectionButtonView(listDisplayModel: listDisplayModel)
             .opacity(!listDisplayModel.isSelectionMode && modal == false ? 1 : 0)
-        ControlGroup {
-            addItemButton(for: .item)
-            addItemButton(for: .folder)
-                .disabled(parentModel?.category == root.itemControllable.collectionCategory)
-            addItemButton(for: .collection)
+        if parentModel == nil && modal == false {
+            ControlGroup {
+                addItemButton(for: .item)
+                addItemButton(for: .folder)
+                    .disabled(parentModel?.category == root.itemControllable.collectionCategory)
+                addItemButton(for: .collection)
+            }
+            .opacity(modal == false ? 1 : 0)
         }
-        .opacity(modal == false ? 1 : 0)
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
             MediumDisplayModeToggle(listDisplayModel: listDisplayModel)
@@ -127,8 +129,10 @@ private extension ToolbarItemListViewModifier {
                 FolderModeToggle(listDisplayModel: listDisplayModel)
             }
 
-            ControlGroup {
-                toggleFolder()
+            if parentModel == nil && modal == false {
+                ControlGroup {
+                    toggleFolder()
+                }
             }
         }
     }

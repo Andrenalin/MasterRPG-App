@@ -47,6 +47,7 @@ public struct LinkItemListView: View {
                 }
 
                 contentView
+                    .tint(root.configurable.module.tint)
                     .onAppear {
                         root.folderLinkControllable.resetItemOnce()
                         withAnimation { root.folderLinkControllable.resetFilter() }
