@@ -89,8 +89,6 @@
 		8E190DA22B8F6C190084B0F4 /* MasterRPGApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC4E48928DDAAF300D0279F /* MasterRPGApp.swift */; };
 		8E190DA62B8F6C340084B0F4 /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		8E190DA82B9008630084B0F4 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */; };
-		8E33767D2DB1140B00F9C14C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E9812A22AEE09E300B42CF5 /* WidgetKit.framework */; };
-		8E33767E2DB1140B00F9C14C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E9812A42AEE09E300B42CF5 /* SwiftUI.framework */; };
 		8E39ABFB2ED1BD8700076078 /* PhotoRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; };
 		8E39ABFC2ED1BD8700076078 /* PhotoRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E39ABFF2ED1BD9100076078 /* PhotoRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; };
@@ -1492,7 +1490,6 @@
 		8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		8E13A4052BCE88BB00B2FCD4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8E13A40E2BCEA66100B2FCD4 /* RPGShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RPGShare.entitlements; sourceTree = "<group>"; };
-		8E33767C2DB1140B00F9C14C /* RPGWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RPGWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CoreRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PhotoRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E49F9D92B8F654D00527E6D /* MasterRPG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MasterRPG.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1591,16 +1588,6 @@
 			);
 			target = 8E13A3FD2BCE88BB00B2FCD4 /* RPGShare */;
 		};
-		8E33768D2DB1140C00F9C14C /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-				"Temp-AppIntent.swift",
-				"TEMP-DiceRollerWidget.swift",
-				"TEMP-DiceRollerWidgetBundle.swift",
-			);
-			target = 8E33767B2DB1140B00F9C14C /* RPGWidgetExtension */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -1609,7 +1596,6 @@
 		599DCADE2E8E30C00056E46C /* GeneratorRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GeneratorRPGTests; sourceTree = "<group>"; };
 		59CE1E9D2E84F011009C6CB5 /* GameRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GameRPG; sourceTree = "<group>"; };
 		8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E0DCFC62F8722DF0045FE8D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 8E0DCFC22F8722C90045FE8D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = DiceRollerWidget; sourceTree = "<group>"; };
-		8E33767F2DB1140B00F9C14C /* RPGWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E33768D2DB1140C00F9C14C /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = RPGWidget; sourceTree = "<group>"; };
 		8E3620AE2E1A80FF00E5C99A /* CoreRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CoreRPG; sourceTree = "<group>"; };
 		8E3620DC2E1A9EAF00E5C99A /* PhotoRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PhotoRPG; sourceTree = "<group>"; };
 		8E4B274E2CD79E7D009AB4D1 /* RPGResources */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResources; sourceTree = "<group>"; };
@@ -1721,15 +1707,6 @@
 				8E0DB0142F85F09C0045FE8D /* TableRPG.framework in Frameworks */,
 				8E0DB00C2F85F09C0045FE8D /* RPGResources.framework in Frameworks */,
 				8E0DAFEC2F85F09C0045FE8D /* CoreRPG.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8E3376792DB1140B00F9C14C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				8E33767E2DB1140B00F9C14C /* SwiftUI.framework in Frameworks */,
-				8E33767D2DB1140B00F9C14C /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2196,7 +2173,6 @@
 				8EBED0952CD8EF68004E7103 /* RPGAdventuresTests.xctest */,
 				8EBED0B62CD8EF94004E7103 /* RPGGamesTests.xctest */,
 				8EBED0D72CD8EFA5004E7103 /* RPGMapsTests.xctest */,
-				8E33767C2DB1140B00F9C14C /* RPGWidgetExtension.appex */,
 				8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */,
 				8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */,
 				8E983DA62E27D057002B25C2 /* SpaceRPG.framework */,
@@ -2223,7 +2199,6 @@
 				8EC4E48028DDAAF300D0279F /* MasterRPG */,
 				8E6BC9CC2AFB0B2200E5E098 /* MasterTV */,
 				8E13A3FF2BCE88BB00B2FCD4 /* RPGShare */,
-				8E33767F2DB1140B00F9C14C /* RPGWidget */,
 				8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */,
 			);
 			path = Sources;
@@ -2591,28 +2566,6 @@
 			name = RPGShare;
 			productName = RPGShare;
 			productReference = 8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		8E33767B2DB1140B00F9C14C /* RPGWidgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 8E33768E2DB1140C00F9C14C /* Build configuration list for PBXNativeTarget "RPGWidgetExtension" */;
-			buildPhases = (
-				8E3376782DB1140B00F9C14C /* Sources */,
-				8E3376792DB1140B00F9C14C /* Frameworks */,
-				8E33767A2DB1140B00F9C14C /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				8E33767F2DB1140B00F9C14C /* RPGWidget */,
-			);
-			name = RPGWidgetExtension;
-			packageProductDependencies = (
-			);
-			productName = RPGWidgetExtension;
-			productReference = 8E33767C2DB1140B00F9C14C /* RPGWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		8E3620AC2E1A80FF00E5C99A /* CoreRPG */ = {
@@ -3394,9 +3347,6 @@
 					8E13A3FD2BCE88BB00B2FCD4 = {
 						CreatedOnToolsVersion = 15.3;
 					};
-					8E33767B2DB1140B00F9C14C = {
-						CreatedOnToolsVersion = 16.3;
-					};
 					8E3620AC2E1A80FF00E5C99A = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -3506,7 +3456,6 @@
 				8E49F9D82B8F654D00527E6D /* MasterMac */,
 				8E13A3FD2BCE88BB00B2FCD4 /* RPGShare */,
 				8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */,
-				8E33767B2DB1140B00F9C14C /* RPGWidgetExtension */,
 				8ED3AB982E2B45AE00FF3AE8 /* RolePlayGameKit */,
 				8E3620AC2E1A80FF00E5C99A /* CoreRPG */,
 				8E79C4A12E6AEE0400893928 /* AdventureRPG */,
@@ -3588,13 +3537,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				59DC213D2BD75537001140B1 /* Localizable.xcstrings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8E33767A2DB1140B00F9C14C /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3863,13 +3805,6 @@
 				8E13A4012BCE88BB00B2FCD4 /* ShareViewController.swift in Sources */,
 				8E5104E72BD23FBD00F10E87 /* PhotoSection.swift in Sources */,
 				8E5104E32BD21DE400F10E87 /* ModuleChooser.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8E3376782DB1140B00F9C14C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5436,102 +5371,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		8E33768F2DB1140C00F9C14C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = Sources/RPGWidget/RPGWidget.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 511;
-				EAGER_LINKING = YES;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SELECTED_FILES = readwrite;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Sources/RPGWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = RPGWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.0;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		8E3376902DB1140C00F9C14C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = Sources/RPGWidget/RPGWidget.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 511;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_TESTABILITY = NO;
-				ENABLE_USER_SELECTED_FILES = readwrite;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GCC_OPTIMIZATION_LEVEL = s;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Sources/RPGWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = RPGWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.0;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -7750,15 +7589,6 @@
 			buildConfigurations = (
 				8E13A40A2BCE88BB00B2FCD4 /* Debug */,
 				8E13A40B2BCE88BB00B2FCD4 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		8E33768E2DB1140C00F9C14C /* Build configuration list for PBXNativeTarget "RPGWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				8E33768F2DB1140C00F9C14C /* Debug */,
-				8E3376902DB1140C00F9C14C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
