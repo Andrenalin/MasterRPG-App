@@ -6,6 +6,7 @@ import SwiftUI
 public enum AppNavigationRouteType: Int, Codable {
     case tabbed
     case split
+    case visionSplit
     case tabbedExtSplit
     case tabbedSplit
 }
@@ -23,6 +24,8 @@ extension AppNavigationRouteType: NavigationDestination {
 #endif
         case .tabbedExtSplit:
             TabbedSplitExtNavigation()
+        case .visionSplit:
+            SplitEditorNavigation()
         case .tabbedSplit:
             TabbedSplitNavigation()
         }

@@ -50,7 +50,7 @@ struct SplitDetailView: View {
     }
     
     var selectedModule: NetworkModules {
-        isExtendedRoutes ? (appModel.selectedExtendedModule ?? .maps).module : (appModel.selectedModule ?? .game).module
+        isExtendedRoutes ? (appModel.selectedEditorModule ?? .pdfs).module : (appModel.selectedModule ?? .game).module
     }
 }
 

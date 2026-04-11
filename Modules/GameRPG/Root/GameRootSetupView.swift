@@ -7,9 +7,7 @@ struct GameRootSetupView: View {
     let root: GameRoot
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
-#if os(macOS) || os(visionOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
     
     var body: some View {
         ZStack {
@@ -21,7 +19,7 @@ struct GameRootSetupView: View {
 #if os(macOS) || os(visionOS)
                 Button {
                     withAnimation {
-                        openWindow(id: SceneId.editor.rawValue)
+                        sceneManager.openWindow(SceneId.editor)
                     }
                 } label: {
                     Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }

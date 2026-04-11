@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 struct TabbedSplitExtNavigation: View {
-    @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
+    @SceneStorage("GameRoute") private var storedTab: RootRoute = .game
     
     @Environment(AppModel.self) private var appModel
     
@@ -32,9 +32,7 @@ struct TabbedSplitExtNavigation: View {
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive { (route: RootRoute, navigator) in
             guard RootRoute.visionTabs.contains(route) else {
-                guard appModel.selectedModule != .editors else { return .immediately }
-                appModel.selectedModule = .editors
-                return .after(0.8)
+                return .immediately
             }
             if appModel.selectedModule == route {
                 return .immediately

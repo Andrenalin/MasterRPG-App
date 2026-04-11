@@ -18,7 +18,7 @@ struct TabRootView: View {
     }
     
     private var layout: AppNavigationRouteType {
-        valueFor(iOS: appSizeModel.mode == .compact ? .tabbed : .split, macOS: .tabbedSplit, tvOS: .tabbed, visionOS: .tabbedExtSplit)
+        valueFor(iOS: appSizeModel.mode == .compact ? .tabbed : .split, macOS: .tabbedSplit, tvOS: .tabbed, visionOS: .visionSplit)
     }
 }
 

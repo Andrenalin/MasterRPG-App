@@ -15,10 +15,12 @@ import SwiftUI
     
     public var navigationType: AppNavigationRouteType = .split
         
-#if os(macOS) || os(tvOS)
-    static private let defaultMode = AppModeRouteType.gameSetup
-#else
+#if os(iOS)
     static private let defaultMode = AppModeRouteType.editor
+#elseif os(visionOS)
+    static private let defaultMode = AppModeRouteType.gameVisionSetup
+#else
+    static private let defaultMode = AppModeRouteType.gameSetup
 #endif
 
 }

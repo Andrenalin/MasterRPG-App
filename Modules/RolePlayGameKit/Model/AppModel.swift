@@ -57,6 +57,7 @@ public final class AppModel: Sendable {
     // Routing models
     @ObservationIgnored public var navigator: Navigator
     var selectedModule: RootRoute? = .game
+    var selectedEditorModule: RootRoute? = .pdfs
     var selectedExtendedModule: ExtendedTabRoute? = nil
     var menuSelectedModule: NetworkModules = .game
     

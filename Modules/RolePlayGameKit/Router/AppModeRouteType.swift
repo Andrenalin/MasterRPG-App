@@ -20,6 +20,8 @@ struct AppGameTypeDestinationView: View {
             switch type {
             case .game:
                 GameFactory.rootGameView(root: appModel.gameRoot)
+            case .gameVisionSetup:
+                AppNavigationRouteType.tabbedExtSplit
             case .gameSetup:
                 GameFactory.rootSetupView(root: appModel.gameRoot)
             case .editor:
@@ -27,7 +29,6 @@ struct AppGameTypeDestinationView: View {
                     .navigationRoot(appModel.navigator)
             }
         }
-        .accentColor(.blue)
         .tint(.blue)
         .environmentActionSetUp(appModel)
     }
