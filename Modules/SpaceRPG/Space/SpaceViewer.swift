@@ -21,10 +21,7 @@ struct SpaceViewer: View {
         }
     }
 
-#if os(visionOS)
-    @Environment(WindowStateModel.self) private var windowStateModel
-    @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
 
     @Environment(\.dismiss) private var dismiss
 
@@ -261,9 +258,8 @@ private extension SpaceViewer {
             } attachments: {
                 Attachment(id: "NameBarView") {
                     Button {
-                        windowStateModel.spaceImmersiveView = false
                         Task {
-                            await dismissImmersiveSpace()
+                            await sceneManager.toggleImmersiveSpace()
                         }
                     } label: {
                         Label {

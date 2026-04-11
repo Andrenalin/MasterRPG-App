@@ -10,7 +10,7 @@ struct TableSheetView: View {
         @Bindable var model = model
 
         listContentView
-            .searchable(text: $model.searchText, placement: .automatic, prompt: Text("Find in", bundle: .module))
+            .searchable(text: $model.searchText, placement: .toolbarPrincipalAll, prompt: Text("Find in", bundle: .module))
             .onChange(of: model.searchText) { oldValue, newValue in
                 model.performSheetSearch(searchControllable: model.searchControllable, searchText: newValue)
             }

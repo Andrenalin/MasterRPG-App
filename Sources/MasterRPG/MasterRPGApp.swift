@@ -61,10 +61,17 @@ struct MasterRPGApp: App {
         AppDependencyManager.shared.add(dependency: generatorRootModel)
     }
 
+    @Environment(\.openWindow) var openWindow
+    @Environment(\.dismissWindow) var dismissWindow
+#if os(visionOS)
+    @Environment(\.openImmersiveSpace) var openImmersiveSpace
+    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
+#endif
+    
     @State private var appModel: AppModel = AppModel.shared
     
     var body: some Scene {
-        BaseWindow("Game", id: WindowIdentifier.game.rawValue) {
+        BaseWindow("Game", id: SceneId.game.rawValue) {
             InitialRootView()
 #if os(macOS)
                 .frame(minWidth: 800, minHeight: 600)
@@ -74,7 +81,22 @@ struct MasterRPGApp: App {
                 .modifier(UserSettingsViewModifier(appModel: appModel))
                 .environmentSetUp(appModel)
 #if os(visionOS)
-                .groupActivityAssociation(.primary(WindowIdentifier.game.rawValue))
+                .groupActivityAssociation(.primary(SceneId.game.rawValue))
+                .onAppear {
+                    appModel.sceneManager.setActions(
+                        openWindow: openWindow,
+                        dismissWindow: dismissWindow,
+                        openImmersiveSpace: openImmersiveSpace,
+                        dismissImmersiveSpace: dismissImmersiveSpace
+                    )
+                }
+            #else
+                .onAppear {
+                    appModel.sceneManager.setActions(
+                        openWindow: openWindow,
+                        dismissWindow: dismissWindow
+                    )
+                }
 #endif
         }
         .commands {

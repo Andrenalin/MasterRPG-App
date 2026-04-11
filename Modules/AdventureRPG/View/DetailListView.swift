@@ -102,7 +102,7 @@ struct AdventureAIAssistantButton: View {
     var body: some View {
         Button {
 #if os(visionOS) || os(macOS)
-            openWindow(id: WindowIdentifier.generateAdventure.rawValue)
+            openWindow(id: SceneId.generateAdventure.rawValue)
 #else
             navigator.navigate(to: EditorRoute.generator(model.id))
 #endif

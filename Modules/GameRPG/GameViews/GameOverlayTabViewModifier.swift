@@ -24,15 +24,28 @@ struct GameToolBarButtonView: View {
     let valueType: NetworkModules
     var alwaysSet: Bool = false
     @Binding var showType: NetworkModules
+    
+    @Environment(ScenesManager.self) private var scenesManager
 
     var body: some View {
         Button {
             withAnimation(.easeInOut) {
+#if os(macOS) || os(visionOS)
                 showType = if alwaysSet { valueType } else { (showType == valueType ? .none : valueType) }
+#else
+                if showType == valueType {
+                    showType = .none
+                }
+                showType = valueType
+#endif
             }
         } label: {
             Image(systemName: valueType.icon)
         }
+        #if os(macOS) || os(visionOS)
+        .selectedBorderedStype(isSelected: scenesManager.getSceneState(for: SceneId.sceneId(for: valueType)) == .opened)
+        #else
         .selectedBorderedStype(isSelected: showType == valueType)
+        #endif
     }
 }

@@ -21,7 +21,7 @@ struct GameRootSetupView: View {
 #if os(macOS) || os(visionOS)
                 Button {
                     withAnimation {
-                        openWindow(id: WindowIdentifier.editor.rawValue)
+                        openWindow(id: SceneId.editor.rawValue)
                     }
                 } label: {
                     Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }

@@ -16,13 +16,12 @@ struct PlayerGameScreen: View {
     @State private var infoState: NetworkModules = .none
     
 #if os(macOS) || os(visionOS)
-    @Environment(\.openWindow) private var openWindow
-    @Environment(\.dismissWindow) private var dismissWindow
-    @Environment(WindowStateModel.self) private var windowStateModel
-    
     @Environment(\.openImmersiveSpace) private var openImmersiveSpace
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
 #endif
+    
+    @Environment(ScenesManager.self) private var sceneManager
+
     @State private var diceShowOptionModel = DiceDisplayModel()
 
     var body: some View {
@@ -55,7 +54,7 @@ struct PlayerGameScreen: View {
         .onChange(of: root.networkStore.sharePlayStore.switchToImmersive) {
             Task {
                 if root.networkStore.sharePlayStore.switchToImmersive {
-                    await openImmersiveSpace(id: WindowIdentifier.spaceViewer.rawValue, value: ItemSelection(itemId: root.spaceRoot.gameControllable.currentId, entryId: nil))
+                    await openImmersiveSpace(id: SceneId.spaceViewer.rawValue, value: ItemSelection(itemId: root.spaceRoot.gameControllable.currentId, entryId: nil))
                 } else {
                     await dismissImmersiveSpace()
                 }
@@ -150,9 +149,8 @@ private extension PlayerGameScreen {
 
     func showWindow(for module: NetworkModules) {
 #if os(macOS) || os(visionOS)
-        guard !windowStateModel.openWindowState[module, default: false] else { return }
-        windowStateModel.openWindowState[module] = true
-        openWindow(id: module.linkWindowId)
+        guard sceneManager.getSceneState(for: SceneId.sceneId(for: module)) == .closed else { return }
+        sceneManager.openWindow(SceneId.sceneId(for: module))
 #endif
     }
 
@@ -170,12 +168,10 @@ private extension PlayerGameScreen {
         .onChange(of: infoState) {
             guard infoState != .none else { return }
 
-            if windowStateModel.openWindowState[infoState, default: false] {
-                windowStateModel.openWindowState[infoState] = false
-                dismissWindow(id: infoState.linkWindowId)
+            if sceneManager.getSceneState(for: SceneId.sceneId(for: infoState)) == .closed {
+                sceneManager.openWindow(SceneId.sceneId(for: infoState))
             } else {
-                windowStateModel.openWindowState[infoState] = true
-                openWindow(id: infoState.linkWindowId)
+                sceneManager.dismissWindow(SceneId.sceneId(for: infoState))
             }
             infoState = .none
         }

@@ -21,6 +21,15 @@ extension SearchFieldPlacement {
 #endif
     }
 
+    public static var toolbarPrincipalAll: SearchFieldPlacement {
+    #if os(tvOS)
+            .automatic
+    #else
+            .toolbarPrincipal
+    #endif
+        }
+
+    
     public static var navigationBarDrawerAll: SearchFieldPlacement {
 #if os(tvOS)
         .automatic

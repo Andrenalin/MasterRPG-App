@@ -17,7 +17,7 @@ struct WindowVisionList: Scene {
     var body: some Scene {
         let defaultSize = Size3D(width: 1.5, height: 1, depth: 0.4)
 
-        Window("Settings", id: WindowIdentifier.settings.rawValue) {
+        Window("Settings", id: SceneId.settings.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 NavigationStack {
                     SettingsView(store: appModel)
@@ -28,7 +28,7 @@ struct WindowVisionList: Scene {
             }
         }
         .windowResizability(.contentSize)
-        .defaultWindowPlacementAll(.below(WindowIdentifier.game.rawValue))
+        .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
         
         WindowGroup(id: "SpaceVolume", for: UUID.self) { $id in
             if let id {
@@ -40,14 +40,14 @@ struct WindowVisionList: Scene {
         .windowStyle(.volumetric)
         .defaultSize(defaultSize, in: .meters)
 
-        ImmersiveSpace(id: WindowIdentifier.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
+        ImmersiveSpace(id: SceneId.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
-                    .environment(appModel.windowStateModel)
-                    .groupActivityAssociation(selection != nil ? .primary(WindowIdentifier.spaceViewer.rawValue) : nil)
+                    .sceneTracker(for: SceneId.spaceViewer)
+                    .groupActivityAssociation(selection != nil ? .primary(SceneId.spaceViewer.rawValue) : nil)
             }
         }
-        .defaultWindowPlacementAll( .above(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue))
+        .defaultWindowPlacementAll( .above(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue))
         //.windowStyle(.volumetric)
         .defaultSize(defaultSize, in: .meters)
         .immersionStyle(selection: $immersionState, in: .mixed)

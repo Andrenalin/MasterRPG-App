@@ -72,9 +72,7 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
             .resetAppColorScheme()
             .frame(minWidth: 350, minHeight: 400)
             .handlesExternalEvents(preferring: [], allowing: [])
-            .onDisappear {
-                model.windowStateModel.openWindowState[module] = false
-            }
+            .sceneTracker(for: SceneId.sceneId(for: module))
             .tint(module.tint)
             .accentColor(module.tint)
             .environmentSetUp(model)

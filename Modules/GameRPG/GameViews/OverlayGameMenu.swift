@@ -10,9 +10,7 @@ struct OverlayGameMenu: View {
     let isMaster: Bool
     
     @Environment(GameScreenModel.self) private var gameScreenModel
-#if !os(tvOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     
     var body: some View {
@@ -158,7 +156,7 @@ private extension OverlayGameMenu {
     var secondOptionView: some View {
         Button {
 #if os(macOS) || os(visionOS)
-            openWindow(id: WindowIdentifier.logs.rawValue)
+            sceneManager.openWindow(SceneId.logs)
 #else
             withAnimation { gameScreenModel.resetToSettingsTab() }
 #endif
@@ -211,9 +209,11 @@ private extension OverlayGameMenu {
             .padding(.trailing, marginWidth)
             .onChange(of: gameScreenModel.showGameType) {
                 guard gameScreenModel.showGameType != .none && gameScreenModel.showGameType != .game else { return }
-#if !os(tvOS)
-                openWindow(id: gameScreenModel.showGameType.linkWindowId)
-#endif
+                if sceneManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
+                    sceneManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+                } else {
+                    sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+                }
             }
     }
     
@@ -242,9 +242,11 @@ private extension OverlayGameMenu {
         .padding(.trailing, marginWidth)
         .onChange(of: gameScreenModel.showGameType) {
             guard gameScreenModel.showGameType != .none && gameScreenModel.showGameType != .game else { return }
-#if !os(tvOS)
-            openWindow(id: gameScreenModel.showGameType.linkWindowId)
-#endif
+            if sceneManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
+                sceneManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+            } else {
+                sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+            }
         }
     }
     

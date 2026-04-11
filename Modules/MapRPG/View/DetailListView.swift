@@ -75,7 +75,7 @@ struct MapEditorButton: View {
     var body: some View {
         Button {
 #if os(visionOS) || os(macOS)
-            openWindow(id: WindowIdentifier.mapEditor.rawValue)
+            openWindow(id: SceneId.mapEditor.rawValue)
 #else
             navigator.navigate(to: EditorRoute.mapEditor(model.id))
 #endif
@@ -99,7 +99,7 @@ struct EditTileButton: View {
     var body: some View {
         Button {
 #if os(visionOS) || os(macOS)
-            openWindow(id: WindowIdentifier.mapEditor.rawValue)
+            openWindow(id: SceneId.mapEditor.rawValue)
 #else
             navigator.navigate(to: EditorRoute.mapEditor(model.id))
 #endif

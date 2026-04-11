@@ -27,7 +27,7 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.appGameStateModel)
             .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)
-            .environment(appModel.windowStateModel)
+            .environment(appModel.sceneManager)
             .environment(appModel.appNavigationModel)
         
             // Module roots

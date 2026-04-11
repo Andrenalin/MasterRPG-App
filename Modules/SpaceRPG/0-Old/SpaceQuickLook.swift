@@ -14,11 +14,7 @@ struct SpaceQuickLook: View {
     let gameMode: Bool
     let dismiss: (() -> Void)?
         
-#if os(visionOS)
-    @Environment(WindowStateModel.self) private var windowStateModel
-    @Environment(\.openImmersiveSpace) private var openImmersiveSpace
-    @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
     
     @State private var selected: URL?
     
@@ -44,12 +40,7 @@ struct SpaceQuickLook: View {
     func loader() {
 #if os(visionOS)
         Task {
-            if windowStateModel.spaceImmersiveView {
-                await dismissImmersiveSpace()
-            }
-            
-            await openImmersiveSpace(id: WindowIdentifier.spaceViewer.rawValue, value: item)
-            windowStateModel.spaceImmersiveView = true
+            await sceneManager.toggleImmersiveSpace()
         }
 #endif
     }

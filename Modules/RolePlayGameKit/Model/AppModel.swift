@@ -37,10 +37,11 @@ public final class AppModel: Sendable {
     
     // App State Models
     @ObservationIgnored public let appGameStateModel: AppGameStateModel
+    @ObservationIgnored public let sceneManager: ScenesManager
+
     @ObservationIgnored public let optionKeyDownModel: OptionKeyDownModel
     @ObservationIgnored public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
     @ObservationIgnored public let settingsModel: AppSettingsModel
-    @ObservationIgnored public let windowStateModel: WindowStateModel
     
     // Database
     public var coreDataInitModel: CoreDataInitModel?
@@ -85,9 +86,9 @@ public final class AppModel: Sendable {
     @MainActor public init() {
         let gameStateModel = AppGameStateModel()
         self.appGameStateModel = gameStateModel
+        self.sceneManager = ScenesManager()
         self.optionKeyDownModel = OptionKeyDownModel()
         self.settingsModel = AppSettingsModel()
-        self.windowStateModel = WindowStateModel()
         
         self.inAppController = InAppController(model: inAppModel)
         
@@ -224,44 +225,44 @@ extension AppModel {
     public func windowPlacement(for module: NetworkModules) -> WindowPlacementPosition {
         switch module {
         case .none, .setting, .editor, .game, .generator, .search:
-                return .leading(WindowIdentifier.game.rawValue)
+                return .leading(SceneId.game.rawValue)
             case .photo:
                 if appGameStateModel.gameModus == .player {
-                    return .leading(WindowIdentifier.game.rawValue, fallback: nil)
+                    return .leading(SceneId.game.rawValue, fallback: nil)
                 }
                 return
-                    .above(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                    .above(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue)
             case .map:
-                return .trailing(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                return .trailing(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue)
             case .table:
-                return .leading(WindowIdentifier.game.rawValue)
+                return .leading(SceneId.game.rawValue)
             case .adventure:
-                return .trailing(WindowIdentifier.game.rawValue)
+                return .trailing(SceneId.game.rawValue)
             case .dice:
                 if appGameStateModel.gameModus == .player {
-                    return .trailing(NetworkModules.value.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                    return .trailing(NetworkModules.value.linkWindowId, fallback: SceneId.game.rawValue)
                 }
-                return .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                return .below(NetworkModules.table.linkWindowId, fallback: SceneId.game.rawValue)
             case .weather:
-                return .above(NetworkModules.map.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                return .above(NetworkModules.map.linkWindowId, fallback: SceneId.game.rawValue)
             case .value:
                 if appGameStateModel.gameModus == .player {
-                    return .trailing(WindowIdentifier.game.rawValue, fallback: nil)
+                    return .trailing(SceneId.game.rawValue, fallback: nil)
                 }
-                return .above(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                return .above(NetworkModules.table.linkWindowId, fallback: SceneId.game.rawValue)
 
             case .audio:
                 if appGameStateModel.gameModus == .player {
-                    return .leading(NetworkModules.photo.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                    return .leading(NetworkModules.photo.linkWindowId, fallback: SceneId.game.rawValue)
                 }
-                return .below(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                return .below(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue)
             case .pdf:
-                return .leading(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                return .leading(NetworkModules.table.linkWindowId, fallback: SceneId.game.rawValue)
             case .space:
                 if appGameStateModel.gameModus == .player {
-                    return .leading(NetworkModules.photo.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                    return .leading(NetworkModules.photo.linkWindowId, fallback: SceneId.game.rawValue)
                 }
-                return .below(NetworkModules.map.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+                return .below(NetworkModules.map.linkWindowId, fallback: SceneId.game.rawValue)
         @unknown default:
             fatalError()
         }
