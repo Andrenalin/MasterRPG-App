@@ -84,7 +84,7 @@ struct ClearDiceHistoryIntent: AppIntent {
     }
 }
 
-/// App Intent for rolling favorite dice by ID
+/// App Intent for rolling favorite dice by opening the app with URL
 struct RollFavoriteDiceIntent: AppIntent {
     static let title: LocalizedStringResource = "Roll Favorite Dice"
     static let description = IntentDescription("Roll a favorite dice configuration")
@@ -105,52 +105,16 @@ struct RollFavoriteDiceIntent: AppIntent {
             return .result()
         }
         
-        // Load favorites to find the dice model
-        let config = DiceConfiguration.loadFromUserDefaults()
-        guard let favorite = config.favoriteDice.first(where: { $0.diceModel.id == uuid }) else {
+        // Create URL to open app and roll this dice
+        // Format: RPG://DICE/0/{itemId}/roll
+        let urlString = "\(URL.appScheme)://\(NetworkModules.dice.token)/0/\(uuid.uuidString)/roll"
+        
+        guard let url = URL(string: urlString) else {
             return .result()
         }
         
-        // Roll the dice
-        let diceModel = favorite.diceModel
-        let rolledDice = diceModel.dice.map { $0.role(resetResults: true, reroleOptions: diceModel.rerollOptions) }
-        
-        // Calculate result
-        let values = rolledDice.compactMap { $0.result.first }.map { String($0) }.joined(separator: ",")
-        let sum = rolledDice.compactMap { $0.result.first }.reduce(0, +)
-        
-        // Create result model
-        let rollResult = DiceResultModel(
-            diceModel: diceModel,
-            result: .rolled,
-            values: values,
-            sum: sum,
-            checked: false,
-            timeStamp: Date()
-        )
-        
-        // Save to configuration
-        var updatedConfig = DiceConfiguration.loadFromUserDefaults()
-        updatedConfig.lastRoll = rollResult
-        updatedConfig.selectedDice = diceModel
-        updatedConfig.save()
-        
-        // Reload widgets
-        WidgetCenter.shared.reloadAllTimelines()
-        
-        // Update Live Activity if game is active
-        await startLiveActivityIfNeeded(with: rollResult)
-        
-        return .result()
-    }
-    
-    private func startLiveActivityIfNeeded(with result: DiceResultModel) async {
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
-        
-        if isGameActive {
-            await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
-        }
+        // Open the app with this URL - the app will handle the roll
+        return .result(opensIntent: OpenURLIntent(url))
     }
 }
 

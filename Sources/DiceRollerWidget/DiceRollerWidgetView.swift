@@ -213,6 +213,7 @@ struct DiceRollerWidgetView: View {
                     .padding(.vertical, 4)
                 }
                 .buttonStyle(.plain)
+                .invalidatableContent() // iOS 18: Auto-updates on tap
             }
         }
     }

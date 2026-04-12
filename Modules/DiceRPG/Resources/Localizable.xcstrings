@@ -157,6 +157,27 @@
         }
       }
     },
+    "4-sided die" : {
+
+    },
+    "6-sided die" : {
+
+    },
+    "8-sided die" : {
+
+    },
+    "10-sided die" : {
+
+    },
+    "12-sided die" : {
+
+    },
+    "20-sided die" : {
+
+    },
+    "100-sided die" : {
+
+    },
     "Add" : {
       "localizations" : {
         "de" : {
@@ -399,6 +420,27 @@
         }
       }
     },
+    "D4" : {
+
+    },
+    "D6" : {
+
+    },
+    "D8" : {
+
+    },
+    "D10" : {
+
+    },
+    "D12" : {
+
+    },
+    "D20" : {
+
+    },
+    "D100" : {
+
+    },
     "Dice" : {
       "localizations" : {
         "de" : {
@@ -408,6 +450,12 @@
           }
         }
       }
+    },
+    "Dice History" : {
+
+    },
+    "Dice Type" : {
+
     },
     "Drop %@" : {
       "localizations" : {
@@ -761,7 +809,16 @@
         }
       }
     },
+    "Roll a dice and show the result" : {
+
+    },
     "Roll a specific dice from your collection" : {
+
+    },
+    "Roll D6" : {
+
+    },
+    "Roll D20" : {
 
     },
     "Roll Dice" : {
@@ -850,6 +907,9 @@
         }
       }
     },
+    "Show Dice History" : {
+
+    },
     "Show Dice in Space" : {
       "localizations" : {
         "de" : {
@@ -859,6 +919,9 @@
           }
         }
       }
+    },
+    "Show recent dice rolls" : {
+
     },
     "Special Options" : {
       "localizations" : {
