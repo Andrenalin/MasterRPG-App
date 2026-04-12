@@ -220,19 +220,21 @@ struct DiceRollerWidgetView: View {
     private var favoriteDiceGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
             ForEach(entry.configuration.favoriteDice.prefix(6)) { favorite in
-                // For now, use a simple button that will be enhanced with App Intents later
-                VStack(spacing: 2) {
-                    if let firstDie = favorite.diceModel.dice.first {
-                        dieImageView(firstDie, size: 32, sides: firstDie.die.max)
+                Button(intent: RollFavoriteDiceIntent(diceId: favorite.diceModel.id)) {
+                    VStack(spacing: 2) {
+                        if let firstDie = favorite.diceModel.dice.first {
+                            dieImageView(firstDie, size: 32, sides: firstDie.die.max)
+                        }
+                        
+                        Text(favorite.name)
+                            .font(.system(size: 8))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                     }
-                    
-                    Text(favorite.name)
-                        .font(.system(size: 8))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
+                .buttonStyle(.plain)
             }
         }
     }

@@ -34,7 +34,7 @@ struct DiceRollerLiveActivity: Widget {
                 }
                 
                 DynamicIslandExpandedRegion(.bottom) {
-                    quickRollButtons
+                    favoriteDiceButtons
                         .padding(.top, 8)
                 }
             } compactLeading: {
@@ -101,6 +101,36 @@ struct DiceRollerLiveActivity: Widget {
         }
     }
 
+    @ViewBuilder private var favoriteDiceButtons: some View {
+        let config = DiceConfiguration.loadFromUserDefaults()
+        
+        if config.favoriteDice.isEmpty {
+            // Fall back to quick roll if no favorites
+            quickRollButtons
+        } else {
+            // Show favorite dice (up to 6)
+            HStack(spacing: 12) {
+                ForEach(config.favoriteDice.prefix(6)) { favorite in
+                    Button(intent: RollFavoriteDiceIntent(diceId: favorite.diceModel.id)) {
+                        VStack(spacing: 2) {
+                            if let firstDie = favorite.diceModel.dice.first {
+                                Image(systemName: diceSymbol(for: firstDie.die.max))
+                                    .font(.system(size: 14))
+                            }
+                            Text(favorite.name)
+                                .font(.system(size: 8))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.white)
+                }
+            }
+        }
+    }
+    
     private var quickRollButtons: some View {
         HStack(spacing: 12) {
             ForEach([IntentDiceType.d4, .d6, .d8, .d10, .d12, .d20], id: \.self) { diceType in
@@ -180,27 +210,58 @@ struct DiceRollerLiveActivityView: View {
 
             Divider()
 
-            // Right side - Quick roll buttons
+            // Right side - Favorite or quick roll buttons
             VStack(alignment: .leading, spacing: 8) {
-                Text("Quick Roll")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                let config = DiceConfiguration.loadFromUserDefaults()
+                
+                if config.favoriteDice.isEmpty {
+                    // Fall back to quick roll if no favorites
+                    Text("Quick Roll")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
 
-                HStack(spacing: 8) {
-                    ForEach([IntentDiceType.d20, .d12, .d10], id: \.self) { diceType in
-                        Button(intent: RollDiceIntent(diceType: diceType)) {
-                            VStack(spacing: 2) {
-                                let sides = diceType.toDieModel().die.max
-                                Image(systemName: diceSymbol(for: sides))
-                                    .font(.system(size: 16))
-                                Text(diceType.rawValue)
-                                    .font(.system(size: 9, weight: .medium))
+                    HStack(spacing: 8) {
+                        ForEach([IntentDiceType.d20, .d12, .d10], id: \.self) { diceType in
+                            Button(intent: RollDiceIntent(diceType: diceType)) {
+                                VStack(spacing: 2) {
+                                    let sides = diceType.toDieModel().die.max
+                                    Image(systemName: diceSymbol(for: sides))
+                                        .font(.system(size: 16))
+                                    Text(diceType.rawValue)
+                                        .font(.system(size: 9, weight: .medium))
+                                }
+                                .frame(width: 44, height: 44)
+                                .background(.quaternary)
+                                .clipShape(.rect(cornerRadius: 8))
                             }
-                            .frame(width: 44, height: 44)
-                            .background(.quaternary)
-                            .clipShape(.rect(cornerRadius: 8))
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                    }
+                } else {
+                    // Show favorite dice
+                    Text("Favorites")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    HStack(spacing: 8) {
+                        ForEach(config.favoriteDice.prefix(3)) { favorite in
+                            Button(intent: RollFavoriteDiceIntent(diceId: favorite.diceModel.id)) {
+                                VStack(spacing: 2) {
+                                    if let firstDie = favorite.diceModel.dice.first {
+                                        Image(systemName: diceSymbol(for: firstDie.die.max))
+                                            .font(.system(size: 16))
+                                    }
+                                    Text(favorite.name)
+                                        .font(.system(size: 8, weight: .medium))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.6)
+                                }
+                                .frame(width: 44, height: 44)
+                                .background(.quaternary)
+                                .clipShape(.rect(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }

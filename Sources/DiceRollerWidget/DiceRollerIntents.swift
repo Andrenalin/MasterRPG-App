@@ -84,6 +84,76 @@ struct ClearDiceHistoryIntent: AppIntent {
     }
 }
 
+/// App Intent for rolling favorite dice by ID
+struct RollFavoriteDiceIntent: AppIntent {
+    static let title: LocalizedStringResource = "Roll Favorite Dice"
+    static let description = IntentDescription("Roll a favorite dice configuration")
+    
+    @Parameter(title: "Dice ID")
+    var diceId: String
+    
+    init() {
+        self.diceId = ""
+    }
+    
+    init(diceId: UUID) {
+        self.diceId = diceId.uuidString
+    }
+    
+    func perform() async throws -> some IntentResult {
+        guard let uuid = UUID(uuidString: diceId) else {
+            return .result()
+        }
+        
+        // Load favorites to find the dice model
+        let config = DiceConfiguration.loadFromUserDefaults()
+        guard let favorite = config.favoriteDice.first(where: { $0.diceModel.id == uuid }) else {
+            return .result()
+        }
+        
+        // Roll the dice
+        let diceModel = favorite.diceModel
+        let rolledDice = diceModel.dice.map { $0.role(resetResults: true, reroleOptions: diceModel.rerollOptions) }
+        
+        // Calculate result
+        let values = rolledDice.compactMap { $0.result.first }.map { String($0) }.joined(separator: ",")
+        let sum = rolledDice.compactMap { $0.result.first }.reduce(0, +)
+        
+        // Create result model
+        let rollResult = DiceResultModel(
+            diceModel: diceModel,
+            result: .rolled,
+            values: values,
+            sum: sum,
+            checked: false,
+            timeStamp: Date()
+        )
+        
+        // Save to configuration
+        var updatedConfig = DiceConfiguration.loadFromUserDefaults()
+        updatedConfig.lastRoll = rollResult
+        updatedConfig.selectedDice = diceModel
+        updatedConfig.save()
+        
+        // Reload widgets
+        WidgetCenter.shared.reloadAllTimelines()
+        
+        // Update Live Activity if game is active
+        await startLiveActivityIfNeeded(with: rollResult)
+        
+        return .result()
+    }
+    
+    private func startLiveActivityIfNeeded(with result: DiceResultModel) async {
+        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
+        let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
+        
+        if isGameActive {
+            await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
+        }
+    }
+}
+
 // MARK: - Dice Type for Intents
 
 /// Simple dice type enum that conforms to AppEnum for use in intents
