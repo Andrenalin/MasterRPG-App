@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "app-intents": {
+      "source": "dpearson2699/swift-ios-skills",
+      "sourceType": "github",
+      "computedHash": "e414271dcda80376e454ca3c257dd17e8bfe0e0007ad035d459a4f752f5c4695"
+    },
     "apple-hig-designer": {
       "source": "jamesrochabrun/skills",
       "sourceType": "github",
@@ -60,6 +65,11 @@
       "source": "ehmo/platform-design-skills",
       "sourceType": "github",
       "computedHash": "88eaf0e697c6b3bf8dd16dbd1d0618b098c94ad18052f892054d64c16f728eac"
+    },
+    "widgetkit": {
+      "source": "dpearson2699/swift-ios-skills",
+      "sourceType": "github",
+      "computedHash": "3f2e574af6c7b46bc51877c34fbd363cc71a71a15416c4476fd8a7cfd7163601"
     },
     "xcode-compilation-analyzer": {
       "source": "avdlee/xcode-build-optimization-agent-skill",

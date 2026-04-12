@@ -634,10 +634,12 @@ struct FavoriteDiceManagementView: View {
             }
         }
         .navigationTitle("Favorite Dice")
+    #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             EditButton()
         }
+#endif
         .sheet(isPresented: $showingAddFavorite) {
             addFavoriteSheet
         }
@@ -663,7 +665,9 @@ struct FavoriteDiceManagementView: View {
                 }
             }
             .navigationTitle("Add Favorite")
+#if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

@@ -21,6 +21,9 @@ struct DetailListView: View {
             .environment(root.rootController)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
+            .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in
+                UserActivity.addPayLoad(for: activity, title: model.name, module: .adventure, itemId: model.id)
+            }
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
