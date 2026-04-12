@@ -87,7 +87,7 @@ struct RollSpecificDiceIntent: AppIntent {
     private func startLiveActivityIfNeeded(with result: DiceResultModel) async {
         // Check if a game is currently running
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        let isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
+        let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
         
         if isGameActive {
             // Start or update Live Activity

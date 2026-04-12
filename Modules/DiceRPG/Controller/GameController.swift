@@ -31,6 +31,11 @@ public protocol DiceGameStorable {
     @MainActor func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID
     @MainActor func setFocusDice(on diceId: UUID?)
     func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws
+    
+    @MainActor func toggleFavoriteDice(itemId: UUID, diceName: String?)
+    @MainActor func isFavoriteDice(itemId: UUID) -> Bool
+    @MainActor func clearAllFavoriteDice()
+    
     @MainActor func number(for diceId: UUID, result: String) -> Int
     @MainActor func validateForValue(diceId: UUID, compareValue: Int?)
     @MainActor func resetPlayerDice(to playerIds: [String])
@@ -143,8 +148,72 @@ extension GameController: DiceGameStorable {
         return dice.id
     }
     
-    @MainActor
-    func setFocusDice(on diceId: UUID?) {
+    // MARK: - Favorite Dice Management
+    
+    /// Toggles the favorite status of a dice with optional custom name
+    @MainActor func toggleFavoriteDice(itemId: UUID, diceName: String? = nil) {
+        #if !os(tvOS)
+        var configuration = DiceConfiguration.loadFromUserDefaults()
+        
+        // Check if already in favorites by game dice ID
+        if let index = configuration.favoriteDice.firstIndex(where: { $0.diceModel.id == itemId }) {
+            // Remove from favorites
+            configuration.favoriteDice.remove(at: index)
+            print("🗑️ Removed favorite: \(itemId), remaining: \(configuration.favoriteDice.count)")
+        } else {
+            // Add to favorites (if under limit)
+            guard configuration.favoriteDice.count < 6 else {
+                print("⚠️ Cannot add favorite - limit reached")
+                return
+            }
+            
+            let diceModel = gameItem(for: itemId)
+            let favoriteName = diceName ?? diceModel.name
+            
+            let favorite = FavoriteDiceItem(
+                name: favoriteName,
+                diceModel: diceModel
+            )
+            configuration.favoriteDice.append(favorite)
+            print("⭐ Added favorite: \(favoriteName) (\(itemId)), total: \(configuration.favoriteDice.count)")
+        }
+        
+        // Save configuration
+        configuration.save()
+        print("💾 Configuration saved with \(configuration.favoriteDice.count) favorites")
+        
+        // Force reload widget timelines
+        print("🔄 Reloading widget timelines...")
+        WidgetKit.WidgetCenter.shared.reloadAllTimelines()
+        #endif
+    }
+    
+    /// Checks if a dice is currently in favorites
+    @MainActor func isFavoriteDice(itemId: UUID) -> Bool {
+        #if !os(tvOS)
+        let configuration = DiceConfiguration.loadFromUserDefaults()
+        let isFav = configuration.favoriteDice.contains(where: { $0.diceModel.id == itemId })
+        print("🔍 Checking favorite for \(itemId): \(isFav)")
+        return isFav
+        #else
+        return false
+        #endif
+    }
+    
+    /// Clears all favorite dice (called when game ends)
+    @MainActor func clearAllFavoriteDice() {
+        #if !os(tvOS)
+        print("🗑️ Clearing all favorite dice (game ended)")
+        var configuration = DiceConfiguration.loadFromUserDefaults()
+        configuration.favoriteDice.removeAll()
+        configuration.save()
+        
+        print("✅ All favorites cleared, reloading widget...")
+        WidgetKit.WidgetCenter.shared.reloadAllTimelines()
+        #endif
+    }
+
+    @MainActor func setFocusDice(on diceId: UUID?) {
         Task {
             if let diceId {
                 await focus(on: diceId)
@@ -551,7 +620,7 @@ extension GameController {
 
         // Update Live Activity if game is active
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        if defaults?.bool(forKey: "isGameActive") == true {
+        if defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) == true {
             await DiceRollerLiveActivityManager.shared.startOrUpdate(with: diceResult)
         }
 #endif

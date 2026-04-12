@@ -4,6 +4,10 @@ import CoreRPG
 import Foundation
 import SwiftUI
 
+#if !os(tvOS)
+import WidgetKit
+#endif
+
 struct LinkController: Sendable {
     let rootManager: RootManager
     let itemController: ItemController

@@ -33,6 +33,17 @@ struct DiceRollerWidgetConfiguration: View {
                         .onChange(of: currentGameName) { _, newValue in
                             saveGameName(newValue)
                         }
+                    
+                    NavigationLink {
+                        FavoriteDiceManagementView(configuration: $configuration)
+                    } label: {
+                        HStack {
+                            Text("Favorite Dice")
+                            Spacer()
+                            Text("\(configuration.favoriteDice.count)/6")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
             } header: {
                 Text("Live Activity")
@@ -148,25 +159,33 @@ struct DiceRollerWidgetConfiguration: View {
         configuration = DiceConfiguration.loadFromUserDefaults()
         
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
-        currentGameName = defaults?.string(forKey: "currentGameName") ?? ""
+        isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
+        currentGameName = defaults?.string(forKey: UserDefaults.DiceKeys.currentGameName) ?? ""
     }
     
     private func updateGameStatus(isActive: Bool) {
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        defaults?.set(isActive, forKey: "isGameActive")
+        defaults?.set(isActive, forKey: UserDefaults.DiceKeys.isGameActive)
         
         if !isActive {
+            // Clear all favorites when game ends
+            // Game dice IDs are only valid during the session
+            configuration.favoriteDice.removeAll()
+            configuration.save()
+            
             // End Live Activity
             Task {
                 await DiceRollerLiveActivityManager.shared.endActivity()
             }
         }
+        
+        // Reload widget to reflect changes
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     private func saveGameName(_ name: String) {
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        defaults?.set(name, forKey: "currentGameName")
+        defaults?.set(name, forKey: UserDefaults.DiceKeys.currentGameName)
     }
     
     private func clearHistory() {
@@ -459,7 +478,7 @@ struct DiceRollerView: View {
                 // Update Live Activity if game is active
                 Task {
                     let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-                    let isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
+                    let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
                     
                     if isGameActive {
                         await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
@@ -474,7 +493,7 @@ struct DiceRollerView: View {
     
     private func loadHistory() {
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        if let data = defaults?.data(forKey: "rollHistory"),
+        if let data = defaults?.data(forKey: UserDefaults.DiceKeys.rollHistory),
            let history = try? JSONDecoder().decode([DiceResultModel].self, from: data) {
             rollHistory = history
         }
@@ -483,7 +502,7 @@ struct DiceRollerView: View {
     private func saveHistory() {
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         if let data = try? JSONEncoder().encode(rollHistory) {
-            defaults?.set(data, forKey: "rollHistory")
+            defaults?.set(data, forKey: UserDefaults.DiceKeys.rollHistory)
         }
     }
     
@@ -500,17 +519,203 @@ struct DiceRollerView: View {
         }
     }
 }
+// MARK: - Favorite Dice Management
 
-// MARK: - Previews
-
-#Preview("Configuration") {
-    NavigationStack {
-        DiceRollerWidgetConfiguration()
+struct FavoriteDiceManagementView: View {
+    @Binding var configuration: DiceConfiguration
+    @State private var showingAddFavorite = false
+    @State private var newFavoriteName = ""
+    @State private var selectedDiceModel: DiceModel?
+    @Environment(\.dismiss) private var dismiss
+    
+    // Sample dice models for selection - in real app, get from character/game
+    private let availableDiceModels: [DiceModel] = [
+        DiceModel(id: UUID(), name: "Attack Roll", dice: [.die20(color: .G)]),
+        DiceModel(id: UUID(), name: "Damage", dice: [.die8(color: .G), .die6(color: .G)]),
+        DiceModel(id: UUID(), name: "Skill Check", dice: [.die20(color: .G)]),
+        DiceModel(id: UUID(), name: "Sneak Attack", dice: [.die6(color: .G), .die6(color: .G), .die6(color: .G)])
+    ]
+    
+    var body: some View {
+        List {
+            Section {
+                ForEach(configuration.favoriteDice) { favorite in
+                    HStack {
+                        if let firstDie = favorite.diceModel.dice.first {
+                            firstDie.diceImage(for: firstDie.die.max)
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(favorite.name)
+                                .font(.headline)
+                            
+                            Text(favorite.diceModel.name)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Text(diceDescription(favorite.diceModel))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .onDelete(perform: deleteFavorites)
+                .onMove(perform: moveFavorites)
+            } header: {
+                HStack {
+                    Text("Favorite Dice")
+                    Spacer()
+                    Text("\(configuration.favoriteDice.count)/6")
+                        .foregroundStyle(.secondary)
+                }
+            } footer: {
+                Text("These dice will appear in the widget during active gameplay. Tap Edit to reorder.")
+            }
+            
+            if configuration.favoriteDice.count < 6 {
+                Section {
+                    Button {
+                        showingAddFavorite = true
+                    } label: {
+                        Label("Add Favorite Dice", systemImage: "plus.circle.fill")
+                    }
+                } footer: {
+                    Text("Select dice from your character sheet or create custom dice configurations.")
+                }
+            }
+            
+            Section {
+                ForEach(availableDiceModels) { diceModel in
+                    Button {
+                        addFavorite(diceModel: diceModel)
+                    } label: {
+                        HStack {
+                            if let firstDie = diceModel.dice.first {
+                                firstDie.diceImage(for: firstDie.die.max)
+                                    .resizable()
+                                    .frame(width: 32, height: 32)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(diceModel.name)
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                
+                                Text(diceDescription(diceModel))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            if configuration.favoriteDice.contains(where: { $0.diceModel.id == diceModel.id }) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                            } else if configuration.favoriteDice.count >= 6 {
+                                Image(systemName: "exclamationmark.circle")
+                                    .foregroundStyle(.orange)
+                            } else {
+                                Image(systemName: "plus.circle")
+                                    .foregroundStyle(.blue)
+                            }
+                        }
+                    }
+                    .disabled(configuration.favoriteDice.count >= 6 || 
+                             configuration.favoriteDice.contains(where: { $0.diceModel.id == diceModel.id }))
+                }
+            } header: {
+                Text("Available Dice")
+            } footer: {
+                Text("Dice configurations from your character and game settings.")
+            }
+        }
+        .navigationTitle("Favorite Dice")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            EditButton()
+        }
+        .sheet(isPresented: $showingAddFavorite) {
+            addFavoriteSheet
+        }
+    }
+    
+    private var addFavoriteSheet: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Favorite Name", text: $newFavoriteName)
+                } header: {
+                    Text("Name")
+                } footer: {
+                    Text("Give this dice configuration a memorable name")
+                }
+                
+                // In a real implementation, this would show character's available dice
+                Section {
+                    Text("Select from character dice configurations")
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Dice Configuration")
+                }
+            }
+            .navigationTitle("Add Favorite")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        showingAddFavorite = false
+                        newFavoriteName = ""
+                    }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        // Add the favorite
+                        showingAddFavorite = false
+                        newFavoriteName = ""
+                    }
+                    .disabled(newFavoriteName.isEmpty)
+                }
+            }
+        }
+    }
+    
+    private func addFavorite(diceModel: DiceModel) {
+        guard configuration.favoriteDice.count < 6 else { return }
+        guard !configuration.favoriteDice.contains(where: { $0.diceModel.id == diceModel.id }) else { return }
+        
+        let favorite = FavoriteDiceItem(
+            name: diceModel.name,
+            diceModel: diceModel
+        )
+        
+        configuration.favoriteDice.append(favorite)
+        configuration.save()
+        
+        // Reload widget
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+    
+    private func deleteFavorites(at offsets: IndexSet) {
+        configuration.favoriteDice.remove(atOffsets: offsets)
+        configuration.save()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+    
+    private func moveFavorites(from source: IndexSet, to destination: Int) {
+        configuration.favoriteDice.move(fromOffsets: source, toOffset: destination)
+        configuration.save()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+    
+    private func diceDescription(_ diceModel: DiceModel) -> String {
+        let diceNames = diceModel.dice.map { "D\($0.die.max)" }.joined(separator: " + ")
+        return diceNames
     }
 }
 
-#Preview("Dice Roller") {
-    NavigationStack {
-        DiceRollerView()
-    }
-}
+

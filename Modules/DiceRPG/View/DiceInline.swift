@@ -6,6 +6,7 @@ import SwiftUI
 struct DiceInline: View {
     let itemId: UUID
     let resultCategory: ResultCategory
+    let player: Bool
 
     @Environment(DiceRootModel.self) private var root
 
@@ -17,7 +18,7 @@ struct DiceInline: View {
 
     var body: some View {
         HStack {
-            if !appGameStateModel.isGameRunning || appGameStateModel.gameModus == .player {
+            if !appGameStateModel.isGameRunning || player {
                 Button {
                     withAnimation {
                         root.gameController.gameModel.focusItemIds <=> [itemId]
@@ -48,7 +49,7 @@ struct DiceInline: View {
                         Label { Text("Add as focus", bundle: .module) } icon: { Image(systemName: "house") }
                     }
 
-                    if appGameStateModel.gameModus == .master {
+                    if !player {
                         ForEach(players) { player in
                             Button {
                                 Task {
@@ -121,6 +122,6 @@ struct DiceInline: View {
 }
 
 #Preview {
-    DiceInline(itemId: DiceModel.previewId, resultCategory: ResultCategory(id: UUID(), module: .dice))
+    DiceInline(itemId: DiceModel.previewId, resultCategory: ResultCategory(id: UUID(), module: .dice), player: true)
         .environment(DiceRootModel.preview)
 }

@@ -13,6 +13,11 @@ struct DiceRollerWidgetView: View {
     
     let entry: DiceRollerEntry
     
+    /// Check if game is currently active
+    private var isGameActive: Bool {
+        UserDefaults(suiteName: UserDefaults.appGroupString)?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
+    }
+    
     var body: some View {
         switch family {
         case .systemSmall:
@@ -78,13 +83,22 @@ struct DiceRollerWidgetView: View {
 
             Divider()
 
-            // Right side - Quick dice selection
+            // Right side - Show favorites only if game is active AND we have favorites
+            // Otherwise always show quick roll
             VStack(spacing: 4) {
-                Text("Quick Roll")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if isGameActive && !entry.configuration.favoriteDice.isEmpty {
+                    Text("Favorites")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    favoriteDiceGrid
+                } else {
+                    Text("Quick Roll")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                quickDiceGrid
+                    quickDiceGrid
+                }
             }
             .frame(maxWidth: .infinity)
         }
@@ -130,12 +144,21 @@ struct DiceRollerWidgetView: View {
 
             Divider()
 
-            // Dice selection grid
-            Text("Quick Roll")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            // Dice selection grid - Show favorites only if game is active AND we have favorites
+            // Otherwise always show quick roll
+            if isGameActive && !entry.configuration.favoriteDice.isEmpty {
+                Text("Favorite Dice")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-            quickDiceGrid
+                favoriteDiceGrid
+            } else {
+                Text("Quick Roll")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                quickDiceGrid
+            }
         }
         .padding()
     }
@@ -190,6 +213,26 @@ struct DiceRollerWidgetView: View {
                     .padding(.vertical, 4)
                 }
                 .buttonStyle(.plain)
+            }
+        }
+    }
+    
+    private var favoriteDiceGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+            ForEach(entry.configuration.favoriteDice.prefix(6)) { favorite in
+                // For now, use a simple button that will be enhanced with App Intents later
+                VStack(spacing: 2) {
+                    if let firstDie = favorite.diceModel.dice.first {
+                        dieImageView(firstDie, size: 32, sides: firstDie.die.max)
+                    }
+                    
+                    Text(favorite.name)
+                        .font(.system(size: 8))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
             }
         }
     }

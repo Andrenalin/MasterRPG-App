@@ -8,9 +8,10 @@ struct InlineRowViewer: View, Equatable {
     let destination: ItemRowModel
     
     @Environment(DiceRootModel.self) private var root
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     
     var body: some View {
-        DiceInline(itemId: source.itemId, resultCategory: ResultCategory(source: destination))
+        DiceInline(itemId: source.itemId, resultCategory: ResultCategory(source: destination), player: appGameStateModel.gameModus == .player)
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

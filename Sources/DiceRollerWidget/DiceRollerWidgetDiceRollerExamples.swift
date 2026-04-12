@@ -43,7 +43,7 @@
 //        
 //        // Update Live Activity if game is active
 //        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-//        if defaults?.bool(forKey: "isGameActive") == true {
+//        if defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) == true {
 //            await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
 //        }
 //    }
@@ -56,7 +56,7 @@
 //    static func startGameSession(name: String) async {
 //        // Mark game as active
 //        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-//        defaults?.set(true, forKey: "isGameActive")
+//        defaults?.set(true, forKey: UserDefaults.DiceKeys.isGameActive)
 //        defaults?.set(name, forKey: "currentGameName")
 //        
 //        // Note: Live Activity will start automatically on first dice roll
@@ -66,7 +66,7 @@
 //    static func endGameSession() async {
 //        // Mark game as inactive
 //        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-//        defaults?.set(false, forKey: "isGameActive")
+//        defaults?.set(false, forKey: UserDefaults.DiceKeys.isGameActive)
 //        
 //        // End Live Activity
 //        await DiceRollerLiveActivityManager.shared.endActivityWithDelay(seconds: 10)
@@ -181,7 +181,7 @@
 //        
 //        // Update Live Activity if game is active
 //        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-//        if defaults?.bool(forKey: "isGameActive") == true {
+//        if defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) == true {
 //            if let widgetType = die.widgetDiceType,
 //               let lastResult = die.result.last {
 //                let widgetResult = DiceRollResult(
@@ -434,7 +434,7 @@
 //        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 //        defaults?.removeObject(forKey: "diceConfiguration")
 //        defaults?.removeObject(forKey: "rollHistory")
-//        defaults?.removeObject(forKey: "isGameActive")
+//        defaults?.removeObject(forKey: UserDefaults.DiceKeys.isGameActive)
 //        defaults?.removeObject(forKey: "currentGameName")
 //        
 //        WidgetCenter.shared.reloadAllTimelines()
@@ -447,7 +447,7 @@
 //        
 //        // Start game
 //        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-//        defaults?.set(true, forKey: "isGameActive")
+//        defaults?.set(true, forKey: UserDefaults.DiceKeys.isGameActive)
 //        defaults?.set("Test Game", forKey: "currentGameName")
 //        
 //        // Simulate rolls
@@ -467,7 +467,7 @@
 //        // End activity
 //        await DiceRollerLiveActivityManager.shared.endActivityWithDelay(seconds: 5)
 //        
-//        defaults?.set(false, forKey: "isGameActive")
+//        defaults?.set(false, forKey: UserDefaults.DiceKeys.isGameActive)
 //        print("Live Activity test complete")
 //    }
 //}
