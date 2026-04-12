@@ -96,7 +96,7 @@ Button("Roll D20") {
 ### Test 3: Live Activity (Requires Device)
 ```swift
 // Start game session:
-let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 defaults?.set(true, forKey: "isGameActive")
 defaults?.set("Test Game", forKey: "currentGameName")
 
@@ -221,7 +221,7 @@ extension GameController {
         
         // Update Live Activity
         Task {
-            let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+            let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
             if defaults?.bool(forKey: "isGameActive") == true {
                 await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
             }

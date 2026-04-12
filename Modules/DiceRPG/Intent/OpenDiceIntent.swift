@@ -7,7 +7,6 @@ import AppIntents
 import Foundation
 import SwiftUI
 
-
 struct OpenDiceIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open Dice"
 

@@ -30,7 +30,7 @@ public final class DiceRootModel {
         _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController, editController: editController)
-        _gameController = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
+        _gameController = GameController(itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         _searchController = SearchController(itemController: itemController)
         

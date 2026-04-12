@@ -121,7 +121,7 @@ WidgetCenter.shared.reloadAllTimelines()
 
 ### Start Game with Live Activity
 ```swift
-let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 defaults?.set(true, forKey: "isGameActive")
 defaults?.set("Dragon's Lair", forKey: "currentGameName")
 ```
@@ -160,7 +160,7 @@ extension GameController {
             WidgetCenter.shared.reloadAllTimelines()
             
             // Update Live Activity
-            let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+            let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
             if defaults?.bool(forKey: "isGameActive") == true {
                 await DiceRollerLiveActivityManager.shared.startOrUpdate(with: widgetResult)
             }

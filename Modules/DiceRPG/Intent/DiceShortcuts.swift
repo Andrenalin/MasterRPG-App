@@ -17,6 +17,17 @@ struct DiceShortcuts: AppShortcutsProvider {
             shortTitle: "Open Dice",
             systemImageName: "dice"
         )
+        
+        AppShortcut(
+            intent: RollSpecificDiceIntent(),
+            phrases: [
+                "Roll my dice in \(.applicationName)",
+                "Roll \(\.$dice) in \(.applicationName)"
+            ],
+            shortTitle: "Roll Dice",
+            systemImageName: "dice"
+        )
+
     }
 }
 

@@ -58,6 +58,12 @@ extension DiceEntity: Transferable {
     }
 }
 
+extension DiceEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://DICE/0/\(.id)"
+    }
+}
+
 @MainActor
 struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: DiceRootModel

@@ -147,13 +147,13 @@ struct DiceRollerWidgetConfiguration: View {
     private func loadConfiguration() {
         configuration = DiceConfiguration.loadFromUserDefaults()
         
-        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
         currentGameName = defaults?.string(forKey: "currentGameName") ?? ""
     }
     
     private func updateGameStatus(isActive: Bool) {
-        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         defaults?.set(isActive, forKey: "isGameActive")
         
         if !isActive {
@@ -165,7 +165,7 @@ struct DiceRollerWidgetConfiguration: View {
     }
     
     private func saveGameName(_ name: String) {
-        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         defaults?.set(name, forKey: "currentGameName")
     }
     
@@ -458,7 +458,7 @@ struct DiceRollerView: View {
                 
                 // Update Live Activity if game is active
                 Task {
-                    let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+                    let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
                     let isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
                     
                     if isGameActive {
@@ -473,7 +473,7 @@ struct DiceRollerView: View {
     }
     
     private func loadHistory() {
-        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         if let data = defaults?.data(forKey: "rollHistory"),
            let history = try? JSONDecoder().decode([DiceResultModel].self, from: data) {
             rollHistory = history
@@ -481,7 +481,7 @@ struct DiceRollerView: View {
     }
     
     private func saveHistory() {
-        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         if let data = try? JSONEncoder().encode(rollHistory) {
             defaults?.set(data, forKey: "rollHistory")
         }

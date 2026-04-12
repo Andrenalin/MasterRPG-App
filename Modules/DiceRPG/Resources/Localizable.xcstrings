@@ -127,6 +127,36 @@
         }
       }
     },
+    "🎉 Critical Success! Rolled %@: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "🎉 Critical Success! Rolled %1$@: %2$lld"
+          }
+        }
+      }
+    },
+    "🎲 Rolled %@: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "🎲 Rolled %1$@: %2$lld"
+          }
+        }
+      }
+    },
+    "💥 Critical Failure! Rolled %@: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "💥 Critical Failure! Rolled %1$@: %2$lld"
+          }
+        }
+      }
+    },
     "Add" : {
       "localizations" : {
         "de" : {
@@ -731,12 +761,31 @@
         }
       }
     },
+    "Roll a specific dice from your collection" : {
+
+    },
+    "Roll Dice" : {
+
+    },
+    "Roll Specific Dice" : {
+
+    },
     "Rolled" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gewürfelt"
+          }
+        }
+      }
+    },
+    "Rolled %@: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Rolled %1$@: %2$lld"
           }
         }
       }
@@ -871,6 +920,9 @@
           }
         }
       }
+    },
+    "Which dice do you want to roll?" : {
+
     },
     "Which die?" : {
       "localizations" : {

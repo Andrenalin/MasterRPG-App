@@ -37,7 +37,7 @@ public protocol DiceGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController, exportController: ExportController) {
+    @MainActor init(itemController: ItemController, exportController: ExportController) {
         self.itemController = itemController
         self.exportController = exportController
 
@@ -358,7 +358,7 @@ extension GameController {
     
     @MainActor
     func sumResult(itemId: UUID) -> Int {
-        guard let item = gameModel.itemData[itemId] as? DiceModel else { return 0 }
+        let item = gameItem(for: itemId)
         let orderedDice = reorder(for: itemId)
         var result = 0
         if item.sumUp {

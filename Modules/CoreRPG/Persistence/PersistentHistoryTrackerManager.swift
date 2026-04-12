@@ -72,7 +72,7 @@ final class PersistentHistoryTrackerManager: @unchecked Sendable {
         self.container = container
         self.currentActor = currentActor
         self.viewBackupContext = viewBackupContext
-        self.userDefaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")!
+        self.userDefaults = UserDefaults(suiteName: UserDefaults.appGroupString)!
 
         NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange, object: container.persistentStoreCoordinator)
             .debounce(for: .seconds(1), scheduler: DispatchQueue.global(qos: .utility))

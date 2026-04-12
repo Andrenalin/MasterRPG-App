@@ -104,7 +104,7 @@ struct ContentView: View {
 
 ```swift
 // When starting a game session
-let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 defaults?.set(true, forKey: "isGameActive")
 defaults?.set("Dragon's Lair Campaign", forKey: "currentGameName")
 

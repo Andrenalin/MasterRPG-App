@@ -58,7 +58,7 @@ struct RollDiceIntent: AppIntent, WidgetConfigurationIntent {
 
     private func startLiveActivityIfNeeded(with result: DiceResultModel) async {
         // Check if a game is currently running
-        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         let isGameActive = defaults?.bool(forKey: "isGameActive") ?? false
 
         if isGameActive {

@@ -8,7 +8,7 @@ public extension UserDefaults {
 }
 
 public extension FileManager {
-    static let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.de.andretrettin.MasterRPG")!
+    static let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: UserDefaults.appGroupString)!
     
     static let cloudURL = FileManager.default.url(forUbiquityContainerIdentifier: "iCloud.de.andretrettin.gamemaster")
 }

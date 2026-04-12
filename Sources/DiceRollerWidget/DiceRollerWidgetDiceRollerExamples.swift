@@ -42,7 +42,7 @@
 //        WidgetCenter.shared.reloadAllTimelines()
 //        
 //        // Update Live Activity if game is active
-//        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+//        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 //        if defaults?.bool(forKey: "isGameActive") == true {
 //            await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
 //        }
@@ -55,7 +55,7 @@
 //    
 //    static func startGameSession(name: String) async {
 //        // Mark game as active
-//        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+//        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 //        defaults?.set(true, forKey: "isGameActive")
 //        defaults?.set(name, forKey: "currentGameName")
 //        
@@ -65,7 +65,7 @@
 //    
 //    static func endGameSession() async {
 //        // Mark game as inactive
-//        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+//        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 //        defaults?.set(false, forKey: "isGameActive")
 //        
 //        // End Live Activity
@@ -180,7 +180,7 @@
 //        die.updateWidget()
 //        
 //        // Update Live Activity if game is active
-//        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+//        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 //        if defaults?.bool(forKey: "isGameActive") == true {
 //            if let widgetType = die.widgetDiceType,
 //               let lastResult = die.result.last {
@@ -431,7 +431,7 @@
 //    
 //    /// Clears all widget data
 //    static func clearAllData() {
-//        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+//        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 //        defaults?.removeObject(forKey: "diceConfiguration")
 //        defaults?.removeObject(forKey: "rollHistory")
 //        defaults?.removeObject(forKey: "isGameActive")
@@ -446,7 +446,7 @@
 //        print("Testing Live Activity...")
 //        
 //        // Start game
-//        let defaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")
+//        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
 //        defaults?.set(true, forKey: "isGameActive")
 //        defaults?.set("Test Game", forKey: "currentGameName")
 //        

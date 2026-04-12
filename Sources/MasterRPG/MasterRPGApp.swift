@@ -59,6 +59,8 @@ struct MasterRPGApp: App {
 
         let generatorRootModel = appModel.generatorRoot
         AppDependencyManager.shared.add(dependency: generatorRootModel)
+        
+        //AdventureShortcuts.updateAppShortcutParameters()
     }
 
     @Environment(\.openWindow) var openWindow
