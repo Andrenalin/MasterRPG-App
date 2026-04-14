@@ -16,6 +16,7 @@ struct GameRootViewer<MapContent: View>: View {
     let mapContentView: (UUID) -> MapContent
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(ScenesManager.self) private var scenesManager
 
     var body: some View {
         Group {
@@ -53,6 +54,13 @@ struct GameRootViewer<MapContent: View>: View {
         .background(colorScheme == .dark ? Color.black : Color.white)
 #endif
         .ignoresSafeArea()
+#if os(visionOS)
+        .onChange(of: root.photoRoot.gameControllable.gameModel.currentItemId) {
+            guard let photoId = root.photoRoot.gameControllable.gameModel.currentItemId else { return }
+            root.photoRoot.imagePresentationModel.selectedItemId = photoId
+            scenesManager.openWindow(SceneId.imageSpaceViewer)
+        }
+#endif
     }
     
     @MainActor @ViewBuilder

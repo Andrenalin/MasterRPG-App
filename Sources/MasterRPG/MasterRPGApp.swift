@@ -68,6 +68,11 @@ struct MasterRPGApp: App {
     @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
 #endif
     
+//#if !os(macOS)
+//    @Environment(IosSceneDelegate.self) private var sceneDelegate
+//#endif
+
+
     @State private var appModel: AppModel = AppModel.shared
     
     var body: some Scene {
@@ -89,6 +94,7 @@ struct MasterRPGApp: App {
                         openImmersiveSpace: openImmersiveSpace,
                         dismissImmersiveSpace: dismissImmersiveSpace
                     )
+//                    appModel.appNavigationModel.reset(sceneDelegate: sceneDelegate)
                 }
             #else
                 .onAppear {

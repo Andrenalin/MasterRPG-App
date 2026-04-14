@@ -3,9 +3,21 @@
 import SwiftUI
 
 @MainActor @Observable public final class AppNavigationModel {
+#if os(macOS)
     public init(appGameStateModel: AppGameStateModel) {
         self.appGameStateModel = appGameStateModel
     }
+#else
+    public init(appGameStateModel: AppGameStateModel) {
+        self.appGameStateModel = appGameStateModel
+    }
+    
+    public func reset(sceneDelegate: AppWindowSceneModel) {
+        self.sceneModel = sceneDelegate
+    }
+    
+    public var sceneModel: AppWindowSceneModel?
+#endif
     
     let appGameStateModel: AppGameStateModel
     
@@ -14,7 +26,7 @@ import SwiftUI
     }
     
     public var navigationType: AppNavigationRouteType = .split
-        
+    
 #if os(iOS)
     static private let defaultMode = AppModeRouteType.editor
 #elseif os(visionOS)
@@ -22,5 +34,12 @@ import SwiftUI
 #else
     static private let defaultMode = AppModeRouteType.gameSetup
 #endif
-
+    
 }
+
+
+#if !os(macOS)
+public protocol AppWindowSceneModel {
+    var windowScene: UIWindowScene? { get }
+}
+#endif

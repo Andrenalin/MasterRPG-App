@@ -86,4 +86,10 @@ public extension ViewController {
         let model = root.itemController.itemOrEmpty(for: id)
         return AsyncImageViewer(model: model, size: size, contentMode: contentMode, toolBarModel: nil)
     }
+
+    #if os(visionOS)
+    func imageSpaceView() -> some View {
+        ImageSpaceView()
+    }
+    #endif
 }

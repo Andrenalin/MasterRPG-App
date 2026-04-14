@@ -3,6 +3,7 @@
 #if os(visionOS)
 import CoreRPG
 import DiceRPG
+import GameRPG
 import RolePlayGameKit
 import PhotoRPG
 import SpaceRPG
@@ -16,6 +17,20 @@ struct WindowVisionList: Scene {
 
     var body: some Scene {
         let defaultSize = Size3D(width: 1.5, height: 1, depth: 0.4)
+
+        WindowGroup(id: SceneId.imageSpaceViewer.rawValue) {
+            appModel.photoRoot.viewController.imageSpaceView()
+                .environmentSetUp(appModel)
+                .frame(minWidth: 600, maxWidth: 2000, minHeight: 600, maxHeight: 2000)
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.plain)
+
+        WindowGroup(id: SceneId.gameTable.rawValue) {
+            GameTableView().volumeBaseplateVisibility(.hidden)
+        }
+        .windowStyle(.volumetric)
+        .defaultSize(width: 2, height: 1.5, depth: 2, in: .meters)
 
         Window("Settings", id: SceneId.settings.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
