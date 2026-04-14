@@ -72,17 +72,11 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
             .resetAppColorScheme()
             .frame(minWidth: 350, minHeight: 400)
             .handlesExternalEvents(preferring: [], allowing: [])
-            .onDisappear {
-                model.windowStateModel.openWindowState[module] = false
-            }
-            .tint(module.tint)
-            .accentColor(module.tint)
+            .sceneTracker(for: SceneId.sceneId(for: module))
             .environmentSetUp(model)
-            .environment(\.gameModus, model.settingsModel.gameModus)
             .environment(\.networkActions, model.gameRoot.networkActions())
             .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)
             .environment(\.sharingFeatureActions, model.gameRoot.sharingFeatureActions)
-            .environment(\.showGame, model.settingsModel.showGame)
 #if os(macOS)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
 #endif

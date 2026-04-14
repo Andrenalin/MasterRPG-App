@@ -8,12 +8,6 @@ public enum FileImporterViewType: Hashable, Sendable {
     case custom
 }
 
-public enum GroupViewType: Hashable, Sendable {
-    case none
-    case item
-    case photo
-}
-
 public enum SharingViewType: Hashable, Sendable {
     case none
     case share
@@ -44,7 +38,6 @@ public struct ViewerConfiguration: Hashable, Sendable {
 
 public protocol ViewControllable: Sendable {
     var fileImporterViewType: FileImporterViewType { get }
-    var goupViewType: GroupViewType { get }
     var sharingViewType: SharingViewType { get }
     var thumbnailRowViewType: ThumbnailRowViewType { get }
     

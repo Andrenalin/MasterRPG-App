@@ -13,16 +13,13 @@ struct ViewerRootView: View {
     var body: some View {
         TableRootSheet(root: root.rootController, itemId: model.id, module: root.config.module, configuration: configuration, dismissAction: dismissAction)
             .safeAreaBar(edge: .bottom) {
-#if os(visionOS)
-                DiceViewer(model: model, isEditor: false)
-                    .padding()
-#else
-                GlassEffectContainer {
+                GlassEffectContainerAll {
                     DiceViewer(model: model, isEditor: false)
                         .padding()
-                        .glassEffect(.clear)
-                }
+#if !os(visionOS)
+                        .glassEffectAll(.clear)
 #endif
+                }
             }
     }
 }

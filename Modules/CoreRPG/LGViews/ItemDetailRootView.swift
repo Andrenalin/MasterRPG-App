@@ -4,70 +4,64 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
+struct EditingItem: Identifiable {
+    let id: UUID
+    let model: any ItemDataAccessable
+
+    init(_ model: any ItemDataAccessable) {
+        self.id = model.id
+        self.model = model
+    }
+}
+
 public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View, EntryEditor: View>: View {
-    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
+
+    /// Configuration for ItemDetailRootView behavior
+    public struct Configuration {
+        public var editorAsBackground: Bool
+        public var hasInspector: Bool
+        public var hasOverlay: Bool
+
+        public init(editorAsBackground: Bool = false, hasInspector: Bool = true, hasOverlay: Bool = false) {
+            self.editorAsBackground = editorAsBackground
+            self.hasInspector = hasInspector
+            self.hasOverlay = hasOverlay
+        }
+    }
+
+    public init(
+        detailListController: FolderListControllable,
+        selectedModel: any ItemDataAccessable,
+        configuration: Configuration = Configuration(),
+        @ViewBuilder header: () -> Header,
+        @ViewBuilder editor: () -> Editor,
+        @ViewBuilder inspector: () -> Inspector,
+        @ViewBuilder overlay: () -> Overlay,
+        @ViewBuilder entryEditor: () -> EntryEditor
+    ) {
         self.detailListController = detailListController
         self.selectedModel = selectedModel
-        self.editorAsBackground = editorAsBackground
+        self.editorAsBackground = configuration.editorAsBackground
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
-        self.hasInspector = true
-        self.overlay = { EmptyView() }()
-        self.hasOverlay = false
-        self.entryEditor = entryEditor()
-    }
-    
-    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
-        self.detailListController = detailListController
-        self.selectedModel = selectedModel
-        self.editorAsBackground = editorAsBackground
-        self.header = header()
-        self.editor = editor()
-        self.inspector = inspector()
-        self.hasInspector = true
+        self.hasInspector = configuration.hasInspector
         self.overlay = overlay()
-        self.hasOverlay = true
+        self.hasOverlay = configuration.hasOverlay
         self.entryEditor = entryEditor()
     }
-    
-    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView {
-        self.detailListController = detailListController
-        self.selectedModel = selectedModel
-        self.editorAsBackground = editorAsBackground
-        self.header = header()
-        self.editor = editor()
-        self.inspector = { EmptyView() }()
-        self.hasInspector = false
-        self.overlay = overlay()
-        self.hasOverlay = true
-        self.entryEditor = entryEditor()
-    }
-    
-    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView, Overlay == EmptyView {
-        self.detailListController = detailListController
-        self.selectedModel = selectedModel
-        self.editorAsBackground = editorAsBackground
-        self.header = header()
-        self.editor = editor()
-        self.inspector = { EmptyView() }()
-        self.hasInspector = false
-        self.overlay = { EmptyView() }()
-        self.hasOverlay = false
-        self.entryEditor = entryEditor()
-    }
-    
+
     let selectedModel: any ItemDataAccessable
     let editorAsBackground: Bool
     let header: Header
     let editor: Editor
-    let inspector: Inspector?
+    let inspector: Inspector
     let overlay: Overlay
     let hasOverlay: Bool
     let hasInspector: Bool
     let entryEditor: EntryEditor
     
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
     
@@ -78,26 +72,24 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @Environment(ItemRootController.self) private var root
     @Environment(DetailInspectorModel.self) private var detailInspectorModel
         
-    @State private var isEditing = false
+    @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
     @State private var selection = GroupItemSelectionModel()
-    
+
     @State private var detailListController: FolderListControllable
-    @State private var headerFooterModel = HeaderFooterScrollModel()
+    @State private var headerModel = HeaderScrollModel()
     
     @Namespace private var editSheetNamespace
     
     public var body: some View {
         contentScrollView(model: selectedModel)
             .tint(root.configurable.module.tint)
-            .accentColor(root.configurable.module.tint)
     }
 }
 
 private extension ItemDetailRootView {
     func currentModel(model: any ItemDataAccessable) -> any ItemDataAccessable {
-        guard let itemId = selection.selectedItem else { return model }
-        return root.itemControllable.itemOrEmpty(for: itemId)
+        model
     }
     
     var fileTypes: [UTType] {
@@ -113,12 +105,10 @@ private extension ItemDetailRootView {
     }
     
     @ViewBuilder func contentScrollView(model: any ItemDataAccessable) -> some View {
-        HeaderFooterContentScrollView(model: headerFooterModel) {
+        HeaderContentScrollView(model: headerModel) {
             headerView(model: model)
         } content: {
             contentView(model: model)
-        } footer: {
-            bottomView(model: model)
         } background: {
             Rectangle()
                 .fill(root.configurable.module.color)
@@ -129,57 +119,32 @@ private extension ItemDetailRootView {
         .overlay(alignment: .bottom) {
             if hasOverlay {
                 overlay
-                    .safeAreaInset(edge: .bottom, spacing: -headerFooterModel.footerOffset) {
-                        bottomView(model: model).opacity(0)
-                    }
             }
         }
-        .animation(.default, value: model.url)
+        .animation(.easeInOut, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id, initial: true) {
-            detailListController.resetParentModel(model: model)
-            detailInspectorModel.canShowInspector = canShowInspector(model: model)
-            updateInspectorStates(model: model)
-            // Note: Cannot use .equatable() here as inspectorView returns heterogeneous types
-            // The view is already optimized by onChange(of: model.id) triggering only on ID changes
-            detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
-            withAnimation(.easeInOut) { selection.selectedItem = nil }
-            guard model.url != nil else {
-                itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
-                return
-            }
-            itemIdHasUrl = model.id
+            handleModelIdChange(model: model)
+        }
+        .task(id: model.id) {
+            await openEditorForNewItemIfNeeded(model: model)
         }
         .onChange(of: openFileWindowModel.showItem) {
             updateInspectorStates(model: model)
         }
-        .onChange(of: model.name, initial: true) {
-            guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
-            withAnimation(.easeInOut) { isEditing = true }
+        .onChange(of: model.name) {
+            handleModelNameChange(model: model)
         }
         .onChange(of: model.url) { oldValue, newValue in
-            guard oldValue == nil else { return }
-            guard itemIdHasUrl != model.id else { return }
-            withAnimation(.easeInOut) { isEditing = true }
+            handleModelUrlChange(model: model, oldValue: oldValue)
         }
 #if !os(tvOS)
         .applyIf(model.category != .folder && !fileTypes.isEmpty) {
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: { updateFile(url: $0, model: model)} ))
         }
 #endif
-        .sheet(isPresented: $isEditing) {
-            ItemHeaderEditorView(editControllable: root.editControllable, model: currentModel(model: model))
-                .colorScheme(colorScheme)
-                .preferredColorScheme(colorScheme)
-                .presentationContentInteraction(.resizes)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackgroundInteraction(.enabled)
-                .tint(root.configurable.module.tint)
-                .accentColor(root.configurable.module.tint)
-#if os(iOS)
-                .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
-#endif
+        .sheet(item: $editingItem) { item in
+            editingSheet(model: item.model)
         }
         .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), module: root.configurable.module))
         .toolbar {
@@ -188,12 +153,63 @@ private extension ItemDetailRootView {
         .environment(selection)
     }
     
+    func openEditorForNewItemIfNeeded(model: any ItemDataAccessable) async {
+        // Yield once to let the view settle before checking model state
+        await Task.yield()
+        guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
+        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
+    }
+
+    func handleModelIdChange(model: any ItemDataAccessable) {
+        // Reset editing state when switching items
+        editingItem = nil
+
+        detailListController.resetParentModel(model: model)
+        detailInspectorModel.canShowInspector = canShowInspector(model: model)
+        updateInspectorStates(model: model)
+        // Note: Cannot use .equatable() here as inspectorView returns heterogeneous types
+        // The view is already optimized by onChange(of: model.id) triggering only on ID changes
+        detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
+        withAnimation(.easeInOut) { selection.selectedItem = nil }
+
+        guard model.url != nil else {
+            itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
+            return
+        }
+        itemIdHasUrl = model.id
+    }
+
+    func handleModelNameChange(model: any ItemDataAccessable) {
+        guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
+        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
+    }
+
+    func handleModelUrlChange(model: any ItemDataAccessable, oldValue: URL?) {
+        guard oldValue == nil else { return }
+        guard itemIdHasUrl != model.id else { return }
+        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
+    }
+
     func updateInspectorStates(model: any ItemDataAccessable) {
         withAnimation(.easeInOut) {
             if detailInspectorModel.showInspector && openFileWindowModel.showItem {
                 detailInspectorModel.showInspector = false
             }
         }
+    }
+
+    func editingSheet(model: any ItemDataAccessable) -> some View {
+        ItemHeaderEditorView(editControllable: root.editControllable, model: model)
+            .colorScheme(colorScheme)
+            .preferredColorScheme(colorScheme)
+            .presentationContentInteraction(.resizes)
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationBackgroundInteraction(.enabled)
+            .tint(root.configurable.module.tint)
+#if os(iOS)
+            .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
+#endif
     }
     
     func headerView(model: any ItemDataAccessable) -> some View {
@@ -227,23 +243,6 @@ private extension ItemDetailRootView {
         .transition(.scale)
     }
     
-    @ViewBuilder func bottomView(model: any ItemDataAccessable) -> some View {
-        if hasFile(model: model) && model.specialCategory == false && root.viewControllable.goupViewType != .none {
-            CarouselItemView(root: root, model: model, selection: selection) {
-                if root.viewControllable.goupViewType == .item {
-                    ItemGroupItemView(root: root, model: model)
-                } else {
-                    if let cacheControllable = root.cacheControllable {
-                        GroupedPhotoView(cacheController: cacheControllable, itemControllable: root.itemControllable, model: model)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .environment(selection)
-            .transition(.move(edge: .bottom))
-        }
-    }
     
     @ViewBuilder func contentView(model: any ItemDataAccessable) -> some View {
         ZStack {
@@ -308,28 +307,16 @@ private extension ItemDetailRootView {
         editor
             .id(model.id)
             .overlay(alignment: .top) {
-                Group {
-#if os(visionOS)
+                GlassEffectContainerAll {
                     overlayFileImporter(model: model)
-#else
-                    GlassEffectContainer {
-                        overlayFileImporter(model: model)
-                    }
-#endif
                 }
                 .padding()
                 .opacity(model.specialCategory ? 0 : 1)
             }
             .overlay(alignment: .bottom) {
                 if model.description.isEmpty == false {
-                    Group {
-#if os(visionOS)
+                    GlassEffectContainerAll {
                         overlayDescription(model: model)
-#else
-                        GlassEffectContainer {
-                            overlayDescription(model: model)
-                        }
-#endif
                     }
                     .padding()
                 }
@@ -349,10 +336,10 @@ private extension ItemDetailRootView {
             .padding(.horizontal, 8)
             .padding(6)
 #if !os(visionOS)
-            .glassEffect(.regular)
+            .glassEffectAll(.regular)
 #endif
     }
-    
+
     func overlayFileImporter(model: any ItemDataAccessable) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
             HStack {
@@ -361,7 +348,7 @@ private extension ItemDetailRootView {
             }
             .padding(6)
 #if !os(visionOS)
-            .glassEffect(.regular.interactive())
+            .glassEffectAll(.regular.interactive())
 #endif
             
             Spacer(minLength: 20)
@@ -389,7 +376,7 @@ private extension ItemDetailRootView {
 private extension ItemDetailRootView {
     
     func canShowInspector(model: any ItemDataAccessable) -> Bool {
-        valueFor(iOS: appSizeMode == .regular, macOS: true, tvOS: true, visionOS: false)
+        valueFor(iOS: appSizeModel.mode == .regular, macOS: true, tvOS: true, visionOS: false)
     }
 
     func hasAnyInspector(model: any ItemDataAccessable) -> Bool {
@@ -423,7 +410,7 @@ private extension ItemDetailRootView {
             ToolbarItem(placement: .primaryAction) {
                 if (hasFile(model: currentModel(model: model)) || currentModel(model: model).specialCategory) {
                     Button {
-                        withAnimation(.easeInOut) { isEditing = true }
+                        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
                     } label: {
                         Label {
                             Text("Edit", bundle: .module)

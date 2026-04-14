@@ -127,6 +127,57 @@
         }
       }
     },
+    "🎉 Critical Success! Rolled %@: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "🎉 Critical Success! Rolled %1$@: %2$lld"
+          }
+        }
+      }
+    },
+    "🎲 Rolled %@: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "🎲 Rolled %1$@: %2$lld"
+          }
+        }
+      }
+    },
+    "💥 Critical Failure! Rolled %@: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "💥 Critical Failure! Rolled %1$@: %2$lld"
+          }
+        }
+      }
+    },
+    "4-sided die" : {
+
+    },
+    "6-sided die" : {
+
+    },
+    "8-sided die" : {
+
+    },
+    "10-sided die" : {
+
+    },
+    "12-sided die" : {
+
+    },
+    "20-sided die" : {
+
+    },
+    "100-sided die" : {
+
+    },
     "Add" : {
       "localizations" : {
         "de" : {
@@ -369,6 +420,27 @@
         }
       }
     },
+    "D4" : {
+
+    },
+    "D6" : {
+
+    },
+    "D8" : {
+
+    },
+    "D10" : {
+
+    },
+    "D12" : {
+
+    },
+    "D20" : {
+
+    },
+    "D100" : {
+
+    },
     "Dice" : {
       "localizations" : {
         "de" : {
@@ -378,6 +450,12 @@
           }
         }
       }
+    },
+    "Dice History" : {
+
+    },
+    "Dice Type" : {
+
     },
     "Drop %@" : {
       "localizations" : {
@@ -731,12 +809,40 @@
         }
       }
     },
+    "Roll a dice and show the result" : {
+
+    },
+    "Roll a specific dice from your collection" : {
+
+    },
+    "Roll D6" : {
+
+    },
+    "Roll D20" : {
+
+    },
+    "Roll Dice" : {
+
+    },
+    "Roll Specific Dice" : {
+
+    },
     "Rolled" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gewürfelt"
+          }
+        }
+      }
+    },
+    "Rolled %@: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Rolled %1$@: %2$lld"
           }
         }
       }
@@ -801,6 +907,9 @@
         }
       }
     },
+    "Show Dice History" : {
+
+    },
     "Show Dice in Space" : {
       "localizations" : {
         "de" : {
@@ -810,6 +919,9 @@
           }
         }
       }
+    },
+    "Show recent dice rolls" : {
+
     },
     "Special Options" : {
       "localizations" : {
@@ -871,6 +983,9 @@
           }
         }
       }
+    },
+    "Which dice do you want to roll?" : {
+
     },
     "Which die?" : {
       "localizations" : {

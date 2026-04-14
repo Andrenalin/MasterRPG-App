@@ -51,7 +51,6 @@ struct DiceInlineEditor: View {
 #Preview(traits: .mockData) {
     ZStack(alignment: .topLeading) {
         DiceInlineEditor(itemId: DiceModel.previewId)
-            .environment(\.gameModus, .master)
             .environment(DiceDisplayModel(isEditing: true, showPlayerDice: false, showDiceValueEditor: false))
     }
 }

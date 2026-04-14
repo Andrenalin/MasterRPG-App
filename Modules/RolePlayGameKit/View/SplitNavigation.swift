@@ -122,6 +122,7 @@ private extension SplitNavigation {
     func pageTab(for tab: RootRoute) -> Tab<RootRoute?, some View, DefaultTabLabel> {
         Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
             tabView(tab: tab)
+                .tint(tab.module.tint)
         }
     }
     
@@ -140,14 +141,41 @@ private extension SplitNavigation {
         .environment(appModel.itemRootController(for: tab.module))
     }
     
-    @ViewBuilder func splitWithDetail(tab: RootRoute) -> some View {
-        @Bindable var model = appModel.itemRootController(for: tab.module)?.folderListControllable.detailInspectorModel ?? DetailInspectorModel()
-        
+    func splitWithDetail(tab: RootRoute) -> some View {
+        SplitWithDetailView(
+            tab: tab,
+            column: $column,
+            preferredCompactColumn: $preferredCompactColumn,
+            appModel: appModel
+        )
+    }
+}
+
+/// Extracted so that @State owns the fallback DetailInspectorModel —
+/// prevents a new allocation on every splitWithDetail body evaluation.
+private struct SplitWithDetailView: View {
+    let tab: RootRoute
+    @Binding var column: NavigationSplitViewVisibility
+    @Binding var preferredCompactColumn: NavigationSplitViewColumn
+    let appModel: AppModel
+
+    @State private var fallbackModel = DetailInspectorModel()
+
+    private var inspectorModel: DetailInspectorModel {
+        appModel.itemRootController(for: tab.module)?.folderListControllable.detailInspectorModel ?? fallbackModel
+    }
+
+    var body: some View {
+        let controller = appModel.itemRootController(for: tab.module)
+        @Bindable var model = inspectorModel
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            contentView(tab: tab)
+            ManagedPresentationView {
+                tab
+            }
+            .environment(controller)
         } detail: {
             SplitDetailView(isExtendedRoutes: false)
-                .environment(appModel.itemRootController(for: tab.module))
+                .environment(controller)
         }
         .inspectorAll(isPresented: $model.showInspector) {
             model.currentInspectorView

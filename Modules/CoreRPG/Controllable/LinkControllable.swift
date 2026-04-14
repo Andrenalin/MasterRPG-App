@@ -10,6 +10,7 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
     case roll
     case share
     case show
+    case favorite
     
     var localizedTitle: LocalizedStringResource {
         switch self {
@@ -19,6 +20,7 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
         case .roll: "Roll"
         case .share: "Share"
         case .show: "Show"
+        case .favorite: "Favorite"
         }
     }
     
@@ -34,6 +36,7 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
         case .roll: "dice.fill"
         case .share: "square.and.arrow.up.fill"
         case .show: "eye.fill"
+        case .favorite: "star.fill"
         }
     }
     
@@ -45,6 +48,7 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
         case .roll: 400
         case .share: 500
         case .show: 600
+        case .favorite: 700
         }
     }
 }

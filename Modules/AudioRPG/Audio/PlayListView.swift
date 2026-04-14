@@ -8,7 +8,7 @@ struct PlayListView: View {
     let root: AudioRootModel
     
     @Environment(\.networkActions) private var networkActions
-    @Environment(\.showGame) private var showGame
+    @Environment(AppGameStateModel.self) private var appGameStateModel
 
     var body: some View {
         @Bindable var model = root.audioController.model
@@ -16,7 +16,7 @@ struct PlayListView: View {
             ForEach(model.playList) { audio in
                 HStack {
                     Button {
-                        if showGame {
+                        if appGameStateModel.isGameRunning {
                             networkActions?.game(root.gameController.requestPlay(id: audio.id), .generic, nil)
                         } else {
                             root.audioController.togglePlay(id: audio.id)
@@ -36,7 +36,7 @@ struct PlayListView: View {
                     .borderLessTVBottonStyle()
 
                     Button(role: .destructive) {
-                        if showGame && root.audioController.model.isPlaying && root.audioController.model.currentId == audio.id {
+                        if appGameStateModel.isGameRunning && root.audioController.model.isPlaying && root.audioController.model.currentId == audio.id {
                             networkActions?.game(root.gameController.requestPlay(id: audio.id), .generic, nil)
                         }
                         withAnimation { root.audioController.removeAudio(id: audio.id) }

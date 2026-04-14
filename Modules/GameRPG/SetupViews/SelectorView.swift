@@ -94,8 +94,6 @@ struct SelectorView: View {
     private var gameMasterView: some View {
         ScrollView {
             VStack {
-                SelectedMasterView(root: root)
-                
                 SelectedAdventureView(root: root)
                 
                 MasterStartView(root: root)

@@ -25,8 +25,6 @@ public struct LinkItemRootView: View {
             .environment(root.folderLinkControllable.listDisplayModel)
             .environment(root.folderLinkControllable.searchModel)
             .environment(root.folderLinkControllable.cacheListItemModel)
-            .tint(root.configurable.module.tint)
-            .accentColor(root.configurable.module.tint)
             .onChange(of: root.listDisplayModel.displayMode) {
                 guard type == .inspector else { return }
                 root.folderLinkControllable.listDisplayModel.displayMode <=> root.listDisplayModel.displayMode

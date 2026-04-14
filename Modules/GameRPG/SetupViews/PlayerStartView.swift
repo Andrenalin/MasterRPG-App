@@ -11,7 +11,7 @@ struct PlayerStartView: View {
         root.networkStore.sharePlayStore
     }
     
-    @Environment(AppSettingsModel.self) private var settingsModel
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     
     @State private var startSharePlayAnimation: Bool = false
     
@@ -20,7 +20,7 @@ struct PlayerStartView: View {
             Group {
                 if sharePlayStore.canActivateSharePlay {
                     Button {
-                        settingsModel.gameModus = .player
+                        appGameStateModel.gameModus = .player
                         Task {
                             await root.startGame(to: nil, mode: .player)
                         }
@@ -50,9 +50,9 @@ struct PlayerStartView: View {
                         BrowserView(root: root, playerNetworkControllable: playerNetworkController)
                             .onChange(of: playerNetworkController.networkModel.isConnected) {
                                 if playerNetworkController.networkModel.isConnected {
-                                    settingsModel.gameModus = .player
+                                    appGameStateModel.gameModus = .player
                                 } else {
-                                    settingsModel.gameModus = .edit
+                                    appGameStateModel.gameModus = .edit
                                 }
                             }
                     }

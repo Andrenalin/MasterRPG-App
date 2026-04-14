@@ -16,9 +16,20 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     let linkTypes: LinkType.Type
     
     @Environment(\.colorScheme) private var colorScheme
-    
+
+    @State private var entryDataEditable: (any EntryDataEditable)?
+
     public var body: some View {
-        if let entryDataEditable, model.sheetModel.sheetType == .edit {
+        if model.isAtMaxDepth {
+            // Maximum nesting depth reached - show fallback
+            Text("Maximum nesting depth reached", bundle: .module)
+                .foregroundStyle(.secondary)
+                .italic()
+                .font(.caption)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .listRowBackground(rowColor(for: model.sheetModel.level))
+                .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+        } else if let entryDataEditable, model.sheetModel.sheetType == .edit {
             InlineEditorView(entryDataEditable: entryDataEditable, model: model, entry: model.sheetModel)
         } else {
             if model.sheetModel.showHeader || isEditor {
@@ -33,10 +44,9 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                     if isEditor && model.sheetModel.canAdd {
                         dropButton
                             .dropDestination(for: model.sheetModel.source.typeId, isEnabled: isEditor) { name, itemId, entryId in
-                                guard let entryDataEditable else { return }
                                 if let entryId  {
                                     withAnimation {
-                                        let isMoved = entryDataEditable.move(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
+                                        let isMoved = model.moveItem(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
                                         if isMoved {
                                             model.move(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
                                             model.updateParent()
@@ -58,7 +68,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                             LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
                         }
                         ForEach(model.sheetModel.inlineEntries) { inlineEntry in
-                            SheetEntryView(root: root, model: model, entry: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
+                            SheetEntryView(model: model, entry: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
                         }
                     }
                     .font(.subheadline)
@@ -68,8 +78,8 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                 }
             }
             
-            ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
-                SheetEntryView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
+            ForEach(model.filteredEntries) { entry in
+                SheetEntryView(model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
 #if !os(tvOS)
                     .applyIf(!isEditor) {
                         $0.draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink())
@@ -78,21 +88,21 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             }
             .applyIf(isEditor) {
                 $0.onMove { indexSet, index in
-                    model.move(entryDataEditable: entryDataEditable, indexSet: indexSet, to: index)
+                    model.moveEntries(indexSet: indexSet, to: index)
                 }
             }
-            .onChange(of: root.editControllable.editorModel.currentEntryId) { previousEntryId, newEntryId in
-                if let previousEntryId, root.editControllable.editorModel.currentItemId == model.itemId {
+            .onChange(of: model.getCurrentEntryId(for: model.sheetModel.source)) { previousEntryId, newEntryId in
+                if let previousEntryId, model.getCurrentItemId(for: model.sheetModel.source) == model.itemId {
                     withAnimation { model.update(entryId: previousEntryId) }
                 }
                 if let newEntryId, !model.hasEntry(entryId: newEntryId) {
                     model.updateParent()
                 }
             }
-            .onChange(of: root.itemControllable.itemOrEmpty(for: model.id).name) {
+            .onChange(of: model.getItemName(for: model.sheetModel.source)) {
                 model.reset()
             }
-            .onChange(of: root.itemControllable.itemOrEmpty(for: model.id).description) {
+            .onChange(of: model.getItemDescription(for: model.sheetModel.source)) {
                 model.reset()
             }
         }
@@ -100,59 +110,65 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         Color.accentColor.opacity(0.3)
             .frame(height: 8)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            .listRowBackground(Color.clear)        
+            .listRowBackground(Color.clear)
+            .task(id: model.sheetModel.source) {
+                entryDataEditable = model.entryDataEditable(for: model.sheetModel.source)
+            }
     }
-    
-    func relocate(indexSet: IndexSet, to: Int) -> (IndexSet, Int) {
-        let inline = model.sheetModel.filter(searchText: model.searchText).reduce(0) { $0 + $1.inlineEntries.count }
-        return (IndexSet(indexSet.map { $0 - inline }), to - inline)
-    }
-    
-    var entryDataEditable: (any EntryDataEditable)? {
-        root.editControllable as? (any EntryDataEditable)
-    }
-    
+
     func rowColor(for level: Int) -> Color {
-#if os(macOS) || os(visionOS)
-        .clear
-#else
-        level.isMultiple(of: 2) ? (colorScheme == .dark ? .black : .white) : .secondary.opacity(0.3)
-#endif
+        #if os(macOS) || os(visionOS)
+        return .clear
+        #else
+        if level.isMultiple(of: 2) {
+            return colorScheme == .dark ? .black : .white
+        } else {
+            return .secondary.opacity(0.3)
+        }
+        #endif
+    }
+
+    func addNewEntry() {
+        guard let entryId = model.addNewEntry(to: model.sheetModel.source) else { return }
+        withAnimation {
+            model.setCurrentItem(source: model.sheetModel.source, entryId: entryId)
+            model.setCurrentEntryId(source: model.sheetModel.source, entryId: entryId)
+            model.add(entryId: entryId)
+            model.updateParent()
+        } completion: {
+            model.setScrollEntryId(source: model.sheetModel.source, entryId: entryId)
+        }
     }
     
     @ViewBuilder var plusButton: some View {
-        if let entryDataEditable {
-            Button {
-                withAnimation {
-                    let entryId = entryDataEditable.addNewEntry(itemId: model.sheetModel.source.itemId)
-                    root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: model.sheetModel.source.itemId, entryId: entryId, typeId: root.configurable.module))
-                    root.editControllable.editorModel.currentEntryId = entryId
-                    model.add(entryId: entryId)
-                    model.updateParent()
-                    Task {
-                        try? await Task.sleep(for: .seconds(0.25))
-                        root.editControllable.editorModel.scrollEntryId = entryId
-                    }
+        if entryDataEditable != nil {
+            Button(action: addNewEntry) {
+                Label {
+                    Text("Add Entry", bundle: .module)
+                } icon: {
+                    Image(systemName: "note.text.badge.plus")
+                        .imageScale(.large)
+                        .foregroundStyle(.foreground, .tint)
                 }
-            } label: {
-                Image(systemName: "note.text.badge.plus")
-                    .imageScale(.large)
-                    .foregroundStyle(.foreground, .tint)
+                .labelStyle(.iconOnly)
             }
             .borderLessTVBottonStyle()
             .padding(4)
             .contentShape(.circle)
-#if !os(visionOS)
-            .glassEffect()
-#endif
+            .glassEffectAll()
         }
     }
     
     @ViewBuilder var dropButton: some View {
         if entryDataEditable != nil {
-            Image(systemName: "square.and.arrow.down.on.square")
-                .imageScale(.large)
-                .foregroundStyle(.foreground, .tint)
+            Label {
+                Text("Drop Here", bundle: .module)
+            } icon: {
+                Image(systemName: "square.and.arrow.down.on.square")
+                    .imageScale(.large)
+                    .foregroundStyle(.foreground, .tint)
+            }
+            .labelStyle(.iconOnly)
         }
     }
 }

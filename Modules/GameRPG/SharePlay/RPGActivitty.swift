@@ -1,11 +1,18 @@
 // @copyright André Trettin
 
 import CoreRPG
+import CoreTransferable
 import CoreGraphics
 import Foundation
 import GroupActivities
 
 public struct RPGActivity: GroupActivity, Sendable {
+    public init(adventureTitle: String? = nil) {
+        if let adventureTitle {
+            self.adventureTitle = adventureTitle
+        }
+    }
+    
     public static let activityIdentifier = "de.andretrettin.MasterRPG.play-rpg-together"
     @MainActor static var titleImage: CGImage?
 
@@ -22,3 +29,7 @@ public struct RPGActivity: GroupActivity, Sendable {
         return metadata
     }
 }
+
+#if !os(tvOS)
+extension RPGActivity: Transferable {}
+#endif

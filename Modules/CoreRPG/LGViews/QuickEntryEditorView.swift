@@ -22,7 +22,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @Environment(ItemRootController.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.navigator) private var navigator
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     
 #if os(macOS) || os(visionOS)
     @Environment(\.openWindow) private var openWindow
@@ -159,95 +159,26 @@ private extension QuickEntryEditorView {
     }
     
     private var initialText: String {
-        model.entries.map {
-            "\($0.name)\n\($0.content)"
-        }.joined(separator: "\n\n")
+        parser.format(model.entries.map { (name: $0.name, content: $0.content) })
     }
 }
 
 private extension QuickEntryEditorView {
+    private var parser: EntryTextParser { EntryTextParser() }
+
     func createMultiLineEntries(_ text: String) -> [EditController.Model.Entry] {
-        var newEntries: [EditController.Model.Entry] = []
-        var name = ""
-        var content = ""
-        
-        text
-            .replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\r", with: "\n")
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .forEach { entryline in
-                guard !entryline.isEmpty else {
-                    if let entry = createEntry(with: name, content: content) {
-                        newEntries.append(entry)
-                    }
-                    name = ""
-                    content = ""
-                    return
-                }
-                
-                if name.isEmpty {
-                    name = String(entryline.trimmingCharacters(in: .whitespacesAndNewlines))
-                } else {
-                    content.append(contentsOf: "\(entryline.trimmingCharacters(in: .whitespacesAndNewlines))\n")
-                }
-            }
-        if let entry = createEntry(with: name, content: content) {
-            newEntries.append(entry)
+        parser.parse(text).compactMap { parsed in
+            createEntry(with: parsed.name, content: parsed.content)
         }
-        
-        return newEntries
     }
-    
+
     private func createEntry(with name: String, content: String) -> EditController.Model.Entry? {
         guard !name.isEmpty else { return nil }
-        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        return editController.create(name: name, content: trimmedContent)
+        return editController.create(name: name, content: content)
     }
-    
-    func removeLineBreak(_ text: String) -> String {
-        var updatedBlock: [String] = []
-        var currentTitle: String = ""
-        var currentContent: String = ""
-        
-        text
-            .replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\r", with: "\n")
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .forEach { entryline in
-                if entryline.isEmpty {
-                    if !currentTitle.isEmpty {
-                        var newBlock = currentTitle
-                        if !currentContent.isEmpty {
-                            newBlock.append("\n\(currentContent)")
-                        }
-                        updatedBlock.append(newBlock)
-                    }
-                    currentTitle = ""
-                    currentContent = ""
-                } else {
-                    var newLine = entryline.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if currentTitle.isEmpty {
-                        currentTitle.append(newLine)
-                    } else {
-                        // content 2nd line and more
-                        if newLine.last == "-" {
-                            newLine = String(newLine.dropLast())
-                        } else {
-                            newLine.append(" ")
-                        }
-                        currentContent.append(newLine)
-                    }
-                }
-            }
 
-        if !currentTitle.isEmpty {
-            var newBlock = currentTitle
-            if !currentContent.isEmpty {
-                newBlock.append("\n\(currentContent)")
-            }
-            updatedBlock.append(newBlock)
-        }
-        return updatedBlock.joined(separator: "\n\n")
+    func removeLineBreak(_ text: String) -> String {
+        parser.removeLineBreaks(from: text)
     }
 }
 
@@ -316,7 +247,7 @@ private extension QuickEntryEditorView {
     }
     
     var canShowInspector: Bool {
-        valueFor(iOS: appSizeMode == .regular, macOS: true, tvOS: true, visionOS: false)
+        valueFor(iOS: appSizeModel.mode == .regular, macOS: true, tvOS: true, visionOS: false)
     }
         
     var pdfButton: some View {

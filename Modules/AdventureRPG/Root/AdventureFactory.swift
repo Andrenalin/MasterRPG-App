@@ -49,7 +49,7 @@ public enum AdventureFactory {
         AdventureRootView()
     }
         
-    @MainActor @ViewBuilder public static func detailView(root: AdventureRootModel) -> some View {
-        ItemSplitDetailRootView(root: root.rootController)
+    @MainActor public static func detailView(root: AdventureRootModel) -> some View {
+        ItemSplitDetailRouteRootView(root: root.rootController, route: AdventureRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
     }
 }

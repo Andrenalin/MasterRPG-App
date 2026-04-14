@@ -7,7 +7,7 @@ import AdventureRPG
 struct MasterStartView: View {
     let root: GameRoot
     
-    @Environment(AppSettingsModel.self) private var settingsModel
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     
 #if os(visionOS)
     @Environment(\.openWindow) private var openWindow
@@ -20,7 +20,7 @@ struct MasterStartView: View {
     @State private var startSharePlayAnimation: Bool = false
     
     var body: some View {
-        if root.gameModel.selectedGameMaster != nil && root.gameModel.selectedAdventure != nil {
+        if root.gameModel.selectedAdventure != nil {
             Button {
 #if os(visionOS)
                 openWindow(id: WindowIdentifier.gameTable.rawValue)
@@ -40,6 +40,11 @@ struct MasterStartView: View {
                 startSharePlayAnimation = sharePlayStore.canActivateSharePlay
             }
             
+            #if !os(tvOS)
+            SharePlayButton("Play RPG Online", activity: RPGActivity())
+                .opacity(startSharePlayAnimation ? 0 : 1)
+            #endif
+            
             ImportDataModels(importController: root.adventureRoot.gameImportControllable, isSaveGame: true) {
                 await startGame()
             }
@@ -49,7 +54,6 @@ struct MasterStartView: View {
     
     private var overlayAnimation: some View {
         Capsule()
-        //RoundedRectangle(cornerRadius: 10)
             .stroke(Color.accentColor, lineWidth: 4)
             .scaleEffect(startSharePlayAnimation ? 2 : 1)
             .opacity(startSharePlayAnimation ? 0 : 1)
@@ -67,7 +71,7 @@ struct MasterStartView: View {
     @MainActor
     func startGame() async {
         await root.startMaster()
-        settingsModel.gameModus = .master
+        appGameStateModel.gameModus = .master
     }
 }
 

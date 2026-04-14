@@ -16,6 +16,7 @@ import WeatherRPG
 
 public protocol AdventureStoreGameable {
     @MainActor func startGame(with id: UUID)
+    @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func resetGame()
     @MainActor func saveGame() -> (Task<Void, any Error>, URL)
 }
@@ -70,6 +71,14 @@ extension GameController: AdventureStoreGameable {
             await focus(on: id)
         }
         root.mapRoot.mapGameControllable.startGameAsMaster()
+    }
+    
+    @MainActor public func focusDice(for itemId: UUID) -> UUID? {
+        if let diceId = itemController.itemOrEmpty(for: itemId).diceId {
+            let newDiceId = root.diceRoot.diceGameControllable.createGameDice(for: diceId, gameDiceId: nil)
+            return newDiceId
+        }
+        return nil
     }
 
     @MainActor

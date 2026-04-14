@@ -10,7 +10,7 @@ struct ViewerRootView: View {
     
     @Environment(WeatherRootModel.self) private var root
     
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     
@@ -59,7 +59,7 @@ private extension ViewerRootView {
     }
     
     var shouldShowCloseButton: Bool {
-        valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
+        valueFor(iOS: appSizeModel.mode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
     }
 
     var animateButton: some View {

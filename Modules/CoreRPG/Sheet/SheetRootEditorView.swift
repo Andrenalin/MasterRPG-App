@@ -30,10 +30,10 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
             Text(headerTitle)
         }
         .onChange(of: model.id) {
-            tableSheetModel = TableSheetModel(linkControllable: linkControllable, parent: nil, model: model, level: 0, module: module)
+            tableSheetModel.update(with: model)
         }
-        .onChange(of: root.editControllable.editorModel.hasChangedEntries) {
-            tableSheetModel = TableSheetModel(linkControllable: linkControllable, parent: nil, model: model, level: 0, module: module)
+        .onChange(of: tableSheetModel.hasAnyChanges(for: tableSheetModel.sheetModel.source)) {
+            tableSheetModel.update(with: model)
         }
     }
 }

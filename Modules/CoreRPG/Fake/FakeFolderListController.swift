@@ -8,6 +8,10 @@ struct FakeFolderListController: FolderListControllable {
         FakeFolderListController()
     }
     
+    func copy(listModel: FolderListModel) -> FakeFolderListController {
+        FakeFolderListController()
+    }
+    
     func detailDestination(for itemId: UUID) -> any NavigationDestination {
         InternalRoute.export(ids: [itemId])
     }
@@ -17,7 +21,7 @@ struct FakeFolderListController: FolderListControllable {
     }
     
     let itemControllable: any ItemControllable = FakeItemController.fake
-    let listModel: FolderListModel = FolderListModel(navigationModel: AppNavigationModel())
+    let listModel: FolderListModel = FolderListModel(navigationModel: ModuleNavigationModel())
     let listDisplayModel: ListDisplayModel = ListDisplayModel()
     let searchModel: SearchModel = .preview()
     

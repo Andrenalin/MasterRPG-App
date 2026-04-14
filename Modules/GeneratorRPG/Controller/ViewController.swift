@@ -4,7 +4,6 @@ import CoreRPG
 import SwiftUI
 
 public struct ViewController: Sendable {
-    public let goupViewType: GroupViewType = .none
     public let thumbnailRowViewType: ThumbnailRowViewType = .none
 }
 

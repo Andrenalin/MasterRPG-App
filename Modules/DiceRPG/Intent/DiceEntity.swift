@@ -20,6 +20,7 @@ struct DiceEntity: IndexedEntity {
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
             title: "\(name)",
+            subtitle: "\(description)",
             image: .init(systemName: icon)
         )
     }
@@ -45,6 +46,24 @@ struct DiceEntity: IndexedEntity {
         self.root = root
         self.model = model
     }
+    
+    // MARK: - Spotlight Integration (iOS 18+)
+    
+    var attributeSet: CSSearchableItemAttributeSet {
+        let attributes = CSSearchableItemAttributeSet(contentType: .item)
+        attributes.title = name
+        attributes.contentDescription = description
+        attributes.keywords = ["dice", "roll", name] + model.tags
+        attributes.contentType = "Dice"
+        attributes.contentTypeTree = ["Dice", "Game", "RPG"]
+        
+        // Add dice-specific metadata
+        if let firstDie = model.dice.first {
+            attributes.comment = "D\(firstDie.die.max)"
+        }
+        
+        return attributes
+    }
 }
 
 extension DiceEntity: Transferable {
@@ -58,11 +77,38 @@ extension DiceEntity: Transferable {
     }
 }
 
+extension DiceEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://DICE/0/\(.id)"
+    }
+}
+
 @MainActor
 struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: DiceRootModel
+    
+    // iOS 18+: Cache for better performance
+    private static var cachedEntities: [DiceEntity] = []
+    private static var lastCacheUpdate: Date = .distantPast
+    private static let cacheValidityDuration: TimeInterval = 60 // 1 minute
 
     func suggestedEntities() async throws -> [DiceEntity] {
+        // Return cached entities if still valid
+        if Date().timeIntervalSince(Self.lastCacheUpdate) < Self.cacheValidityDuration {
+            return Self.cachedEntities
+        }
+        
+        // Fetch fresh entities
+        let entities = await fetchEntities()
+        
+        // Update cache
+        Self.cachedEntities = entities
+        Self.lastCacheUpdate = Date()
+        
+        return entities
+    }
+    
+    private func fetchEntities() async -> [DiceEntity] {
         let ids = root.itemController.itemDataModel.items
         var results: [DiceEntity] = []
         for id in ids {
@@ -83,20 +129,23 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         return results
     }
 
-    func entities(matching: String) async throws -> [DiceEntity] {
-        let ids = root.itemController.itemDataModel.items
-        var results: [DiceEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
-            let entity = DiceEntity(root: root, model: model)
-            results.append(entity)
+    func entities(matching string: String) async throws -> [DiceEntity] {
+        let allEntities = try await suggestedEntities()
+        return allEntities.filter { entity in
+            entity.name.localizedCaseInsensitiveContains(string) ||
+            entity.description.localizedCaseInsensitiveContains(string) ||
+            entity.model.tags.contains(where: { $0.localizedCaseInsensitiveContains(string) })
         }
-        return results
     }
 
     func allEntities() async throws -> [DiceEntity] {
         try await suggestedEntities()
+    }
+    
+    // iOS 18+: Invalidate cache when data changes
+    static func invalidateCache() {
+        cachedEntities = []
+        lastCacheUpdate = .distantPast
     }
 }
 

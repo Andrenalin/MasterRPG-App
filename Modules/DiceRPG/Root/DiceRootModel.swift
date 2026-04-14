@@ -18,7 +18,7 @@ public final class DiceRootModel {
         
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
-        self.navigationModel = AppNavigationModel()
+        self.navigationModel = ModuleNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
     }
     
@@ -30,7 +30,7 @@ public final class DiceRootModel {
         _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController, editController: editController)
-        _gameController = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
+        _gameController = GameController(itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         _searchController = SearchController(itemController: itemController)
         
@@ -71,7 +71,7 @@ public final class DiceRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: AppNavigationModel
+    @MainActor public var navigationModel: ModuleNavigationModel
     public var linkSelectionModel: ItemSelectionModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }

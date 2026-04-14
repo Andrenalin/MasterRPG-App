@@ -3,12 +3,24 @@
 import SwiftUI
 
 @MainActor @Observable public final class AppNavigationModel {
-    public init(selectedItemId: UUID? = nil, selectedEntryId: UUID? = nil) {
-        self.selectedItemId = selectedItemId
-        self.selectedEntryId = selectedEntryId
+    public init(appGameStateModel: AppGameStateModel) {
+        self.appGameStateModel = appGameStateModel
     }
     
-    public var selectedItemId: UUID?
-    public var selectedEntryId: UUID?    
-    public var folderItems: [UUID] = []
+    let appGameStateModel: AppGameStateModel
+    
+    public var initialRouteType: AppInitialRouteType = .initializing
+    public var modeRouteType: AppModeRouteType { appGameStateModel.isGameRunning ? .game : AppNavigationModel.defaultMode
+    }
+    
+    public var navigationType: AppNavigationRouteType = .split
+        
+#if os(iOS)
+    static private let defaultMode = AppModeRouteType.editor
+#elseif os(visionOS)
+    static private let defaultMode = AppModeRouteType.gameVisionSetup
+#else
+    static private let defaultMode = AppModeRouteType.gameSetup
+#endif
+
 }

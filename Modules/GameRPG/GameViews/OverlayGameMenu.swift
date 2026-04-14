@@ -10,10 +10,8 @@ struct OverlayGameMenu: View {
     let isMaster: Bool
     
     @Environment(GameScreenModel.self) private var gameScreenModel
-#if !os(tvOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
-    @Environment(\.wideMode) private var wideMode
+    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     
     var body: some View {
 #if os(visionOS)
@@ -85,7 +83,7 @@ private extension OverlayGameMenu {
             titleView
             
             HStack(spacing: marginWidth + 4) {
-                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: wideMode == .small ? .bottom : .bottomTrailing)
+                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: appWindowSizeModel.mode == .compact ? .bottom : .bottomTrailing)
                     .padding(.horizontal, marginWidth)
                     .padding(.leading, marginWidth / 2)
                     .zIndex(2)
@@ -106,12 +104,12 @@ private extension OverlayGameMenu {
     }
     
     var marginWidth: CGFloat {
-        wideMode == .small ? 4 : 8
+        appWindowSizeModel.mode == .compact ? 4 : 8
     }
     
     @ViewBuilder
     var titleView: some View {
-        if isMaster && wideMode != .small {
+        if isMaster && appWindowSizeModel.mode == .regular {
             Text(root.gameModel.startGameTime, style: .relative)
                 .font(.caption)
                 .frame(maxWidth: .infinity)
@@ -158,7 +156,7 @@ private extension OverlayGameMenu {
     var secondOptionView: some View {
         Button {
 #if os(macOS) || os(visionOS)
-            openWindow(id: WindowIdentifier.logs.rawValue)
+            sceneManager.openWindow(SceneId.logs)
 #else
             withAnimation { gameScreenModel.resetToSettingsTab() }
 #endif
@@ -211,9 +209,11 @@ private extension OverlayGameMenu {
             .padding(.trailing, marginWidth)
             .onChange(of: gameScreenModel.showGameType) {
                 guard gameScreenModel.showGameType != .none && gameScreenModel.showGameType != .game else { return }
-#if !os(tvOS)
-                openWindow(id: gameScreenModel.showGameType.linkWindowId)
-#endif
+                if sceneManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
+                    sceneManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+                } else {
+                    sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+                }
             }
     }
     
@@ -242,9 +242,11 @@ private extension OverlayGameMenu {
         .padding(.trailing, marginWidth)
         .onChange(of: gameScreenModel.showGameType) {
             guard gameScreenModel.showGameType != .none && gameScreenModel.showGameType != .game else { return }
-#if !os(tvOS)
-            openWindow(id: gameScreenModel.showGameType.linkWindowId)
-#endif
+            if sceneManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
+                sceneManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+            } else {
+                sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+            }
         }
     }
     
@@ -266,7 +268,6 @@ private extension OverlayGameMenu {
             .padding()
     }
     .background(Color.brown)
-    .environment(\.wideMode, .wide)
 }
 
 #Preview("small") {
@@ -278,5 +279,4 @@ private extension OverlayGameMenu {
             .padding(.trailing, 8)
     }
     .background(Color.brown)
-    .environment(\.wideMode, .small)
 }

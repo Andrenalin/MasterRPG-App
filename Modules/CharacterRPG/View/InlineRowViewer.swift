@@ -20,7 +20,6 @@ struct InlineRowViewer: View, Equatable {
                 EntryListDiceRow(itemId: destination.itemId, entryId: entryId)
             } else {
                 root.diceRoot.viewController.rowViewer(source: diceSource, destination: destination)
-                    .environment(\.gameModus, .player)
             }
         case .pdf:
             root.pdfRoot.viewController.rowViewer(source: source, destination: destination)

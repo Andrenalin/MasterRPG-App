@@ -8,6 +8,10 @@ import RolePlayGameKit
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
+<<<<<<< HEAD
+=======
+import GroupActivities
+>>>>>>> develop
 
 struct WindowVisionList: Scene {
     let appModel: AppModel
@@ -23,7 +27,7 @@ struct WindowVisionList: Scene {
         .windowStyle(.volumetric)
         .defaultSize(width: 2, height: 1.5, depth: 2, in: .meters)
 
-        Window("Settings", id: WindowIdentifier.settings.rawValue) {
+        Window("Settings", id: SceneId.settings.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 NavigationStack {
                     SettingsView(store: appModel)
@@ -34,7 +38,7 @@ struct WindowVisionList: Scene {
             }
         }
         .windowResizability(.contentSize)
-        .defaultWindowPlacementAll(.below(WindowIdentifier.game.rawValue))
+        .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
         
         WindowGroup(id: "SpaceVolume", for: UUID.self) { $id in
             if let id {
@@ -46,14 +50,14 @@ struct WindowVisionList: Scene {
         .windowStyle(.volumetric)
         .defaultSize(defaultSize, in: .meters)
 
-        ImmersiveSpace(id: WindowIdentifier.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
+        ImmersiveSpace(id: SceneId.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
-                    .environment(appModel.windowStateModel)
+                    .sceneTracker(for: SceneId.spaceViewer)
+                    .groupActivityAssociation(selection != nil ? .primary(SceneId.spaceViewer.rawValue) : nil)
             }
-            .handlesExternalEvents(preferring: [], allowing: [])
         }
-        .defaultWindowPlacementAll( .above(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue))
+        .defaultWindowPlacementAll( .above(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue))
         //.windowStyle(.volumetric)
         .defaultSize(defaultSize, in: .meters)
         .immersionStyle(selection: $immersionState, in: .mixed)

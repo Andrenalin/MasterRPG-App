@@ -14,34 +14,45 @@ public struct LinkItemListView: View {
             root.folderLinkControllable.resetParentModel(model: parentModel)
         }
     }
-    
+
     let root: any ItemRootControllable
     let type: LinkRootType
     let parentModel: (any ItemDataAccessable)?
-    
+
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ItemSelectionModel.self) private var selectionModel
 #if os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
-    
+
     @State private var showDetails: Bool = false
     @State private var showDetailsView: (any NavigationDestination)? = nil
-    
+
+    // Plain text avoids NSTextAttachment re-resolution via UIKit TextField prompt path on every layout pass
+    private static let filterPrompt = Text("Filter", bundle: .module)
+
     public var body: some View {
         ManagedNavigationStack(name: "LinkInspector") { navigator in
             VStack {
                 if type == .inspector {
-                    pickerView
-                    
-                    filterFieldView
+                    LinkItemPickerView(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+
+                    LinkItemFilterFieldView(
+                        searchModel: root.folderLinkControllable.searchModel,
+                        prompt: Self.filterPrompt
+                    ) {
+                        root.folderLinkControllable.resetFilter()
+                        cacheItemListModel.reset(search: root.folderLinkControllable.searchModel.searchText)
+                    }
                 }
-                
+
                 contentView
+                    .tint(root.configurable.module.tint)
                     .onAppear {
                         root.folderLinkControllable.resetItemOnce()
+                        withAnimation { root.folderLinkControllable.resetFilter() }
                     }
-                    .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode, initial: true) {
+                    .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode) {
                         withAnimation { root.folderLinkControllable.resetFilter() }
                     }
                     .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
@@ -73,96 +84,47 @@ private extension LinkItemListView {
     var listModel: FolderListModel {
         root.folderLinkControllable.listModel
     }
-    
-    @ViewBuilder
-    var pickerView: some View {
-        @Bindable var inspectorDisplayModel = root.folderLinkControllable.listDisplayModel
-        
-        Picker(selection: $inspectorDisplayModel.listMode) {
-            ForEach(ListDisplayModel.ListMode.allCases) { mode in
-                Text(mode.title, bundle: .module)
-                    .tag(mode)
-            }
-        } label: {
-            Text("List Mode", bundle: .module)
-        }
-        .labelsHidden()
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
+
+    var displayItems: [ListItemModel] {
+        parentModel == nil ? listModel.displayedItems : listModel.displayedParentItems
     }
-    
-    @ViewBuilder
-    var filterFieldView: some View {
-        @Bindable var searchModel = root.folderLinkControllable.searchModel
-        
-        TextField(text: $searchModel.searchText, prompt: textFieldText) {
-            textFieldText
-        }
-#if os(iOS)
-        .autocapitalization(.none)
-        .textContentType(.name)
-#endif
-        .disableAutocorrection(true)
-        .labelsHidden()
-        .submitLabel(.return)
-        .textFieldStyle(.plain)
-        .padding(6)
-        .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(.secondary, lineWidth: 1)
-        }
-        .padding(.horizontal)
-        .onChange(of: searchModel.searchText) {
-            withAnimation {
-                root.folderLinkControllable.resetFilter()
-                cacheItemListModel.reset(search: searchModel.searchText)
-            }
-        }
-    }
-    
-    var textFieldText: Text {
-        Text("\(Image(systemName: "magnifyingglass")) Filter", bundle: .module)
-    }
-    
+
     var contentView: some View {
-        listView
+        // Capture once — prevents multiple observation registrations per body update
+        let items = displayItems
+        let searchText = root.folderLinkControllable.searchModel.searchText
+        return listView(items: items)
             .frame(minWidth: 150, idealWidth: 250)
             .overlay {
-                if displayItems.isEmpty && !root.folderLinkControllable.searchModel.searchText.isEmpty {
+                if items.isEmpty && !searchText.isEmpty {
                     ContentUnavailableView.search
                 }
             }
-            .animation(.smooth, value: displayItems.count)
+            .animation(.smooth, value: items.count)
 #if os(macOS)
             .listStyle(.sidebar)
 #endif
             .scrollIndicatorsFlash(onAppear: true)
-            .scrollIndicatorsFlash(trigger: displayItems.count)
+            .scrollIndicatorsFlash(trigger: items.count)
 #if !os(visionOS)
             .scrollEdgeEffectStyle(.hard, for: .top)
             .scrollDismissesKeyboard(.immediately)
 #endif
     }
-    
-    @ViewBuilder
-    var listView: some View {
-        @Bindable var listModel = listModel
+
+    func listView(items: [ListItemModel]) -> some View {
         List {
-            itemRows()
+            itemRows(items: items)
         }
     }
-    
-    var displayItems: [ListItemModel] {
-        parentModel == nil ? listModel.displayedItems : listModel.displayedParentItems
-    }
-    
-    func itemRows() -> some View {
-        ForEach(displayItems) { item in
+
+    func itemRows(items: [ListItemModel]) -> some View {
+        ForEach(items) { item in
             Group {
                 if let entryId = item.entryId {
                     HStack {
                         EntryRowView(root: root, item: item)
-                        
+
                         specialCategoryFolderIndicator(item: item)
                     }
                     .contentShape(.rect)
@@ -197,11 +159,11 @@ private extension LinkItemListView {
             .listRowSeparatorAll(item.isOpen || item.entryId != nil ? .visible : .hidden, edges: .bottom)
         }
     }
-    
+
     func isSelectionActive(item: ListItemModel) -> Bool {
         (type == .selection || type == .selectionInline) && selectionModel.canSelect(isCollection: item.model.specialCategory, entryId: item.entryId)
     }
-    
+
     func itemRow(item: ListItemModel) -> some View {
         HStack {
             ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false) {
@@ -220,7 +182,7 @@ private extension LinkItemListView {
 #endif
         }
     }
-    
+
     func openDetail(for item: ListItemModel) {
 #if os(macOS)
         guard !item.model.specialCategory else { return }
@@ -229,17 +191,12 @@ private extension LinkItemListView {
         if item.model.specialCategory {
             showDetailsView = root.folderLinkControllable.detailDestination(for: item.model.id)
         } else {
-            
             showDetailsView = root.folderLinkControllable.viewerDestination(for: item.model.id)
         }
         withAnimation { showDetails.toggle() }
 #endif
     }
-    
-    var leadingPadding: CGFloat {
-        CGFloat(valueFor(iOS: 8, macOS: 4, tvOS: 8, visionOS: 8))
-    }
-    
+
     @ViewBuilder
     func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
         if showFolderIndicator(item: item) {
@@ -252,18 +209,18 @@ private extension LinkItemListView {
                     .contentShape(.circle)
                     .frame(width: 32, height: 32)
 #if !os(visionOS)
-                    .glassEffect(.clear.interactive())
+                    .glassEffectAll(.clear.interactive())
 #endif
             }
             .borderLessTVBottonStyle()
             .padding(.trailing, 4)
         }
     }
-    
+
     func showFolderIndicator(item: ListItemModel) -> Bool {
         item.model.specialCategory || (selectionModel.allowEntrySelection && !item.model.entries.isEmpty && item.entryId == nil) || !root.itemControllable.subChildren(itemId: item.model.id, entryId: item.entryId).isEmpty
     }
-    
+
     func closeEntrySection(for item: ListItemModel) -> some View {
         Button {
             withAnimation { root.folderLinkControllable.toggleParentFolder(item: item) }
@@ -273,8 +230,66 @@ private extension LinkItemListView {
             } icon: {
                 Image(systemName: "folder.circle")
             }
-
         }
+    }
+}
 
+// MARK: - Extracted subviews to scope @Bindable allocations
+
+/// Picker subview — @Bindable is allocated only when this subview's dependencies change,
+/// not on every LinkItemListView body update.
+private struct LinkItemPickerView: View {
+    @Bindable var listDisplayModel: ListDisplayModel
+
+    var body: some View {
+        Picker(selection: $listDisplayModel.listMode) {
+            ForEach(ListDisplayModel.ListMode.allCases) { mode in
+                Text(mode.title, bundle: .module)
+                    .tag(mode)
+            }
+        } label: {
+            Text("List Mode", bundle: .module)
+        }
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+    }
+}
+
+/// Filter field subview — @Bindable allocation and Text prompt construction are scoped here,
+/// not recomputed on every parent body update.
+private struct LinkItemFilterFieldView: View {
+    @Bindable var searchModel: SearchModel
+    let prompt: Text
+    let onSearchChange: () -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .imageScale(.small)
+            TextField(text: $searchModel.searchText, prompt: prompt) {
+                prompt
+            }
+#if os(iOS)
+            .autocapitalization(.none)
+            .textContentType(.name)
+#endif
+            .disableAutocorrection(true)
+            .labelsHidden()
+            .submitLabel(.return)
+            .textFieldStyle(.plain)
+        }
+        .padding(6)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(.secondary, lineWidth: 1)
+        }
+        .padding(.horizontal)
+        .onChange(of: searchModel.searchText) {
+            withAnimation {
+                onSearchChange()
+            }
+        }
     }
 }

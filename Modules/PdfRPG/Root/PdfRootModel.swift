@@ -24,8 +24,9 @@ public final class PdfRootModel {
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.navigationModel = AppNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
+
+        self.navigationModel = ModuleNavigationModel()
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
@@ -63,9 +64,7 @@ public final class PdfRootModel {
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
-                Task {
                 syncDataController?.start()
-            }
             }
         }
     }
@@ -75,10 +74,11 @@ public final class PdfRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: AppNavigationModel
     public var linkSelectionModel: ItemSelectionModel
+
+    @MainActor public var navigationModel: ModuleNavigationModel
+
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
-        
     public let removeEntryListModel = RemoveEntryListModel()
     
     var cacheController: CacheController? { itemController.cacheController }

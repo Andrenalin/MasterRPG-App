@@ -4,7 +4,6 @@ import CoreRPG
 import SwiftUI
 
 public struct ViewController {
-    public let goupViewType: GroupViewType = .none
     public let sharingViewType: SharingViewType = .share
     public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }
@@ -40,6 +39,5 @@ public extension ViewController {
             .padding(32)
             .padding(.top, 64)
             .environment(root)
-            .environment(\.showGame, true)
     }
 }

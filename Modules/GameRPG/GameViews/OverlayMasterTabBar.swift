@@ -18,7 +18,6 @@ struct OverlayMasterTabBar: View {
     let openAction: ((NetworkModules) -> Void)?
 
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(\.wideMode) private var wideMode
 
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -36,8 +35,7 @@ struct OverlayMasterTabBar: View {
     
     var onlyGameView: some View {
         root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
-            .environment(\.gameModus, .master)
-            .environment(\.showGame, true)
+            //.environment(\.gameModus, .master)
             .gameOverlayTabBarView(value: NetworkModules.game)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
@@ -52,8 +50,7 @@ struct OverlayMasterTabBar: View {
         @Bindable var gameScreenModel = gameScreenModel
         NavigationStack {
             root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
-                .environment(\.gameModus, .master)
-                .environment(\.showGame, true)
+                //.environment(\.gameModus, .master)
         }
         .gameOverlayTabBarView(value: NetworkModules.game)
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
@@ -70,8 +67,8 @@ struct OverlayMasterTabBar: View {
     var tabSecondGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
         root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: false)
-            .environment(\.gameModus, .master)
-            .environment(\.showGame, true)
+            //.environment(\.gameModus, .master)
+            //.environment(\.showGame, true)
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))

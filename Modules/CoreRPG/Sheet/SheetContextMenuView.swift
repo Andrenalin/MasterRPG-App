@@ -3,21 +3,18 @@
 import SwiftUI
 
 struct SheetContextMenuView: View {
-    init(root: ItemRootController, entryEditable: any EntryDataEditable, model: TableSheetModel, entry: SheetModel) {
-        self.root = root
+    init(entryEditable: any EntryDataEditable, model: TableSheetModel, entry: SheetModel) {
         self.entryEditable = entryEditable
         self.model = model
         self.entry = entry
     }
-    
-    let root: ItemRootController
+
     let entryEditable: any EntryDataEditable
     let model: TableSheetModel
     let entry: SheetModel
     
     @Environment(\.networkActions) private var networkActions
-    @Environment(\.showGame) private var showGame
-    @Environment(\.gameModus) private var gameModus
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
     
@@ -41,10 +38,10 @@ private extension SheetContextMenuView {
     var duplicateButton: some View {
         Button {
             guard let entryId = entry.source.entryId, let newId = entryEditable.copy(itemId: entry.source.itemId, entryId: entryId) else { return }
-            
+
             withAnimation {
                 model.add(entryId: newId)
-                root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: newId, typeId: entry.source.typeId))
+                model.setCurrentItem(source: entry.source, entryId: newId)
                 model.updateParent()
             }
         } label: {
@@ -54,9 +51,7 @@ private extension SheetContextMenuView {
                 Image(systemName: "doc.on.doc")
             }
         }
-#if !os(tvOS)
-        .keyboardShortcut("d", modifiers: .shift)
-#endif
+        .keyboardShortcutAll("d", modifiers: .shift)
     }
     
     var linkButton: some View {
@@ -124,9 +119,7 @@ private extension SheetContextMenuView {
             }
         }
         .disabled(model.sheetModel.entries.first?.id == entry.id)
-#if !os(tvOS)
-        .keyboardShortcut(.upArrow, modifiers: [.command, .option])
-#endif
+        .keyboardShortcutAll(.upArrow, modifiers: [.command, .option])
     }
 
     var moveDownButton: some View {
@@ -143,8 +136,6 @@ private extension SheetContextMenuView {
             }
         }
         .disabled(model.sheetModel.entries.last?.id == entry.id)
-#if !os(tvOS)
-        .keyboardShortcut(.downArrow, modifiers: [.command, .option])
-#endif
+        .keyboardShortcutAll(.downArrow, modifiers: [.command, .option])
     }
 }

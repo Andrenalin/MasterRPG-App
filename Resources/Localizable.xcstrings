@@ -32,12 +32,6 @@
         }
       }
     },
-    "Cancel" : {
-
-    },
-    "Continue Anyway" : {
-
-    },
     "Database is loaded" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -50,6 +44,7 @@
       }
     },
     "Delete" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -60,6 +55,7 @@
       }
     },
     "Delete Database" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -68,9 +64,6 @@
           }
         }
       }
-    },
-    "Delete Database?" : {
-
     },
     "Do you really want to delete the Database" : {
       "extractionState" : "stale",
@@ -94,6 +87,7 @@
       }
     },
     "Explaination Data" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -104,6 +98,7 @@
       }
     },
     "First Launch" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -156,9 +151,6 @@
         }
       }
     },
-    "iCloud Account Issues" : {
-
-    },
     "Init Database" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -171,6 +163,7 @@
       }
     },
     "Initialize" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -179,9 +172,6 @@
           }
         }
       }
-    },
-    "Initializing Database" : {
-
     },
     "Logs" : {
       "localizations" : {
@@ -217,6 +207,7 @@
       }
     },
     "Not now" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -227,6 +218,7 @@
       }
     },
     "Ok" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -239,13 +231,11 @@
     "Search" : {
 
     },
-    "Setting up your database..." : {
-
-    },
     "Settings" : {
 
     },
     "The explaination data is saved. You will find the data in the other sections." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -266,10 +256,8 @@
         }
       }
     },
-    "The iCloud account is not available. Please check your iCloud settings. If you continue, data cannot be synced between devices." : {
-
-    },
     "This is the first lunch and there is no data in the database. Do you want to initialize the database with explaination data? No download is required the example data is prebundled." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -279,10 +267,8 @@
         }
       }
     },
-    "This will permanently delete the database. This action cannot be undone." : {
-
-    },
     "Wait for Database initialization..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

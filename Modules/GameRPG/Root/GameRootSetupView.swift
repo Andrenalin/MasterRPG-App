@@ -6,10 +6,8 @@ import SwiftUI
 struct GameRootSetupView: View {
     let root: GameRoot
     
-    @Environment(AppSettingsModel.self) private var settingsModel
-#if os(macOS) || os(visionOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(AppGameStateModel.self) private var appGameStateModel
+    @Environment(ScenesManager.self) private var sceneManager
     
     var body: some View {
         ZStack {
@@ -18,10 +16,10 @@ struct GameRootSetupView: View {
                 .opacity(0.5)
             
             ScrollView {
-#if os(macOS)
+#if os(macOS) || os(visionOS)
                 Button {
                     withAnimation {
-                        openWindow(id: WindowIdentifier.editor.rawValue)
+                        sceneManager.openWindow(SceneId.editor)
                     }
                 } label: {
                     Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
@@ -37,18 +35,19 @@ struct GameRootSetupView: View {
             }
         }
         .onChange(of: root.gameModel.gameConfig.state, initial: true) {
-            settingsModel.showGame <=> root.gameModel.gameConfig.state == .started
+            appGameStateModel.isGameRunning = root.gameModel.gameConfig.state == .started
             if root.gameModel.gameConfig.state == .started {
-                settingsModel.gameModus = root.gameModel.gameConfig.isMaster ? .master : .player
+                appGameStateModel.gameModus = root.gameModel.gameConfig.isMaster ? .master : .player
             } else {
-                settingsModel.gameModus = .edit
+                appGameStateModel.gameModus = .edit
             }
+            root.widgetGameRunningChanged()
         }
     }
 }
 
 #Preview {
     GameRootSetupView(root: .preview)
-        .environment(\.wideMode, .small)
         .environment(AppSettingsModel())
+        .environment(AppNavigationModel(appGameStateModel: AppGameStateModel()))
 }

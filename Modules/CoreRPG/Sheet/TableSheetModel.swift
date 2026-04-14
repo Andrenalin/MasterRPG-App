@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor @Observable
 public final class TableSheetModel: Sendable {
-    public init(linkControllable: any LinkControllable, parent: TableSheetModel?, model: any ItemDataAccessable, entryId: UUID? = nil, level: Int, module: NetworkModules, searchText: String = "") {
+    public init(linkControllable: any LinkControllable, parent: TableSheetModel?, model: any ItemDataAccessable, entryId: UUID? = nil, level: Int, module: NetworkModules, searchText: String = "", maxDepth: Int = 20) {
         self.linkControllable = linkControllable
         self.parent = parent
         self.model = model
@@ -12,11 +12,13 @@ public final class TableSheetModel: Sendable {
         self.entryId = entryId
         self.level = level
         self.module = module
+        self.maxDepth = maxDepth
         self.sheetModel = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         self.searchText = searchText
         id = model.id
+        updateFilteredEntries()
     }
-    
+
     @ObservationIgnored let linkControllable: any LinkControllable
     let parent: TableSheetModel?
     let model: any ItemDataAccessable
@@ -25,15 +27,30 @@ public final class TableSheetModel: Sendable {
     let entryId: UUID?
     let level: Int
     let module: NetworkModules
-    
+    let maxDepth: Int
+
     var sheetModel: SheetModel
-    var searchText: String = ""
+    var searchText: String = "" {
+        didSet {
+            updateFilteredEntries()
+        }
+    }
+
+    private(set) var filteredEntries: [SheetModel] = []
 
     @ObservationIgnored var sheets: [ItemRowModel: TableSheetModel] = [:]
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
     @ObservationIgnored private var originalEntries: [SheetModel] = []
     @ObservationIgnored private var searchTask: Task<Void, Never>?
     @ObservationIgnored private var currentSearchResult: SheetSearchResult?
+
+    var isAtMaxDepth: Bool {
+        level >= maxDepth
+    }
+
+    private func updateFilteredEntries() {
+        filteredEntries = sheetModel.filter(searchText: searchText)
+    }
 
     func description(for sheetModel: SheetModel) -> String? {
         guard !searchText.isEmpty else { return sheetModel.description }
@@ -61,11 +78,24 @@ public final class TableSheetModel: Sendable {
     func reset() {
         resetModel(model: linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module))
     }
-    
+
     func resetModel(model: SheetModel) {
         linkTextModel.removeAll()
         sheets.removeAll()
         sheetModel = model
+        updateFilteredEntries()
+    }
+
+    func update(with model: any ItemDataAccessable) {
+        // Update the model reference
+        guard model.id != self.model.id else {
+            // Same model, just reset to reload data
+            reset()
+            return
+        }
+
+        // Model changed, need full reset
+        reset()
     }
 
     func entry(entryId: String) -> SheetModel? {
@@ -94,12 +124,13 @@ public final class TableSheetModel: Sendable {
                     entry.sheetIds.removeAll(where: { $0 == rowModel })
                 } else {
                     let model = linkControllable.itemControllable.itemOrEmpty(for: itemId)
-                    let tableSheetModel = TableSheetModel(linkControllable: linkControllable, parent: self, model: model, level: entry.level + 1, module: module, searchText: searchText)
-                    
+                    let tableSheetModel = TableSheetModel(linkControllable: linkControllable, parent: self, model: model, level: entry.level + 1, module: module, searchText: searchText, maxDepth: maxDepth)
+
                     sheets[rowModel] = tableSheetModel
                     entry.sheetIds.append(rowModel)
                 }
                 sheetModel.entries[entryIndex] = entry
+                updateFilteredEntries()
             }
         }
     }
@@ -113,6 +144,7 @@ public final class TableSheetModel: Sendable {
             } else {
                 sheetModel.entries.append(entry)
             }
+            updateFilteredEntries()
         }
     }
     
@@ -146,6 +178,16 @@ public final class TableSheetModel: Sendable {
         guard let entryDataEditable else { return }
         move(itemId: sheetModel.source.itemId, indexSet: indexSet, to: index)
         entryDataEditable.move(itemId: sheetModel.source.itemId, entryIds: sheetModel.entries.compactMap { $0.source.entryId })
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            updateParent()
+        }
+    }
+
+    func moveEntries(indexSet: IndexSet, to index: Int) {
+        guard let editable = entryDataEditable(for: sheetModel.source) else { return }
+        move(itemId: sheetModel.source.itemId, indexSet: indexSet, to: index)
+        editable.move(itemId: sheetModel.source.itemId, entryIds: sheetModel.entries.compactMap { $0.source.entryId })
         Task {
             try? await Task.sleep(for: .milliseconds(100))
             updateParent()
@@ -189,6 +231,7 @@ public final class TableSheetModel: Sendable {
             if entryIndex < sheetModel.entries.count {
                 sheetModel.entries[entryIndex] = entry
                 linkTextModel[.entry(entry.id)] = nil
+                updateFilteredEntries()
             }
         } else if updatedModel.source.entryId == entryId, let entryIndex = sheetModel.entries.firstIndex(where: { $0.source.entryId == entryId }) {
             var updatedEntry = sheetModel.entries[entryIndex]
@@ -197,6 +240,7 @@ public final class TableSheetModel: Sendable {
                 updatedEntry.name = updatedModel.name
                 sheetModel.entries[entryIndex] = updatedEntry
                 linkTextModel[.entry(updatedEntry.id)] = nil
+                updateFilteredEntries()
             }
         }
     }
@@ -211,6 +255,15 @@ public final class TableSheetModel: Sendable {
     
     func updateModels() {
         let updatedModel = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+
+        // Update root sheet model properties if they changed
+        if sheetModel.name != updatedModel.name || sheetModel.description != updatedModel.description {
+            sheetModel.name = updatedModel.name
+            sheetModel.description = updatedModel.description
+            linkTextModel[.name] = nil
+            linkTextModel[.description] = nil
+        }
+
         let entries = updatedModel.entries.map {
             var entry = $0
             guard let localIndex = sheetModel.entries.firstIndex(where: { $0.source == entry.source }) else { return entry }
@@ -222,6 +275,7 @@ public final class TableSheetModel: Sendable {
             return entry
         }
         sheetModel.entries <=> entries
+        updateFilteredEntries()
         sheets.values.forEach {
             $0.updateModels()
         }
@@ -230,6 +284,7 @@ public final class TableSheetModel: Sendable {
     func remove(entry: SheetModel) {
         sheetModel.entries.removeAll(where: { $0.id == entry.id })
         linkTextModel[.entry(entry.id)] = nil
+        updateFilteredEntries()
     }
     
     // Quick Editor
@@ -241,12 +296,13 @@ public final class TableSheetModel: Sendable {
             entry.sheetIds.removeAll(where: { $0 == rowModel })
         } else {
             let model = linkControllable.itemControllable.itemOrEmpty(for: itemId)
-            let tableSheetModel = TableSheetModel(linkControllable: linkControllable, parent: self, model: model, entryId: entry.source.entryId, level: entry.level + 1, module: module, searchText: searchText)
-            
+            let tableSheetModel = TableSheetModel(linkControllable: linkControllable, parent: self, model: model, entryId: entry.source.entryId, level: entry.level + 1, module: module, searchText: searchText, maxDepth: maxDepth)
+
             sheets[rowModel] = tableSheetModel
             entry.sheetIds.append(rowModel)
         }
         sheetModel.entries[entryIndex] = entry
+        updateFilteredEntries()
     }
     
     func isEditing(entry: SheetModel) -> Bool {
@@ -337,7 +393,8 @@ public final class TableSheetModel: Sendable {
                     model: linkedModel,
                     level: entry.level + 1,
                     module: module,
-                    searchText: searchText
+                    searchText: searchText,
+                    maxDepth: maxDepth
                 )
 
                 // Store the sub-sheet
@@ -402,6 +459,124 @@ public final class TableSheetModel: Sendable {
             if case .link = location { return true }
             return false
         }
+    }
+
+    // MARK: - Action Methods (Module-Aware)
+
+    /// Add a new entry to the specified source
+    func addNewEntry(to source: ItemRowModel) -> UUID? {
+        guard let editable = entryDataEditable(for: source) else { return nil }
+        return editable.addNewEntry(itemId: source.itemId)
+    }
+
+    /// Remove an entry from the specified source
+    func removeEntry(source: ItemRowModel) {
+        guard let editable = entryDataEditable(for: source) else { return }
+        editable.removeEntry(source: source)
+    }
+
+    /// Set the current item in the edit controller
+    func setCurrentItem(source: ItemRowModel, entryId: UUID?) {
+        guard let editController = editControllable(for: source) else { return }
+        editController.setCurrentItem(to: ItemRowTreeModel(itemId: source.itemId, entryId: entryId, typeId: source.typeId))
+    }
+
+    /// Set the current entry ID in the editor model
+    func setCurrentEntryId(source: ItemRowModel, entryId: UUID?) {
+        guard let editController = editControllable(for: source) else { return }
+        editController.editorModel.currentEntryId = entryId
+    }
+
+    /// Set the scroll entry ID in the editor model
+    func setScrollEntryId(source: ItemRowModel, entryId: UUID?) {
+        guard let editController = editControllable(for: source) else { return }
+        editController.editorModel.scrollEntryId = entryId
+    }
+
+    /// Add a link to a destination entry
+    func addLink(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, to destination: ItemRowModel) {
+        guard let editable = entryDataEditable(for: destination),
+              let destinationEntryId = destination.entryId else { return }
+        editable.add(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destination.itemId, destinationEntryId: destinationEntryId)
+    }
+
+    /// Get the item name for a source
+    func getItemName(for source: ItemRowModel) -> String {
+        let item = itemControllable(for: source).itemOrEmpty(for: source.itemId)
+        return item.name
+    }
+
+    /// Get the item description for a source
+    func getItemDescription(for source: ItemRowModel) -> String {
+        let item = itemControllable(for: source).itemOrEmpty(for: source.itemId)
+        return item.description
+    }
+
+    /// Get the current entry ID from the editor model
+    func getCurrentEntryId(for source: ItemRowModel) -> UUID? {
+        editControllable(for: source)?.editorModel.currentEntryId
+    }
+
+    /// Get the current item ID from the editor model
+    func getCurrentItemId(for source: ItemRowModel) -> UUID? {
+        editControllable(for: source)?.editorModel.currentItemId
+    }
+
+    /// Check if the editor has changed entries
+    func hasChangedEntries(for source: ItemRowModel) -> Int {
+        editControllable(for: source)?.editorModel.hasChangedEntries ?? 0
+    }
+
+    /// Check if the editor has any changes (boolean for more efficient onChange observation)
+    func hasAnyChanges(for source: ItemRowModel) -> Bool {
+        hasChangedEntries(for: source) > 0
+    }
+
+    /// Move an item/entry into a new parent
+    func moveItem(itemId: UUID, entryId: UUID, into destination: ItemRowModel) -> Bool {
+        guard let editable = entryDataEditable(for: destination) else { return false }
+        return editable.move(itemId: itemId, entryId: entryId, into: destination)
+    }
+
+    // MARK: - Module-Aware Controllable Resolution
+
+    /// Get the correct ItemRootController for a given module
+    func rootController(for module: NetworkModules) -> ItemRootController? {
+        linkControllable.rootManager.itemRootController(for: module)
+    }
+
+    /// Get the correct ItemControllable for a source (handles cross-module)
+    func itemControllable(for source: ItemRowModel) -> any ItemControllable {
+        if let root = rootController(for: source.typeId) {
+            return root.itemControllable
+        }
+        // Fallback to current module's controllable
+        return linkControllable.itemControllable
+    }
+
+    /// Get the correct EditControllable for a source (handles cross-module)
+    func editControllable(for source: ItemRowModel) -> (any EditControllable)? {
+        rootController(for: source.typeId)?.editControllable
+    }
+
+    /// Get the correct EntryDataEditable for a source (handles cross-module)
+    func entryDataEditable(for source: ItemRowModel) -> (any EntryDataEditable)? {
+        editControllable(for: source) as? (any EntryDataEditable)
+    }
+
+    /// Get the correct ViewControllable for a source (handles cross-module)
+    func viewControllable(for source: ItemRowModel) -> (any ViewControllable)? {
+        rootController(for: source.typeId)?.viewControllable
+    }
+
+    /// Get the search controllable (uses root since search is cross-module)
+    var searchControllable: any SearchControllable {
+        linkControllable.rootManager.adventureRoot.searchControllable
+    }
+
+    /// Get the module tint color
+    var moduleTint: Color {
+        rootController(for: module)?.configurable.module.tint ?? .blue
     }
 }
 

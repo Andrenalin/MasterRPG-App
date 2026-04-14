@@ -21,8 +21,12 @@ struct FolderListController: FolderListControllable {
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
         DetailRoute.viewer(itemId)
     }
-
+    
     func copy(parentModel: (any ItemDataAccessable)?) -> FolderListController {
         FolderListController(listModel: FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel, itemControllable: itemControllable)
     }
+    
+    func copy(listModel: FolderListModel) -> FolderListController {
+        FolderListController(listModel: listModel, listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel, itemControllable: itemControllable)
+    }    
 }

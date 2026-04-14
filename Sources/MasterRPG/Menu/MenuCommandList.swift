@@ -3,6 +3,7 @@
 #if !os(tvOS)
 
 import AdventureRPG
+import CoreRPG
 import DiceRPG
 import RolePlayGameKit
 import AudioRPG
@@ -20,7 +21,7 @@ struct MenuCommandList: Commands {
     let appModel: AppModel
 
     var body: some Commands {
-        if appModel.hasDatabase {
+        if appModel.appNavigationModel.initialRouteType == .ready {
             Group {
                 Group {
                     AdventureCommands(root: appModel.adventureRoot, navigator: appModel.navigator)

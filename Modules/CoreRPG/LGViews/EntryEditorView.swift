@@ -4,15 +4,17 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
-    public init(editController: any EntryDataEditable, model: any ItemDataAccessable, linkTypes: LinkType.Type) {
+    public init(editController: any EntryDataEditable, model: any ItemDataAccessable, linkControllable: any LinkControllable, linkTypes: LinkType.Type) {
         self.editController = editController
         self.model = model
+        self.linkControllable = linkControllable
         self.linkTypes = linkTypes
         self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: editController.linkRegisterController))
     }
-    
+
     let editController: any EntryDataEditable
     let model: any ItemDataAccessable
+    let linkControllable: any LinkControllable
     let linkTypes: LinkType.Type
     
     @FocusState private var currentFocus: EntryEditorFocusField?
@@ -25,10 +27,10 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                 content(entry: entry)
                     .id(editController.editorModel.currentItemId ?? UUID())
                     .onChange(of: entry.content, initial: true) {
-                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, typeId: editController.itemControllable.config.module))
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, typeId: activeEditController.itemControllable.config.module))
                     }
                     .onChange(of: entry.name) {
-                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, typeId: editController.itemControllable.config.module))
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, typeId: activeEditController.itemControllable.config.module))
                     }
             }
         }
@@ -53,10 +55,10 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                         }
                         .padding()
 #if !os(visionOS)
-                        .glassEffect(.regular.interactive())
+                        .glassEffectAll(.regular.interactive())
 #endif
                         Spacer()
-                        
+
                         Button {
                             save()
                         } label: {
@@ -65,7 +67,7 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                         }
                         .padding()
 #if !os(visionOS)
-                        .glassEffect(.regular.interactive())
+                        .glassEffectAll(.regular.interactive())
 #endif
                     }
                     .buttonStyle(.borderless)
@@ -91,28 +93,55 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    var backGroundColor: Color {
-        editController.itemControllable.config.module.color
+    /// Get the correct edit controller for the current module
+    var activeEditController: (any EntryDataEditable) {
+        guard let currentModule = editController.editorModel.currentModule,
+              currentModule != editController.itemControllable.config.module else {
+            return editController  // Same module, use default
+        }
+
+        // Get the correct controller for cross-module editing
+        if let crossModuleController = linkControllable.rootManager
+            .itemRootController(for: currentModule)?
+            .editControllable as? (any EntryDataEditable) {
+            return crossModuleController
+        }
+
+        return editController  // Fallback to default
     }
-    
+
+    var backGroundColor: Color {
+        activeEditController.itemControllable.config.module.color
+    }
+
     var isActive: Bool {
 #if os(iOS)
         guard !editController.editorModel.deactivateEntryEditor else { return false }
 #endif
-        return entry.id == editController.editorModel.currentEntryId
+        // Check if the current module matches this editor's module
+        guard let currentModule = editController.editorModel.currentModule else {
+            return false
+        }
+
+        // If this editor is for the current module, check if entry is active
+        if currentModule == editController.itemControllable.config.module {
+            return entry.id == editController.editorModel.currentEntryId
+        }
+
+        return false
     }
-    
+
     var entry: any EntryDataAccessable {
         guard let currentItemId = editController.editorModel.currentItemId else {
             return model[editController.editorModel.currentEntryId ?? UUID()]
         }
-        return editController.itemControllable.itemOrEmpty(for: currentItemId)[editController.editorModel.currentEntryId ?? UUID()]
+        return activeEditController.itemControllable.itemOrEmpty(for: currentItemId)[editController.editorModel.currentEntryId ?? UUID()]
     }
     
     func save() {
         editModel.resetText()
         withAnimation {
-            editController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
+            activeEditController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
             editController.editorModel.currentEntryId = nil
         }
     }
@@ -143,9 +172,9 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
             .dropDestination(for: linkTypes) { items, dropSession in
                 isDropTargeted = dropSession.phase == .entering
                 editModel.resetText()
-                editController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
+                activeEditController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
                 items.forEach {
-                    editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
+                    activeEditController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
                 }
             }
 #endif

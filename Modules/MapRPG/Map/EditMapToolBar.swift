@@ -404,5 +404,4 @@ private extension EditToolBarViewModifier {
         }
         .modifier(EditToolBarViewModifier(editController: editController, model: model))
     }
-    .setAppSizeMode()
 }

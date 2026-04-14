@@ -249,6 +249,9 @@
         }
       }
     },
+    "GameMaster" : {
+
+    },
     "Join Game" : {
       "localizations" : {
         "de" : {
@@ -343,6 +346,9 @@
         }
       }
     },
+    "Ok" : {
+
+    },
     "Play Pen&Paper RPG" : {
       "comment" : "Title of group activity",
       "localizations" : {
@@ -383,6 +389,9 @@
           }
         }
       }
+    },
+    "Please try again later." : {
+
     },
     "Proxy" : {
       "localizations" : {
@@ -587,6 +596,9 @@
           }
         }
       }
+    },
+    "Unable to start game" : {
+
     },
     "Waiting for Gamemaster" : {
       "localizations" : {

@@ -5,7 +5,6 @@ import Observation
 import SwiftUI
 
 public struct ViewController: Sendable {
-    public let goupViewType: GroupViewType = .none
     public let sharingViewType: SharingViewType = .custom
     public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }

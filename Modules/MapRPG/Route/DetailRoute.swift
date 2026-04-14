@@ -42,10 +42,10 @@ struct ViewerRouteDestinationView: View {
     let itemId: UUID
 
     @Environment(MapRootModel.self) private var root
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     
     var body: some View {
-        root.viewController.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: appSizeMode == .compact))
+        root.viewController.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: appSizeModel.mode == .compact))
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
     }

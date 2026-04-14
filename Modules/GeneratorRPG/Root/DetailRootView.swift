@@ -44,14 +44,23 @@ struct DetailListView: View {
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
+        ItemDetailRootView(
+            detailListController: listController,
+            selectedModel: model,
+            configuration: .init(editorAsBackground: false, hasInspector: true, hasOverlay: false)
+        ) {
+            EmptyView()
         } editor: {
             Text("Add a reference character")
-            
+
             detailEditorView(model: model)
         } inspector: {
             LinkRootView(type: .inspector)
                 .environment(selection)
+        } overlay: {
+            EmptyView()
+        } entryEditor: {
+            EmptyView()
         }
         .overlay {
             if openFileWindowModel.showItem {

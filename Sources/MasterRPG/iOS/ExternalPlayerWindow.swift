@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import RolePlayGameKit
 import GameRPG
 import SwiftUI
@@ -9,7 +10,7 @@ struct ExternalPlayerWindow: View {
 
     var body: some View {
         VStack {
-            if appModel.hasDatabase {
+            if appModel.appNavigationModel.initialRouteType == .ready {
                 ExternalGameRootView(root: appModel.gameRoot)
             } else {
                 Color.blue

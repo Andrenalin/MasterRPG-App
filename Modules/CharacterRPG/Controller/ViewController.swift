@@ -7,7 +7,6 @@ import TableRPG
 import SwiftUI
 
 public struct ViewController {
-    public let goupViewType: GroupViewType = .none
     public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
 

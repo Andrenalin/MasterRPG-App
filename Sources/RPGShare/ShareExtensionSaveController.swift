@@ -1,0 +1,81 @@
+// @copyright André Trettin
+
+import CoreRPG
+import RolePlayGameKit
+import Foundation
+import os.log
+import SwiftUI
+import CoreData
+import PhotoRPG
+import WeatherRPG
+import CharacterRPG
+import MapRPG
+import AdventureRPG
+
+/// Controller for saving content from the share extension using lightweight data operations
+/// Mimics SaveAction behavior but uses Core Data directly without full root model infrastructure
+@MainActor
+final class ShareExtensionSaveController {
+    init(databaseService: ShareExtensionDatabaseService) {
+        self.databaseService = databaseService
+    }
+
+    let databaseService: ShareExtensionDatabaseService
+
+    // MARK: - Save Operations
+
+    /// Saves content to the specified module
+    /// Replicates SaveAction logic without using root models
+    func saveContent(
+        to module: NetworkModules,
+        name: String,
+        text: String,
+        images: [ImageItem]
+    ) async throws {
+        guard let context = databaseService.context else {
+            throw ShareExtensionError.contextNotAvailable
+        }
+
+        // Step 1: Save photos if we have any
+        var photoIds: [UUID] = []
+        var photoLinks: [String] = []
+
+        let photoController = PhotoDataController()
+
+        for image in images {
+            let (photoId, link) = await photoController.addNewPhoto(context: context, data: image.imageData, name: name, text: text)
+            photoIds.append(photoId)
+            photoLinks.append(link)
+        }
+
+        // Step 2: Save to the target module
+        switch module {
+        case .photo:
+            break
+
+        case .map:
+            let mapDataController = MapDataController()
+            await mapDataController.addNewMap(context: context, name: name, text: text, photoId: photoIds.first)
+
+        case .adventure:
+            let adventureDataController = AdventureDataController()
+            await adventureDataController.addNewAdventure(context: context, name: name, text: text, photoIds: photoIds, photoLinks: photoLinks)
+
+        case .weather:
+            let weatherDataController = WeatherDataController()
+            await weatherDataController.addNewWeather(context: context, name: name, text: text, photoId: photoIds.first)
+
+        case .value:
+            let characterDataController = CharacterDataController()
+            await characterDataController.addNewValue(context: context, name: name, text: text, photoIds: photoIds)
+
+        default:
+            throw ShareExtensionError.moduleNotSupported
+        }
+
+        // Step 3: Save all changes to Core Data
+        try await databaseService.save()
+
+        Logger.bootStrap.info("Successfully saved content to \(module.rawValue)")
+    }
+}

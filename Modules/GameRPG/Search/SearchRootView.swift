@@ -25,10 +25,10 @@ private struct CompactNavigationModifier: ViewModifier {
     let navigator: Navigator
     @Bindable var model: SearchModel
 
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     func body(content: Content) -> some View {
-        if appSizeMode == .compact {
+        if appSizeModel.mode == .compact {
             content
                 .navigationDestination(item: $model.selection) { _ in
                     SearchDetailView(root: root, navigator: navigator)

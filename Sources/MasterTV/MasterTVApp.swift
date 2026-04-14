@@ -11,7 +11,7 @@ struct MasterTVApp: App {
     @UIApplicationDelegateAdaptor private var appDelegate: IosAppDelegate
 
     var body: some Scene {
-        WindowGroup("Game", id: WindowIdentifier.game.rawValue) {
+        WindowGroup("Game", id: SceneId.game.rawValue) {
             InitialRootView()
                 .modifier(UserSettingsViewModifier(appModel: appModel))
                 .setAppSizeMode()

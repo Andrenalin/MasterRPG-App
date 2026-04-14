@@ -79,20 +79,20 @@ public struct SummaryPdfUpdateView: View {
                     }
 
                     if selectedProperties.applySections {
-                        ForEach(content.sections.indices, id: \.self) { index in
+                        ForEach(content.sections) { section in
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
-                                    Text(content.sections[index].heading)
+                                    Text(section.heading)
                                         .font(.subheadline)
                                         .fontWeight(.medium)
                                     Spacer()
-                                    if let pageNumber = content.sections[index].pageNumber {
+                                    if let pageNumber = section.pageNumber {
                                         Text("Page \(pageNumber)", bundle: .module)
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                 }
-                                Text(content.sections[index].summary)
+                                Text(section.summary)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(2)

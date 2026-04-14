@@ -97,6 +97,12 @@ extension EditController {
 // MARK: - New Editor Functions
 
 extension EditController {
+    @MainActor func add(diceId: UUID?, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.diceId = diceId
+        save(updated: item, message: String(localized: "Change Dice", bundle: .module).localizedString)
+    }
+
     @MainActor func add(photoId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId

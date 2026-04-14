@@ -20,7 +20,7 @@ public enum MapRootFactory {
         MapRootView()
     }
         
-    @MainActor @ViewBuilder public static func detailView(root: MapRootModel) -> some View {
-        ItemSplitDetailRootView(root: root.rootController)
+    @MainActor public static func detailView(root: MapRootModel) -> some View {
+        ItemSplitDetailRouteRootView(root: root.rootController, route: MapRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
     }
 }

@@ -40,7 +40,7 @@ public final class MapRootModel {
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.navigationModel = AppNavigationModel()
+        self.navigationModel = ModuleNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
     }
     
@@ -99,7 +99,7 @@ public final class MapRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: AppNavigationModel
+    @MainActor public var navigationModel: ModuleNavigationModel
     public var linkSelectionModel: ItemSelectionModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
@@ -196,14 +196,6 @@ extension MapRootModel {
 }
 
 public extension MapRootModel {
-    @MainActor
-    func addNewMap(name: String, text: String, photoId: UUID?) async {
-        let itemId = await itemController.addNew(type: .item)
-        editController.reset(name: name, itemId: itemId)
-        editController.reset(description: text, itemId: itemId)
-        editController.add(photoId: photoId, itemId: itemId)
-    }
-
     @MainActor
     func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         SheetController(itemController: itemController).sheet(for: itemId, level: level)

@@ -15,6 +15,6 @@ public enum PdfFactory {
     }
     
     @MainActor @ViewBuilder public static func detailView(root: PdfRootModel) -> some View {
-        ItemSplitDetailRootView(root: root.rootController)
+        ItemSplitDetailRouteRootView(root: root.rootController, route: PdfRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
     }
 }

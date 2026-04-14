@@ -19,7 +19,7 @@ public final class PhotoRootModel {
         self.itemSelectionModel = ItemSelectionModel()
         self.linkSelectionModel = config.linkSelectionModel
         
-        self.navigationModel = AppNavigationModel()
+        self.navigationModel = ModuleNavigationModel()
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
@@ -57,9 +57,7 @@ public final class PhotoRootModel {
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
-                Task {
                 syncDataController?.start()
-            }
             }
         }
     }
@@ -71,7 +69,7 @@ public final class PhotoRootModel {
     public var itemSelectionModel: ItemSelectionModel
     public var linkSelectionModel: ItemSelectionModel
     
-    @MainActor public var navigationModel: AppNavigationModel
+    @MainActor public var navigationModel: ModuleNavigationModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
@@ -171,17 +169,6 @@ public extension PhotoRootModel {
         return (image, model.degrees)
     }
     
-    func addNewPhoto(data: Data, name: String, text: String) async -> (UUID, String) {
-        let itemId = await itemController.addNew(type: .item)
-        editController.reset(name: name, itemId: itemId)
-        editController.reset(description: text, itemId: itemId)
-        try? await editController.resetFile(data: data, itemId: itemId, path: "")
-
-        let item = await itemController.item(for: itemId)
-        
-        return (itemId, item?.url(linkNumber: 0) ?? "")
-    }
-
     static let thumbnailSize: CGSize = .init(width: 64.0, height: 64.0)
     
     func moveFiles() async throws {

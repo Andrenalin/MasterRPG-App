@@ -13,15 +13,10 @@ struct ViewerRootView: View {
     var body: some View {
         TableRootSheet(root: root.rootController, itemId: model.id, module: root.config.module, configuration: configuration, dismissAction: dismissAction)
             .safeAreaBar(edge: .bottom) {
-#if os(visionOS)
-                AudioPlayerBarView()
-                    .padding()
-#else
-                GlassEffectContainer {
+                GlassEffectContainerAll {
                     AudioPlayerBarView()
                         .padding()
                 }
-#endif
             }
     }
 }

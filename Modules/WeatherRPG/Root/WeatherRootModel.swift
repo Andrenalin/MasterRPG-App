@@ -20,7 +20,7 @@ public final class WeatherRootModel {
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.navigationModel = AppNavigationModel()
+        self.navigationModel = ModuleNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
     }
     
@@ -70,7 +70,7 @@ public final class WeatherRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: AppNavigationModel
+    @MainActor public var navigationModel: ModuleNavigationModel
     public var linkSelectionModel: ItemSelectionModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
@@ -138,13 +138,6 @@ extension WeatherRootModel {
 }
 
 public extension WeatherRootModel {
-    @MainActor func addNewWeather(name: String, text: String, photoId: UUID?) async {
-        let itemId = await itemController.addNew(type: .item)
-        editController.reset(name: name, itemId: itemId)
-        editController.reset(description: text, itemId: itemId)
-        editController.add(photoId: photoId, itemId: itemId)
-    }
-    
     @MainActor
     func listItems() -> [WeatherModel] {
         itemController.itemDataModel.items.map {

@@ -34,24 +34,10 @@
 		593568FD2ED8761800FA4C87 /* TableRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		593D0DA12E32136800410232 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		5946860C2E1E0F69004DC406 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
-		5978B41B2F7E615900818159 /* DatabaseInitializationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4172F7E615900818159 /* DatabaseInitializationView.swift */; };
-		5978B41C2F7E615900818159 /* DestinationReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4182F7E615900818159 /* DestinationReadyView.swift */; };
-		5978B41D2F7E615900818159 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4192F7E615900818159 /* InitialRootView.swift */; };
-		5978B41E2F7E615900818159 /* DatabaseInitializationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4172F7E615900818159 /* DatabaseInitializationView.swift */; };
-		5978B41F2F7E615900818159 /* DestinationReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4182F7E615900818159 /* DestinationReadyView.swift */; };
-		5978B4202F7E615900818159 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4192F7E615900818159 /* InitialRootView.swift */; };
-		5978B4212F7E615900818159 /* DatabaseInitializationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4172F7E615900818159 /* DatabaseInitializationView.swift */; };
-		5978B4222F7E615900818159 /* DestinationReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4182F7E615900818159 /* DestinationReadyView.swift */; };
-		5978B4232F7E615900818159 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4192F7E615900818159 /* InitialRootView.swift */; };
-		5978B4292F7E785A00818159 /* AppModeTypeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */; };
-		5978B42A2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */; };
-		5978B42B2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */; };
-		5978B42D2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */; };
-		5978B42E2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */; };
-		5978B42F2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */; };
 		5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		599DCAD92E8E30C00056E46C /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; };
+		59B573092F87FB7D0014508E /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		59CE1EB72E84F11C009C6CB5 /* AdventureRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E79C4A22E6AEE0400893928 /* AdventureRPG.framework */; };
 		59CE1EBB2E84F11C009C6CB5 /* AudioRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593D0D2C2E31F2D000410232 /* AudioRPG.framework */; };
 		59CE1EBF2E84F11C009C6CB5 /* CharacterRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA5A7D32E6A8EDB00E70E9C /* CharacterRPG.framework */; };
@@ -71,16 +57,38 @@
 		59E299072F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
 		59E299082F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
 		59E2991B2F75438C00700934 /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		59F140402F87BF940072927B /* RPGShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		59F140462F87C0E40072927B /* RPGShare.appex in Embed Extensions */ = {isa = PBXBuildFile; fileRef = 8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		59F140472F87C7D30072927B /* DiceRollerWidgetExtension.appex in Embed Extensions */ = {isa = PBXBuildFile; fileRef = 8E0DCFB12F8722C80045FE8D /* DiceRollerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8E0DAFDB2F85EDB80045FE8D /* SharingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0DAFD72F85EC380045FE8D /* SharingView.swift */; };
+		8E0DAFE02F85F09C0045FE8D /* AdventureRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E79C4A22E6AEE0400893928 /* AdventureRPG.framework */; };
+		8E0DAFE42F85F09C0045FE8D /* AudioRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593D0D2C2E31F2D000410232 /* AudioRPG.framework */; };
+		8E0DAFE82F85F09C0045FE8D /* CharacterRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA5A7D32E6A8EDB00E70E9C /* CharacterRPG.framework */; };
+		8E0DAFEC2F85F09C0045FE8D /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
+		8E0DAFF02F85F09C0045FE8D /* DiceRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EB640062E47471400799690 /* DiceRPG.framework */; };
+		8E0DAFF42F85F09C0045FE8D /* GameRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59CE1E9C2E84F011009C6CB5 /* GameRPG.framework */; };
+		8E0DAFF82F85F09C0045FE8D /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; };
+		8E0DAFFC2F85F09C0045FE8D /* MapRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E79C4822E6AEDD500893928 /* MapRPG.framework */; };
+		8E0DB0002F85F09C0045FE8D /* PdfRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EEF8E052E3639E200393DAD /* PdfRPG.framework */; };
+		8E0DB0042F85F09C0045FE8D /* PhotoRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; };
+		8E0DB0082F85F09C0045FE8D /* RolePlayGameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8ED3AB992E2B45AE00FF3AE8 /* RolePlayGameKit.framework */; };
+		8E0DB00C2F85F09C0045FE8D /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
+		8E0DB0102F85F09C0045FE8D /* SpaceRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E983DA62E27D057002B25C2 /* SpaceRPG.framework */; };
+		8E0DB0142F85F09C0045FE8D /* TableRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; };
+		8E0DB0182F85F09C0045FE8D /* WeatherRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EF512872E5E03C200B4CE44 /* WeatherRPG.framework */; };
+		8E0DCF902F86806C0045FE8D /* ShareExtensionSaveController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0DCF8F2F86806C0045FE8D /* ShareExtensionSaveController.swift */; };
+		8E0DCFB22F8722C80045FE8D /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E9812A22AEE09E300B42CF5 /* WidgetKit.framework */; };
+		8E0DCFB32F8722C80045FE8D /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E9812A42AEE09E300B42CF5 /* SwiftUI.framework */; };
+		8E0DCFC12F8722C90045FE8D /* DiceRollerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8E0DCFB12F8722C80045FE8D /* DiceRollerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8E0DCFCE2F87323D0045FE8D /* DiceRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EB640062E47471400799690 /* DiceRPG.framework */; };
+		8E0DCFD32F8732410045FE8D /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
 		8E13A4012BCE88BB00B2FCD4 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */; };
-		8E13A40D2BCE890D00B2FCD4 /* SharingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E13A40C2BCE890D00B2FCD4 /* SharingView.swift */; };
 		8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC4E48228DDAAF300D0279F /* macOSAppDelegate.swift */; };
 		8E190D9A2B8F6C150084B0F4 /* LinkWindowCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E6761E52A04B58F001AAE0E /* LinkWindowCommands.swift */; };
 		8E190D9C2B8F6C150084B0F4 /* WindowMacList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E926E8A2B453D450025B659 /* WindowMacList.swift */; };
 		8E190DA22B8F6C190084B0F4 /* MasterRPGApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC4E48928DDAAF300D0279F /* MasterRPGApp.swift */; };
 		8E190DA62B8F6C340084B0F4 /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		8E190DA82B9008630084B0F4 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */; };
-		8E33767D2DB1140B00F9C14C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E9812A22AEE09E300B42CF5 /* WidgetKit.framework */; };
-		8E33767E2DB1140B00F9C14C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E9812A42AEE09E300B42CF5 /* SwiftUI.framework */; };
 		8E39ABFB2ED1BD8700076078 /* PhotoRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; };
 		8E39ABFC2ED1BD8700076078 /* PhotoRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E39ABFF2ED1BD9100076078 /* PhotoRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; };
@@ -121,7 +129,6 @@
 		8E5104E52BD23F5000F10E87 /* SharingHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E5104E42BD23F5000F10E87 /* SharingHeader.swift */; };
 		8E5104E72BD23FBD00F10E87 /* PhotoSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */; };
 		8E5104E92BD2413900F10E87 /* SharingInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E5104E82BD2413900F10E87 /* SharingInput.swift */; };
-		8E5104EB2BD2425900F10E87 /* SaveAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E5104EA2BD2425900F10E87 /* SaveAction.swift */; };
 		8E5104ED2BD2440300F10E87 /* ItemProviderImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E5104EC2BD2440300F10E87 /* ItemProviderImporter.swift */; };
 		8E52F6762EC994F5005E6838 /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; };
 		8E52F6772EC994FF005E6838 /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; };
@@ -160,12 +167,6 @@
 		8E56C0A62EDB01CF0026F01C /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
 		8E56C0A72EDB01CF0026F01C /* CoreRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E5B8C712E3235ED00321B4A /* AudioRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593D0D2C2E31F2D000410232 /* AudioRPG.framework */; };
-		8E647DD42EB4F79600057875 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCB2EB4F79600057875 /* RootView.swift */; };
-		8E647DD52EB4F79600057875 /* TabRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCC2EB4F79600057875 /* TabRootView.swift */; };
-		8E647DDD2EB4F79600057875 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCB2EB4F79600057875 /* RootView.swift */; };
-		8E647DDE2EB4F79600057875 /* TabRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCC2EB4F79600057875 /* TabRootView.swift */; };
-		8E647DE62EB4F79600057875 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCB2EB4F79600057875 /* RootView.swift */; };
-		8E647DE72EB4F79600057875 /* TabRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCC2EB4F79600057875 /* TabRootView.swift */; };
 		8E668C752B5AB7A5005BA45F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */; };
 		8E668C772B5AB7A5005BA45F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */; };
 		8E6761E62A04B58F001AAE0E /* LinkWindowCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E6761E52A04B58F001AAE0E /* LinkWindowCommands.swift */; };
@@ -386,6 +387,13 @@
 			remoteGlobalIDString = 599DCACF2E8E30C00056E46C;
 			remoteInfo = GeneratorRPG;
 		};
+		59B5730B2F87FB7D0014508E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E4B27012CD79E2E009AB4D1;
+			remoteInfo = RPGResources;
+		};
 		59CE1EB92E84F11C009C6CB5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
@@ -470,12 +478,159 @@
 			remoteGlobalIDString = 599DCACF2E8E30C00056E46C;
 			remoteInfo = GeneratorRPG;
 		};
+		59F140412F87BFA10072927B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E13A3FD2BCE88BB00B2FCD4;
+			remoteInfo = RPGShare;
+		};
+		59F140432F87C0BB0072927B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E13A3FD2BCE88BB00B2FCD4;
+			remoteInfo = RPGShare;
+		};
+		59F140482F87C7DD0072927B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E0DCFB02F8722C80045FE8D;
+			remoteInfo = DiceRollerWidgetExtension;
+		};
 		8E00BC632990942C00C484A1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 8EC4E46828DDA29600D0279F;
 			remoteInfo = MasterRPG;
+		};
+		8E0DAFE22F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E79C4A12E6AEE0400893928;
+			remoteInfo = AdventureRPG;
+		};
+		8E0DAFE62F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 593D0D2B2E31F2D000410232;
+			remoteInfo = AudioRPG;
+		};
+		8E0DAFEA2F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8EA5A7D22E6A8EDB00E70E9C;
+			remoteInfo = CharacterRPG;
+		};
+		8E0DAFEE2F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E3620AC2E1A80FF00E5C99A;
+			remoteInfo = CoreRPG;
+		};
+		8E0DAFF22F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8EB640052E47471400799690;
+			remoteInfo = DiceRPG;
+		};
+		8E0DAFF62F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 59CE1E9B2E84F011009C6CB5;
+			remoteInfo = GameRPG;
+		};
+		8E0DAFFA2F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 599DCACF2E8E30C00056E46C;
+			remoteInfo = GeneratorRPG;
+		};
+		8E0DAFFE2F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E79C4812E6AEDD500893928;
+			remoteInfo = MapRPG;
+		};
+		8E0DB0022F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8EEF8E042E3639E200393DAD;
+			remoteInfo = PdfRPG;
+		};
+		8E0DB0062F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E3620DA2E1A9EAF00E5C99A;
+			remoteInfo = PhotoRPG;
+		};
+		8E0DB00A2F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8ED3AB982E2B45AE00FF3AE8;
+			remoteInfo = RolePlayGameKit;
+		};
+		8E0DB00E2F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E4B27012CD79E2E009AB4D1;
+			remoteInfo = RPGResources;
+		};
+		8E0DB0122F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E983DA52E27D057002B25C2;
+			remoteInfo = SpaceRPG;
+		};
+		8E0DB0162F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8EA804502E62EBC60009479F;
+			remoteInfo = TableRPG;
+		};
+		8E0DB01A2F85F09C0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8EF512862E5E03C200B4CE44;
+			remoteInfo = WeatherRPG;
+		};
+		8E0DCFBE2F8722C90045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E0DCFB02F8722C80045FE8D;
+			remoteInfo = DiceRollerWidgetExtension;
+		};
+		8E0DCFD02F87323D0045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8EB640052E47471400799690;
+			remoteInfo = DiceRPG;
+		};
+		8E0DCFD52F8732410045FE8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E3620AC2E1A80FF00E5C99A;
+			remoteInfo = CoreRPG;
 		};
 		8E39ABFD2ED1BD8700076078 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1222,6 +1377,30 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		59F140452F87C0C70072927B /* Embed Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				59F140472F87C7D30072927B /* DiceRollerWidgetExtension.appex in Embed Extensions */,
+				59F140462F87C0E40072927B /* RPGShare.appex in Embed Extensions */,
+			);
+			name = "Embed Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E0DCFC02F8722C90045FE8D /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				59F140402F87BF940072927B /* RPGShare.appex in Embed Foundation Extensions */,
+				8E0DCFC12F8722C90045FE8D /* DiceRollerWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8E1CF92F2BD14CB800891478 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1300,11 +1479,6 @@
 
 /* Begin PBXFileReference section */
 		593D0D2C2E31F2D000410232 /* AudioRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5978B4172F7E615900818159 /* DatabaseInitializationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseInitializationView.swift; sourceTree = "<group>"; };
-		5978B4182F7E615900818159 /* DestinationReadyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationReadyView.swift; sourceTree = "<group>"; };
-		5978B4192F7E615900818159 /* InitialRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitialRootView.swift; sourceTree = "<group>"; };
-		5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModeTypeRoute.swift; sourceTree = "<group>"; };
-		5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInitialStateRoute.swift; sourceTree = "<group>"; };
 		5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalPlayerWindow.swift; sourceTree = "<group>"; };
 		599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GeneratorRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		599DCAD82E8E30C00056E46C /* GeneratorRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeneratorRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1313,12 +1487,13 @@
 		59DC213C2BD75537001140B1 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		59E299052F75313D00700934 /* RealityKitInit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealityKitInit.swift; sourceTree = "<group>"; };
 		8E00BC5D2990942C00C484A1 /* MasterRPGUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MasterRPGUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E0DAFD72F85EC380045FE8D /* SharingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingView.swift; sourceTree = "<group>"; };
+		8E0DCF8F2F86806C0045FE8D /* ShareExtensionSaveController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtensionSaveController.swift; sourceTree = "<group>"; };
+		8E0DCFB12F8722C80045FE8D /* DiceRollerWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DiceRollerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RPGShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		8E13A4052BCE88BB00B2FCD4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		8E13A40C2BCE890D00B2FCD4 /* SharingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SharingView.swift; sourceTree = "<group>"; };
 		8E13A40E2BCEA66100B2FCD4 /* RPGShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RPGShare.entitlements; sourceTree = "<group>"; };
-		8E33767C2DB1140B00F9C14C /* RPGWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RPGWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CoreRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PhotoRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E49F9D92B8F654D00527E6D /* MasterRPG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MasterRPG.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1328,10 +1503,7 @@
 		8E5104E42BD23F5000F10E87 /* SharingHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingHeader.swift; sourceTree = "<group>"; };
 		8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSection.swift; sourceTree = "<group>"; };
 		8E5104E82BD2413900F10E87 /* SharingInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingInput.swift; sourceTree = "<group>"; };
-		8E5104EA2BD2425900F10E87 /* SaveAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveAction.swift; sourceTree = "<group>"; };
 		8E5104EC2BD2440300F10E87 /* ItemProviderImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemProviderImporter.swift; sourceTree = "<group>"; };
-		8E647DCB2EB4F79600057875 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		8E647DCC2EB4F79600057875 /* TabRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabRootView.swift; sourceTree = "<group>"; };
 		8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		8E6761E52A04B58F001AAE0E /* LinkWindowCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkWindowCommands.swift; sourceTree = "<group>"; };
 		8E6A8A9C2F6E538E00149E06 /* WindowVisionList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowVisionList.swift; sourceTree = "<group>"; };
@@ -1399,12 +1571,12 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		8E33768D2DB1140C00F9C14C /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		8E0DCFC22F8722C90045FE8D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 8E33767B2DB1140B00F9C14C /* RPGWidgetExtension */;
+			target = 8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -1413,7 +1585,7 @@
 		599DCAD12E8E30C00056E46C /* GeneratorRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GeneratorRPG; sourceTree = "<group>"; };
 		599DCADE2E8E30C00056E46C /* GeneratorRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GeneratorRPGTests; sourceTree = "<group>"; };
 		59CE1E9D2E84F011009C6CB5 /* GameRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GameRPG; sourceTree = "<group>"; };
-		8E33767F2DB1140B00F9C14C /* RPGWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E33768D2DB1140C00F9C14C /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = RPGWidget; sourceTree = "<group>"; };
+		8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E0DCFC22F8722C90045FE8D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = DiceRollerWidget; sourceTree = "<group>"; };
 		8E3620AE2E1A80FF00E5C99A /* CoreRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CoreRPG; sourceTree = "<group>"; };
 		8E3620DC2E1A9EAF00E5C99A /* PhotoRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PhotoRPG; sourceTree = "<group>"; };
 		8E4B274E2CD79E7D009AB4D1 /* RPGResources */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResources; sourceTree = "<group>"; };
@@ -1495,19 +1667,37 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8E0DCFAE2F8722C80045FE8D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8E0DCFCE2F87323D0045FE8D /* DiceRPG.framework in Frameworks */,
+				59B573092F87FB7D0014508E /* RPGResources.framework in Frameworks */,
+				8E0DCFB32F8722C80045FE8D /* SwiftUI.framework in Frameworks */,
+				8E0DCFB22F8722C80045FE8D /* WidgetKit.framework in Frameworks */,
+				8E0DCFD32F8732410045FE8D /* CoreRPG.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8E13A3FB2BCE88BB00B2FCD4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8E3376792DB1140B00F9C14C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				8E33767E2DB1140B00F9C14C /* SwiftUI.framework in Frameworks */,
-				8E33767D2DB1140B00F9C14C /* WidgetKit.framework in Frameworks */,
+				8E0DB0102F85F09C0045FE8D /* SpaceRPG.framework in Frameworks */,
+				8E0DB0082F85F09C0045FE8D /* RolePlayGameKit.framework in Frameworks */,
+				8E0DAFE82F85F09C0045FE8D /* CharacterRPG.framework in Frameworks */,
+				8E0DB0182F85F09C0045FE8D /* WeatherRPG.framework in Frameworks */,
+				8E0DAFE02F85F09C0045FE8D /* AdventureRPG.framework in Frameworks */,
+				8E0DAFF42F85F09C0045FE8D /* GameRPG.framework in Frameworks */,
+				8E0DAFFC2F85F09C0045FE8D /* MapRPG.framework in Frameworks */,
+				8E0DAFF82F85F09C0045FE8D /* GeneratorRPG.framework in Frameworks */,
+				8E0DB0042F85F09C0045FE8D /* PhotoRPG.framework in Frameworks */,
+				8E0DAFE42F85F09C0045FE8D /* AudioRPG.framework in Frameworks */,
+				8E0DAFF02F85F09C0045FE8D /* DiceRPG.framework in Frameworks */,
+				8E0DB0002F85F09C0045FE8D /* PdfRPG.framework in Frameworks */,
+				8E0DB0142F85F09C0045FE8D /* TableRPG.framework in Frameworks */,
+				8E0DB00C2F85F09C0045FE8D /* RPGResources.framework in Frameworks */,
+				8E0DAFEC2F85F09C0045FE8D /* CoreRPG.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1845,18 +2035,6 @@
 			path = Window;
 			sourceTree = "<group>";
 		};
-		5978B41A2F7E615900818159 /* View */ = {
-			isa = PBXGroup;
-			children = (
-				5978B4172F7E615900818159 /* DatabaseInitializationView.swift */,
-				5978B4182F7E615900818159 /* DestinationReadyView.swift */,
-				5978B4192F7E615900818159 /* InitialRootView.swift */,
-				8E647DCB2EB4F79600057875 /* RootView.swift */,
-				8E647DCC2EB4F79600057875 /* TabRootView.swift */,
-			);
-			path = View;
-			sourceTree = "<group>";
-		};
 		5978B4242F7E618500818159 /* visionOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -1865,29 +2043,20 @@
 			path = visionOS;
 			sourceTree = "<group>";
 		};
-		5978B4272F7E785000818159 /* Route */ = {
-			isa = PBXGroup;
-			children = (
-				5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */,
-				5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */,
-			);
-			path = Route;
-			sourceTree = "<group>";
-		};
 		8E13A3FF2BCE88BB00B2FCD4 /* RPGShare */ = {
 			isa = PBXGroup;
 			children = (
 				8E13A4052BCE88BB00B2FCD4 /* Info.plist */,
 				8E5104EC2BD2440300F10E87 /* ItemProviderImporter.swift */,
+				59DC213C2BD75537001140B1 /* Localizable.xcstrings */,
 				8E5104E02BD20D9E00F10E87 /* ModuleChooser.swift */,
 				8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */,
 				8E13A40E2BCEA66100B2FCD4 /* RPGShare.entitlements */,
-				8E5104EA2BD2425900F10E87 /* SaveAction.swift */,
-				8E13A40C2BCE890D00B2FCD4 /* SharingView.swift */,
+				8E0DCF8F2F86806C0045FE8D /* ShareExtensionSaveController.swift */,
 				8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */,
 				8E5104E42BD23F5000F10E87 /* SharingHeader.swift */,
 				8E5104E82BD2413900F10E87 /* SharingInput.swift */,
-				59DC213C2BD75537001140B1 /* Localizable.xcstrings */,
+				8E0DAFD72F85EC380045FE8D /* SharingView.swift */,
 			);
 			path = RPGShare;
 			sourceTree = "<group>";
@@ -1998,7 +2167,6 @@
 				8EBED0952CD8EF68004E7103 /* RPGAdventuresTests.xctest */,
 				8EBED0B62CD8EF94004E7103 /* RPGGamesTests.xctest */,
 				8EBED0D72CD8EFA5004E7103 /* RPGMapsTests.xctest */,
-				8E33767C2DB1140B00F9C14C /* RPGWidgetExtension.appex */,
 				8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */,
 				8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */,
 				8E983DA62E27D057002B25C2 /* SpaceRPG.framework */,
@@ -2014,6 +2182,7 @@
 				59CE1E9C2E84F011009C6CB5 /* GameRPG.framework */,
 				599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */,
 				599DCAD82E8E30C00056E46C /* GeneratorRPGTests.xctest */,
+				8E0DCFB12F8722C80045FE8D /* DiceRollerWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2024,7 +2193,7 @@
 				8EC4E48028DDAAF300D0279F /* MasterRPG */,
 				8E6BC9CC2AFB0B2200E5E098 /* MasterTV */,
 				8E13A3FF2BCE88BB00B2FCD4 /* RPGShare */,
-				8E33767F2DB1140B00F9C14C /* RPGWidget */,
+				8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -2038,8 +2207,6 @@
 				5978B4142F7E613F00818159 /* Menu */,
 				8E83E4CA2E841B4400A1095C /* MyAppPackage.swift */,
 				59E299052F75313D00700934 /* RealityKitInit.swift */,
-				5978B4272F7E785000818159 /* Route */,
-				5978B41A2F7E615900818159 /* View */,
 				5978B4242F7E618500818159 /* visionOS */,
 				5978B4152F7E614400818159 /* Window */,
 			);
@@ -2339,6 +2506,31 @@
 			productReference = 8E00BC5D2990942C00C484A1 /* MasterRPGUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8E0DCFC32F8722C90045FE8D /* Build configuration list for PBXNativeTarget "DiceRollerWidgetExtension" */;
+			buildPhases = (
+				8E0DCFAD2F8722C80045FE8D /* Sources */,
+				8E0DCFAE2F8722C80045FE8D /* Frameworks */,
+				8E0DCFAF2F8722C80045FE8D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8E0DCFD12F87323D0045FE8D /* PBXTargetDependency */,
+				8E0DCFD62F8732410045FE8D /* PBXTargetDependency */,
+				59B5730C2F87FB7D0014508E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */,
+			);
+			name = DiceRollerWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = DiceRollerWidgetExtension;
+			productReference = 8E0DCFB12F8722C80045FE8D /* DiceRollerWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		8E13A3FD2BCE88BB00B2FCD4 /* RPGShare */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8E13A4092BCE88BB00B2FCD4 /* Build configuration list for PBXNativeTarget "RPGShare" */;
@@ -2350,32 +2542,25 @@
 			buildRules = (
 			);
 			dependencies = (
+				8E0DAFE32F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DAFE72F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DAFEB2F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DAFEF2F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DAFF32F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DAFF72F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DAFFB2F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DAFFF2F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DB0032F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DB0072F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DB00B2F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DB00F2F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DB0132F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DB0172F85F09C0045FE8D /* PBXTargetDependency */,
+				8E0DB01B2F85F09C0045FE8D /* PBXTargetDependency */,
 			);
 			name = RPGShare;
 			productName = RPGShare;
 			productReference = 8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		8E33767B2DB1140B00F9C14C /* RPGWidgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 8E33768E2DB1140C00F9C14C /* Build configuration list for PBXNativeTarget "RPGWidgetExtension" */;
-			buildPhases = (
-				8E3376782DB1140B00F9C14C /* Sources */,
-				8E3376792DB1140B00F9C14C /* Frameworks */,
-				8E33767A2DB1140B00F9C14C /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				8E33767F2DB1140B00F9C14C /* RPGWidget */,
-			);
-			name = RPGWidgetExtension;
-			packageProductDependencies = (
-			);
-			productName = RPGWidgetExtension;
-			productReference = 8E33767C2DB1140B00F9C14C /* RPGWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		8E3620AC2E1A80FF00E5C99A /* CoreRPG */ = {
@@ -2434,10 +2619,13 @@
 				8E49F9D62B8F654D00527E6D /* Frameworks */,
 				8E49F9D72B8F654D00527E6D /* Resources */,
 				8E1CF92F2BD14CB800891478 /* Embed Frameworks */,
+				59F140452F87C0C70072927B /* Embed Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				59F140492F87C7DD0072927B /* PBXTargetDependency */,
+				59F140442F87C0BB0072927B /* PBXTargetDependency */,
 				8E8F02592ED1874500A0A6F7 /* PBXTargetDependency */,
 				8E39AC062ED1BD9900076078 /* PBXTargetDependency */,
 				8E39AC712ED1DC6400076078 /* PBXTargetDependency */,
@@ -3007,10 +3195,12 @@
 				8EC4E46628DDA29600D0279F /* Frameworks */,
 				8EC4E46728DDA29600D0279F /* Resources */,
 				8EF250082CF0AE8E005D1170 /* Embed Frameworks */,
+				8E0DCFC02F8722C90045FE8D /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				59F140422F87BFA10072927B /* PBXTargetDependency */,
 				8E8F02512ED1873000A0A6F7 /* PBXTargetDependency */,
 				8E39ABFE2ED1BD8700076078 /* PBXTargetDependency */,
 				8E39AC692ED1DC5400076078 /* PBXTargetDependency */,
@@ -3024,6 +3214,7 @@
 				8E56BD552ED9E8A80026F01C /* PBXTargetDependency */,
 				8E56BD9A2EDAEE540026F01C /* PBXTargetDependency */,
 				8E56C0A92EDB01CF0026F01C /* PBXTargetDependency */,
+				8E0DCFBF2F8722C90045FE8D /* PBXTargetDependency */,
 			);
 			name = MasterRPG;
 			packageProductDependencies = (
@@ -3128,7 +3319,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2600;
+				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					593D0D2B2E31F2D000410232 = {
@@ -3148,11 +3339,11 @@
 						CreatedOnToolsVersion = 14.2;
 						TestTargetID = 8EC4E46828DDA29600D0279F;
 					};
+					8E0DCFB02F8722C80045FE8D = {
+						CreatedOnToolsVersion = 26.4;
+					};
 					8E13A3FD2BCE88BB00B2FCD4 = {
 						CreatedOnToolsVersion = 15.3;
-					};
-					8E33767B2DB1140B00F9C14C = {
-						CreatedOnToolsVersion = 16.3;
 					};
 					8E3620AC2E1A80FF00E5C99A = {
 						CreatedOnToolsVersion = 26.0;
@@ -3263,7 +3454,7 @@
 				8E6BC9CA2AFB0B2200E5E098 /* MasterTV */,
 				8E49F9D82B8F654D00527E6D /* MasterMac */,
 				8E13A3FD2BCE88BB00B2FCD4 /* RPGShare */,
-				8E33767B2DB1140B00F9C14C /* RPGWidgetExtension */,
+				8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */,
 				8ED3AB982E2B45AE00FF3AE8 /* RolePlayGameKit */,
 				8E3620AC2E1A80FF00E5C99A /* CoreRPG */,
 				8E79C4A12E6AEE0400893928 /* AdventureRPG */,
@@ -3333,18 +3524,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8E0DCFAF2F8722C80045FE8D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8E13A3FC2BCE88BB00B2FCD4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				59DC213D2BD75537001140B1 /* Localizable.xcstrings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8E33767A2DB1140B00F9C14C /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3594,25 +3785,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8E0DCFAD2F8722C80045FE8D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8E13A3FA2BCE88BB00B2FCD4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				8E5104ED2BD2440300F10E87 /* ItemProviderImporter.swift in Sources */,
-				8E5104EB2BD2425900F10E87 /* SaveAction.swift in Sources */,
-				8E13A40D2BCE890D00B2FCD4 /* SharingView.swift in Sources */,
 				8E5104E92BD2413900F10E87 /* SharingInput.swift in Sources */,
+				8E0DCF902F86806C0045FE8D /* ShareExtensionSaveController.swift in Sources */,
 				8E5104E52BD23F5000F10E87 /* SharingHeader.swift in Sources */,
+				8E0DAFDB2F85EDB80045FE8D /* SharingView.swift in Sources */,
 				8E13A4012BCE88BB00B2FCD4 /* ShareViewController.swift in Sources */,
 				8E5104E72BD23FBD00F10E87 /* PhotoSection.swift in Sources */,
 				8E5104E32BD21DE400F10E87 /* ModuleChooser.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8E3376782DB1140B00F9C14C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3634,7 +3825,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5978B42A2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */,
 				8E83E4DC2E841B7200A1095C /* MenuBarView.swift in Sources */,
 				8E83E4D02E841B5000A1095C /* WindowLinkList.swift in Sources */,
 				59D30AEB2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
@@ -3642,15 +3832,9 @@
 				8E83E4E02E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */,
 				8E190D9C2B8F6C150084B0F4 /* WindowMacList.swift in Sources */,
-				8E647DD42EB4F79600057875 /* RootView.swift in Sources */,
-				8E647DD52EB4F79600057875 /* TabRootView.swift in Sources */,
 				8E190DA62B8F6C340084B0F4 /* ExternalPlayerWindow.swift in Sources */,
-				5978B41B2F7E615900818159 /* DatabaseInitializationView.swift in Sources */,
-				5978B41C2F7E615900818159 /* DestinationReadyView.swift in Sources */,
-				5978B41D2F7E615900818159 /* InitialRootView.swift in Sources */,
 				59E299062F75313D00700934 /* RealityKitInit.swift in Sources */,
 				8E190D9A2B8F6C150084B0F4 /* LinkWindowCommands.swift in Sources */,
-				5978B42E2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */,
 				8E83E4CB2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8E190DA22B8F6C190084B0F4 /* MasterRPGApp.swift in Sources */,
 				8E6A8A9E2F6E538E00149E06 /* WindowVisionList.swift in Sources */,
@@ -3680,17 +3864,10 @@
 				8E83E4D72E841B5C00A1095C /* MenuCommandList.swift in Sources */,
 				8E83E4DF2E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E6BC9CE2AFB0B2300E5E098 /* MasterTVApp.swift in Sources */,
-				5978B42D2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */,
 				8E6BC9E12AFB0BCF00E5E098 /* iOSAppDelegate.swift in Sources */,
 				59E299072F75313D00700934 /* RealityKitInit.swift in Sources */,
-				5978B41E2F7E615900818159 /* DatabaseInitializationView.swift in Sources */,
-				5978B41F2F7E615900818159 /* DestinationReadyView.swift in Sources */,
-				5978B4202F7E615900818159 /* InitialRootView.swift in Sources */,
 				59D30AEC2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
-				5978B4292F7E785A00818159 /* AppModeTypeRoute.swift in Sources */,
 				8E83E4DB2E841B7200A1095C /* MenuBarView.swift in Sources */,
-				8E647DE62EB4F79600057875 /* RootView.swift in Sources */,
-				8E647DE72EB4F79600057875 /* TabRootView.swift in Sources */,
 				5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
 				8E6BC9E22AFB0BCF00E5E098 /* iOSSceneDelegate.swift in Sources */,
 				8E83E4CC2E841B4400A1095C /* MyAppPackage.swift in Sources */,
@@ -3829,21 +4006,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5978B42F2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */,
 				8E83E4CD2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8EC4E49628DDAAF400D0279F /* iOSAppDelegate.swift in Sources */,
 				8E6761E62A04B58F001AAE0E /* LinkWindowCommands.swift in Sources */,
 				5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
-				5978B42B2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */,
 				8E926E8B2B453D450025B659 /* WindowMacList.swift in Sources */,
-				8E647DDD2EB4F79600057875 /* RootView.swift in Sources */,
-				8E647DDE2EB4F79600057875 /* TabRootView.swift in Sources */,
 				59D30AED2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
 				8E83E4E12E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E83E4D12E841B5000A1095C /* WindowLinkList.swift in Sources */,
-				5978B4212F7E615900818159 /* DatabaseInitializationView.swift in Sources */,
-				5978B4222F7E615900818159 /* DestinationReadyView.swift in Sources */,
-				5978B4232F7E615900818159 /* InitialRootView.swift in Sources */,
 				8E83E4D52E841B5500A1095C /* WindowViewerList.swift in Sources */,
 				8EC4E49728DDAAF400D0279F /* iOSSceneDelegate.swift in Sources */,
 				8EC4E49228DDAAF400D0279F /* macOSAppDelegate.swift in Sources */,
@@ -3959,6 +4129,11 @@
 			target = 599DCACF2E8E30C00056E46C /* GeneratorRPG */;
 			targetProxy = 599DCADA2E8E30C00056E46C /* PBXContainerItemProxy */;
 		};
+		59B5730C2F87FB7D0014508E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E4B27012CD79E2E009AB4D1 /* RPGResources */;
+			targetProxy = 59B5730B2F87FB7D0014508E /* PBXContainerItemProxy */;
+		};
 		59CE1EBA2E84F11C009C6CB5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8E79C4A12E6AEE0400893928 /* AdventureRPG */;
@@ -4024,10 +4199,115 @@
 			target = 599DCACF2E8E30C00056E46C /* GeneratorRPG */;
 			targetProxy = 59E2991D2F75438C00700934 /* PBXContainerItemProxy */;
 		};
+		59F140422F87BFA10072927B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E13A3FD2BCE88BB00B2FCD4 /* RPGShare */;
+			targetProxy = 59F140412F87BFA10072927B /* PBXContainerItemProxy */;
+		};
+		59F140442F87C0BB0072927B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E13A3FD2BCE88BB00B2FCD4 /* RPGShare */;
+			targetProxy = 59F140432F87C0BB0072927B /* PBXContainerItemProxy */;
+		};
+		59F140492F87C7DD0072927B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */;
+			targetProxy = 59F140482F87C7DD0072927B /* PBXContainerItemProxy */;
+		};
 		8E00BC642990942C00C484A1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8EC4E46828DDA29600D0279F /* MasterRPG */;
 			targetProxy = 8E00BC632990942C00C484A1 /* PBXContainerItemProxy */;
+		};
+		8E0DAFE32F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E79C4A12E6AEE0400893928 /* AdventureRPG */;
+			targetProxy = 8E0DAFE22F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DAFE72F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 593D0D2B2E31F2D000410232 /* AudioRPG */;
+			targetProxy = 8E0DAFE62F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DAFEB2F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8EA5A7D22E6A8EDB00E70E9C /* CharacterRPG */;
+			targetProxy = 8E0DAFEA2F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DAFEF2F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E3620AC2E1A80FF00E5C99A /* CoreRPG */;
+			targetProxy = 8E0DAFEE2F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DAFF32F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8EB640052E47471400799690 /* DiceRPG */;
+			targetProxy = 8E0DAFF22F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DAFF72F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 59CE1E9B2E84F011009C6CB5 /* GameRPG */;
+			targetProxy = 8E0DAFF62F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DAFFB2F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 599DCACF2E8E30C00056E46C /* GeneratorRPG */;
+			targetProxy = 8E0DAFFA2F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DAFFF2F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E79C4812E6AEDD500893928 /* MapRPG */;
+			targetProxy = 8E0DAFFE2F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DB0032F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8EEF8E042E3639E200393DAD /* PdfRPG */;
+			targetProxy = 8E0DB0022F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DB0072F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E3620DA2E1A9EAF00E5C99A /* PhotoRPG */;
+			targetProxy = 8E0DB0062F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DB00B2F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8ED3AB982E2B45AE00FF3AE8 /* RolePlayGameKit */;
+			targetProxy = 8E0DB00A2F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DB00F2F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E4B27012CD79E2E009AB4D1 /* RPGResources */;
+			targetProxy = 8E0DB00E2F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DB0132F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E983DA52E27D057002B25C2 /* SpaceRPG */;
+			targetProxy = 8E0DB0122F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DB0172F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8EA804502E62EBC60009479F /* TableRPG */;
+			targetProxy = 8E0DB0162F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DB01B2F85F09C0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8EF512862E5E03C200B4CE44 /* WeatherRPG */;
+			targetProxy = 8E0DB01A2F85F09C0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DCFBF2F8722C90045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */;
+			targetProxy = 8E0DCFBE2F8722C90045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DCFD12F87323D0045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8EB640052E47471400799690 /* DiceRPG */;
+			targetProxy = 8E0DCFD02F87323D0045FE8D /* PBXContainerItemProxy */;
+		};
+		8E0DCFD62F8732410045FE8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E3620AC2E1A80FF00E5C99A /* CoreRPG */;
+			targetProxy = 8E0DCFD52F8732410045FE8D /* PBXContainerItemProxy */;
 		};
 		8E39ABFE2ED1BD8700076078 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -4905,6 +5185,107 @@
 			};
 			name = Release;
 		};
+		8E0DCFC42F8722C90045FE8D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = Sources/DiceRollerWidget/DiceRollerWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 511;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/DiceRollerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DiceRollerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.DiceRollerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Debug;
+		};
+		8E0DCFC52F8722C90045FE8D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = Sources/DiceRollerWidget/DiceRollerWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 511;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/DiceRollerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DiceRollerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.DiceRollerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Release;
+		};
 		8E13A40A2BCE88BB00B2FCD4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -4989,102 +5370,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		8E33768F2DB1140C00F9C14C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = Sources/RPGWidget/RPGWidget.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 511;
-				EAGER_LINKING = YES;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SELECTED_FILES = readwrite;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Sources/RPGWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = RPGWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.0;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		8E3376902DB1140C00F9C14C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = Sources/RPGWidget/RPGWidget.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 511;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_TESTABILITY = NO;
-				ENABLE_USER_SELECTED_FILES = readwrite;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GCC_OPTIMIZATION_LEVEL = s;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Sources/RPGWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = RPGWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.0;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -6912,8 +7197,8 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "MasterRPG uses speech recognition to convert your voice into text for AI chat.";
-				INFOPLIST_KEY_NSSupportsLiveActivities = NO;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = NO;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
@@ -6980,8 +7265,8 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "MasterRPG uses speech recognition to convert your voice into text for AI chat.";
-				INFOPLIST_KEY_NSSupportsLiveActivities = NO;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = NO;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
@@ -7289,20 +7574,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		8E0DCFC32F8722C90045FE8D /* Build configuration list for PBXNativeTarget "DiceRollerWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E0DCFC42F8722C90045FE8D /* Debug */,
+				8E0DCFC52F8722C90045FE8D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		8E13A4092BCE88BB00B2FCD4 /* Build configuration list for PBXNativeTarget "RPGShare" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8E13A40A2BCE88BB00B2FCD4 /* Debug */,
 				8E13A40B2BCE88BB00B2FCD4 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		8E33768E2DB1140C00F9C14C /* Build configuration list for PBXNativeTarget "RPGWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				8E33768F2DB1140C00F9C14C /* Debug */,
-				8E3376902DB1140C00F9C14C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

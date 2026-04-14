@@ -130,7 +130,11 @@ extension RootRoute: NavigationDestination {
     }
 
     public static var visionTabs: [RootRoute] {
-        [.game, .adventures, .values, .pdfs, .editors, .generator, .search, .settings]
+        [.game, .adventures, .values, .generator, .search, .settings]
+    }
+
+    public static var visionEditorTabs: [RootRoute] {
+        [.pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
     }
 
     public static var macTabs: [RootRoute] {

@@ -58,7 +58,7 @@ struct GameToolBar: View {
     @Environment(MapRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.networkActions) private var networkActions
-    @Environment(\.wideMode) private var wideMode
+    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     
 #if os(macOS)
     @Environment(\.openWindow) private var openWindow
@@ -72,7 +72,7 @@ struct GameToolBar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if wideMode == .small {
+            if appWindowSizeModel.mode == .compact {
                 VStack(spacing: 8) {
                     pinScaleView
                         .padding(.horizontal)
@@ -115,7 +115,7 @@ struct GameToolBar: View {
                             
                             barButtonViews
 
-                            if wideMode != .small {
+                            if appWindowSizeModel.mode == .regular {
                                 hideScaleButtonView
 
                                 reshareButtonView
@@ -124,7 +124,7 @@ struct GameToolBar: View {
                                 pinScaleView
                             }
                             Spacer()
-                            if wideMode == .small {
+                            if appWindowSizeModel.mode == .compact {
                                 hideScaleButtonView
                                 reshareButtonView
                             }

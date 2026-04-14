@@ -16,11 +16,11 @@ enum EditorRoute: Equatable, Hashable, Codable {
 extension EditorRoute: NavigationDestination {
     public var method: NavigationMethod {
         switch self {
-        case .quickEditor:
-            return .cover
+        case .quickEditor, .mapEditor:
+            return .managedCover
         case .addLink:
             return .managedSheet
-        case .mapEditor, .selectionPdf, .linkSelection:
+        case .selectionPdf, .linkSelection:
             return .push
         }
     }
