@@ -28,13 +28,18 @@ struct Board: EntityEquipment {
     init(id: ID, mapImageName: String = "battleMap") {
         self.id = id
         
+        // 5cm border on all sides
+        let borderSize: Float = 0.05
+        let mapSize = GameMetrics.tableEdge - (borderSize * 2)
+        let boxHeight: Float = 0.02  // 2cm height
+        
         // Create the board entity
         let boardEntity = Entity()
         
-        // Create base board mesh (3D box)
+        // Create base board mesh (3D box) with 2cm height
         let boardMesh = MeshResource.generateBox(
             width: GameMetrics.boardEdge,
-            height: GameMetrics.boardHeight,
+            height: boxHeight,
             depth: GameMetrics.boardEdge
         )
         
@@ -45,12 +50,12 @@ struct Board: EntityEquipment {
         
         // Create image plane on top of the board
         let imagePlane = ModelEntity(
-            mesh: .generatePlane(width: GameMetrics.boardEdge * 0.95, depth: GameMetrics.boardEdge * 0.95),
+            mesh: .generatePlane(width: mapSize, depth: mapSize),
             materials: [SimpleMaterial(color: .white, isMetallic: false)]
         )
         
-        // Position the image plane on top of the board
-        imagePlane.position.y = GameMetrics.boardHeight / 2 + 0.001
+        // Position the image plane on top of the 2cm box
+        imagePlane.position.y = boxHeight / 2 + 0.001
         
         // Load and apply the map texture
         var mapMaterial = UnlitMaterial()
@@ -67,10 +72,11 @@ struct Board: EntityEquipment {
         
         self.entity = boardEntity
         
+        // Align with table (no rotation)
         self.initialState = .init(
             parentID: .tableID,
             seatControl: .restricted([]),
-            pose: .init(position: .init(), rotation: .degrees(45)),
+            pose: .init(position: .init(), rotation: .degrees(0)),
             entity: self.entity
         )
     }
