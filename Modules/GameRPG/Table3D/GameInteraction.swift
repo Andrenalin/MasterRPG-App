@@ -69,7 +69,7 @@ struct GameInteraction: TabletopInteraction.Delegate {
                 }
             }
             // Pick a random value for the result of the die toss and toss the die.
-            let nextValue = Int.random(in: 1 ... 20)
+            let nextValue = 3
             interaction.addAction(.updateEquipment(die20, value: nextValue))
             interaction.toss(equipmentID: interaction.value.startingEquipmentID, as: die20.representation)
             // Move the die back to the starting pose on the table after toss animation finishes.

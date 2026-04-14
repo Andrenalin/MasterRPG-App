@@ -148,53 +148,68 @@ struct Die20: EntityEquipment {
     
     // Return the orientation of the die entity to a given value face up.
     func restingOrientation(state: DieState) -> Rotation3D {
-        // The die asset's default orientation shows 6 on top (+y), 2 on the right (+x), and 3 on the front (+z).
+        // D20 model - faces arranged on an icosahedron
+        // Testing shows: 1 is default up, 20 is opposite (bottom)
+        // The remaining faces need to be determined by testing the actual 3D model
+        print("**** Rolled: \(state.value)")
         switch state.value {
-            case 20: // Flip upside down.
-                return .init(angle: .init(degrees: +180), axis: .init(x: 0, y: 0, z: 1))
-            case 14: // Flip to the left once.
-                return .init(angle: .init(degrees: +180 + 41.811), axis: .init(x: 1, y: 0, z: 1))
-            case 3: // Flip to the back once.
-                return .init(angle: .init(degrees: -90), axis: .init(x: 1, y: 0, z: 0))
-            case 4: // Flip to the front once.
-                return .init(angle: .init(degrees: +90), axis: .init(x: 1, y: 0, z: 0))
-            case 5: // Flip to the right once.
-                return .init(angle: .init(degrees: -90), axis: .init(x: 0, y: 0, z: 1))
-            case 6: // Default orientation.
-                return .init()
-        case 7: // Flip upside down.
-            return .init(angle: .init(degrees: +180), axis: .init(x: 0, y: 0, z: 1))
-        case 8: // Flip to the left once.
-            return .init(angle: .init(degrees: +90), axis: .init(x: 0, y: 0, z: 1))
-        case 9: // Flip to the back once.
-            return .init(angle: .init(degrees: -90), axis: .init(x: 1, y: 0, z: 0))
-        case 10: // Flip to the front once.
-            return .init(angle: .init(degrees: +90), axis: .init(x: 1, y: 0, z: 0))
-        case 11: // Flip to the right once.
-            return .init(angle: .init(degrees: -90), axis: .init(x: 0, y: 0, z: 1))
-        case 12: // Default orientation.
+            case 1: // Default orientation - 1 facing up
+                return .init(angle: .init(degrees: 180), axis: .init(x: 1, y: 0, z: 0))
+        case 2:
+        return .init(angle: .init(degrees: 63.4), axis: .init(x: 0.809, y: 0, z: 0.588))
+
+            case 7:
+                return .init(angle: .init(degrees: 116.6), axis: .init(x: 1, y: 0, z: 0))
+        case 9:
+            return .init(angle: .init(degrees: 116.6), axis: .init(x: -0.809, y: 0, z: -0.588))
+        case 10:
+            return .init(angle: .init(degrees: 63.4), axis: .init(x: 0.809, y: 0, z: -0.588))
+        case 14:
+            return .init(angle: .init(degrees: 63.4), axis: .init(x: -1, y: 0, z: 0))
+
+            case 18:
+                return .init(angle: .init(degrees: 63.4), axis: .init(x: -0.309, y: 0, z: 0.951))
+
+        case 20: // Opposite of 1 - flip 180°
+            //return .init(angle: .init(degrees: 180), axis: .init(x: 1, y: 0, z: 0))
             return .init()
 
-        case 13: // Flip upside down.
-            return .init(angle: .init(degrees: +180), axis: .init(x: 0, y: 0, z: 1))
-        case 2: // Flip to the left once.
-            return .init(angle: .init(degrees: +90), axis: .init(x: 0, y: 0, z: 1))
-        case 15: // Flip to the back once.
-            return .init(angle: .init(degrees: -90), axis: .init(x: 1, y: 0, z: 0))
-        case 16: // Flip to the front once.
-            return .init(angle: .init(degrees: +90), axis: .init(x: 1, y: 0, z: 0))
-        case 17: // Flip to the right once.
-            return .init(angle: .init(degrees: -90), axis: .init(x: 0, y: 0, z: 1))
-        case 18: // Default orientation.
-            return .init()
-
-        case 19: // Flip upside down.
-            return .init(angle: .init(degrees: +180), axis: .init(x: 0, y: 0, z: 1))
-        case 1: // Flip to the left once.
-            return .init(angle: .init(degrees: +0), axis: .init(x: 0, y: 0, z: 1))
-
-        default:
-            fatalError("Invalid die value")
+            
+            // Adjacent to 1 (first ring of 5 faces around 1)
+            // Tilt ~63.4° (icosahedron dihedral complement)
+            case 12: 
+                return .init(angle: .init(degrees: 63.4), axis: .init(x: 1, y: 0, z: 0))
+            case 3:
+                return .init(angle: .init(degrees: 63.4), axis: .init(x: 0.309, y: 0, z: 0.951))
+            case 4:
+                return .init(angle: .init(degrees: 63.4), axis: .init(x: -0.809, y: 0, z: 0.588))
+            case 5:
+                return .init(angle: .init(degrees: 63.4), axis: .init(x: -0.809, y: 0, z: -0.588))
+            case 6:
+                return .init(angle: .init(degrees: 63.4), axis: .init(x: 0.309, y: 0, z: -0.951))
+                
+            // Second ring (offset ring) - tilt ~63.4° on different axes
+            case 8:
+                return .init(angle: .init(degrees: 116.6), axis: .init(x: -0.309, y: 0, z: 0.951))
+            case 11:
+                return .init(angle: .init(degrees: 63.4), axis: .init(x: -0.309, y: 0, z: -0.951))
+                
+            // Third ring - larger tilt ~116.6° (icosahedron dihedral angle)
+            case 13:
+                return .init(angle: .init(degrees: 116.6), axis: .init(x: 0.309, y: 0, z: 0.951))
+            case 15:
+                return .init(angle: .init(degrees: 116.6), axis: .init(x: -0.809, y: 0, z: 0.588))
+            case 16:
+                return .init(angle: .init(degrees: 116.6), axis: .init(x: 0.309, y: 0, z: -0.951))
+                
+            // Ring adjacent to 20 (near bottom)
+            case 17:
+                return .init(angle: .init(degrees: 116.6), axis: .init(x: 0.809, y: 0, z: 0.588))
+            case 19:
+                return .init(angle: .init(degrees: 116.6), axis: .init(x: -1, y: 0, z: 0))
+                
+            default:
+                fatalError("Invalid die value: \(state.value). D20 must have value 1-20")
         }
     }
     
