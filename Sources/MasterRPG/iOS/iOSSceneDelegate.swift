@@ -2,14 +2,17 @@
 
 #if os(iOS) || os(visionOS) || os(tvOS)
 import CoreRPG
+import Combine
 import RolePlayGameKit
 import os.log
 import SwiftUI
 import UIKit
 
-@Observable final class IosSceneDelegate: NSObject, UIWindowSceneDelegate, AppWindowSceneModel {
+final class IosSceneDelegate: NSObject, UIWindowSceneDelegate, ObservableObject {
+    var originalDelegate: (any UIWindowSceneDelegate)?
+
     var window: UIWindow?
-    weak var windowScene: UIWindowScene?
+    public weak var windowScene: UIWindowScene?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let scene = scene as? UIWindowScene else {
@@ -31,5 +34,7 @@ import UIKit
         self.windowScene = scene
     }
 }
+
+extension IosSceneDelegate: AppWindowSceneModel {}
 
 #endif

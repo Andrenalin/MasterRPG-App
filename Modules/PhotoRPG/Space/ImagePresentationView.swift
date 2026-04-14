@@ -1,10 +1,10 @@
 // @copyright André Trettin
 
+#if os(visionOS)
+
 import RealityKit
 import SwiftUI
 import CoreRPG
-
-#if os(visionOS)
 import UIKit
 
 struct ImagePresentationView: View {

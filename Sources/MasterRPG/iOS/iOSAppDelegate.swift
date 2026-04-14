@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
 #if os(iOS)  || os(visionOS) || os(tvOS)
-import Observation
-import UIKit
+import SwiftUI
 
 @Observable final class IosAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,

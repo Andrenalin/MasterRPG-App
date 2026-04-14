@@ -5,6 +5,9 @@ import TabletopKit
 import RealityKit
 import RPGTabletopGameContent
 import Spatial
+import DeveloperToolsSupport
+import SwiftUI
+import UIKit
 
 extension EquipmentIdentifier {
     static var tableID: Self { .init(0) }
@@ -16,14 +19,60 @@ struct Table: Tabletop {
     var id: EquipmentIdentifier = .tableID
 }
 
-struct Board: Equipment {
+struct Board: EntityEquipment {
     let id: ID
-
-    var initialState: BaseEquipmentState {
-        .init(parentID: .tableID,
-              seatControl: .restricted([]),
-              pose: .init(position: .init(), rotation: .degrees(45)),
-              boundingBox: .init(center: .zero, size: .init(GameMetrics.boardEdge, GameMetrics.boardHeight, GameMetrics.boardEdge)))
+    let entity: Entity
+    var initialState: BaseEquipmentState
+    
+    @MainActor
+    init(id: ID, mapImageName: String = "battleMap") {
+        self.id = id
+        
+        // Create the board entity
+        let boardEntity = Entity()
+        
+        // Create base board mesh (3D box)
+        let boardMesh = MeshResource.generateBox(
+            width: GameMetrics.boardEdge,
+            height: GameMetrics.boardHeight,
+            depth: GameMetrics.boardEdge
+        )
+        
+        var boardMaterial = PhysicallyBasedMaterial()
+        boardMaterial.baseColor = .init(tint: UIColor(red: 0.4, green: 0.3, blue: 0.2, alpha: 1.0))
+        let boardModel = ModelEntity(mesh: boardMesh, materials: [boardMaterial])
+        boardEntity.addChild(boardModel)
+        
+        // Create image plane on top of the board
+        let imagePlane = ModelEntity(
+            mesh: .generatePlane(width: GameMetrics.boardEdge * 0.95, depth: GameMetrics.boardEdge * 0.95),
+            materials: [SimpleMaterial(color: .white, isMetallic: false)]
+        )
+        
+        // Position the image plane on top of the board
+        imagePlane.position.y = GameMetrics.boardHeight / 2 + 0.001
+        
+        // Load and apply the map texture
+        var mapMaterial = UnlitMaterial()
+        do {
+            let texture = try TextureResource.load(named: mapImageName, in: nil)
+            mapMaterial.color = .init(texture: .init(texture))
+        } catch {
+            // Fallback to a colored material if image loading fails
+            mapMaterial.color = .init(tint: .gray)
+        }
+        imagePlane.model?.materials = [mapMaterial]
+        
+        boardEntity.addChild(imagePlane)
+        
+        self.entity = boardEntity
+        
+        self.initialState = .init(
+            parentID: .tableID,
+            seatControl: .restricted([]),
+            pose: .init(position: .init(), rotation: .degrees(45)),
+            entity: self.entity
+        )
     }
 }
 

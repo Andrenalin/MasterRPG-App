@@ -18,6 +18,14 @@ struct WindowVisionList: Scene {
     var body: some Scene {
         let defaultSize = Size3D(width: 1.5, height: 1, depth: 0.4)
 
+        WindowGroup(id: SceneId.imageSpaceViewer.rawValue) {
+            appModel.photoRoot.viewController.imageSpaceView()
+                .environmentSetUp(appModel)
+                .frame(minWidth: 600, maxWidth: 2000, minHeight: 600, maxHeight: 2000)
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.plain)
+
         WindowGroup(id: SceneId.gameTable.rawValue) {
             GameTableView().volumeBaseplateVisibility(.hidden)
         }

@@ -20,6 +20,7 @@ public final class PhotoRootModel {
         self.linkSelectionModel = config.linkSelectionModel
         
         self.navigationModel = ModuleNavigationModel()
+        self.imagePresentationModel = ImagePresentationModel()
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
@@ -70,6 +71,8 @@ public final class PhotoRootModel {
     public var linkSelectionModel: ItemSelectionModel
     
     @MainActor public var navigationModel: ModuleNavigationModel
+    
+    public let imagePresentationModel: ImagePresentationModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()

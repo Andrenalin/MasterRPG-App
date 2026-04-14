@@ -10,8 +10,8 @@ enum Spatial3DImageState {
     case generated
 }
 
-@MainActor @Observable final class ImagePresentationModel {
-    var selectedItemId: UUID?
+@MainActor @Observable public final class ImagePresentationModel {
+    public var selectedItemId: UUID?
 
     var imageIndex: Int = 0
     var imageURL: URL? = nil

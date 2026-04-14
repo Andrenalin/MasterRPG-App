@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
     "%@" : {
       "localizations" : {
         "de" : {
@@ -30,6 +33,9 @@
           }
         }
       }
+    },
+    "Convert to 3D" : {
+
     },
     "Convert to JPEG" : {
       "localizations" : {
@@ -102,6 +108,12 @@
           }
         }
       }
+    },
+    "Show as 2D" : {
+
+    },
+    "Show as 3D" : {
+
     },
     "Show image in the world space" : {
       "localizations" : {
