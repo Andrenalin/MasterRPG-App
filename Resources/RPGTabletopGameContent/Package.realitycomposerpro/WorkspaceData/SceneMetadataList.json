@@ -16,6 +16,27 @@
       }
     ]
   },
+  "1D58F7E8-3F65-4A83-84F0-09E0002C31DA" : {
+    "objectMetadataList" : [
+      [
+        "1D58F7E8-3F65-4A83-84F0-09E0002C31DA",
+        "Root",
+        "table_assembly"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "1D58F7E8-3F65-4A83-84F0-09E0002C31DA",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      }
+    ]
+  },
   "1FB77816-9E7D-4467-83EA-A0668C1C1D60" : {
     "objectMetadataList" : [
       [
@@ -150,7 +171,16 @@
       [
         "3A0F651E-FFC0-4324-B986-FC5A1054E23E",
         "Root",
-        "board_flatbase_mat"
+        "board",
+        "Board_Mesh"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "3A0F651E-FFC0-4324-B986-FC5A1054E23E",
+        "Root"
       ],
       {
         "isExpanded" : true,
@@ -168,16 +198,7 @@
       [
         "3A0F651E-FFC0-4324-B986-FC5A1054E23E",
         "Root",
-        "board",
-        "Board_Mesh"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "3A0F651E-FFC0-4324-B986-FC5A1054E23E",
-        "Root"
+        "board_flatbase_mat"
       ],
       {
         "isExpanded" : true,
@@ -210,7 +231,8 @@
     "objectMetadataList" : [
       [
         "3D2F24C9-F933-4FE3-926F-0B998CA423C2",
-        "Root"
+        "Root",
+        "gantry_assembly"
       ],
       {
         "isExpanded" : true,
@@ -218,8 +240,7 @@
       },
       [
         "3D2F24C9-F933-4FE3-926F-0B998CA423C2",
-        "Root",
-        "gantry_assembly"
+        "Root"
       ],
       {
         "isExpanded" : true,
@@ -242,8 +263,7 @@
       [
         "3E7BB723-6FE1-455D-B5AD-92AF37F3682A",
         "Root",
-        "CardSet",
-        "Looks"
+        "CardSet"
       ],
       {
         "isExpanded" : true,
@@ -252,7 +272,8 @@
       [
         "3E7BB723-6FE1-455D-B5AD-92AF37F3682A",
         "Root",
-        "CardSet"
+        "CardSet",
+        "Looks"
       ],
       {
         "isExpanded" : true,
@@ -333,7 +354,7 @@
       [
         "6A0E0B9B-C43C-4E81-B743-8369CA61CD5A",
         "Root",
-        "Material_board"
+        "Material_occluder"
       ],
       {
         "isExpanded" : true,
@@ -350,7 +371,7 @@
       [
         "6A0E0B9B-C43C-4E81-B743-8369CA61CD5A",
         "Root",
-        "Material_occluder"
+        "Material_board"
       ],
       {
         "isExpanded" : true,
@@ -362,8 +383,7 @@
     "objectMetadataList" : [
       [
         "6B0FE460-615F-4AC1-B88D-F07B2C91455D",
-        "Root",
-        "Material_2"
+        "Root"
       ],
       {
         "isExpanded" : true,
@@ -380,7 +400,8 @@
       },
       [
         "6B0FE460-615F-4AC1-B88D-F07B2C91455D",
-        "Root"
+        "Root",
+        "Material_2"
       ],
       {
         "isExpanded" : true,
@@ -467,16 +488,7 @@
       [
         "91FE426E-B994-40CB-ADAF-FCD9DBC7F218",
         "Root",
-        "D20Blue",
-        "Materials"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "91FE426E-B994-40CB-ADAF-FCD9DBC7F218",
-        "Root"
+        "D20Blue"
       ],
       {
         "isExpanded" : true,
@@ -485,7 +497,18 @@
       [
         "91FE426E-B994-40CB-ADAF-FCD9DBC7F218",
         "Root",
-        "D20Blue"
+        "Die",
+        "geom"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "91FE426E-B994-40CB-ADAF-FCD9DBC7F218",
+        "Root",
+        "D20Blue",
+        "Materials"
       ],
       {
         "isExpanded" : true,
@@ -502,9 +525,7 @@
       },
       [
         "91FE426E-B994-40CB-ADAF-FCD9DBC7F218",
-        "Root",
-        "D20Blue",
-        "Meshes"
+        "Root"
       ],
       {
         "isExpanded" : true,
@@ -513,8 +534,8 @@
       [
         "91FE426E-B994-40CB-ADAF-FCD9DBC7F218",
         "Root",
-        "Die",
-        "geom"
+        "D20Blue",
+        "Meshes"
       ],
       {
         "isExpanded" : true,
@@ -574,15 +595,6 @@
     "objectMetadataList" : [
       [
         "9EA55302-0617-4BB0-88EC-CB095954DA3D",
-        "Root",
-        "table_mat"
-      ],
-      {
-        "isExpanded" : true,
-        "isLocked" : false
-      },
-      [
-        "9EA55302-0617-4BB0-88EC-CB095954DA3D",
         "Root"
       ],
       {
@@ -593,6 +605,15 @@
         "9EA55302-0617-4BB0-88EC-CB095954DA3D",
         "Root",
         "table_rectangle"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      },
+      [
+        "9EA55302-0617-4BB0-88EC-CB095954DA3D",
+        "Root",
+        "table_mat"
       ],
       {
         "isExpanded" : true,
@@ -624,8 +645,7 @@
       },
       [
         "A4216F42-1CE9-4D59-8658-1FD730C1129F",
-        "table_rectangle",
-        "Looks"
+        "Material"
       ],
       {
         "isExpanded" : true,
@@ -633,7 +653,8 @@
       },
       [
         "A4216F42-1CE9-4D59-8658-1FD730C1129F",
-        "Material"
+        "table_rectangle",
+        "Looks"
       ],
       {
         "isExpanded" : true,
@@ -787,7 +808,8 @@
     "objectMetadataList" : [
       [
         "C834DADC-084D-4C7C-97CC-1EE60CEB420B",
-        "Root"
+        "Root",
+        "card_arm_01_mat"
       ],
       {
         "isExpanded" : true,
@@ -795,8 +817,7 @@
       },
       [
         "C834DADC-084D-4C7C-97CC-1EE60CEB420B",
-        "Root",
-        "card_arm_01_mat"
+        "Root"
       ],
       {
         "isExpanded" : true,
@@ -873,7 +894,7 @@
     "objectMetadataList" : [
       [
         "E5B88685-EF6C-401C-8633-BD67C0F49516",
-        "Material"
+        "cloud_plane"
       ],
       {
         "isExpanded" : true,
@@ -881,7 +902,7 @@
       },
       [
         "E5B88685-EF6C-401C-8633-BD67C0F49516",
-        "cloud_plane"
+        "Material"
       ],
       {
         "isExpanded" : true,

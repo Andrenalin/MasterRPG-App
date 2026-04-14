@@ -2,17 +2,14 @@
 
 #if os(iOS) || os(visionOS) || os(tvOS)
 import CoreRPG
-import Combine
-import CloudKit
 import RolePlayGameKit
-import GameRPG
 import os.log
 import SwiftUI
 import UIKit
 
-final class IosSceneDelegate: NSObject, UIWindowSceneDelegate, ObservableObject {
-    var originalDelegate: (any UIWindowSceneDelegate)?
+@Observable final class IosSceneDelegate: NSObject, UIWindowSceneDelegate, AppWindowSceneModel {
     var window: UIWindow?
+    weak var windowScene: UIWindowScene?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let scene = scene as? UIWindowScene else {
@@ -31,12 +28,8 @@ final class IosSceneDelegate: NSObject, UIWindowSceneDelegate, ObservableObject 
         preferences.resizingRestrictions = UIWindowScene.ResizingRestrictions.freeform
         scene.requestGeometryUpdate(preferences)
 #endif
+        self.windowScene = scene
     }
-}
-
-@MainActor
-final class GameShare {
-    static var root: GameRoot?
 }
 
 #endif

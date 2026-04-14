@@ -2,6 +2,7 @@
   "pathsToIds" : {
     "RPGTabletopGameContent\/Sources\/RPGTabletopGameContent\/RPGTabletopGameContent.rkassets\/CardSet_assembly.usda" : "3E7BB723-6FE1-455D-B5AD-92AF37F3682A",
     "RPGTabletopGameContent\/Sources\/RPGTabletopGameContent\/RPGTabletopGameContent.rkassets\/Scene.usda" : "91FE426E-B994-40CB-ADAF-FCD9DBC7F218",
+    "RPGTabletopGameContent\/Sources\/RPGTabletopGameContent\/RPGTabletopGameContent.rkassets\/complete_scene.usda" : "1D58F7E8-3F65-4A83-84F0-09E0002C31DA",
     "RPGTabletopGameContent\/Sources\/RPGTabletopGameContent\/RPGTabletopGameContent.rkassets\/dice_and_audio.usda" : "E05FF2E9-E743-46B0-B1DD-7D8B0AAD9595",
     "RPGTabletopGameContent\/Sources\/RPGTabletopGameContent\/RPGTabletopGameContent.rkassets\/static_scene.usda" : "B460C40D-4585-4CD1-8749-EA670E523E70",
     "Table_Top_Kit\/Sources\/Table_Top_Kit\/Table_Top_Kit.rkassets\/CardSet_assembly.usda" : "B6FC0736-63B0-4A0A-A614-8A61F9EE2745",
@@ -76,6 +77,7 @@
   },
   "projectID" : -7644951300517489638,
   "uuidToIntID" : {
+    "1D58F7E8-3F65-4A83-84F0-09E0002C31DA" : -7630807434660950482,
     "3E7BB723-6FE1-455D-B5AD-92AF37F3682A" : 7074636472168897627,
     "91FE426E-B994-40CB-ADAF-FCD9DBC7F218" : 2264447347613824752,
     "B460C40D-4585-4CD1-8749-EA670E523E70" : 3858758308563452372,

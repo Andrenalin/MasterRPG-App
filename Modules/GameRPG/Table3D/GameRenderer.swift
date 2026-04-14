@@ -40,13 +40,7 @@ class GameRenderer: TabletopGame.RenderDelegate {
         let staticSceneEntity = try! await Entity(named: "static_scene", in: tabletopGameContentBunlde)
         staticSceneEntity.setParent(root)
 
-        let boardCavityEntity = try! await Entity(named: "board_cavity_assembly", in: tabletopGameContentBunlde)
-        boardCavityEntity.transform.rotation = .init(angle: -.pi / 2, axis: .init(x: 0, y: 1, z: 0))
-
-        // Set up portal to render the board internals without being clipped to the RealityView volume.
-        // Both `portal` and `portalWorld` need to be added to the RealityView content.
         portalWorld.components.set(WorldComponent())
-        portalWorld.addChild(boardCavityEntity)
         portalWorld.transform.translation = .init(rootOffset)
         portalWorld.transform.translation.y += GameMetrics.tableThickness * 0.5
         let portalMesh = MeshResource.generateBox(width: 0.6, height: 0, depth: 0.6)

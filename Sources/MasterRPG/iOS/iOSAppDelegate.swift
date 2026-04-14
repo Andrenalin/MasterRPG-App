@@ -1,16 +1,16 @@
 // @copyright André Trettin
 
 #if os(iOS)  || os(visionOS) || os(tvOS)
-import Combine
+import Observation
 import UIKit
 
-final class IosAppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
+@Observable final class IosAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions:
                      [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         return true
     }
-
+    
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
@@ -20,11 +20,11 @@ final class IosAppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         }
         return sceneConfig
     }
-
-    #if os(iOS)
+    
+#if os(iOS)
     func application(_ application: UIApplication, handleOpen url: URL) -> Bool {
         return false
     }
-    #endif
+#endif
 }
 #endif
