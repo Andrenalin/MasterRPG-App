@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if os(visionOS)
 import CoreRPG
 import RealityKit
 import SwiftUI
@@ -77,3 +78,5 @@ enum Spatial3DImageState {
         }
     }
 }
+
+#endif

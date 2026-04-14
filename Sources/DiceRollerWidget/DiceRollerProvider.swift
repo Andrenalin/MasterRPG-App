@@ -80,7 +80,7 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
             AppIntentRecommendation(intent: ConfigureDiceWidgetIntent(), description: "Standard Dice Roller"),
             AppIntentRecommendation(
                 intent: {
-                    var intent = ConfigureDiceWidgetIntent()
+                    let intent = ConfigureDiceWidgetIntent()
                     intent.showFavoritesOnly = true
                     return intent
                 }(),
