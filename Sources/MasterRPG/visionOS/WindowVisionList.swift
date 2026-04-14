@@ -8,10 +8,7 @@ import RolePlayGameKit
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
-<<<<<<< HEAD
-=======
 import GroupActivities
->>>>>>> develop
 
 struct WindowVisionList: Scene {
     let appModel: AppModel
@@ -21,7 +18,7 @@ struct WindowVisionList: Scene {
     var body: some Scene {
         let defaultSize = Size3D(width: 1.5, height: 1, depth: 0.4)
 
-        WindowGroup(id: WindowIdentifier.gameTable.rawValue) {
+        WindowGroup(id: SceneId.gameTable.rawValue) {
             GameTableView().volumeBaseplateVisibility(.hidden)
         }
         .windowStyle(.volumetric)
