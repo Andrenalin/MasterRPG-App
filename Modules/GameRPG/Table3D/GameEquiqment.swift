@@ -274,7 +274,7 @@ struct Board: EntityEquipment {
         }
         
         // For non-rectangular polygons, use extrusion (centered at origin, return center)
-        let fogHeight: Float = 0.11
+        //let fogHeight: Float = 0.11
         let bottomY: Float = -0.01
         let topY: Float = 0.10
         

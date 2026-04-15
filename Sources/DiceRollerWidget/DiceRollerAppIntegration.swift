@@ -100,7 +100,7 @@ struct DiceRollerWidgetConfiguration: View {
             Section {
                 Button("Add Widget to Home Screen") {
                     // This opens Settings where user can add widget
-                    if let url = URL(string: "App-prefs:root=") {
+                    if let _ = URL(string: "App-prefs:root=") {
                         //UIApplication.openSettingsURLString
                         //UIApplication.shared.open(url)
                     }

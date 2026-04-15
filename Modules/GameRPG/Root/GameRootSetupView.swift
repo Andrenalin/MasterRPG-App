@@ -16,7 +16,7 @@ struct GameRootSetupView: View {
                 .opacity(0.5)
             
             ScrollView {
-#if os(macOS) || os(visionOS)
+#if os(macOS)
                 Button {
                     withAnimation {
                         sceneManager.openWindow(SceneId.editor)

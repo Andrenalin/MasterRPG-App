@@ -7,6 +7,7 @@ struct SplitEditorNavigation: View {
     @SceneStorage("EditorRoute") private var storedTab: RootRoute = .pdfs
     
     @Environment(AppModel.self) private var appModel
+    @Environment(ScenesManager.self) private var sceneManager
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
@@ -42,6 +43,26 @@ struct SplitEditorNavigation: View {
         }
         .onNavigationRoute(RootVisionRouteRouter(appModel: appModel))
         .onNavigationOpenURL(RootURLHandler(appModel: appModel))
+#if os(visionOS)
+        .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .leading) {
+            VStack {
+                menuView
+            }
+            .padding(12)
+        }
+        .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
+            Button {
+                sceneManager.openWindow(SceneId.game)
+            } label: {
+                Label {
+                    Text("Game", bundle: .module)
+                } icon: {
+                    Image(systemName: NetworkModules.game.icon)
+                }
+            }
+            .padding([.top, .leading], 12)
+        }
+#endif
     }
     
     var selectedModule: NetworkModules {
@@ -69,6 +90,21 @@ struct SplitEditorNavigation: View {
         } detail: {
             SplitDetailView(isExtendedRoutes: true)
                 .environment(appModel.itemRootController(for: tab.module))
+        }
+    }
+    
+    var menuView: some View {
+        Group {
+            MenuWindowButtonView(valueType: .adventure)
+            MenuWindowButtonView(valueType: .audio)
+            MenuWindowButtonView(valueType: .dice)
+            MenuWindowButtonView(valueType: .map)
+            MenuWindowButtonView(valueType: .pdf)
+            MenuWindowButtonView(valueType: .photo)
+            MenuWindowButtonView(valueType: .space)
+            MenuWindowButtonView(valueType: .table)
+            MenuWindowButtonView(valueType: .value)
+            MenuWindowButtonView(valueType: .weather)
         }
     }
 }
