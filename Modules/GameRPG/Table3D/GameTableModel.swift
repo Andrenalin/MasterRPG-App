@@ -82,8 +82,8 @@ final class GameTableModel {
             return
         }
         
-        // Update the board with the new photo
-        setup.board.updateMap(image: akImage, degrees: degrees)
+        // Update the board with the new photo and display config
+        setup.board.updateMap(image: akImage, degrees: degrees, displayConfig: mapModel.displayConfig)
         print("Map updated successfully: '\(mapModel.name)' (rotation: \(degrees)°)")
     }
     

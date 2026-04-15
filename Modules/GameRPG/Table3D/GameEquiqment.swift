@@ -2,6 +2,7 @@
 
 #if os(visionOS)
 import CoreRPG
+import MapRPG
 import TabletopKit
 import RealityKit
 import RPGTabletopGameContent
@@ -25,9 +26,11 @@ struct Board: EntityEquipment {
     let entity: Entity
     var initialState: BaseEquipmentState
     
-    // Store the image plane as a property so we can update it
+    // Store the image plane and border as properties so we can update them
     private let imagePlane: ModelEntity
+    private let borderPlane: ModelEntity
     private let mapSize: Float
+    private let boxHeight: Float = 0.02
     
     @MainActor
     init(id: ID) {
@@ -36,7 +39,6 @@ struct Board: EntityEquipment {
         // 5cm border on all sides
         let borderSize: Float = 0.05
         self.mapSize = GameMetrics.tableEdge - (borderSize * 2)
-        let boxHeight: Float = 0.02  // 2cm height
         
         // Create the board entity
         let boardEntity = Entity()
@@ -53,19 +55,28 @@ struct Board: EntityEquipment {
         let boardModel = ModelEntity(mesh: boardMesh, materials: [boardMaterial])
         boardEntity.addChild(boardModel)
         
-        // Create image plane on top of the board
+        // Create border plane (full size, behind the image)
+        let border = ModelEntity(
+            mesh: .generatePlane(width: mapSize, depth: mapSize),
+            materials: [SimpleMaterial(color: .black, isMetallic: false)]
+        )
+        border.position.y = boxHeight / 2 + 0.0005
+        border.name = "MapBorderPlane"
+        boardEntity.addChild(border)
+        self.borderPlane = border
+        
+        // Create image plane on top of the border (will be sized to aspect ratio)
         let plane = ModelEntity(
             mesh: .generatePlane(width: mapSize, depth: mapSize),
             materials: [SimpleMaterial(color: .white, isMetallic: false)]
         )
         
-        // Position the image plane on top of the 2cm box
+        // Position the image plane on top of the border
         plane.position.y = boxHeight / 2 + 0.001
-        plane.name = "MapImagePlane"  // Name it for easy finding
+        plane.name = "MapImagePlane"
         
-        // Load and apply the map texture
+        // Fallback to a green grid pattern on init
         var mapMaterial = UnlitMaterial()
-        // Fallback to a green grid pattern on init (later we see the map here)
         mapMaterial.color = .init(tint: UIColor(red: 0.3, green: 0.6, blue: 0.3, alpha: 1.0))
         plane.model?.materials = [mapMaterial]
         
@@ -83,22 +94,48 @@ struct Board: EntityEquipment {
         )
     }
         
-    // Method to update map from PhotoModel data
-    @MainActor func updateMap(image: AKImage, degrees: Double) {
+    // Method to update map from PhotoModel data with aspect ratio and border color
+    @MainActor func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?) {
         guard let cgImage = image.cgImage else {
             print("Failed to create image from photo data")
             return
         }
         
-        var mapMaterial = UnlitMaterial()
-        do {
-            let texture = try TextureResource.generate(from: cgImage, options: .init(semantic: .color))
-            mapMaterial.color = .init(texture: .init(texture))
-        } catch {
-            print("Failed to generate texture from photo: \(error)")
-            mapMaterial.color = .init(tint: .gray)
+        // Calculate aspect ratio and resize image plane
+        let imageWidth = CGFloat(cgImage.width)
+        let imageHeight = CGFloat(cgImage.height)
+        let aspectRatio = imageWidth / imageHeight
+        
+        var planeWidth: Float
+        var planeDepth: Float
+        
+        if aspectRatio > 1.0 {
+            // Landscape - width constrained
+            planeWidth = mapSize
+            planeDepth = mapSize / Float(aspectRatio)
+        } else {
+            // Portrait or square - height constrained
+            planeDepth = mapSize
+            planeWidth = mapSize * Float(aspectRatio)
         }
+        
+        // Update image plane mesh with correct aspect ratio
+        imagePlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
+        
+        // Update the texture using new visionOS 2.0+ API
+        guard let texture = try? TextureResource(image: cgImage, options: .init(semantic: .color)) else {
+            print("Texture init issue with an cgImage")
+            return
+        }
+        var mapMaterial = UnlitMaterial()
+        mapMaterial.color = .init(texture: .init(texture))
         imagePlane.model?.materials = [mapMaterial]
+        
+        // Update border color from DisplayConfigModel
+        if let displayConfig = displayConfig {
+            let uiColor = UIColor(displayConfig.color)
+            borderPlane.model?.materials = [SimpleMaterial(color: uiColor, isMetallic: false)]
+        }
     }
 }
 
