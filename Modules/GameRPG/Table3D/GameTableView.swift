@@ -9,11 +9,14 @@ import TabletopKit
 
 @MainActor
 public struct GameTableView: View {
+    let root: GameRoot
+    
     @Environment(\.realityKitScene) private var scene
     @State private var game: GameTableModel?
     @State private var activityManager: GroupActivityManager?
 
-    public init() {
+    public init(root: GameRoot) {
+        self.root = root
     }
 
     public var body: some View {
@@ -31,8 +34,11 @@ public struct GameTableView: View {
             }
         }
         .task {
-            self.game = await GameTableModel()
-            self.activityManager = .init(tabletopGame: game!.tabletopGame)
+            let initGame = await GameTableModel()
+            self.root.gameModel.gameTableModel = initGame
+            //self.root.gameModel.gameTableModel?.configure(mapRoot: root.mapRoot, photoRoot: root.photoRoot)
+            self.game = initGame
+            self.activityManager = .init(tabletopGame: initGame.tabletopGame)
         }
     }
 }

@@ -27,7 +27,7 @@ struct WindowVisionList: Scene {
         .windowStyle(.plain)
 
         WindowGroup(id: SceneId.gameTable.rawValue) {
-            GameTableView().volumeBaseplateVisibility(.hidden)
+            GameTableView(root: appModel.gameRoot).volumeBaseplateVisibility(.hidden)
         }
         .windowStyle(.volumetric)
         .defaultSize(width: 2, height: 1.5, depth: 2, in: .meters)
