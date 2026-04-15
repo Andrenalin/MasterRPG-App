@@ -93,12 +93,13 @@ struct DetailFolderListView: View {
             .onChange(of: root.editController.mapEditModel.selectionPhoto.itemId) {
                 withAnimation { root.editController.add(photoId: root.editController.mapEditModel.selectionPhoto.itemId, itemId: model.id) }
             }
-            .onChange(of: model.photoId, initial: true) {
-                withAnimation { root.editController.mapEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil) }
+            .task(id: model.photoId) {
+                root.editController.mapEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil)
             }
 
         DisplayConfigEditor(model: model)
 
         SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Rooms", bundle: .module).localizedString, linkTypes: LinkMapModuleTransferable.self)
+            .id(model.id)
     }
 }

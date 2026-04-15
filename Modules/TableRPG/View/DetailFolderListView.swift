@@ -100,10 +100,11 @@ struct DetailFolderListView: View {
             .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
                 withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, itemId: model.id) }
             }
-            .onChange(of: model.diceId, initial: true) {
-                withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil) }
+            .task(id: model.diceId) {
+                root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil)
             }
         
         SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Entries", bundle: .module).localizedString, linkTypes: LinkTableModuleTransferable.self)
+            .id(model.id)
     }
 }

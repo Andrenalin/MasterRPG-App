@@ -70,9 +70,6 @@ struct DetailFolderListView: View {
                     }
                 }
             }
-            .onAppear {
-                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-            }
     }
 
     @ViewBuilder
@@ -105,18 +102,21 @@ struct DetailFolderListView: View {
             .onChange(of: root.editController.adventureEditModel.selectionDice.selection) {
                 withAnimation { root.editController.add(diceId: root.editController.adventureEditModel.selectionDice.itemId, itemId: model.id) }
             }
-            .onChange(of: model.diceId, initial: true) {
-                withAnimation { root.editController.adventureEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil) }
+            .task(id: model.diceId) {
+                // Sync dice selection without triggering animation on initial render
+                root.editController.adventureEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil)
             }
 
         root.photoRoot.viewController.dropSelectionView(model: root.editController.adventureEditModel.selectionPhoto)
             .onChange(of: root.editController.adventureEditModel.selectionPhoto.itemId) {
                 withAnimation { root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId, itemId: model.id) }
             }
-            .onChange(of: model.photoId, initial: true) {
-                withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil) }
+            .task(id: model.photoId) {
+                // Sync photo selection without triggering animation on initial render
+                root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil)
             }
 
         SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Sections", bundle: .module).localizedString, linkTypes: LinkAdventureModuleTransferable.self)
+            .id(model.id)
     }
 }
