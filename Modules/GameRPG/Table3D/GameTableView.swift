@@ -34,8 +34,7 @@ public struct GameTableView: View {
             }
         }
         .task {
-            let initGame = await GameTableModel()
-            initGame.configure(mapRoot: root.mapRoot, photoRoot: root.photoRoot)
+            let initGame = await GameTableModel(mapRoot: root.mapRoot, photoRoot: root.photoRoot)
             self.root.gameModel.gameTableModel = initGame
             self.game = initGame
             self.activityManager = .init(tabletopGame: initGame.tabletopGame)

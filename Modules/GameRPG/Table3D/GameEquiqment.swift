@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if os(visionOS)
+import CoreRPG
 import TabletopKit
 import RealityKit
 import RPGTabletopGameContent
@@ -29,7 +30,7 @@ struct Board: EntityEquipment {
     private let mapSize: Float
     
     @MainActor
-    init(id: ID, mapImageName: String = "battleMap") {
+    init(id: ID) {
         self.id = id
         
         // 5cm border on all sides
@@ -64,13 +65,8 @@ struct Board: EntityEquipment {
         
         // Load and apply the map texture
         var mapMaterial = UnlitMaterial()
-        if let texture = try? TextureResource.load(named: mapImageName, in: nil) {
-            mapMaterial.color = .init(texture: .init(texture))
-        } else {
-            // Fallback to a green grid pattern if image loading fails
-            mapMaterial.color = .init(tint: UIColor(red: 0.3, green: 0.6, blue: 0.3, alpha: 1.0))
-            print("Warning: Could not load default map image '\(mapImageName)', using green placeholder")
-        }
+        // Fallback to a green grid pattern on init (later we see the map here)
+        mapMaterial.color = .init(tint: UIColor(red: 0.3, green: 0.6, blue: 0.3, alpha: 1.0))
         plane.model?.materials = [mapMaterial]
         
         boardEntity.addChild(plane)
@@ -86,27 +82,10 @@ struct Board: EntityEquipment {
             entity: self.entity
         )
     }
-    
-    // Method to update the map image dynamically
-    @MainActor
-    func updateMap(imageName: String) {
-        var mapMaterial = UnlitMaterial()
-        do {
-            let texture = try TextureResource.load(named: imageName, in: nil)
-            mapMaterial.color = .init(texture: .init(texture))
-        } catch {
-            print("Failed to load map texture: \(imageName)")
-            mapMaterial.color = .init(tint: .gray)
-        }
-        imagePlane.model?.materials = [mapMaterial]
-    }
-    
+        
     // Method to update map from PhotoModel data
-    @MainActor
-    func updateMap(from photoData: Data?) {
-        guard let photoData = photoData,
-              let uiImage = UIImage(data: photoData),
-              let cgImage = uiImage.cgImage else {
+    @MainActor func updateMap(image: AKImage, degrees: Double) {
+        guard let cgImage = image.cgImage else {
             print("Failed to create image from photo data")
             return
         }

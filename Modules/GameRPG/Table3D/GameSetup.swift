@@ -76,7 +76,7 @@ class GameSetup {
 
         // Create board with battle map image
         // Replace "battleMap" with your actual image asset name
-        board = Board(id: EquipmentIdentifier(self.idGenerator.newId()), mapImageName: "Marktplatz")
+        board = Board(id: EquipmentIdentifier(self.idGenerator.newId()))
         setup.add(equipment: board)
 
         let die = Die(id: EquipmentIdentifier(self.idGenerator.newId()))

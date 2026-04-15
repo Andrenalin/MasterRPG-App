@@ -17,13 +17,16 @@ final class GameTableModel {
     let setup: GameSetup
     
     // References to root models for accessing game controllers
-    weak var mapRoot: MapRootModel?
-    weak var photoRoot: PhotoRootModel?
+    let mapRoot: MapRootModel
+    let photoRoot: PhotoRootModel
     
     private var currentMapId: UUID?
 
     @MainActor
-    init() async {
+    init(mapRoot: MapRootModel, photoRoot: PhotoRootModel) async {
+        self.mapRoot = mapRoot
+        self.photoRoot = photoRoot
+
         renderer = GameRenderer()
         setup = GameSetup(root: renderer.root)
         
@@ -41,26 +44,8 @@ final class GameTableModel {
         // Shuffles the card deck.
         self.resetGame()
     }
-    
-    @MainActor
-    func configure(mapRoot: MapRootModel, photoRoot: PhotoRootModel) {
-        self.mapRoot = mapRoot
-        self.photoRoot = photoRoot
         
-        // Optionally load the current map immediately if one exists
-        Task {
-            await handleMapChange()
-        }
-    }
-        
-    @MainActor
-    func handleMapChange() async {
-        guard let mapRoot = mapRoot,
-              let photoRoot = photoRoot else {
-            print("MapRoot or PhotoRoot not configured")
-            return
-        }
-        
+    @MainActor func handleMapChange() async {
         guard let currentItemId = mapRoot.gameControllable.gameModel.currentItemId else {
             print("No current map selected in game")
             return
@@ -79,11 +64,11 @@ final class GameTableModel {
         }
         
         // Load the map photo similar to RootCanvasMap's reloadImage()
-        await loadMapPhoto(mapModel: mapModel, photoRoot: photoRoot)
+        await loadMapPhoto(mapModel: mapModel)
     }
     
     @MainActor
-    private func loadMapPhoto(mapModel: MapModel, photoRoot: PhotoRootModel) async {
+    private func loadMapPhoto(mapModel: MapModel) async {
         guard let photoId = mapModel.photoId else {
             print("Map '\(mapModel.name)' has no photo")
             return
@@ -97,13 +82,8 @@ final class GameTableModel {
             return
         }
         
-        guard let imageData = akImage.pngData() else {
-            print("Failed to convert image to PNG data")
-            return
-        }
-        
         // Update the board with the new photo
-        setup.board.updateMap(from: imageData)
+        setup.board.updateMap(image: akImage, degrees: degrees)
         print("Map updated successfully: '\(mapModel.name)' (rotation: \(degrees)°)")
     }
     
