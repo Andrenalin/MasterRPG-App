@@ -115,17 +115,23 @@ public extension SearchControllable {
         return score
     }
 
-    func searchInSheet(itemId: UUID, searchText: String, includeLinks: Bool = true) async -> SheetSearchResult {
+    func searchInSheet(
+        itemId: UUID,
+        searchText: String,
+        includeLinks: Bool = true,
+        rootManager: RootManager? = nil
+    ) async -> SheetSearchResult {
         guard !searchText.isEmpty else {
-            return SheetSearchResult(matchedEntries: [], expandedLinks: [:])
+            return SheetSearchResult(matchedEntries: [], expandedLinks: [:], crossModuleMatches: [:])
         }
 
         guard let item = await itemControllable.item(for: itemId) else {
-            return SheetSearchResult(matchedEntries: [], expandedLinks: [:])
+            return SheetSearchResult(matchedEntries: [], expandedLinks: [:], crossModuleMatches: [:])
         }
 
         var matchedEntries: [SheetEntryMatch] = []
         var expandedLinks: [UUID: [UUID]] = [:]  // entryId -> [linked itemIds to expand]
+        var crossModuleMatches: [UUID: [CrossModuleMatch]] = [:]  // entryId -> [cross-module matches]
 
         // Search through all entries
         for entry in item.entries {
@@ -145,24 +151,55 @@ public extension SearchControllable {
 
             // If includeLinks, search within linked items
             if includeLinks {
-                
-                let linkedItemIds = await extractLinkedItemIds(from: entry.content)
+                let links = await extractLinksWithModules(from: entry.content)
 
-                for linkedItemId in linkedItemIds {
+                for link in links {
                     guard !Task.isCancelled else { break }
 
-                    if let linkedItem = await itemControllable.item(for: linkedItemId) {
-                        // Search in linked item
-                        let linkHasMatch = await searchInLinkedItem(linkedItem, searchText: searchText)
+                    // Determine which controllable to use based on the link's module
+                    let searchControllable: (any SearchControllable)?
+                    
+                    if link.module == itemControllable.config.module {
+                        // Same module - use current controllable
+                        searchControllable = self
+                    } else if let rootManager {
+                        // Cross-module - get the appropriate controllable
+                        searchControllable = await rootManager.rootModel(for: link.module)?.rootController.searchControllable
+                    } else {
+                        searchControllable = nil
+                    }
 
-                        if linkHasMatch {
+                    guard let searchControllable else { continue }
+
+                    if let linkedItem = await searchControllable.itemControllable.item(for: link.itemId) {
+                        // Search in linked item (check both item and entries)
+                        let linkMatchResult = await searchInLinkedItem(
+                            linkedItem,
+                            searchText: searchText,
+                            searchControllable: searchControllable
+                        )
+
+                        if linkMatchResult.hasMatch {
                             // Mark that this link should be expanded
                             var links = expandedLinks[entry.id] ?? []
-                            links.append(linkedItemId)
+                            links.append(link.itemId)
                             expandedLinks[entry.id] = links
 
                             // Add as link match location
-                            matchLocations.append(.link(linkedItemId))
+                            matchLocations.append(.link(link.itemId, link.module))
+
+                            // Store cross-module match details if applicable
+                            if link.module != itemControllable.config.module {
+                                var matches = crossModuleMatches[entry.id] ?? []
+                                matches.append(CrossModuleMatch(
+                                    linkedItemId: link.itemId,
+                                    linkedModule: link.module,
+                                    matchedInItemName: linkMatchResult.matchedInItemName,
+                                    matchedInItemDescription: linkMatchResult.matchedInItemDescription,
+                                    matchedEntryIds: linkMatchResult.matchedEntryIds
+                                ))
+                                crossModuleMatches[entry.id] = matches
+                            }
                         }
                     }
                 }
@@ -189,39 +226,69 @@ public extension SearchControllable {
         // Sort by relevance
         matchedEntries.sort { $0.relevanceScore > $1.relevanceScore }
 
-        return SheetSearchResult(matchedEntries: matchedEntries, expandedLinks: expandedLinks)
+        return SheetSearchResult(
+            matchedEntries: matchedEntries,
+            expandedLinks: expandedLinks,
+            crossModuleMatches: crossModuleMatches
+        )
     }
 
     // MARK: - Private Helper Methods
 
-    private func extractLinkedItemIds(from content: String) async -> [UUID] {
+    /// Extract linked items with their module information
+    private func extractLinksWithModules(from content: String) async -> [LinkInfo] {
         // Use existing LinkReplaceController to extract all links
         let links = await LinkReplaceController.links(for: content)
 
-        // Extract item IDs from the links
+        // Convert to LinkInfo with module information
+        return links.map { LinkInfo(itemId: $0.itemId, module: $0.module) }
+    }
+
+    /// Legacy method for backwards compatibility
+    private func extractLinkedItemIds(from content: String) async -> [UUID] {
+        let links = await extractLinksWithModules(from: content)
         return links.map { $0.itemId }
     }
 
-    private func searchInLinkedItem(_ item: any ItemDataAccessable, searchText: String) async -> Bool {
+    /// Search in a linked item and return detailed match information
+    private func searchInLinkedItem(
+        _ item: any ItemDataAccessable,
+        searchText: String,
+        searchControllable: any SearchControllable
+    ) async -> LinkedItemMatchResult {
+        var matchedInItemName = false
+        var matchedInItemDescription = false
+        var matchedEntryIds: [UUID] = []
+
         // Check item name
         if item.name.localizedStandardContains(searchText) {
-            return true
+            matchedInItemName = true
         }
 
         // Check item description
         if item.description.localizedStandardContains(searchText) {
-            return true
+            matchedInItemDescription = true
         }
 
         // Check entries
         for entry in item.entries {
             if entry.name.localizedStandardContains(searchText) ||
                entry.content.localizedStandardContains(searchText) {
-                return true
+                matchedEntryIds.append(entry.id)
             }
         }
 
-        return false
+        return LinkedItemMatchResult(
+            matchedInItemName: matchedInItemName,
+            matchedInItemDescription: matchedInItemDescription,
+            matchedEntryIds: matchedEntryIds
+        )
+    }
+
+    /// Legacy method for backwards compatibility
+    private func searchInLinkedItem(_ item: any ItemDataAccessable, searchText: String) async -> Bool {
+        let result = await searchInLinkedItem(item, searchText: searchText, searchControllable: self)
+        return result.hasMatch
     }
 
     private func calculateSheetRelevance(
@@ -239,8 +306,9 @@ public extension SearchControllable {
                 score += 100
             case .content:
                 score += 50
-            case .link:
-                score += 30  // Lower priority for matches in links
+            case .link(_, let module):
+                // Cross-module links get slightly lower priority
+                score += (module == itemControllable.config.module) ? 30 : 25
             }
         }
 
@@ -260,15 +328,62 @@ public extension SearchControllable {
     }
 }
 
+// MARK: - Supporting Types
+
+/// Information about a link with its module
+struct LinkInfo: Sendable {
+    let itemId: UUID
+    let module: NetworkModules
+}
+
+/// Result of searching in a linked item
+struct LinkedItemMatchResult: Sendable {
+    let matchedInItemName: Bool
+    let matchedInItemDescription: Bool
+    let matchedEntryIds: [UUID]
+
+    var hasMatch: Bool {
+        matchedInItemName || matchedInItemDescription || !matchedEntryIds.isEmpty
+    }
+}
+
 // MARK: - Sheet Search Result Models
 
 public struct SheetSearchResult: Sendable {
     public let matchedEntries: [SheetEntryMatch]
     public let expandedLinks: [UUID: [UUID]]  // entryId -> [itemIds to expand]
+    public let crossModuleMatches: [UUID: [CrossModuleMatch]]  // entryId -> cross-module details
 
-    public init(matchedEntries: [SheetEntryMatch], expandedLinks: [UUID: [UUID]]) {
+    public init(
+        matchedEntries: [SheetEntryMatch],
+        expandedLinks: [UUID: [UUID]],
+        crossModuleMatches: [UUID: [CrossModuleMatch]] = [:]
+    ) {
         self.matchedEntries = matchedEntries
         self.expandedLinks = expandedLinks
+        self.crossModuleMatches = crossModuleMatches
+    }
+}
+
+public struct CrossModuleMatch: Sendable {
+    public let linkedItemId: UUID
+    public let linkedModule: NetworkModules
+    public let matchedInItemName: Bool
+    public let matchedInItemDescription: Bool
+    public let matchedEntryIds: [UUID]
+
+    public init(
+        linkedItemId: UUID,
+        linkedModule: NetworkModules,
+        matchedInItemName: Bool,
+        matchedInItemDescription: Bool,
+        matchedEntryIds: [UUID]
+    ) {
+        self.linkedItemId = linkedItemId
+        self.linkedModule = linkedModule
+        self.matchedInItemName = matchedInItemName
+        self.matchedInItemDescription = matchedInItemDescription
+        self.matchedEntryIds = matchedEntryIds
     }
 }
 
@@ -291,5 +406,5 @@ public struct SheetEntryMatch: Identifiable, Sendable {
 public enum SheetMatchLocation: Equatable, Sendable {
     case name
     case content
-    case link(UUID)  // UUID of the linked item where match was found
+    case link(UUID, NetworkModules)  // UUID of the linked item, module it belongs to
 }

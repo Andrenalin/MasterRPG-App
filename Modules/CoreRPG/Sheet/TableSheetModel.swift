@@ -49,6 +49,8 @@ public final class TableSheetModel: Sendable {
     }
 
     private func updateFilteredEntries() {
+        // Don't override if we have active search results
+        guard currentSearchResult == nil else { return }
         filteredEntries = sheetModel.filter(searchText: searchText)
     }
 
@@ -321,12 +323,13 @@ public final class TableSheetModel: Sendable {
             return
         }
 
-        // Start new search task
+        // Start new search task with cross-module support
         searchTask = Task { @MainActor in
             let result = await searchControllable.searchInSheet(
                 itemId: itemId,
                 searchText: searchText,
-                includeLinks: true
+                includeLinks: true,
+                rootManager: linkControllable.rootManager
             )
 
             // Check if task was cancelled
@@ -351,14 +354,16 @@ public final class TableSheetModel: Sendable {
         let matchedIds = Set(result.matchedEntries.map { $0.entryId })
 
         // Filter entries to only show matches
-        let filteredEntries = originalEntries.filter { entry in
+        let matchedEntries = originalEntries.filter { entry in
             guard let entryId = entry.source.entryId else { return false }
             return matchedIds.contains(entryId)
         }
 
         // Update displayed entries with animation
         withAnimation {
-            sheetModel.entries = filteredEntries
+            sheetModel.entries = matchedEntries
+            // CRITICAL: Update filteredEntries property that UI reads from
+            self.filteredEntries = matchedEntries
         }
 
         // Auto-expand links with matches
@@ -378,21 +383,36 @@ public final class TableSheetModel: Sendable {
 
             var entry = sheetModel.entries[entryIndex]
 
+            // Get cross-module match info for this entry
+            let crossModuleMatches = result.crossModuleMatches[entryId] ?? []
+
             // Expand each linked item
             for linkedItemId in linkedItemIds {
-                let rowModel = ItemRowModel(itemId: linkedItemId, typeId: module)
+                // Determine the module for this linked item
+                let linkedModule: NetworkModules
+                if let crossMatch = crossModuleMatches.first(where: { $0.linkedItemId == linkedItemId }) {
+                    linkedModule = crossMatch.linkedModule
+                } else {
+                    // Same module as current
+                    linkedModule = module
+                }
+
+                let rowModel = ItemRowModel(itemId: linkedItemId, typeId: linkedModule)
 
                 // Check if link is already expanded
                 guard !entry.sheetIds.contains(rowModel) else { continue }
 
-                // Create sub-sheet model for the linked item
-                let linkedModel = linkControllable.itemControllable.itemOrEmpty(for: linkedItemId)
+                // Get the correct item controllable for the linked module
+                let linkedItemControllable = itemControllable(for: rowModel)
+                let linkedModel = linkedItemControllable.itemOrEmpty(for: linkedItemId)
+
+                // Create sub-sheet model for the linked item with the correct module
                 let tableSheetModel = TableSheetModel(
                     linkControllable: linkControllable,
                     parent: self,
                     model: linkedModel,
                     level: entry.level + 1,
-                    module: module,
+                    module: linkedModule,  // Use correct module
                     searchText: searchText,
                     maxDepth: maxDepth
                 )
@@ -402,6 +422,14 @@ public final class TableSheetModel: Sendable {
 
                 // Add to entry's expanded sheets
                 entry.sheetIds.append(rowModel)
+                
+                // Trigger search on the sub-sheet to filter its entries
+                if let linkedSearchControllable = rootController(for: linkedModule)?.searchControllable {
+                    tableSheetModel.performSheetSearch(
+                        searchControllable: linkedSearchControllable,
+                        searchText: searchText
+                    )
+                }
             }
 
             // Update the entry with expanded links
@@ -439,6 +467,8 @@ public final class TableSheetModel: Sendable {
         if !originalEntries.isEmpty {
             withAnimation {
                 sheetModel.entries = originalEntries
+                // Also restore filteredEntries that UI reads from
+                filteredEntries = originalEntries
             }
             originalEntries.removeAll()
         }
