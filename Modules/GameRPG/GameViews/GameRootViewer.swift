@@ -60,6 +60,10 @@ struct GameRootViewer<MapContent: View>: View {
             root.photoRoot.imagePresentationModel.selectedItemId = photoId
             scenesManager.openWindow(SceneId.imageSpaceViewer)
         }
+        .task(id: root.mapRoot.gameControllable.gameModel.currentItemId) {
+            await root.gameModel.gameTableModel?.handleMapChange()
+        }
+
 #endif
     }
     

@@ -24,13 +24,17 @@ struct Board: EntityEquipment {
     let entity: Entity
     var initialState: BaseEquipmentState
     
+    // Store the image plane as a property so we can update it
+    private let imagePlane: ModelEntity
+    private let mapSize: Float
+    
     @MainActor
     init(id: ID, mapImageName: String = "battleMap") {
         self.id = id
         
         // 5cm border on all sides
         let borderSize: Float = 0.05
-        let mapSize = GameMetrics.tableEdge - (borderSize * 2)
+        self.mapSize = GameMetrics.tableEdge - (borderSize * 2)
         let boxHeight: Float = 0.02  // 2cm height
         
         // Create the board entity
@@ -49,26 +53,28 @@ struct Board: EntityEquipment {
         boardEntity.addChild(boardModel)
         
         // Create image plane on top of the board
-        let imagePlane = ModelEntity(
+        let plane = ModelEntity(
             mesh: .generatePlane(width: mapSize, depth: mapSize),
             materials: [SimpleMaterial(color: .white, isMetallic: false)]
         )
         
         // Position the image plane on top of the 2cm box
-        imagePlane.position.y = boxHeight / 2 + 0.001
+        plane.position.y = boxHeight / 2 + 0.001
+        plane.name = "MapImagePlane"  // Name it for easy finding
         
         // Load and apply the map texture
         var mapMaterial = UnlitMaterial()
-        do {
-            let texture = try TextureResource.load(named: mapImageName, in: nil)
+        if let texture = try? TextureResource.load(named: mapImageName, in: nil) {
             mapMaterial.color = .init(texture: .init(texture))
-        } catch {
-            // Fallback to a colored material if image loading fails
-            mapMaterial.color = .init(tint: .gray)
+        } else {
+            // Fallback to a green grid pattern if image loading fails
+            mapMaterial.color = .init(tint: UIColor(red: 0.3, green: 0.6, blue: 0.3, alpha: 1.0))
+            print("Warning: Could not load default map image '\(mapImageName)', using green placeholder")
         }
-        imagePlane.model?.materials = [mapMaterial]
+        plane.model?.materials = [mapMaterial]
         
-        boardEntity.addChild(imagePlane)
+        boardEntity.addChild(plane)
+        self.imagePlane = plane
         
         self.entity = boardEntity
         
@@ -79,6 +85,41 @@ struct Board: EntityEquipment {
             pose: .init(position: .init(), rotation: .degrees(0)),
             entity: self.entity
         )
+    }
+    
+    // Method to update the map image dynamically
+    @MainActor
+    func updateMap(imageName: String) {
+        var mapMaterial = UnlitMaterial()
+        do {
+            let texture = try TextureResource.load(named: imageName, in: nil)
+            mapMaterial.color = .init(texture: .init(texture))
+        } catch {
+            print("Failed to load map texture: \(imageName)")
+            mapMaterial.color = .init(tint: .gray)
+        }
+        imagePlane.model?.materials = [mapMaterial]
+    }
+    
+    // Method to update map from PhotoModel data
+    @MainActor
+    func updateMap(from photoData: Data?) {
+        guard let photoData = photoData,
+              let uiImage = UIImage(data: photoData),
+              let cgImage = uiImage.cgImage else {
+            print("Failed to create image from photo data")
+            return
+        }
+        
+        var mapMaterial = UnlitMaterial()
+        do {
+            let texture = try TextureResource.generate(from: cgImage, options: .init(semantic: .color))
+            mapMaterial.color = .init(texture: .init(texture))
+        } catch {
+            print("Failed to generate texture from photo: \(error)")
+            mapMaterial.color = .init(tint: .gray)
+        }
+        imagePlane.model?.materials = [mapMaterial]
     }
 }
 
