@@ -17,6 +17,7 @@ public struct EditorLinkView: View {
     let selectedEntryId: UUID?
     
     public var body: some View {
+        let _ = Self._printChanges()
         VStack {
             pickerAll
             
