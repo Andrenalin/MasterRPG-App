@@ -35,8 +35,16 @@ import SwiftUI
     static private let defaultMode = AppModeRouteType.gameSetup
 #endif
     
+    public func canShowInspector(appSizeModel: AppWindowSizeModel) -> Bool {
+#if os(macOS)
+        true
+#elseif os(iOS)
+        appSizeModel.mode == .regular
+#else
+        false
+#endif
+    }
 }
-
 
 #if !os(macOS)
 public protocol AppWindowSceneModel {

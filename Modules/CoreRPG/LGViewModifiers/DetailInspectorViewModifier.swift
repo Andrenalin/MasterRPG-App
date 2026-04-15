@@ -3,31 +3,21 @@
 import SwiftUI
 
 extension View {
-    public func detailInspectorModifier(folderListControllable: any FolderListControllable) -> some View {
-        modifier(DetailInspectorViewModifier(folderListController: folderListControllable))
+    public func detailInspectorModifier() -> some View {
+        modifier(DetailInspectorViewModifier())
     }
 }
 
 struct DetailInspectorViewModifier: ViewModifier {
-    let folderListController: any FolderListControllable
+    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
+    @Environment(AppNavigationModel.self) private var appNavigationModel
+    @Environment(ItemRootController.self) private var itemRootController
     
     func body(content: Content) -> some View {
-#if os(macOS)
-        @Bindable var model = folderListController.detailInspectorModel
-#endif
-        
         content
-            .environment(folderListController.detailInspectorModel)
-#if os(macOS)
-            .applyIf(folderListController.detailInspectorModel.canShowInspector) {
-                $0.inspectorAll(isPresented: $model.showInspector) {
-                    folderListController.detailInspectorModel.currentInspectorView
-                }
-            }
-#endif
             .toolbar {
-                ToolbarItemGroup(placement: .secondaryActionAll) {
-                    if folderListController.detailInspectorModel.canShowInspector {
+                if appNavigationModel.canShowInspector(appSizeModel: appWindowSizeModel) {
+                    ToolbarItemGroup(placement: .secondaryActionAll) {
                         inspectorButton
                     }
                 }
@@ -36,7 +26,7 @@ struct DetailInspectorViewModifier: ViewModifier {
     
     var inspectorButton: some View {
         Button {
-            withAnimation { folderListController.detailInspectorModel.showInspector.toggle() }
+            withAnimation { itemRootController.navigationModel.showInspector.toggle() }
         } label: {
             Label {
                 Text("Inspector", bundle: .module)

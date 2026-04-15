@@ -18,6 +18,7 @@ struct DetailFolderListView: View {
     @State private var showFolderDetail: Bool = false
 
     var detailFolderListController: FolderListController {
+        let _ = print("🔄 DetailFolderListView.detailFolderListController computed for model: \(model.name)")
         let listModel = root.navigationModel.folderModels[model.id]
 
         let allListModel = listModel ?? root.folderListController.copyModel(parentModel: model)
@@ -29,6 +30,7 @@ struct DetailFolderListView: View {
     }
 
     var body: some View {
+        let _ = Self._printChanges()
         content(listController: detailFolderListController)
             .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $detailRoute)
@@ -73,17 +75,17 @@ struct DetailFolderListView: View {
             }
     }
 
+    @ViewBuilder
     func content(listController: any FolderListControllable) -> some View {
+        let _ = print("🔍 DetailFolderListView.content() called for model: \(model.name)")
         ItemDetailRootView(
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: false, hasInspector: true, hasOverlay: false)
+            configuration: .init(editorAsBackground: false, hasOverlay: false)
         ) {
             EmptyView()
         } editor: {
             detailEditorView
-        } inspector: {
-            EditorLinkView(root: root.rootController, model: model, editorLinkModel: root.editorLinkModel)
         } overlay: {
             EmptyView()
         } entryEditor: {

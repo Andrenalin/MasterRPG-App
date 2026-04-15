@@ -26,7 +26,6 @@ struct FakeFolderListController: FolderListControllable {
     let searchModel: SearchModel = .preview()
     
     var cacheListItemModel = CacheItemListModel()
-    let detailInspectorModel = DetailInspectorModel()
     
     static let fake = FakeFolderListController()
 }

@@ -53,12 +53,12 @@ struct DestinationDetailAdventureRouteView: View {
     @Environment(AdventureRootModel.self) private var root
 
     var body: some View {
+        let _ = Self._printChanges()
         switch route {
         case .folder(let itemId):
             DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
                 .environment(root.listDisplayModel)
                 .environment(root.searchModel)
-                .environment(root.folderListController.detailInspectorModel)
                 .environment(root.rootController)
 
         case .folderInline(let itemId):

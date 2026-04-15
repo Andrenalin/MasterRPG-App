@@ -44,6 +44,8 @@ public final class PhotoRootModel {
             config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
+            navigationModel: navigationModel,
+            inspectorEditorLinkModel: editorLinkModel,
             itemSelectionModel: itemSelectionModel,
             removeEntryListModel: removeEntryListModel,
             cacheControllable: cacheController,
@@ -116,7 +118,16 @@ public final class PhotoRootModel {
     }()
 
     @MainActor @ObservationIgnored private(set) var _rootController: ItemRootController?
-    @MainActor public var rootController: ItemRootController { _rootController!}
+    @MainActor public var rootController: ItemRootController { _rootController! }
+    
+    @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
+        EditorLinkModel(
+            rootManager: RootManager(anyRoot: self),
+            folderListController: folderListController.copy(parentModel: nil),
+            firstRow: [],
+            selection: .none
+        )
+    }()
 }
 
 @MainActor
@@ -126,6 +137,7 @@ extension PhotoRootModel: ItemRootControllable {
     public var editControllable: any EditControllable { editController }
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
+    public var inspectorEditorLinkModel: EditorLinkModel? { editorLinkModel }
     public var viewControllable: any ViewControllable { viewController }
 }
 

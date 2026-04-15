@@ -70,23 +70,17 @@ private extension ExtendedSplitBar {
     }
 }
 
-/// Extracted so that @State owns the fallback DetailInspectorModel —
-/// prevents a new allocation on every tabView body evaluation.
 private struct ExtendedSplitWithDetailView: View {
     let tab: ExtendedTabRoute
     @Binding var column: NavigationSplitViewVisibility
     @Binding var preferredCompactColumn: NavigationSplitViewColumn
     let appModel: AppModel
 
-    @State private var fallbackModel = DetailInspectorModel()
-
-    private var inspectorModel: DetailInspectorModel {
-        appModel.itemRootController(for: tab.module)?.folderListControllable.detailInspectorModel ?? fallbackModel
-    }
-
+    @State private var fallbackNavigationModel = ModuleNavigationModel()
+    
     var body: some View {
         let controller = appModel.itemRootController(for: tab.module)
-        @Bindable var model = inspectorModel
+        @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             ManagedPresentationView {
                 tab
@@ -97,7 +91,9 @@ private struct ExtendedSplitWithDetailView: View {
                 .environment(controller)
         }
         .inspectorAll(isPresented: $model.showInspector) {
-            model.currentInspectorView
+            if model.showInspector {
+                AppInspectorView(isExtendedRoutes: true)
+            }
         }
     }
 }

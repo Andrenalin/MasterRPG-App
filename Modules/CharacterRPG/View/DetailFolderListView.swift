@@ -77,13 +77,11 @@ struct DetailFolderListView: View {
         ItemDetailRootView(
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: false, hasInspector: true, hasOverlay: false)
+            configuration: .init(editorAsBackground: false, hasOverlay: false)
         ) {
             EmptyView()
         } editor: {
             DetailEditorView(root: root, model: model)
-        } inspector: {
-            DetailInspectorView(root: root, model: model)
         } overlay: {
             EmptyView()
         } entryEditor: {

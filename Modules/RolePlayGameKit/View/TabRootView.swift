@@ -10,6 +10,7 @@ struct TabRootView: View {
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     var body: some View {
+        let _ = Self._printChanges()
         layout
             .appExitNotifications(handler: appModel.adventureRoot.save)
             .onChange(of: appSizeModel.mode) { oldValue, newValue in

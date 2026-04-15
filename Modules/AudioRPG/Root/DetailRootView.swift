@@ -11,7 +11,7 @@ struct DetailRootView: View {
 
     var body: some View {
         DetailListView(root: root, model: model)
-            .detailInspectorModifier(folderListControllable: root.folderListController)
+            .detailInspectorModifier()
             .applyIf(appSizeModel.mode == .regular) {
                 $0.task(id: model.id) {
                     root.navigationModel.folderItems = []

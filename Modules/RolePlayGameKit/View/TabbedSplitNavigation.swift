@@ -10,9 +10,12 @@ struct TabbedSplitNavigation: View {
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
     @AppStorage("contentColumnWidth") private var contentColumnWidth: Double = 350
-    
+    @State private var fallbackNavigationModel = ModuleNavigationModel()
+
     var body: some View {
         @Bindable var appModel = appModel
+        let controller = appModel.itemRootController(for: selectedModule)
+        @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
 
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
             TabSidebar()
@@ -31,6 +34,11 @@ struct TabbedSplitNavigation: View {
         } detail: {
             SplitDetailView(isExtendedRoutes: false)
                 .environment(appModel.itemRootController(for: selectedModule))
+        }
+        .inspectorAll(isPresented: $model.showInspector) {
+            if model.showInspector {
+                AppInspectorView(isExtendedRoutes: false)
+            }
         }
         .onChange(of: appModel.selectedModule) {
             guard let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module else { return }

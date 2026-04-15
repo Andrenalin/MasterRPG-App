@@ -11,6 +11,7 @@ struct DatabaseInitializationView: View {
     @State private var iCloudAccount: CloudKitAccountStatus = .notChecked
 
     var body: some View {
+        let _ = Self._printChanges()
         VStack(spacing: 20) {
             Text("Initializing Database")
                 .font(.largeTitle)

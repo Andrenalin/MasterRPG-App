@@ -32,4 +32,5 @@ public extension Logger {
     static internal let persistentHistory = Logger(subsystem: subsystem, category: "PersistentHistory")
     static let networking = Logger(subsystem: subsystem, category: "networking")
     static let sharePlay = Logger(subsystem: subsystem, category: "sharePlay")
+    static let widget = Logger(subsystem: subsystem, category: "widget")
 }

@@ -71,13 +71,11 @@ struct DetailFolderListView: View {
         ItemDetailRootView(
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: false, hasInspector: false, hasOverlay: true)
+            configuration: .init(editorAsBackground: false, hasOverlay: true)
         ) {
             EmptyView()
         } editor: {
             fileAndPlayerView(model: model)
-        } inspector: {
-            EmptyView()
         } overlay: {
             playerView
         } entryEditor: {

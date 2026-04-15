@@ -24,6 +24,8 @@ struct SplitDetailView: View {
     @Environment(AppModel.self) private var appModel
     
     var body: some View {
+        let _ = Self._printChanges()
+
         switch selectedModule {
         case .adventure: AdventureFactory.detailView(root: appModel.adventureRoot)
         case .audio: AudioFactory.detailView(root: appModel.audioRoot)

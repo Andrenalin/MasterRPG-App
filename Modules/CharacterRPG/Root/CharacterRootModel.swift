@@ -48,6 +48,8 @@ public final class CharacterRootModel {
             config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
+            navigationModel: navigationModel,
+            inspectorEditorLinkModel: editorLinkModel,
             itemSelectionModel: itemSelectionModel,
             removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
@@ -143,6 +145,7 @@ extension CharacterRootModel: ItemRootControllable {
     public var editControllable: any EditControllable { editController }
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
+    public var inspectorEditorLinkModel: EditorLinkModel? { editorLinkModel }
     public var viewControllable: any ViewControllable { viewController }
 }
 

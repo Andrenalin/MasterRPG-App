@@ -14,17 +14,15 @@ struct EditingItem: Identifiable {
     }
 }
 
-public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View, EntryEditor: View>: View {
+public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, EntryEditor: View>: View {
 
     /// Configuration for ItemDetailRootView behavior
     public struct Configuration {
         public var editorAsBackground: Bool
-        public var hasInspector: Bool
         public var hasOverlay: Bool
 
-        public init(editorAsBackground: Bool = false, hasInspector: Bool = true, hasOverlay: Bool = false) {
+        public init(editorAsBackground: Bool = false, hasOverlay: Bool = false) {
             self.editorAsBackground = editorAsBackground
-            self.hasInspector = hasInspector
             self.hasOverlay = hasOverlay
         }
     }
@@ -35,7 +33,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         configuration: Configuration = Configuration(),
         @ViewBuilder header: () -> Header,
         @ViewBuilder editor: () -> Editor,
-        @ViewBuilder inspector: () -> Inspector,
         @ViewBuilder overlay: () -> Overlay,
         @ViewBuilder entryEditor: () -> EntryEditor
     ) {
@@ -44,8 +41,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.editorAsBackground = configuration.editorAsBackground
         self.header = header()
         self.editor = editor()
-        self.inspector = inspector()
-        self.hasInspector = configuration.hasInspector
         self.overlay = overlay()
         self.hasOverlay = configuration.hasOverlay
         self.entryEditor = entryEditor()
@@ -55,10 +50,8 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     let editorAsBackground: Bool
     let header: Header
     let editor: Editor
-    let inspector: Inspector
     let overlay: Overlay
     let hasOverlay: Bool
-    let hasInspector: Bool
     let entryEditor: EntryEditor
     
     @Environment(AppWindowSizeModel.self) private var appSizeModel
@@ -70,7 +63,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     
     @Environment(ItemRootController.self) private var root
-    @Environment(DetailInspectorModel.self) private var detailInspectorModel
         
     @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
@@ -82,6 +74,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @Namespace private var editSheetNamespace
     
     public var body: some View {
+        let _ = Self._printChanges()
         contentScrollView(model: selectedModel)
             .tint(root.configurable.module.tint)
     }
@@ -105,6 +98,7 @@ private extension ItemDetailRootView {
     }
     
     @ViewBuilder func contentScrollView(model: any ItemDataAccessable) -> some View {
+        let _ = print("📜 ItemDetailRootView.contentScrollView() for model: \(model.name) (id: \(model.id))")
         HeaderContentScrollView(model: headerModel) {
             headerView(model: model)
         } content: {
@@ -128,9 +122,6 @@ private extension ItemDetailRootView {
         }
         .task(id: model.id) {
             await openEditorForNewItemIfNeeded(model: model)
-        }
-        .onChange(of: openFileWindowModel.showItem) {
-            updateInspectorStates(model: model)
         }
         .onChange(of: model.name) {
             handleModelNameChange(model: model)
@@ -165,11 +156,6 @@ private extension ItemDetailRootView {
         editingItem = nil
 
         detailListController.resetParentModel(model: model)
-        detailInspectorModel.canShowInspector = canShowInspector(model: model)
-        updateInspectorStates(model: model)
-        // Note: Cannot use .equatable() here as inspectorView returns heterogeneous types
-        // The view is already optimized by onChange(of: model.id) triggering only on ID changes
-        detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
         withAnimation(.easeInOut) { selection.selectedItem = nil }
 
         guard model.url != nil else {
@@ -188,14 +174,6 @@ private extension ItemDetailRootView {
         guard oldValue == nil else { return }
         guard itemIdHasUrl != model.id else { return }
         withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
-    }
-
-    func updateInspectorStates(model: any ItemDataAccessable) {
-        withAnimation(.easeInOut) {
-            if detailInspectorModel.showInspector && openFileWindowModel.showItem {
-                detailInspectorModel.showInspector = false
-            }
-        }
     }
 
     func editingSheet(model: any ItemDataAccessable) -> some View {
@@ -374,36 +352,6 @@ private extension ItemDetailRootView {
 // MARK: - Inspector
 
 private extension ItemDetailRootView {
-    
-    func canShowInspector(model: any ItemDataAccessable) -> Bool {
-        valueFor(iOS: appSizeModel.mode == .regular, macOS: true, tvOS: true, visionOS: false)
-    }
-
-    func hasAnyInspector(model: any ItemDataAccessable) -> Bool {
-        (hasInspector || model.specialCategory) && canShowInspector(model: model)
-    }
-
-    @ViewBuilder func inspectorView(model: any ItemDataAccessable) -> some View {
-        Group {
-            if hasAnyInspector(model: model) {
-                if model.specialCategory {
-                    LinkItemRootView(root: root, type: .inspector)
-                        .environment(root.itemSelectionModel)
-                } else {
-                    inspector
-                }
-            } else {
-                ContentUnavailableView {
-                    Label {
-                        Text("No Inspector for this item", bundle: .module)
-                    } icon: {
-                        Image(systemName: "scope")
-                    }
-                }
-            }
-        }
-    }
-    
     @ToolbarContentBuilder
     private func toolbarContent(model: any ItemDataAccessable) -> some ToolbarContent {
         if openFileWindowModel.showItem == false {

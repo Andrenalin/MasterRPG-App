@@ -27,6 +27,7 @@ extension AdventureRoute: RawRepresentable {
 
 extension AdventureRoute: NavigationDestination {
     public var body: some View {
+        let _ = Self._printChanges()
         switch self {
         case .detail(let itemId):
             DestinationAdventureRouteView(itemId: itemId)
@@ -53,6 +54,7 @@ struct DestinationAdventureRouteView: View {
     @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
+        let _ = Self._printChanges()
         if let model = root.itemController.itemSync(for: itemId) {
             DetailRootView(root: root, model: model)
                 .environment(root.listDisplayModel)

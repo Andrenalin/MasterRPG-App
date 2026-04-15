@@ -55,7 +55,6 @@ struct GeneratorDetailRouteDestinationView: View {
         DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
-            .environment(root.folderListController.detailInspectorModel)
             .environment(root.rootController)
     }
 }

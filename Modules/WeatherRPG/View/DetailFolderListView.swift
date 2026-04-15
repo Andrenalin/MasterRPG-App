@@ -17,8 +17,6 @@ struct DetailFolderListView: View {
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
     
-    @State private var photoSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: true, allowCollections: false, allowEntrySelection: false)
-
     var detailFolderListController: FolderListController {
         let listModel = root.navigationModel.folderModels[model.id]
         
@@ -76,13 +74,11 @@ struct DetailFolderListView: View {
         ItemDetailRootView(
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: false, hasInspector: true, hasOverlay: true)
+            configuration: .init(editorAsBackground: false, hasOverlay: true)
         ) {
             EmptyView()
         } editor: {
             WeatherEditor(model: model)
-        } inspector: {
-            root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
         } overlay: {
             OverlayViewer(model: model, animate: $animate)
                 .allowsHitTesting(false)

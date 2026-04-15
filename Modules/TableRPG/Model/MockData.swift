@@ -51,7 +51,6 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.listDisplayModel)
             .environment(root.rootController)
             .environment(CacheItemListModel())
-            .environment(DetailInspectorModel())
             .environment(root.diceRoot)
 #if os(macOS)
             .frame(width: 800, height: 600)

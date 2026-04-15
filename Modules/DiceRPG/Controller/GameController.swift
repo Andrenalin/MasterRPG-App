@@ -4,6 +4,7 @@ import CoreRPG
 import AVFoundation
 import Foundation
 import Observation
+import os.log
 import RPGResources
 #if !os(tvOS)
 import WidgetKit
@@ -159,11 +160,11 @@ extension GameController: DiceGameStorable {
         if let index = configuration.favoriteDice.firstIndex(where: { $0.diceModel.id == itemId }) {
             // Remove from favorites
             configuration.favoriteDice.remove(at: index)
-            print("🗑️ Removed favorite: \(itemId), remaining: \(configuration.favoriteDice.count)")
+            Logger.widget.info("🗑️ Removed favorite: \(itemId), remaining: \(configuration.favoriteDice.count)")
         } else {
             // Add to favorites (if under limit)
             guard configuration.favoriteDice.count < 6 else {
-                print("⚠️ Cannot add favorite - limit reached")
+                Logger.widget.warning("⚠️ Cannot add favorite - limit reached")
                 return
             }
             
@@ -175,15 +176,15 @@ extension GameController: DiceGameStorable {
                 diceModel: diceModel
             )
             configuration.favoriteDice.append(favorite)
-            print("⭐ Added favorite: \(favoriteName) (\(itemId)), total: \(configuration.favoriteDice.count)")
+            Logger.widget.info("⭐ Added favorite: \(favoriteName) (\(itemId)), total: \(configuration.favoriteDice.count)")
         }
         
         // Save configuration
         configuration.save()
-        print("💾 Configuration saved with \(configuration.favoriteDice.count) favorites")
+        Logger.widget.info("💾 Configuration saved with \(configuration.favoriteDice.count) favorites")
         
         // Force reload widget timelines
-        print("🔄 Reloading widget timelines...")
+        Logger.widget.debug("🔄 Reloading widget timelines...")
         WidgetKit.WidgetCenter.shared.reloadAllTimelines()
         #endif
     }
@@ -193,7 +194,7 @@ extension GameController: DiceGameStorable {
         #if !os(tvOS)
         let configuration = DiceConfiguration.loadFromUserDefaults()
         let isFav = configuration.favoriteDice.contains(where: { $0.diceModel.id == itemId })
-        print("🔍 Checking favorite for \(itemId): \(isFav)")
+        Logger.widget.debug("🔍 Checking favorite for \(itemId): \(isFav)")
         return isFav
         #else
         return false
@@ -203,12 +204,12 @@ extension GameController: DiceGameStorable {
     /// Clears all favorite dice (called when game ends)
     @MainActor func clearAllFavoriteDice() {
         #if !os(tvOS)
-        print("🗑️ Clearing all favorite dice (game ended)")
+        Logger.widget.info("🗑️ Clearing all favorite dice (game ended)")
         var configuration = DiceConfiguration.loadFromUserDefaults()
         configuration.favoriteDice.removeAll()
         configuration.save()
         
-        print("✅ All favorites cleared, reloading widget...")
+        Logger.widget.debug("✅ All favorites cleared, reloading widget...")
         WidgetKit.WidgetCenter.shared.reloadAllTimelines()
         #endif
     }

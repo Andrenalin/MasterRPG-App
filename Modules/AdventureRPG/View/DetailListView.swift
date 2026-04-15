@@ -12,6 +12,7 @@ struct DetailListView: View {
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
 
     var body: some View {
+        let _ = Self._printChanges()
         DetailFolderListView(root: root, model: model)
             .toolbar {
                 toolbarContent

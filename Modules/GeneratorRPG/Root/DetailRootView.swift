@@ -9,7 +9,7 @@ struct DetailRootView: View {
 
     var body: some View {
         DetailListView(root: root, model: model)
-            .detailInspectorModifier(folderListControllable: root.folderListController)
+            .detailInspectorModifier()
     }
 }
 
@@ -47,16 +47,13 @@ struct DetailListView: View {
         ItemDetailRootView(
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: false, hasInspector: true, hasOverlay: false)
+            configuration: .init(editorAsBackground: false, hasOverlay: false)
         ) {
             EmptyView()
         } editor: {
             Text("Add a reference character")
 
             detailEditorView(model: model)
-        } inspector: {
-            LinkRootView(type: .inspector)
-                .environment(selection)
         } overlay: {
             EmptyView()
         } entryEditor: {

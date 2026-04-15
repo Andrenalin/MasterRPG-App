@@ -6,8 +6,6 @@ import CoreRPG
 import SwiftUI
 
 struct SplitNavigation: View {
-    init() {}
-    
     @AppStorage("MasterRPGCustomization") private var customization: TabViewCustomization
     @SceneStorage("RootRoute") private var storedTab: RootRoute = SplitNavigation.defaultTab
     
@@ -17,6 +15,7 @@ struct SplitNavigation: View {
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
     var body: some View {
+        let _ = Self._printChanges()
         @Bindable var appModel = appModel
 
         allTabs
@@ -151,23 +150,18 @@ private extension SplitNavigation {
     }
 }
 
-/// Extracted so that @State owns the fallback DetailInspectorModel —
-/// prevents a new allocation on every splitWithDetail body evaluation.
 private struct SplitWithDetailView: View {
     let tab: RootRoute
     @Binding var column: NavigationSplitViewVisibility
     @Binding var preferredCompactColumn: NavigationSplitViewColumn
     let appModel: AppModel
 
-    @State private var fallbackModel = DetailInspectorModel()
-
-    private var inspectorModel: DetailInspectorModel {
-        appModel.itemRootController(for: tab.module)?.folderListControllable.detailInspectorModel ?? fallbackModel
-    }
-
+    @State private var fallbackNavigationModel = ModuleNavigationModel()
+    
     var body: some View {
+        let _ = Self._printChanges()
         let controller = appModel.itemRootController(for: tab.module)
-        @Bindable var model = inspectorModel
+        @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             ManagedPresentationView {
                 tab
@@ -178,7 +172,9 @@ private struct SplitWithDetailView: View {
                 .environment(controller)
         }
         .inspectorAll(isPresented: $model.showInspector) {
-            model.currentInspectorView
+            if model.showInspector {
+                AppInspectorView(isExtendedRoutes: false)
+            }
         }
     }
 }

@@ -72,13 +72,11 @@ struct DetailFolderListView: View {
         ItemDetailRootView(
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: true, hasInspector: false, hasOverlay: false)
+            configuration: .init(editorAsBackground: true, hasOverlay: false)
         ) {
             EmptyView()
         } editor: {
             SpaceDetailObjectViewer(editController: root.editController, model: model)
-        } inspector: {
-            EmptyView()
         } overlay: {
             EmptyView()
         } entryEditor: {
