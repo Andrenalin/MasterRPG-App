@@ -82,8 +82,8 @@ final class GameTableModel {
             return
         }
         
-        // Update the board with the new photo and display config
-        setup.board.updateMap(image: akImage, degrees: degrees, displayConfig: mapModel.displayConfig)
+        // Update the board with the new photo, display config, and map model (for fog of war)
+        setup.board.updateMap(image: akImage, degrees: degrees, displayConfig: mapModel.displayConfig, mapModel: mapModel)
         print("Map updated successfully: '\(mapModel.name)' (rotation: \(degrees)°)")
     }
     

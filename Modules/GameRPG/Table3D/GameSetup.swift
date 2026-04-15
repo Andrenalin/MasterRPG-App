@@ -22,7 +22,7 @@ enum GameMetrics {
 class GameSetup {
     let root: Entity
     var setup: TableSetup
-    let board: Board
+    var board: Board
     var pawns: [PlayerPawn] = []
     var seats: [PlayerSeat] = []
 
