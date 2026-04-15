@@ -9,19 +9,9 @@ public struct InitialRootView: View {
     @Environment(AppModel.self) private var appModel
 
     public var body: some View {
+        // User activity handling has been moved to scene-level in MasterRPGApp
+        // for better multi-window support on macOS and visionOS
         appModel.appNavigationModel.initialRouteType
-            .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
-                handle(userActivity: userActivity)
-            }
-    }
-
-    private func handle(userActivity: NSUserActivity) {
-        // SIRI & Search
-        let module = UserActivity.module(from: userActivity)
-        guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
-        let childId = UserActivity.childId(from: userActivity)
-        // this must be stored on NavigationModel and done as soon the database is loaded
-        appModel.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: childId))
     }
 }
 

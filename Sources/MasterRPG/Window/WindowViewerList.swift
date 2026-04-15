@@ -97,24 +97,6 @@ struct WindowViewerList: Scene {
     #if !os(iOS)
             .restorationBehavior(.disabled)
     #endif
-
-            BaseWindow("Editor", id: SceneId.editor.rawValue) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    AppModeRouteType.editor
-                        .frame(minWidth: 1000, minHeight: 600)
-                }
-                .setAppSizeMode()
-                .sceneTracker(for: SceneId.editor)
-                .environmentSetUp(appModel)
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(.leading(SceneId.game.rawValue))
-#if !os(iOS)
-        .restorationBehavior(.disabled)
-#endif
-#if os(macOS)
-            .keyboardShortcut("E", modifiers: [.command, .shift, .option])
-#endif
             
             BaseWindow("Search", id: SceneId.search.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in

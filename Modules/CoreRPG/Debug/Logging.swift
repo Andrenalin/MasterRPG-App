@@ -18,6 +18,7 @@ public enum LogScreenCategory: String {
 public extension Logger {
     static let subsystem = Bundle.main.bundleIdentifier!
 
+    static let bootStrap = Logger(subsystem: subsystem, category: "BootStrap")
     static let bookmarkStore = Logger(subsystem: subsystem, category: "BookmarkController")
     static let cacheController = Logger(subsystem: subsystem, category: "CacheController")
     static let codable = Logger(subsystem: subsystem, category: "Codable")

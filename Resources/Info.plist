@@ -68,7 +68,7 @@
 	</dict>
 	<key>NSUserActivityTypes</key>
 	<array>
-		<string>de.andretrettin.rpg</string>
+		<string>de.AndreTrettin.GameMaster.Activity.Detail</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
@@ -372,9 +372,9 @@
 	<true/>
 	<key>com.apple.security.files.user-selected.read-only</key>
 	<true/>
-    <key>NSSupportsLiveActivities</key>
-    <true/>
-    <key>UIApplicationSupportsIndirectInputEvents</key>
-    <true/>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>

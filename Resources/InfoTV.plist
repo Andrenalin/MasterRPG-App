@@ -68,7 +68,7 @@
 	</dict>
 	<key>NSUserActivityTypes</key>
 	<array>
-		<string>de.andretrettin.rpg</string>
+		<string>de.AndreTrettin.GameMaster.Activity.Detail</string>
 	</array>
 	<key>NSWorldSensingUsageDescription</key>
 	<string>MasterRPG uses the world sensing data to detect tables for the dice rolling during the game.</string>

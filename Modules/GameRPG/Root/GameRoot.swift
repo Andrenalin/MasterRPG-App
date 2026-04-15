@@ -37,8 +37,10 @@ final class GameModel: Sendable {
     
     var masterController: MasterController?
     var playerController: PlayerController?
-    
+
+    #if os(visionOS)
     var gameTableModel: GameTableModel?
+    #endif
     
     func add(playerId: UUID, playerModel: PlayerGameModel, sharingModel: SharingControlModel) -> Bool {
         if let index = gameConfig.players.firstIndex(where: { $0.id == playerId }) {

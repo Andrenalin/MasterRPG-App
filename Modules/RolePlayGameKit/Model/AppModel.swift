@@ -25,12 +25,6 @@ import WeatherRPG
 import GeneratorRPG
 #endif
 
-extension Logger {
-    private static let subsystem = Bundle.main.bundleIdentifier!
-    @MainActor
-    static let bootStrap = Logger(subsystem: subsystem, category: "BootStrap")
-}
-
 @MainActor @Observable
 public final class AppModel: Sendable {
     @MainActor public static let shared = AppModel()

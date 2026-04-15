@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 
 public enum UserActivity {
     // used in SIRI, Search
-    public static let bundleIdentifierType = "de.andretrettin.rpg"
+    public static let bundleIdentifierType = "de.AndreTrettin.GameMaster.Activity.Detail"
     public static let moduleKey = "module"
     public static let commandKey = "command"
     public static let itemKey = "itemId"
