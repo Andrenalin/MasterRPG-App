@@ -3,15 +3,15 @@
 import SwiftUI
 
 struct SheetContextMenuView: View {
-    init(entryEditable: any EntryDataEditable, model: TableSheetModel, entry: SheetModel) {
+    init(entryEditable: any EntryDataEditable, model: TableFirstSheetModel, entry: SheetFirstModel) {
         self.entryEditable = entryEditable
         self.model = model
         self.entry = entry
     }
 
     let entryEditable: any EntryDataEditable
-    let model: TableSheetModel
-    let entry: SheetModel
+    let model: TableFirstSheetModel
+    let entry: SheetFirstModel
     
     @Environment(\.networkActions) private var networkActions
     @Environment(AppGameStateModel.self) private var appGameStateModel

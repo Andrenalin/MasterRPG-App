@@ -3,15 +3,15 @@
 import SwiftUI
 
 struct SheetEntryView<LinkType: LinkDataTransferable>: View {
-    init(model: TableSheetModel, entry: SheetModel, isEditor: Bool, linkTypes: LinkType.Type) {
+    init(model: TableFirstSheetModel, entry: SheetFirstModel, isEditor: Bool, linkTypes: LinkType.Type) {
         self.model = model
         self.entry = entry
         self.isEditor = isEditor
         self.linkTypes = linkTypes
     }
 
-    let model: TableSheetModel
-    let entry: SheetModel
+    let model: TableFirstSheetModel
+    let entry: SheetFirstModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
     

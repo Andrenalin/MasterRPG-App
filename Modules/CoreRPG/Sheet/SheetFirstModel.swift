@@ -2,8 +2,8 @@
 
 import Foundation
 
-public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
+public struct SheetFirstModel: Equatable, Hashable, Identifiable, Sendable {
+    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetFirstModel] = [], entries: [SheetFirstModel]) {
         self.id = "\(level)!\(source.entryId ?? source.itemId)"
         self.source = source
         self.destination = destination ?? source
@@ -32,20 +32,20 @@ public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
     public var name: String
     public var description: String
     
-    public var inlineEntries: [SheetModel]
-    public var entries: [SheetModel]
+    public var inlineEntries: [SheetFirstModel]
+    public var entries: [SheetFirstModel]
     
     public var sheetIds: [ItemRowModel]
     
-    func filter(searchText: String) -> [SheetModel] {
+    func filter(searchText: String) -> [SheetFirstModel] {
         guard !searchText.isEmpty else { return entries }
         return entries.filter { entry in
             entry.name.localizedCaseInsensitiveContains(searchText) || entry.description.localizedCaseInsensitiveContains(searchText) || !entry.filter(searchText: searchText).isEmpty
         }
     }
     
-    public static var empty: SheetModel {
-        SheetModel(source: .empty, level: 0, name: "", description: "", entries: [])
+    public static var empty: SheetFirstModel {
+        SheetFirstModel(source: .empty, level: 0, name: "", description: "", entries: [])
     }
 }
 

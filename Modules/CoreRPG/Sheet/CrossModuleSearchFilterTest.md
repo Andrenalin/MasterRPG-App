@@ -129,7 +129,7 @@ func crossModuleSearchShowsLinkingEntry() async throws {
         ]
     )
     
-    let tableSheetModel = TableSheetModel(
+    let TableFirstSheetModel = TableFirstSheetModel(
         linkControllable: mockLinkControllable,
         parent: nil,
         model: adventureItem,
@@ -138,15 +138,15 @@ func crossModuleSearchShowsLinkingEntry() async throws {
     )
     
     // WHEN: Searching for "Bathroom"
-    await tableSheetModel.performSheetSearch(
+    await TableFirstSheetModel.performSheetSearch(
         searchControllable: mockSearchControllable,
         searchText: "Bathroom"
     )
     
     // THEN: filteredEntries should contain the "Tavern" entry
-    #expect(tableSheetModel.filteredEntries.count == 1)
+    #expect(TableFirstSheetModel.filteredEntries.count == 1)
     
-    let entry = try #require(tableSheetModel.filteredEntries.first)
+    let entry = try #require(TableFirstSheetModel.filteredEntries.first)
     #expect(entry.name == "Tavern")
     
     // AND: The entry should be auto-expanded to show the linked map
@@ -155,7 +155,7 @@ func crossModuleSearchShowsLinkingEntry() async throws {
 
 @Test("Clearing search restores all entries in filteredEntries")
 func clearingSearchRestoresEntries() async throws {
-    let tableSheetModel = TableSheetModel(
+    let TableFirstSheetModel = TableFirstSheetModel(
         linkControllable: mockLinkControllable,
         parent: nil,
         model: mockItemWith10Entries,
@@ -164,29 +164,29 @@ func clearingSearchRestoresEntries() async throws {
     )
     
     // Initial state: all entries shown
-    #expect(tableSheetModel.filteredEntries.count == 10)
+    #expect(TableFirstSheetModel.filteredEntries.count == 10)
     
     // Perform search that matches only 2 entries
-    await tableSheetModel.performSheetSearch(
+    await TableFirstSheetModel.performSheetSearch(
         searchControllable: mockSearchControllable,
         searchText: "Specific Term"
     )
     
-    #expect(tableSheetModel.filteredEntries.count == 2)
+    #expect(TableFirstSheetModel.filteredEntries.count == 2)
     
     // Clear search
-    await tableSheetModel.performSheetSearch(
+    await TableFirstSheetModel.performSheetSearch(
         searchControllable: mockSearchControllable,
         searchText: ""
     )
     
     // All entries should be restored
-    #expect(tableSheetModel.filteredEntries.count == 10)
+    #expect(TableFirstSheetModel.filteredEntries.count == 10)
 }
 
 @Test("updateFilteredEntries respects active search")
 func updateDoesNotOverrideSearch() async throws {
-    let tableSheetModel = TableSheetModel(
+    let TableFirstSheetModel = TableFirstSheetModel(
         linkControllable: mockLinkControllable,
         parent: nil,
         model: mockItemWith10Entries,
@@ -195,19 +195,19 @@ func updateDoesNotOverrideSearch() async throws {
     )
     
     // Perform search
-    await tableSheetModel.performSheetSearch(
+    await TableFirstSheetModel.performSheetSearch(
         searchControllable: mockSearchControllable,
         searchText: "Bathroom"
     )
     
-    let searchResultCount = tableSheetModel.filteredEntries.count
+    let searchResultCount = TableFirstSheetModel.filteredEntries.count
     
     // Now add a new entry (this calls updateFilteredEntries internally)
     let newEntryId = UUID()
-    tableSheetModel.add(entryId: newEntryId)
+    TableFirstSheetModel.add(entryId: newEntryId)
     
     // filteredEntries should NOT change (search is still active)
-    #expect(tableSheetModel.filteredEntries.count == searchResultCount)
+    #expect(TableFirstSheetModel.filteredEntries.count == searchResultCount)
 }
 ```
 

@@ -3,8 +3,8 @@
 import SwiftUI
 
 @MainActor @Observable
-public final class TableSheetModel: Sendable {
-    public init(linkControllable: any LinkControllable, parent: TableSheetModel?, model: any ItemDataAccessable, entryId: UUID? = nil, level: Int, module: NetworkModules, searchText: String = "", maxDepth: Int = 20) {
+public final class TableFirstSheetModel: Sendable {
+    public init(linkControllable: any LinkControllable, parent: TableFirstSheetModel?, model: any ItemDataAccessable, entryId: UUID? = nil, level: Int, module: NetworkModules, searchText: String = "", maxDepth: Int = 20) {
         self.linkControllable = linkControllable
         self.parent = parent
         self.model = model
@@ -20,7 +20,7 @@ public final class TableSheetModel: Sendable {
     }
 
     @ObservationIgnored let linkControllable: any LinkControllable
-    let parent: TableSheetModel?
+    let parent: TableFirstSheetModel?
     let model: any ItemDataAccessable
     let id: UUID
     let itemId: UUID
@@ -29,18 +29,18 @@ public final class TableSheetModel: Sendable {
     let module: NetworkModules
     let maxDepth: Int
 
-    var sheetModel: SheetModel
+    var sheetModel: SheetFirstModel
     var searchText: String = "" {
         didSet {
             updateFilteredEntries()
         }
     }
 
-    private(set) var filteredEntries: [SheetModel] = []
+    private(set) var filteredEntries: [SheetFirstModel] = []
 
-    @ObservationIgnored var sheets: [ItemRowModel: TableSheetModel] = [:]
+    @ObservationIgnored var sheets: [ItemRowModel: TableFirstSheetModel] = [:]
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
-    @ObservationIgnored private var originalEntries: [SheetModel] = []
+    @ObservationIgnored private var originalEntries: [SheetFirstModel] = []
     @ObservationIgnored private var searchTask: Task<Void, Never>?
     @ObservationIgnored private var currentSearchResult: SheetSearchResult?
 
@@ -54,7 +54,7 @@ public final class TableSheetModel: Sendable {
         filteredEntries = sheetModel.filter(searchText: searchText)
     }
 
-    func description(for sheetModel: SheetModel) -> String? {
+    func description(for sheetModel: SheetFirstModel) -> String? {
         guard !searchText.isEmpty else { return sheetModel.description }
         return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
     }
@@ -81,7 +81,7 @@ public final class TableSheetModel: Sendable {
         resetModel(model: linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module))
     }
 
-    func resetModel(model: SheetModel) {
+    func resetModel(model: SheetFirstModel) {
         linkTextModel.removeAll()
         sheets.removeAll()
         sheetModel = model
@@ -100,7 +100,7 @@ public final class TableSheetModel: Sendable {
         reset()
     }
 
-    func entry(entryId: String) -> SheetModel? {
+    func entry(entryId: String) -> SheetFirstModel? {
         sheetModel.entries.first { $0.id == entryId }
     }
 
@@ -126,9 +126,9 @@ public final class TableSheetModel: Sendable {
                     entry.sheetIds.removeAll(where: { $0 == rowModel })
                 } else {
                     let model = linkControllable.itemControllable.itemOrEmpty(for: itemId)
-                    let tableSheetModel = TableSheetModel(linkControllable: linkControllable, parent: self, model: model, level: entry.level + 1, module: module, searchText: searchText, maxDepth: maxDepth)
+                    let TableFirstSheetModel = TableFirstSheetModel(linkControllable: linkControllable, parent: self, model: model, level: entry.level + 1, module: module, searchText: searchText, maxDepth: maxDepth)
 
-                    sheets[rowModel] = tableSheetModel
+                    sheets[rowModel] = TableFirstSheetModel
                     entry.sheetIds.append(rowModel)
                 }
                 sheetModel.entries[entryIndex] = entry
@@ -150,7 +150,7 @@ public final class TableSheetModel: Sendable {
         }
     }
     
-    func subTableModel(source: ItemRowModel) -> TableSheetModel? {
+    func subTableModel(source: ItemRowModel) -> TableFirstSheetModel? {
         if let subModel = sheets[source] {
             return subModel
         }
@@ -196,12 +196,12 @@ public final class TableSheetModel: Sendable {
         }
     }
     
-    func groupFolders(entryDataEditable: (any EntryDataEditable), entry: SheetModel) -> [FolderRepresentable] {
+    func groupFolders(entryDataEditable: (any EntryDataEditable), entry: SheetFirstModel) -> [FolderRepresentable] {
         guard let entryId = entry.source.entryId else { return [] }
         return entryDataEditable.groupFolders(itemId: entry.source.itemId, sourceEntryId: entryId)
     }
 
-    func move(entryDataEditable: (any EntryDataEditable), entry: SheetModel, into folder: FolderRepresentable) {
+    func move(entryDataEditable: (any EntryDataEditable), entry: SheetFirstModel, into folder: FolderRepresentable) {
         guard let entryId = entry.source.entryId else { return }
         entryDataEditable.move(itemId: entry.source.itemId, sourceEntryId: entryId, into: folder)
 
@@ -216,7 +216,7 @@ public final class TableSheetModel: Sendable {
         return entryDataEditable.parentFolder(itemId: sheetModel.source.itemId)
     }
 
-    func moveOutOfGroup(entryDataEditable: (any EntryDataEditable), entry: SheetModel, parent: FolderRepresentable) {
+    func moveOutOfGroup(entryDataEditable: (any EntryDataEditable), entry: SheetFirstModel, parent: FolderRepresentable) {
         guard let entryId = entry.source.entryId else { return }
         entryDataEditable.moveOutOfGroup(itemId: entry.source.itemId, sourceEntryId: entryId, parent: parent)
 
@@ -283,14 +283,14 @@ public final class TableSheetModel: Sendable {
         }
     }
 
-    func remove(entry: SheetModel) {
+    func remove(entry: SheetFirstModel) {
         sheetModel.entries.removeAll(where: { $0.id == entry.id })
         linkTextModel[.entry(entry.id)] = nil
         updateFilteredEntries()
     }
     
     // Quick Editor
-    func toggleEdit(entry: SheetModel) {
+    func toggleEdit(entry: SheetFirstModel) {
         guard let entryIndex = sheetModel.entries.firstIndex(where: { $0.id == entry.id }) else { return }
         var entry = entry
         let rowModel = ItemRowModel(itemId: itemId, typeId: module)
@@ -298,16 +298,16 @@ public final class TableSheetModel: Sendable {
             entry.sheetIds.removeAll(where: { $0 == rowModel })
         } else {
             let model = linkControllable.itemControllable.itemOrEmpty(for: itemId)
-            let tableSheetModel = TableSheetModel(linkControllable: linkControllable, parent: self, model: model, entryId: entry.source.entryId, level: entry.level + 1, module: module, searchText: searchText, maxDepth: maxDepth)
+            let TableFirstSheetModel = TableFirstSheetModel(linkControllable: linkControllable, parent: self, model: model, entryId: entry.source.entryId, level: entry.level + 1, module: module, searchText: searchText, maxDepth: maxDepth)
 
-            sheets[rowModel] = tableSheetModel
+            sheets[rowModel] = TableFirstSheetModel
             entry.sheetIds.append(rowModel)
         }
         sheetModel.entries[entryIndex] = entry
         updateFilteredEntries()
     }
     
-    func isEditing(entry: SheetModel) -> Bool {
+    func isEditing(entry: SheetFirstModel) -> Bool {
         entry.sheetIds.contains(ItemRowModel(itemId: itemId, typeId: module))
     }
 
@@ -337,6 +337,10 @@ public final class TableSheetModel: Sendable {
 
             // Apply search results
             await applySearchResults(result, searchText: searchText)
+            
+            sheets.values.forEach {
+                $0.performSheetSearch(searchControllable: searchControllable, searchText: searchText)
+            }
         }
     }
 
@@ -407,7 +411,7 @@ public final class TableSheetModel: Sendable {
                 let linkedModel = linkedItemControllable.itemOrEmpty(for: linkedItemId)
 
                 // Create sub-sheet model for the linked item with the correct module
-                let tableSheetModel = TableSheetModel(
+                let TableFirstSheetModel = TableFirstSheetModel(
                     linkControllable: linkControllable,
                     parent: self,
                     model: linkedModel,
@@ -418,14 +422,14 @@ public final class TableSheetModel: Sendable {
                 )
 
                 // Store the sub-sheet
-                sheets[rowModel] = tableSheetModel
+                sheets[rowModel] = TableFirstSheetModel
 
                 // Add to entry's expanded sheets
                 entry.sheetIds.append(rowModel)
                 
                 // Trigger search on the sub-sheet to filter its entries
                 if let linkedSearchControllable = rootController(for: linkedModule)?.searchControllable {
-                    tableSheetModel.performSheetSearch(
+                    TableFirstSheetModel.performSheetSearch(
                         searchControllable: linkedSearchControllable,
                         searchText: searchText
                     )
@@ -482,7 +486,7 @@ public final class TableSheetModel: Sendable {
         return searchResult.matchedEntries.first(where: { $0.entryId == entryId })?.matchLocations ?? []
     }
 
-    func hasLinkMatch(for entry: SheetModel) -> Bool {
+    func hasLinkMatch(for entry: SheetFirstModel) -> Bool {
         guard let entryId = entry.source.entryId else { return false }
         let locations = getMatchLocations(for: entryId)
         return locations.contains { location in

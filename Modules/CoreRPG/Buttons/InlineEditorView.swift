@@ -4,8 +4,8 @@ import SwiftUI
 
 struct InlineEditorView: View {
     let entryDataEditable: (any EntryDataEditable)
-    let model: TableSheetModel
-    let entry: SheetModel
+    let model: TableFirstSheetModel
+    let entry: SheetFirstModel
     
     @State private var selectedValue: Bool = false
     @State private var textValue: String = ""

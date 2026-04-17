@@ -164,7 +164,7 @@ extension TableRootModel {
 
 public extension TableRootModel {
     @MainActor
-    func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
+    func sheet(for itemId: UUID, level: Int = 0) -> SheetFirstModel {
         SheetController(itemController: itemController).sheet(for: itemId, level: level)
     }
     

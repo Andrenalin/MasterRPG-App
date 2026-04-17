@@ -21,7 +21,7 @@ Successfully implemented cross-module search that finds matches in linked items 
 - Updated `SheetMatchLocation` to include module: `.link(UUID, NetworkModules)`
 - Enhanced `SheetSearchResult` with `crossModuleMatches` dictionary
 
-### 2. TableSheetModel.swift
+### 2. TableFirstSheetModel.swift
 **Changes:**
 - Updated `performSheetSearch()` to pass `rootManager` for cross-module search
 - Enhanced `expandLinksWithMatches()` to determine correct module for each link
@@ -71,7 +71,7 @@ Successfully implemented cross-module search that finds matches in linked items 
    ↓
 9. expandLinksWithMatches
    - Get Map's ItemControllable (not Adventure's)
-   - Create TableSheetModel with module: .map
+   - Create TableFirstSheetModel with module: .map
    - Auto-expand "Tavern" to show Map
    ↓
 10. UI displays results

@@ -14,7 +14,7 @@ HStack {
             .font(.headline)
         
         // Show match information
-        if let crossMatches = tableSheetModel.getCrossModuleMatches(for: entry) {
+        if let crossMatches = TableFirstSheetModel.getCrossModuleMatches(for: entry) {
             ForEach(crossMatches, id: \.linkedItemId) { match in
                 HStack(spacing: 4) {
                     Image(systemName: match.linkedModule.icon)
@@ -149,7 +149,7 @@ Show module distribution of results:
 ```swift
 struct SearchResultSummary: View {
     let result: SheetSearchResult
-    let tableSheetModel: TableSheetModel
+    let TableFirstSheetModel: TableFirstSheetModel
     
     var moduleSummary: [NetworkModules: Int] {
         var summary: [NetworkModules: Int] = [:]
@@ -204,11 +204,11 @@ Show the module path when viewing nested results:
 
 ```swift
 struct ModuleBreadcrumb: View {
-    let tableSheetModel: TableSheetModel
+    let TableFirstSheetModel: TableFirstSheetModel
     
     var modulePath: [NetworkModules] {
-        var path: [NetworkModules] = [tableSheetModel.module]
-        var current = tableSheetModel.parent
+        var path: [NetworkModules] = [TableFirstSheetModel.module]
+        var current = TableFirstSheetModel.parent
         
         while let parent = current {
             path.insert(parent.module, at: 0)
@@ -307,11 +307,11 @@ Putting it all together:
 ```swift
 struct CrossModuleSearchResultRow: View {
     let entry: SheetModel
-    let tableSheetModel: TableSheetModel
+    let TableFirstSheetModel: TableFirstSheetModel
     @State private var showDetails = false
     
     var crossMatches: [CrossModuleMatch] {
-        tableSheetModel.getCrossModuleMatches(for: entry)
+        TableFirstSheetModel.getCrossModuleMatches(for: entry)
     }
     
     var body: some View {
@@ -345,9 +345,9 @@ struct CrossModuleSearchResultRow: View {
             }
             
             // Expanded link content (if auto-expanded)
-            if tableSheetModel.isExpanded(entry: entry) {
+            if TableFirstSheetModel.isExpanded(entry: entry) {
                 ForEach(entry.sheetIds, id: \.self) { sheetId in
-                    if let subModel = tableSheetModel.sheets[sheetId] {
+                    if let subModel = TableFirstSheetModel.sheets[sheetId] {
                         ExpandedLinkView(
                             sheetModel: subModel,
                             highlightedEntries: matchedEntryIds(for: sheetId)

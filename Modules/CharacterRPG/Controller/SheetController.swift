@@ -8,33 +8,33 @@ struct SheetController {
     let linkController: LinkController
 
     @MainActor
-    func sheet(for itemId: UUID, entryId: UUID?, level: Int = 0) -> SheetModel {
+    func sheet(for itemId: UUID, entryId: UUID?, level: Int = 0) -> SheetFirstModel {
         let model = itemController.itemOrEmpty(for: itemId)
         if let entryId {
             let entry = model[entryId]
             return sheetEntry(itemId: itemId, entry: entry, level: level, editMode: true)
         }
 
-        var entries: [SheetModel] = []
+        var entries: [SheetFirstModel] = []
         let showHeader: Bool = model.displayState == 0
         
         if showHeader, let photoId = model.photoId {
-            entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: []))
+            entries.append(SheetFirstModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: []))
         }
         entries.append(contentsOf: sheetEntries(for: itemId, level: level + 1))
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .item, showHeader: showHeader, name: model.name, description: model.description, entries: entries)
+        let sheetModel = SheetFirstModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .item, showHeader: showHeader, name: model.name, description: model.description, entries: entries)
         return sheetModel
     }
 
-    @MainActor func sheetEntries(for itemId: UUID, level: Int) -> [SheetModel] {
+    @MainActor func sheetEntries(for itemId: UUID, level: Int) -> [SheetFirstModel] {
         guard level < 25 else { return [] }
         let value = itemController.itemOrEmpty(for: itemId)
-        return value.entries.map { entry -> SheetModel in
+        return value.entries.map { entry -> SheetFirstModel in
             sheetEntry(itemId: itemId, entry: entry, level: level)
         }
     }
     
-    @MainActor func sheetEntry(itemId: UUID, entry: ValueEntryModel, level: Int, editMode: Bool = false) -> SheetModel {
+    @MainActor func sheetEntry(itemId: UUID, entry: ValueEntryModel, level: Int, editMode: Bool = false) -> SheetFirstModel {
         var name = entry.name
         var description = ""
         if let valueId = entry.valueId {
@@ -47,12 +47,12 @@ struct SheetController {
                 description += " = \(valueCalculate)"
             }
         }
-        var inlineEntries: [SheetModel] = []
+        var inlineEntries: [SheetFirstModel] = []
         if let diceId = entry.diceId {
-            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: []))
+            inlineEntries.append(SheetFirstModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: []))
         }
 
-        let result = SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: editMode ? .edit : (entry.valueId == nil ? .item : .group), editType: entry.editType, name: name, description: description, inlineEntries: inlineEntries, entries: [])
+        let result = SheetFirstModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: editMode ? .edit : (entry.valueId == nil ? .item : .group), editType: entry.editType, name: name, description: description, inlineEntries: inlineEntries, entries: [])
         return result
     }
 }

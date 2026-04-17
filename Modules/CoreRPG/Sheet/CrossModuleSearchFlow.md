@@ -9,7 +9,7 @@
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ TableSheetModel.performSheetSearch()                                │
+│ TableFirstSheetModel.performSheetSearch()                                │
 │ - itemId: Adventure Item UUID                                       │
 │ - module: .adventure                                                │
 │ - searchText: "Bathroom"                                            │
@@ -97,7 +97,7 @@
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ TableSheetModel.applySearchResults()                                │
+│ TableFirstSheetModel.applySearchResults()                                │
 │                                                                     │
 │ - Filter entries to show only "Tavern" entry                        │
 │ - Call expandLinksWithMatches()                                     │
@@ -105,14 +105,14 @@
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ TableSheetModel.expandLinksWithMatches()                            │
+│ TableFirstSheetModel.expandLinksWithMatches()                            │
 │                                                                     │
 │ For "Tavern" entry:                                                 │
 │   - Get cross-module match info                                     │
 │   - linkedModule = .map (from CrossModuleMatch)                     │
 │   - Create ItemRowModel(itemId: mapItemId, typeId: .map)           │
 │   - Get Map's ItemControllable via itemControllable(for:)           │
-│   - Create sub-TableSheetModel with:                                │
+│   - Create sub-TableFirstSheetModel with:                                │
 │     * module: .map ← Correct module!                                │
 │     * searchText: "Bathroom"                                        │
 │     * level: entry.level + 1                                        │
@@ -144,7 +144,7 @@
 
 3. **Recursive Search**: The expanded Map sheet can have its own links, which could point to other modules
 
-4. **Context Preservation**: Each `TableSheetModel` maintains its module context for proper display and interaction
+4. **Context Preservation**: Each `TableFirstSheetModel` maintains its module context for proper display and interaction
 
 5. **Relevance Scoring**: Cross-module matches get slightly lower scores (25) vs same-module matches (30)
 
@@ -152,7 +152,7 @@
 
 ```swift
 // 1. User initiates search
-tableSheetModel.performSheetSearch(searchControllable: adventureSearch, searchText: "Bathroom")
+TableFirstSheetModel.performSheetSearch(searchControllable: adventureSearch, searchText: "Bathroom")
 
 // 2. Adventure search finds links
 let links = extractLinksWithModules(from: tavernEntry.content)
@@ -173,7 +173,7 @@ CrossModuleMatch(
 )
 
 // 6. Expand with correct module
-TableSheetModel(
+TableFirstSheetModel(
     linkControllable: linkControllable,
     parent: self,
     model: mapItem,
@@ -187,7 +187,7 @@ TableSheetModel(
 ```
 User Input
     ↓
-TableSheetModel (Adventure)
+TableFirstSheetModel (Adventure)
     ↓
 SearchControllable (Adventure)
     ↓
@@ -201,7 +201,7 @@ Find "Bathroom" in Map entries
     ↓
 Return CrossModuleMatch
     ↓
-TableSheetModel creates sub-sheet with .map module
+TableFirstSheetModel creates sub-sheet with .map module
     ↓
 UI displays nested results with module context
 ```

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation enables **cross-module search** in TableSheetModel, allowing searches to find matches in linked items across different modules (e.g., searching in Adventure and finding matches in linked Maps).
+This implementation enables **cross-module search** in TableFirstSheetModel, allowing searches to find matches in linked items across different modules (e.g., searching in Adventure and finding matches in linked Maps).
 
 ## Changes Made
 
@@ -66,7 +66,7 @@ public enum SheetMatchLocation: Equatable, Sendable {
 }
 ```
 
-### 2. TableSheetModel.swift
+### 2. TableFirstSheetModel.swift
 
 #### Updated `performSheetSearch`
 - Now passes `linkControllable.rootManager` to `searchInSheet`
@@ -75,7 +75,7 @@ public enum SheetMatchLocation: Equatable, Sendable {
 #### Enhanced `expandLinksWithMatches`
 - Determines the correct module for each linked item
 - Uses `itemControllable(for:)` to get the right controllable for cross-module items
-- Creates `TableSheetModel` with the correct module
+- Creates `TableFirstSheetModel` with the correct module
 
 #### New Helper Methods
 ```swift
@@ -121,7 +121,7 @@ func getMatchedModule(for entry: SheetModel, linkedItemId: UUID) -> NetworkModul
 
 ### Basic Search (Automatic)
 ```swift
-tableSheetModel.performSheetSearch(
+TableFirstSheetModel.performSheetSearch(
     searchControllable: searchControllable,
     searchText: "Bathroom"
 )
@@ -135,7 +135,7 @@ The cross-module search happens automatically when:
 ### Accessing Cross-Module Results
 ```swift
 // Get cross-module matches for an entry
-let crossMatches = tableSheetModel.getCrossModuleMatches(for: entry)
+let crossMatches = TableFirstSheetModel.getCrossModuleMatches(for: entry)
 
 for match in crossMatches {
     print("Found in \(match.linkedModule)")

@@ -5,7 +5,7 @@ import FoundationModels
 import SwiftUI
 
 struct AdventureChatRootView: View {
-    let sheetModel: SheetModel
+    let sheetModel: SheetFirstModel
     var dismissAction: (() -> Void)? = nil
     
     @Environment(GeneratorRootModel.self) private var root

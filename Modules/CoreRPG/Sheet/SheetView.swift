@@ -3,7 +3,7 @@
 import SwiftUI
 
 public struct SheetView<LinkType: LinkDataTransferable>: View {
-    public init(root: ItemRootController, model: TableSheetModel, isEditor: Bool = false, linkTypes: LinkType.Type = LinkDiceData.self) {
+    public init(root: ItemRootController, model: TableFirstSheetModel, isEditor: Bool = false, linkTypes: LinkType.Type = LinkDiceData.self) {
         self.root = root
         self.model = model
         self.isEditor = isEditor
@@ -11,7 +11,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     }
     
     let root: ItemRootController
-    let model: TableSheetModel
+    let model: TableFirstSheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
     

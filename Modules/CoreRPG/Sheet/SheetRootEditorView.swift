@@ -11,7 +11,7 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
         self.module = module
         self.headerTitle = headerTitle
         self.linkTypes = linkTypes
-        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: rootLinkControllable, parent: nil, model: model, level: 0, module: module))
+        self._tableFSheetModel = State(wrappedValue: TableFirstSheetModel(linkControllable: rootLinkControllable, parent: nil, model: model, level: 0, module: module))
     }
     
     let root: ItemRootController
@@ -21,19 +21,19 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
     let headerTitle: String
     let linkTypes: LinkType.Type
     
-    @State private var tableSheetModel: TableSheetModel
+    @State private var tableFSheetModel: TableFirstSheetModel
     
     public var body: some View {
         Section {
-            SheetView(root: root, model: tableSheetModel, isEditor: true, linkTypes: linkTypes)
+            SheetView(root: root, model: tableFSheetModel, isEditor: true, linkTypes: linkTypes)
         } header: {
             Text(headerTitle)
         }
         .onChange(of: model.id) {
-            tableSheetModel.update(with: model)
+            tableFSheetModel.update(with: model)
         }
-        .onChange(of: tableSheetModel.hasAnyChanges(for: tableSheetModel.sheetModel.source)) {
-            tableSheetModel.update(with: model)
+        .onChange(of: tableFSheetModel.hasAnyChanges(for: tableFSheetModel.sheetModel.source)) {
+            tableFSheetModel.update(with: model)
         }
     }
 }

@@ -4,7 +4,7 @@ import SwiftUI
 
 struct TableSheetView: View {
     let root: ItemRootController
-    let model: TableSheetModel
+    let model: TableFirstSheetModel
 
     var body: some View {
         @Bindable var model = model
