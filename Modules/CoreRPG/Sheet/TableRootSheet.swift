@@ -8,7 +8,7 @@ public struct TableRootSheet: View {
         self.configuration = configuration
         self.dismissAction = dismissAction
         let model = root.itemControllable.itemOrEmpty(for: itemId)
-        self._tableSheetModel = State(wrappedValue: TableFirstSheetModel(linkControllable: root.linkControllable.rootLinkControllable, parent: nil, model: model, level: 0, module: module))
+        self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: itemId))
     }
         
     let root: ItemRootController
@@ -21,10 +21,10 @@ public struct TableRootSheet: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) var dismiss
 
-    @State private var tableSheetModel: TableFirstSheetModel
+    @State private var sheetRootModel: SheetRootModel
     
     public var body: some View {
-        TableSheetView(root: root, model: tableSheetModel)
+        TableSheetView(root: root, model: sheetRootModel)
 #if os(macOS) || os(visionOS)
             .padding(.top)
 #else
@@ -36,7 +36,7 @@ public struct TableRootSheet: View {
             .toolbar {
                 toolbarContent
             }
-            .navigationTitle(Text(tableSheetModel.sheetModel.name))
+            .navigationTitle(Text(sheetRootModel.sheetModel.name))
     }
 }
 

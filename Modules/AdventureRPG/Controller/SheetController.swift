@@ -27,3 +27,9 @@ struct SheetController {
         }
     }
 }
+
+extension SheetController: SheetControllable {
+    @MainActor func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
+        .empty
+    }
+}

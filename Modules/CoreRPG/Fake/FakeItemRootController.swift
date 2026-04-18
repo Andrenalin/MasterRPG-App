@@ -25,6 +25,7 @@ public extension ItemRootController {
             linkControllable: linkFake,
             folderListControllable: FakeFolderListController.fake,
             searchControllable: FakeSearchController.fake,
+            sheetControllable: FakeSheetController.fake,
             viewControllable: FakeViewController()
         )
         exportFake._rootManager = RootManager.preview(fake: root)

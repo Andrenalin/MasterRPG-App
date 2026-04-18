@@ -11,7 +11,7 @@ struct ViewerRootView: View {
     @Environment(AudioRootModel.self) private var root
     
     var body: some View {
-        TableRootSheet(root: root.rootController, itemId: model.id, module: root.config.module, configuration: configuration, dismissAction: dismissAction)
+        TableFirstRootSheet(root: root.rootController, itemId: model.id, module: root.config.module, configuration: configuration, dismissAction: dismissAction)
             .safeAreaBar(edge: .bottom) {
                 GlassEffectContainerAll {
                     AudioPlayerBarView()

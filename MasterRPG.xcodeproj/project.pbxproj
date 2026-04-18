@@ -1601,7 +1601,7 @@
 		8EBED4502CD9A5C3004E7103 /* RPGAudiosTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGAudiosTests; sourceTree = "<group>"; };
 		8EBED4622CD9A5D7004E7103 /* RPGGamesTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGGamesTests; sourceTree = "<group>"; };
 		8EBED4762CD9A613004E7103 /* RPGMapsTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGMapsTests; sourceTree = "<group>"; };
-		8EBED47D2CD9A617004E7103 /* RPGTablesTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGTablesTests; sourceTree = "<group>"; };
+		8EBED47D2CD9A617004E7103 /* TableRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = TableRPGTests; sourceTree = "<group>"; };
 		8EBED4812CD9A617004E7103 /* RPGSpacesTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGSpacesTests; sourceTree = "<group>"; };
 		8EBED4852CD9A617004E7103 /* RPGWeathersTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGWeathersTests; sourceTree = "<group>"; };
 		8EBED4922CD9A617004E7103 /* RPGValuesTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGValuesTests; sourceTree = "<group>"; };
@@ -2104,7 +2104,7 @@
 				8EBED49B2CD9A617004E7103 /* RPGPdfsTests */,
 				8EBED4972CD9A617004E7103 /* RPGPhotosTests */,
 				8EBED4812CD9A617004E7103 /* RPGSpacesTests */,
-				8EBED47D2CD9A617004E7103 /* RPGTablesTests */,
+				8EBED47D2CD9A617004E7103 /* TableRPGTests */,
 				8EBED4922CD9A617004E7103 /* RPGValuesTests */,
 				8EBED4852CD9A617004E7103 /* RPGWeathersTests */,
 			);
@@ -3058,7 +3058,7 @@
 				8EBECE492CD8EE92004E7103 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8EBED47D2CD9A617004E7103 /* RPGTablesTests */,
+				8EBED47D2CD9A617004E7103 /* TableRPGTests */,
 			);
 			name = RPGTablesTests;
 			packageProductDependencies = (

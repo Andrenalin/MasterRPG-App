@@ -39,8 +39,10 @@ public final class CharacterRootModel {
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController, editController: editController)
         _gameController = GameController(rootManager: rootManager, root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, exportController: exportController)
-        _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
+        let linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
+        _linkController = linkController
         _searchController = SearchController(itemController: itemController)
+        _sheetController = SheetController(itemController: itemController, linkController: linkController)
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 
@@ -61,6 +63,7 @@ public final class CharacterRootModel {
             linkControllable: linkControllable,
             folderListControllable: folderListController,
             searchControllable: searchController,
+            sheetControllable: sheetController,
             viewControllable: viewController
         )
 
@@ -122,6 +125,8 @@ public final class CharacterRootModel {
     var linkController: LinkController { _linkController! }
     @ObservationIgnored private(set) var _searchController: SearchController?
     var searchController: SearchController { _searchController! }
+    @ObservationIgnored private(set) var _sheetController: SheetController?
+    var sheetController: SheetController { _sheetController! }
 
     @ObservationIgnored private(set) var _folderListController: FolderListController?
     var folderListController: FolderListControllable { _folderListController! }
@@ -146,6 +151,7 @@ extension CharacterRootModel: ItemRootControllable {
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
     public var inspectorEditorLinkModel: EditorLinkModel? { editorLinkModel }
+    public var sheetControllable: any SheetControllable { sheetController }
     public var viewControllable: any ViewControllable { viewController }
 }
 

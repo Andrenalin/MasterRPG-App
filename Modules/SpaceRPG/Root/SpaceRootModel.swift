@@ -32,6 +32,7 @@ public final class SpaceRootModel {
         _gameController = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         _searchController = SearchController(itemController: itemController)
+        _sheetController = SheetController(itemController: itemController)
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
         
@@ -52,6 +53,7 @@ public final class SpaceRootModel {
             linkControllable: linkControllable,
             folderListControllable: folderListController,
             searchControllable: searchController,
+            sheetControllable: sheetController,
             viewControllable: viewController
         )
 
@@ -96,6 +98,8 @@ public final class SpaceRootModel {
     var linkController: LinkController { _linkController! }
     @ObservationIgnored private(set) var _searchController: SearchController?
     var searchController: SearchController { _searchController! }
+    @ObservationIgnored private(set) var _sheetController: SheetController?
+    var sheetController: SheetController { _sheetController! }
 
     @ObservationIgnored private(set) var _folderListController: FolderListController?
     var folderListController: FolderListControllable { _folderListController! }
@@ -129,6 +133,7 @@ extension SpaceRootModel: ItemRootControllable {
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
     public var inspectorEditorLinkModel: EditorLinkModel? { editorLinkModel }
+    public var sheetControllable: any SheetControllable { sheetController }
     public var viewControllable: any ViewControllable { viewController }
 }
 

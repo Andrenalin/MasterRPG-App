@@ -10,7 +10,7 @@ struct DetailListView: View {
     
     @Environment(\.navigator) private var navigator
     
-    @State private var openFileWindowModel = OpenFileWindowModel()
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.table.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
     
     var body: some View {
         DetailFolderListView(root: root, model: model)

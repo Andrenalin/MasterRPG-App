@@ -207,7 +207,7 @@ extension ValueEntryModel {
         return "0 Error"
     }
     
-    var editType: SheetModelEditType {
+    var editType: SheetFirstModelEditType {
         guard valueId == nil else { return .none }
         return switch type {
         case .text: .text

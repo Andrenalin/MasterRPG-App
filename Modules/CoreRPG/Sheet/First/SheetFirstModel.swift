@@ -3,7 +3,7 @@
 import Foundation
 
 public struct SheetFirstModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetFirstModel] = [], entries: [SheetFirstModel]) {
+    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetFirstModelType = .item, canAdd: Bool = true, editType: SheetFirstModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetFirstModel] = [], entries: [SheetFirstModel]) {
         self.id = "\(level)!\(source.entryId ?? source.itemId)"
         self.source = source
         self.destination = destination ?? source
@@ -25,9 +25,9 @@ public struct SheetFirstModel: Equatable, Hashable, Identifiable, Sendable {
     
     public let destination: ItemRowModel
         
-    public let sheetType: SheetModelType
+    public let sheetType: SheetFirstModelType
     public let canAdd: Bool
-    public let editType: SheetModelEditType
+    public let editType: SheetFirstModelEditType
     public let showHeader: Bool
     public var name: String
     public var description: String
@@ -49,7 +49,7 @@ public struct SheetFirstModel: Equatable, Hashable, Identifiable, Sendable {
     }
 }
 
-public enum SheetModelEditType: Equatable, Hashable, Sendable {
+public enum SheetFirstModelEditType: Equatable, Hashable, Sendable {
     case none
     case number
     case decimal
@@ -61,7 +61,7 @@ public enum SheetModelEditType: Equatable, Hashable, Sendable {
     }
 }
 
-public enum SheetModelType: Equatable, Hashable, Sendable {
+public enum SheetFirstModelType: Equatable, Hashable, Sendable {
     case group
     case item
     case edit

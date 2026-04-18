@@ -25,6 +25,7 @@ public protocol ItemRootControllable: Sendable {
     var folderListControllable: any FolderListControllable { get }
     var folderLinkControllable: any FolderListControllable { get }
     var searchControllable: any SearchControllable { get }
+    var sheetControllable: any SheetControllable { get }
     var viewControllable: any ViewControllable { get }
     
     var rootController: ItemRootController { get }
@@ -49,6 +50,7 @@ public final class ItemRootController: ItemRootControllable {
         linkControllable: any LinkControllable,
         folderListControllable: any FolderListControllable,
         searchControllable: any SearchControllable,
+        sheetControllable: any SheetControllable,
         viewControllable: any ViewControllable
     ) {
         self.configurable = config
@@ -68,6 +70,7 @@ public final class ItemRootController: ItemRootControllable {
         self.folderListControllable = folderListControllable
         self.folderLinkControllable = folderListControllable.copy(parentModel: nil)
         self.searchControllable = searchControllable
+        self.sheetControllable = sheetControllable
         self.viewControllable = viewControllable
     }
     
@@ -92,6 +95,7 @@ public final class ItemRootController: ItemRootControllable {
     public let folderListControllable: any FolderListControllable
     public let folderLinkControllable: any FolderListControllable
     public let searchControllable: any SearchControllable
+    public let sheetControllable: any SheetControllable
     public let viewControllable: any ViewControllable
     
     public let removeEntryListModel: RemoveEntryListModel

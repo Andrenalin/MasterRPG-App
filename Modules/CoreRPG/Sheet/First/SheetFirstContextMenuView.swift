@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-struct SheetContextMenuView: View {
+struct SheetFirstContextMenuView: View {
     init(entryEditable: any EntryDataEditable, model: TableFirstSheetModel, entry: SheetFirstModel) {
         self.entryEditable = entryEditable
         self.model = model
@@ -34,7 +34,7 @@ struct SheetContextMenuView: View {
     }
 }
 
-private extension SheetContextMenuView {
+private extension SheetFirstContextMenuView {
     var duplicateButton: some View {
         Button {
             guard let entryId = entry.source.entryId, let newId = entryEditable.copy(itemId: entry.source.itemId, entryId: entryId) else { return }

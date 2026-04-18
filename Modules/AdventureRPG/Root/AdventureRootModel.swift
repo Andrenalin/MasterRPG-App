@@ -61,6 +61,7 @@ public final class AdventureRootModel {
         _gameController = GameController(rootManager: root, root: self, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: root, itemController: itemController)
         _searchController = SearchController(itemController: itemController)
+        _sheetController = SheetController(itemController: itemController)
         _linkRegisterController = linkRegisterController
         
         audioRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
@@ -165,6 +166,8 @@ public final class AdventureRootModel {
     var linkController: LinkController { _linkController! }
     @ObservationIgnored private(set) var _searchController: SearchController?
     var searchController: SearchController { _searchController! }
+    @ObservationIgnored private(set) var _sheetController: SheetController?
+    var sheetController: SheetController { _sheetController! }
 
     @ObservationIgnored private(set) var _linkRegisterController: LinkRegisterController?
     var linkRegisterController: LinkRegisterController { _linkRegisterController! }
@@ -197,6 +200,7 @@ public final class AdventureRootModel {
             linkControllable: linkControllable,
             folderListControllable: folderListController,
             searchControllable: searchController,
+            sheetControllable: sheetController,
             viewControllable: viewController
         )
     }()
@@ -210,6 +214,7 @@ extension AdventureRootModel: ItemRootControllable {
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
     public var inspectorEditorLinkModel: EditorLinkModel? { editorLinkModel }
+    public var sheetControllable: any SheetControllable { sheetController }
     public var viewControllable: any ViewControllable { viewController }
 }
 
