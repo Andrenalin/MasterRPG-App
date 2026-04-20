@@ -21,7 +21,7 @@ private extension TableSheetView {
     var listContentView: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                SheetView(root: root, model: model)
+                SheetRootView(root: root, rootModel: model)
                     .animation(.default, value: model.searchText)
             }
         }

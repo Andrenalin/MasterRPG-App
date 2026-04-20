@@ -7,13 +7,33 @@ public final class SheetRootModel: Sendable {
     init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID) {
         self.linkControllable = linkControllable
         self.sheetModel = sheetControllable.sheet(for: itemId, level: 0)
+        
+        updateFilteredEntries()
     }
     
     var sheetModel: SheetModel
-    var searchText: String = ""
+    
+    private(set) var filteredEntries: [SheetModel] = []
+    var searchText: String = "" {
+        didSet {
+            updateFilteredEntries()
+        }
+    }
+
     
     @ObservationIgnored let linkControllable: any LinkControllable
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
+
+    func rootController(for module: NetworkModules) -> ItemRootController? {
+        linkControllable.rootManager.itemRootController(for: module)
+    }
+
+    
+    func description(for sheetModel: SheetModel) -> String? {
+        guard !searchText.isEmpty else { return sheetModel.description }
+        return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
+    }
+
     
     func linkTextModel(for id: LinkHighlightTextModelId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {
@@ -53,4 +73,11 @@ public final class SheetRootModel: Sendable {
             }
         }
     }
+    
+    // MARK: - Search
+    
+    private func updateFilteredEntries() {
+        filteredEntries = sheetModel.filter(searchText: searchText)
+    }
+
 }

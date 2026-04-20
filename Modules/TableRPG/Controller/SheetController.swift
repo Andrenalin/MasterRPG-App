@@ -41,12 +41,25 @@ extension SheetController: SheetControllable {
     }
     
     @MainActor func sheetEntries(for itemId: UUID, level: Int) -> [SheetModel] {
-        guard level < 25 else { return [] }
+        guard level < 50 else { return [] }
         let value = itemController.itemOrEmpty(for: itemId)
         return value.entries.map { entry in
             let name = entry.name
             let description = entry.content
-            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: [])
+            
+            let links = LinkReplaceController.links(for: entry.content)
+            let linkSheets = links.map {
+                switch $0.module {
+                case .dice:
+                    SheetModel(source: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), level: level + 1, name: $0.name, description: "", entries: [])
+                case .pdf:
+                    SheetModel(source: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), level: level + 1, name: $0.name, description: "", entries: [])
+                default:
+                    sheet(for: $0.itemId, level: level + 1)
+                }
+            }
+            
+            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: linkSheets)
         }
     }
 }
