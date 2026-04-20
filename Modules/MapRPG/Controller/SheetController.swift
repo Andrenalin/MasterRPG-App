@@ -32,7 +32,7 @@ struct SheetController {
 }
 
 extension SheetController: SheetControllable {
-    @MainActor func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int) -> SheetModel {
         .empty
     }
 }

@@ -114,6 +114,8 @@ public final class TableFirstSheetModel: Sendable {
             let rowModel = ItemRowModel(itemId: itemId, typeId: module)
             
             switch id {
+            case .item(_):
+                break
             case .name:
                 break
             case .description:
@@ -612,10 +614,4 @@ public final class TableFirstSheetModel: Sendable {
     var moduleTint: Color {
         rootController(for: module)?.configurable.module.tint ?? .blue
     }
-}
-
-enum LinkHighlightTextModelId: Hashable {
-    case name
-    case description
-    case entry(String)
 }

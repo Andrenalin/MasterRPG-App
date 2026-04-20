@@ -3,5 +3,5 @@
 import Foundation
 
 public protocol SheetControllable: Sendable {
-    @MainActor func sheet(for itemId: UUID, level: Int) -> SheetModel
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int) -> SheetModel
 }

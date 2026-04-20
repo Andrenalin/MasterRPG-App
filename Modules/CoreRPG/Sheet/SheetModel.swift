@@ -4,7 +4,7 @@ import Foundation
 
 public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
     public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
-        self.id = "\(level)!\(source.entryId ?? source.itemId)"
+        self.id = "\(level)!\(source.entryId ?? source.itemId)!\((destination ?? source).entryId ?? (destination ?? source).itemId)"
         self.source = source
         self.destination = destination ?? source
         self.level = level

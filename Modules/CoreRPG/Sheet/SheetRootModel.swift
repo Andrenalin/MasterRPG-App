@@ -2,11 +2,18 @@
 
 import SwiftUI
 
+enum LinkHighlightTextModelId: Hashable {
+    case name
+    case description
+    case item(String)
+    case entry(String)
+}
+
 @MainActor @Observable
 public final class SheetRootModel: Sendable {
     init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID) {
         self.linkControllable = linkControllable
-        self.sheetModel = sheetControllable.sheet(for: itemId, level: 0)
+        self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0)
         
         updateFilteredEntries()
     }
@@ -52,6 +59,8 @@ public final class SheetRootModel: Sendable {
             case .name:
                 break
             case .description:
+                break
+            case .item(let uuid):
                 break
 //                let sheets = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: 0, module: module)
 //                sheetModel.entries.insert(contentsOf: sheets.entries, at: 0)

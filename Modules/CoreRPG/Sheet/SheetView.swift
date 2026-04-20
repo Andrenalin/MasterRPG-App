@@ -34,9 +34,14 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
 
 private extension SheetView {
     var nameRow: some View {
-        LinkHighlightTextView(model: rootModel.linkTextModel(for: .name, text: sheetModel.name))
+        LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.id), text: sheetModel.name))
             .frame(maxWidth: .infinity, alignment: .leading)
             .font(.title)
+            .padding(4)
+            .background {
+                RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
+            }
+            .padding(2)
     }
     
     var inlineRows: some View {
@@ -46,29 +51,25 @@ private extension SheetView {
                 .background {
                     RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
                 }
-                .padding(4)
+                .padding(2)
         }
     }
     
     @ViewBuilder
     var secondaryRow: some View {
         if let description = rootModel.description(for: sheetModel), !description.isEmpty {
-            LinkHighlightTextView(model: rootModel.linkTextModel(for: .description, text: description))
+            LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(sheetModel.id), text: description))
                 .padding(4)
                 .background {
                     RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
                 }
                 .font(.subheadline)
-                .padding(4)
+                .padding(2)
         }
-
-        //.moveDisabled(true)
-//        if !model.sheetModel.inlineEntries.isEmpty || !description.isEmpty {
-//        }
     }
     
     var entryRows: some View {
-        ForEach(rootModel.filteredEntries) { entry in
+        ForEach(sheetModel.entries) { entry in
             SheetEntryView(rootModel: rootModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
                 .padding(4)
                 .background {
