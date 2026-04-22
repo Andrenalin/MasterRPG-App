@@ -7,7 +7,6 @@ public struct TableRootSheet: View {
         self.root = root
         self.configuration = configuration
         self.dismissAction = dismissAction
-        let model = root.itemControllable.itemOrEmpty(for: itemId)
         self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: itemId))
     }
         

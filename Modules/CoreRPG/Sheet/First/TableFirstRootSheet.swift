@@ -2,6 +2,13 @@
 
 import SwiftUI
 
+enum LinkHighlightTextModeOldId: Hashable {
+    case name
+    case description
+    case entry(String)
+}
+
+
 public struct TableFirstRootSheet: View {
     public init(root: ItemRootController, itemId: UUID, module: NetworkModules, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) {
         self.root = root

@@ -39,7 +39,7 @@ public final class TableFirstSheetModel: Sendable {
     private(set) var filteredEntries: [SheetFirstModel] = []
 
     @ObservationIgnored var sheets: [ItemRowModel: TableFirstSheetModel] = [:]
-    @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
+    @ObservationIgnored private var linkTextModel: [LinkHighlightTextModeOldId: LinkHighlightTextModel] = [:]
     @ObservationIgnored private var originalEntries: [SheetFirstModel] = []
     @ObservationIgnored private var searchTask: Task<Void, Never>?
     @ObservationIgnored private var currentSearchResult: SheetSearchResult?
@@ -59,7 +59,7 @@ public final class TableFirstSheetModel: Sendable {
         return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
     }
     
-    func linkTextModel(for id: LinkHighlightTextModelId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
+    func linkTextModel(for id: LinkHighlightTextModeOldId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {
             let model = LinkHighlightTextModel(linkControllable: linkControllable, text: text, highlightedText: searchText, toggler: { self.toggle(id: id, itemId: $0, module: $1) }, shareResult: shareResults)
             linkTextModel[id] = model
@@ -109,13 +109,11 @@ public final class TableFirstSheetModel: Sendable {
     }
 
     
-    func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules) {
+    func toggle(id: LinkHighlightTextModeOldId, itemId: UUID, module: NetworkModules) {
         withAnimation {
             let rowModel = ItemRowModel(itemId: itemId, typeId: module)
             
             switch id {
-            case .item(_):
-                break
             case .name:
                 break
             case .description:

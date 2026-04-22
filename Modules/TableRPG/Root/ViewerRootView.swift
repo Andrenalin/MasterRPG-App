@@ -12,6 +12,7 @@ struct ViewerRootView: View {
 
     var body: some View {
         TableRootSheet(root: root.rootController, itemId: model.id, module: root.config.module, configuration: configuration, dismissAction: dismissAction)
+            .id(model.id)
     }
 }
 

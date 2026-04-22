@@ -3,17 +3,16 @@
 import SwiftUI
 
 enum LinkHighlightTextModelId: Hashable {
-    case name
-    case description
     case item(String)
     case entry(String)
 }
+
 
 @MainActor @Observable
 public final class SheetRootModel: Sendable {
     init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID) {
         self.linkControllable = linkControllable
-        self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0)
+        self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true)
         
         updateFilteredEntries()
     }
@@ -53,35 +52,33 @@ public final class SheetRootModel: Sendable {
     
     func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules) {
         withAnimation {
-            let rowModel = ItemRowModel(itemId: itemId, typeId: module)
-            
             switch id {
-            case .name:
+            case .item:
                 break
-            case .description:
-                break
-            case .item(let uuid):
-                break
-//                let sheets = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: 0, module: module)
-//                sheetModel.entries.insert(contentsOf: sheets.entries, at: 0)
             case .entry(let uuid):
-                break
-//                guard let entryIndex = sheetModel.entries.firstIndex(where: { $0.id == uuid }) else { return }
-//                var entry = sheetModel.entries[entryIndex]
-//                if entry.sheetIds.contains(rowModel) {
-//                    entry.sheetIds.removeAll(where: { $0 == rowModel })
-//                } else {
-//                    let model = linkControllable.itemControllable.itemOrEmpty(for: itemId)
-//                    let TableFirstSheetModel = TableFirstSheetModel(linkControllable: linkControllable, parent: self, model: model, level: entry.level + 1, module: module, searchText: searchText, maxDepth: maxDepth)
-//
-//                    sheets[rowModel] = TableFirstSheetModel
-//                    entry.sheetIds.append(rowModel)
-//                }
-//                sheetModel.entries[entryIndex] = entry
-//                updateFilteredEntries()
+                toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module)
             }
         }
     }
+    
+    func toggleShown(sheetModel: SheetModel, entryId: String, linkId: UUID, module: NetworkModules) {
+        for entrySheetModel in sheetModel.entries {
+            if entrySheetModel.id == entryId {
+                for subEntrySheetModel in entrySheetModel.entries {
+                    if subEntrySheetModel.source.itemId == linkId {
+                        subEntrySheetModel.isShown.toggle()
+                        return
+                    }
+                }
+                return
+            }
+            if toggleShown(sheetModel: entrySheetModel, entryId: entryId, linkId: linkId, module: module) {
+                return
+            }
+        }
+    }
+    
+    
     
     // MARK: - Search
     

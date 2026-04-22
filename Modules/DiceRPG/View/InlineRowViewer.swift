@@ -12,6 +12,7 @@ struct InlineRowViewer: View, Equatable {
     
     var body: some View {
         DiceInline(itemId: source.itemId, resultCategory: ResultCategory(source: destination), player: appGameStateModel.gameModus == .player)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

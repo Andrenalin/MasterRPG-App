@@ -20,8 +20,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
 
-    @State private var viewControllable: (any ViewControllable)?
-
     var body: some View {
         VStack(alignment: .leading) {
             beforeInline
@@ -34,7 +32,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         .moveDisabled(entryModel.sheetType != .item && entryModel.sheetType != .group)
         
         ForEach(entryModel.entries) { subEntry in
-            if let root = rootModel.rootController(for: subEntry.source.typeId) {
+            if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
                 SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes)
             }
         }
@@ -42,11 +40,15 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
 }
 
 private extension SheetEntryView {
+    func viewController(for source: ItemRowModel) -> ViewControllable? {
+        rootModel.linkControllable.rootManager.rootModel(for: source.typeId)?.viewControllable
+    }
+    
     var beforeInline: some View {
         ForEach(entryModel.inlineEntries) { inlineSheet in
             switch inlineSheet.sheetType {
             case .photoInline:
-                viewControllable?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
                     .frame(height: 96)
                     .frame(maxWidth: .infinity, alignment: .center)
             default:
@@ -70,15 +72,15 @@ private extension SheetEntryView {
                     .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entryModel.level * 4), bottom: 8, trailing: 8))
                 
             case .dice:
-                viewControllable?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
             case .pdf, .photo, .space, .weather:
-                viewControllable?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color.clear)
                     .frame(height: 256)
             case .audioInline:
                 HStack {
-                    viewControllable?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                    viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
                     LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: text, shareResults: shareResult))
                 }
                 .font(.body)
@@ -98,9 +100,9 @@ private extension SheetEntryView {
         ForEach(entryModel.inlineEntries) { inlineSheet in
             switch inlineSheet.sheetType {
             case .dice:
-                viewControllable?.rowViewer(source: inlineSheet.source, destination: entryModel.destination)
+                viewController(for: entryModel.source)?.rowViewer(source: inlineSheet.source, destination: entryModel.destination)
             case .pdf:
-                viewControllable?.rowViewer(source: inlineSheet.source, destination: entryModel.destination)
+                viewController(for: entryModel.source)?.rowViewer(source: inlineSheet.source, destination: entryModel.destination)
             default:
                 EmptyView()
             }

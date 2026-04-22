@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct FakeSheetController: SheetControllable {
-    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int) -> SheetModel {
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
         .empty
     }
     

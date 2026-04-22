@@ -2,40 +2,44 @@
 
 import Foundation
 
-public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
+@MainActor @Observable
+public final class SheetModel: Identifiable, Sendable {
+    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
         self.id = "\(level)!\(source.entryId ?? source.itemId)!\((destination ?? source).entryId ?? (destination ?? source).itemId)"
         self.source = source
         self.destination = destination ?? source
         self.level = level
         self.sheetType = type
-        self.canAdd = canAdd
-        self.editType = editType
-        self.showHeader = showHeader
+        self.isShown = isShown
         self.name = name
         self.description = description
         self.inlineEntries = inlineEntries
         self.entries = entries
-        self.sheetIds = []
+
+        self.canAdd = canAdd
+        self.editType = editType
+        self.showHeader = showHeader
     }
 
     public let id: String
     public let source: ItemRowModel
-    public let level: Int
-    
     public let destination: ItemRowModel
-        
+    public let level: Int
+
     public let sheetType: SheetModelType
+    public var isShown: Bool
+    
+    public var name: String
+    public var description: String
+            
+    public var inlineEntries: [SheetModel]
+    public var entries: [SheetModel]
+        
+    
     public let canAdd: Bool
     public let editType: SheetModelEditType
     public let showHeader: Bool
-    public var name: String
-    public var description: String
-    
-    public var inlineEntries: [SheetModel]
-    public var entries: [SheetModel]
-    
-    public var sheetIds: [ItemRowModel]
+
     
     func filter(searchText: String) -> [SheetModel] {
         guard !searchText.isEmpty else { return entries }
