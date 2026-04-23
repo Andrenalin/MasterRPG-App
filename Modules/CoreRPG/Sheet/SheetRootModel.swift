@@ -3,10 +3,9 @@
 import SwiftUI
 
 enum LinkHighlightTextModelId: Hashable {
-    case item(String)
-    case entry(String)
+    case item(UUID)
+    case entry(UUID)
 }
-
 
 @MainActor @Observable
 public final class SheetRootModel: Sendable {
@@ -59,7 +58,7 @@ public final class SheetRootModel: Sendable {
         }
     }
     
-    func toggleShown(sheetModel: SheetModel, entryId: String, linkId: UUID, module: NetworkModules) -> Bool {
+    func toggleShown(sheetModel: SheetModel, entryId: UUID, linkId: UUID, module: NetworkModules) -> Bool {
         for entrySheetModel in sheetModel.entries {
             if entrySheetModel.id == entryId {
                 for subEntrySheetModel in entrySheetModel.entries {
@@ -76,8 +75,6 @@ public final class SheetRootModel: Sendable {
         }
         return false
     }
-    
-    
     
     // MARK: - Search
     

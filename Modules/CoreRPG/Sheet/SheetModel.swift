@@ -5,7 +5,7 @@ import Foundation
 @MainActor @Observable
 public final class SheetModel: Identifiable, Sendable {
     public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
-        self.id = "\(level)!\(source.entryId ?? source.itemId)!\((destination ?? source).entryId ?? (destination ?? source).itemId)"
+        self.id = UUID()
         self.source = source
         self.destination = destination ?? source
         self.level = level
@@ -21,7 +21,7 @@ public final class SheetModel: Identifiable, Sendable {
         self.showHeader = showHeader
     }
 
-    public let id: String
+    public let id: UUID
     public let source: ItemRowModel
     public let destination: ItemRowModel
     public let level: Int
