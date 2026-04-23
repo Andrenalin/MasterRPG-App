@@ -12,6 +12,7 @@ struct PlayerStartView: View {
     }
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
+    @Environment(ScenesManager.self) private var scenesManager
     
     @State private var startSharePlayAnimation: Bool = false
     
@@ -21,6 +22,10 @@ struct PlayerStartView: View {
                 if sharePlayStore.canActivateSharePlay {
                     Button {
                         appGameStateModel.gameModus = .player
+#if os(visionOS)
+                scenesManager.openWindow(SceneId.gameTable)
+#endif
+
                         Task {
                             await root.startGame(to: nil, mode: .player)
                         }
@@ -51,6 +56,10 @@ struct PlayerStartView: View {
                             .onChange(of: playerNetworkController.networkModel.isConnected) {
                                 if playerNetworkController.networkModel.isConnected {
                                     appGameStateModel.gameModus = .player
+#if os(visionOS)
+                scenesManager.openWindow(SceneId.gameTable)
+#endif
+
                                 } else {
                                     appGameStateModel.gameModus = .edit
                                 }
