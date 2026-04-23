@@ -13,13 +13,11 @@ public final class SheetRootModel: Sendable {
     init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID) {
         self.linkControllable = linkControllable
         self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true)
-        
         updateFilteredEntries()
     }
     
-    var sheetModel: SheetModel
+    private(set)var sheetModel: SheetModel
     
-    private(set) var filteredEntries: [SheetModel] = []
     var searchText: String = "" {
         didSet {
             updateFilteredEntries()
@@ -56,26 +54,27 @@ public final class SheetRootModel: Sendable {
             case .item:
                 break
             case .entry(let uuid):
-                toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module)
+                _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module)
             }
         }
     }
     
-    func toggleShown(sheetModel: SheetModel, entryId: String, linkId: UUID, module: NetworkModules) {
+    func toggleShown(sheetModel: SheetModel, entryId: String, linkId: UUID, module: NetworkModules) -> Bool {
         for entrySheetModel in sheetModel.entries {
             if entrySheetModel.id == entryId {
                 for subEntrySheetModel in entrySheetModel.entries {
                     if subEntrySheetModel.source.itemId == linkId {
                         subEntrySheetModel.isShown.toggle()
-                        return
+                        return true
                     }
                 }
-                return
+                return true
             }
             if toggleShown(sheetModel: entrySheetModel, entryId: entryId, linkId: linkId, module: module) {
-                return
+                return true
             }
         }
+        return false
     }
     
     
@@ -83,7 +82,9 @@ public final class SheetRootModel: Sendable {
     // MARK: - Search
     
     private func updateFilteredEntries() {
-        filteredEntries = sheetModel.filter(searchText: searchText)
+        _ = sheetModel.filter(searchText: searchText)
+        linkTextModel.values.forEach {
+            $0.reset(highlightedText: searchText)
+        }
     }
-
 }

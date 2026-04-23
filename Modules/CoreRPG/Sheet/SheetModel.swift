@@ -28,6 +28,7 @@ public final class SheetModel: Identifiable, Sendable {
 
     public let sheetType: SheetModelType
     public var isShown: Bool
+    public var isHidden: Bool = false
     
     public var name: String
     public var description: String
@@ -41,11 +42,22 @@ public final class SheetModel: Identifiable, Sendable {
     public let showHeader: Bool
 
     
-    func filter(searchText: String) -> [SheetModel] {
-        guard !searchText.isEmpty else { return entries }
-        return entries.filter { entry in
-            entry.name.localizedCaseInsensitiveContains(searchText) || entry.description.localizedCaseInsensitiveContains(searchText) || !entry.filter(searchText: searchText).isEmpty
+    func filter(searchText: String) -> Bool {
+        var hasResult: Bool = false
+        entries.forEach {
+            let subResult = $0.filter(searchText: searchText)
+            hasResult = hasResult || subResult
         }
+        if searchText.isEmpty {
+            isHidden <=> false
+        } else {
+            let result = name.localizedCaseInsensitiveContains(searchText) || description.localizedCaseInsensitiveContains(searchText)
+            if hasResult {
+                isShown <=> true
+            }
+            isHidden <=> !result && !hasResult
+        }
+        return !isHidden
     }
     
     public static var empty: SheetModel {

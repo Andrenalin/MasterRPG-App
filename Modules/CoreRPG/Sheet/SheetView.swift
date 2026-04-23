@@ -70,17 +70,19 @@ private extension SheetView {
     
     var entryRows: some View {
         ForEach(sheetModel.entries) { entry in
-            SheetEntryView(rootModel: rootModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
-                .padding(4)
-                .background {
-                    RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
-                }
-                .padding(2)
+            if !entry.isHidden {
+                SheetEntryView(rootModel: rootModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
+                    .padding(4)
+                    .background {
+                        RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
+                    }
+                    .padding(2)
 #if !os(tvOS)
-                .applyIf(!isEditor) {
-                    $0.draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink())
-                }
+                    .applyIf(!isEditor) {
+                        $0.draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink())
+                    }
 #endif
+            }
         }
     }
     
