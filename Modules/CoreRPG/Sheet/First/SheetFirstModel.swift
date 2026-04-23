@@ -3,7 +3,7 @@
 import Foundation
 
 public struct SheetFirstModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetFirstModelType = .item, canAdd: Bool = true, editType: SheetFirstModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetFirstModel] = [], entries: [SheetFirstModel]) {
+    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetFirstModelType = .item, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetFirstModel] = [], entries: [SheetFirstModel]) {
         self.id = "\(level)!\(source.entryId ?? source.itemId)"
         self.source = source
         self.destination = destination ?? source
@@ -27,7 +27,7 @@ public struct SheetFirstModel: Equatable, Hashable, Identifiable, Sendable {
         
     public let sheetType: SheetFirstModelType
     public let canAdd: Bool
-    public let editType: SheetFirstModelEditType
+    public let editType: SheetModelEditType
     public let showHeader: Bool
     public var name: String
     public var description: String
@@ -46,18 +46,6 @@ public struct SheetFirstModel: Equatable, Hashable, Identifiable, Sendable {
     
     public static var empty: SheetFirstModel {
         SheetFirstModel(source: .empty, level: 0, name: "", description: "", entries: [])
-    }
-}
-
-public enum SheetFirstModelEditType: Equatable, Hashable, Sendable {
-    case none
-    case number
-    case decimal
-    case selection
-    case text
-    
-    var isEditable: Bool {
-        self != .none
     }
 }
 

@@ -33,6 +33,50 @@ struct SheetController {
 
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
-        .empty
+        let model = itemController.itemOrEmpty(for: itemId)
+        var entries: [SheetModel] = []
+
+        if let photoId = model.photoId {
+            entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, isShown: isShown, name: "", description: "", entries: []))
+        }
+        entries.append(contentsOf: sheetEntries(root: root, itemId: itemId, level: level + 1, isShown: isShown))
+
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, name: model.name, description: model.description, entries: entries)
+        return sheetModel
+    }
+
+    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, isShown: Bool) -> [SheetModel] {
+        guard level < 25 else { return [] }
+        let item = itemController.itemOrEmpty(for: itemId)
+        return item.entries.compactMap { entry in
+            guard !entry.isHexGrid else { return nil }
+            return sheetEntry(root: root, itemId: itemId, entry: entry, level: level, isShown: isShown)
+        }
+    }
+
+    @MainActor func sheetEntry(root: RootManager, itemId: UUID, entry: MapEntryModel, level: Int, isShown: Bool) -> SheetModel {
+        let name = entry.name
+        let description = entry.content
+        let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
+
+        let inlineEntries: [SheetModel] = [
+            SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .photoInline, isShown: isShown, name: "", description: "", entries: [])
+        ]
+
+        let links = LinkReplaceController.links(for: description)
+        let linkSheets = links.compactMap { link -> SheetModel? in
+            switch link.module {
+            case .map:
+                if link.entryId == nil {
+                    return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
+                } else {
+                    return nil
+                }
+            default:
+                return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
+            }
+        }
+
+        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, name: name, description: description, inlineEntries: inlineEntries, entries: linkSheets)
     }
 }

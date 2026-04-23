@@ -47,6 +47,7 @@ private extension SheetView {
     var inlineRows: some View {
         ForEach(sheetModel.inlineEntries) { inlineEntry in
             SheetEntryView(rootModel: rootModel, entryModel: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(4)
                 .background {
                     RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
@@ -59,6 +60,7 @@ private extension SheetView {
     var secondaryRow: some View {
         if let description = rootModel.description(for: sheetModel), !description.isEmpty {
             LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(sheetModel.id), text: description))
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(4)
                 .background {
                     RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
@@ -72,6 +74,7 @@ private extension SheetView {
         ForEach(sheetModel.entries) { entry in
             if !entry.isHidden {
                 SheetEntryView(rootModel: rootModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(4)
                     .background {
                         RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))

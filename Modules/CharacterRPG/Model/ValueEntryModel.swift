@@ -119,7 +119,7 @@ extension ValueEntryModel {
         }
         return firstBold
     }
-
+    
     func valueLinkText(otherValue: String, withoutName: Bool = false) -> String {
         let bold = name.starts(with: "**") ? "" : "**"
         var first: String
@@ -146,14 +146,14 @@ extension ValueEntryModel {
             }
         }
     }
-
+    
     var valueNumber: Int {
         get { Int(valueCalculated) ?? 0 }
         set {
             setValue(from: "\(newValue)")
         }
     }
-
+    
     mutating func setValue(from text: String) {
         let comp = value.split(separator: "|")
         var newValue = comp.isEmpty ? "0" : String(comp[0])
@@ -162,11 +162,11 @@ extension ValueEntryModel {
         }
         value = newValue
     }
-
+    
     var valueSelected: Bool {
         type == .selection && value == "I"
     }
-
+    
     mutating func toggleSelection() {
         guard type == .selection else { return }
         if valueSelected {
@@ -175,12 +175,12 @@ extension ValueEntryModel {
             value = "I"
         }
     }
-
+    
     mutating func resetSelection() {
         guard type == .selection else { return }
         value = ""
     }
-
+    
     var valueCalculated: String {
         guard type == .number || type == .decimal else { return "0" }
         let calcValues =  value.split(separator: "|")
@@ -190,7 +190,7 @@ extension ValueEntryModel {
             return "0"
         }
     }
-
+    
     @MainActor func calculate(on result: String) -> String {
         if let final = Calculator.calculate(result) {
             if type == .number {
@@ -207,7 +207,7 @@ extension ValueEntryModel {
         return "0 Error"
     }
     
-    var editType: SheetFirstModelEditType {
+    var editType: SheetModelEditType {
         guard valueId == nil else { return .none }
         return switch type {
         case .text: .text

@@ -51,16 +51,14 @@ extension SheetController: SheetControllable {
             let links = LinkReplaceController.links(for: entry.content)
             let linkSheets = links.compactMap { link -> SheetModel? in
                 switch link.module {
-                case .dice:
-                    return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
-                case .pdf:
-                    return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
-                default:
+                case .table:
                     if link.entryId == nil {
                         return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
                     } else {
                         return nil
                     }
+                default:
+                    return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
                 }
             }
             
