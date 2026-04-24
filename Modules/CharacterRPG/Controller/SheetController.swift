@@ -95,7 +95,7 @@ extension SheetController: SheetControllable {
             name = ""
             description = value.url(linkNumber: 0)
             sheetType = .group
-            linkSheets = [sheet(root: root, itemId: valueId, destination: destination, level: level + 1, isShown: false)]
+            linkSheets = [sheet(root: root, itemId: valueId, destination: destination, level: level + 1, isShown: true)]
         } else {
             description = entry.value
             if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {
