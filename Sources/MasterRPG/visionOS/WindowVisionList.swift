@@ -28,6 +28,7 @@ struct WindowVisionList: Scene {
 
         WindowGroup(id: SceneId.gameTable.rawValue) {
             GameTableView(root: appModel.gameRoot).volumeBaseplateVisibility(.hidden)
+                .groupActivityAssociation(.primary(SceneId.gameTable.rawValue))
         }
         .windowStyle(.volumetric)
         .defaultSize(width: 2, height: 1.5, depth: 2, in: .meters)
@@ -59,7 +60,7 @@ struct WindowVisionList: Scene {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
                     .sceneTracker(for: SceneId.spaceViewer)
-                    .groupActivityAssociation(selection != nil ? .primary(SceneId.spaceViewer.rawValue) : nil)
+//                    .groupActivityAssociation(selection != nil ? .primary(SceneId.spaceViewer.rawValue) : nil)
             }
         }
         .defaultWindowPlacementAll( .above(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue))

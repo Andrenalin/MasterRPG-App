@@ -9,6 +9,10 @@ import Foundation
 import os.log
 import SwiftUI
 
+#if os(visionOS)
+import TabletopKit
+#endif
+
 protocol SharePlayControllerDelegate: AnyObject {
     func handleUpdate(_ model: GameNetworkModel, id: UUID) -> Void
     func handleFileUpdate(_ model: GameNetworkModel) -> Void
@@ -26,52 +30,67 @@ final class RPGSharePlayController {
     var isActive: Bool = false
     var canActivateSharePlay: Bool = false
     var stateText: String = "Not Active"
-
+    
     var gameModel: GameModel?
     var packageSender: SharePlaySingleQueuePackageSender?
     var packageReceiver = SharePlayPackageReceiver()
     
     var switchToImmersive: Bool = false
-
+    
     private let groupStateObserver = GroupStateObserver()
     private var cancellables: Set<AnyCancellable> = []
-
+    
     private var messenger: GroupSessionMessenger?
     private var subscriptions = Set<AnyCancellable>()
     private var tasks = Set<Task<Void, Never>>()
     private var journal: GroupSessionJournal?
-
+    
     weak var delegate: SharePlayControllerDelegate?
     weak var playBack: AVPlaybackCoordinator?
     weak var audioCoordinator: AudioListenerCoordinator?
     
+#if os(visionOS)
+    weak var tabletopGame: TabletopGame?
+#endif
+    
     init() {
         Logger.sharePlay.debug("SharePlay: init")
     }
-
+    
     deinit {
+//#if os(visionOS)
+//        tabletopGame?.detachNetworkCoordinator()
+//#endif
         Logger.sharePlay.debug("SharePlay: deinit")
     }
-
+    
     func setup(gameModel: GameModel) {
         Logger.sharePlay.debug("SharePlay: setup")
         self.gameModel = gameModel
         packageSender = SharePlaySingleQueuePackageSender { [weak self] package in
             await self?.sendPackage(package)
         }
-
+        
         groupStateObserver.$isEligibleForGroupSession
             .sink { [weak self] in
                 self?.canActivateSharePlay = $0
             }.store(in: &cancellables)
     }
-
+    
     func setup(audioCoordinator: AudioListenerCoordinator?) {
-//        self.audioCoordinator = audioCoordinator
-//        self.playBack = audioCoordinator?.playbackCoordinator
-//        guard let groupSession else { return }
-//        playBack?.coordinateWithSession(groupSession)
+        self.audioCoordinator = audioCoordinator
+        self.playBack = audioCoordinator?.playbackCoordinator
+        guard let groupSession else { return }
+        playBack?.coordinateWithSession(groupSession)
     }
+    
+    #if os(visionOS)
+    func setup(tabletopGame: TabletopGame) {
+        self.tabletopGame = tabletopGame
+        guard let groupSession else { return }
+        tabletopGame.coordinateWithSession(groupSession)
+    }
+    #endif
 }
 
 extension RPGSharePlayController {
@@ -160,25 +179,36 @@ extension RPGSharePlayController {
                 Logger.sharePlay.debug("Session \(session.description, privacy: .public) state: \(self.printState(), privacy: .public)")
 
                 #if os(visionOS)
-                guard let systemCoordinator = await session.systemCoordinator else { continue }
+                if let coordinator = await session.systemCoordinator {
+                    var configuration = SystemCoordinator.Configuration()
+                    configuration.spatialTemplatePreference = .surround.contentExtent(100)
+                    configuration.supportsGroupImmersiveSpace = true
+                    coordinator.configuration = configuration
 
-                var configuration = SystemCoordinator.Configuration()
-                configuration.supportsGroupImmersiveSpace = true
-//                configuration.spatialTemplatePreference = .sideBySide.contentExtent(200)
-                configuration.spatialTemplatePreference = .conversational
-                systemCoordinator.configuration = configuration
-                
-                let vpTask = Task { @MainActor in
-                    for await immersionStyle in systemCoordinator.groupImmersionStyle {
-                        if immersionStyle != nil {
-                            switchToImmersive = true
-                        } else {
-                            switchToImmersive = false
+                    let vpTask = Task { @MainActor in
+                        tabletopGame?.coordinateWithSession(session)
+                        for await immersionStyle in coordinator.groupImmersionStyle {
+                            if immersionStyle != nil {
+                                switchToImmersive = true
+                            } else {
+                                switchToImmersive = false
+                            }
                         }
                     }
-                }
 
-                tasks.insert(vpTask)
+//                    Task.detached { @MainActor in
+//                        for await state in coordinator.localParticipantStates {
+//                            if state.isSpatial {
+//                                // Synchronize additional data for the shared context.
+//                                gameModel.isSpatial = true
+//                            } else {
+//                                // Don't synchronize additional data.
+//                                gameModel.isSpatial = false
+//                            }
+//                        }
+//                    }
+                    tasks.insert(vpTask)
+                }
 
                 #endif
 
@@ -240,6 +270,9 @@ extension RPGSharePlayController {
         
         groupSession.join()
         playBack?.coordinateWithSession(groupSession)
+        #if os(visionOS)
+        tabletopGame?.coordinateWithSession(groupSession)
+        #endif
     }
 
     func handle(_ attachments: GroupSessionJournal.Attachments.Element) async {

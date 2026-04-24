@@ -10,13 +10,15 @@ class GroupActivityManager: Observable {
     var sessionTask = Task<Void, Never> {}
     
     @MainActor
-    init(tabletopGame: TabletopGame) {
+    init(tabletopGame: TabletopGame, sharePlayController: RPGSharePlayController) {
         self.tabletopGame = tabletopGame
         sessionTask = Task {
             for await session in RPGActivity.sessions() {
                 tabletopGame.coordinateWithSession(session)
             }
         }
+        
+        sharePlayController.setup(tabletopGame: tabletopGame)
     }
 
     deinit {

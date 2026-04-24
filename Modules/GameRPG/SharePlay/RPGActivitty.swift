@@ -25,6 +25,9 @@ public struct RPGActivity: GroupActivity, Sendable {
         metadata.subtitle = NSLocalizedString("Play Pen&Paper RPG", bundle: .module, comment: "Title of group activity")
         metadata.supportsContinuationOnTV = false
         metadata.previewImage = Self.titleImage
+        #if os(visionOS)
+        metadata.sceneAssociationBehavior = .content(SceneId.gameTable.rawValue)
+        #endif
 
         return metadata
     }

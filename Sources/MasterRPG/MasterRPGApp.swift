@@ -128,7 +128,7 @@ struct MasterRPGApp: App {
                 .modifier(UserSettingsViewModifier(appModel: appModel))
                 .environmentSetUp(appModel)
 #if os(visionOS)
-                .groupActivityAssociation(.primary(SceneId.game.rawValue))
+//                .groupActivityAssociation(.primary(SceneId.game.rawValue))
                 .onAppear {
                     appModel.sceneManager.setActions(
                         openWindow: openWindow,

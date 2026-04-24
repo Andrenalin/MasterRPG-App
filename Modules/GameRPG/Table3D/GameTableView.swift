@@ -37,7 +37,8 @@ public struct GameTableView: View {
             let initGame = await GameTableModel(mapRoot: root.mapRoot, photoRoot: root.photoRoot)
             self.root.gameModel.gameTableModel = initGame
             self.game = initGame
-            self.activityManager = .init(tabletopGame: initGame.tabletopGame)
+            //root.networkStore.sharePlayStore.setup(tabletopGame: initGame.tabletopGame)
+            self.activityManager = .init(tabletopGame: initGame.tabletopGame, sharePlayController: root.networkStore.sharePlayStore)
         }
     }
 }
