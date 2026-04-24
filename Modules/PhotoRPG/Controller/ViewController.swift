@@ -13,6 +13,10 @@ extension ViewController: ViewControllable {
     @MainActor public func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView {
         AnyView(InlineImporterView(itemId: itemId, preopen: preopen, layoutDown: layoutDown).equatable())
     }
+    
+    @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
+        AnyView(InlineRowViewer(source: source, destination: destination).equatable())
+    }
 }
 
 // MARK: - External Views

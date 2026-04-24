@@ -61,15 +61,15 @@ extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
 
-        var entries: [SheetModel] = []
         let showHeader: Bool = model.displayState == 0
 
+        var inlineEntries: [SheetModel] = []
         if showHeader, let photoId = model.photoId {
-            entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: []))
+            inlineEntries = [SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: [])]
         }
-        entries.append(contentsOf: sheetEntries(root: root, itemId: itemId, level: level + 1))
+        let entries = sheetEntries(root: root, itemId: itemId, level: level + 1)
 
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, showHeader: showHeader, name: model.name, description: model.description, entries: entries)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
 
@@ -95,7 +95,7 @@ extension SheetController: SheetControllable {
             name = ""
             description = value.url(linkNumber: 0)
             sheetType = .group
-            linkSheets = [sheet(root: root, itemId: valueId, destination: destination, level: level + 1, isShown: true)]
+            linkSheets = [sheet(root: root, itemId: valueId, destination: destination, level: level + 1, isShown: false)]
         } else {
             description = entry.value
             if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {

@@ -29,6 +29,8 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
         secondaryRow
         
         entryRows
+        
+        endRow
     }
 }
 
@@ -87,6 +89,11 @@ private extension SheetView {
 #endif
             }
         }
+    }
+    
+    var endRow: some View {
+        Color.accentColor.opacity(0.3)
+            .frame(height: 8)
     }
     
     func rowColor(for level: Int) -> Color {

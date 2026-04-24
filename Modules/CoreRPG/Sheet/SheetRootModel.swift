@@ -27,11 +27,14 @@ public final class SheetRootModel: Sendable {
     @ObservationIgnored let linkControllable: any LinkControllable
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
 
+    var linkRootController: LinkControllable? {
+        rootController(for: .adventure)?.linkControllable
+    }
+    
     func rootController(for module: NetworkModules) -> ItemRootController? {
         linkControllable.rootManager.itemRootController(for: module)
     }
 
-    
     func description(for sheetModel: SheetModel) -> String? {
         guard !searchText.isEmpty else { return sheetModel.description }
         return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
@@ -40,7 +43,7 @@ public final class SheetRootModel: Sendable {
     
     func linkTextModel(for id: LinkHighlightTextModelId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {
-            let model = LinkHighlightTextModel(linkControllable: linkControllable, text: text, highlightedText: searchText, toggler: { self.toggle(id: id, itemId: $0, module: $1) }, shareResult: shareResults)
+            let model = LinkHighlightTextModel(linkControllable: linkRootController, text: text, highlightedText: searchText, toggler: { self.toggle(id: id, itemId: $0, module: $1) }, shareResult: shareResults)
             linkTextModel[id] = model
             return model
         }

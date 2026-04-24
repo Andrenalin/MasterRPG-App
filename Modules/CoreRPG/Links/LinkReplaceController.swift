@@ -45,7 +45,7 @@ public final class LinkReplaceController: Sendable {
         return list
     }
 
-    public static func linksRepair(for text: inout String) -> [LinkReplaceModel] {
+    public static func linksRepair(for text: inout String, linkControllable: LinkControllable?) -> [LinkReplaceModel] {
         var list: [LinkReplaceModel] = []
         let allLinks = ReferenceScanner.allUuidUrls(for: scheme, in: text)
         
@@ -72,7 +72,8 @@ public final class LinkReplaceController: Sendable {
             }
             let markDown = updatedLink.markDown(for: scheme)
             let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-            return LinkReplaceModel(name: $0.name, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: nil, markDown: markDown, command: $0.command, range: range)
+            let (updatedName, updatedMarkDown) = currentName(linkController: linkControllable, itemId: $0.table, entryId: nil, module: module) ?? ($0.name, markDown)
+            return LinkReplaceModel(name: updatedName, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: nil, markDown: updatedMarkDown, command: $0.command, range: range)
         }
         var seenEntryId: [UUID: [UUID: Int]] = [:]
         let entryLinks = allLinks.tableEntries.map {
@@ -99,10 +100,20 @@ public final class LinkReplaceController: Sendable {
             }
             let markDown = updatedLink.markDown(for: scheme)
             let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-            return LinkReplaceModel(name: $0.name, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: $0.entry, markDown: markDown, command: $0.command, range: range)
+            let (updatedName, updatedMarkDown) = currentName(linkController: linkControllable, itemId: $0.table, entryId: $0.entry, module: module) ?? ($0.name, markDown)
+            return LinkReplaceModel(name: updatedName, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: $0.entry, markDown: updatedMarkDown, command: $0.command, range: range)
         }
         list.append(contentsOf: entryLinks)
         return list
+    }
+    
+    private static func currentName(linkController: LinkControllable?, itemId: UUID, entryId: UUID?, module: NetworkModules) -> (String, String)? {
+        guard let itemControllable = linkController?.rootManager.itemRootController(for: module)?.itemControllable, let item = itemControllable.itemSync(for: itemId) else { return nil }
+        if let entryId {
+            return (item.urlName(entryId: entryId), item.url(linkNumber: 0, entryId: entryId))
+        } else {
+            return (item.urlName(), item.url(linkNumber: 0))
+        }
     }
 
     public static func removeLinks(for text: String) -> String {

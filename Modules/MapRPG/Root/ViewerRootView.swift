@@ -11,7 +11,7 @@ struct ViewerRootView: View {
     @Environment(MapRootModel.self) private var root
 
     var body: some View {
-        TableFirstRootSheet(root: root.rootController, itemId: model.id, module: root.config.module, configuration: configuration, dismissAction: dismissAction)
+        TableRootSheet(root: root.rootController, itemId: model.id, module: root.config.module, configuration: configuration, dismissAction: dismissAction)
             .id(model.id)
     }
 }

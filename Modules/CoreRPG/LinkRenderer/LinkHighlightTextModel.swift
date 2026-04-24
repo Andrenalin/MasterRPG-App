@@ -52,7 +52,7 @@ public final class LinkHighlightTextModel {
         guard let url = URL(string: searchUrl) else { return }
 
         var repariedText = text
-        _ = LinkReplaceController.linksRepair(for: &repariedText)
+        _ = LinkReplaceController.linksRepair(for: &repariedText, linkControllable: linkControllable)
         
         let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: toggler, editAction: editAction)
 
@@ -66,7 +66,7 @@ extension LinkHighlightTextModel {
     var displayText: [HighlightedTextComponent] {
         var boldRange: Range<String.Index>? = nil
         var repairedText = text
-        let links = LinkReplaceController.linksRepair(for: &repairedText)
+        let links = LinkReplaceController.linksRepair(for: &repairedText, linkControllable: linkControllable)
         return components(for: repairedText, range: repairedText.startIndex..<repairedText.endIndex, links: links, boldRange: &boldRange)
     }
     
