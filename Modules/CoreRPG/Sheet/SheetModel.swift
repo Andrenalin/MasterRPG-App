@@ -28,6 +28,7 @@ public final class SheetModel: Identifiable, Sendable {
 
     public let sheetType: SheetModelType
     public var isShown: Bool
+    public var lastIsShown: Bool = false
     public var isHidden: Bool = false
     
     public var name: String
@@ -50,6 +51,7 @@ public final class SheetModel: Identifiable, Sendable {
         }
         if searchText.isEmpty {
             isHidden <=> false
+            isShown <=> lastIsShown
         } else {
             let result = name.localizedCaseInsensitiveContains(searchText) || description.localizedCaseInsensitiveContains(searchText)
             if hasResult {

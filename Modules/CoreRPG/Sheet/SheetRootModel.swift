@@ -16,9 +16,17 @@ public final class SheetRootModel: Sendable {
     }
     
     private(set)var sheetModel: SheetModel
-    
+
     var searchText: String = "" {
         didSet {
+            let wasEmpty = oldValue.isEmpty
+            let isEmpty = searchText.isEmpty
+
+            // Save state when starting search
+            if wasEmpty && !isEmpty {
+                saveIsShownState(sheetModel: sheetModel)
+            }
+
             updateFilteredEntries()
         }
     }
@@ -80,7 +88,12 @@ public final class SheetRootModel: Sendable {
     }
     
     // MARK: - Search
-    
+
+    private func saveIsShownState(sheetModel: SheetModel) {
+        sheetModel.lastIsShown = sheetModel.isShown
+        sheetModel.entries.forEach { saveIsShownState(sheetModel: $0) }
+    }
+
     private func updateFilteredEntries() {
         _ = sheetModel.filter(searchText: searchText)
         linkTextModel.values.forEach {
