@@ -72,8 +72,8 @@ public final class LinkReplaceController: Sendable {
             }
             let markDown = updatedLink.markDown(for: scheme)
             let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-            let (updatedName, updatedMarkDown) = currentName(linkController: linkControllable, itemId: $0.table, entryId: nil, module: module) ?? ($0.name, markDown)
-            return LinkReplaceModel(name: updatedName, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: nil, markDown: updatedMarkDown, command: $0.command, range: range)
+//            let (updatedName, updatedMarkDown) = currentName(linkController: linkControllable, itemId: $0.table, entryId: nil, module: module) ?? ($0.name, markDown)
+            return LinkReplaceModel(name: $0.name, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: nil, markDown: markDown, command: $0.command, range: range)
         }
         var seenEntryId: [UUID: [UUID: Int]] = [:]
         let entryLinks = allLinks.tableEntries.map {
@@ -100,8 +100,7 @@ public final class LinkReplaceController: Sendable {
             }
             let markDown = updatedLink.markDown(for: scheme)
             let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-            let (updatedName, updatedMarkDown) = currentName(linkController: linkControllable, itemId: $0.table, entryId: $0.entry, module: module) ?? ($0.name, markDown)
-            return LinkReplaceModel(name: updatedName, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: $0.entry, markDown: updatedMarkDown, command: $0.command, range: range)
+            return LinkReplaceModel(name: $0.name, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: $0.entry, markDown: markDown, command: $0.command, range: range)
         }
         list.append(contentsOf: entryLinks)
         return list

@@ -14,7 +14,7 @@ public final class SheetRootModel: Sendable {
         self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true)
         updateFilteredEntries()
     }
-    
+
     private(set)var sheetModel: SheetModel
 
     var searchText: String = "" {
@@ -31,7 +31,7 @@ public final class SheetRootModel: Sendable {
         }
     }
 
-    
+
     @ObservationIgnored let linkControllable: any LinkControllable
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
 
@@ -68,13 +68,32 @@ public final class SheetRootModel: Sendable {
             }
         }
     }
-    
+
     func toggleShown(sheetModel: SheetModel, entryId: UUID, linkId: UUID, module: NetworkModules) -> Bool {
         for entrySheetModel in sheetModel.entries {
             if entrySheetModel.id == entryId {
-                for subEntrySheetModel in entrySheetModel.entries {
-                    if subEntrySheetModel.source.itemId == linkId {
-                        subEntrySheetModel.isShown.toggle()
+                // Check if link already exists in entries
+                if let existingIndex = entrySheetModel.entries.firstIndex(where: { $0.source.itemId == linkId }) {
+                    let existingSheet = entrySheetModel.entries[existingIndex]
+                    // If it has an entryId, it's an entry link - remove it instead of toggling
+                    if existingSheet.source.entryId != nil {
+                        entrySheetModel.entries.remove(at: existingIndex)
+                    } else {
+                        // Module link - just toggle visibility
+                        existingSheet.isShown.toggle()
+                    }
+                    return true
+                } else {
+                    // Link doesn't exist - add it using SheetController
+                    if let rootModel = linkControllable.rootManager.rootModel(for: module) {
+                        let newSheet = rootModel.sheetControllable.sheet(
+                            root: linkControllable.rootManager,
+                            itemId: linkId,
+                            destination: entrySheetModel.destination,
+                            level: entrySheetModel.level + 1,
+                            isShown: true
+                        )
+                        entrySheetModel.entries.append(newSheet)
                         return true
                     }
                 }
