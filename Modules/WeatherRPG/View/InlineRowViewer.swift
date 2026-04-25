@@ -16,6 +16,7 @@ struct InlineRowViewer: View, Equatable {
                 WeatherViewer(model: root.itemController.itemOrEmpty(for: source.itemId), size: proxy.size, useGame: true, isAnimating: .constant(true))
             }
             .frame(height: 256)
+            .clipped()
         }
     }
     

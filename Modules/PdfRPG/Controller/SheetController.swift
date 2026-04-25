@@ -16,7 +16,7 @@ struct SheetController {
     }
     
     @MainActor func sheetFirstEntries(for itemId: UUID, level: Int) -> [SheetFirstModel] {
-        guard level < 25 else { return [] }
+        guard level < 4 else { return [] }
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
             let name = entry.name
@@ -41,7 +41,7 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, isShown: Bool) -> [SheetModel] {
-        guard level < 25 else { return [] }
+        guard level < 4 else { return [] }
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
             let name = entry.name
