@@ -68,24 +68,19 @@ private extension SheetEntryView {
                 LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: text, shareResults: shareResult))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.body)
-                    .listRowBackground(rowColor(for: entryModel.level))
-                    .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entryModel.level * 4), bottom: 8, trailing: 8))
                 
             case .dice:
                 viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
             case .pdf, .photo, .space, .weather:
                 viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowBackground(Color.clear)
                     .frame(height: 256)
+
             case .audioInline:
                 HStack {
                     viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
                     LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: text, shareResults: shareResult))
                 }
                 .font(.body)
-                .listRowBackground(rowColor(for: entryModel.level))
-                .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entryModel.level * 4), bottom: 8, trailing: 8))
             case .photoInline, .edit:
                 EmptyView()
             }

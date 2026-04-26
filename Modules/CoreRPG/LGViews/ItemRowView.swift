@@ -24,10 +24,6 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
     
-    @Environment(AppGameStateModel.self) private var appGameStateModel
-    @Environment(\.networkActions) private var networkActions
-    @Environment(\.sharingFeatureActions) private var sharingFeatureActions
-    
     public var body: some View {
         HStack(alignment: .center, spacing: 4) {
             specialCategoryIcon
@@ -43,7 +39,9 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
                         collectionCategory: root.itemControllable.collectionCategory
                     )
                 }
-                actionBarWithSharing
+                GameShareView(root: root, model: model) {
+                    actionBar
+                }
 
                 if listDisplayModel.displayMode != .compact {
                     DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
@@ -102,49 +100,6 @@ private extension ItemRowView {
         if !isSpecialCategory {
             thumbnail
                 .fixedSize(horizontal: true, vertical: false)
-        }
-    }
-    
-    @ViewBuilder
-    var actionBarWithSharing: some View {
-        switch root.viewControllable.sharingViewType {
-        case .none:
-            actionBar
-        case .share:
-            actionBar
-                .shareListItem(isActive: canShare, feedBackEnabled: true, action: shareAction)
-        case .custom:
-            root.viewControllable.sharingView(for: model.id)
-        }
-    }
-    
-    var canShare: Bool {
-        if appGameStateModel.gameModus == .player {
-            let features = sharingFeatureActions.features()
-            switch root.configurable.module {
-            case .photo:
-                return features.photoSharing && appGameStateModel.isGameRunning
-            case .audio:
-                return features.audioSharing && appGameStateModel.isGameRunning
-            case .space:
-                return features.spaceSharing && appGameStateModel.isGameRunning
-            default:
-                return false
-            }
-        } else {
-            return appGameStateModel.isGameRunning
-        }
-    }
-    
-    func shareAction() {
-        Task {
-            if appGameStateModel.gameModus == .master {
-                await networkActions?.shareId(root.gameControllable.share(id: model.id))
-            } else {
-                if let result = try? await root.gameControllable.createGameData(for: model.id) {
-                    networkActions?.game(result, .generic, nil)
-                }
-            }
         }
     }
 }

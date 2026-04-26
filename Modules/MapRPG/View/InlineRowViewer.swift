@@ -31,9 +31,15 @@ struct InlineRowViewer: View, Equatable {
             root.characterRoot.viewController.rowViewer(source: source, destination: destination)
         case .map:
             if let cacheController = root.cacheController {
-                ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)
-                    .environment(root.editController.cacheItemListModel)
-                    .environment(root.listDisplayModel)
+                GameShareView(root: root.rootController, model: model) {
+                    HStack {
+                        ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)
+                            .environment(root.editController.cacheItemListModel)
+                            .environment(root.listDisplayModel)
+                        
+                        AddtionalEntryRow(source: source)
+                    }
+                }
             }
         default:
             EmptyView()

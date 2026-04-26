@@ -22,7 +22,9 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     @State private var entryDataEditable: (any EntryDataEditable)?
     
     var body: some View {
-        nameRow
+        GameShareView(root: root, model: model) {
+            nameRow
+        }
         
         inlineRows
         
@@ -108,4 +110,7 @@ private extension SheetView {
 #endif
     }
 
+    var model: any ItemDataAccessable {
+        root.itemControllable.itemOrEmpty(for: sheetModel.source.itemId)
+    }
 }
