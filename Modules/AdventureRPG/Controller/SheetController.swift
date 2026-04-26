@@ -31,19 +31,18 @@ struct SheetController {
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
-        var entries: [SheetModel] = []
-
+        var inlineEntries: [SheetModel] = []
         if let photoId = model.photoId {
-            entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, isShown: isShown, name: "", description: "", entries: []))
+            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, isShown: isShown, name: "", description: "", entries: []))
         }
-        entries.append(contentsOf: sheetEntries(root: root, itemId: itemId, level: level + 1))
-
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, name: model.name, description: model.description, entries: entries)
+        
+        let isFolded = level > 4
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, entries: entries)
         return sheetModel
     }
 
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
-        guard level < 4 else { return [] }
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
             let name = entry.name

@@ -32,16 +32,16 @@ struct SheetController {
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
-
-        var entries: [SheetModel] = []
-        entries.append(SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, isShown: isShown, name: "", description: "", entries: []))
-        entries.append(contentsOf: sheetEntries(root: root, itemId: itemId, level: level, isShown: isShown))
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, canAdd: false, name: model.name, description: model.description, entries: entries)
+        var inlineEntries: [SheetModel] = []
+        inlineEntries.append(SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .pdf, isShown: isShown, name: "", description: "", entries: []))
+        
+        let isFolded = level > 4
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, canAdd: false, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
 
-    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, isShown: Bool) -> [SheetModel] {
-        guard level < 4 else { return [] }
+    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
             let name = entry.name
@@ -49,15 +49,10 @@ extension SheetController: SheetControllable {
             let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
 
             let inlineEntries: [SheetModel] = [
-                SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .pdf, isShown: isShown, name: "", description: "", entries: [])
+                SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .pdf, name: "", description: "", entries: [])
             ]
 
-            let links = LinkReplaceController.links(for: description)
-            let linkSheets = links.compactMap { link -> SheetModel? in
-                return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
-            }
-
-            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, name: name, description: description, inlineEntries: inlineEntries, entries: linkSheets)
+            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, name: name, description: description, inlineEntries: inlineEntries, entries: [])
         }
     }
 }

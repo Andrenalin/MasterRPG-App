@@ -35,13 +35,13 @@ extension SheetController: SheetControllable {
         if let diceId = model.diceId {
             inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: []))
         }
-        let entries: [SheetModel] = sheetEntries(root: root, itemId: itemId, level: level)
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
+        let isFolded = level > 4
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
     
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
-        guard level < 4 else { return [] }
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
             let name = entry.name
@@ -64,5 +64,5 @@ extension SheetController: SheetControllable {
             
             return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: linkSheets)
         }
-    }
+    }    
 }

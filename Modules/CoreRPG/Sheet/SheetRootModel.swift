@@ -14,27 +14,27 @@ public final class SheetRootModel: Sendable {
         self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true)
         updateFilteredEntries()
     }
-
+    
     private(set)var sheetModel: SheetModel
-
+    
     var searchText: String = "" {
         didSet {
             let wasEmpty = oldValue.isEmpty
             let isEmpty = searchText.isEmpty
-
+            
             // Save state when starting search
             if wasEmpty && !isEmpty {
                 saveIsShownState(sheetModel: sheetModel)
             }
-
+            
             updateFilteredEntries()
         }
     }
-
-
+    
+    
     @ObservationIgnored let linkControllable: any LinkControllable
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
-
+    
     var linkRootController: LinkControllable? {
         rootController(for: .adventure)?.linkControllable
     }
@@ -42,12 +42,12 @@ public final class SheetRootModel: Sendable {
     func rootController(for module: NetworkModules) -> ItemRootController? {
         linkControllable.rootManager.itemRootController(for: module)
     }
-
+    
     func description(for sheetModel: SheetModel) -> String? {
         guard !searchText.isEmpty else { return sheetModel.description }
         return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
     }
-
+    
     
     func linkTextModel(for id: LinkHighlightTextModelId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {
@@ -68,20 +68,13 @@ public final class SheetRootModel: Sendable {
             }
         }
     }
-
+    
     func toggleShown(sheetModel: SheetModel, entryId: UUID, linkId: UUID, module: NetworkModules) -> Bool {
         for entrySheetModel in sheetModel.entries {
             if entrySheetModel.id == entryId {
-                // Check if link already exists in entries
-                if let existingIndex = entrySheetModel.entries.firstIndex(where: { $0.source.itemId == linkId }) {
-                    let existingSheet = entrySheetModel.entries[existingIndex]
-                    // If it has an entryId, it's an entry link - remove it instead of toggling
-                    if existingSheet.source.entryId != nil {
-                        entrySheetModel.entries.remove(at: existingIndex)
-                    } else {
-                        // Module link - just toggle visibility
-                        existingSheet.isShown.toggle()
-                    }
+                if let existingSheet = entrySheetModel.entries.first(where: { $0.source.itemId == linkId }) {
+                    unfold(sheetModel: existingSheet)
+                    existingSheet.isShown.toggle()
                     return true
                 } else {
                     // Link doesn't exist - add it using SheetController
@@ -93,6 +86,7 @@ public final class SheetRootModel: Sendable {
                             level: entrySheetModel.level + 1,
                             isShown: true
                         )
+                        unfold(sheetModel: newSheet)
                         entrySheetModel.entries.append(newSheet)
                         return true
                     }
@@ -106,13 +100,18 @@ public final class SheetRootModel: Sendable {
         return false
     }
     
+    func unfold(sheetModel: SheetModel) {
+        guard let sheetController = linkControllable.rootManager.rootModel(for: sheetModel.source.typeId)?.sheetControllable else { return }
+        sheetController.unfold(root: linkControllable.rootManager, sheetModel: sheetModel)
+    }
+    
     // MARK: - Search
-
+    
     private func saveIsShownState(sheetModel: SheetModel) {
         sheetModel.lastIsShown = sheetModel.isShown
         sheetModel.entries.forEach { saveIsShownState(sheetModel: $0) }
     }
-
+    
     private func updateFilteredEntries() {
         _ = sheetModel.filter(searchText: searchText)
         linkTextModel.values.forEach {

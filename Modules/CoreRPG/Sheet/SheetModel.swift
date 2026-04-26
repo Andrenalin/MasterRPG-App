@@ -4,7 +4,7 @@ import Foundation
 
 @MainActor @Observable
 public final class SheetModel: Identifiable, Sendable {
-    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
+    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, isFolded: Bool = false, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
         self.id = UUID()
         self.source = source
         self.destination = destination ?? source
@@ -30,6 +30,7 @@ public final class SheetModel: Identifiable, Sendable {
     public var isShown: Bool
     public var lastIsShown: Bool = false
     public var isHidden: Bool = false
+    public var isFolded: Bool = false
     
     public var name: String
     public var description: String

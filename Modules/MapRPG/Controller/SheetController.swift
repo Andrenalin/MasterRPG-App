@@ -34,33 +34,31 @@ struct SheetController {
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
-
         var inlineEntries: [SheetModel] = []
         if let photoId = model.photoId {
             inlineEntries = [SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, isShown: isShown, name: "", description: "", entries: [])]
         }
-        let entries = sheetEntries(root: root, itemId: itemId, level: level + 1, isShown: isShown)
-
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
+        let isFolded = level > 4
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
 
-    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, isShown: Bool) -> [SheetModel] {
-        guard level < 4 else { return [] }
+    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.compactMap { entry in
             guard !entry.isHexGrid else { return nil }
-            return sheetEntry(root: root, itemId: itemId, entry: entry, level: level, isShown: isShown)
+            return sheetEntry(root: root, itemId: itemId, entry: entry, level: level)
         }
     }
 
-    @MainActor func sheetEntry(root: RootManager, itemId: UUID, entry: MapEntryModel, level: Int, isShown: Bool) -> SheetModel {
+    @MainActor func sheetEntry(root: RootManager, itemId: UUID, entry: MapEntryModel, level: Int) -> SheetModel {
         let name = entry.name
         let description = entry.content
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
 
         let inlineEntries: [SheetModel] = [
-            SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .photoInline, isShown: isShown, name: "", description: "", entries: [])
+            SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .photoInline, name: "", description: "", entries: [])
         ]
 
         let links = LinkReplaceController.links(for: description)
@@ -77,6 +75,6 @@ extension SheetController: SheetControllable {
             }
         }
 
-        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, name: name, description: description, inlineEntries: inlineEntries, entries: linkSheets)
+        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .item, name: name, description: description, inlineEntries: inlineEntries, entries: linkSheets)
     }
 }

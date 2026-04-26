@@ -67,14 +67,14 @@ extension SheetController: SheetControllable {
         if showHeader, let photoId = model.photoId {
             inlineEntries = [SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: [])]
         }
-        let entries = sheetEntries(root: root, itemId: itemId, level: level + 1)
+        let isFolded = level > 4
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level)
 
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, isFolded: isFolded, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
 
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
-        guard level < 4 else { return [] }
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
             sheetEntry(root: root, itemId: itemId, entry: entry, level: level)
