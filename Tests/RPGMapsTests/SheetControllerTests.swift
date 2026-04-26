@@ -70,7 +70,7 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0, isShown: true)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0)
 
         // All entries should not be hex grid
         for entry in entries {
@@ -89,7 +89,7 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0, isShown: true)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0)
 
         // Each map entry should have photoInline
         for entry in entries {
@@ -105,7 +105,7 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0, isShown: true)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0)
 
         for entry in entries {
             for linkedSheet in entry.entries {
@@ -122,7 +122,7 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0, isShown: true)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0)
 
         for entry in entries {
             for link in entry.entries where link.source.typeId == NetworkModules.map {
@@ -153,10 +153,10 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 25, isShown: true)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 25)
         #expect(entries.isEmpty)
 
-        let entriesBeforeLimit = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 24, isShown: true)
+        let entriesBeforeLimit = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 24)
         #expect(entriesBeforeLimit.count >= 0)
     }
 

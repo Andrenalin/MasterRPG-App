@@ -74,7 +74,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0, isShown: true)
+        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0)
 
         for entry in entries {
             #expect(entry.sheetType == SheetModelType.audioInline)
@@ -90,7 +90,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0, isShown: true)
+        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0)
 
         for entry in entries {
             for linkedSheet in entry.entries {
@@ -125,10 +125,10 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 25, isShown: true)
+        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 25)
         #expect(entries.isEmpty)
 
-        let entriesBeforeLimit = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 24, isShown: true)
+        let entriesBeforeLimit = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 24)
         #expect(entriesBeforeLimit.count >= 0)
     }
 

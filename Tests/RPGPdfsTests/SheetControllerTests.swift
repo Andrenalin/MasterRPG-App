@@ -94,10 +94,10 @@ struct SheetControllerTests {
         let pdfModel = PdfModel(id: itemId, name: "Test", description: "", entries: [entry])
         root.itemController.itemDataModel.itemData[itemId] = pdfModel
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId, level: 25, isShown: true)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId, level: 25)
         #expect(entries.isEmpty)
 
-        let entriesBeforeLimit = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId, level: 24, isShown: true)
+        let entriesBeforeLimit = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId, level: 24)
         #expect(entriesBeforeLimit.count > 0)
     }
 }

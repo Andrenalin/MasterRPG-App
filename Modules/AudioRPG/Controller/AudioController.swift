@@ -194,7 +194,7 @@ private extension AudioController {
         session.initSession()
         model.audioSession = session
 
-        //model.coordinator = AudioListenerCoordinator(playbackCoordinator: model.player.playbackCoordinator)
+        model.coordinator = AudioListenerCoordinator(playbackCoordinator: model.player.playbackCoordinator)
 
         MediaPlayerCoordinator.handleRemoteCommands(using: self)
 
@@ -229,7 +229,7 @@ private extension AudioController {
         model.add(subscriptions: subscriptions)
         model.add(subscriptions: notifications)
         
-        //observeSharedAudio()
+        observeSharedAudio()
         
         addTimeObserver()
     }
@@ -260,28 +260,29 @@ private extension AudioController {
         model.timeObserver = nil
     }
 
-//    @MainActor
-//    func observeSharedAudio() {
-//        guard let coordinator = model.coordinator else { return }
-//        _ = withObservationTracking {
-//            coordinator.sharedAudioId
-//        } onChange: { [weak self] in
-//            Task {
-//                await self?.checkForSharedAudio()
-//            }
-//        }
-//    }
-//    
-//    @MainActor
-//    func checkForSharedAudio() {
-//        guard let audioId = model.coordinator?.sharedAudioId, audioId != model.currentItem?.id else { return }
-//        
-//        let models = self.root.gameController.fetchPlaylist(id: audioId)
-//        Task {
-//            await addAudio(models: models, replace: true, playId: audioId, playMode: .share, shouldPlay: true)
-//        }
-//        observeSharedAudio()
-//    }
+    @MainActor
+    func observeSharedAudio() {
+        guard let coordinator = model.coordinator else { return }
+        _ = withObservationTracking {
+            coordinator.sharedAudioId
+        } onChange: { [weak self] in
+            Task {
+                await self?.checkForSharedAudio()
+            }
+        }
+    }
+    
+    @MainActor
+    func checkForSharedAudio() {
+        guard let audioId = model.coordinator?.sharedAudioId, audioId != model.currentItem?.id else { return }
+        
+        if let model = itemController.itemSync(for: audioId) {
+            Task {
+                await add(audio: [model], replace: true)
+            }
+        }
+        observeSharedAudio()
+    }
 
     @MainActor func resetPlaylist(complete: Bool) {
         guard let currentIndex = model.currentIndex else { return }
