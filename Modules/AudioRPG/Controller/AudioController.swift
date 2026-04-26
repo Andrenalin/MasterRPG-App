@@ -16,6 +16,10 @@ final class AudioController {
     
     let itemController: ItemController
     let model: AudioPlayerModel
+    
+    @MainActor func prewarm() {
+        initAudioSessionEngine()
+    }
 }
 
 // MARK: - Player controls
@@ -171,6 +175,10 @@ extension AudioController {
             model.set(currentId: id)
         }
         await replaceCurrentItem()
+        
+        // Coordinate playback across SharePlay participants
+        await model.coordinator?.coordinatePlayback(of: id)
+        
         play()
     }
     
@@ -195,7 +203,7 @@ private extension AudioController {
         model.audioSession = session
 
         model.coordinator = AudioListenerCoordinator(playbackCoordinator: model.player.playbackCoordinator)
-
+        
         MediaPlayerCoordinator.handleRemoteCommands(using: self)
 
         observePlayback()

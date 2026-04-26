@@ -157,6 +157,10 @@ extension GameController: AudioGameStoreable {
         Task { @MainActor in
             guard let id else { return }
             let list = fetchPlaylist(id: id)
+            
+            // Coordinate with SharePlay BEFORE adding to playlist
+            await audioController.model.coordinator?.coordinatePlayback(of: id)
+            
             await audioController.add(audio: fetchPlaylist(id: id), replace: true)
             audioController.togglePlay(id: list.first?.id)
         }

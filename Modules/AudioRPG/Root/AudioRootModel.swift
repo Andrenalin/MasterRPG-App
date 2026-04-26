@@ -176,7 +176,8 @@ extension AudioRootModel {
 extension AudioRootModel {
     @MainActor
     public var audioCoordinatorPlayback: AudioListenerCoordinator? {
-        audioController.model.coordinator
+        audioController.prewarm()
+        return audioController.model.coordinator
     }
 
     @MainActor

@@ -27,18 +27,31 @@ public final class AudioListenerCoordinator {
         sharedAudioId = audioId
     }
 
-    private final class CoordinatorDelegate: NSObject, AVPlayerPlaybackCoordinatorDelegate {
-        nonisolated(unsafe) private var audioId: UUID?
+    private final class CoordinatorDelegate: NSObject, AVPlayerPlaybackCoordinatorDelegate, @unchecked Sendable {
+        private let lock = NSLock()
+        private var _audioId: UUID?
+        
+        var audioId: UUID? {
+            get {
+                lock.lock()
+                defer { lock.unlock() }
+                return _audioId
+            }
+            set {
+                lock.lock()
+                defer { lock.unlock() }
+                _audioId = newValue
+            }
+        }
 
-        @MainActor
         func setAudioId(_ audioId: UUID?) {
             self.audioId = audioId
         }
         
         func playbackCoordinator(_ coordinator: AVPlayerPlaybackCoordinator,
                                  identifierFor playerItem: AVPlayerItem) -> String {
-            guard let audioId else { return "-1" }
-            return "\(audioId)"
+            guard let audioId else { return UUID().uuidString }
+            return audioId.uuidString
         }
     }
 }
