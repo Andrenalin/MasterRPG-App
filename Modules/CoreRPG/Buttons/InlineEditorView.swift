@@ -2,10 +2,15 @@
 
 import SwiftUI
 
+protocol InlineEditorEntry {
+    var source: ItemRowModel { get }
+    var editType: SheetModelEditType { get }
+}
+
 struct InlineEditorView: View {
     let entryDataEditable: (any EntryDataEditable)
-    let model: TableFirstSheetModel
-    let entry: SheetFirstModel
+    let updateHandler: (String) -> Void
+    let entry: any InlineEditorEntry
     
     @State private var selectedValue: Bool = false
     @State private var textValue: String = ""
@@ -56,7 +61,7 @@ private extension InlineEditorView {
     func updateValue() {
         withAnimation {
             textValue <=> entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId)
-            model.updateParent()
+            updateHandler(textValue)
         }
     }
     

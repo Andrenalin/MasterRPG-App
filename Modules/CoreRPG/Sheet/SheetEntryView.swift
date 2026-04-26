@@ -26,6 +26,8 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             
             mainRow
             
+            inlineEditorRow
+            
             afterInline
         }
         .contentShape(.rect)
@@ -104,9 +106,19 @@ private extension SheetEntryView {
         }
     }
     
+    @ViewBuilder var inlineEditorRow: some View {
+        if (entryModel.isEditing && entryModel.editType != .none), let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
+            // Show inline editor when in edit mode
+            InlineEditorView(entryDataEditable: entryDataEditable, updateHandler: { text in
+                rootModel.updateSheetModel(entryModel: entryModel, updatedText: text)
+            }, entry: entryModel)
+        }
+    }
+    
     func editButton(onlyIcon: Bool) -> some View {
         Button {
             withAnimation {
+                entryModel.isEditing.toggle()
 //                if isEditor {
 //                    model.setCurrentItem(source: entry.source, entryId: entry.source.entryId)
 //                } else {
@@ -121,10 +133,10 @@ private extension SheetEntryView {
                     .opacity(0)
                     .imageScale(.large)
                     .overlay {
-//                        Image(systemName: model.isEditing(entry: entry) ? "square.and.pencil" : "pencil")
-//                            .imageScale(.large)
-//                            .foregroundStyle(.tint, .foreground, .tint)
-//                            .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                        Image(systemName: entryModel.isEditing ? "square.and.pencil" : "pencil")
+                            .imageScale(.large)
+                            .foregroundStyle(.tint, .foreground, .tint)
+                            .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
                     }
             }
             .applyIf(onlyIcon) {

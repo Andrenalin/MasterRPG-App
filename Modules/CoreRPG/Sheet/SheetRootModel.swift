@@ -48,6 +48,22 @@ public final class SheetRootModel: Sendable {
         return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
     }
     
+    /// Get the correct EntryDataEditable for a source (handles cross-module)
+    func entryDataEditable(for source: ItemRowModel) -> (any EntryDataEditable)? {
+        editControllable(for: source) as? (any EntryDataEditable)
+    }
+    
+    /// Get the correct EditControllable for a source (handles cross-module)
+    func editControllable(for source: ItemRowModel) -> (any EditControllable)? {
+        rootController(for: source.typeId)?.editControllable
+    }
+    
+    /// Update the sheet model after inline edits
+    func updateSheetModel(entryModel: SheetModel, updatedText: String) {
+        guard let model = linkTextModel[.entry(entryModel.id)] else { return }
+        entryModel.description = updatedText
+        model.reset(text: entryModel.content)
+    }
     
     func linkTextModel(for id: LinkHighlightTextModelId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {

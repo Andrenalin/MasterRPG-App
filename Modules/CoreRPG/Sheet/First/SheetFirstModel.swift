@@ -49,6 +49,10 @@ public struct SheetFirstModel: Equatable, Hashable, Identifiable, Sendable {
     }
 }
 
+extension SheetFirstModel: InlineEditorEntry {
+    // Already has source and editType properties
+}
+
 public enum SheetFirstModelType: Equatable, Hashable, Sendable {
     case group
     case item

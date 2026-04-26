@@ -39,12 +39,23 @@ public final class SheetModel: Identifiable, Sendable {
     public var inlineEntries: [SheetModel]
     public var entries: [SheetModel]
         
+    // MARK: Editor
+    public let editType: SheetModelEditType
+    public var isEditing: Bool = false
     
     public let canAdd: Bool
-    public let editType: SheetModelEditType
     public let showHeader: Bool
 
-    
+    var content: String {
+        if description.isEmpty {
+            name
+        } else if name.isEmpty {
+            description
+        } else {
+            "**" + name + "**: " + description
+        }
+    }
+
     func filter(searchText: String) -> Bool {
         var hasResult: Bool = false
         entries.forEach {
@@ -93,3 +104,7 @@ public enum SheetModelType: Equatable, Hashable, Sendable {
     case weather
     case space
 }
+extension SheetModel: InlineEditorEntry {
+    // Already has source and editType properties
+}
+

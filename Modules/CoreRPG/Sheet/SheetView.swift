@@ -19,8 +19,6 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     
     @Environment(\.colorScheme) private var colorScheme
     
-    @State private var entryDataEditable: (any EntryDataEditable)?
-    
     var body: some View {
         GameShareView(root: root, model: model) {
             nameRow

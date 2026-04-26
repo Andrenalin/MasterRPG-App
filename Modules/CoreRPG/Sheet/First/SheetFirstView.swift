@@ -30,7 +30,7 @@ public struct SheetFirstView<LinkType: LinkDataTransferable>: View {
                 .listRowBackground(rowColor(for: model.sheetModel.level))
                 .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
         } else if let entryDataEditable, model.sheetModel.sheetType == .edit {
-            InlineEditorView(entryDataEditable: entryDataEditable, model: model, entry: model.sheetModel)
+            InlineEditorView(entryDataEditable: entryDataEditable, updateHandler: { _ in model.updateParent() }, entry: model.sheetModel)
         } else {
             if model.sheetModel.showHeader || isEditor {
                 HStack {
