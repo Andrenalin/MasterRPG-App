@@ -10,7 +10,9 @@ public protocol SheetControllable: Sendable {
 }
 
 public extension SheetControllable {
-    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] { [] }
+    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
+        []
+    }
     
     @MainActor func unfold(root: RootManager, sheetModel: SheetModel) {
         guard sheetModel.isFolded else { return }

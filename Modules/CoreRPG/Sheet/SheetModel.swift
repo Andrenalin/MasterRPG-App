@@ -11,6 +11,7 @@ public final class SheetModel: Identifiable, Sendable {
         self.level = level
         self.sheetType = type
         self.isShown = isShown
+        self.isFolded = isFolded
         self.name = name
         self.description = description
         self.inlineEntries = inlineEntries
