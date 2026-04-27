@@ -8,7 +8,7 @@ struct SheetController {
 }
 
 extension SheetController: SheetControllable {
-    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .dice, isShown: isShown, name: model.name, description: model.description, entries: [])
         return sheetModel

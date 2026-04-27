@@ -29,20 +29,24 @@ struct SheetController {
 }
 
 extension SheetController: SheetControllable {
-    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
         if let photoId = model.photoId {
             inlineEntries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, isShown: isShown, name: "", description: "", entries: []))
         }
-        
-        let isFolded = level > 4
-        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level)
+
+        let isFolded = moduleDepth >= 3
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
 
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
+        sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: 0)
+    }
+
+    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
             let name = entry.name
@@ -54,12 +58,12 @@ extension SheetController: SheetControllable {
                 switch link.module {
                 case .adventure:
                     if link.entryId == nil {
-                        return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
+                        return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1)
                     } else {
                         return nil
                     }
                 default:
-                    return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
+                    return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0)
                 }
             }
 

@@ -11,7 +11,7 @@ enum LinkHighlightTextModelId: Hashable {
 public final class SheetRootModel: Sendable {
     init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID) {
         self.linkControllable = linkControllable
-        self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true)
+        self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0)
         updateFilteredEntries()
     }
     
@@ -100,7 +100,8 @@ public final class SheetRootModel: Sendable {
                             itemId: linkId,
                             destination: entrySheetModel.destination,
                             level: entrySheetModel.level + 1,
-                            isShown: true
+                            isShown: true,
+                            moduleDepth: 0
                         )
                         unfold(sheetModel: newSheet)
                         entrySheetModel.entries.append(newSheet)

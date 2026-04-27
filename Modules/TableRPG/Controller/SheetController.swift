@@ -29,31 +29,36 @@ struct SheetController {
 }
 
 extension SheetController: SheetControllable {
-    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
         if let diceId = model.diceId {
             inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: []))
         }
-        let isFolded = level > 4
-        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level)
+
+        let isFolded = moduleDepth >= 2
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
-    
+
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
+        sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: 0)
+    }
+
+    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
             let name = entry.name
             let description = entry.content
             let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
-            
+
             let links = LinkReplaceController.links(for: entry.content)
             let linkSheets = links.compactMap { link -> SheetModel? in
                 switch link.module {
                 case .table:
                     if link.entryId == nil {
-                        return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
+                        return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1)
                     } else {
                         return nil
                     }
@@ -61,8 +66,8 @@ extension SheetController: SheetControllable {
                     return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
                 }
             }
-            
+
             return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: linkSheets)
         }
-    }    
+    }
 }
