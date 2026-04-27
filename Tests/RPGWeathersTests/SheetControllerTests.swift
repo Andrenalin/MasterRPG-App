@@ -112,9 +112,10 @@ struct SheetControllerTests {
 
         let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
 
-        // Weather sheets have no sub-entries
+        // Weather sheets have inline weather widget but no sub-entries
         #expect(model.entries.isEmpty)
-        #expect(model.inlineEntries.isEmpty)
+        #expect(model.inlineEntries.count == 1)
+        #expect(model.inlineEntries.first?.sheetType == SheetModelType.weather)
     }
 }
 #endif

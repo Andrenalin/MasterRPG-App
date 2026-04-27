@@ -39,7 +39,7 @@ struct SheetControllerTests {
         let model = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 0, isShown: true)
 
         if item.photoId != nil {
-            let photoEntry = model.entries.first(where: { $0.sheetType == SheetModelType.photo })
+            let photoEntry = model.inlineEntries.first(where: { $0.sheetType == SheetModelType.photo })
             #expect(photoEntry != nil)
             #expect(photoEntry?.level == 0)
         }
@@ -121,11 +121,13 @@ struct SheetControllerTests {
         try #require(itemId != nil)
         try #require(root.rootManager != nil)
 
-        let entries = sut.sheetEntries(root: root.rootManager!, itemId: itemId!, level: 25)
-        #expect(entries.isEmpty)
+        // Test isFolded at level > 4
+        let model = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 5, isShown: true)
+        #expect(model.isFolded == true)
+        #expect(model.entries.isEmpty)
 
-        let entriesBeforeLimit = sut.sheetEntries(root: root.rootManager!, itemId: itemId!, level: 24)
-        #expect(entriesBeforeLimit.count >= 0)
+        let modelNotFolded = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 4, isShown: true)
+        #expect(modelNotFolded.isFolded == false)
     }
 
     @Test func adventureSheetDestination() async throws {

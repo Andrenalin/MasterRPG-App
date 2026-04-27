@@ -128,12 +128,13 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
-        // Test level limit at 25
-        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 25)
-        #expect(entries.isEmpty)
+        // Test isFolded at level > 4
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 5, isShown: true)
+        #expect(model.isFolded == true)
+        #expect(model.entries.isEmpty)
 
-        let entriesBeforeLimit = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 24)
-        #expect(entriesBeforeLimit.count >= 0)
+        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 4, isShown: true)
+        #expect(modelNotFolded.isFolded == false)
     }
 
     @Test func tableSheetDestination() async throws {

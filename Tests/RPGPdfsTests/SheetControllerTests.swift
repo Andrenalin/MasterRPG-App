@@ -41,9 +41,9 @@ struct SheetControllerTests {
 
         let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
 
-        // First entry should be photo placeholder
-        #expect(model.entries.count >= 1)
-        #expect(model.entries.first?.sheetType == SheetModelType.photo)
+        // Should have PDF widget in inlineEntries
+        #expect(model.inlineEntries.count == 1)
+        #expect(model.inlineEntries.first?.sheetType == SheetModelType.pdf)
     }
 
     @Test func pdfSheetEntries() async throws {
@@ -58,8 +58,10 @@ struct SheetControllerTests {
 
         let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
 
-        // Should have photo + entries
-        #expect(model.entries.count >= 2)
+        // Should have PDF widget in inlineEntries and page entries in entries
+        #expect(model.inlineEntries.count == 1)
+        #expect(model.inlineEntries.first?.sheetType == SheetModelType.pdf)
+        #expect(model.entries.count == 1)
 
         let pdfEntry = model.entries.first(where: { $0.name == "Page 1" })
         #expect(pdfEntry != nil)
@@ -94,11 +96,13 @@ struct SheetControllerTests {
         let pdfModel = PdfModel(id: itemId, name: "Test", description: "", entries: [entry])
         root.itemController.itemDataModel.itemData[itemId] = pdfModel
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId, level: 25)
-        #expect(entries.isEmpty)
+        // Test isFolded at level > 4
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 5, isShown: true)
+        #expect(model.isFolded == true)
+        #expect(model.entries.isEmpty)
 
-        let entriesBeforeLimit = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId, level: 24)
-        #expect(entriesBeforeLimit.count > 0)
+        let modelNotFolded = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 4, isShown: true)
+        #expect(modelNotFolded.isFolded == false)
     }
 }
 #endif

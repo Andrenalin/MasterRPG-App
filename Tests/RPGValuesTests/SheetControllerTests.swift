@@ -95,10 +95,10 @@ struct SheetControllerTests {
         let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
 
         #expect(model.entries.count > 0)
-        // Each entry should have proper source
+        // Each entry should have proper source and be at the same level
         for entry in model.entries where entry.sheetType != SheetModelType.photo {
             #expect(entry.source.entryId != nil)
-            #expect(entry.level == 1)
+            #expect(entry.level == 0)
         }
     }
 
@@ -213,12 +213,13 @@ struct SheetControllerTests {
             weatherRoot: root
         )
 
-        // Test level limit at 25
-        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 25)
-        #expect(entries.isEmpty)
+        // Test isFolded at level > 4
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 5, isShown: true)
+        #expect(model.isFolded == true)
+        #expect(model.entries.isEmpty)
 
-        let entriesBeforeLimit = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 24)
-        #expect(entriesBeforeLimit.count > 0)
+        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 4, isShown: true)
+        #expect(modelNotFolded.isFolded == false)
     }
 }
 #endif

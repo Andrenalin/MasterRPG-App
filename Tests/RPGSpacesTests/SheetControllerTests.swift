@@ -62,9 +62,10 @@ struct SheetControllerTests {
 
         let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: Optional<ItemRowModel>.none, level: 0, isShown: true)
 
-        // Space sheets have no sub-entries
+        // Space sheets have inline space widget but no sub-entries
         #expect(model.entries.isEmpty)
-        #expect(model.inlineEntries.isEmpty)
+        #expect(model.inlineEntries.count == 1)
+        #expect(model.inlineEntries.first?.sheetType == SheetModelType.space)
     }
 }
 #endif
