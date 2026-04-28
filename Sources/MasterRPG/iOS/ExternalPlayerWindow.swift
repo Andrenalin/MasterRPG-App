@@ -12,6 +12,7 @@ struct ExternalPlayerWindow: View {
         VStack {
             if appModel.appNavigationModel.initialRouteType == .ready {
                 ExternalGameRootView(root: appModel.gameRoot)
+                    .environmentSetUp(appModel)
             } else {
                 Color.blue
                     .overlay {
