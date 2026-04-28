@@ -23,7 +23,7 @@ public final class SheetModel: Identifiable, Sendable {
     }
 
     public let id: UUID
-    public let source: ItemRowModel
+    public var source: ItemRowModel
     public let destination: ItemRowModel
     public let level: Int
 
@@ -42,6 +42,7 @@ public final class SheetModel: Identifiable, Sendable {
     // MARK: Editor
     public let editType: SheetModelEditType
     public var isEditing: Bool = false
+    public var hasChanged: Bool = false
     
     public let canAdd: Bool
     public let showHeader: Bool

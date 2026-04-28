@@ -81,4 +81,57 @@ extension SheetController: SheetControllable {
 
         return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .item, name: name, description: description, inlineEntries: inlineEntries, entries: linkSheets)
     }
+
+    @MainActor private func createPhotoInline(photoId: UUID, itemId: UUID, level: Int, isShown: Bool) -> SheetModel {
+        SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, isShown: isShown, name: "", description: "", entries: [])
+    }
+
+    @MainActor func update(root: RootManager, sheetModel: SheetModel) {
+        let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+
+        unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
+            sheetModel.hasChanged = changed
+        }
+        unequalSet(lhs: &sheetModel.description, rhs: model.description) { changed in
+            sheetModel.hasChanged = sheetModel.hasChanged || changed
+        }
+
+        // Update inline entries (photo)
+        if let photoId = model.photoId {
+            let photoSource = ItemRowModel(itemId: photoId, typeId: .photo)
+            let photoSheetModel = sheetModel.inlineEntries.first ?? createPhotoInline(photoId: photoId, itemId: model.id, level: sheetModel.level, isShown: sheetModel.isShown)
+            photoSheetModel.source = photoSource
+            sheetModel.inlineEntries = [photoSheetModel]
+        } else {
+            sheetModel.inlineEntries = []
+        }
+
+        guard !sheetModel.isFolded else { return }
+        let entryIds = model.entries.filter { !$0.isHexGrid }.map { $0.id }
+
+        // Remove deleted entries
+        sheetModel.entries.removeAll { entry in
+            guard let entryId = entry.source.entryId else { return false }
+            return !entryIds.contains(entryId)
+        }
+
+        var updatedEntries: [SheetModel] = []
+        for entry in model.entries.filter({ !$0.isHexGrid }) {
+            if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
+                unequalSet(lhs: &existingSheetModel.name, rhs: entry.name) { changed in
+                    existingSheetModel.hasChanged = changed
+                }
+                unequalSet(lhs: &existingSheetModel.description, rhs: entry.content) { changed in
+                    existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
+                }
+                existingSheetModel.entries.forEach { subSheetModel in
+                    root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel)
+                }
+                updatedEntries.append(existingSheetModel)
+            } else {
+                updatedEntries.append(sheetEntry(root: root, itemId: model.id, entry: entry, level: sheetModel.level, moduleDepth: 0))
+            }
+        }
+        sheetModel.entries = updatedEntries
+    }
 }

@@ -133,4 +133,92 @@ extension SheetController: SheetControllable {
         let result = SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: sheetType, editType: entry.editType, name: name, description: description, inlineEntries: inlineEntries, entries: linkSheets)
         return result
     }
+
+    @MainActor private func createPhotoInline(photoId: UUID, itemId: UUID, level: Int) -> SheetModel {
+        SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: [])
+    }
+
+    @MainActor private func createDiceInline(diceId: UUID, itemId: UUID, entryId: UUID, level: Int) -> SheetModel {
+        SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: [])
+    }
+
+    @MainActor func update(root: RootManager, sheetModel: SheetModel) {
+        let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+
+        unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
+            sheetModel.hasChanged = changed
+        }
+        unequalSet(lhs: &sheetModel.description, rhs: model.description) { changed in
+            sheetModel.hasChanged = sheetModel.hasChanged || changed
+        }
+
+        // Update inline entries (photo)
+        if model.displayState == 0 {
+            if let photoId = model.photoId {
+                let photoSource = ItemRowModel(itemId: photoId, typeId: .photo)
+                let photoSheetModel = sheetModel.inlineEntries.first ?? createPhotoInline(photoId: photoId, itemId: model.id, level: sheetModel.level)
+                photoSheetModel.source = photoSource
+                sheetModel.inlineEntries = [photoSheetModel]
+            } else {
+                sheetModel.inlineEntries = []
+            }
+        } else {
+            sheetModel.inlineEntries = []
+        }
+
+        guard !sheetModel.isFolded else { return }
+        let entryIds = model.entries.map { $0.id }
+
+        // Remove deleted entries
+        sheetModel.entries.removeAll { entry in
+            guard let entryId = entry.source.entryId else { return false }
+            return !entryIds.contains(entryId)
+        }
+
+        var updatedEntries: [SheetModel] = []
+        for itemEntry in model.entries {
+            if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == itemEntry.id }) {
+                var name = itemEntry.name
+                var description = ""
+
+                if let valueId = itemEntry.valueId {
+                    let value = itemController.itemOrEmpty(for: valueId)
+                    name = ""
+                    description = value.url(linkNumber: 0)
+                } else {
+                    description = itemEntry.value
+                    if let valueCalculate = linkController.calculate(entry: itemEntry), description != valueCalculate {
+                        description += " = \(valueCalculate)"
+                    }
+                }
+
+                unequalSet(lhs: &existingSheetModel.name, rhs: name) { changed in
+                    existingSheetModel.hasChanged = changed
+                }
+                unequalSet(lhs: &existingSheetModel.description, rhs: description) { changed in
+                    existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
+                }
+
+                // Update inline entries (dice)
+                if let diceId = itemEntry.diceId {
+                    let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
+                    let diceSheetModel = existingSheetModel.inlineEntries.first ?? createDiceInline(diceId: diceId, itemId: model.id, entryId: itemEntry.id, level: sheetModel.level)
+                    diceSheetModel.source = diceSource
+                    existingSheetModel.inlineEntries = [diceSheetModel]
+                } else {
+                    existingSheetModel.inlineEntries = []
+                }
+
+                // Update linked value sheets and other nested sheets
+                existingSheetModel.entries.forEach { subSheetModel in
+                    root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel)
+                }
+
+                updatedEntries.append(existingSheetModel)
+            } else {
+                updatedEntries.append(sheetEntry(root: root, itemId: model.id, entry: itemEntry, level: sheetModel.level + 1))
+            }
+        }
+        sheetModel.entries = updatedEntries
+    }
 }

@@ -14,4 +14,15 @@ extension SheetController: SheetControllable {
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .photo, isShown: isShown, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: [])
         return sheetModel
     }
+
+    @MainActor func update(root: RootManager, sheetModel: SheetModel) {
+        let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+
+        unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
+            sheetModel.hasChanged = changed
+        }
+        unequalSet(lhs: &sheetModel.description, rhs: model.description) { changed in
+            sheetModel.hasChanged = sheetModel.hasChanged || changed
+        }
+    }
 }

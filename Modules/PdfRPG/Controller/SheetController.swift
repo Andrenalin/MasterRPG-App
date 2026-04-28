@@ -59,4 +59,52 @@ extension SheetController: SheetControllable {
             return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, name: name, description: description, inlineEntries: inlineEntries, entries: [])
         }
     }
+
+    @MainActor private func sheetEntry(itemId: UUID, entry: PdfEntryModel, level: Int) -> SheetModel {
+        let name = entry.name
+        let description = entry.content
+        let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
+
+        let inlineEntries: [SheetModel] = [
+            SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .pdf, name: "", description: "", entries: [])
+        ]
+
+        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, name: name, description: description, inlineEntries: inlineEntries, entries: [])
+    }
+
+    @MainActor func update(root: RootManager, sheetModel: SheetModel) {
+        let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+
+        unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
+            sheetModel.hasChanged = changed
+        }
+        unequalSet(lhs: &sheetModel.description, rhs: model.description) { changed in
+            sheetModel.hasChanged = sheetModel.hasChanged || changed
+        }
+
+        guard !sheetModel.isFolded else { return }
+        let entryIds = model.entries.map { $0.id }
+
+        // Remove deleted entries
+        sheetModel.entries.removeAll { entry in
+            guard let entryId = entry.source.entryId else { return false }
+            return !entryIds.contains(entryId)
+        }
+
+        var updatedEntries: [SheetModel] = []
+        for entry in model.entries {
+            if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
+                unequalSet(lhs: &existingSheetModel.name, rhs: entry.name) { changed in
+                    existingSheetModel.hasChanged = changed
+                }
+                unequalSet(lhs: &existingSheetModel.description, rhs: entry.content) { changed in
+                    existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
+                }
+                updatedEntries.append(existingSheetModel)
+            } else {
+                updatedEntries.append(sheetEntry(itemId: model.id, entry: entry, level: sheetModel.level))
+            }
+        }
+        sheetModel.entries = updatedEntries
+    }
 }

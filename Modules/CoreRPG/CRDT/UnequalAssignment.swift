@@ -18,3 +18,12 @@ public func unequalSet<T: Equatable>(lhs: inout T, rhs: T, apply: @escaping () -
         apply()
     }
 }
+
+public func unequalSet<T: Equatable>(lhs: inout T, rhs: T, apply: @escaping (Bool) -> Void) {
+    if lhs != rhs {
+        lhs = rhs
+        apply(true)
+    } else {
+        apply(false)
+    }
+}
