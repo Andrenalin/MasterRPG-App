@@ -16,7 +16,6 @@ public final class SheetRootModel: Sendable {
     }
     
     private(set)var sheetModel: SheetModel
-    
     var searchText: String = "" {
         didSet {
             let wasEmpty = oldValue.isEmpty
@@ -31,38 +30,30 @@ public final class SheetRootModel: Sendable {
         }
     }
     
-    
     @ObservationIgnored let linkControllable: any LinkControllable
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
-    
-    var linkRootController: LinkControllable? {
-        rootController(for: .adventure)?.linkControllable
-    }
     
     func rootController(for module: NetworkModules) -> ItemRootController? {
         linkControllable.rootManager.itemRootController(for: module)
     }
-    
-    func description(for sheetModel: SheetModel) -> String? {
-        guard !searchText.isEmpty else { return sheetModel.description }
-        return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
+
+    var linkRootController: LinkControllable? {
+        rootController(for: .adventure)?.linkControllable
     }
-    
+        
+    /// Get the correct EditControllable for a source (handles cross-module)
+    func editControllable(for source: ItemRowModel) -> (any EditControllable)? {
+        rootController(for: source.typeId)?.editControllable
+    }
+
     /// Get the correct EntryDataEditable for a source (handles cross-module)
     func entryDataEditable(for source: ItemRowModel) -> (any EntryDataEditable)? {
         editControllable(for: source) as? (any EntryDataEditable)
     }
     
-    /// Get the correct EditControllable for a source (handles cross-module)
-    func editControllable(for source: ItemRowModel) -> (any EditControllable)? {
-        rootController(for: source.typeId)?.editControllable
-    }
-    
-    /// Update the sheet model after inline edits
-    func updateSheetModel(entryModel: SheetModel, updatedText: String) {
-        guard let model = linkTextModel[.entry(entryModel.id)] else { return }
-        entryModel.description = updatedText
-        model.reset(text: entryModel.content)
+    func description(for sheetModel: SheetModel) -> String? {
+        guard !searchText.isEmpty else { return sheetModel.description }
+        return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
     }
     
     func linkTextModel(for id: LinkHighlightTextModelId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
@@ -135,4 +126,46 @@ public final class SheetRootModel: Sendable {
             $0.reset(highlightedText: searchText)
         }
     }
+    
+    // MARK: - Editor
+    
+    /// Update the sheet model after inline edits
+    func updateSheetModel(entryModel: SheetModel, updatedText: String) {
+        guard let model = linkTextModel[.entry(entryModel.id)] else { return }
+        entryModel.description = updatedText
+        model.reset(text: entryModel.content)
+    }
+    
+    func addNewEntry(in sheetModel: SheetModel) -> UUID? {
+        guard let entryId = addNewEntry(to: sheetModel.source) else { return nil }
+        setCurrentItem(source: sheetModel.source, entryId: entryId)
+        setCurrentEntryId(source: sheetModel.source, entryId: entryId)
+        let rootManager = linkControllable.rootManager
+        rootController(for: sheetModel.source.typeId)?.sheetControllable.unfold(root: rootManager, sheetModel: sheetModel)
+        return entryId
+    }
+    
+    func setScrollEntryId(source: ItemRowModel, entryId: UUID?) {
+        guard let editController = editControllable(for: source) else { return }
+        editController.editorModel.scrollEntryId = entryId
+    }
+
+    private func addNewEntry(to source: ItemRowModel) -> UUID? {
+        guard let editable = entryDataEditable(for: source) else { return nil }
+        return editable.addNewEntry(itemId: source.itemId)
+    }
+
+    /// Set the current item in the edit controller
+    private func setCurrentItem(source: ItemRowModel, entryId: UUID?) {
+        guard let editController = editControllable(for: source) else { return }
+        editController.setCurrentItem(to: ItemRowTreeModel(itemId: source.itemId, entryId: entryId, typeId: source.typeId))
+    }
+
+    /// Set the current entry ID in the editor model
+    private func setCurrentEntryId(source: ItemRowModel, entryId: UUID?) {
+        guard let editController = editControllable(for: source) else { return }
+        editController.editorModel.currentEntryId = entryId
+    }
+
+
 }

@@ -36,14 +36,20 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
 
 private extension SheetView {
     var nameRow: some View {
-        LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.id), text: sheetModel.name))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .font(.title)
-            .padding(4)
-            .background {
-                RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
+        HStack {
+            if isEditor && sheetModel.canAdd {
+                plusButton
             }
-            .padding(2)
+
+            LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.id), text: sheetModel.name))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(.title)
+                .padding(4)
+                .background {
+                    RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
+                }
+                .padding(2)
+        }
     }
     
     var inlineRows: some View {
@@ -110,5 +116,37 @@ private extension SheetView {
 
     var model: any ItemDataAccessable {
         root.itemControllable.itemOrEmpty(for: sheetModel.source.itemId)
+    }
+    
+    var entryDataEditable: (any EntryDataEditable)? {
+        rootModel.entryDataEditable(for: sheetModel.source)
+    }
+    
+    @ViewBuilder var plusButton: some View {
+        if entryDataEditable != nil {
+            Button(action: addNewEntry) {
+                Label {
+                    Text("Add Entry", bundle: .module)
+                } icon: {
+                    Image(systemName: "note.text.badge.plus")
+                        .imageScale(.large)
+                        .foregroundStyle(.foreground, .tint)
+                }
+                .labelStyle(.iconOnly)
+            }
+            .borderLessTVBottonStyle()
+            .padding(4)
+            .contentShape(.circle)
+            .glassEffectAll()
+        }
+    }
+    
+    func addNewEntry() {
+        var entryId: UUID?
+        withAnimation {
+            entryId = rootModel.addNewEntry(in: sheetModel)
+        } completion: {
+            rootModel.setScrollEntryId(source: sheetModel.source, entryId: entryId)
+        }
     }
 }
