@@ -36,7 +36,9 @@ extension SheetController: SheetControllable {
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
         if let photoId = model.photoId {
-            inlineEntries = [SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, isShown: isShown, name: "", description: "", entries: [])]
+            inlineEntries = [
+                createPhotoInline(photoId: photoId, itemId: itemId, level: level, isShown: isShown)
+            ]
         }
         let isFolded = moduleDepth >= 2
         let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
@@ -52,11 +54,11 @@ extension SheetController: SheetControllable {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.compactMap { entry in
             guard !entry.isHexGrid else { return nil }
-            return sheetEntry(root: root, itemId: itemId, entry: entry, level: level, moduleDepth: moduleDepth)
+            return sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
         }
     }
 
-    @MainActor private func sheetEntry(root: RootManager, itemId: UUID, entry: MapEntryModel, level: Int, moduleDepth: Int) -> SheetModel {
+    @MainActor private func sheet(entry: MapEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> SheetModel {
         let name = entry.name
         let description = entry.content
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
@@ -79,7 +81,7 @@ extension SheetController: SheetControllable {
             }
         }
 
-        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .item, name: name, description: description, inlineEntries: inlineEntries, entries: linkSheets)
+        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, inlineEntries: inlineEntries, entries: linkSheets)
     }
 
     @MainActor private func createPhotoInline(photoId: UUID, itemId: UUID, level: Int, isShown: Bool) -> SheetModel {
@@ -129,7 +131,7 @@ extension SheetController: SheetControllable {
                 }
                 updatedEntries.append(existingSheetModel)
             } else {
-                updatedEntries.append(sheetEntry(root: root, itemId: model.id, entry: entry, level: sheetModel.level, moduleDepth: 0))
+                updatedEntries.append(sheet(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0))
             }
         }
         sheetModel.entries = updatedEntries

@@ -22,7 +22,7 @@ public extension SheetControllable {
     }
 
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool) -> SheetModel {
-        sheet(root: root, itemId: itemId, destination: destination, level: level, isShown: isShown, moduleDepth: 0)
+        sheet(root: root, itemId: itemId, destination: destination, level: level, isShown: isShown, moduleDepth: -3)
     }
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
         []

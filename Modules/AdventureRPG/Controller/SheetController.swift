@@ -33,7 +33,7 @@ extension SheetController: SheetControllable {
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
         if let photoId = model.photoId {
-            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, isShown: isShown, name: "", description: "", entries: []))
+            inlineEntries.append(createPhotoInline(photoId: photoId, itemId: itemId, level: level, isShown: isShown))
         }
 
         let isFolded = moduleDepth >= 3
@@ -49,11 +49,11 @@ extension SheetController: SheetControllable {
     @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
-            sheetEntry(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
+            sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
         }
     }
 
-    @MainActor private func sheetEntry(entry: AdventureEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> SheetModel {
+    @MainActor private func sheet(entry: AdventureEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> SheetModel {
         let name = entry.name
         let description = entry.content
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
@@ -122,7 +122,7 @@ extension SheetController: SheetControllable {
                 }
                 updatedEntries.append(existingSheetModel)
             } else {
-                updatedEntries.append(sheetEntry(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0))
+                updatedEntries.append(sheet(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0))
             }
         }
         sheetModel.entries = updatedEntries

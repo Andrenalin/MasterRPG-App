@@ -67,7 +67,7 @@ extension SheetController: SheetControllable {
         if showHeader, let photoId = model.photoId {
             inlineEntries = [SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: [])]
         }
-        let isFolded = moduleDepth >= 2
+        let isFolded = moduleDepth >= 1
         let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
 
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, isFolded: isFolded, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
@@ -81,15 +81,11 @@ extension SheetController: SheetControllable {
     @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
-            sheetEntry(root: root, itemId: itemId, entry: entry, level: level, moduleDepth: moduleDepth)
+            sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
         }
     }
 
-    @MainActor func sheetEntry(root: RootManager, itemId: UUID, entry: ValueEntryModel, level: Int) -> SheetModel {
-        sheetEntry(root: root, itemId: itemId, entry: entry, level: level, moduleDepth: 0)
-    }
-
-    @MainActor private func sheetEntry(root: RootManager, itemId: UUID, entry: ValueEntryModel, level: Int, moduleDepth: Int) -> SheetModel {
+    @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> SheetModel {
         var name = entry.name
         var description = ""
         var sheetType: SheetModelType = .item
@@ -103,7 +99,7 @@ extension SheetController: SheetControllable {
             name = ""
             description = value.url(linkNumber: 0)
             sheetType = .group
-            linkSheets = [sheet(root: root, itemId: valueId, destination: destination, level: level + 1, isShown: true, moduleDepth: moduleDepth + 1)]
+            linkSheets = [sheet(root: root, itemId: valueId, destination: destination, level: level + 1, isShown: true, moduleDepth: moduleDepth)]
         } else {
             description = entry.value
             if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {
@@ -119,7 +115,7 @@ extension SheetController: SheetControllable {
         let links = LinkReplaceController.links(for: description)
         linkSheets.append(contentsOf: links.compactMap { link -> SheetModel? in
             switch link.module {
-            case .value:
+            case .value: // this should not happen
                 if link.entryId == nil {
                     return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1)
                 } else {
@@ -216,7 +212,7 @@ extension SheetController: SheetControllable {
 
                 updatedEntries.append(existingSheetModel)
             } else {
-                updatedEntries.append(sheetEntry(root: root, itemId: model.id, entry: itemEntry, level: sheetModel.level + 1))
+                updatedEntries.append(sheet(entry: itemEntry, root: root, itemId: model.id, level: sheetModel.level + 1, moduleDepth: 0))
             }
         }
         sheetModel.entries = updatedEntries

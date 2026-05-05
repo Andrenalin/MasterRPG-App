@@ -36,7 +36,7 @@ extension SheetController: SheetControllable {
             inlineEntries.append(createDiceInline(diceId: diceId, itemId: itemId, level: level))
         }
 
-        let isFolded = moduleDepth >= 2
+        let isFolded = moduleDepth >= 1
         let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
@@ -68,7 +68,7 @@ extension SheetController: SheetControllable {
                     return nil
                 }
             default:
-                return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false)
+                return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0)
             }
         }
 
