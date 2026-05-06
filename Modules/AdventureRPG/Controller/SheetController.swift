@@ -13,7 +13,7 @@ struct SheetController {
     
     @MainActor func sheet(for itemId: UUID, level: Int = 0) -> SheetFirstModel {
         let startTime = ContinuousClock.now
-        Logger.sheetController.info("🚀 [SheetFirst] Starting sheet creation for itemId: \(itemId.uuidString), level: \(level)")
+        Logger.sheetController.info("🚀 [SheetFirst] Starting sheet creation for \(itemController.config.module.token) itemId: \(itemId.uuidString), level: \(level)")
         
         let model = itemController.itemOrEmpty(for: itemId)
         var entries: [SheetFirstModel] = []
@@ -31,7 +31,7 @@ struct SheetController {
         let sheetModel = SheetFirstModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, name: model.name, description: model.description, entries: entries)
         
         let duration = ContinuousClock.now - startTime
-        Logger.sheetController.info("✅ [SheetFirst] Completed sheet creation - Duration: \(duration), Sheets created: \(sheetCount), Max depth: \(level + 1)")
+        Logger.sheetController.info("✅ [SheetFirst] Completed sheet creation \(itemController.config.module.token) - Duration: \(duration), Sheets created: \(sheetCount), Max depth: \(level + 1)")
         
         return sheetModel
     }
@@ -57,7 +57,7 @@ struct SheetController {
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
         let startTime = ContinuousClock.now
-        Logger.sheetController.info("🚀 [Sheet] Starting sheet creation - itemId: \(itemId.uuidString), level: \(level), moduleDepth: \(moduleDepth), module: \(self.itemController.config.module.rawValue)")
+        Logger.sheetController.info("🚀 [Sheet] Starting sheet creation \(itemController.config.module.token) - itemId: \(itemId.uuidString), level: \(level), moduleDepth: \(moduleDepth), module: \(self.itemController.config.module.rawValue)")
         
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
@@ -82,7 +82,7 @@ extension SheetController: SheetControllable {
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         
         let duration = ContinuousClock.now - startTime
-        Logger.sheetController.info("✅ [Sheet] Completed - Duration: \(duration), Total sheets in subtree: \(totalSheetCount), Direct entries: \(entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
+        Logger.sheetController.info("✅ [Sheet] Completed \(itemController.config.module.token) - Duration: \(duration), Total sheets in subtree: \(totalSheetCount), Direct entries: \(entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
         
         return sheetModel
     }
@@ -140,7 +140,7 @@ extension SheetController: SheetControllable {
 
     @MainActor func update(root: RootManager, sheetModel: SheetModel) {
         let startTime = ContinuousClock.now
-        Logger.sheetController.info("🔄 [Update] Starting update for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
+        Logger.sheetController.info("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
         
         let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
 

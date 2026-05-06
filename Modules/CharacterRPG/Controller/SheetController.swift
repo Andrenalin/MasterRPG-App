@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Foundation
+import os
 
 struct SheetController {
     let itemController: ItemController
@@ -59,18 +60,34 @@ struct SheetController {
 
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
+        let startTime = ContinuousClock.now
+        Logger.sheetController.info("🚀 [Sheet] Starting sheet creation \(itemController.config.module.token) - itemId: \(itemId.uuidString), level: \(level), moduleDepth: \(moduleDepth), module: \(self.itemController.config.module.rawValue)")
+        
         let model = itemController.itemOrEmpty(for: itemId)
-
-        let showHeader: Bool = model.displayState == 0
-
         var inlineEntries: [SheetModel] = []
-        if showHeader, let photoId = model.photoId {
-            inlineEntries = [SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: [])]
+        var totalSheetCount = 1 // Count this sheet
+        
+        if let diceId = model.diceId {
+            inlineEntries.append(createDiceInline(diceId: diceId, itemId: itemId, level: level, isShown: isShown))
+            totalSheetCount += 1
         }
-        let isFolded = moduleDepth >= 1
-        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
 
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .item, isShown: isShown, isFolded: isFolded, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
+        let isFolded = moduleDepth >= 1
+        if isFolded {
+            Logger.sheetController.debug("[Sheet] Folded at moduleDepth \(moduleDepth) for itemId: \(itemId.uuidString)")
+        }
+        
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
+        
+        // Count all nested sheets
+        let nestedCount = countSheets(in: entries)
+        totalSheetCount += nestedCount
+        
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
+        
+        let duration = ContinuousClock.now - startTime
+        Logger.sheetController.info("✅ [Sheet] Completed \(itemController.config.module.token) - Duration: \(duration), Total sheets in subtree: \(totalSheetCount), Direct entries: \(entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
+        
         return sheetModel
     }
 
@@ -80,141 +97,131 @@ extension SheetController: SheetControllable {
 
     @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
-        return item.entries.map { entry in
+        Logger.sheetController.debug("[Sheet] Creating entries for itemId: \(itemId.uuidString) - Entry count: \(item.entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
+        
+        let sheets = item.entries.map { entry in
             sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
         }
+        
+        return sheets
     }
-
+    
     @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> SheetModel {
-        var name = entry.name
-        var description = ""
-        var sheetType: SheetModelType = .item
-
+        let startTime = ContinuousClock.now
+        let name = entry.name
+        let description = entry.content
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
 
-        var linkSheets: [SheetModel] = []
-
-        if let valueId = entry.valueId {
-            let value = itemController.itemOrEmpty(for: valueId)
-            name = ""
-            description = value.url(linkNumber: 0)
-            sheetType = .group
-            linkSheets = [sheet(root: root, itemId: valueId, destination: destination, level: level + 1, isShown: true, moduleDepth: moduleDepth)]
-        } else {
-            description = entry.value
-            if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {
-                description += " = \(valueCalculate)"
-            }
-        }
-
-        var inlineEntries: [SheetModel] = []
-        if let diceId = entry.diceId {
-            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: []))
-        }
-
-        let links = LinkReplaceController.links(for: description)
-        linkSheets.append(contentsOf: links.compactMap { link -> SheetModel? in
+        let links = LinkReplaceController.links(for: entry.content)
+        Logger.sheetController.debug("[Sheet] Entry '\(name)' has \(links.count) links - Level: \(level), ModuleDepth: \(moduleDepth)")
+        
+        let linkSheets = links.compactMap { link -> SheetModel? in
+            let linkedModule = link.module.rawValue
+            Logger.sheetController.debug("[Sheet] Processing link to module: \(linkedModule), itemId: \(link.itemId.uuidString), hasEntryId: \(link.entryId != nil)")
+            
             switch link.module {
-            case .value: // this should not happen
+            case .value:
                 if link.entryId == nil {
                     return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1)
                 } else {
+                    Logger.sheetController.debug("[Sheet] Skipping value link with entryId")
                     return nil
                 }
             default:
                 return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0)
             }
-        })
+        }
 
-        let result = SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: sheetType, editType: entry.editType, name: name, description: description, inlineEntries: inlineEntries, entries: linkSheets)
-        return result
+        let duration = ContinuousClock.now - startTime
+        Logger.sheetController.debug("[Sheet] Entry sheet created - Duration: \(duration), Name: '\(name)', Links processed: \(links.count), Sheets from links: \(linkSheets.count)")
+        
+        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: linkSheets)
     }
-
-    @MainActor private func createPhotoInline(photoId: UUID, itemId: UUID, level: Int) -> SheetModel {
-        SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: [])
-    }
-
-    @MainActor private func createDiceInline(diceId: UUID, itemId: UUID, entryId: UUID, level: Int) -> SheetModel {
-        SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: [])
+    
+    @MainActor private func createDiceInline(diceId: UUID, itemId: UUID, level: Int, isShown: Bool) -> SheetModel {
+        SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .dice, isShown: isShown, name: "", description: "", entries: [])
     }
 
     @MainActor func update(root: RootManager, sheetModel: SheetModel) {
+        let startTime = ContinuousClock.now
+        Logger.sheetController.info("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
+        
         let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
 
+        var changeCount = 0
         unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
             sheetModel.hasChanged = changed
+            if changed { changeCount += 1 }
         }
         unequalSet(lhs: &sheetModel.description, rhs: model.description) { changed in
             sheetModel.hasChanged = sheetModel.hasChanged || changed
+            if changed { changeCount += 1 }
         }
 
-        // Update inline entries (photo)
-        if model.displayState == 0 {
-            if let photoId = model.photoId {
-                let photoSource = ItemRowModel(itemId: photoId, typeId: .photo)
-                let photoSheetModel = sheetModel.inlineEntries.first ?? createPhotoInline(photoId: photoId, itemId: model.id, level: sheetModel.level)
-                photoSheetModel.source = photoSource
-                sheetModel.inlineEntries = [photoSheetModel]
-            } else {
-                sheetModel.inlineEntries = []
-            }
+        if let diceId = model.diceId {
+            let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
+            let diceSheetModel = sheetModel.inlineEntries.first ?? createDiceInline(diceId: diceId, itemId: model.id, level: sheetModel.level, isShown: sheetModel.isShown)
+            diceSheetModel.source = diceSource
+            sheetModel.inlineEntries = [diceSheetModel]
         } else {
             sheetModel.inlineEntries = []
         }
 
-        guard !sheetModel.isFolded else { return }
+        guard !sheetModel.isFolded else {
+            let duration = ContinuousClock.now - startTime
+            Logger.sheetController.info("✅ [Update] Completed (folded) - Duration: \(duration), Changes: \(changeCount)")
+            return
+        }
+        
         let entryIds = model.entries.map { $0.id }
-
+        
         // Remove deleted entries
+        let removedCount = sheetModel.entries.filter { entry in
+            guard let entryId = entry.source.entryId else { return false }
+            return !entryIds.contains(entryId)
+        }.count
+        
         sheetModel.entries.removeAll { entry in
             guard let entryId = entry.source.entryId else { return false }
             return !entryIds.contains(entryId)
         }
-
+        
         var updatedEntries: [SheetModel] = []
-        for itemEntry in model.entries {
-            if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == itemEntry.id }) {
-                var name = itemEntry.name
-                var description = ""
-
-                if let valueId = itemEntry.valueId {
-                    let value = itemController.itemOrEmpty(for: valueId)
-                    name = ""
-                    description = value.url(linkNumber: 0)
-                } else {
-                    description = itemEntry.value
-                    if let valueCalculate = linkController.calculate(entry: itemEntry), description != valueCalculate {
-                        description += " = \(valueCalculate)"
-                    }
-                }
-
-                unequalSet(lhs: &existingSheetModel.name, rhs: name) { changed in
+        var updatedCount = 0
+        var createdCount = 0
+        
+        for entry in model.entries {
+            if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
+                unequalSet(lhs: &existingSheetModel.name, rhs: entry.name) { changed in
                     existingSheetModel.hasChanged = changed
+                    if changed { updatedCount += 1 }
                 }
-                unequalSet(lhs: &existingSheetModel.description, rhs: description) { changed in
+                unequalSet(lhs: &existingSheetModel.description, rhs: entry.content) { changed in
                     existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
+                    if changed { updatedCount += 1 }
                 }
-
-                // Update inline entries (dice)
-                if let diceId = itemEntry.diceId {
-                    let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
-                    let diceSheetModel = existingSheetModel.inlineEntries.first ?? createDiceInline(diceId: diceId, itemId: model.id, entryId: itemEntry.id, level: sheetModel.level)
-                    diceSheetModel.source = diceSource
-                    existingSheetModel.inlineEntries = [diceSheetModel]
-                } else {
-                    existingSheetModel.inlineEntries = []
-                }
-
-                // Update linked value sheets and other nested sheets
                 existingSheetModel.entries.forEach { subSheetModel in
                     root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel)
                 }
-
                 updatedEntries.append(existingSheetModel)
             } else {
-                updatedEntries.append(sheet(entry: itemEntry, root: root, itemId: model.id, level: sheetModel.level + 1, moduleDepth: 0))
+                createdCount += 1
+                updatedEntries.append(sheet(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0))
             }
         }
         sheetModel.entries = updatedEntries
+        
+        let duration = ContinuousClock.now - startTime
+        Logger.sheetController.info("✅ [Update] Completed - Duration: \(duration), Changed fields: \(changeCount), Removed: \(removedCount), Updated: \(updatedCount), Created: \(createdCount), Total entries: \(updatedEntries.count)")
+    }
+    
+    // Helper function to count all sheets in a tree
+    @MainActor private func countSheets(in sheets: [SheetModel]) -> Int {
+        var count = sheets.count
+        for sheet in sheets {
+            count += countSheets(in: sheet.inlineEntries)
+            count += countSheets(in: sheet.entries)
+        }
+        return count
     }
 }
