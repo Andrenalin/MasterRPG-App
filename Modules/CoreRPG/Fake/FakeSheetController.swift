@@ -3,11 +3,11 @@
 import SwiftUI
 
 struct FakeSheetController: SheetControllable {
-    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         .empty
     }
 
-    @MainActor func update(root: RootManager, sheetModel: SheetModel) {
+    @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
         // Fake implementation - no updates needed
     }
 

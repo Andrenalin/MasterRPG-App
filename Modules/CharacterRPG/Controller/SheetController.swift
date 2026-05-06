@@ -59,7 +59,7 @@ struct SheetController {
 }
 
 extension SheetController: SheetControllable {
-    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let startTime = ContinuousClock.now
         Logger.sheetController.info("🚀 [Sheet] Starting sheet creation \(itemController.config.module.token) - itemId: \(itemId.uuidString), level: \(level), moduleDepth: \(moduleDepth)")
         
@@ -72,12 +72,12 @@ extension SheetController: SheetControllable {
             totalSheetCount += 1
         }
 
-        let isFolded = moduleDepth >= 1
+        let isFolded = moduleDepth >= 1 || (isEditor && level > 0)
         if isFolded {
             Logger.sheetController.debug("[Sheet] Folded at moduleDepth \(moduleDepth) for itemId: \(itemId.uuidString)")
         }
         
-        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
         
         // Count all nested sheets
         let nestedCount = countSheets(in: entries)
@@ -91,22 +91,18 @@ extension SheetController: SheetControllable {
         return sheetModel
     }
 
-    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
-        sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: 0)
-    }
-
-    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> [SheetModel] {
+    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         Logger.sheetController.debug("[Sheet] Creating entries for itemId: \(itemId.uuidString) - Entry count: \(item.entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
         
         let sheets = item.entries.map { entry in
-            sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
+            sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
         }
         
         return sheets
     }
     
-    @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> SheetModel {
+    @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let startTime = ContinuousClock.now
         let name = entry.name
         let description = entry.content
@@ -114,7 +110,7 @@ extension SheetController: SheetControllable {
 
         var allSheets: [SheetModel] = []
         if let subValueId = entry.valueId {
-            allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0)]
+            allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)]
         }
         let links = LinkReplaceController.links(for: entry.content)
         Logger.sheetController.debug("[Sheet] Entry '\(name)' has \(links.count) links - Level: \(level), ModuleDepth: \(moduleDepth)")
@@ -126,13 +122,13 @@ extension SheetController: SheetControllable {
             switch link.module {
             case .value:
                 if link.entryId == nil {
-                    return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1)
+                    return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
                 } else {
                     Logger.sheetController.debug("[Sheet] Skipping value link with entryId")
                     return nil
                 }
             default:
-                return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0)
+                return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)
             }
         }
         allSheets.append(contentsOf: linkSheets)
@@ -147,7 +143,7 @@ extension SheetController: SheetControllable {
         SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .dice, isShown: isShown, name: "", description: "", entries: [])
     }
 
-    @MainActor func update(root: RootManager, sheetModel: SheetModel) {
+    @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
         let startTime = ContinuousClock.now
         Logger.sheetController.info("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
         
@@ -206,12 +202,12 @@ extension SheetController: SheetControllable {
                     if changed { updatedCount += 1 }
                 }
                 existingSheetModel.entries.forEach { subSheetModel in
-                    root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel)
+                    root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel, isEditor: isEditor)
                 }
                 updatedEntries.append(existingSheetModel)
             } else {
                 createdCount += 1
-                updatedEntries.append(sheet(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0))
+                updatedEntries.append(sheet(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor))
             }
         }
         sheetModel.entries = updatedEntries

@@ -11,7 +11,7 @@ public struct SheetFirstRootEditorView<LinkType: LinkDataTransferable>: View {
         self.module = module
         self.headerTitle = headerTitle
         self.linkTypes = linkTypes
-        self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: model.id))
+        self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: model.id, isEditor: true))
 //        self._sheetRootModel = State(wrappedValue: TableFirstSheetModel(linkControllable: rootLinkControllable, parent: nil, model: model, level: 0, module: module))
 
     }

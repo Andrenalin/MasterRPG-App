@@ -33,31 +33,27 @@ struct SheetController {
 }
 
 extension SheetController: SheetControllable {
-    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
         if model.hasAudio {
             inlineEntries.append(SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .audioInline, isShown: isShown, name: model.name, description: model.description, entries: []))
         }
 
-        let isFolded = moduleDepth >= 1
-        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
+        let isFolded = moduleDepth >= 1 || (isEditor && level > 0)
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, canAdd: false, showHeader: false, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
 
-    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int) -> [SheetModel] {
-        sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: 0)
-    }
-
-    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> [SheetModel] {
+    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
-            sheetEntry(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
+            sheetEntry(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
         }
     }
 
-    @MainActor private func sheetEntry(entry: AudioEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> SheetModel {
+    @MainActor private func sheetEntry(entry: AudioEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let track = itemController.itemOrEmpty(for: entry.audioId)
         var name = track.name
         let description = track.description
@@ -72,12 +68,12 @@ extension SheetController: SheetControllable {
             switch link.module {
             case .audio:
                 if link.entryId == nil {
-                    return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1)
+                    return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
                 } else {
                     return nil
                 }
             default:
-                return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0)
+                return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)
             }
         }
 
@@ -88,7 +84,7 @@ extension SheetController: SheetControllable {
         SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .audioInline, isShown: isShown, name: name, description: description, entries: [])
     }
 
-    @MainActor func update(root: RootManager, sheetModel: SheetModel) {
+    @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
         let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
 
         unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
@@ -136,11 +132,11 @@ extension SheetController: SheetControllable {
                     existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
                 }
                 existingSheetModel.entries.forEach { subSheetModel in
-                    root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel)
+                    root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel, isEditor: isEditor)
                 }
                 updatedEntries.append(existingSheetModel)
             } else {
-                updatedEntries.append(sheetEntry(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0))
+                updatedEntries.append(sheetEntry(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor))
             }
         }
         sheetModel.entries = updatedEntries

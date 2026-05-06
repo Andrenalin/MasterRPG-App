@@ -9,12 +9,14 @@ enum LinkHighlightTextModelId: Hashable {
 
 @MainActor @Observable
 public final class SheetRootModel: Sendable {
-    init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID) {
+    init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool) {
         self.linkControllable = linkControllable
-        self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0)
+        self.isEditor = isEditor
+        self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         updateFilteredEntries()
     }
     
+    let isEditor: Bool
     private(set)var sheetModel: SheetModel
     var searchText: String = "" {
         didSet {
@@ -92,7 +94,8 @@ public final class SheetRootModel: Sendable {
                             destination: entrySheetModel.destination,
                             level: entrySheetModel.level + 1,
                             isShown: true,
-                            moduleDepth: 0
+                            moduleDepth: 0,
+                            isEditor: isEditor
                         )
                         unfold(sheetModel: newSheet)
                         entrySheetModel.entries.append(newSheet)

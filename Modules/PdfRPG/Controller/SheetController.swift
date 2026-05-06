@@ -30,12 +30,12 @@ struct SheetController {
 }
 
 extension SheetController: SheetControllable {
-    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
+    @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
         inlineEntries.append(SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .pdf, isShown: isShown, name: "", description: "", entries: []))
 
-        let isFolded = moduleDepth >= 1
+        let isFolded = moduleDepth >= 1 || (isEditor && level > 0)
         let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, canAdd: false, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
@@ -72,7 +72,7 @@ extension SheetController: SheetControllable {
         return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, name: name, description: description, inlineEntries: inlineEntries, entries: [])
     }
 
-    @MainActor func update(root: RootManager, sheetModel: SheetModel) {
+    @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
         let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
 
         unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
