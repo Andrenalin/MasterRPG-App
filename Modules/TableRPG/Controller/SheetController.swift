@@ -107,7 +107,7 @@ extension SheetController: SheetControllable {
         Logger.sheetController.debug("[Sheet] Entry '\(name)' has \(links.count) links - Level: \(level), ModuleDepth: \(moduleDepth)")
         
         let linkSheets = links.compactMap { link -> SheetModel? in
-            let linkedModule = link.module.rawValue
+            let linkedModule = link.module.token
             Logger.sheetController.debug("[Sheet] Processing link to module: \(linkedModule), itemId: \(link.itemId.uuidString), hasEntryId: \(link.entryId != nil)")
             
             switch link.module {

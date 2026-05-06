@@ -91,8 +91,9 @@ extension SheetController: SheetControllable {
         let item = itemController.itemOrEmpty(for: itemId)
         Logger.sheetController.debug("[Sheet] Creating entries for itemId: \(itemId.uuidString) - Entry count: \(item.entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
         
-        let sheets = item.entries.map { entry in
-            sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
+        let sheets = item.entries.compactMap{ entry -> SheetModel? in
+            guard !entry.isHexGrid else { return nil }
+            return sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth)
         }
         
         return sheets
@@ -108,7 +109,7 @@ extension SheetController: SheetControllable {
         Logger.sheetController.debug("[Sheet] Entry '\(name)' has \(links.count) links - Level: \(level), ModuleDepth: \(moduleDepth)")
         
         let linkSheets = links.compactMap { link -> SheetModel? in
-            let linkedModule = link.module.rawValue
+            let linkedModule = link.module.token
             Logger.sheetController.debug("[Sheet] Processing link to module: \(linkedModule), itemId: \(link.itemId.uuidString), hasEntryId: \(link.entryId != nil)")
             
             switch link.module {

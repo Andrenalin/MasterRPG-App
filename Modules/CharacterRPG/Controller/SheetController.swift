@@ -61,7 +61,7 @@ struct SheetController {
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int) -> SheetModel {
         let startTime = ContinuousClock.now
-        Logger.sheetController.info("🚀 [Sheet] Starting sheet creation \(itemController.config.module.token) - itemId: \(itemId.uuidString), level: \(level), moduleDepth: \(moduleDepth), module: \(self.itemController.config.module.rawValue)")
+        Logger.sheetController.info("🚀 [Sheet] Starting sheet creation \(itemController.config.module.token) - itemId: \(itemId.uuidString), level: \(level), moduleDepth: \(moduleDepth)")
         
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
@@ -112,11 +112,15 @@ extension SheetController: SheetControllable {
         let description = entry.content
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
 
+        var allSheets: [SheetModel] = []
+        if let subValueId = entry.valueId {
+            allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0)]
+        }
         let links = LinkReplaceController.links(for: entry.content)
         Logger.sheetController.debug("[Sheet] Entry '\(name)' has \(links.count) links - Level: \(level), ModuleDepth: \(moduleDepth)")
         
         let linkSheets = links.compactMap { link -> SheetModel? in
-            let linkedModule = link.module.rawValue
+            let linkedModule = link.module.token
             Logger.sheetController.debug("[Sheet] Processing link to module: \(linkedModule), itemId: \(link.itemId.uuidString), hasEntryId: \(link.entryId != nil)")
             
             switch link.module {
@@ -131,11 +135,12 @@ extension SheetController: SheetControllable {
                 return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0)
             }
         }
-
+        allSheets.append(contentsOf: linkSheets)
+        
         let duration = ContinuousClock.now - startTime
         Logger.sheetController.debug("[Sheet] Entry sheet created - Duration: \(duration), Name: '\(name)', Links processed: \(links.count), Sheets from links: \(linkSheets.count)")
         
-        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: linkSheets)
+        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: allSheets)
     }
     
     @MainActor private func createDiceInline(diceId: UUID, itemId: UUID, level: Int, isShown: Bool) -> SheetModel {
