@@ -132,6 +132,13 @@ public final class SheetRootModel: Sendable {
     
     // MARK: - Editor
     
+    func removeEntry(entryModel: SheetModel, from parentModel: SheetModel) {
+        entryDataEditable(for: entryModel.source)?.removeEntry(source: entryModel.source)
+        parentModel.entries.removeAll(where: { $0.id == entryModel.id })
+        linkTextModel[.entry(entryModel.id)] = nil
+        updateFilteredEntries()
+    }
+
     /// Update the sheet model after inline edits
     func updateSheetModel(entryModel: SheetModel, updatedText: String) {
         guard let model = linkTextModel[.entry(entryModel.id)] else { return }

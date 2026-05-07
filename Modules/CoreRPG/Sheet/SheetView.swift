@@ -54,7 +54,7 @@ private extension SheetView {
     
     var inlineRows: some View {
         ForEach(sheetModel.inlineEntries) { inlineEntry in
-            SheetEntryView(rootModel: rootModel, entryModel: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
+            SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(4)
                 .background {
@@ -81,7 +81,7 @@ private extension SheetView {
     var entryRows: some View {
         ForEach(sheetModel.entries) { entry in
             if !entry.isHidden {
-                SheetEntryView(rootModel: rootModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
+                SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(4)
                     .background {

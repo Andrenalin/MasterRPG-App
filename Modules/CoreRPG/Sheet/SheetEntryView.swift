@@ -3,14 +3,16 @@
 import SwiftUI
 
 struct SheetEntryView<LinkType: LinkDataTransferable>: View {
-    init(rootModel: SheetRootModel, entryModel: SheetModel, isEditor: Bool, linkTypes: LinkType.Type) {
+    init(rootModel: SheetRootModel, parentModel: SheetModel, entryModel: SheetModel, isEditor: Bool, linkTypes: LinkType.Type) {
         self.rootModel = rootModel
+        self.parentModel = parentModel
         self.entryModel = entryModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
     }
 
     let rootModel: SheetRootModel
+    let parentModel: SheetModel
     let entryModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
@@ -150,9 +152,7 @@ private extension SheetEntryView {
     func deleteButton(onlyIcon: Bool) -> some View {
         Button(role: .destructive) {
             withAnimation {
-//                model.removeEntry(source: entry.source)
-//                model.remove(entry: entry)
-//                model.updateParent()
+                rootModel.removeEntry(entryModel: entryModel, from: parentModel)
             }
         } label: {
             Label {
