@@ -23,7 +23,10 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
         GameShareView(root: root, model: model) {
             nameRow
         }
-        
+        .onChange(of: rootModel.currentEntryId(for: rootModel.sheetModel.source)) { previousEntryId, currentEntryId in
+            rootModel.update(sheetModel: sheetModel, previousEntryId: previousEntryId, currentEntryId: currentEntryId)
+        }
+
         inlineRows
         
         secondaryRow

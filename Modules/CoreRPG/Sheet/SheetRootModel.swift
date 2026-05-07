@@ -150,8 +150,6 @@ public final class SheetRootModel: Sendable {
         guard let entryId = addNewEntry(to: sheetModel.source) else { return nil }
         setCurrentItem(source: sheetModel.source, entryId: entryId)
         setCurrentEntryId(source: sheetModel.source, entryId: entryId)
-        let rootManager = linkControllable.rootManager
-        rootController(for: sheetModel.source.typeId)?.sheetControllable.unfold(root: rootManager, sheetModel: sheetModel)
         return entryId
     }
     
@@ -165,8 +163,20 @@ public final class SheetRootModel: Sendable {
         return editable.addNewEntry(itemId: source.itemId)
     }
 
+    func update(sheetModel: SheetModel, previousEntryId: UUID?, currentEntryId: UUID?) {
+        guard let previousEntryId, currentEntryId == nil, let itemId = currentItemId(for: sheetModel.source), itemId == sheetModel.source.itemId else { return }
+        
+        rootController(for: sheetModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: sheetModel, isEditor: isEditor)
+
+        guard let entryModel = sheetModel.entries.first(where: { $0.source.entryId == previousEntryId }) else { return }
+        entryModel.isEditing = false
+
+        guard let model = linkTextModel[.entry(entryModel.id)] else { return }
+        model.reset(text: entryModel.content)
+    }
+
     /// Set the current item in the edit controller
-    private func setCurrentItem(source: ItemRowModel, entryId: UUID?) {
+    func setCurrentItem(source: ItemRowModel, entryId: UUID?) {
         guard let editController = editControllable(for: source) else { return }
         editController.setCurrentItem(to: ItemRowTreeModel(itemId: source.itemId, entryId: entryId, typeId: source.typeId))
     }
@@ -177,5 +187,14 @@ public final class SheetRootModel: Sendable {
         editController.editorModel.currentEntryId = entryId
     }
 
+    /// Get the current entry ID from the editor model
+    func currentEntryId(for source: ItemRowModel) -> UUID? {
+        editControllable(for: source)?.editorModel.currentEntryId
+    }
+
+    /// Get the current item ID from the editor model
+    func currentItemId(for source: ItemRowModel) -> UUID? {
+        editControllable(for: source)?.editorModel.currentItemId
+    }
 
 }

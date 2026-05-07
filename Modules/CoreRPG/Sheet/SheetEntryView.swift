@@ -69,7 +69,7 @@ private extension SheetEntryView {
             
             switch entryModel.sheetType {
             case .item, .group:
-                LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: text, shareResults: shareResult))
+                LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: entryModel.content, shareResults: shareResult))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.body)
                 
@@ -82,14 +82,14 @@ private extension SheetEntryView {
             case .audioInline:
                 HStack {
                     viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: text, shareResults: shareResult))
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: entryModel.content, shareResults: shareResult))
                 }
                 .font(.body)
             case .photoInline, .edit:
                 EmptyView()
             }
                             
-            if (isEditor) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
+            if isEditor && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 deleteButton(onlyIcon: true)
             }
         }
@@ -121,11 +121,9 @@ private extension SheetEntryView {
         Button {
             withAnimation {
                 entryModel.isEditing.toggle()
-//                if isEditor {
-//                    model.setCurrentItem(source: entry.source, entryId: entry.source.entryId)
-//                } else {
-//                    model.toggleEdit(entry: entry)
-//                }
+                if isEditor {
+                    rootModel.setCurrentItem(source: entryModel.source, entryId: entryModel.source.entryId)
+                }
             }
         } label: {
             Label {
@@ -180,15 +178,5 @@ private extension SheetEntryView {
     
     var shareResult: ShareValueResult {
         ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: entryModel.source.itemId, childId: entryModel.source.entryId, module: entryModel.source.typeId), showGame: appGameStateModel.isGameRunning, gameModus: appGameStateModel.gameModus)
-    }
-    
-    var text: String {
-        if entryModel.description.isEmpty {
-            entryModel.name
-        } else if entryModel.name.isEmpty {
-            entryModel.description
-        } else {
-            "**" + entryModel.name + "**: " + entryModel.description
-        }
     }
 }
