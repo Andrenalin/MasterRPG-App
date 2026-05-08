@@ -6,12 +6,6 @@ import PhotoRPG
 import SwiftUI
 
 struct DetailFolderListView: View {
-    init(root: AdventureRootModel, model: AdventureModel) {
-        self.root = root
-        self.model = model
-        self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: model.id, isEditor: true))
-    }
-
     let root: AdventureRootModel
     let model: AdventureModel
 
@@ -22,7 +16,6 @@ struct DetailFolderListView: View {
     @State private var detailRoute: AdventureDetailRoute?
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
-    @State private var sheetRootModel: SheetRootModel
 
     var detailFolderListController: FolderListController {
         let _ = print("🔄 DetailFolderListView.detailFolderListController computed for model: \(model.name)")
@@ -93,7 +86,7 @@ struct DetailFolderListView: View {
         } overlay: {
             EmptyView()
         } entryEditor: {
-            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: sheetRootModel.editorModel, linkTypes: LinkAdventureModuleTransferable.self)
+            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: root.editController.sheetEditorModel, linkTypes: LinkAdventureModuleTransferable.self)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -123,7 +116,7 @@ struct DetailFolderListView: View {
                 root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil)
             }
 
-        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, sheetRootModel: sheetRootModel, model: model, module: root.config.module, headerTitle: String(localized: "Sections", bundle: .module).localizedString, linkTypes: LinkAdventureModuleTransferable.self)
+        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Sections", bundle: .module).localizedString, linkTypes: LinkAdventureModuleTransferable.self)
             .id(model.id)
     }
 }

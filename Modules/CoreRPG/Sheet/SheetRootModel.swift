@@ -17,6 +17,15 @@ public final class SheetRootModel: Sendable {
         self.editorModel = SheetEditorModel(itemId: itemId, module: sheetModel.source.typeId)
         updateFilteredEntries()
     }
+
+    public init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool, editorModel: SheetEditorModel) {
+        self.linkControllable = linkControllable
+        self.isEditor = isEditor
+        let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
+        self.sheetModel = sheetModel
+        self.editorModel = editorModel
+        updateFilteredEntries()
+    }
     
     let isEditor: Bool
     public let editorModel: SheetEditorModel

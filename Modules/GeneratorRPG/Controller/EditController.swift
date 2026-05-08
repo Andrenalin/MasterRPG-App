@@ -10,6 +10,7 @@ struct EditController: Sendable {
         self.itemController = itemController
         self.tagController = tagController
         self.editorModel = ItemEditorModel()
+        self.sheetEditorModel = SheetEditorModel(module: itemController.config.module)
         self.selectionReference = ItemSelectionModel()
     }
 
@@ -17,6 +18,7 @@ struct EditController: Sendable {
     let linkRegisterController: LinkRegisterController
     let tagController: TagController
     let editorModel: ItemEditorModel
+    let sheetEditorModel: SheetEditorModel
 
     let selectionReference: ItemSelectionModel
 }

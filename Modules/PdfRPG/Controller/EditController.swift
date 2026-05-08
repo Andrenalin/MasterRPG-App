@@ -25,12 +25,14 @@ struct EditController: Sendable {
         self.tagController = tagController
         self.itemController = itemController
         self.editorModel = ItemEditorModel()
+        self.sheetEditorModel = SheetEditorModel(module: itemController.config.module)
     }
 
     let itemController: ItemController
     let linkRegisterController: LinkRegisterController
     let tagController: TagController
     let editorModel: ItemEditorModel
+    let sheetEditorModel: SheetEditorModel
 }
 
 extension EditController: EntryDataEditable {

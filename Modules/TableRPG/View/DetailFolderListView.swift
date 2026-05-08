@@ -5,23 +5,16 @@ import DiceRPG
 import SwiftUI
 
 struct DetailFolderListView: View {
-    init(root: TableRootModel, model: TableModel) {
-        self.root = root
-        self.model = model
-        self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: model.id, isEditor: true))
-    }
-    
     let root: TableRootModel
     let model: TableModel
 
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
-    
+
     @State private var detailRoute: TableDetailRoute?
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
-    @State private var sheetRootModel: SheetRootModel
 
     var detailFolderListController: FolderListController {
         let listModel = root.navigationModel.folderModels[model.id]
@@ -91,7 +84,7 @@ struct DetailFolderListView: View {
         } overlay: {
             EmptyView()
         } entryEditor: {
-            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: sheetRootModel.editorModel, linkTypes: LinkTableModuleTransferable.self)
+            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: root.editController.sheetEditorModel, linkTypes: LinkTableModuleTransferable.self)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -111,7 +104,7 @@ struct DetailFolderListView: View {
                 root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil)
             }
         
-        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, sheetRootModel: sheetRootModel, model: model, module: root.config.module, headerTitle: String(localized: "Entries", bundle: .module).localizedString, linkTypes: LinkTableModuleTransferable.self)
+        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Entries", bundle: .module).localizedString, linkTypes: LinkTableModuleTransferable.self)
             .id(model.id)
     }
 }

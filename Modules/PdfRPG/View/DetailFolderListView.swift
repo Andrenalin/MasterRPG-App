@@ -4,12 +4,6 @@ import CoreRPG
 import SwiftUI
 
 struct DetailFolderListView: View {
-    init(root: PdfRootModel, model: PdfModel) {
-        self.root = root
-        self.model = model
-        self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: model.id, isEditor: true))
-    }
-
     let root: PdfRootModel
     let model: PdfModel
 
@@ -20,7 +14,6 @@ struct DetailFolderListView: View {
     @State private var detailRoute: PdfDetailRoute?
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
-    @State private var sheetRootModel: SheetRootModel
     
     var detailFolderListController: FolderListController {
         let listModel = root.navigationModel.folderModels[model.id]
@@ -85,12 +78,12 @@ struct DetailFolderListView: View {
         } editor: {
             fileAndPlayerView(model: model)
 
-            SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, sheetRootModel: sheetRootModel, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString, linkTypes: LinkPdfModuleTransferable.self)
+            SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString, linkTypes: LinkPdfModuleTransferable.self)
                 .id(model.id)
         } overlay: {
             EmptyView()
         } entryEditor: {
-            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: sheetRootModel.editorModel, linkTypes: LinkPdfModuleTransferable.self)
+            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: root.editController.sheetEditorModel, linkTypes: LinkPdfModuleTransferable.self)
         }
         .overlay {
             if openFileWindowModel.showItem {

@@ -36,6 +36,7 @@ struct EditController: Sendable {
         self.tagController = tagController
         
         self.editorModel = ItemEditorModel()
+        self.sheetEditorModel = SheetEditorModel(module: itemController.config.module)
         self.tableEditModel = TableEditModel()
     }
 
@@ -44,8 +45,9 @@ struct EditController: Sendable {
     let itemController: ItemController
     let linkRegisterController: LinkRegisterController
     let tagController: TagController
-    
+
     let editorModel: ItemEditorModel
+    let sheetEditorModel: SheetEditorModel
     let tableEditModel: TableEditModel
 }
 

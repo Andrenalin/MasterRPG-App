@@ -6,12 +6,6 @@ import PhotoRPG
 import SwiftUI
 
 struct DetailFolderListView: View {
-    init(root: CharacterRootModel, model: ValueModel) {
-        self.root = root
-        self.model = model
-        self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: model.id, isEditor: true))
-    }
-
     let root: CharacterRootModel
     let model: ValueModel
 
@@ -22,7 +16,6 @@ struct DetailFolderListView: View {
     @State private var detailRoute: CharacterDetailRoute?
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
-    @State private var sheetRootModel: SheetRootModel
     
     var detailFolderListController: FolderListController {
         let listModel = root.navigationModel.folderModels[model.id]
@@ -88,11 +81,11 @@ struct DetailFolderListView: View {
         ) {
             EmptyView()
         } editor: {
-            DetailEditorView(root: root, model: model, sheetRootModel: sheetRootModel)
+            DetailEditorView(root: root, model: model)
         } overlay: {
             EmptyView()
         } entryEditor: {
-            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: sheetRootModel.editorModel, linkTypes: LinkCharacterModuleTransferable.self)
+            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: root.editController.sheetEditorModel, linkTypes: LinkCharacterModuleTransferable.self)
         }
         .overlay {
             if openFileWindowModel.showItem {

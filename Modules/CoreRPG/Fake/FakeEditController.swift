@@ -9,13 +9,14 @@ struct FakeEditController: EditControllable {
     var fileUrlDataController: FileUrlDataController?
     var tagController: TagController
     var linkRegisterController: LinkRegisterController
-        
+
     var editorModel: ItemEditorModel
-    
+    var sheetEditorModel: SheetEditorModel
+
     var cacheItemListModel: CacheItemListModel
-    
+
     @MainActor
-    static let fake = FakeEditController(itemControllable: FakeItemController.fake, tagController: TagController(), linkRegisterController: LinkRegisterController(root: nil), editorModel: ItemEditorModel(), cacheItemListModel: CacheItemListModel())
+    static let fake = FakeEditController(itemControllable: FakeItemController.fake, tagController: TagController(), linkRegisterController: LinkRegisterController(root: nil), editorModel: ItemEditorModel(), sheetEditorModel: SheetEditorModel(), cacheItemListModel: CacheItemListModel())
 }
 
 extension FakeEditController: EntryDataEditable {

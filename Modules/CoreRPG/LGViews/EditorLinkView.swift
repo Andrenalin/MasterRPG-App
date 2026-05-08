@@ -3,18 +3,20 @@
 import SwiftUI
 
 public struct EditorLinkView: View {
-    public init(root: ItemRootController, model: any ItemDataAccessable, editorLinkModel: EditorLinkModel, selectedModule: NetworkModules? = nil, selectedEntryId: UUID? = nil) {
+    public init(root: ItemRootController, model: any ItemDataAccessable, editorLinkModel: EditorLinkModel, selectedModule: NetworkModules? = nil, selectedEntryId: UUID? = nil, destinationModule: NetworkModules? = nil) {
         self.root = root
         self.model = model
         self.editorLinkModel = editorLinkModel
         self.selectedEntryId = selectedEntryId
+        self.destinationModule = destinationModule
         editorLinkModel.preselectedModule = selectedModule
     }
-    
+
     let root: ItemRootController
     let model: any ItemDataAccessable
     let editorLinkModel: EditorLinkModel
     let selectedEntryId: UUID?
+    let destinationModule: NetworkModules?
     
     public var body: some View {
         let _ = Self._printChanges()
@@ -34,7 +36,8 @@ public struct EditorLinkView: View {
         .applyIf(selectionMode) {
             $0
                 .toolbarItemListModifier(root: root, listControllable: editorLinkModel.folderListController, parentModel: nil, modal: true) {
-                    guard let editControllable = root.editControllable as? (any EntryDataEditable) else { return }
+                    let resolvedRoot = destinationModule.flatMap { editorLinkModel.rootManager.itemRootController(for: $0) } ?? root
+                    guard let editControllable = resolvedRoot.editControllable as? (any EntryDataEditable) else { return }
                     editorLinkModel.addLinkAndReset(editController: editControllable, destiantionItemId: model.id, destinationEntryId: selectedEntryId)
                 }
                 .searchItemList(listControllable: editorLinkModel.folderListController)

@@ -14,10 +14,9 @@ public struct TableFirstRootSheet: View {
         self.root = root
         self.configuration = configuration
         self.dismissAction = dismissAction
-        let model = root.itemControllable.itemOrEmpty(for: itemId)
-        self._tableSheetModel = State(wrappedValue: TableFirstSheetModel(linkControllable: root.linkControllable.rootLinkControllable, parent: nil, model: model, level: 0, module: module))
+        self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: itemId, isEditor: false, editorModel: root.editControllable.sheetEditorModel))
     }
-        
+
     let root: ItemRootController
     let configuration: ViewerConfiguration
     let dismissAction: (() -> Void)?
@@ -28,10 +27,10 @@ public struct TableFirstRootSheet: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) var dismiss
 
-    @State private var tableSheetModel: TableFirstSheetModel
-    
+    @State private var sheetRootModel: SheetRootModel
+
     public var body: some View {
-        TableFirstSheetView(root: root, model: tableSheetModel)
+        SheetRootView(root: root, rootModel: sheetRootModel)
 #if os(macOS) || os(visionOS)
             .padding(.top)
 #else
@@ -43,7 +42,7 @@ public struct TableFirstRootSheet: View {
             .toolbar {
                 toolbarContent
             }
-            .navigationTitle(Text(tableSheetModel.sheetModel.name))
+            .navigationTitle(Text(sheetRootModel.sheetModel.name))
     }
 }
 
