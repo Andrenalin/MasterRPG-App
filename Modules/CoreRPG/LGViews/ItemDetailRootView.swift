@@ -242,13 +242,7 @@ private extension ItemDetailRootView {
                 
                 ListRootView(root: root, listController: detailListController, parentModel: model)
             } else {
-#if os(macOS)
-                ScrollView {
-                    formEditor(model: model)
-                }
-#else
                 formEditor(model: model)
-#endif
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
@@ -263,22 +257,24 @@ private extension ItemDetailRootView {
     
     func formEditor(model: any ItemDataAccessable) -> some View {
         ScrollViewReader { scrollProxy in
-            Form {
-                if model.description.isEmpty == false {
-                    ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
-                }
-                
-                editor
-                    .onChange(of: root.editControllable.editorModel.scrollEntryId) {
-                        guard let scrollEntryId = root.editControllable.editorModel.scrollEntryId else { return }
-                        scrollProxy.scrollTo(scrollEntryId, anchor: .bottom)
-                        root.editControllable.editorModel.scrollEntryId = nil
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    if model.description.isEmpty == false {
+                        ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
                     }
+                    
+                    editor
+                        .onChange(of: root.editControllable.editorModel.scrollEntryId) {
+                            guard let scrollEntryId = root.editControllable.editorModel.scrollEntryId else { return }
+                            scrollProxy.scrollTo(scrollEntryId, anchor: .bottom)
+                            root.editControllable.editorModel.scrollEntryId = nil
+                        }
+                }
+                .padding()
             }
             .scrollClipDisabled(true)
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .formStyle(.grouped)
-        .scrollBounceBehavior(.basedOnSize)
     }
     
     func editorContentBackgroundView(model: any ItemDataAccessable) -> some View {
