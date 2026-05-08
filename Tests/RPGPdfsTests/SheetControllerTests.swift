@@ -19,7 +19,7 @@ struct SheetControllerTests {
         let pdfModel = PdfModel(id: itemId, name: "Test PDF", description: "PDF Description")
         root.itemController.itemDataModel.itemData[itemId] = pdfModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.name == "Test PDF")
         #expect(model.description == "PDF Description")
@@ -39,7 +39,7 @@ struct SheetControllerTests {
         let pdfModel = PdfModel(id: itemId, name: "Test", description: "")
         root.itemController.itemDataModel.itemData[itemId] = pdfModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
 
         // Should have PDF widget in inlineEntries
         #expect(model.inlineEntries.count == 1)
@@ -56,7 +56,7 @@ struct SheetControllerTests {
         let pdfModel = PdfModel(id: itemId, name: "Test", description: "", entries: [entry])
         root.itemController.itemDataModel.itemData[itemId] = pdfModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
 
         // Should have PDF widget in inlineEntries and page entries in entries
         #expect(model.inlineEntries.count == 1)
@@ -79,7 +79,7 @@ struct SheetControllerTests {
         root.itemController.itemDataModel.itemData[itemId] = pdfModel
 
         let destination = ItemRowModel(itemId: Foundation.UUID(), typeId: NetworkModules.table)
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 2, isShown: false)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 2, isShown: false, isEditor: false)
 
         #expect(model.destination.itemId == destination.itemId)
         #expect(model.level == 2)
@@ -97,11 +97,11 @@ struct SheetControllerTests {
         root.itemController.itemDataModel.itemData[itemId] = pdfModel
 
         // Test isFolded at level > 4
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 5, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 5, isShown: true, isEditor: false)
         #expect(model.isFolded == true)
         #expect(model.entries.isEmpty)
 
-        let modelNotFolded = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 4, isShown: true)
+        let modelNotFolded = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 4, isShown: true, isEditor: false)
         #expect(modelNotFolded.isFolded == false)
     }
 }

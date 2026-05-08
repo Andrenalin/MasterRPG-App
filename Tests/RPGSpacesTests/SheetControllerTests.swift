@@ -23,7 +23,7 @@ struct SheetControllerTests {
         )
         root.itemController.itemDataModel.itemData[itemId] = spaceModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: Optional<ItemRowModel>.none, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: Optional<ItemRowModel>.none, level: 0, isShown: true, isEditor: false)
 
         #expect(model.name == "Test Space")
         #expect(model.description == "Empty space")
@@ -44,7 +44,7 @@ struct SheetControllerTests {
         root.itemController.itemDataModel.itemData[itemId] = spaceModel
 
         let destination = ItemRowModel(itemId: Foundation.UUID(), typeId: NetworkModules.adventure)
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 1, isShown: false)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 1, isShown: false, isEditor: false)
 
         #expect(model.destination.itemId == destination.itemId)
         #expect(model.level == 1)
@@ -60,7 +60,7 @@ struct SheetControllerTests {
         let spaceModel = SpaceModel(id: itemId, name: "Test", displayState: 0)
         root.itemController.itemDataModel.itemData[itemId] = spaceModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: Optional<ItemRowModel>.none, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: Optional<ItemRowModel>.none, level: 0, isShown: true, isEditor: false)
 
         // Space sheets have inline space widget but no sub-entries
         #expect(model.entries.isEmpty)

@@ -18,7 +18,7 @@ struct SheetControllerTests {
         let photoModel = PhotoModel(id: itemId, name: "Test Photo", description: "Description")
         root.itemController.itemDataModel.itemData[itemId] = photoModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.name == "Test Photo")
         #expect(model.description == "Description")
@@ -39,7 +39,7 @@ struct SheetControllerTests {
         root.itemController.itemDataModel.itemData[itemId] = photoModel
 
         let destination = ItemRowModel(itemId: Foundation.UUID(), typeId: NetworkModules.value)
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 1, isShown: false)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 1, isShown: false, isEditor: false)
 
         #expect(model.destination.itemId == destination.itemId)
         #expect(model.level == 1)
@@ -55,7 +55,7 @@ struct SheetControllerTests {
         let photoModel = PhotoModel(id: itemId, name: "Test", description: "")
         root.itemController.itemDataModel.itemData[itemId] = photoModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
 
         // Photo sheet has inline photo entry
         #expect(model.inlineEntries.count == 1)

@@ -19,7 +19,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.isShown == true)
         #expect(model.level == 0)
@@ -38,7 +38,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         if item.diceId != nil {
             #expect(model.inlineEntries.count == 1)
@@ -55,7 +55,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.entries.count >= 0)
         for entry in model.entries {
@@ -73,7 +73,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
-        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0)
+        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         // Find entry with links
         let entryWithLinks = entries.first(where: { !$0.entries.isEmpty })
@@ -93,7 +93,7 @@ struct SheetControllerTests {
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
         // Create a test item with link to another table
-        let entries = sut.sheetEntries(root: rootManager, itemId: root.itemController.itemDataModel.items.first!, level: 0)
+        let entries = sut.sheetEntries(root: rootManager, itemId: root.itemController.itemDataModel.items.first!, level: 0, moduleDepth: 0, isEditor: false)
 
         for entry in entries {
             for link in entry.entries where link.source.typeId == NetworkModules.table {
@@ -112,10 +112,10 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
-        let modelShown = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let modelShown = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
         #expect(modelShown.isShown == true)
 
-        let modelHidden = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: false)
+        let modelHidden = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: false, isEditor: false)
         #expect(modelHidden.isShown == false)
     }
 
@@ -129,11 +129,11 @@ struct SheetControllerTests {
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
         // Test isFolded at level > 4
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 5, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 5, isShown: true, isEditor: false)
         #expect(model.isFolded == true)
         #expect(model.entries.isEmpty)
 
-        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 4, isShown: true)
+        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 4, isShown: true, isEditor: false)
         #expect(modelNotFolded.isFolded == false)
     }
 
@@ -147,7 +147,7 @@ struct SheetControllerTests {
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
         let destination = ItemRowModel(itemId: Foundation.UUID(), typeId: NetworkModules.table)
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: destination, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: destination, level: 0, isShown: true, isEditor: false)
 
         #expect(model.destination.itemId == destination.itemId)
     }

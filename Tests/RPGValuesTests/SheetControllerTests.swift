@@ -32,7 +32,7 @@ struct SheetControllerTests {
             weatherRoot: root
         )
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.name == "Adalbert Unheil")
         #expect(model.isShown == true)
@@ -62,7 +62,7 @@ struct SheetControllerTests {
             weatherRoot: root
         )
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         // Character with displayState == 0 should have photo in inlineEntries
         if model.showHeader {
@@ -92,7 +92,7 @@ struct SheetControllerTests {
             weatherRoot: root
         )
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.entries.count > 0)
         // Each entry should have proper source and be at the same level
@@ -123,7 +123,7 @@ struct SheetControllerTests {
             weatherRoot: root
         )
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         // Find entry with valueId (group type)
         let groupEntry = model.entries.first(where: { $0.sheetType == SheetModelType.group })
@@ -154,10 +154,10 @@ struct SheetControllerTests {
             weatherRoot: root
         )
 
-        let modelShown = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let modelShown = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
         #expect(modelShown.isShown == true)
 
-        let modelHidden = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: false)
+        let modelHidden = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: false, isEditor: false)
         #expect(modelHidden.isShown == false)
     }
 
@@ -182,7 +182,7 @@ struct SheetControllerTests {
             weatherRoot: root
         )
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         // Find entry with diceId
         let entryWithDice = model.entries.first(where: { !$0.inlineEntries.isEmpty })
@@ -214,11 +214,11 @@ struct SheetControllerTests {
         )
 
         // Test isFolded at level > 4
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 5, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 5, isShown: true, isEditor: false)
         #expect(model.isFolded == true)
         #expect(model.entries.isEmpty)
 
-        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 4, isShown: true)
+        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 4, isShown: true, isEditor: false)
         #expect(modelNotFolded.isFolded == false)
     }
 }

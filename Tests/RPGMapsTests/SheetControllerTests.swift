@@ -19,7 +19,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.isShown == true)
         #expect(model.level == 0)
@@ -36,7 +36,7 @@ struct SheetControllerTests {
         try #require(itemId != nil)
         let item = root.itemController.itemOrEmpty(for: itemId!)
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         if item.photoId != nil {
             let photoEntry = model.inlineEntries.first(where: { $0.sheetType == SheetModelType.photo })
@@ -54,7 +54,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.entries.count >= 0)
         for entry in model.entries where entry.sheetType != SheetModelType.photo {
@@ -70,7 +70,7 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         // All entries should not be hex grid
         for entry in entries {
@@ -89,7 +89,7 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         // Each map entry should have photoInline
         for entry in entries {
@@ -105,7 +105,7 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         for entry in entries {
             for linkedSheet in entry.entries {
@@ -122,7 +122,7 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0)
+        let entries = sut.sheetEntries(root: RootManager(anyRoot: root), itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         for entry in entries {
             for link in entry.entries where link.source.typeId == NetworkModules.map {
@@ -139,10 +139,10 @@ struct SheetControllerTests {
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        let modelShown = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let modelShown = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
         #expect(modelShown.isShown == true)
 
-        let modelHidden = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 0, isShown: false)
+        let modelHidden = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 0, isShown: false, isEditor: false)
         #expect(modelHidden.isShown == false)
     }
 
@@ -154,11 +154,11 @@ struct SheetControllerTests {
         try #require(itemId != nil)
 
         // Test isFolded at level > 4
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 5, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 5, isShown: true, isEditor: false)
         #expect(model.isFolded == true)
         #expect(model.entries.isEmpty)
 
-        let modelNotFolded = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 4, isShown: true)
+        let modelNotFolded = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: nil, level: 4, isShown: true, isEditor: false)
         #expect(modelNotFolded.isFolded == false)
     }
 
@@ -170,7 +170,7 @@ struct SheetControllerTests {
         try #require(itemId != nil)
 
         let destination = ItemRowModel(itemId: Foundation.UUID(), typeId: NetworkModules.map)
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: destination, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId!, destination: destination, level: 0, isShown: true, isEditor: false)
 
         #expect(model.destination.itemId == destination.itemId)
     }

@@ -18,7 +18,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.isShown == true)
         #expect(model.level == 0)
@@ -38,7 +38,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         if item.hasAudio {
             let audioInline = model.entries.first(where: { $0.sheetType == SheetModelType.audioInline })
@@ -55,7 +55,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.entries.count >= 0)
         for entry in model.entries {
@@ -74,7 +74,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0)
+        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         for entry in entries {
             #expect(entry.sheetType == SheetModelType.audioInline)
@@ -90,7 +90,7 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0)
+        let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         for entry in entries {
             for linkedSheet in entry.entries {
@@ -109,10 +109,10 @@ struct SheetControllerTests {
 
         let rootManager = RootManager(anyRoot: root)
 
-        let modelShown = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true)
+        let modelShown = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
         #expect(modelShown.isShown == true)
 
-        let modelHidden = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: false)
+        let modelHidden = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: false, isEditor: false)
         #expect(modelHidden.isShown == false)
     }
 
@@ -126,11 +126,11 @@ struct SheetControllerTests {
         let rootManager = RootManager(anyRoot: root)
 
         // Test isFolded at level > 4
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 5, isShown: true)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 5, isShown: true, isEditor: false)
         #expect(model.isFolded == true)
         #expect(model.entries.isEmpty)
 
-        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 4, isShown: true)
+        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 4, isShown: true, isEditor: false)
         #expect(modelNotFolded.isFolded == false)
     }
 
@@ -144,7 +144,7 @@ struct SheetControllerTests {
         let rootManager = RootManager(anyRoot: root)
 
         let destination = ItemRowModel(itemId: Foundation.UUID(), typeId: NetworkModules.map)
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: destination, level: 1, isShown: false)
+        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: destination, level: 1, isShown: false, isEditor: false)
 
         #expect(model.destination.itemId == destination.itemId)
     }

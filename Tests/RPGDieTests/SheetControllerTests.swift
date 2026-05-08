@@ -19,7 +19,7 @@ struct SheetControllerTests {
         let diceModel = DiceModel(id: itemId, name: "Test Dice", description: "1d6", category: .scenario, displayState: 0, dice: [])
         root.itemController.itemDataModel.itemData[itemId] = diceModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: Optional<ItemRowModel>.none, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: Optional<ItemRowModel>.none, level: 0, isShown: true, isEditor: false)
 
         #expect(model.name == "Test Dice")
         #expect(model.description == "1d6")
@@ -40,7 +40,7 @@ struct SheetControllerTests {
         root.itemController.itemDataModel.itemData[itemId] = diceModel
 
         let destination = ItemRowModel(itemId: Foundation.UUID(), typeId: NetworkModules.table)
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 2, isShown: false)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 2, isShown: false, isEditor: false)
 
         #expect(model.destination.itemId == destination.itemId)
         #expect(model.level == 2)
@@ -56,7 +56,7 @@ struct SheetControllerTests {
         let diceModel = DiceModel(id: itemId, name: "Test", description: "", category: .scenario, displayState: 0, dice: [])
         root.itemController.itemDataModel.itemData[itemId] = diceModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: Optional<ItemRowModel>.none, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: Optional<ItemRowModel>.none, level: 0, isShown: true, isEditor: false)
 
         // Dice sheets have no sub-entries
         #expect(model.entries.isEmpty)

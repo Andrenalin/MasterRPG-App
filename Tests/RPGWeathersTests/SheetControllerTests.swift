@@ -37,7 +37,7 @@ struct SheetControllerTests {
         )
         root.itemController.itemDataModel.itemData[itemId] = weatherModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.name == "Test Weather")
         #expect(model.description == "Sunny")
@@ -76,7 +76,7 @@ struct SheetControllerTests {
         root.itemController.itemDataModel.itemData[itemId] = weatherModel
 
         let destination = ItemRowModel(itemId: Foundation.UUID(), typeId: NetworkModules.adventure)
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 1, isShown: false)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: destination, level: 1, isShown: false, isEditor: false)
 
         #expect(model.destination.itemId == destination.itemId)
         #expect(model.level == 1)
@@ -110,7 +110,7 @@ struct SheetControllerTests {
         )
         root.itemController.itemDataModel.itemData[itemId] = weatherModel
 
-        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true)
+        let model = sut.sheet(root: RootManager(anyRoot: root), itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
 
         // Weather sheets have inline weather widget but no sub-entries
         #expect(model.entries.isEmpty)
