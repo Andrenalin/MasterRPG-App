@@ -34,11 +34,14 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         }
         .contentShape(.rect)
         .moveDisabled(entryModel.sheetType != .item && entryModel.sheetType != .group)
+        .onChange(of: entryModel.content) {
+            rootModel.updateParent(parentModel)
+        }
 #if !os(tvOS)
         .applyIf(isEditor && entryModel.sheetType == .item) {
             $0.dropDestination(for: linkTypes, isEnabled: entryModel.sheetType != .group) { items, _ in
                 items.forEach {
-                    rootModel.addLink(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, to: entryModel)
+                    rootModel.addLink(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, to: entryModel, in: parentModel)
                 }
             }
         }

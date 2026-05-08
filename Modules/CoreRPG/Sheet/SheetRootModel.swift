@@ -171,7 +171,7 @@ public final class SheetRootModel: Sendable {
     func update(sheetModel: SheetModel, previousEntryId: UUID?, currentEntryId: UUID?) {
         guard let previousEntryId, currentEntryId == nil, editorModel.itemId == sheetModel.source.itemId else { return }
 
-        rootController(for: sheetModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: sheetModel, isEditor: isEditor)
+        updateParent(sheetModel)
 
         guard let entryModel = sheetModel.entries.first(where: { $0.source.entryId == previousEntryId }) else { return }
         entryModel.isEditing = false
@@ -193,8 +193,7 @@ public final class SheetRootModel: Sendable {
               let editable = entryDataEditable(for: entryModel.source),
               let newId = editable.copy(itemId: entryModel.source.itemId, entryId: entryId) else { return }
         editorModel.setEdit(source: ItemRowModel(itemId: entryModel.source.itemId, entryId: newId, typeId: entryModel.source.typeId))
-        rootController(for: entryModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
-        updateFilteredEntries()
+        updateParent(parentModel)
     }
 
     func moveEntry(entryModel: SheetModel, in parentModel: SheetModel, up: Bool) {
@@ -219,8 +218,7 @@ public final class SheetRootModel: Sendable {
         editable.move(itemId: entryModel.source.itemId, sourceEntryId: entryId, into: folder)
         Task {
             try? await Task.sleep(for: .milliseconds(100))
-            rootController(for: entryModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
-            updateFilteredEntries()
+            updateParent(parentModel)
         }
     }
 
@@ -234,15 +232,38 @@ public final class SheetRootModel: Sendable {
         editable.moveOutOfGroup(itemId: entryModel.source.itemId, sourceEntryId: entryId, parent: parent)
         Task {
             try? await Task.sleep(for: .milliseconds(100))
-            rootController(for: entryModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
-            updateFilteredEntries()
+            updateParent(parentModel)
         }
     }
 
-    func addLink(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, to destination: SheetModel) {
+    func addLink(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, to destination: SheetModel, in parentModel: SheetModel) {
         guard let editable = entryDataEditable(for: destination.source),
               let destinationEntryId = destination.source.entryId else { return }
         editable.add(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destination.source.itemId, destinationEntryId: destinationEntryId)
+        updateParent(parentModel)
+    }
+
+    /// Re-syncs a SheetModel tree from live data, then invalidates linkTextModel cache for any entry
+    /// whose content changed (hasChanged) and clears the flag.
+    func updateParent(_ parentModel: SheetModel) {
+        rootController(for: parentModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
+        resetChangedLinkModels(in: parentModel)
+        updateFilteredEntries()
+    }
+
+    private func resetChangedLinkModels(in sheetModel: SheetModel) {
+        if sheetModel.hasChanged {
+            linkTextModel[.item(sheetModel.id)] = nil
+            linkTextModel[.entry(sheetModel.id)] = nil
+            sheetModel.hasChanged = false
+        }
+        for entry in sheetModel.entries {
+            if entry.hasChanged {
+                linkTextModel[.entry(entry.id)] = nil
+                entry.hasChanged = false
+            }
+            resetChangedLinkModels(in: entry)
+        }
     }
 
 }
