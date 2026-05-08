@@ -8,6 +8,7 @@ import SwiftUI
 struct DetailEditorView: View {
     let root: CharacterRootModel
     let model: ValueModel
+    let sheetRootModel: SheetRootModel
     
     var body: some View {
         root.diceRoot.viewController.dropChooseView(model: root.editController.valueEditModel.selectionDice)
@@ -26,7 +27,7 @@ struct DetailEditorView: View {
                 root.editController.valueEditModel.selectionPhoto.resetSelection(selectionIds: model.photos)
             }
 
-        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Values", bundle: .module).localizedString, linkTypes: LinkCharacterModuleTransferable.self)
+        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, sheetRootModel: sheetRootModel, model: model, module: root.config.module, headerTitle: String(localized: "Values", bundle: .module).localizedString, linkTypes: LinkCharacterModuleTransferable.self)
             .task(id: model.id) {
                 root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                 root.editorLinkModel.characterSelectionModel.onlyChildrenFrom <=> model.id

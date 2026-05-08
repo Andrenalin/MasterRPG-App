@@ -4,33 +4,32 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
-    public init(editController: any EntryDataEditable, model: any ItemDataAccessable, linkControllable: any LinkControllable, linkTypes: LinkType.Type) {
-        self.editController = editController
-        self.model = model
-        self.linkControllable = linkControllable
+    public init(rootManager: RootManager, editorModel: SheetEditorModel, linkTypes: LinkType.Type) {
+        self.rootManager = rootManager
+        self.editorModel = editorModel
         self.linkTypes = linkTypes
-        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: editController.linkRegisterController))
+        let editController = rootManager.itemRootController(for: editorModel.module)?.editControllable as? (any EntryDataEditable)
+        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: editController?.linkRegisterController))
     }
 
-    let editController: any EntryDataEditable
-    let model: any ItemDataAccessable
-    let linkControllable: any LinkControllable
+    let rootManager: RootManager
+    let editorModel: SheetEditorModel
     let linkTypes: LinkType.Type
-    
+
     @FocusState private var currentFocus: EntryEditorFocusField?
     @State private var editModel: TextEditModel
     @State private var isDropTargeted: Bool = false
-    
+
     public var body: some View {
         Group {
             if isActive {
                 content(entry: entry)
-                    .id(editController.editorModel.currentItemId ?? UUID())
+                    .id(editorModel.itemId)
                     .onChange(of: entry.content, initial: true) {
-                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, typeId: activeEditController.itemControllable.config.module))
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editorModel.itemId, entryId: entry.id, typeId: activeEditController.itemControllable.config.module))
                     }
                     .onChange(of: entry.name) {
-                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, typeId: activeEditController.itemControllable.config.module))
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editorModel.itemId, entryId: entry.id, typeId: activeEditController.itemControllable.config.module))
                     }
             }
         }
@@ -41,14 +40,14 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
             currentFocus = .name
         }
     }
-    
+
     func content(entry: any EntryDataAccessable) -> some View {
         VStack {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Button {
-                            withAnimation { editController.editorModel.currentEntryId = nil }
+                            withAnimation { editorModel.entryId = nil }
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.headline)
@@ -71,11 +70,11 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
 #endif
                     }
                     .buttonStyle(.borderless)
-                    
+
                     EntryNameEditor(editModel: editModel, currentFocus: $currentFocus)
-                    
+
                     EntryContentEditor(editModel: editModel, currentFocus: $currentFocus)
-                    
+
                     // Drop Links Button Disable
                 }
                 .padding()
@@ -92,22 +91,9 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
         .contentShape(.rect)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
-    /// Get the correct edit controller for the current module
-    var activeEditController: (any EntryDataEditable) {
-        guard let currentModule = editController.editorModel.currentModule,
-              currentModule != editController.itemControllable.config.module else {
-            return editController  // Same module, use default
-        }
 
-        // Get the correct controller for cross-module editing
-        if let crossModuleController = linkControllable.rootManager
-            .itemRootController(for: currentModule)?
-            .editControllable as? (any EntryDataEditable) {
-            return crossModuleController
-        }
-
-        return editController  // Fallback to default
+    var activeEditController: any EntryDataEditable {
+        rootManager.itemRootController(for: editorModel.module)?.editControllable as! (any EntryDataEditable)
     }
 
     var backGroundColor: Color {
@@ -116,36 +102,23 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
 
     var isActive: Bool {
 #if os(iOS)
-        guard !editController.editorModel.deactivateEntryEditor else { return false }
+        guard !(rootManager.itemRootController(for: editorModel.module)?.editControllable.editorModel.deactivateEntryEditor ?? false) else { return false }
 #endif
-        // Check if the current module matches this editor's module
-        guard let currentModule = editController.editorModel.currentModule else {
-            return false
-        }
-
-        // If this editor is for the current module, check if entry is active
-        if currentModule == editController.itemControllable.config.module {
-            return entry.id == editController.editorModel.currentEntryId
-        }
-
-        return false
+        return editorModel.entryId != nil
     }
 
     var entry: any EntryDataAccessable {
-        guard let currentItemId = editController.editorModel.currentItemId else {
-            return model[editController.editorModel.currentEntryId ?? UUID()]
-        }
-        return activeEditController.itemControllable.itemOrEmpty(for: currentItemId)[editController.editorModel.currentEntryId ?? UUID()]
+        activeEditController.itemControllable.itemOrEmpty(for: editorModel.itemId)[editorModel.entryId ?? UUID()]
     }
-    
+
     func save() {
         editModel.resetText()
         withAnimation {
-            activeEditController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
-            editController.editorModel.currentEntryId = nil
+            activeEditController.update(itemId: editorModel.itemId, entryId: entry.id, name: editModel.name, content: editModel.text)
+            editorModel.entryId = nil
         }
     }
-    
+
     var dropBackgroundColor: Color {
 #if os(iOS) || os(visionOS)
         isDropTargeted ? Color.accentColor : Color(.systemGray6)
@@ -172,9 +145,9 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
             .dropDestination(for: linkTypes) { items, dropSession in
                 isDropTargeted = dropSession.phase == .entering
                 editModel.resetText()
-                activeEditController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
+                activeEditController.update(itemId: editorModel.itemId, entryId: entry.id, name: editModel.name, content: editModel.text)
                 items.forEach {
-                    activeEditController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
+                    activeEditController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: editorModel.itemId, destinationEntryId: entry.id)
                 }
             }
 #endif
@@ -189,14 +162,14 @@ enum EntryEditorFocusField {
 struct EntryNameEditor: View {
     let editModel: TextEditModel
     @FocusState.Binding var currentFocus: EntryEditorFocusField?
-    
+
     var body: some View {
         @Bindable var editModel = editModel
-        
+
         Text("Name", bundle: .module)
             .font(.caption)
             .frame(maxWidth: .infinity, alignment: .leading)
-        
+
         HStack {
             TextField(text: $editModel.name, prompt: Text("Enter a name", bundle: .module)) {
                 Text("Name", bundle: .module)
@@ -204,7 +177,7 @@ struct EntryNameEditor: View {
             .focused($currentFocus, equals: .name)
             .labelsHidden()
             .textFieldStyle(.plain)
-            
+
             Button {
                 withAnimation { editModel.name = "" }
             } label: {
@@ -232,14 +205,14 @@ struct EntryNameEditor: View {
 struct EntryContentEditor: View {
     let editModel: TextEditModel
     @FocusState.Binding var currentFocus: EntryEditorFocusField?
-    
+
     var body: some View {
         Text("Description", bundle: .module)
             .font(.caption)
-        
+
 #if os(tvOS)
         @Bindable var editModel = editModel
-        
+
         TextField(text: $editModel.text, prompt: Text("Add content", bundle: .module), axis: .vertical) {
             Text("Description", bundle: .module)
         }

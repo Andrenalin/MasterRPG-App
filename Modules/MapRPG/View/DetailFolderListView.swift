@@ -6,6 +6,12 @@ import PhotoRPG
 import SwiftUI
 
 struct DetailFolderListView: View {
+    init(root: MapRootModel, model: MapModel) {
+        self.root = root
+        self.model = model
+        self._sheetRootModel = State(wrappedValue: SheetRootModel(linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: model.id, isEditor: true))
+    }
+
     let root: MapRootModel
     let model: MapModel
 
@@ -15,6 +21,7 @@ struct DetailFolderListView: View {
     @State private var detailRoute: MapDetailRoute?
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
+    @State private var sheetRootModel: SheetRootModel
 
     var detailFolderListController: FolderListController {
         let listModel = root.navigationModel.folderModels[model.id]
@@ -84,7 +91,7 @@ struct DetailFolderListView: View {
         } overlay: {
             EmptyView()
         } entryEditor: {
-            EntryEditorView(editController: root.editController, model: model, linkControllable: root.linkControllable, linkTypes: LinkMapModuleTransferable.self)
+            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: sheetRootModel.editorModel, linkTypes: LinkMapModuleTransferable.self)
         }
     }
 
@@ -99,7 +106,7 @@ struct DetailFolderListView: View {
 
         DisplayConfigEditor(model: model)
 
-        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Rooms", bundle: .module).localizedString, linkTypes: LinkMapModuleTransferable.self)
+        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, sheetRootModel: sheetRootModel, model: model, module: root.config.module, headerTitle: String(localized: "Rooms", bundle: .module).localizedString, linkTypes: LinkMapModuleTransferable.self)
             .id(model.id)
     }
 }

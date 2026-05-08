@@ -5,11 +5,11 @@ import SwiftData
 import SwiftUI
 
 @MainActor @Observable public final class TextEditModel {
-    public init(linkRegisterController: LinkRegisterController) {
+    public init(linkRegisterController: LinkRegisterController?) {
         self.linkRegisterController = linkRegisterController
     }
     
-    let linkRegisterController: LinkRegisterController
+    let linkRegisterController: LinkRegisterController?
     var source: ItemRowModel = ItemRowModel(itemId: UUID(), typeId: .none)
     
     public var name: String = ""
@@ -36,7 +36,8 @@ import SwiftUI
     
     public func resetAttributedText() {
         var att = AttributedString(text)
-        links = linkRegisterController.linkRegisterModel(in: text, for: source)
+        guard let links = linkRegisterController?.linkRegisterModel(in: text, for: source) else { return }
+        self.links = links
         links.forEach {
             if let markDown = $0.markDown, let range = att.range(of: markDown) {
                 var linkAtt = AttributedString($0.name)
@@ -60,7 +61,7 @@ import SwiftUI
             let substring = String(att[range].characters)
             
             if let linkId = run.linkContent {
-                if let link = linkRegisterController.linkRegisterModel(linkId: linkId) {
+                if let link = linkRegisterController?.linkRegisterModel(linkId: linkId) {
                     let markdown = link.markDown ?? link.urlMarkDown
                     result.append(markdown)
                 } else {

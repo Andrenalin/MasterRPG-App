@@ -16,6 +16,20 @@ public struct SheetFirstRootEditorView<LinkType: LinkDataTransferable>: View {
 
     }
     
+    public init(root: ItemRootController, linkControllable: any LinkControllable, sheetRootModel: SheetRootModel, model: any ItemDataAccessable, module: NetworkModules, headerTitle: String, linkTypes: LinkType.Type) {
+        self.root = root
+        let rootLinkControllable = linkControllable.rootManager.adventureRoot.linkControllable
+        self.linkControllable = rootLinkControllable
+        self.model = model
+        self.module = module
+        self.headerTitle = headerTitle
+        self.linkTypes = linkTypes
+        self.sheetRootModel = sheetRootModel
+//        self._sheetRootModel = State(wrappedValue: TableFirstSheetModel(linkControllable: rootLinkControllable, parent: nil, model: model, level: 0, module: module))
+
+    }
+
+    
     let root: ItemRootController
     let linkControllable: LinkControllable
     let model: any ItemDataAccessable

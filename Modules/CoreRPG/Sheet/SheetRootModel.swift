@@ -9,14 +9,17 @@ enum LinkHighlightTextModelId: Hashable {
 
 @MainActor @Observable
 public final class SheetRootModel: Sendable {
-    init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool) {
+    public init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool) {
         self.linkControllable = linkControllable
         self.isEditor = isEditor
-        self.sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
+        let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
+        self.sheetModel = sheetModel
+        self.editorModel = SheetEditorModel(itemId: itemId, module: sheetModel.source.typeId)
         updateFilteredEntries()
     }
     
     let isEditor: Bool
+    public let editorModel: SheetEditorModel
     private(set)var sheetModel: SheetModel
     var searchText: String = "" {
         didSet {
@@ -148,8 +151,10 @@ public final class SheetRootModel: Sendable {
     
     func addNewEntry(in sheetModel: SheetModel) -> UUID? {
         guard let entryId = addNewEntry(to: sheetModel.source) else { return nil }
-        setCurrentItem(source: sheetModel.source, entryId: entryId)
-        setCurrentEntryId(source: sheetModel.source, entryId: entryId)
+        //setCurrentItem(source: sheetModel.source, entryId: entryId)
+        editorModel.itemId = sheetModel.source.itemId
+        editorModel.module = sheetModel.source.typeId
+        editorModel.entryId = entryId
         return entryId
     }
     
@@ -164,8 +169,8 @@ public final class SheetRootModel: Sendable {
     }
 
     func update(sheetModel: SheetModel, previousEntryId: UUID?, currentEntryId: UUID?) {
-        guard let previousEntryId, currentEntryId == nil, let itemId = currentItemId(for: sheetModel.source), itemId == sheetModel.source.itemId else { return }
-        
+        guard let previousEntryId, currentEntryId == nil, editorModel.itemId == sheetModel.source.itemId else { return }
+
         rootController(for: sheetModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: sheetModel, isEditor: isEditor)
 
         guard let entryModel = sheetModel.entries.first(where: { $0.source.entryId == previousEntryId }) else { return }
@@ -175,26 +180,10 @@ public final class SheetRootModel: Sendable {
         model.reset(text: entryModel.content)
     }
 
-    /// Set the current item in the edit controller
+    /// Set the current item in the edit controller (keeps ItemEditorModel in sync for scroll/other consumers)
     func setCurrentItem(source: ItemRowModel, entryId: UUID?) {
         guard let editController = editControllable(for: source) else { return }
         editController.setCurrentItem(to: ItemRowTreeModel(itemId: source.itemId, entryId: entryId, typeId: source.typeId))
-    }
-
-    /// Set the current entry ID in the editor model
-    private func setCurrentEntryId(source: ItemRowModel, entryId: UUID?) {
-        guard let editController = editControllable(for: source) else { return }
-        editController.editorModel.currentEntryId = entryId
-    }
-
-    /// Get the current entry ID from the editor model
-    func currentEntryId(for source: ItemRowModel) -> UUID? {
-        editControllable(for: source)?.editorModel.currentEntryId
-    }
-
-    /// Get the current item ID from the editor model
-    func currentItemId(for source: ItemRowModel) -> UUID? {
-        editControllable(for: source)?.editorModel.currentItemId
     }
 
 }

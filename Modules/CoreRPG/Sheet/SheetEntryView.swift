@@ -122,7 +122,7 @@ private extension SheetEntryView {
             withAnimation {
                 entryModel.isEditing.toggle()
                 if isEditor {
-                    rootModel.setCurrentItem(source: entryModel.source, entryId: entryModel.source.entryId)
+                    rootModel.editorModel.setEdit(source: entryModel.source)
                 }
             }
         } label: {
