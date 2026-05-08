@@ -34,7 +34,21 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         }
         .contentShape(.rect)
         .moveDisabled(entryModel.sheetType != .item && entryModel.sheetType != .group)
-        
+#if !os(tvOS)
+        .applyIf(isEditor && entryModel.sheetType == .item) {
+            $0.dropDestination(for: linkTypes, isEnabled: entryModel.sheetType != .group) { items, _ in
+                items.forEach {
+                    rootModel.addLink(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, to: entryModel)
+                }
+            }
+        }
+#endif
+        .contextMenuAll {
+            editButton(onlyIcon: false)
+            SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel)
+            deleteButton(onlyIcon: false)
+        }
+
         ForEach(entryModel.entries) { subEntry in
             if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
                 SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes)

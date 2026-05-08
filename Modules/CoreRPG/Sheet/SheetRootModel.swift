@@ -186,4 +186,63 @@ public final class SheetRootModel: Sendable {
         editController.setCurrentItem(to: ItemRowTreeModel(itemId: source.itemId, entryId: entryId, typeId: source.typeId))
     }
 
+    // MARK: - Context menu actions
+
+    func duplicateEntry(entryModel: SheetModel, in parentModel: SheetModel) {
+        guard let entryId = entryModel.source.entryId,
+              let editable = entryDataEditable(for: entryModel.source),
+              let newId = editable.copy(itemId: entryModel.source.itemId, entryId: entryId) else { return }
+        editorModel.setEdit(source: ItemRowModel(itemId: entryModel.source.itemId, entryId: newId, typeId: entryModel.source.typeId))
+        rootController(for: entryModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
+        updateFilteredEntries()
+    }
+
+    func moveEntry(entryModel: SheetModel, in parentModel: SheetModel, up: Bool) {
+        guard let editable = entryDataEditable(for: entryModel.source),
+              let index = parentModel.entries.firstIndex(where: { $0.id == entryModel.id }) else { return }
+        let newIndex = up ? index - 1 : index + 2
+        guard newIndex >= 0, newIndex <= parentModel.entries.count else { return }
+        parentModel.entries.move(fromOffsets: IndexSet(integer: index), toOffset: newIndex)
+        editable.move(itemId: parentModel.source.itemId, entryIds: parentModel.entries.compactMap { $0.source.entryId })
+        updateFilteredEntries()
+    }
+
+    func groupFolders(for entryModel: SheetModel) -> [FolderRepresentable] {
+        guard let entryId = entryModel.source.entryId,
+              let editable = entryDataEditable(for: entryModel.source) else { return [] }
+        return editable.groupFolders(itemId: entryModel.source.itemId, sourceEntryId: entryId)
+    }
+
+    func moveEntry(_ entryModel: SheetModel, in parentModel: SheetModel, into folder: FolderRepresentable) {
+        guard let entryId = entryModel.source.entryId,
+              let editable = entryDataEditable(for: entryModel.source) else { return }
+        editable.move(itemId: entryModel.source.itemId, sourceEntryId: entryId, into: folder)
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            rootController(for: entryModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
+            updateFilteredEntries()
+        }
+    }
+
+    func parentGroup(for entryModel: SheetModel) -> FolderRepresentable? {
+        entryDataEditable(for: entryModel.source)?.parentFolder(itemId: entryModel.source.itemId)
+    }
+
+    func moveEntryOutOfGroup(_ entryModel: SheetModel, in parentModel: SheetModel, parent: FolderRepresentable) {
+        guard let entryId = entryModel.source.entryId,
+              let editable = entryDataEditable(for: entryModel.source) else { return }
+        editable.moveOutOfGroup(itemId: entryModel.source.itemId, sourceEntryId: entryId, parent: parent)
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            rootController(for: entryModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
+            updateFilteredEntries()
+        }
+    }
+
+    func addLink(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, to destination: SheetModel) {
+        guard let editable = entryDataEditable(for: destination.source),
+              let destinationEntryId = destination.source.entryId else { return }
+        editable.add(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destination.source.itemId, destinationEntryId: destinationEntryId)
+    }
+
 }
