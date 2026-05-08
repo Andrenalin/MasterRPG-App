@@ -46,7 +46,7 @@ extension SheetController: SheetControllable {
         return sheetModel
     }
 
-    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
+    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
             sheetEntry(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)

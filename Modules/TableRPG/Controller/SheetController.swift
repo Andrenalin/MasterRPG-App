@@ -82,7 +82,7 @@ extension SheetController: SheetControllable {
         return sheetModel
     }
 
-    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
+    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         Logger.sheetController.debug("[Sheet] Creating entries for itemId: \(itemId.uuidString) - Entry count: \(item.entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
         

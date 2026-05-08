@@ -73,17 +73,14 @@ extension SheetController: SheetControllable {
         }
 
         let isFolded = moduleDepth >= 1 || (isEditor && level > 0)
-        if isFolded {
-            Logger.sheetController.debug("[Sheet] Folded at moduleDepth \(moduleDepth) for itemId: \(itemId.uuidString)")
-        }
-        
         let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
         
         // Count all nested sheets
         let nestedCount = countSheets(in: entries)
         totalSheetCount += nestedCount
         
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
+        let showHeader = model.displayState == 0
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         
         let duration = ContinuousClock.now - startTime
         Logger.sheetController.info("✅ [Sheet] Completed \(itemController.config.module.token) - Duration: \(duration), Total sheets in subtree: \(totalSheetCount), Direct entries: \(entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
@@ -91,7 +88,7 @@ extension SheetController: SheetControllable {
         return sheetModel
     }
 
-    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
+    @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         Logger.sheetController.debug("[Sheet] Creating entries for itemId: \(itemId.uuidString) - Entry count: \(item.entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
         
@@ -104,9 +101,25 @@ extension SheetController: SheetControllable {
     
     @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let startTime = ContinuousClock.now
-        let name = entry.name
-        let description = entry.content
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
+
+        var name = entry.name
+        var description = ""
+        if let valueId = entry.valueId {
+            let value = itemController.itemOrEmpty(for: valueId)
+            name = ""
+            description = value.url(linkNumber: 0)
+        } else {
+            description = entry.value
+            if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {
+                description += " = \(valueCalculate)"
+            }
+        }
+
+        var inlineEntries: [SheetModel] = []
+        if let diceId = entry.diceId {
+            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: destination, level: level, type: .dice, name: "", description: "", entries: []))
+        }
 
         var allSheets: [SheetModel] = []
         if let subValueId = entry.valueId {
@@ -114,11 +127,11 @@ extension SheetController: SheetControllable {
         }
         let links = LinkReplaceController.links(for: entry.content)
         Logger.sheetController.debug("[Sheet] Entry '\(name)' has \(links.count) links - Level: \(level), ModuleDepth: \(moduleDepth)")
-        
+
         let linkSheets = links.compactMap { link -> SheetModel? in
             let linkedModule = link.module.token
             Logger.sheetController.debug("[Sheet] Processing link to module: \(linkedModule), itemId: \(link.itemId.uuidString), hasEntryId: \(link.entryId != nil)")
-            
+
             switch link.module {
             case .value:
                 if link.entryId == nil {
@@ -132,11 +145,12 @@ extension SheetController: SheetControllable {
             }
         }
         allSheets.append(contentsOf: linkSheets)
-        
+
         let duration = ContinuousClock.now - startTime
         Logger.sheetController.debug("[Sheet] Entry sheet created - Duration: \(duration), Name: '\(name)', Links processed: \(links.count), Sheets from links: \(linkSheets.count)")
-        
-        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: allSheets)
+
+        let entryType: SheetModelType = entry.valueId != nil ? .group : .item
+        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: entryType, editType: entry.editType, name: name, description: description, inlineEntries: inlineEntries, entries: allSheets)
     }
     
     @MainActor private func createDiceInline(diceId: UUID, itemId: UUID, level: Int, isShown: Bool) -> SheetModel {
@@ -200,6 +214,16 @@ extension SheetController: SheetControllable {
                 unequalSet(lhs: &existingSheetModel.description, rhs: entry.content) { changed in
                     existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
                     if changed { updatedCount += 1 }
+                }
+                // Update per-entry dice inline
+                if let diceId = entry.diceId {
+                    let destination = ItemRowModel(itemId: model.id, entryId: entry.id, typeId: itemController.config.module)
+                    let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
+                    let diceSheetModel = existingSheetModel.inlineEntries.first ?? SheetModel(source: diceSource, destination: destination, level: sheetModel.level, type: .dice, name: "", description: "", entries: [])
+                    diceSheetModel.source = diceSource
+                    existingSheetModel.inlineEntries = [diceSheetModel]
+                } else {
+                    existingSheetModel.inlineEntries = []
                 }
                 existingSheetModel.entries.forEach { subSheetModel in
                     root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel, isEditor: isEditor)

@@ -20,20 +20,26 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        GameShareView(root: root, model: model) {
-            nameRow
-        }
-        .onChange(of: rootModel.editorModel.entryId) { previousEntryId, currentEntryId in
-            rootModel.update(sheetModel: sheetModel, previousEntryId: previousEntryId, currentEntryId: currentEntryId)
+        if sheetModel.showHeader || isEditor {
+            GameShareView(root: root, model: model) {
+                nameRow
+            }
+
+            if !sheetModel.isFolded {
+                inlineRows
+
+                secondaryRow
+            }
         }
 
-        inlineRows
-        
-        secondaryRow
-        
-        entryRows
-        
+        if !sheetModel.isFolded {
+            entryRows
+        }
+
         endRow
+            .onChange(of: rootModel.editorModel.entryId) { previousEntryId, currentEntryId in
+                rootModel.update(sheetModel: sheetModel, previousEntryId: previousEntryId, currentEntryId: currentEntryId)
+            }
     }
 }
 
