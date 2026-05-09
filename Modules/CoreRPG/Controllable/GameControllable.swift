@@ -123,12 +123,14 @@ public extension GameControllable {
     }
 
     func hasItem(id: UUID, version: Int) async -> Bool {
-        guard await gameModel.itemData[id] == nil else { return version == 0 }
-        
-        guard let item = await itemControllable.item(for: id, version: version) else { return false }
-        let gameItem = item.copy()
-        await gameModel.insert(itemId: item.id, item: gameItem)
-        return true
+        guard await gameModel.itemData[id] != nil, let localItem = await itemControllable.item(for: id) else {
+            guard let item = await itemControllable.item(for: id, version: version) else { return false }
+            let gameItem = item.copy()
+            await gameModel.insert(itemId: item.id, item: gameItem)
+            return true
+        }
+        return version == 0 || version == localItem.version
+
     }
 
     func setCurrent(itemId: UUID) async -> Bool {

@@ -33,7 +33,6 @@ struct PlayerGameScreen: View {
             overlayMenu
         }
         .focusSectionAll()
-        //.environment(\.gameModus, .player)
         .alert(Text("Quit Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
             Button {
                 endGame()

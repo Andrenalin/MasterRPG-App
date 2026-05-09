@@ -69,25 +69,40 @@ struct GameRootViewer<MapContent: View>: View {
     
     @MainActor @ViewBuilder
     private func otherViews<Content: View>(@ViewBuilder defaultContentView: () -> Content) -> some View {
+        Group {
+            switch playerController.gameModel.gameUpdateType {
+                case .pdf:
+                    root.pdfRoot.viewController.gamePdfView(root: root.pdfRoot)
+                case .photo:
+                    root.photoRoot.viewController.gameViewer(root: root.photoRoot)
+                case .space:
+                    root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
+                case .table:
+                    root.tableRoot.viewController.gameViewer(root: root.tableRoot)
+                case .weather:
+                    root.weatherRoot.viewController.gameViewer(root: root.weatherRoot)
+                default:
+                    defaultContentView()
+            }
+        }
+        .id(currentViewId)
+    }
+    
+    private var currentViewId: UUID {
         switch playerController.gameModel.gameUpdateType {
             case .pdf:
-                root.pdfRoot.viewController.gamePdfView(root: root.pdfRoot)
-                    .id(root.pdfRoot.gameControllable.gameModel.currentItemId ?? UUID())
+                return root.pdfRoot.gameControllable.gameModel.currentItemId ?? UUID()
             case .photo:
-                root.photoRoot.viewController.gameViewer(root: root.photoRoot)
-                    .id(root.photoRoot.gameControllable.gameModel.currentItemId ?? UUID())
+                return root.photoRoot.gameControllable.gameModel.currentItemId ?? UUID()
             case .space:
-                root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
-                    .id(root.spaceRoot.gameControllable.gameModel.currentItemId ?? UUID())
+                return root.spaceRoot.gameControllable.gameModel.currentItemId ?? UUID()
             case .table:
-                root.tableRoot.viewController.gameViewer(root: root.tableRoot)
-                    .id(root.tableRoot.gameControllable.gameModel.currentItemId ?? UUID())
+                return root.tableRoot.gameControllable.gameModel.currentItemId ?? UUID()
             case .weather:
-                root.weatherRoot.viewController.gameViewer(root: root.weatherRoot)
-                    .id(root.weatherRoot.gameControllable.gameModel.currentItemId ?? UUID())
+                return root.weatherRoot.gameControllable.gameModel.currentItemId ?? UUID()
             default:
-                defaultContentView()
-            }
+                return UUID() // Generates a new ID for default content
+        }
     }
 }
 
