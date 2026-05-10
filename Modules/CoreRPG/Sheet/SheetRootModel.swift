@@ -257,7 +257,9 @@ public final class SheetRootModel: Sendable {
     func updateParent(_ parentModel: SheetModel) {
         rootController(for: parentModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
         resetChangedLinkModels(in: parentModel)
-        updateFilteredEntries()
+        if !searchText.isEmpty {
+            updateFilteredEntries()
+        }
     }
 
     private func resetChangedLinkModels(in sheetModel: SheetModel) {
