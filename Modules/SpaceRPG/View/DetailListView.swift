@@ -3,14 +3,19 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailListView: View {
+struct DetailListView: View, Equatable {
     let root: SpaceRootModel
     let model: SpaceModel
-    
+
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
-    
+
+    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
+        lhs.model.id == rhs.model.id
+    }
+
     var body: some View {
         DetailFolderListView(root: root, model: model)
+            .equatable()
             .environment(openFileWindowModel)
             .environment(root.folderListController.cacheListItemModel)
             .environment(root.listDisplayModel)

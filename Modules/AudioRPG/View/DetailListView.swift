@@ -3,16 +3,21 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailListView: View {
+struct DetailListView: View, Equatable {
     let root: AudioRootModel
     let model: AudioModel
-    
+
     @Environment(\.navigator) private var navigator
-    
+
     @State private var openFileWindowModel = OpenFileWindowModel()
-    
+
+    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
+        lhs.model.id == rhs.model.id
+    }
+
     var body: some View {
         DetailFolderListView(root: root, model: model)
+            .equatable()
             .toolbar {
                 ToolbarItem(placement: .secondaryActionAll) {
                     playButton

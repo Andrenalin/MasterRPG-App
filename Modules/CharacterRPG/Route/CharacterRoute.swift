@@ -51,13 +51,23 @@ struct CHaracterRouteDestinationView: View {
     let itemId: UUID
 
     @Environment(CharacterRootModel.self) private var root
-    
+
     var body: some View {
         if let model = root.itemController.itemSync(for: itemId) {
-            DetailRootView(root: root, model: model)
-                .environment(root.listDisplayModel)
-                .environment(root.searchModel)
-                .environment(root.rootController)
+            DetailRootViewWrapper(root: root, model: model)
         }
+    }
+}
+
+private struct DetailRootViewWrapper: View {
+    let root: CharacterRootModel
+    let model: ValueModel
+
+    var body: some View {
+        DetailRootView(root: root, model: model)
+            .equatable()
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(root.rootController)
     }
 }

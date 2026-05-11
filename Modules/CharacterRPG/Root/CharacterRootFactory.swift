@@ -18,7 +18,10 @@ public enum CharacterRootFactory {
     }
     
     @MainActor public static func detailView(root: CharacterRootModel) -> some View {
-        ItemSplitDetailRouteRootView(root: root.rootController, route: CharacterRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
+        let selectedItemId = root.navigationModel.selectedItemId
 
+        if let itemId = selectedItemId {
+            ItemSplitDetailRouteRootView(root: root.rootController, route: CharacterRoute.detail(itemId))
+        }
     }
 }

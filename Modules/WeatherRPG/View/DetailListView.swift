@@ -3,17 +3,22 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailListView: View {
+struct DetailListView: View, Equatable {
     let root: WeatherRootModel
     let model: WeatherModel
-    
+
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.weather.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
     @Environment(\.navigator) private var navigator
-    
+
     @State private var animate: Bool = false
-    
+
+    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
+        lhs.model.id == rhs.model.id
+    }
+
     var body: some View {
         DetailFolderListView(root: root, model: model, animate: $animate)
+            .equatable()
             .toolbar {
                 toolbarContent
             }

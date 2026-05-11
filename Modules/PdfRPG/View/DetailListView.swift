@@ -3,16 +3,21 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailListView: View {
+struct DetailListView: View, Equatable {
     let root: PdfRootModel
     let model: PdfModel
-    
+
     @Environment(\.navigator) private var navigator
-    
+
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.pdf.viewerWindowId, route: { DetailRoute.viewer($0, nil) })
-    
+
+    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
+        lhs.model.id == rhs.model.id
+    }
+
     var body: some View {
         DetailFolderListView(root: root, model: model)
+            .equatable()
 #if !os(tvOS)
             .toolbar {
                 toolbarContent

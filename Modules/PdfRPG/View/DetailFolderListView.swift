@@ -3,9 +3,10 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailFolderListView: View {
-    let root: PdfRootModel
+struct DetailFolderListView: View, Equatable {
+    private let rootStorage: PdfRootModel
     let model: PdfModel
+    private let navigationModel: ModuleNavigationModel
 
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(\.navigator) private var navigator
@@ -14,19 +15,32 @@ struct DetailFolderListView: View {
     @State private var detailRoute: PdfDetailRoute?
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
-    
-    var detailFolderListController: FolderListController {
+    @State private var detailFolderListController: FolderListController
+
+    init(root: PdfRootModel, model: PdfModel) {
+        self.rootStorage = root
+        self.model = model
+        self.navigationModel = root.navigationModel
+
         let listModel = root.navigationModel.folderModels[model.id]
-        
         let allListModel = listModel ?? root.folderListController.copyModel(parentModel: model)
         if listModel == nil {
             root.navigationModel.folderModels[model.id] = allListModel
         }
-        
-        return root.folderListController.copy(listModel: allListModel) as! FolderListController
+
+        let controller = root.folderListController.copy(listModel: allListModel) as! FolderListController
+        self._detailFolderListController = State(initialValue: controller)
+
+        print("🔄 DetailFolderListView.detailFolderListController created for model: \(model.name)")
+    }
+
+    static func == (lhs: DetailFolderListView, rhs: DetailFolderListView) -> Bool {
+        lhs.model.id == rhs.model.id
     }
     
     var body: some View {
+        let _ = Self._printChanges()
+
         content(listController: detailFolderListController)
             .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $detailRoute)
@@ -40,12 +54,12 @@ struct DetailFolderListView: View {
                     }
             }
             .applyIf(appSizeModel.mode == .regular) {
-                $0.onChange(of: root.navigationModel.folderItems) {
-                    guard lastFolderId == nil, let subItemId = root.navigationModel.folderItems.last else { return }
-                    lastFolderId = subItemId
-                    withAnimation {
-                        showFolderDetail = true
-                    }
+                $0.background {
+                    FolderItemsObserver(
+                        navigationModel: navigationModel,
+                        lastFolderId: $lastFolderId,
+                        showFolderDetail: $showFolderDetail
+                    )
                 }
                 .overlay {
                     if showFolderDetail, let lastFolderId {
@@ -68,7 +82,25 @@ struct DetailFolderListView: View {
             }
     }
     
+    @ViewBuilder
     func content(listController: any FolderListControllable) -> some View {
+        let _ = print("🔍 DetailFolderListView.content() called for model: \(model.name)")
+        DetailFolderContentView(
+            root: rootStorage,
+            model: model,
+            listController: listController
+        )
+    }
+}
+
+private struct DetailFolderContentView: View {
+    let root: PdfRootModel
+    let model: PdfModel
+    let listController: any FolderListControllable
+
+    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
+
+    var body: some View {
         ItemDetailRootView(
             detailListController: listController,
             selectedModel: model,
@@ -76,10 +108,7 @@ struct DetailFolderListView: View {
         ) {
             EmptyView()
         } editor: {
-            fileAndPlayerView(model: model)
-
-            SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString, linkTypes: LinkPdfModuleTransferable.self)
-                .id(model.id)
+            DetailEditorView(root: root, model: model)
         } overlay: {
             EmptyView()
         } entryEditor: {
@@ -93,20 +122,45 @@ struct DetailFolderListView: View {
             }
         }
     }
-    
-    func fileAndPlayerView(model: PdfModel) -> some View {
+}
+
+private struct DetailEditorView: View {
+    let root: PdfRootModel
+    let model: PdfModel
+
+    var body: some View {
         VStack(spacing: 12) {
             HStack {
                 HStack {
                     FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], itemId: model.id)
-                    
+
                     Text(model.url?.path(percentEncoded: false) ?? "No file is set")
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    
+
                 }
                 .opacity(model.specialCategory ? 0 : 1)
             }
         }
         .padding()
+
+        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString, linkTypes: LinkPdfModuleTransferable.self)
+            .id(model.id)
+    }
+}
+
+private struct FolderItemsObserver: View {
+    let navigationModel: ModuleNavigationModel
+    @Binding var lastFolderId: UUID?
+    @Binding var showFolderDetail: Bool
+
+    var body: some View {
+        Color.clear
+            .onChange(of: navigationModel.folderItems) {
+                guard lastFolderId == nil, let subItemId = navigationModel.folderItems.last else { return }
+                lastFolderId = subItemId
+                withAnimation {
+                    showFolderDetail = true
+                }
+            }
     }
 }

@@ -57,11 +57,9 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
-    
-    @Environment(ListDisplayModel.self) private var listDisplayModel
-    @Environment(SearchModel.self) private var searchModel
+
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
-    
+
     @Environment(ItemRootController.self) private var root
         
     @State private var editingItem: EditingItem?

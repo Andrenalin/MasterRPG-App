@@ -5,15 +5,21 @@ import DiceRPG
 import PhotoRPG
 import SwiftUI
 
-struct DetailListView: View {
+struct DetailListView: View, Equatable {
     let root: AdventureRootModel
     let model: AdventureModel
 
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
 
+    // Equatable conformance: only recreate if model.id changes
+    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
+        lhs.model.id == rhs.model.id
+    }
+
     var body: some View {
         let _ = Self._printChanges()
         DetailFolderListView(root: root, model: model)
+            .equatable()  // Only recreate if model.id changes
             .toolbar {
                 toolbarContent
             }

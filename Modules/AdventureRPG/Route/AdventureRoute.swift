@@ -52,14 +52,27 @@ struct DestinationAdventureRouteView: View {
     let itemId: UUID
 
     @Environment(AdventureRootModel.self) private var root
-    
+
     var body: some View {
         let _ = Self._printChanges()
+
+        // Fetch model once to avoid repeated lookups
         if let model = root.itemController.itemSync(for: itemId) {
-            DetailRootView(root: root, model: model)
-                .environment(root.listDisplayModel)
-                .environment(root.searchModel)
-                .environment(root.rootController)
+            DetailRootViewWrapper(root: root, model: model)
         }
+    }
+}
+
+// Separate wrapper to isolate observable dependencies
+private struct DetailRootViewWrapper: View {
+    let root: AdventureRootModel
+    let model: AdventureModel
+
+    var body: some View {
+        DetailRootView(root: root, model: model)
+            .equatable()  // Only recreate if model.id changes
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(root.rootController)
     }
 }

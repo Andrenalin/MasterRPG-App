@@ -5,9 +5,13 @@ import DiceRPG
 import PhotoRPG
 import SwiftUI
 
-struct DetailFolderListView: View {
-    let root: AdventureRootModel
+struct DetailFolderListView: View, Equatable {
+    // Store root temporarily for initialization, but don't access in body
+    private let rootStorage: AdventureRootModel
     let model: AdventureModel
+
+    // Extract only what we need for body evaluation
+    private let navigationModel: ModuleNavigationModel
 
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(\.navigator) private var navigator
@@ -16,21 +20,34 @@ struct DetailFolderListView: View {
     @State private var detailRoute: AdventureDetailRoute?
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
+    @State private var detailFolderListController: FolderListController
 
-    var detailFolderListController: FolderListController {
-        let _ = print("🔄 DetailFolderListView.detailFolderListController computed for model: \(model.name)")
+    init(root: AdventureRootModel, model: AdventureModel) {
+        self.rootStorage = root
+        self.model = model
+        self.navigationModel = root.navigationModel
+
+        // Get or create the list model
         let listModel = root.navigationModel.folderModels[model.id]
-
         let allListModel = listModel ?? root.folderListController.copyModel(parentModel: model)
         if listModel == nil {
             root.navigationModel.folderModels[model.id] = allListModel
         }
 
-        return root.folderListController.copy(listModel: allListModel) as! FolderListController
+        let controller = root.folderListController.copy(listModel: allListModel) as! FolderListController
+        self._detailFolderListController = State(initialValue: controller)
+
+        print("🔄 DetailFolderListView.detailFolderListController created for model: \(model.name)")
+    }
+
+    // Equatable conformance: only recreate if model.id changes
+    static func == (lhs: DetailFolderListView, rhs: DetailFolderListView) -> Bool {
+        lhs.model.id == rhs.model.id
     }
 
     var body: some View {
         let _ = Self._printChanges()
+
         content(listController: detailFolderListController)
             .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $detailRoute)
@@ -44,12 +61,13 @@ struct DetailFolderListView: View {
                     }
             }
             .applyIf(appSizeModel.mode == .regular) {
-                $0.onChange(of: root.navigationModel.folderItems) {
-                    guard lastFolderId == nil, let subItemId = root.navigationModel.folderItems.last else { return }
-                    lastFolderId = subItemId
-                    withAnimation {
-                        showFolderDetail = true
-                    }
+                $0.background {
+                    // Isolate folderItems observation to prevent parent re-renders
+                    FolderItemsObserver(
+                        navigationModel: navigationModel,
+                        lastFolderId: $lastFolderId,
+                        showFolderDetail: $showFolderDetail
+                    )
                 }
                 .overlay {
                     if showFolderDetail, let lastFolderId {
@@ -75,6 +93,24 @@ struct DetailFolderListView: View {
     @ViewBuilder
     func content(listController: any FolderListControllable) -> some View {
         let _ = print("🔍 DetailFolderListView.content() called for model: \(model.name)")
+        DetailFolderContentView(
+            root: rootStorage,
+            model: model,
+            listController: listController
+        )
+    }
+}
+
+// MARK: - Separate Content View to Reduce Observable Dependencies
+
+private struct DetailFolderContentView: View {
+    let root: AdventureRootModel
+    let model: AdventureModel
+    let listController: any FolderListControllable
+
+    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
+
+    var body: some View {
         ItemDetailRootView(
             detailListController: listController,
             selectedModel: model,
@@ -82,7 +118,7 @@ struct DetailFolderListView: View {
         ) {
             EmptyView()
         } editor: {
-            detailEditorView
+            DetailEditorView(root: root, model: model)
         } overlay: {
             EmptyView()
         } entryEditor: {
@@ -96,8 +132,15 @@ struct DetailFolderListView: View {
             }
         }
     }
+}
 
-    @ViewBuilder private var detailEditorView: some View {
+// MARK: - Detail Editor View (Isolated from Parent)
+
+private struct DetailEditorView: View {
+    let root: AdventureRootModel
+    let model: AdventureModel
+
+    var body: some View {
         root.diceRoot.viewController.dropChooseView(model: root.editController.adventureEditModel.selectionDice)
             .onChange(of: root.editController.adventureEditModel.selectionDice.selection) {
                 withAnimation { root.editController.add(diceId: root.editController.adventureEditModel.selectionDice.itemId, itemId: model.id) }
@@ -118,5 +161,24 @@ struct DetailFolderListView: View {
 
         SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Sections", bundle: .module).localizedString, linkTypes: LinkAdventureModuleTransferable.self)
             .id(model.id)
+    }
+}
+
+// MARK: - Folder Items Observer (Isolated Observable Dependency)
+
+private struct FolderItemsObserver: View {
+    let navigationModel: ModuleNavigationModel
+    @Binding var lastFolderId: UUID?
+    @Binding var showFolderDetail: Bool
+
+    var body: some View {
+        Color.clear
+            .onChange(of: navigationModel.folderItems) {
+                guard lastFolderId == nil, let subItemId = navigationModel.folderItems.last else { return }
+                lastFolderId = subItemId
+                withAnimation {
+                    showFolderDetail = true
+                }
+            }
     }
 }

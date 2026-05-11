@@ -14,6 +14,10 @@ public enum WeatherRootFactory {
     }
     
     @MainActor public static func detailView(root: WeatherRootModel) -> some View {
-        ItemSplitDetailRouteRootView(root: root.rootController, route: WeatherRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
+        let selectedItemId = root.navigationModel.selectedItemId
+
+        if let itemId = selectedItemId {
+            ItemSplitDetailRouteRootView(root: root.rootController, route: WeatherRoute.detail(itemId))
+        }
     }
 }

@@ -13,6 +13,10 @@ public enum SpaceFactory {
     }
     
     @MainActor @ViewBuilder public static func detailView(root: SpaceRootModel) -> some View {
-        ItemSplitDetailRouteRootView(root: root.rootController, route: SpaceRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
+        let selectedItemId = root.navigationModel.selectedItemId
+
+        if let itemId = selectedItemId {
+            ItemSplitDetailRouteRootView(root: root.rootController, route: SpaceRoute.detail(itemId))
+        }
     }
 }

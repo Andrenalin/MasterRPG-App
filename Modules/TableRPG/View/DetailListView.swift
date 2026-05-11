@@ -4,16 +4,21 @@ import CoreRPG
 import DiceRPG
 import SwiftUI
 
-struct DetailListView: View {
+struct DetailListView: View, Equatable {
     let root: TableRootModel
     let model: TableModel
-    
+
     @Environment(\.navigator) private var navigator
-    
+
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.table.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
-    
+
+    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
+        lhs.model.id == rhs.model.id
+    }
+
     var body: some View {
         DetailFolderListView(root: root, model: model)
+            .equatable()
             .toolbar {
                 toolbarContent
             }
