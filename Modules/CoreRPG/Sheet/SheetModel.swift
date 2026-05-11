@@ -57,21 +57,22 @@ public final class SheetModel: Identifiable, Sendable {
         }
     }
 
-    func filter(searchText: String) -> Bool {
+    func filter(searchText: String, shouldRestoreState: Bool = false) -> Bool {
         var hasResult: Bool = false
         entries.forEach {
-            let subResult = $0.filter(searchText: searchText)
+            let subResult = $0.filter(searchText: searchText, shouldRestoreState: shouldRestoreState)
             hasResult = hasResult || subResult
         }
         if searchText.isEmpty {
-            isHidden <=> false
-            isShown <=> lastIsShown
-        } else {
-            let result = name.localizedCaseInsensitiveContains(searchText) || description.localizedCaseInsensitiveContains(searchText)
-            if hasResult {
-                isShown <=> true
+            isHidden = false
+            // Only restore state when clearing an active search
+            if shouldRestoreState {
+                isShown = lastIsShown
             }
-            isHidden <=> !result && !hasResult
+        } else {
+            // During search: only modify isHidden, preserve isShown state
+            let result = name.localizedCaseInsensitiveContains(searchText) || description.localizedCaseInsensitiveContains(searchText)
+            isHidden = !result && !hasResult
         }
         return !isHidden
     }

@@ -15,7 +15,8 @@ public final class SheetRootModel: Sendable {
         let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         self.sheetModel = sheetModel
         self.editorModel = SheetEditorModel(itemId: itemId, module: sheetModel.source.typeId)
-        updateFilteredEntries()
+        // Initialize lastIsShown to match isShown so first search clear works correctly
+        initializeLastIsShownState(sheetModel: sheetModel)
     }
 
     public init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool, editorModel: SheetEditorModel) {
@@ -24,22 +25,31 @@ public final class SheetRootModel: Sendable {
         let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         self.sheetModel = sheetModel
         self.editorModel = editorModel
-        updateFilteredEntries()
+        // Initialize lastIsShown to match isShown so first search clear works correctly
+        initializeLastIsShownState(sheetModel: sheetModel)
     }
     
     let isEditor: Bool
     public let editorModel: SheetEditorModel
-    private(set)var sheetModel: SheetModel
-    var searchText: String = "" {
+    public private(set)var sheetModel: SheetModel
+    private var hasActiveSearch: Bool = false
+
+    public var searchText: String = "" {
         didSet {
             let wasEmpty = oldValue.isEmpty
             let isEmpty = searchText.isEmpty
-            
-            // Save state when starting search
+
+            // Save state when starting search (before filter modifies anything)
             if wasEmpty && !isEmpty {
                 saveIsShownState(sheetModel: sheetModel)
+                hasActiveSearch = true
             }
-            
+
+            // Clear search flag when search is cleared
+            if !wasEmpty && isEmpty {
+                hasActiveSearch = false
+            }
+
             updateFilteredEntries()
         }
     }
@@ -129,14 +139,19 @@ public final class SheetRootModel: Sendable {
     }
     
     // MARK: - Search
-    
+
+    private func initializeLastIsShownState(sheetModel: SheetModel) {
+        sheetModel.lastIsShown = sheetModel.isShown
+        sheetModel.entries.forEach { initializeLastIsShownState(sheetModel: $0) }
+    }
+
     private func saveIsShownState(sheetModel: SheetModel) {
         sheetModel.lastIsShown = sheetModel.isShown
         sheetModel.entries.forEach { saveIsShownState(sheetModel: $0) }
     }
     
     private func updateFilteredEntries() {
-        _ = sheetModel.filter(searchText: searchText)
+        _ = sheetModel.filter(searchText: searchText, shouldRestoreState: hasActiveSearch)
         linkTextModel.values.forEach {
             $0.reset(highlightedText: searchText)
         }
@@ -212,7 +227,9 @@ public final class SheetRootModel: Sendable {
         guard newIndex >= 0, newIndex <= parentModel.entries.count else { return }
         parentModel.entries.move(fromOffsets: IndexSet(integer: index), toOffset: newIndex)
         editable.move(itemId: parentModel.source.itemId, entryIds: parentModel.entries.compactMap { $0.source.entryId })
-        updateFilteredEntries()
+        if !searchText.isEmpty {
+            updateFilteredEntries()
+        }
     }
 
     func groupFolders(for entryModel: SheetModel) -> [FolderRepresentable] {
@@ -276,5 +293,4 @@ public final class SheetRootModel: Sendable {
             resetChangedLinkModels(in: entry)
         }
     }
-
 }

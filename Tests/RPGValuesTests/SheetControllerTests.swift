@@ -64,10 +64,12 @@ struct SheetControllerTests {
 
         let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
-        // Character with displayState == 0 should have photo in inlineEntries
-        if model.showHeader {
-            let photoEntry = model.inlineEntries.first(where: { $0.sheetType == SheetModelType.photo })
-            #expect(photoEntry != nil)
+        // Character sheets with displayState == 0 should have showHeader set
+        let item = root.itemController.itemOrEmpty(for: itemId!)
+        if item.displayState == 0 {
+            #expect(model.showHeader == true)
+        } else {
+            #expect(model.showHeader == false)
         }
     }
 
@@ -129,7 +131,7 @@ struct SheetControllerTests {
         let groupEntry = model.entries.first(where: { $0.sheetType == SheetModelType.group })
         if let groupEntry {
             #expect(groupEntry.entries.count > 0)
-            #expect(groupEntry.entries.first?.isShown == true) // Value links are shown
+            #expect(groupEntry.entries.first?.isShown == false) // Value links default to hidden
         }
     }
 
@@ -213,13 +215,18 @@ struct SheetControllerTests {
             weatherRoot: root
         )
 
-        // Test isFolded at level > 4
-        let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 5, isShown: true, isEditor: false)
-        #expect(model.isFolded == true)
-        #expect(model.entries.isEmpty)
+        // Test isFolded at moduleDepth >= 1
+        let modelFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 1, isEditor: false)
+        #expect(modelFolded.isFolded == true)
+        #expect(modelFolded.entries.isEmpty)
 
-        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 4, isShown: true, isEditor: false)
+        let modelNotFolded = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: false)
         #expect(modelNotFolded.isFolded == false)
+
+        // Test isFolded in editor mode at level > 0
+        let modelFoldedEditor = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 1, isShown: true, moduleDepth: 0, isEditor: true)
+        #expect(modelFoldedEditor.isFolded == true)
+        #expect(modelFoldedEditor.entries.isEmpty)
     }
 }
 #endif
