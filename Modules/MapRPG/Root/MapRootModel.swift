@@ -205,11 +205,6 @@ extension MapRootModel {
 
 public extension MapRootModel {
     @MainActor
-    func sheet(for itemId: UUID, level: Int = 0) -> SheetFirstModel {
-        SheetController(itemController: itemController).sheet(for: itemId, level: level)
-    }
-    
-    @MainActor
     func listItems() -> [MapModel] {
         itemController.itemDataModel.items.map {
             itemController.itemOrEmpty(for: $0)

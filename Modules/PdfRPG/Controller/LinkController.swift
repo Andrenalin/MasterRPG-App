@@ -56,8 +56,4 @@ extension LinkController: LinkControllable {
             return text.toggleLink(url: url, with: result)
         }
     }
-    
-    @MainActor public func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetFirstModel {
-        SheetController(itemController: itemController).sheet(for: itemId, level: level)
-    }
 }

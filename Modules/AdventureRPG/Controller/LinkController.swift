@@ -175,33 +175,6 @@ extension LinkController {
 }
 
 extension LinkController {
-    @MainActor func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetFirstModel {
-        switch module {
-        case .audio:
-            return rootManager.audioRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
-        case .dice:
-            return rootManager.diceRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
-        case .map:
-            return rootManager.mapRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
-        case .pdf:
-            return rootManager.pdfRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
-        case .photo:
-            return rootManager.photoRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
-        case .space:
-            return rootManager.spaceRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
-        case .table:
-            return rootManager.tableRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
-        case .value:
-            return rootManager.characterRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
-        case .weather:
-            return rootManager.weatherRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
-        default:
-            return SheetController(itemController: itemController).sheet(for: itemId, level: level)
-        }
-    }
-}
-
-extension LinkController {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
         guard let item = itemController.itemSync(for: itemId) else { return [] }
         var photoIds: [UUID] = []

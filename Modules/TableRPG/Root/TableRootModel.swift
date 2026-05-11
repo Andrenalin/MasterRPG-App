@@ -169,11 +169,6 @@ extension TableRootModel {
 
 public extension TableRootModel {
     @MainActor
-    func sheet(for itemId: UUID, level: Int = 0) -> SheetFirstModel {
-        SheetController(itemController: itemController).sheetFirstModel(for: itemId, level: level)
-    }
-    
-    @MainActor
     func listItems() -> [TableModel] {
         itemController.itemDataModel.items.map {
             itemController.itemOrEmpty(for: $0)

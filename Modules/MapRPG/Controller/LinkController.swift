@@ -120,12 +120,6 @@ extension LinkController {
 }
 
 extension LinkController {
-    @MainActor func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetFirstModel {
-        SheetController(itemController: itemController).sheet(for: itemId, level: level)
-    }
-}
-
-extension LinkController {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
         guard let item = itemController.itemSync(for: itemId) else { return [] }
         var photoIds: [UUID] = []

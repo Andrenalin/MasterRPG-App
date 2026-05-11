@@ -6,47 +6,6 @@ import os
 
 struct SheetController {
     let itemController: ItemController
-    
-    @MainActor func sheetFirstModel(for itemId: UUID, level: Int = 0) -> SheetFirstModel {
-        let startTime = ContinuousClock.now
-        Logger.sheetController.info("🚀 [SheetFirst] Starting sheet creation for \(itemController.config.module.token) itemId: \(itemId.uuidString), level: \(level)")
-        
-        let model = itemController.itemOrEmpty(for: itemId)
-        var inlineEntries: [SheetFirstModel] = []
-        var sheetCount = 1 // Count this sheet
-        
-        if let diceId = model.diceId {
-            inlineEntries.append(SheetFirstModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: []))
-            sheetCount += 1
-        }
-        
-        let entries: [SheetFirstModel] = sheetFirstEntries(for: itemId, level: level)
-        sheetCount += entries.count
-        
-        let sheetModel = SheetFirstModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
-        
-        let duration = ContinuousClock.now - startTime
-        Logger.sheetController.info("✅ [SheetFirst] Completed sheet creation \(itemController.config.module.token) - Duration: \(duration), Sheets created: \(sheetCount), Max depth: \(level + 1)")
-        
-        return sheetModel
-    }
-    
-    @MainActor func sheetFirstEntries(for itemId: UUID, level: Int) -> [SheetFirstModel] {
-        guard level < 4 else {
-            Logger.sheetController.debug("[SheetFirst] Max depth reached at level \(level) for itemId: \(itemId.uuidString)")
-            return []
-        }
-        
-        let value = itemController.itemOrEmpty(for: itemId)
-        let entries = value.entries.map { entry in
-            let name = entry.name
-            let description = entry.content
-            return SheetFirstModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: [])
-        }
-        
-        Logger.sheetController.debug("[SheetFirst] Created \(entries.count) entries at level \(level) for itemId: \(itemId.uuidString)")
-        return entries
-    }
 }
 
 extension SheetController: SheetControllable {

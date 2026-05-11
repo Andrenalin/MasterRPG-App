@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-public struct SheetFirstRootEditorView<LinkType: LinkDataTransferable>: View {
+public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
     public init(root: ItemRootController, linkControllable: any LinkControllable, editorModel: SheetEditorModel, model: any ItemDataAccessable, module: NetworkModules, headerTitle: String, linkTypes: LinkType.Type) {
         self.root = root
         let rootLinkControllable = linkControllable.rootManager.adventureRoot.linkControllable
@@ -22,20 +22,12 @@ public struct SheetFirstRootEditorView<LinkType: LinkDataTransferable>: View {
     let linkTypes: LinkType.Type
     
     @State private var sheetRootModel: SheetRootModel
-//    @State private var sheetRootModel: TableFirstSheetModel
 
     public var body: some View {
         Section {
             SheetRootView(root: root, rootModel: sheetRootModel, isEditor: true, linkTypes: linkTypes)
-//            SheetFirstView(root: root, model: sheetRootModel, isEditor: true, linkTypes: linkTypes)
         } header: {
             Text(headerTitle)
         }
-//        .onChange(of: model.id) {
-//            sheetRootModel.update(with: model)
-//        }
-//        .onChange(of: sheetRootModel.hasAnyChanges(for: sheetRootModel.sheetModel.source)) {
-//            sheetRootModel.update(with: model)
-//        }
     }
 }

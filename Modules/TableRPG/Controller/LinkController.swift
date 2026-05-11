@@ -87,10 +87,6 @@ extension LinkController: LinkControllable {
             itemController.replace(model: replacedItem, isInsert: false)
         }
     }
-    
-    @MainActor public func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetFirstModel {
-        SheetController(itemController: itemController).sheetFirstModel(for: itemId, level: level)
-    }
 }
 
 extension LinkController {

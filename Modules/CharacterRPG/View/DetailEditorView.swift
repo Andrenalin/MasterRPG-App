@@ -26,7 +26,7 @@ struct DetailEditorView: View {
                 root.editController.valueEditModel.selectionPhoto.resetSelection(selectionIds: model.photos)
             }
 
-        SheetFirstRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Values", bundle: .module).localizedString, linkTypes: LinkCharacterModuleTransferable.self)
+        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Values", bundle: .module).localizedString, linkTypes: LinkCharacterModuleTransferable.self)
             .task(id: model.id) {
                 root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                 root.editorLinkModel.characterSelectionModel.onlyChildrenFrom <=> model.id

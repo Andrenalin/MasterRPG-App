@@ -52,8 +52,8 @@ struct DestinationEditorRoute: View {
             EmptyView()
                 .id(itemId)
 #else
-            if let generatorRoot = root.generatorRoot {
-                let sheetModel = root.linkController.toggleSheet(itemId: itemId, entryId: nil, level: 0, module: root.config.module)
+            if let generatorRoot = root.generatorRoot, let rootManager = root.rootManager {
+                let sheetModel = root.sheetController.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: true)
                 generatorRoot.viewController.inlineChat(root: generatorRoot, sheetModel: sheetModel)
             }
 #endif

@@ -82,10 +82,7 @@ public protocol LinkControllable: Sendable {
     @MainActor func linkEntries(for itemId: UUID) -> [LinkEntryModel]
     @MainActor func link(for module: NetworkModules) -> [LinkEntryModel]
     @MainActor func name(for id: UUID, entryId: UUID?) -> String
-    
-    // Sheet Entries
-    @MainActor func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetFirstModel
-    
+        
     // Collect Links
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID]
 }
@@ -293,13 +290,6 @@ public extension LinkControllable {
         return itemControllable.nameSync(itemId: id)
     }
 }
-
-// MARK: - Sheets
-
-public extension LinkControllable {
-    @MainActor func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetFirstModel { .empty }
-}
-
 
 // MARK: - Collect Links
 

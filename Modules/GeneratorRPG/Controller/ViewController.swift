@@ -19,14 +19,14 @@ public extension ViewController {
             case .adventure:
                 AdventureGenRootView(model: model, dismissAction: dismissAction)
             case .character:
-                AdventureChatRootView(sheetModel: SheetFirstModel.empty, dismissAction: dismissAction)
+                AdventureChatRootView(sheetModel: SheetModel.empty, dismissAction: dismissAction)
             case .extractor:
                 ExtractorGenRootView(model: model, dismissAction: dismissAction)
             }
         }
     }
     
-    @MainActor @ViewBuilder func inlineChat(root: GeneratorRootModel, sheetModel: SheetFirstModel) -> some View {
+    @MainActor @ViewBuilder func inlineChat(root: GeneratorRootModel, sheetModel: SheetModel) -> some View {
         AdventureChatRootView(sheetModel: sheetModel, dismissAction: nil)
     }
 }
