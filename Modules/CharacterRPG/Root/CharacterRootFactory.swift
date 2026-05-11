@@ -17,7 +17,7 @@ public enum CharacterRootFactory {
         CharacterRootView()
     }
     
-    @MainActor public static func detailView(root: CharacterRootModel) -> some View {
+    @MainActor @ViewBuilder public static func detailView(root: CharacterRootModel) -> some View {
         let selectedItemId = root.navigationModel.selectedItemId
 
         if let itemId = selectedItemId {

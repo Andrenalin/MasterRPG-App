@@ -13,7 +13,7 @@ public enum WeatherRootFactory {
         WeatherRootView()
     }
     
-    @MainActor public static func detailView(root: WeatherRootModel) -> some View {
+    @MainActor @ViewBuilder public static func detailView(root: WeatherRootModel) -> some View {
         let selectedItemId = root.navigationModel.selectedItemId
 
         if let itemId = selectedItemId {

@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
-
-import CoreRPG
 import AudioRPG
+import CoreRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
@@ -20,7 +19,7 @@ public enum MapRootFactory {
         MapRootView()
     }
         
-    @MainActor public static func detailView(root: MapRootModel) -> some View {
+    @MainActor @ViewBuilder public static func detailView(root: MapRootModel) -> some View {
         // Extract observable property to break dependency chain
         let selectedItemId = root.navigationModel.selectedItemId
 

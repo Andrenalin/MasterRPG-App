@@ -15,7 +15,7 @@ public enum TableFactory {
         TableRootView()
     }
 
-    @MainActor public static func detailView(root: TableRootModel) -> some View {
+    @MainActor @ViewBuilder public static func detailView(root: TableRootModel) -> some View {
         let selectedItemId = root.navigationModel.selectedItemId
 
         if let itemId = selectedItemId {
