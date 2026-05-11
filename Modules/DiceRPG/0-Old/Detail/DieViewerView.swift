@@ -43,7 +43,8 @@ struct DieViewerView: View {
             .animation(.default.delay(0.5), value: die.result)
             .onChange(of: die.rotation, initial: true) {
                 if die.rotation != 0 {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.60) {
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(0.60))
                         var die = gameController.gameItem(for: diceId).die(for: die.id)
                         die.rotation = 0
                         withAnimation {

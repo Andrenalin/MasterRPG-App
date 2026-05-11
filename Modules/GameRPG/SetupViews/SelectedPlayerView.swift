@@ -31,7 +31,8 @@ struct SelectedPlayerView: View {
             }
         }
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(2)) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(2))
                 root.resetSelectedCharacter(uuidString: playerUUID)
                 selection.resetSelection(itemId: root.gameModel.selectedCharacter, entryId: nil)
             }

@@ -43,13 +43,15 @@ struct TutorialVideoView: View {
         }
         .foregroundStyle(.white)
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + textDelay) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(textDelay))
                 withAnimation {
                     isShowing = true
                 }
             }
             if !isInReviewSheet {
-                DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(animationDuration))
                     appModel.orbitState = .capturing
                 }
             }

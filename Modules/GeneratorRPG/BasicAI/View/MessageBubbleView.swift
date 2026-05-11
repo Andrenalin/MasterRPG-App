@@ -39,7 +39,8 @@ struct MessageBubbleView: View {
     .onAppear {
       // Auto-focus new assistant messages for screen readers
       if !message.isFromUser && !message.content.characters.isEmpty {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task { @MainActor in
+          try? await Task.sleep(for: .seconds(0.5))
           isMessageFocused = true
         }
       }

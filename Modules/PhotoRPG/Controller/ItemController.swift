@@ -53,13 +53,13 @@ extension ItemController {
 #if os(macOS)
     static let importImageTypes = AKImage.imageTypes.compactMap { UTType($0) }
 
-    static func importImageFromProviders(_ itemProviders: [NSItemProvider], completion: @Sendable @escaping (Data?) -> Void) -> Bool {
+    static func importImageFromProviders(_ itemProviders: [NSItemProvider], completion: @Sendable @escaping @MainActor (Data?) -> Void) -> Bool {
         guard let provider = itemProviders.first else { return false }
         for type in importImageTypes {
             let typeIdentifier = type.identifier
             if provider.hasItemConformingToTypeIdentifier(typeIdentifier) {
                 provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
-                    DispatchQueue.main.async {
+                    Task { @MainActor in
                         completion(data)
                     }
                 }

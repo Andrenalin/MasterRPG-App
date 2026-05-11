@@ -270,5 +270,99 @@ struct SheetControllerTests {
         #expect(entry0.isShown == true, "First entry isShown should remain true after move")
         #expect(entry1.isShown == false, "Second entry isShown should remain false after move")
     }
+
+    @Test func searchExpandsParentWhenChildMatches() async throws {
+        let root = try await MockRoot.importTestData()
+
+        let sut = SheetController(itemController: root.itemController)
+        let itemId = root.itemController.itemDataModel.items.first
+        try #require(itemId != nil)
+        try #require(root.rootManager != nil)
+
+        let rootModel = SheetRootModel(linkControllable: root.rootManager!.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
+
+        // Find an entry with children
+        var parentEntry: SheetModel?
+        for entry in rootModel.sheetModel.entries {
+            if !entry.entries.isEmpty {
+                parentEntry = entry
+                break
+            }
+        }
+
+        guard let parent = parentEntry, !parent.entries.isEmpty else {
+            // Skip test if no suitable entry found
+            return
+        }
+
+        // Collapse the parent
+        parent.isShown = false
+
+        // Search for something in a child entry
+        let childName = parent.entries[0].name
+        guard !childName.isEmpty else { return }
+
+        rootModel.searchText = childName
+
+        // Verify parent was expanded to show matching child
+        #expect(parent.isShown == true, "Parent should be expanded when child matches search")
+        #expect(parent.isHidden == false, "Parent should not be hidden when child matches")
+
+        // Clear search - parent should collapse back to original state
+        rootModel.searchText = ""
+
+        #expect(parent.isShown == false, "Parent should collapse back to original state after search cleared")
+        #expect(parent.isHidden == false, "Parent should not be hidden after search cleared")
+    }
+
+    @Test func searchPreservesOriginalStateAcrossMultipleSearches() async throws {
+        let root = try await MockRoot.importTestData()
+
+        let sut = SheetController(itemController: root.itemController)
+        let itemId = root.itemController.itemDataModel.items.first
+        try #require(itemId != nil)
+        try #require(root.rootManager != nil)
+
+        let rootModel = SheetRootModel(linkControllable: root.rootManager!.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
+
+        // Find an entry with children
+        var parentEntry: SheetModel?
+        for entry in rootModel.sheetModel.entries {
+            if !entry.entries.isEmpty {
+                parentEntry = entry
+                break
+            }
+        }
+
+        guard let parent = parentEntry, !parent.entries.isEmpty else {
+            return
+        }
+
+        // Collapse the parent
+        parent.isShown = false
+        let originalState = parent.isShown
+
+        // First search - should expand
+        let childName = parent.entries[0].name
+        guard !childName.isEmpty else { return }
+        rootModel.searchText = childName
+        #expect(parent.isShown == true, "First search should expand parent")
+
+        // Modify search query - should still be expanded if child still matches
+        rootModel.searchText = childName + "x"
+        // Parent state depends on whether child still matches, but should restore from original first
+
+        // Clear search - should return to original state
+        rootModel.searchText = ""
+        #expect(parent.isShown == originalState, "Should return to original collapsed state")
+
+        // Second search - should expand again from original state
+        rootModel.searchText = childName
+        #expect(parent.isShown == true, "Second search should expand parent again")
+
+        // Clear again - should return to original state
+        rootModel.searchText = ""
+        #expect(parent.isShown == originalState, "Should return to original state after second search")
+    }
 }
 #endif

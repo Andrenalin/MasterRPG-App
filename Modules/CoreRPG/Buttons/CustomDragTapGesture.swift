@@ -167,7 +167,8 @@
             let date = Date()
             longPressDate = date
             let delay = longPressDelay
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(delay))
                 guard self.longPressDate == date else { return }
                 action(value)
             }

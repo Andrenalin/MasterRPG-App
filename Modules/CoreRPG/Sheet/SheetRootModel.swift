@@ -45,12 +45,15 @@ public final class SheetRootModel: Sendable {
                 hasActiveSearch = true
             }
 
+            // Determine if we should restore state (when clearing an active search)
+            let shouldRestore = !wasEmpty && isEmpty && hasActiveSearch
+
             // Clear search flag when search is cleared
             if !wasEmpty && isEmpty {
                 hasActiveSearch = false
             }
 
-            updateFilteredEntries()
+            updateFilteredEntries(shouldRestoreState: shouldRestore)
         }
     }
     
@@ -150,8 +153,8 @@ public final class SheetRootModel: Sendable {
         sheetModel.entries.forEach { saveIsShownState(sheetModel: $0) }
     }
     
-    private func updateFilteredEntries() {
-        _ = sheetModel.filter(searchText: searchText, shouldRestoreState: hasActiveSearch)
+    private func updateFilteredEntries(shouldRestoreState: Bool = false) {
+        _ = sheetModel.filter(searchText: searchText, shouldRestoreState: shouldRestoreState)
         linkTextModel.values.forEach {
             $0.reset(highlightedText: searchText)
         }

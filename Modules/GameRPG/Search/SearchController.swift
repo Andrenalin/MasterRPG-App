@@ -25,14 +25,14 @@ struct SearchController {
 
     func performSearch() async {
         // Cancel any ongoing search
-        model.searchTask?.cancel()
+        model.cancelSearch()
 
         guard !model.searchText.isEmpty else {
             model.results = [:]
             return
         }
 
-        let searchTask = Task {
+        let searchTask = Task { @MainActor in
             model.isSearching = true
             defer { model.isSearching = false }
 
@@ -44,8 +44,8 @@ struct SearchController {
             model.results = await searchAllItems()
         }
 
-        self.model.searchTask = searchTask
-        await searchTask.value
+        model.setSearchTask(searchTask)
+        await model.awaitCurrentSearch()
     }
 
     private func searchAllItems() async -> [NetworkModules: [SearchResult]] {

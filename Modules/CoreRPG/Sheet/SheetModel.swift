@@ -70,9 +70,18 @@ public final class SheetModel: Identifiable, Sendable {
                 isShown = lastIsShown
             }
         } else {
-            // During search: only modify isHidden, preserve isShown state
+            // During search: first restore to original state, then expand if needed
+            // This ensures we start from the saved state for each search query change
+            isShown = lastIsShown
+
+            // Set isHidden based on match
             let result = name.localizedCaseInsensitiveContains(searchText) || description.localizedCaseInsensitiveContains(searchText)
             isHidden = !result && !hasResult
+
+            // If any child matches, expand this entry to show the matching child
+            if hasResult {
+                isShown = true
+            }
         }
         return !isHidden
     }

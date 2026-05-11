@@ -216,37 +216,40 @@ private extension AudioController {
 
         var subscriptions: Set<AnyCancellable> = []
         model.player.publisher(for: \.timeControlStatus)
-            .receive(on: DispatchQueue.main)
             .removeDuplicates()
             .sink { [weak self] status in
-                self?.model.isPlaying = status == .playing
+                Task { @MainActor [weak self] in
+                    self?.model.isPlaying = status == .playing
+                }
             }
             .store(in: &subscriptions)
 
         var notifications: Set<AnyCancellable> = []
         NotificationCenter.default
             .publisher(for: .AVPlayerItemDidPlayToEndTime)
-            .receive(on: DispatchQueue.main)
             .map { _ in true }
             .sink { isPlaybackComplete in
-                // we could do a reset or something else
-                // maybe shutdown the audio session?
+                Task { @MainActor in
+                    // we could do a reset or something else
+                    // maybe shutdown the audio session?
+                }
             }
             .store(in: &notifications)
 
         model.add(subscriptions: subscriptions)
         model.add(subscriptions: notifications)
-        
+
         observeSharedAudio()
-        
+
         addTimeObserver()
     }
 
     @MainActor private func addTimeObserver() {
         removeTimeObserver()
         let timeInterval = CMTime(value: 1, timescale: 1)
-        model.timeObserver = model.player.addPeriodicTimeObserver(forInterval: timeInterval, queue: .main) { [weak self] time in
-            Task { @MainActor in
+        // Using nil queue - callback will be on player's internal queue, then hop to MainActor
+        model.timeObserver = model.player.addPeriodicTimeObserver(forInterval: timeInterval, queue: nil) { [weak self] time in
+            Task { @MainActor [weak self] in
                 self?.updateCurrentTime(time: time)
             }
         }

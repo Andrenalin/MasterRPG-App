@@ -30,7 +30,8 @@ struct SelectedMasterView: View {
             }
         }
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(2)) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(2))
                 root.resetSelectedGameMaster(uuidString: gameMasterUUID)
                 selection.resetSelection(itemId: root.gameModel.selectedGameMaster, entryId: nil)
             }
