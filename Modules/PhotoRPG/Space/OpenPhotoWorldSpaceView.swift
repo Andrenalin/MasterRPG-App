@@ -33,8 +33,8 @@ struct OpenPhotoWorldSpace: View {
                 }
             }
         }
-        .onChange(of: editController.editorModel.currentItemId, initial: true) {
-            guard let itemId = editController.editorModel.currentItemId else { return }
+        .onChange(of: editController.sheetEditorModel.itemId, initial: true) {
+            guard let itemId = editController.sheetEditorModel.itemId else { return }
             Task {
                 _ = await root.gameController.setCurrent(itemId: itemId)
                 root.gameController.photoGameModel.currentSelection = PhotoWorldSelection(id: itemId, rotationDegrees: 67)
