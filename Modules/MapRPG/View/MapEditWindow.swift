@@ -8,7 +8,7 @@ struct MapEditWindow: View {
     
     var body: some View {
         Group {
-            if let itemId = root.editController.editorModel.currentItemId {
+            if let itemId = root.editController.sheetEditorModel.itemId {
                 RootEditCanvasMap(itemId: itemId)
                     .id(itemId)
             } else {

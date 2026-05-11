@@ -22,14 +22,14 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
 
     public var body: some View {
         Group {
-            if isActive {
+            if isActive, let itemId = editorModel.itemId {
                 content(entry: entry)
-                    .id(editorModel.itemId)
+                    .id(itemId)
                     .onChange(of: entry.content, initial: true) {
-                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editorModel.itemId, entryId: entry.id, typeId: activeEditController.itemControllable.config.module))
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: editorModel.module))
                     }
                     .onChange(of: entry.name) {
-                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editorModel.itemId, entryId: entry.id, typeId: activeEditController.itemControllable.config.module))
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: editorModel.module))
                     }
             }
         }
@@ -108,13 +108,15 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
     }
 
     var entry: any EntryDataAccessable {
-        activeEditController.itemControllable.itemOrEmpty(for: editorModel.itemId)[editorModel.entryId ?? UUID()]
+        activeEditController.itemControllable.itemOrEmpty(for: editorModel.itemId ?? UUID())[editorModel.entryId ?? UUID()]
     }
 
     func save() {
         editModel.resetText()
         withAnimation {
-            activeEditController.update(itemId: editorModel.itemId, entryId: entry.id, name: editModel.name, content: editModel.text)
+            if let itemId = editorModel.itemId {
+                activeEditController.update(itemId: itemId, entryId: entry.id, name: editModel.name, content: editModel.text)
+            }
             editorModel.entryId = nil
         }
     }
@@ -145,9 +147,11 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
             .dropDestination(for: linkTypes) { items, dropSession in
                 isDropTargeted = dropSession.phase == .entering
                 editModel.resetText()
-                activeEditController.update(itemId: editorModel.itemId, entryId: entry.id, name: editModel.name, content: editModel.text)
-                items.forEach {
-                    activeEditController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: editorModel.itemId, destinationEntryId: entry.id)
+                if let itemId = editorModel.itemId {
+                    activeEditController.update(itemId: itemId, entryId: entry.id, name: editModel.name, content: editModel.text)
+                    items.forEach {
+                        activeEditController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: itemId, destinationEntryId: entry.id)
+                    }
                 }
             }
 #endif

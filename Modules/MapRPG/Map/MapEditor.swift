@@ -76,10 +76,10 @@ struct MapEditor: View {
 #if !os(tvOS)
             .dragTapGesture(isActive: true, pressAction: pressAction(_:), releaseAction: releaseAction(_:), longPressAction: longPressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
-            .onChange(of: editController.editorModel.currentItemId) {
+            .onChange(of: editController.sheetEditorModel.itemId) {
                 changeImage()
             }
-            .onChange(of: editController.editorModel.currentEntryId, initial: true) {
+            .onChange(of: editController.sheetEditorModel.entryId, initial: true) {
                 changeMap()
             }
             .onChange(of: map.mapPins) {
@@ -173,7 +173,7 @@ private extension MapEditor {
     }
 
     func changeMap() {
-        let currentEntryId = editController.editorModel.currentEntryId
+        let currentEntryId = editController.sheetEditorModel.entryId
         if currentEntryId != editEntries.entries.first?.id {
             if map.id == entries.mapId && !editEntries.entries.isEmpty {
                 let mapEdit = map.copy()

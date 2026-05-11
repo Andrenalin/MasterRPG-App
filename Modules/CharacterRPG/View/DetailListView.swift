@@ -52,7 +52,7 @@ private extension DetailListView {
                         withAnimation {
                             root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                             let entryId = root.editController.addNewEntry(itemId: model.id)
-                            root.editController.editorModel.currentEntryId = entryId
+                            root.editController.sheetEditorModel.entryId = entryId
                             Task {
                                 try? await Task.sleep(for: .seconds(0.25))
                                 root.editController.editorModel.scrollEntryId = entryId
@@ -72,7 +72,7 @@ private extension DetailListView {
                         Task {
                             let entryId = await root.editController.addNewGroup(itemId: itemId)
                             withAnimation {
-                                root.editController.editorModel.currentEntryId = entryId
+                                root.editController.sheetEditorModel.entryId = entryId
                             }
                         }
                     } label: {

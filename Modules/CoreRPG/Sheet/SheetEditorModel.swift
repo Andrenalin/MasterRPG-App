@@ -4,13 +4,13 @@ import Foundation
 import SwiftUI
 
 @MainActor @Observable public final class SheetEditorModel {
-    public init(itemId: UUID = UUID(), entryId: UUID? = nil, module: NetworkModules = .none) {
+    public init(itemId: UUID? = nil, entryId: UUID? = nil, module: NetworkModules = .none) {
         self.itemId = itemId
         self.entryId = entryId
         self.module = module
     }
     
-    public var itemId: UUID
+    public var itemId: UUID?
     public var entryId: UUID?
     public var module: NetworkModules
     

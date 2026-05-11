@@ -538,9 +538,9 @@ public extension EditControllable {
     }
 
     @MainActor func setCurrentItem(to item: ItemRowTreeModel) {
-        guard editorModel.currentItemId != item.model.itemId else {
-            editorModel.currentEntryId <=> item.model.entryId
-            editorModel.currentModule = item.model.typeId
+        guard sheetEditorModel.itemId != item.model.itemId else {
+            sheetEditorModel.entryId <=> item.model.entryId
+            sheetEditorModel.module = item.model.typeId
             return
         }
         guard let model = itemControllable.copy(of: item.model.itemId) as? Model else { return }
@@ -548,13 +548,13 @@ public extension EditControllable {
     }
     
     @MainActor func setCurrentItem(model: Model, entryId: UUID? = nil, module: NetworkModules? = nil) {
-        if model.id != editorModel.currentItemId {
+        if model.id != sheetEditorModel.itemId {
             editorModel.cacheItemListModel.resetItemLink()
             editorModel.undoManaged.resetValue(model)
-            editorModel.currentItemId = model.id
+            sheetEditorModel.itemId = model.id
         }
-        editorModel.currentEntryId <=> entryId
-        editorModel.currentModule = module ?? itemControllable.config.module
+        sheetEditorModel.entryId <=> entryId
+        sheetEditorModel.module = module ?? itemControllable.config.module
     }
 
     @MainActor func save(with name: String, currentModel: Model) {

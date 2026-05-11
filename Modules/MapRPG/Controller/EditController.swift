@@ -25,7 +25,7 @@ struct EditController: Sendable {
         self.tagController = tagController
         
         self.editorModel = ItemEditorModel()
-        self.sheetEditorModel = SheetEditorModel(module: itemController.config.module)
+        self.sheetEditorModel = SheetEditorModel(itemId: nil, entryId: nil, module: itemController.config.module)
         self.mapEditModel = MapEditModel()
     }
 

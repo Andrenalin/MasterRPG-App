@@ -85,7 +85,7 @@ struct AdventureAddEntryButton: View {
             withAnimation {
                 let entryId = root.editController.addNewEntry(itemId: model.id)
                 root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, entryId: entryId, typeId: root.config.module))
-                root.editController.editorModel.currentEntryId = entryId
+                root.editController.sheetEditorModel.entryId = entryId
                 Task {
                     try? await Task.sleep(for: .seconds(0.25))
                     root.editController.editorModel.scrollEntryId = entryId
