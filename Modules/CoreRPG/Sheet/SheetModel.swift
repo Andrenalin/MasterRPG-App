@@ -108,8 +108,6 @@ public enum SheetModelType: Equatable, Hashable, Sendable {
     case item
     case group // only for character module to simulate folders
 
-    case edit
-
     // module specific
     case audio
     case dice
@@ -118,7 +116,3 @@ public enum SheetModelType: Equatable, Hashable, Sendable {
     case space
     case weather
 }
-extension SheetModel: InlineEditorEntry {
-    // Already has source and editType properties
-}
-

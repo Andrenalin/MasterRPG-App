@@ -16,7 +16,7 @@ struct InlineRowViewer: View, Equatable {
 
 
     var body: some View {
-        if source.typeId == root.config.module, let cacheController = root.cacheController {
+        if let cacheController = root.cacheController {
             HStack {
                 if source.entryId == nil {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)

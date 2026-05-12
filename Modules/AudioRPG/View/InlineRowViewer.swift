@@ -10,10 +10,8 @@ struct InlineRowViewer: View, Equatable {
     @Environment(AudioRootModel.self) private var root
     
     var body: some View {
-        if source.typeId == root.config.module {
-            HStack {
-                SharingActionView(itemId: model.id, showPlayControl: true)
-            }
+        HStack {
+            SharingActionView(itemId: model.id, showPlayControl: true)
         }
     }
     

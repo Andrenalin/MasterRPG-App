@@ -15,19 +15,17 @@ struct InlineRowViewer: View, Equatable {
     @Environment(\.navigator) private var navigator
 
     var body: some View {
-        if source.typeId == root.config.module {
-            ViewerRootView(model: root.itemController.itemOrEmpty(for: source.itemId), configuration: ViewerConfiguration(isGame: false))
-                .frame(height: 256)
-                .overlay(alignment: .trailing) {
-                    Button {
-                        actionHandler()
-                    } label: {
-                        Image(systemName: root.configurable.module.icon)
-                            .imageScale(.large)
-                    }
-                    .padding()
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: source.itemId), configuration: ViewerConfiguration(isGame: false))
+            .frame(height: 256)
+            .overlay(alignment: .trailing) {
+                Button {
+                    actionHandler()
+                } label: {
+                    Image(systemName: root.configurable.module.icon)
+                        .imageScale(.large)
                 }
-        }
+                .padding()
+            }
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

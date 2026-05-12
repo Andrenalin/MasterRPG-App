@@ -21,12 +21,6 @@ struct InlineRowViewer: View, Equatable {
             } else {
                 root.diceRoot.viewController.rowViewer(source: diceSource, destination: destination)
             }
-        case .pdf:
-            root.pdfRoot.viewController.rowViewer(source: source, destination: destination)
-        case .photo:
-            root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
-        case .table:
-            root.tableRoot.viewController.rowViewer(source: source, destination: destination)
         default:
             EmptyView()
         }
@@ -42,7 +36,6 @@ struct InlineRowViewer: View, Equatable {
     var module: NetworkModules {
         destination.typeId == .value ? source.typeId : destination.typeId
     }
-
     
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source

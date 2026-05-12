@@ -16,33 +16,18 @@ struct InlineRowViewer: View, Equatable {
     @Environment(MapRootModel.self) private var root
     
     var body: some View {
-        switch module {
-        case .audio:
-            root.audioRoot.viewController.rowViewer(source: source, destination: destination)
-        case .dice:
-            root.diceRoot.viewController.rowViewer(source: source, destination: destination)
-        case .pdf:
-            root.pdfRoot.viewController.rowViewer(source: source, destination: destination)
-        case .photo:
-            root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
-        case .table:
-            root.tableRoot.viewController.rowViewer(source: source, destination: destination)
-        case .value:
-            root.characterRoot.viewController.rowViewer(source: source, destination: destination)
-        case .map:
-            if let cacheController = root.cacheController {
-                GameShareView(root: root.rootController, model: model) {
-                    HStack {
+        if let cacheController = root.cacheController {
+            GameShareView(root: root.rootController, model: model) {
+                HStack {
+                    VStack {
                         ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)
                             .environment(root.editController.cacheItemListModel)
                             .environment(root.listDisplayModel)
-                        
-                        AddtionalEntryRow(source: source)
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    AddtionalEntryRow(source: source)
                 }
             }
-        default:
-            EmptyView()
         }
     }
     

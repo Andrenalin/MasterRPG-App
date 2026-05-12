@@ -102,8 +102,6 @@ private extension SheetEntryView {
                     LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: entryModel.content, shareResults: shareResult))
                 }
                 .font(.body)
-            case .edit:
-                EmptyView()
             }
                             
             if isEditor && (entryModel.sheetType == .item || entryModel.sheetType == .group) {

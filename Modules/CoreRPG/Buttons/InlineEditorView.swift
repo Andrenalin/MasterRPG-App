@@ -2,15 +2,10 @@
 
 import SwiftUI
 
-protocol InlineEditorEntry {
-    var source: ItemRowModel { get }
-    var editType: SheetModelEditType { get }
-}
-
 struct InlineEditorView: View {
     let entryDataEditable: (any EntryDataEditable)
     let updateHandler: (String) -> Void
-    let entry: any InlineEditorEntry
+    let entry: SheetModel
     
     @State private var selectedValue: Bool = false
     @State private var textValue: String = ""

@@ -22,7 +22,6 @@ struct AddtionalEntryRow: View, Equatable {
             }
             Text("\(pinsCounter) pins", bundle: .module)
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
     }
     
     private var model: MapModel {
