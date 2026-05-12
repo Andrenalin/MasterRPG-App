@@ -14,7 +14,9 @@ public struct GeneratorRootFactory {
         GeneratorRootView()
     }
     
-    @ViewBuilder public static func detailView(root: GeneratorRootModel) -> some View {
-        ItemSplitDetailRouteRootView(root: root.rootController, route: GeneratorRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
+    @ViewBuilder public static func detailView(root: GeneratorRootModel, selectedItemId: UUID?) -> some View {
+        if let itemId = selectedItemId {
+            ItemSplitDetailRouteRootView(root: root.rootController, route: GeneratorRoute.detail(itemId))
+        }
     }
 }

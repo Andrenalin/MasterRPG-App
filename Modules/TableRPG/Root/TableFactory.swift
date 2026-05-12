@@ -15,9 +15,7 @@ public enum TableFactory {
         TableRootView()
     }
 
-    @MainActor @ViewBuilder public static func detailView(root: TableRootModel) -> some View {
-        let selectedItemId = root.navigationModel.selectedItemId
-
+    @MainActor @ViewBuilder public static func detailView(root: TableRootModel, selectedItemId: UUID?) -> some View {
         if let itemId = selectedItemId {
             ItemSplitDetailRouteRootView(root: root.rootController, route: TableRoute.detail(itemId))
         }

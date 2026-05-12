@@ -12,9 +12,7 @@ public enum PhotoFactory {
         PhotoRootView()
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: PhotoRootModel) -> some View {
-        let selectedItemId = root.navigationModel.selectedItemId
-
+    @MainActor @ViewBuilder public static func detailView(root: PhotoRootModel, selectedItemId: UUID?) -> some View {
         if let itemId = selectedItemId {
             ItemSplitDetailRouteRootView(root: root.rootController, route: PhotoRoute.detail(itemId))
         }

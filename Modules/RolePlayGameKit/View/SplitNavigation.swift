@@ -157,7 +157,7 @@ private struct SplitWithDetailView: View {
     let appModel: AppModel
 
     @State private var fallbackNavigationModel = ModuleNavigationModel()
-    
+
     var body: some View {
         let _ = Self._printChanges()
         let controller = appModel.itemRootController(for: tab.module)

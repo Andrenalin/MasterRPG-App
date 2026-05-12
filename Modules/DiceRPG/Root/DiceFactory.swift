@@ -17,9 +17,7 @@ public enum DiceFactory {
         return model.diceImage(for: result)
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: DiceRootModel) -> some View {
-        let selectedItemId = root.navigationModel.selectedItemId
-
+    @MainActor @ViewBuilder public static func detailView(root: DiceRootModel, selectedItemId: UUID?) -> some View {
         if let itemId = selectedItemId {
             ItemSplitDetailRouteRootView(root: root.rootController, route: DiceRoute.detail(itemId))
         }

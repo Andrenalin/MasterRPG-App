@@ -14,9 +14,7 @@ public enum AudioFactory {
         AudioRootView()
     }
 
-    @MainActor @ViewBuilder public static func detailView(root: AudioRootModel) -> some View {
-        let selectedItemId = root.navigationModel.selectedItemId
-
+    @MainActor @ViewBuilder public static func detailView(root: AudioRootModel, selectedItemId: UUID?) -> some View {
         if let itemId = selectedItemId {
             ItemSplitDetailRouteRootView(root: root.rootController, route: AudioRoute.detail(itemId))
         }

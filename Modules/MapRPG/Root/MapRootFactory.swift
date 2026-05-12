@@ -19,10 +19,7 @@ public enum MapRootFactory {
         MapRootView()
     }
         
-    @MainActor @ViewBuilder public static func detailView(root: MapRootModel) -> some View {
-        // Extract observable property to break dependency chain
-        let selectedItemId = root.navigationModel.selectedItemId
-
+    @MainActor @ViewBuilder public static func detailView(root: MapRootModel, selectedItemId: UUID?) -> some View {
         if let itemId = selectedItemId {
             ItemSplitDetailRouteRootView(root: root.rootController, route: MapRoute.detail(itemId))
         }

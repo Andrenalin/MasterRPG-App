@@ -49,10 +49,8 @@ public enum AdventureFactory {
         AdventureRootView()
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: AdventureRootModel) -> some View {
-        // Extract observable property to break dependency chain
-        let selectedItemId = root.navigationModel.selectedItemId
-
+    @MainActor @ViewBuilder public static func detailView(root: AdventureRootModel, selectedItemId: UUID?) -> some View {
+        // selectedItemId passed explicitly to avoid observable dependency
         if let itemId = selectedItemId {
             ItemSplitDetailRouteRootView(root: root.rootController, route: AdventureRoute.detail(itemId))
         }
