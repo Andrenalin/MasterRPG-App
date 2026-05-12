@@ -73,9 +73,9 @@ public final class WeatherRootModel {
     
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
-    public var itemSelectionModel: ItemSelectionModel
+    @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @MainActor public var navigationModel: ModuleNavigationModel
-    public var linkSelectionModel: ItemSelectionModel
+    @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()

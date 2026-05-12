@@ -77,8 +77,8 @@ public final class PdfRootModel {
     
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
-    public var itemSelectionModel: ItemSelectionModel
-    public var linkSelectionModel: ItemSelectionModel
+    @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
+    @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
 
     @MainActor public var navigationModel: ModuleNavigationModel
 
