@@ -5,6 +5,7 @@ import SwiftUI
 enum LinkHighlightTextModelId: Hashable {
     case item(UUID)
     case entry(UUID)
+    case entryContent(UUID)
 }
 
 @MainActor @Observable
@@ -98,6 +99,8 @@ public final class SheetRootModel: Sendable {
             case .item:
                 break
             case .entry(let uuid):
+                _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module)
+            case .entryContent(let uuid):
                 _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module)
             }
         }

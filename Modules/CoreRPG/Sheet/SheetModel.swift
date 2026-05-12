@@ -101,6 +101,17 @@ public enum SheetModelEditType: Equatable, Hashable, Sendable {
     var isEditable: Bool {
         self != .none
     }
+    
+    var icon: String {
+        switch self {
+            case .text: "doc.text"
+            case .number: "textformat.12"
+            case .decimal: "number"
+            case .selection: "checkmark.square"
+            case .none: ""
+        }
+    }
+
 }
 
 public enum SheetModelType: Equatable, Hashable, Sendable {

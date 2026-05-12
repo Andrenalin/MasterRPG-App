@@ -17,18 +17,19 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     let isEditor: Bool
     let linkTypes: LinkType.Type
     
-    @Environment(\.colorScheme) private var colorScheme
-    
     var body: some View {
         if sheetModel.showHeader || isEditor {
             GameShareView(root: root, model: model) {
                 nameRow
             }
+            .sheetBorderColor(level: sheetModel.level)
 
             if !sheetModel.isFolded {
                 inlineRows
+                    .sheetBorderColor(level: sheetModel.level)
 
                 secondaryRow
+                    .sheetBorderColor(level: sheetModel.level)
             }
         }
 
@@ -53,11 +54,6 @@ private extension SheetView {
             LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.id), text: sheetModel.name))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.title)
-                .padding(4)
-                .background {
-                    RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
-                }
-                .padding(2)
         }
     }
     
@@ -65,11 +61,6 @@ private extension SheetView {
         ForEach(sheetModel.inlineEntries) { inlineEntry in
             SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(4)
-                .background {
-                    RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
-                }
-                .padding(2)
         }
     }
     
@@ -78,12 +69,7 @@ private extension SheetView {
         if let description = rootModel.description(for: sheetModel), !description.isEmpty {
             LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(sheetModel.id), text: description))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(4)
-                .background {
-                    RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
-                }
                 .font(.subheadline)
-                .padding(2)
         }
     }
     
@@ -92,11 +78,6 @@ private extension SheetView {
             if !entry.isHidden {
                 SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(4)
-                    .background {
-                        RoundedRectangle(cornerRadius: 8).fill(rowColor(for: sheetModel.level))
-                    }
-                    .padding(2)
 #if !os(tvOS)
                     .applyIf(!isEditor) {
                         $0.draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink())
@@ -111,18 +92,6 @@ private extension SheetView {
             .frame(height: 8)
     }
     
-    func rowColor(for level: Int) -> Color {
-#if os(macOS) || os(visionOS)
-        return .clear
-#else
-        if level.isMultiple(of: 2) {
-            return colorScheme == .dark ? .black : .white
-        } else {
-            return .secondary.opacity(0.3)
-        }
-#endif
-    }
-
     var model: any ItemDataAccessable {
         root.itemControllable.itemOrEmpty(for: sheetModel.source.itemId)
     }
@@ -156,6 +125,35 @@ private extension SheetView {
             entryId = rootModel.addNewEntry(in: sheetModel)
         } completion: {
             rootModel.setScrollEntryId(source: sheetModel.source, entryId: entryId)
+        }
+    }
+}
+
+extension View {
+    func sheetBorderColor(level: Int) -> some View {
+        self.modifier(SheetBorderViewModifier(level: level))
+    }
+}
+
+
+struct SheetBorderViewModifier: ViewModifier {
+    let level: Int
+    
+    @Environment(\.colorScheme) private var colorScheme
+    
+    func body(content: Content) -> some View {
+        content
+            .padding(4)
+            .background {
+                RoundedRectangle(cornerRadius: 8).fill(rowColor(for: level))
+            }
+    }
+    
+    func rowColor(for level: Int) -> Color {
+        if level.isMultiple(of: 2) {
+            return .secondary.opacity(0.2)
+        } else {
+            return .secondary.opacity(0.4)
         }
     }
 }

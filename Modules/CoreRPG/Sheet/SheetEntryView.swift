@@ -28,10 +28,13 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             
             mainRow
             
+            contentRow
+            
             inlineEditorRow
             
             afterInline
         }
+        .sheetBorderColor(level: parentModel.level)
         .contentShape(.rect)
         .moveDisabled(entryModel.sheetType != .item && entryModel.sheetType != .group)
         .onChange(of: entryModel.content) {
@@ -55,6 +58,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         ForEach(entryModel.entries) { subEntry in
             if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
                 SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes)
+                    .padding(.leading, 2)
             }
         }
     }
@@ -86,9 +90,9 @@ private extension SheetEntryView {
             
             switch entryModel.sheetType {
             case .item, .group:
-                LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: entryModel.content, shareResults: shareResult))
+                LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: entryModel.name, shareResults: shareResult))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .font(.body)
+                    .font(.headline)
                 
             case .dice:
                 viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
@@ -106,6 +110,30 @@ private extension SheetEntryView {
                             
             if isEditor && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 deleteButton(onlyIcon: true)
+            }
+        }
+    }
+
+    @ViewBuilder var contentRow: some View {
+        if !entryModel.description.isEmpty {
+            HStack {
+                if entryModel.editType.isEditable {
+                    Image(systemName: entryModel.editType.icon)
+                        .imageScale(.small)
+                        .foregroundStyle(.foreground, .tint)
+                        .padding(4)
+                        .background {
+                            Circle().stroke(entryModel.source.typeId.tint.opacity(0.3))
+                        }
+                }
+                switch entryModel.sheetType {
+                case .item:
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entryContent(entryModel.id), text: entryModel.description, shareResults: shareResult))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.body)
+                default:
+                    EmptyView()
+                }
             }
         }
     }

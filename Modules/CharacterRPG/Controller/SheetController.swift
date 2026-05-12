@@ -98,8 +98,7 @@ extension SheetController: SheetControllable {
         var description = ""
         if let valueId = entry.valueId {
             let value = itemController.itemOrEmpty(for: valueId)
-            name = ""
-            description = value.url(linkNumber: 0)
+            name = value.url(linkNumber: 0)
         } else {
             description = entry.value
             if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {
