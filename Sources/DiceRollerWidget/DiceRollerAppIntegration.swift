@@ -444,15 +444,17 @@ struct DiceRollerView: View {
     private func rollDice() {
         withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
             isRolling = true
-            
-            // Simulate rolling animation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+
+            // Simulate rolling animation with modern structured concurrency
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(0.6))
+
                 let rolledDie = selectedDie.role(resetResults: true, reroleOptions: [])
                 let value = rolledDie.result.first ?? selectedDie.die.max
-                
+
                 // Create dice model with the rolled die
                 let diceModel = DiceModel(id: UUID(), name: "D\(selectedDie.die.max)", dice: [rolledDie])
-                
+
                 let result = DiceResultModel(
                     diceModel: diceModel,
                     result: .rolled,
@@ -461,30 +463,28 @@ struct DiceRollerView: View {
                     checked: false,
                     timeStamp: Date()
                 )
-                
+
                 withAnimation {
                     currentRoll = result
                     rollHistory.append(result)
                     isRolling = false
                 }
-                
+
                 // Update widget
                 var config = DiceConfiguration.loadFromUserDefaults()
                 config.lastRoll = result
                 config.selectedDice = diceModel
                 config.save()
                 WidgetCenter.shared.reloadAllTimelines()
-                
+
                 // Update Live Activity if game is active
-                Task {
-                    let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-                    let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
-                    
-                    if isGameActive {
-                        await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
-                    }
+                let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
+                let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
+
+                if isGameActive {
+                    await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
                 }
-                
+
                 // Save history
                 saveHistory()
             }
