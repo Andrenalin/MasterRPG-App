@@ -284,13 +284,13 @@ public final class SheetRootModel: Sendable {
 
     private func resetChangedLinkModels(in sheetModel: SheetModel) {
         if sheetModel.hasChanged {
-            linkTextModel[.item(sheetModel.id)] = nil
-            linkTextModel[.entry(sheetModel.id)] = nil
+            linkTextModel[.item(sheetModel.id)]?.reset(text: sheetModel.name)
+            linkTextModel[.entry(sheetModel.id)]?.reset(text: sheetModel.description)
             sheetModel.hasChanged = false
         }
         for entry in sheetModel.entries {
             if entry.hasChanged {
-                linkTextModel[.entry(entry.id)] = nil
+                linkTextModel[.entry(entry.id)]?.reset(text: entry.content)
                 entry.hasChanged = false
             }
             resetChangedLinkModels(in: entry)

@@ -12,12 +12,14 @@ extension SheetController: SheetControllable {
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
         if model.hasAudio {
-            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .audioInline, isShown: isShown, name: model.name, description: model.description, entries: []))
+            inlineEntries.append(
+                createAudioInline(itemId: itemId, level: level, isShown: isShown, name: model.name, description: model.description)
+                )
         }
 
         let isFolded = moduleDepth >= 1 || (isEditor && level > 0)
         let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, canAdd: false, showHeader: false, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, canAdd: false, showHeader: false, name: model.name, description: model.hasAudio ? "" : model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
 
@@ -52,11 +54,11 @@ extension SheetController: SheetControllable {
             }
         }
 
-        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .audioInline, name: name, description: description, entries: linkSheets)
+        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .audio, name: name, description: description, entries: linkSheets)
     }
 
     @MainActor private func createAudioInline(itemId: UUID, level: Int, isShown: Bool, name: String, description: String) -> SheetModel {
-        SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .audioInline, isShown: isShown, name: name, description: description, entries: [])
+        SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .audio, isShown: isShown, name: name, description: description, entries: [])
     }
 
     @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {

@@ -82,7 +82,7 @@ extension SheetController: SheetControllable {
         let duration = ContinuousClock.now - startTime
         Logger.sheetController.debug("[Sheet] Entry sheet created - Duration: \(duration), Name: '\(name)', Links processed: \(links.count), Sheets from links: \(linkSheets.count)")
         
-        let inlineEntry = SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), type: .photoInline, name: "", description: "", entries: [])
+        let inlineEntry = SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), type: .photo, name: "", description: "", entries: [])
         
         return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, inlineEntries: [inlineEntry], entries: linkSheets)
     }

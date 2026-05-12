@@ -103,18 +103,7 @@ extension SheetController: SheetControllable {
         let startTime = ContinuousClock.now
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
 
-        var name = entry.name
-        var description = ""
-        if let valueId = entry.valueId {
-            let value = itemController.itemOrEmpty(for: valueId)
-            name = ""
-            description = value.url(linkNumber: 0)
-        } else {
-            description = entry.value
-            if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {
-                description += " = \(valueCalculate)"
-            }
-        }
+        let (name, description) = entryNameDescription(entry: entry)
 
         var inlineEntries: [SheetModel] = []
         if let diceId = entry.diceId {
@@ -149,9 +138,24 @@ extension SheetController: SheetControllable {
         let duration = ContinuousClock.now - startTime
         Logger.sheetController.debug("[Sheet] Entry sheet created - Duration: \(duration), Name: '\(name)', Links processed: \(links.count), Sheets from links: \(linkSheets.count)")
 
-        //editMode ? .edit : (entry.valueId == nil ? .item : .group)
         let entryType: SheetModelType = entry.valueId != nil ? .group : .item
         return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: entryType, editType: entry.editType, name: name, description: description, inlineEntries: inlineEntries, entries: allSheets)
+    }
+
+    @MainActor func entryNameDescription(entry: ValueEntryModel) -> (name: String, description: String) {
+        var name = entry.name
+        var description = ""
+        if let valueId = entry.valueId {
+            let value = itemController.itemOrEmpty(for: valueId)
+            name = ""
+            description = value.url(linkNumber: 0)
+        } else {
+            description = entry.value
+            if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {
+                description += " = \(valueCalculate)"
+            }
+        }
+        return (name, description)
     }
     
     @MainActor private func createDiceInline(diceId: UUID, itemId: UUID, level: Int, isShown: Bool) -> SheetModel {
@@ -208,11 +212,12 @@ extension SheetController: SheetControllable {
         
         for entry in model.entries {
             if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
-                unequalSet(lhs: &existingSheetModel.name, rhs: entry.name) { changed in
+                let (name, description) = entryNameDescription(entry: entry)
+                unequalSet(lhs: &existingSheetModel.name, rhs: name) { changed in
                     existingSheetModel.hasChanged = changed
                     if changed { updatedCount += 1 }
                 }
-                unequalSet(lhs: &existingSheetModel.description, rhs: entry.content) { changed in
+                unequalSet(lhs: &existingSheetModel.description, rhs: description) { changed in
                     existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
                     if changed { updatedCount += 1 }
                 }

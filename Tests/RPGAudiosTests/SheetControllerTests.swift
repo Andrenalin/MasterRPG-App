@@ -41,7 +41,7 @@ struct SheetControllerTests {
         let model = sut.sheet(root: rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         if item.hasAudio {
-            let audioInline = model.entries.first(where: { $0.sheetType == SheetModelType.audioInline })
+            let audioInline = model.entries.first(where: { $0.sheetType == SheetModelType.audio })
             #expect(audioInline != nil)
         }
     }
@@ -59,7 +59,7 @@ struct SheetControllerTests {
 
         #expect(model.entries.count >= 0)
         for entry in model.entries {
-            if entry.sheetType == SheetModelType.audioInline {
+            if entry.sheetType == SheetModelType.audio {
                 #expect(entry.level == 0)
             }
         }
@@ -77,7 +77,7 @@ struct SheetControllerTests {
         let entries = sut.sheetEntries(root: rootManager, itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         for entry in entries {
-            #expect(entry.sheetType == SheetModelType.audioInline)
+            #expect(entry.sheetType == SheetModelType.audio)
         }
     }
 

@@ -68,7 +68,7 @@ private extension SheetEntryView {
     var beforeInline: some View {
         ForEach(entryModel.inlineEntries) { inlineSheet in
             switch inlineSheet.sheetType {
-            case .photoInline:
+            case .photo:
                 viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
                     .frame(height: 96)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -96,13 +96,13 @@ private extension SheetEntryView {
                 viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
                     .frame(height: 256)
 
-            case .audioInline:
+            case .audio:
                 HStack {
                     viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
                     LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: entryModel.content, shareResults: shareResult))
                 }
                 .font(.body)
-            case .photoInline, .edit:
+            case .edit:
                 EmptyView()
             }
                             
