@@ -29,6 +29,7 @@
     "core-data-expert": {
       "source": "avdlee/core-data-agent-skill",
       "sourceType": "github",
+      "skillPath": "core-data-expert/SKILL.md",
       "computedHash": "b8d2829005b1f2fefbaa8af2ea7d7d64e2fbeca2f2172033176ad0780edc3970"
     },
     "ipados-design-guidelines": {
@@ -41,25 +42,40 @@
       "sourceType": "github",
       "computedHash": "ceaaadf38ee556f3ba73f3826d3d4b0a469ddd57a1ea0d9cd8813d52cfb94dc8"
     },
+    "spm-build-analysis": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/spm-build-analysis/SKILL.md",
+      "computedHash": "9785f2113e45cd29aedc4c1e7e5763735157ff1e4c99a4ca4a65d4f625814c55"
+    },
     "swift-concurrency": {
       "source": "avdlee/swift-concurrency-agent-skill",
       "sourceType": "github",
-      "computedHash": "05ef28a2e0eb4eacd6a958cf07c1f5bd5d600e147c844b26dde42a9bdd2f633d"
+      "skillPath": "swift-concurrency/SKILL.md",
+      "computedHash": "64067648af92d2c24b8df033e9f1b19ab36364fbee015a53755d7e74a5711b60"
     },
     "swift-testing-expert": {
       "source": "avdlee/swift-testing-agent-skill",
       "sourceType": "github",
+      "skillPath": "swift-testing-expert/SKILL.md",
       "computedHash": "ee2a73c7148264cb7e0a0819d3063225541e57162353d97707d9fab830d27ba6"
     },
     "swiftui-expert-skill": {
       "source": "avdlee/swiftui-agent-skill",
       "sourceType": "github",
-      "computedHash": "6ee49ef533bac7e930efb2e2e5ae61399de9ffb52645df311740cbe6b4108134"
+      "skillPath": "swiftui-expert-skill/SKILL.md",
+      "computedHash": "1f56a9a166a86c3622b695929cdbfe614f1e1ec998a97df068e102c7aff52224"
     },
     "tvos-design-guidelines": {
       "source": "ehmo/platform-design-skills",
       "sourceType": "github",
       "computedHash": "7e8751618b4421617d083191150b6324eaa2bdf03509b3cc846763b770ff5b3f"
+    },
+    "update-swiftui-apis": {
+      "source": "avdlee/swiftui-agent-skill",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/update-swiftui-apis/SKILL.md",
+      "computedHash": "cd1d2af833b4f98836bbd98684880c73d3a17556d216fe6f4d6eb7149c6dfa3f"
     },
     "visionos-design-guidelines": {
       "source": "ehmo/platform-design-skills",
@@ -71,10 +87,35 @@
       "sourceType": "github",
       "computedHash": "3f2e574af6c7b46bc51877c34fbd363cc71a71a15416c4476fd8a7cfd7163601"
     },
+    "xcode-build-benchmark": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/xcode-build-benchmark/SKILL.md",
+      "computedHash": "e132c38adbb8a74e3e0474c0e34566b209fa3bf29532604af97d715b8c721ec8"
+    },
+    "xcode-build-fixer": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/xcode-build-fixer/SKILL.md",
+      "computedHash": "7d1c68154af030a24b7420c9f9c7805e6009e0012da34b9a16c0cfef3396b608"
+    },
+    "xcode-build-orchestrator": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/xcode-build-orchestrator/SKILL.md",
+      "computedHash": "d03e65e314a8fbe0ae0cf7469fa1a4280b5d335a7f163fdc7a7a91dbb0fd1b2b"
+    },
     "xcode-compilation-analyzer": {
       "source": "avdlee/xcode-build-optimization-agent-skill",
       "sourceType": "github",
+      "skillPath": "skills/xcode-compilation-analyzer/SKILL.md",
       "computedHash": "9857f081cf044a06f93f382ea1a53c3fe9699ac0d0686abbabea67696c2eff6a"
+    },
+    "xcode-project-analyzer": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/xcode-project-analyzer/SKILL.md",
+      "computedHash": "dfe1901df149b68d8869a48143508444605ed8ba20b448d1faec1d6218d58859"
     }
   }
 }
