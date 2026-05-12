@@ -634,8 +634,7 @@ struct FavoriteDiceManagementView: View {
             }
         }
         .navigationTitle("Favorite Dice")
-    #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+#if os(iOS)
         .toolbar {
             EditButton()
         }
@@ -665,9 +664,6 @@ struct FavoriteDiceManagementView: View {
                 }
             }
             .navigationTitle("Add Favorite")
-#if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -721,5 +717,3 @@ struct FavoriteDiceManagementView: View {
         return diceNames
     }
 }
-
-

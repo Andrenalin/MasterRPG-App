@@ -26,7 +26,6 @@ struct WindowMacList: Scene {
                     SettingsView(store: appModel)
                 }
                 .environmentSetUp(appModel)
-                .accentColor(.blue)
                 .tint(.teal)
                 .frame(minWidth: 600, minHeight: 400)
             }

@@ -160,7 +160,6 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
             .frame(minWidth: 600, minHeight: 400)
             .handlesExternalEvents(preferring: [], allowing: [])
             .tint(module.tint)
-            .accentColor(module.tint)
             .environmentSetUp(model)
             .environment(\.networkActions, model.gameRoot.networkActions())
             .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)

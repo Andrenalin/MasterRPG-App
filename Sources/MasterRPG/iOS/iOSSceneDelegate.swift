@@ -7,8 +7,10 @@ import RolePlayGameKit
 import os.log
 import SwiftUI
 import UIKit
+import Observation
 
-final class IosSceneDelegate: NSObject, UIWindowSceneDelegate, ObservableObject {
+@Observable
+final class IosSceneDelegate: NSObject, UIWindowSceneDelegate {
     var originalDelegate: (any UIWindowSceneDelegate)?
 
     var window: UIWindow?
