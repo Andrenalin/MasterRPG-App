@@ -201,7 +201,7 @@ public final class SheetRootModel: Sendable {
     func update(sheetModel: SheetModel, previousEntryId: UUID?, currentEntryId: UUID?) {
         guard let previousEntryId, currentEntryId == nil, editorModel.itemId == sheetModel.source.itemId else { return }
 
-        updateParent(sheetModel)
+        updateFromRoot()
 
         guard let entryModel = sheetModel.entries.first(where: { $0.source.entryId == previousEntryId }) else { return }
         entryModel.isEditing = false
@@ -278,8 +278,21 @@ public final class SheetRootModel: Sendable {
     /// Re-syncs a SheetModel tree from live data, then invalidates linkTextModel cache for any entry
     /// whose content changed (hasChanged) and clears the flag.
     func updateParent(_ parentModel: SheetModel) {
+        if parentModel.source.typeId == .value {
+            updateFromRoot()
+            return
+        }
         rootController(for: parentModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
         resetChangedLinkModels(in: parentModel)
+        if !searchText.isEmpty {
+            updateFilteredEntries()
+        }
+    }
+
+    /// Updates from the root SheetModel down - use when changes may affect calculated values throughout the tree
+    func updateFromRoot() {
+        rootController(for: sheetModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: sheetModel, isEditor: isEditor)
+        resetChangedLinkModels(in: sheetModel)
         if !searchText.isEmpty {
             updateFilteredEntries()
         }
