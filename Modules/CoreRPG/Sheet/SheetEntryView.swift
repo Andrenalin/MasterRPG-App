@@ -156,8 +156,8 @@ private extension SheetEntryView {
     }
     
     @ViewBuilder var inlineEditorRow: some View {
-        if (entryModel.isEditing && entryModel.editType != .none), let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
-            // Show inline editor when in edit mode
+        if !isEditor && (entryModel.isEditing && entryModel.editType != .none), let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
+            // Show inline editor when in edit mode (not available in editor mode)
             InlineEditorView(entryDataEditable: entryDataEditable, updateHandler: { text in
                 rootModel.updateSheetModel(entryModel: entryModel, updatedText: text)
             }, entry: entryModel)
