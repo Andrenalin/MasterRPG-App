@@ -40,22 +40,12 @@ public final class SheetModel: Identifiable, Sendable {
     public var entries: [SheetModel]
         
     // MARK: Editor
-    public let editType: SheetModelEditType
+    public var editType: SheetModelEditType
     public var isEditing: Bool = false
     public var hasChanged: Bool = false
     
     public let canAdd: Bool
     public let showHeader: Bool
-
-    var content: String {
-        if description.isEmpty {
-            name
-        } else if name.isEmpty {
-            description
-        } else {
-            "**" + name + "**: " + description
-        }
-    }
 
     func filter(searchText: String, shouldRestoreState: Bool = false) -> Bool {
         var hasResult: Bool = false

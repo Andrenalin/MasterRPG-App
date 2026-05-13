@@ -37,7 +37,10 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         .sheetBorderColor(level: parentModel.level)
         .contentShape(.rect)
         .moveDisabled(entryModel.sheetType != .item && entryModel.sheetType != .group)
-        .onChange(of: entryModel.content) {
+        .onChange(of: entryModel.name) {
+            rootModel.updateParent(parentModel)
+        }
+        .onChange(of: entryModel.description) {
             rootModel.updateParent(parentModel)
         }
 #if !os(tvOS)
@@ -104,7 +107,7 @@ private extension SheetEntryView {
             case .audio:
                 HStack {
                     viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: entryModel.content, shareResults: shareResult))
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: audioDisplayText, shareResults: shareResult))
                 }
                 .font(.body)
             }
@@ -171,5 +174,15 @@ private extension SheetEntryView {
     
     var shareResult: ShareValueResult {
         ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: entryModel.source.itemId, childId: entryModel.source.entryId, module: entryModel.source.typeId), showGame: appGameStateModel.isGameRunning, gameModus: appGameStateModel.gameModus)
+    }
+
+    var audioDisplayText: String {
+        if entryModel.description.isEmpty {
+            entryModel.name
+        } else if entryModel.name.isEmpty {
+            entryModel.description
+        } else {
+            "**\(entryModel.name)**: \(entryModel.description)"
+        }
     }
 }

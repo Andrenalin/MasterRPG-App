@@ -137,14 +137,23 @@ extension SheetController: SheetControllable {
             if changed { changeCount += 1 }
         }
 
+        var updatedInlineEntries: [SheetModel] = []
+
         if let diceId = model.diceId {
             let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
-            let diceSheetModel = sheetModel.inlineEntries.first ?? createDiceInline(diceId: diceId, itemId: model.id, level: sheetModel.level, isShown: sheetModel.isShown)
+            let diceSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? createDiceInline(diceId: diceId, itemId: model.id, level: sheetModel.level, isShown: sheetModel.isShown)
             diceSheetModel.source = diceSource
-            sheetModel.inlineEntries = [diceSheetModel]
-        } else {
-            sheetModel.inlineEntries = []
+            updatedInlineEntries.append(diceSheetModel)
         }
+
+        if let photoId = model.photoId {
+            let photoSource = ItemRowModel(itemId: photoId, typeId: .photo)
+            let photoSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .photo }) ?? createPhotoInline(photoId: photoId, itemId: model.id, level: sheetModel.level, isShown: sheetModel.isShown)
+            photoSheetModel.source = photoSource
+            updatedInlineEntries.append(photoSheetModel)
+        }
+
+        sheetModel.inlineEntries = updatedInlineEntries
 
         guard !sheetModel.isFolded else {
             let duration = ContinuousClock.now - startTime
@@ -180,11 +189,15 @@ extension SheetController: SheetControllable {
                     existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
                     if changed { updatedCount += 1 }
                 }
+                unequalSet(lhs: &existingSheetModel.editType, rhs: entry.editType) { changed in
+                    existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
+                    if changed { updatedCount += 1 }
+                }
                 // Update per-entry dice inline
                 if let diceId = entry.diceId {
                     let destination = ItemRowModel(itemId: model.id, entryId: entry.id, typeId: itemController.config.module)
                     let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
-                    let diceSheetModel = existingSheetModel.inlineEntries.first ?? SheetModel(source: diceSource, destination: destination, level: sheetModel.level, type: .dice, name: "", description: "", entries: [])
+                    let diceSheetModel = existingSheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? SheetModel(source: diceSource, destination: destination, level: sheetModel.level, type: .dice, name: "", description: "", entries: [])
                     diceSheetModel.source = diceSource
                     existingSheetModel.inlineEntries = [diceSheetModel]
                 } else {

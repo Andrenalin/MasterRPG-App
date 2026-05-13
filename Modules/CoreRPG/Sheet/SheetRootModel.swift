@@ -174,9 +174,9 @@ public final class SheetRootModel: Sendable {
 
     /// Update the sheet model after inline edits
     func updateSheetModel(entryModel: SheetModel, updatedText: String) {
-        guard let model = linkTextModel[.entry(entryModel.id)] else { return }
         entryModel.description = updatedText
-        model.reset(text: entryModel.content)
+        linkTextModel[.entry(entryModel.id)]?.reset(text: entryModel.name)
+        linkTextModel[.entryContent(entryModel.id)]?.reset(text: entryModel.description)
     }
     
     func addNewEntry(in sheetModel: SheetModel) -> UUID? {
@@ -206,8 +206,8 @@ public final class SheetRootModel: Sendable {
         guard let entryModel = sheetModel.entries.first(where: { $0.source.entryId == previousEntryId }) else { return }
         entryModel.isEditing = false
 
-        guard let model = linkTextModel[.entry(entryModel.id)] else { return }
-        model.reset(text: entryModel.content)
+        linkTextModel[.entry(entryModel.id)]?.reset(text: entryModel.name)
+        linkTextModel[.entryContent(entryModel.id)]?.reset(text: entryModel.description)
     }
 
     /// Set the current item in the edit controller (keeps ItemEditorModel in sync for scroll/other consumers)
@@ -288,12 +288,14 @@ public final class SheetRootModel: Sendable {
     private func resetChangedLinkModels(in sheetModel: SheetModel) {
         if sheetModel.hasChanged {
             linkTextModel[.item(sheetModel.id)]?.reset(text: sheetModel.name)
-            linkTextModel[.entry(sheetModel.id)]?.reset(text: sheetModel.description)
+            linkTextModel[.entry(sheetModel.id)]?.reset(text: sheetModel.name)
+            linkTextModel[.entryContent(sheetModel.id)]?.reset(text: sheetModel.description)
             sheetModel.hasChanged = false
         }
         for entry in sheetModel.entries {
             if entry.hasChanged {
-                linkTextModel[.entry(entry.id)]?.reset(text: entry.content)
+                linkTextModel[.entry(entry.id)]?.reset(text: entry.name)
+                linkTextModel[.entryContent(entry.id)]?.reset(text: entry.description)
                 entry.hasChanged = false
             }
             resetChangedLinkModels(in: entry)
