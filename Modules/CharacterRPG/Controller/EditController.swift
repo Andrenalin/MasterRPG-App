@@ -286,31 +286,57 @@ extension EditController {
         if item[entryId].valueDecimal != decimal {
             item[entryId].valueDecimal = decimal
             save(updated: item, message: String(localized: "Update decimal", bundle: .module).localizedString)
+            saveGameDataToPermanent(itemId: itemId, entryId: entryId)
         }
     }
-    
+
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int) {
         guard let entryId, let item = editModel(for: itemId) else { return }
         if item[entryId].valueNumber != number {
             item[entryId].valueNumber = number
             save(updated: item, message: String(localized: "Update number", bundle: .module).localizedString)
+            saveGameDataToPermanent(itemId: itemId, entryId: entryId)
         }
     }
-    
+
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, selected: Bool) {
         guard let entryId, let item = editModel(for: itemId) else { return }
         if item[entryId].valueSelected != selected {
             item[entryId].toggleSelection()
             save(updated: item, message: String(localized: "Update Selection", bundle: .module).localizedString)
+            saveGameDataToPermanent(itemId: itemId, entryId: entryId)
         }
     }
-    
+
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String) {
         guard let entryId, let item = editModel(for: itemId) else { return }
         if item[entryId].value != value {
             item[entryId].value = value
             save(updated: item, message: String(localized: "Update value", bundle: .module).localizedString)
+            saveGameDataToPermanent(itemId: itemId, entryId: entryId)
         }
+    }
+
+    // MARK: - Save Game Changes to Permanent Storage
+
+    /// Saves the current game data entry to the permanent (non-game) storage
+    /// This is used by the inline editor to persist player changes made during gameplay
+    @MainActor private func saveGameDataToPermanent(itemId: UUID, entryId: UUID) {
+        // Only save to permanent if we're in game mode
+        guard itemController.itemDataModel.isGameMode else { return }
+
+        // Get the current game item
+        guard let gameItem = itemController.itemSync(for: itemId, noGame: false) else { return }
+
+        // Get the permanent item (or create copy from game item if doesn't exist)
+        guard let permanentItem = itemController.itemSync(for: itemId, noGame: true)?.copy() as? ValueModel else { return }
+
+        // Copy the specific entry from game to permanent
+        let gameEntry = gameItem[entryId]
+        permanentItem[entryId] = gameEntry
+
+        // Save to permanent storage with forceSave flag
+        itemController.replace(model: permanentItem, isInsert: false, forceSave: true)
     }
 }
 
