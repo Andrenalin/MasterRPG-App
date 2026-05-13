@@ -26,7 +26,6 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
 
             if !sheetModel.isFolded {
                 inlineRows
-                    .sheetBorderColor(level: sheetModel.level)
 
                 secondaryRow
                     .sheetBorderColor(level: sheetModel.level)
@@ -47,8 +46,8 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
 private extension SheetView {
     var nameRow: some View {
         HStack {
-            if isEditor && sheetModel.canAdd {
-                plusButton
+            if isEditor && sheetModel.canAdd && entryDataEditable != nil {
+                SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
             }
 
             LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.id), text: sheetModel.name))
@@ -98,62 +97,5 @@ private extension SheetView {
     
     var entryDataEditable: (any EntryDataEditable)? {
         rootModel.entryDataEditable(for: sheetModel.source)
-    }
-    
-    @ViewBuilder var plusButton: some View {
-        if entryDataEditable != nil {
-            Button(action: addNewEntry) {
-                Label {
-                    Text("Add Entry", bundle: .module)
-                } icon: {
-                    Image(systemName: "note.text.badge.plus")
-                        .imageScale(.large)
-                        .foregroundStyle(.foreground, .tint)
-                }
-                .labelStyle(.iconOnly)
-            }
-            .borderLessTVBottonStyle()
-            .padding(4)
-            .contentShape(.circle)
-            .glassEffectAll()
-        }
-    }
-    
-    func addNewEntry() {
-        var entryId: UUID?
-        withAnimation {
-            entryId = rootModel.addNewEntry(in: sheetModel)
-        } completion: {
-            rootModel.setScrollEntryId(source: sheetModel.source, entryId: entryId)
-        }
-    }
-}
-
-extension View {
-    func sheetBorderColor(level: Int) -> some View {
-        self.modifier(SheetBorderViewModifier(level: level))
-    }
-}
-
-
-struct SheetBorderViewModifier: ViewModifier {
-    let level: Int
-    
-    @Environment(\.colorScheme) private var colorScheme
-    
-    func body(content: Content) -> some View {
-        content
-            .padding(4)
-            .background {
-                RoundedRectangle(cornerRadius: 8).fill(rowColor(for: level))
-            }
-    }
-    
-    func rowColor(for level: Int) -> Color {
-        if level.isMultiple(of: 2) {
-            return .secondary.opacity(0.2)
-        } else {
-            return .secondary.opacity(0.4)
-        }
     }
 }

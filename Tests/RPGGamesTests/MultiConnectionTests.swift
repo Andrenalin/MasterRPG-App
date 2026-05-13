@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import RPGResourcesDebug
@@ -553,5 +552,3 @@ struct MultiConnectionAudioTests {
         #expect(player3Players == expectedPlayers)
     }
 }
-
-#endif

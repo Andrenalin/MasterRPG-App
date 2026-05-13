@@ -6,10 +6,13 @@ struct SheetContextMenuView: View {
     let rootModel: SheetRootModel
     let parentModel: SheetModel
     let entryModel: SheetModel
+    let isEditor: Bool
 
     @Environment(\.navigator) private var navigator
 
     var body: some View {
+        Divider()
+        SheetEntryAddButton(rootModel: rootModel, parentModel: parentModel, onlyIcon: false)
         Divider()
         moveIntoButton
         moveOutOfGroupButton

@@ -50,9 +50,10 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         }
 #endif
         .contextMenuAll {
-            editButton(onlyIcon: false)
-            SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel)
-            deleteButton(onlyIcon: false)
+            SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, isEditor: isEditor, onlyIcon: false)
+            SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor)
+            SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
+                .tint(.red)
         }
 
         ForEach(entryModel.entries) { subEntry in
@@ -85,7 +86,7 @@ private extension SheetEntryView {
     var mainRow: some View {
         HStack {
             if (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
-                editButton(onlyIcon: true)
+                SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, isEditor: isEditor, onlyIcon: true)
             }
             
             switch entryModel.sheetType {
@@ -109,7 +110,7 @@ private extension SheetEntryView {
             }
                             
             if isEditor && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
-                deleteButton(onlyIcon: true)
+                SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
             }
         }
     }
@@ -158,57 +159,6 @@ private extension SheetEntryView {
                 rootModel.updateSheetModel(entryModel: entryModel, updatedText: text)
             }, entry: entryModel)
         }
-    }
-    
-    func editButton(onlyIcon: Bool) -> some View {
-        Button {
-            withAnimation {
-                entryModel.isEditing.toggle()
-                if isEditor {
-                    rootModel.editorModel.setEdit(source: entryModel.source)
-                }
-            }
-        } label: {
-            Label {
-                Text("Edit \(entryModel.name.withoutLink())", bundle: .module)
-            } icon: {
-                Image(systemName: "square.and.pencil")
-                    .opacity(0)
-                    .imageScale(.large)
-                    .overlay {
-                        Image(systemName: entryModel.isEditing ? "square.and.pencil" : "pencil")
-                            .imageScale(.large)
-                            .foregroundStyle(.tint, .foreground, .tint)
-                            .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
-                    }
-            }
-            .applyIf(onlyIcon) {
-                $0.labelStyle(.iconOnly)
-            }
-        }
-        .borderLessTVBottonStyle()
-        .keyboardShortcutAll("e", modifiers: .shift)
-    }
-    
-    func deleteButton(onlyIcon: Bool) -> some View {
-        Button(role: .destructive) {
-            withAnimation {
-                rootModel.removeEntry(entryModel: entryModel, from: parentModel)
-            }
-        } label: {
-            Label {
-                Text("Delete \(entryModel.name.withoutLink())", bundle: .module)
-            } icon: {
-                Image(systemName: "minus.circle.fill")
-                    .imageScale(.large)
-                    .foregroundStyle(.white, .red, .red)
-            }
-            .applyIf(onlyIcon) {
-                $0.labelStyle(.iconOnly)
-            }
-        }
-        .borderLessTVBottonStyle()
-        .keyboardShortcutAll("r", modifiers: .shift)
     }
     
     func rowColor(for level: Int) -> Color {
