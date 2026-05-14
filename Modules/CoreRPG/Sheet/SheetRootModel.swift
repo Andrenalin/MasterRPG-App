@@ -257,6 +257,80 @@ public final class SheetRootModel: Sendable {
         }
     }
 
+    func moveEntry(fromItemId: UUID, entryId: UUID, toItemId: UUID, afterEntry: SheetModel) {
+        guard let sourceEditable = entryDataEditable(for: ItemRowModel(itemId: fromItemId, typeId: afterEntry.source.typeId)) else { return }
+
+        // Move the entry from source item to target item
+        let success = sourceEditable.move(itemId: fromItemId, entryId: entryId, into: ItemRowModel(itemId: toItemId, typeId: afterEntry.source.typeId))
+
+        guard success else { return }
+
+        // Update the sheet models to reflect the changes
+        updateFromRoot()
+    }
+
+    func handleDrop<LinkType: LinkDataTransferable>(items: [LinkType], targetEntry: SheetModel, parentModel: SheetModel) -> Bool {
+        guard let droppedItem = items.first else { return false }
+
+        if droppedItem.isMove {
+            // ===== MOVE: Entry being moved (within same item or across items in same module) =====
+
+            // Only allow moves within same module
+            guard droppedItem.module == targetEntry.source.typeId else {
+                return false
+            }
+
+            // Don't allow dropping on inline entries (like dice, photo, etc.)
+            guard targetEntry.sheetType == .item || targetEntry.sheetType == .group else {
+                return false
+            }
+
+            guard let draggedEntryId = droppedItem.entryId else {
+                return false
+            }
+
+            // Check if this is a move within the same parent item (reorder)
+            if droppedItem.itemId == parentModel.source.itemId,
+               let draggedIndex = parentModel.entries.firstIndex(where: { $0.source.entryId == draggedEntryId }),
+               let targetIndex = parentModel.entries.firstIndex(where: { $0.id == targetEntry.id }),
+               draggedIndex != targetIndex {
+                // Reorder within same parent
+                withAnimation {
+                    reorderEntry(from: draggedIndex, to: targetIndex, in: parentModel)
+                }
+                return true
+            }
+
+            // Otherwise, move entry from one item to another (cross-item move)
+            if droppedItem.itemId != targetEntry.source.itemId {
+                withAnimation {
+                    moveEntry(
+                        fromItemId: droppedItem.itemId,
+                        entryId: draggedEntryId,
+                        toItemId: targetEntry.source.itemId,
+                        afterEntry: targetEntry
+                    )
+                }
+                return true
+            }
+
+            return false
+
+        } else {
+            // ===== LINK DROP: From inspector or viewer mode =====
+
+            // Only allow link drops on item entries (not groups, not inline entries)
+            guard targetEntry.sheetType == .item else {
+                return false
+            }
+
+            items.forEach {
+                addLink(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, to: targetEntry, in: parentModel)
+            }
+            return true
+        }
+    }
+
     func groupFolders(for entryModel: SheetModel) -> [FolderRepresentable] {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source) else { return [] }

@@ -104,41 +104,7 @@ private extension SheetView {
     }
 
     func handleDrop(items: [LinkType], targetEntry: SheetModel) -> Bool {
-        guard let droppedItem = items.first else { return false }
-
-        if droppedItem.isMove {
-            // ===== REORDER: Entry being moved within sheet =====
-
-            // Don't allow dropping on inline entries (like dice, photo, etc.)
-            guard targetEntry.sheetType == .item || targetEntry.sheetType == .group else {
-                return false
-            }
-
-            guard let draggedEntryId = droppedItem.entryId,
-                  let draggedIndex = sheetModel.entries.firstIndex(where: { $0.source.entryId == draggedEntryId }),
-                  let targetIndex = sheetModel.entries.firstIndex(where: { $0.id == targetEntry.id }),
-                  draggedIndex != targetIndex else {
-                return false
-            }
-
-            withAnimation {
-                rootModel.reorderEntry(from: draggedIndex, to: targetIndex, in: sheetModel)
-            }
-            return true
-
-        } else {
-            // ===== LINK DROP: From inspector or viewer mode =====
-
-            // Only allow link drops on item entries (not groups, not inline entries)
-            guard targetEntry.sheetType == .item else {
-                return false
-            }
-
-            items.forEach {
-                rootModel.addLink(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, to: targetEntry, in: sheetModel)
-            }
-            return true
-        }
+        rootModel.handleDrop(items: items, targetEntry: targetEntry, parentModel: sheetModel)
     }
     
     var endRow: some View {
