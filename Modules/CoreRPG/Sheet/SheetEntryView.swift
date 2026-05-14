@@ -37,33 +37,18 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         .id(entryModel.source.entryId)
         .sheetBorderColor(level: parentModel.level)
         .contentShape(.rect)
-        .moveDisabled(entryModel.sheetType != .item && entryModel.sheetType != .group)
         .onChange(of: entryModel.name) {
             rootModel.updateParent(parentModel)
         }
         .onChange(of: entryModel.description) {
             rootModel.updateParent(parentModel)
         }
-#if !os(tvOS)
-        .applyIf(isEditor && entryModel.sheetType == .item) {
-            $0.dropDestination(for: linkTypes, isEnabled: entryModel.sheetType != .group) { items, _ in
-                items.forEach {
-                    rootModel.addLink(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, to: entryModel, in: parentModel)
-                }
-            }
-        }
-#endif
-        .contextMenuAll {
-            SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, isEditor: isEditor, onlyIcon: false)
-            SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor)
-            SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
-                .tint(.red)
-        }
-
-        ForEach(entryModel.entries) { subEntry in
-            if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
-                SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes)
-                    .padding(.leading, 2)
+        .applyIf(isEditor) {
+            $0.contextMenuAll {
+                SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, isEditor: isEditor, onlyIcon: false)
+                SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor)
+                SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
+                    .tint(.red)
             }
         }
     }

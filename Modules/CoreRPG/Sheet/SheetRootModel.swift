@@ -238,6 +238,25 @@ public final class SheetRootModel: Sendable {
         }
     }
 
+    func reorderEntry(from sourceIndex: Int, to targetIndex: Int, in parentModel: SheetModel) {
+        guard sourceIndex != targetIndex,
+              let editable = entryDataEditable(for: parentModel.source),
+              sourceIndex >= 0,
+              sourceIndex < parentModel.entries.count,
+              targetIndex >= 0,
+              targetIndex < parentModel.entries.count else { return }
+
+        let entry = parentModel.entries[sourceIndex]
+        parentModel.entries.remove(at: sourceIndex)
+        let insertIndex = sourceIndex < targetIndex ? targetIndex : targetIndex
+        parentModel.entries.insert(entry, at: insertIndex)
+
+        editable.move(itemId: parentModel.source.itemId, entryIds: parentModel.entries.compactMap { $0.source.entryId })
+        if !searchText.isEmpty {
+            updateFilteredEntries()
+        }
+    }
+
     func groupFolders(for entryModel: SheetModel) -> [FolderRepresentable] {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source) else { return [] }
