@@ -106,7 +106,7 @@ extension LinkController: LinkControllable {
             if let entryId {
                 description = item[entryId].content
             } else {
-                description = "\(item.name) / \(item.description) / \(item.entries.count) Entries"
+                description = formatInlineDescription(description: item.description, entryCount: item.entries.count)
             }
             let result = "\(showAction) \(description)\(removeAction)"
             let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
