@@ -55,6 +55,7 @@ struct WindowLinkList: Scene {
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(model.windowPlacement(for: module))
+        .restorationBehaviorAll(.disabled)
 #if os(macOS)
         .keyboardShortcut(key, modifiers: [.command, .option])
 #endif

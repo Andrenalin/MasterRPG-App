@@ -169,9 +169,7 @@ struct MasterRPGApp: App {
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(.leading(SceneId.game.rawValue))
-#if !os(iOS)
-        .restorationBehavior(.disabled)
-#endif
+        .restorationBehaviorAll(.disabled)
 #if os(macOS)
         .keyboardShortcut("E", modifiers: [.command, .shift, .option])
 #endif

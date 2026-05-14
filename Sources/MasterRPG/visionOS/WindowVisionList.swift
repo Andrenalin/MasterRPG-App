@@ -32,6 +32,7 @@ struct WindowVisionList: Scene {
         }
         .windowStyle(.volumetric)
         .defaultSize(width: 2, height: 1.5, depth: 2, in: .meters)
+        .restorationBehaviorAll(.disabled)
 
         Window("Settings", id: SceneId.settings.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in

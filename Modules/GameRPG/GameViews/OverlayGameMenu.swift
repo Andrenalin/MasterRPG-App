@@ -12,6 +12,7 @@ struct OverlayGameMenu: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(ScenesManager.self) private var sceneManager
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
+    @Environment(AppSettingsModel.self) private var appSettingsModel
     
     var body: some View {
 #if os(visionOS)
@@ -215,6 +216,10 @@ private extension OverlayGameMenu {
                     sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
                 }
             }
+            .onChange(of: gameScreenModel.showMainTab) {
+                // Save user preference when main tab is toggled
+                appSettingsModel.autoShowMasterMainTab = gameScreenModel.showMainTab != .none
+            }
     }
     
     @ViewBuilder
@@ -247,6 +252,10 @@ private extension OverlayGameMenu {
             } else {
                 sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
             }
+        }
+        .onChange(of: gameScreenModel.showMainTab) {
+            // Save user preference when main tab is toggled
+            appSettingsModel.autoShowPlayerMainTab = gameScreenModel.showMainTab != .none
         }
     }
     
