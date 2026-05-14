@@ -13,6 +13,7 @@ struct LinkPdfModuleTransferable: LinkDataTransferable {
     let itemId: UUID
     let entryId: UUID?
     let name: String
+    let isMove: Bool
 
     static var transferRepresentation: some TransferRepresentation {
         ProxyRepresentation(exporting: \.linkRepresentation)

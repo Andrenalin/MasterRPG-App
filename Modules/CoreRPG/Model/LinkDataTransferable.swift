@@ -8,6 +8,7 @@ public protocol LinkDataTransferable: Sendable, Codable, Transferable {
     var itemId: UUID { get }
     var entryId: UUID? { get }
     var name: String { get }
+    var isMove: Bool { get }
 }
 
 extension LinkDataTransferable {
@@ -53,11 +54,12 @@ extension UTType {
 }
 
 public struct LinkEntryData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = module
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -69,14 +71,16 @@ public struct LinkEntryData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkAdventureData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .adventure) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .adventure, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .adventure
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -88,14 +92,16 @@ public struct LinkAdventureData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkAudioData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .audio) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .audio, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .audio
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -107,14 +113,16 @@ public struct LinkAudioData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkCharacterData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .value) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .value, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .value
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -126,14 +134,16 @@ public struct LinkCharacterData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkDiceData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .dice) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .dice, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .dice
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -145,14 +155,16 @@ public struct LinkDiceData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkMapData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .map) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .map, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .map
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -164,14 +176,16 @@ public struct LinkMapData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkPdfData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .pdf) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .pdf, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .pdf
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -183,14 +197,16 @@ public struct LinkPdfData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkPhotoData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .photo) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .photo, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .photo
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -202,14 +218,16 @@ public struct LinkPhotoData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkSpaceData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .space) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .space, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .space
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -221,14 +239,16 @@ public struct LinkSpaceData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkTableData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .table) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .table, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .table
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -240,14 +260,16 @@ public struct LinkTableData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }
 
 public struct LinkWeatherData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .weather) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .weather, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
         self.module = .weather
+        self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -259,4 +281,5 @@ public struct LinkWeatherData: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 }

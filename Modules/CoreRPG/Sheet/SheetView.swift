@@ -83,7 +83,7 @@ private extension SheetView {
                     .applyIf(isEditor) {
                         $0
                             .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
-                            .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink())
+                            .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)
                             .dropDestination(for: linkTypes) { items, location in
                                 handleDrop(items: items, targetEntry: entry)
                             } isTargeted: { isTargeted in
@@ -105,45 +105,35 @@ private extension SheetView {
 
     func handleDrop(items: [LinkType], targetEntry: SheetModel) -> Bool {
         guard let droppedItem = items.first else { return false }
-        
-        // Determine if this is a reorder or a link drop based on:
-        // 1. Same parent item (itemId matches)
-        // 2. Has an entryId (it's an entry, not just an item)
-        // 3. The entry exists in the current sheet's entries
-        
-        if droppedItem.itemId == sheetModel.source.itemId,
-           let draggedEntryId = droppedItem.entryId,
-           let draggedIndex = sheetModel.entries.firstIndex(where: { $0.source.entryId == draggedEntryId }) {
-            // ===== REORDER: Entry from this same sheet =====
-            
+
+        if droppedItem.isMove {
+            // ===== REORDER: Entry being moved within sheet =====
+
             // Don't allow dropping on inline entries (like dice, photo, etc.)
             guard targetEntry.sheetType == .item || targetEntry.sheetType == .group else {
                 return false
             }
-            
-            // Don't drop on self
-            guard let targetIndex = sheetModel.entries.firstIndex(where: { $0.id == targetEntry.id }),
+
+            guard let draggedEntryId = droppedItem.entryId,
+                  let draggedIndex = sheetModel.entries.firstIndex(where: { $0.source.entryId == draggedEntryId }),
+                  let targetIndex = sheetModel.entries.firstIndex(where: { $0.id == targetEntry.id }),
                   draggedIndex != targetIndex else {
                 return false
             }
-            
+
             withAnimation {
                 rootModel.reorderEntry(from: draggedIndex, to: targetIndex, in: sheetModel)
             }
             return true
-            
+
         } else {
-            // ===== LINK DROP: From inspector, another sheet, or another item =====
-            // This includes:
-            // - Items from inspector (no entryId)
-            // - Entries from other sheets (different itemId)
-            // - Entries from the same item but not found in this sheet's entries
-            
+            // ===== LINK DROP: From inspector or viewer mode =====
+
             // Only allow link drops on item entries (not groups, not inline entries)
             guard targetEntry.sheetType == .item else {
                 return false
             }
-            
+
             items.forEach {
                 rootModel.addLink(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, to: targetEntry, in: sheetModel)
             }

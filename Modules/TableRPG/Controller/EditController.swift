@@ -18,6 +18,7 @@ struct LinkTableModuleTransferable: LinkDataTransferable {
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
+    public let isMove: Bool
 
     public static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .diceLink)

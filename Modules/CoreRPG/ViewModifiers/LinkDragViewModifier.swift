@@ -4,8 +4,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 extension View {
-    public func draggable(for module: NetworkModules, itemId: UUID, entryId: UUID?, name: String) -> some View {
-        modifier(LinkDragViewModifier(itemId: itemId, entryId: entryId, module: module, name: name))
+    public func draggable(for module: NetworkModules, itemId: UUID, entryId: UUID?, name: String, isMove: Bool = false) -> some View {
+        modifier(LinkDragViewModifier(itemId: itemId, entryId: entryId, module: module, name: name, isMove: isMove))
     }
     
     public func dropDestination(for module: NetworkModules, isEnabled: Bool = true, handler: @escaping (_ name: String, _ itenId: UUID, _ entryId: UUID?) -> Void) -> some View {
@@ -22,23 +22,24 @@ struct LinkDragViewModifier: ViewModifier {
     let entryId: UUID?
     let module: NetworkModules
     let name: String
-    
+    let isMove: Bool
+
     func body(content: Content) -> some View {
 #if os(tvOS)
         content
 #else
         switch module {
-        case .adventure: content.draggable(LinkAdventureData(itemId: itemId, entryId: entryId, name: name))
-        case .audio: content.draggable(LinkAudioData(itemId: itemId, entryId: entryId, name: name))
-        case .value: content.draggable(LinkCharacterData(itemId: itemId, entryId: entryId, name: name))
-        case .dice: content.draggable(LinkDiceData(itemId: itemId, entryId: entryId, name: name))
-        case .map: content.draggable(LinkMapData(itemId: itemId, entryId: entryId, name: name))
-        case .pdf: content.draggable(LinkPdfData(itemId: itemId, entryId: entryId, name: name))
-        case .photo: content.draggable(LinkPhotoData(itemId: itemId, entryId: entryId, name: name))
-        case .space: content.draggable(LinkSpaceData(itemId: itemId, entryId: entryId, name: name))
-        case .table: content.draggable(LinkTableData(itemId: itemId, entryId: entryId, name: name))
-        case .weather: content.draggable(LinkWeatherData(itemId: itemId, entryId: entryId, name: name))
-        default: content.draggable(LinkEntryData(itemId: itemId, entryId: entryId, name: name, module: module))
+        case .adventure: content.draggable(LinkAdventureData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .audio: content.draggable(LinkAudioData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .value: content.draggable(LinkCharacterData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .dice: content.draggable(LinkDiceData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .map: content.draggable(LinkMapData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .pdf: content.draggable(LinkPdfData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .photo: content.draggable(LinkPhotoData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .space: content.draggable(LinkSpaceData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .table: content.draggable(LinkTableData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .weather: content.draggable(LinkWeatherData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        default: content.draggable(LinkEntryData(itemId: itemId, entryId: entryId, name: name, module: module, isMove: isMove))
         }
 #endif
     }
