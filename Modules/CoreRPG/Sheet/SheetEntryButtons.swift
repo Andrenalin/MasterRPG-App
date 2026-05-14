@@ -78,6 +78,7 @@ struct SheetEntryAddButton: View {
             var entryId: UUID?
             withAnimation {
                 entryId = rootModel.addNewEntry(in: parentModel)
+                rootModel.updateParent(parentModel)
             } completion: {
                 rootModel.setScrollEntryId(source: parentModel.source, entryId: entryId)
             }

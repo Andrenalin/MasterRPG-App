@@ -13,8 +13,6 @@ public final class ItemEditorModel: Sendable {
         undoManaged.value
     }
 
-    public var scrollEntryId: UUID?
-
     public var hasChangedEntries: Int = 0
 
     public var deactivateEntryEditor: Bool = false

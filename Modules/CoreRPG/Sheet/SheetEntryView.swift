@@ -25,15 +25,16 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     var body: some View {
         VStack(alignment: .leading) {
             beforeInline
-            
+
             mainRow
-            
+
             contentRow
-            
+
             inlineEditorRow
-            
+
             afterInline
         }
+        .id(entryModel.source.entryId)
         .sheetBorderColor(level: parentModel.level)
         .contentShape(.rect)
         .moveDisabled(entryModel.sheetType != .item && entryModel.sheetType != .group)

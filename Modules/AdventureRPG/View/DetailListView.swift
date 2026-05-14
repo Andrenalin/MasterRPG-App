@@ -88,7 +88,7 @@ struct AdventureAddEntryButton: View {
                 root.editController.sheetEditorModel.entryId = entryId
                 Task {
                     try? await Task.sleep(for: .seconds(0.25))
-                    root.editController.editorModel.scrollEntryId = entryId
+                    root.editController.sheetEditorModel.scrollEntryId = entryId
                 }
             }
         } label: {

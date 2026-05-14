@@ -13,6 +13,7 @@ import SwiftUI
     public var itemId: UUID?
     public var entryId: UUID?
     public var module: NetworkModules
+    public var scrollEntryId: UUID?
     
     func setEdit(source: ItemRowModel) {
         self.itemId = source.itemId

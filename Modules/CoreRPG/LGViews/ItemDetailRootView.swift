@@ -262,10 +262,10 @@ private extension ItemDetailRootView {
                     }
                     
                     editor
-                        .onChange(of: root.editControllable.editorModel.scrollEntryId) {
-                            guard let scrollEntryId = root.editControllable.editorModel.scrollEntryId else { return }
-                            scrollProxy.scrollTo(scrollEntryId, anchor: .bottom)
-                            root.editControllable.editorModel.scrollEntryId = nil
+                        .onChange(of: root.editControllable.sheetEditorModel.scrollEntryId) {
+                            guard let scrollEntryId = root.editControllable.sheetEditorModel.scrollEntryId else { return }
+                            scrollProxy.scrollTo(scrollEntryId, anchor: .center)
+                            root.editControllable.sheetEditorModel.scrollEntryId = nil
                         }
                 }
                 .padding()
