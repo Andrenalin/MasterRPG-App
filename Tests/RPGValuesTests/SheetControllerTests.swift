@@ -10,10 +10,14 @@ import Testing
 
 @MainActor
 struct SheetControllerTests {
+    func linkRegisterController(for root: CharacterRootModel) -> LinkRegisterController {
+        LinkRegisterController(root: RootManager.init(anyRoot: root))
+    }
+    
     @Test func characterSheetBasic() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -44,7 +48,7 @@ struct SheetControllerTests {
     @Test func characterSheetWithPhoto() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -76,7 +80,7 @@ struct SheetControllerTests {
     @Test func characterSheetEntries() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -107,7 +111,7 @@ struct SheetControllerTests {
     @Test func characterSheetWithValueLink() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -138,7 +142,7 @@ struct SheetControllerTests {
     @Test func characterSheetIsShownPropagation() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -166,7 +170,7 @@ struct SheetControllerTests {
     @Test func characterSheetWithDice() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -197,7 +201,7 @@ struct SheetControllerTests {
     @Test func characterSheetLevelLimit() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 

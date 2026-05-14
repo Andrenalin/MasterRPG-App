@@ -10,10 +10,14 @@ import Testing
 
 @MainActor
 struct SheetControllerTests {
+    func linkRegisterController(for root: MapRootModel) -> LinkRegisterController {
+        LinkRegisterController(root: RootManager.init(anyRoot: root))
+    }
+
     @Test func mapSheetBasic() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -31,7 +35,7 @@ struct SheetControllerTests {
     @Test func mapSheetWithPhoto() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
         let item = root.itemController.itemOrEmpty(for: itemId!)
@@ -48,7 +52,7 @@ struct SheetControllerTests {
     @Test func mapSheetEntries() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -66,7 +70,7 @@ struct SheetControllerTests {
     @Test func mapSheetEntriesFilterHexGrid() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -85,7 +89,7 @@ struct SheetControllerTests {
     @Test func mapSheetWithPhotoInline() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -105,7 +109,7 @@ struct SheetControllerTests {
     @Test func mapSheetWithLinks() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -122,7 +126,7 @@ struct SheetControllerTests {
     @Test func mapSheetLinkToMapModule() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -139,7 +143,7 @@ struct SheetControllerTests {
     @Test func mapSheetIsShownPropagation() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -153,7 +157,7 @@ struct SheetControllerTests {
     @Test func mapSheetLevelLimit() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -174,7 +178,7 @@ struct SheetControllerTests {
     @Test func mapSheetDestination() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController)
+        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
