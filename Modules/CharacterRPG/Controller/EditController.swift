@@ -59,9 +59,11 @@ struct EditController: Sendable {
 
 extension EditController: EntryDataEditable {
     typealias Model = ValueModel
-    
+
     var itemControllable: any ItemControllable { itemController }
     var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
+
+    var canAddGroups: Bool { true }
 }
  
 // MARK: - EntryList editor

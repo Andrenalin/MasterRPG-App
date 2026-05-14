@@ -21,9 +21,12 @@ public protocol EntryDataEditable: EditControllable {
 
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID)
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool
-        
+
     var linkModules: [NetworkModules] { get }
     func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination
+
+    var canAddGroups: Bool { get }
+    @MainActor func addNewGroup(itemId: UUID) async -> UUID
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
     var additioanlEnrtryViewType: AdditionalEntryViewType { get }
@@ -61,8 +64,14 @@ public extension EntryDataEditable {
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
         addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
     }
-    
+
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
+
+    var canAddGroups: Bool { false }
+
+    @MainActor func addNewGroup(itemId: UUID) async -> UUID {
+        UUID() // Default implementation does nothing, returns empty UUID
+    }
     
     @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, separator: String = " ") {
         guard canAddLink(module: module, entryId: entryId), var item = editModel(for: destinationItemId) else { return }

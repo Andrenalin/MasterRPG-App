@@ -187,7 +187,18 @@ public final class SheetRootModel: Sendable {
         editorModel.entryId = entryId
         return entryId
     }
-    
+
+    @MainActor func addNewGroup(in sheetModel: SheetModel) async -> UUID? {
+        guard let editable = entryDataEditable(for: sheetModel.source) else { return nil }
+        let entryId = await editable.addNewGroup(itemId: sheetModel.source.itemId)
+        
+        //setCurrentItem(source: sheetModel.source, entryId: entryId)
+        editorModel.itemId = sheetModel.source.itemId
+        editorModel.module = sheetModel.source.typeId
+        editorModel.entryId = entryId
+        return entryId
+    }
+
     func setScrollEntryId(source: ItemRowModel, entryId: UUID?) {
         guard let editController = editControllable(for: source) else { return }
         editController.sheetEditorModel.scrollEntryId = entryId

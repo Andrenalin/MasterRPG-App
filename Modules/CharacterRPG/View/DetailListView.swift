@@ -34,6 +34,59 @@ struct DetailListView: View, Equatable {
     }
 }
 
+// MARK: - Toolbar Buttons
+
+struct AddEntryButton: View {
+    let root: CharacterRootModel
+    let model: ValueModel
+
+    var body: some View {
+        Button {
+            withAnimation {
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+                let entryId = root.editController.addNewEntry(itemId: model.id)
+                root.editController.sheetEditorModel.entryId = entryId
+                Task {
+                    try? await Task.sleep(for: .seconds(0.25))
+                    root.editController.sheetEditorModel.scrollEntryId = entryId
+                }
+            }
+        } label: {
+            Label {
+                Text("Add new Entry", bundle: .module)
+            } icon: {
+                Image(systemName: "note.text.badge.plus")
+            }
+        }
+    }
+}
+
+struct AddGroupButton: View {
+    let root: CharacterRootModel
+    let model: ValueModel
+
+    var body: some View {
+        Button {
+            root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+            let itemId = model.id
+            Task {
+                let entryId = await root.editController.addNewGroup(itemId: itemId)
+                withAnimation {
+                    root.editController.sheetEditorModel.entryId = entryId
+                }
+                try? await Task.sleep(for: .seconds(0.25))
+                root.editController.sheetEditorModel.scrollEntryId = entryId
+            }
+        } label: {
+            Label {
+                Text("Add new Group", bundle: .module)
+            } icon: {
+                Image(systemName: "plus.square.fill.on.square.fill")
+            }
+        }
+    }
+}
+
 private extension DetailListView {
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
@@ -48,40 +101,8 @@ private extension DetailListView {
                             Image(systemName: "table.badge.more")
                         }
                     }
-                    Button {
-                        withAnimation {
-                            root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-                            let entryId = root.editController.addNewEntry(itemId: model.id)
-                            root.editController.sheetEditorModel.entryId = entryId
-                            Task {
-                                try? await Task.sleep(for: .seconds(0.25))
-                                root.editController.sheetEditorModel.scrollEntryId = entryId
-                            }
-                        }
-                    } label: {
-                        Label {
-                            Text("Add new Entry", bundle: .module)
-                        } icon: {
-                            Image(systemName: "note.text.badge.plus")
-                        }
-                    }
-                    
-                    Button {
-                        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-                        let itemId = model.id
-                        Task {
-                            let entryId = await root.editController.addNewGroup(itemId: itemId)
-                            withAnimation {
-                                root.editController.sheetEditorModel.entryId = entryId
-                            }
-                        }
-                    } label: {
-                        Label {
-                            Text("Add new Group", bundle: .module)
-                        } icon: {
-                            Image(systemName: "plus.square.fill.on.square.fill")
-                        }
-                    }
+                    AddEntryButton(root: root, model: model)
+                    AddGroupButton(root: root, model: model)
                 }
             }
         }
