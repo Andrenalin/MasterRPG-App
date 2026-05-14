@@ -11,6 +11,7 @@ struct PlayerGameScreen: View {
     let playerController: PlayerController
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
+    @Environment(AppSettingsModel.self) private var appSettingsModel
     
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
@@ -96,30 +97,18 @@ struct PlayerGameScreen: View {
 
 private extension PlayerGameScreen {
     func prepareWindows() {
-#if os(iOS) || os(visionOS)
         Task {
-            try? await Task.sleep(for: .seconds(0.1))
-            gameScreenModel.showGameType <=> .table
-            withAnimation { gameScreenModel.showMainTab <=> .game }
             try? await Task.sleep(for: .seconds(0.6))
-            withAnimation { gameScreenModel.showGameType <=> .value }
+            
+            // Set display mode based on user preference  
+            if appSettingsModel.autoShowPlayerMainTab {
+                gameScreenModel.gameMainTabDisplayMode = .inline
+                withAnimation { gameScreenModel.showMainTab = .value }
+            } else {
+                gameScreenModel.gameMainTabDisplayMode = .hidden
+                withAnimation { gameScreenModel.showMainTab = .none }
+            }
         }
-#elseif os(macOS)
-        Task {
-            try? await Task.sleep(for: .seconds(0.1))
-            withAnimation { gameScreenModel.showMainTab <=> .game }
-        }
-#endif
-#if os(visionOS)
-        Task {
-            try? await Task.sleep(for: .seconds(0.15))
-            showWindow(for: .table)
-            try? await Task.sleep(for: .seconds(0.15))
-            showWindow(for: .pdf)
-            try? await Task.sleep(for: .seconds(0.15))
-            showWindow(for: .value)
-        }
-#endif
     }
 
     var overlayMenu: some View {

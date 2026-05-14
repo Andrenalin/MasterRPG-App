@@ -281,6 +281,34 @@ import OSLog
         }
 #endif
     }
+
+    /// Opens a window with the specified scene identifier.
+    ///
+    /// - Parameter scene: The scene identifier for the window to open
+    /// - Note: This method checks the current window state and handles transitions appropriately
+    @MainActor
+    public func openWindow(_ scene: SceneId, selection: WindowItemSelection) {
+#if !os(tvOS)
+        guard let openWindow = openWindow else { return }
+        
+        // Check if we can open this window
+        if let state = sceneStates[scene] {
+            switch state {
+            case .closed, .closing:
+                Logger.scenesManager.info("Opening window for scene \(scene.rawValue) with state opening")
+                sceneStates[scene] = .opening
+                openWindow(id: scene.rawValue, value: selection)
+            case .opening, .opened:
+                Logger.scenesManager.info("Window for scene \(scene.rawValue) is already open or opening")
+            }
+        } else {
+            Logger.scenesManager.info("First time tracking window for scene \(scene.rawValue) with state opening")
+            sceneStates[scene] = .opening
+            openWindow(id: scene.rawValue, value: selection)
+        }
+#endif
+    }
+
     
     /// Dismisses a window with the specified scene identifier.
     ///

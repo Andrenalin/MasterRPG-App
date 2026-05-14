@@ -45,6 +45,20 @@ public final class AppSettingsModel: Sendable {
             UserDefaults.standard.set(appColorScheme.rawValue, forKey: AppSettingsModel.appColorSchemeKey)
         }
     }
+    
+    public var autoShowMasterMainTab: Bool = true {
+        didSet {
+            guard oldValue != autoShowMasterMainTab else { return }
+            UserDefaults.standard.set(autoShowMasterMainTab, forKey: AppSettingsModel.autoShowMasterMainTabKey)
+        }
+    }
+    
+    public var autoShowPlayerMainTab: Bool = true {
+        didSet {
+            guard oldValue != autoShowPlayerMainTab else { return }
+            UserDefaults.standard.set(autoShowPlayerMainTab, forKey: AppSettingsModel.autoShowPlayerMainTabKey)
+        }
+    }
 
     // MARK: - Shared Settings Value in AppGroups
     
@@ -133,6 +147,9 @@ public final class AppSettingsModel: Sendable {
         firstLaunch = UserDefaults.standard.value(forKey: AppSettingsModel.firstLunchKey) as? Bool ?? true
         appColorScheme = AppColorScheme(rawValue: UserDefaults.standard.integer(forKey: AppSettingsModel.appColorSchemeKey)) ?? .system
         
+        autoShowMasterMainTab = UserDefaults.standard.value(forKey: AppSettingsModel.autoShowMasterMainTabKey) as? Bool ?? true
+        autoShowPlayerMainTab = UserDefaults.standard.value(forKey: AppSettingsModel.autoShowPlayerMainTabKey) as? Bool ?? true
+        
         // shared App groups
         useCloudKit = UserDefaults.standard.bool(forKey: AppSettingsModel.useCloudKitKey)
         
@@ -154,6 +171,8 @@ public final class AppSettingsModel: Sendable {
     private static let migrationKey = "MasterRPGMigrationAppGroup"
     private static let firstLunchKey = "FirstLunchMasterRPG"
     private static let appColorSchemeKey = "appColorScheme"
+    private static let autoShowMasterMainTabKey = "autoShowMasterMainTab"
+    private static let autoShowPlayerMainTabKey = "autoShowPlayerMainTab"
 
     private static let useCloudKitKey = "MasterRPGuseCloudKit"
     

@@ -12,6 +12,7 @@ struct OverlayGameMenu: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(ScenesManager.self) private var sceneManager
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
+    @Environment(AppSettingsModel.self) private var appSettingsModel
     
     var body: some View {
 #if os(visionOS)
@@ -205,7 +206,7 @@ private extension OverlayGameMenu {
         GameToolBarButtonView(valueType: .value, showType: $gameScreenModel.showGameType)
         GameToolBarButtonView(valueType: .weather, showType: $gameScreenModel.showGameType)
         
-        GameToolBarButtonView(valueType: .game, showType: $gameScreenModel.showMainTab)
+        GameMainTabButtonView(isMaster: true, displayMode: $gameScreenModel.gameMainTabDisplayMode)
             .padding(.trailing, marginWidth)
             .onChange(of: gameScreenModel.showGameType) {
                 guard gameScreenModel.showGameType != .none && gameScreenModel.showGameType != .game else { return }
@@ -214,6 +215,9 @@ private extension OverlayGameMenu {
                 } else {
                     sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
                 }
+            }
+            .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
+                handleMainTabDisplayModeChange(oldValue: oldValue, newValue: newValue, isMaster: true)
             }
     }
     
@@ -236,7 +240,7 @@ private extension OverlayGameMenu {
         
         Group {
             if root.gameModel.gameConfig.type != .observer {
-                GameToolBarButtonView(valueType: .game, showType: $gameScreenModel.showMainTab)
+                GameMainTabButtonView(isMaster: false, displayMode: $gameScreenModel.gameMainTabDisplayMode)
             }
         }
         .padding(.trailing, marginWidth)
@@ -246,6 +250,86 @@ private extension OverlayGameMenu {
                 sceneManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
             } else {
                 sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+            }
+        }
+        .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
+            handleMainTabDisplayModeChange(oldValue: oldValue, newValue: newValue, isMaster: false)
+        }
+    }
+    
+    /// Handles the three-state main tab display mode changes
+    func handleMainTabDisplayModeChange(oldValue: GameMainTabDisplayMode, newValue: GameMainTabDisplayMode, isMaster: Bool) {
+        switch newValue {
+        case .hidden:
+            // Hide the game view
+            gameScreenModel.showMainTab = .none
+            
+            // Close the appropriate window if it was open
+            if isMaster {
+                // Master: Close adventure viewer window
+                if sceneManager.getSceneState(for: SceneId.adventureViewer) == .opened {
+                    sceneManager.dismissWindow(SceneId.adventureViewer)
+                }
+            } else {
+                // Player: Close character viewer window
+                if sceneManager.getSceneState(for: SceneId.valueViewer) == .opened {
+                    sceneManager.dismissWindow(SceneId.valueViewer)
+                }
+            }
+            
+            // Save preference
+            if isMaster {
+                appSettingsModel.autoShowMasterMainTab = false
+            } else {
+                appSettingsModel.autoShowPlayerMainTab = false
+            }
+            
+        case .inline:
+            // Show game view inline
+            gameScreenModel.showMainTab = isMaster ? .game : .value
+            
+            // Close the window if it was open
+            if isMaster {
+                if sceneManager.getSceneState(for: SceneId.adventureViewer) == .opened {
+                    sceneManager.dismissWindow(SceneId.adventureViewer)
+                }
+            } else {
+                if sceneManager.getSceneState(for: SceneId.valueViewer) == .opened {
+                    sceneManager.dismissWindow(SceneId.valueViewer)
+                }
+            }
+            
+            // Save preference
+            if isMaster {
+                appSettingsModel.autoShowMasterMainTab = true
+            } else {
+                appSettingsModel.autoShowPlayerMainTab = true
+            }
+            
+        case .window:
+            // Hide inline view
+            gameScreenModel.showMainTab = .none
+            
+            // Open as separate window with appropriate content
+            #if os(macOS) || os(visionOS)
+            if isMaster {
+                // Master: Open adventure viewer with current adventure
+                if sceneManager.getSceneState(for: SceneId.adventureViewer) == .closed, let adventureId = root.gameModel.selectedAdventure {
+                    sceneManager.openWindow(SceneId.viewerId(for: .adventure), selection: WindowItemSelection(itemId: adventureId))
+                }
+            } else {
+                // Player: Open character viewer with current character
+                if sceneManager.getSceneState(for: SceneId.valueViewer) == .closed, let characterId = root.gameModel.selectedCharacter {
+                    sceneManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
+                }
+            }
+            #endif
+            
+            // Save preference (consider window mode as "shown")
+            if isMaster {
+                appSettingsModel.autoShowMasterMainTab = true
+            } else {
+                appSettingsModel.autoShowPlayerMainTab = true
             }
         }
     }

@@ -13,6 +13,7 @@ struct MasterGameScreen: View {
     let adventureId: UUID
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
+    @Environment(AppSettingsModel.self) private var appSettingsModel
 
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
@@ -29,7 +30,6 @@ struct MasterGameScreen: View {
             
             overlayMenu
         }
-        //.environment(\.gameModus, .master)
         .environment(\.mapActions, root.mapRoot.mapActions)
         .environment(\.valueActions, root.characterRoot.valueActions)
         .overlay(alignment: .center) {
@@ -104,32 +104,18 @@ struct MasterGameScreen: View {
 
 private extension MasterGameScreen {
     func prepareWindows() {
-#if os(iOS) || os(visionOS)
         Task {
-            try? await Task.sleep(for: .seconds(0.1))
-            gameScreenModel.showGameType <=> .table
-            withAnimation { gameScreenModel.showMainTab <=> .game }
             try? await Task.sleep(for: .seconds(0.6))
-            withAnimation { gameScreenModel.showGameType <=> .game }
+            
+            // Set display mode based on user preference
+            if appSettingsModel.autoShowMasterMainTab {
+                gameScreenModel.gameMainTabDisplayMode = .inline
+                withAnimation { gameScreenModel.showMainTab = .game }
+            } else {
+                gameScreenModel.gameMainTabDisplayMode = .hidden
+                withAnimation { gameScreenModel.showMainTab = .none }
+            }
         }
-#elseif os(macOS)
-        Task {
-            try? await Task.sleep(for: .seconds(0.1))
-            withAnimation { gameScreenModel.showMainTab <=> .game }
-        }
-#endif
-#if os(visionOS)
-        Task {
-            try? await Task.sleep(for: .seconds(1))
-            showWindow(for: .adventure)
-            try? await Task.sleep(for: .seconds(0.15))
-            showWindow(for: .map)
-            try? await Task.sleep(for: .seconds(0.15))
-            showWindow(for: .table)
-            try? await Task.sleep(for: .seconds(0.15))
-            showWindow(for: .pdf)
-        }
-#endif
     }
 
     var overlayMenu: some View {

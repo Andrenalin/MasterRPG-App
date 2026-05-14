@@ -47,4 +47,7 @@ final class GameScreenModel {
 
     var showGameType: NetworkModules = .none
     var showSettingsType: NetworkModules = .none
+    
+    // Game main tab display mode (for macOS/visionOS three-state button)
+    var gameMainTabDisplayMode: GameMainTabDisplayMode = .hidden
 }

@@ -10,6 +10,15 @@ public enum WindowPlacementPosition {
     case below(_ id: String, fallback: String? = nil)
 }
 
+/// Cross-platform restoration behavior for scenes
+/// Mirrors SwiftUI's SceneRestorationBehavior but works on all platforms
+public enum SceneRestorationBehaviorAll {
+    /// Automatic restoration behavior (default)
+    case automatic
+    /// Prevents the scene from being automatically restored
+    case disabled
+}
+
 extension SwiftUI.Scene {
     public func defaultWindowPlacementAll(_ windowPlacementPosition: WindowPlacementPosition) -> some SwiftUI.Scene {
 #if os(visionOS)
@@ -53,6 +62,21 @@ extension SwiftUI.Scene {
                     return WindowPlacement(.none)
                 }
             }
+        }
+#else
+        return self
+#endif
+    }
+    
+    /// Applies restoration behavior with platform-specific checks
+    /// On platforms that don't support `.restorationBehavior`, this is a no-op
+    public func restorationBehaviorAll(_ behavior: SceneRestorationBehaviorAll) -> some SwiftUI.Scene {
+#if !os(iOS) && !os(tvOS)
+        switch behavior {
+        case .automatic:
+            return self.restorationBehavior(.automatic)
+        case .disabled:
+            return self.restorationBehavior(.disabled)
         }
 #else
         return self
