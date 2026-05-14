@@ -99,7 +99,15 @@ private extension PlayerGameScreen {
     func prepareWindows() {
         Task {
             try? await Task.sleep(for: .seconds(0.6))
-            withAnimation { gameScreenModel.showMainTab = appSettingsModel.autoShowMasterMainTab ? .value : .none }
+            
+            // Set display mode based on user preference  
+            if appSettingsModel.autoShowPlayerMainTab {
+                gameScreenModel.gameMainTabDisplayMode = .inline
+                withAnimation { gameScreenModel.showMainTab = .value }
+            } else {
+                gameScreenModel.gameMainTabDisplayMode = .hidden
+                withAnimation { gameScreenModel.showMainTab = .none }
+            }
         }
     }
 
