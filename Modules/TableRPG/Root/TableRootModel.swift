@@ -37,7 +37,7 @@ public final class TableRootModel {
         _gameController = GameController(rootManager: rootManager, diceRoot: diceRoot, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         _searchController = SearchController(itemController: itemController)
-        _sheetController = SheetController(itemController: itemController)
+        _sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 

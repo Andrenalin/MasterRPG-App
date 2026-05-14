@@ -61,7 +61,7 @@ public final class AdventureRootModel {
         _gameController = GameController(rootManager: root, root: self, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: root, itemController: itemController)
         _searchController = SearchController(itemController: itemController)
-        _sheetController = SheetController(itemController: itemController)
+        _sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
         _linkRegisterController = linkRegisterController
         
         audioRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)

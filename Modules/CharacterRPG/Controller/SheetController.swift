@@ -7,12 +7,23 @@ import os
 struct SheetController {
     let itemController: ItemController
     let linkController: LinkController
+    let linkRegisterController: LinkRegisterController
+
+    // Timing accumulators for performance comparison
+    @MainActor private static var parseDurationTotal: Duration = .zero
+    @MainActor private static var registerDurationTotal: Duration = .zero
 }
 
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let startTime = ContinuousClock.now
-        Logger.sheetController.info("🚀 [Sheet] Starting sheet creation \(itemController.config.module.token) - itemId: \(itemId.uuidString), level: \(level), moduleDepth: \(moduleDepth)")
+
+        // Reset timing counters at the start of a new sheet tree
+        if level == 0 {
+            Self.parseDurationTotal = .zero
+            Self.registerDurationTotal = .zero
+            Logger.sheetController.info("🚀 [Sheet] Starting sheet creation \(itemController.config.module.token) - itemId: \(itemId.uuidString)")
+        }
         
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
@@ -37,28 +48,26 @@ extension SheetController: SheetControllable {
         
         let showHeader = model.displayState == 0
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
-        
-        let duration = ContinuousClock.now - startTime
-        Logger.sheetController.info("✅ [Sheet] Completed \(itemController.config.module.token) - Duration: \(duration), Total sheets in subtree: \(totalSheetCount), Direct entries: \(entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
-        
+
+        // Report timing only at the root level
+        if level == 0 {
+            let duration = ContinuousClock.now - startTime
+            Logger.sheetController.info("✅ [Sheet] Completed \(itemController.config.module.token) - Duration: \(duration), Sheets: \(totalSheetCount), ParseLinks: \(Self.parseDurationTotal), RegisterLinks: \(Self.registerDurationTotal)")
+        }
+
         return sheetModel
     }
 
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
-        Logger.sheetController.debug("[Sheet] Creating entries for itemId: \(itemId.uuidString) - Entry count: \(item.entries.count), Level: \(level), ModuleDepth: \(moduleDepth)")
-        
         let sheets = item.entries.map { entry in
             sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
         }
-        
         return sheets
     }
     
     @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
-        let startTime = ContinuousClock.now
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
-
         let (name, description) = entryNameDescription(entry: entry)
 
         var inlineEntries: [SheetModel] = []
@@ -70,19 +79,34 @@ extension SheetController: SheetControllable {
         if let subValueId = entry.valueId {
             allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)]
         }
-        let links = LinkReplaceController.links(for: entry.content)
-        Logger.sheetController.debug("[Sheet] Entry '\(name)' has \(links.count) links - Level: \(level), ModuleDepth: \(moduleDepth)")
+
+        // Measure and compare both link parsing approaches
+        let parseStartTime = ContinuousClock.now
+        let parsedLinks = LinkReplaceController.links(for: entry.content)
+        let parseDuration = ContinuousClock.now - parseStartTime
+        Self.parseDurationTotal += parseDuration
+
+        let registerStartTime = ContinuousClock.now
+        let registeredLinks = linkRegisterController.linksFrom(source: destination)
+        let registerDuration = ContinuousClock.now - registerStartTime
+        Self.registerDurationTotal += registerDuration
+
+        // Use parsed links (existing behavior)
+        let links = parsedLinks
+
+        // Check if results match by comparing ItemRowModels
+        let registeredDestinations = Set(registeredLinks.map { $0.destination })
+        let parsedDestinations = Set(parsedLinks.map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module) })
+        if registeredDestinations != parsedDestinations {
+            Logger.sheetController.warning("[Sheet] Link mismatch! Entry: '\(name)', Parsed: \(parsedDestinations.count), Registered: \(registeredDestinations.count)")
+        }
 
         let linkSheets = links.compactMap { link -> SheetModel? in
-            let linkedModule = link.module.token
-            Logger.sheetController.debug("[Sheet] Processing link to module: \(linkedModule), itemId: \(link.itemId.uuidString), hasEntryId: \(link.entryId != nil)")
-
             switch link.module {
             case .value:
                 if link.entryId == nil {
                     return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
                 } else {
-                    Logger.sheetController.debug("[Sheet] Skipping value link with entryId")
                     return nil
                 }
             default:
@@ -90,9 +114,6 @@ extension SheetController: SheetControllable {
             }
         }
         allSheets.append(contentsOf: linkSheets)
-
-        let duration = ContinuousClock.now - startTime
-        Logger.sheetController.debug("[Sheet] Entry sheet created - Duration: \(duration), Name: '\(name)', Links processed: \(links.count), Sheets from links: \(linkSheets.count)")
 
         let entryType: SheetModelType = entry.valueId != nil ? .group : .item
         return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: entryType, editType: entry.editType, name: name, description: description, inlineEntries: inlineEntries, entries: allSheets)

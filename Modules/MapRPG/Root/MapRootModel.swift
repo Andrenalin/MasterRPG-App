@@ -57,7 +57,7 @@ public final class MapRootModel {
         _gameController = gameController
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, editController: editController, gameController: gameController)
         _searchController = SearchController(itemController: itemController)
-        _sheetController = SheetController(itemController: itemController)
+        _sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 

@@ -68,6 +68,23 @@ public extension LinkRegisterController {
             return EffectedItemModel(id: UUID(), name: item.name, entryName: entryName, module: $0.source.typeId)
         }
     }
+
+    /// Get links FROM a source entry (outgoing links from this entry to other items)
+    /// This searches through all registered links to find ones where this entry is the source
+    @MainActor func linksFrom(source: ItemRowModel) -> [LinkRegisterModel] {
+        guard source.entryId != nil else { return [] }
+
+        // Search through all registered links to find ones from this source
+        var foundLinks: [LinkRegisterModel] = []
+        for (_, links) in model.items {
+            for link in links {
+                if link.source == source {
+                    foundLinks.append(link)
+                }
+            }
+        }
+        return foundLinks
+    }
     
     @MainActor func repairLinks(for items: [ItemRowModel]) {
         for item in items {

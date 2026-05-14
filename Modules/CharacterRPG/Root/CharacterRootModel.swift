@@ -42,7 +42,7 @@ public final class CharacterRootModel {
         let linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         _linkController = linkController
         _searchController = SearchController(itemController: itemController)
-        _sheetController = SheetController(itemController: itemController, linkController: linkController)
+        _sheetController = SheetController(itemController: itemController, linkController: linkController, linkRegisterController: linkRegisterController)
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 
