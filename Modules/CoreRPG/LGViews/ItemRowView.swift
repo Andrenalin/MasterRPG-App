@@ -51,7 +51,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
                 }
             }
             .padding(.leading, isSpecialCategory ? 0 : 6)
-            .frame(minHeight: 64, alignment: .center)
+            .frame(minHeight: listDisplayModel.imageHeight, alignment: .center)
             .frame(maxWidth: .infinity, alignment: .leading)
             
             thumbView
@@ -99,7 +99,6 @@ private extension ItemRowView {
     var thumbView: some View {
         if !isSpecialCategory {
             thumbnail
-                .fixedSize(horizontal: true, vertical: false)
         }
     }
 }

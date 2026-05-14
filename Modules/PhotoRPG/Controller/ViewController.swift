@@ -27,11 +27,10 @@ public extension ViewController {
             .environment(model)
     }
     
-    @ViewBuilder @MainActor func thumbnailRow(root: PhotoRootModel, for itemId: UUID) -> some View {
+    @ViewBuilder @MainActor func thumbnailRow(root: PhotoRootModel, for itemId: UUID, listDisplayModel: ListDisplayModel) -> some View {
         if let model = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
-            ThumbnailRowPhotoView(cacheController: cacheController, model: model)
+            ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: listDisplayModel)
                 .environment(root.editController.cacheItemListModel)
-                .environment(root.listDisplayModel)
         }
     }
     

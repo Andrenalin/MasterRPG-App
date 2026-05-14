@@ -4,18 +4,20 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditRow: View {
-    public init(editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel) {
+    public init(editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel) {
         self.editController = editController
         self.itemId = itemId
         self.entry = entry
         self.cacheItemListModel = cacheItemListModel
+        self.listDisplayModel = listDisplayModel
     }
-    
+
     let editController: any EntryDataEditable
     let itemId: UUID
     let entry: any EntryDataAccessable
     let cacheItemListModel: CacheItemListModel
-    
+    let listDisplayModel: ListDisplayModel
+
     @Environment(ItemRootController.self) private var itemRootController
     @Environment(SearchModel.self) private var searchModel
     @Environment(ItemRootController.self) private var root
@@ -25,7 +27,7 @@ public struct EntryEditRow: View {
         VStack {
             if hasThumbnail, let cacheController = itemRootController.cacheControllable {
                 HStack {
-                    ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: entry.id)
+                    ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: listDisplayModel, entryId: entry.id)
                     
                     if editController.additioanlEnrtryViewType == .custom {
                         editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemRootController.configurable.module), textModel: nil)

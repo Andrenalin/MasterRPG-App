@@ -124,7 +124,7 @@ private extension LinkItemListView {
             Group {
                 if let entryId = item.entryId {
                     HStack {
-                        EntryRowView(root: root, item: item)
+                        EntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
 
                         specialCategoryFolderIndicator(item: item)
                     }
@@ -171,7 +171,7 @@ private extension LinkItemListView {
                 if root.viewControllable.thumbnailRowViewType == .custom {
                     root.viewControllable.thumbnailRowView(for: item.model.id)
                 } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
-                    ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
+                    ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, listDisplayModel: root.folderLinkControllable.listDisplayModel)
                 }
             }
             .overlay(alignment: .trailing) {

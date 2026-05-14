@@ -3,18 +3,19 @@
 import SwiftUI
 
 public struct ThumbnailRowPhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, entryId: UUID? = nil) {
+    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, listDisplayModel: ListDisplayModel, entryId: UUID? = nil) {
         self.cacheController = cacheController
         self.model = model
+        self.listDisplayModel = listDisplayModel
         self.entryId = entryId
     }
-    
+
     let cacheController: ImageCacheControllable
     let model: any ItemDataAccessable
+    let listDisplayModel: ListDisplayModel
     let entryId: UUID?
-    
+
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ListDisplayModel.self) private var listDisplayModel
     
     @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
@@ -23,7 +24,6 @@ public struct ThumbnailRowPhotoView: View {
         VStack {
             if let image = cachedImage {
                 imageView(image: image)
-                    .frame(height: imageHeight)
 #if os(iOS)
                     .clipShape(
                         .rect(
@@ -42,9 +42,10 @@ public struct ThumbnailRowPhotoView: View {
                     )
 #endif
             } else {
-                placeHolder(size: CGSize(width: imageHeight, height: imageHeight))
+                placeHolder(size: CGSize(width: listDisplayModel.imageHeight, height: listDisplayModel.imageHeight))
             }
         }
+        .frame(width: listDisplayModel.imageHeight, height: listDisplayModel.imageHeight)
         .task(id: model.fileUrl) {
             initImage()
         }
@@ -52,14 +53,6 @@ public struct ThumbnailRowPhotoView: View {
 }
 
 private extension ThumbnailRowPhotoView {
-    var imageHeight: CGFloat {
-        switch listDisplayModel.displayMode {
-        case .compact: 64
-        case .medium: 96
-        case .regular: 128
-        }
-    }
-    
     var cachedImage: AKImage? {
         cacheItemListModel.imageCache(cacheType: .thumbnail, itemId: entryId ?? model.id)
     }

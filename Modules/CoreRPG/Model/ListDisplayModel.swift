@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 public final class ListDisplayModel {
     public init(isSelectionMode: Bool = false, displayMode: ListDisplayModel.DisplayMode = .medium, listMode: ListDisplayModel.ListMode = .list, isPadStyle: Bool = false) {
         self.isSelectionMode = isSelectionMode
@@ -72,6 +72,14 @@ public final class ListDisplayModel {
         }
     }
     
+    var imageHeight: CGFloat {
+        switch displayMode {
+        case .compact: 64
+        case .medium: 80
+        case .regular: 96
+        }
+    }
+
     var isPadStyle: Bool
     
     public var newListDisplayModel: ListDisplayModel {

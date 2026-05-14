@@ -152,7 +152,7 @@ private extension ListRootView {
                     if root.viewControllable.thumbnailRowViewType == .custom {
                         root.viewControllable.thumbnailRowView(for: item.model.id)
                     } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
-                        ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
+                        ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, listDisplayModel: listController.listDisplayModel)
                     }
                 }
                 .draggable(for: root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
@@ -164,6 +164,7 @@ private extension ListRootView {
                 
                 specialCategoryFolderIndicator(item: item)
             }
+            .environment(listController.listDisplayModel)
             .padding(.leading, CGFloat(item.level * 16))
             .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
             .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))

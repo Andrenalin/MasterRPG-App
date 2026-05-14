@@ -17,7 +17,6 @@ struct ListRootContextMenu: View {
 
     @Environment(ItemRootController.self) private var root
     @Environment(\.navigator) private var navigator
-    @Environment(ListDisplayModel.self) private var listDisplayModel
     
     var body: some View {
         duplicateItemView
@@ -49,6 +48,10 @@ private extension ListRootContextMenu {
         parentItem ?? controller.parentItem(currentSelected: currentSelected)
     }
 
+    var listDisplayModel: ListDisplayModel {
+        listController?.listDisplayModel ?? ListDisplayModel()
+    }
+    
     var duplicateItemView: some View {
         Button {
             Task {

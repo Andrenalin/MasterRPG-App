@@ -6,14 +6,14 @@ import SwiftUI
 struct EntryRowView: View {
     let root: any ItemRootControllable
     let item: ListItemModel
-    
-    
+    let listDisplayModel: ListDisplayModel
+
     var editController: (any EntryDataEditable)? {
         root.editControllable as? (any EntryDataEditable)
     }
     var body: some View {
         if let editController {
-            EntryEditRow(editController: editController, itemId: item.model.id, entry: item.model[entryId], cacheItemListModel: root.editControllable.cacheItemListModel)
+            EntryEditRow(editController: editController, itemId: item.model.id, entry: item.model[entryId], cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: listDisplayModel)
         } else {
             Text("\(item.model[entryId].name): \(item.model[entryId].content)")
         }

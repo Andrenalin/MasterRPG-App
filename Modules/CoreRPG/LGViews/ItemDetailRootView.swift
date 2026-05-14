@@ -239,6 +239,7 @@ private extension ItemDetailRootView {
                     .padding()
                 
                 ListRootView(root: root, listController: detailListController, parentModel: model)
+                    .environment(detailListController.listDisplayModel)
             } else {
                 formEditor(model: model)
             }
