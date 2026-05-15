@@ -125,7 +125,12 @@ struct Board: EntityEquipment {
         // Generate composite texture with fog of war overlays
         let compositeImage: CGImage
         if let mapModel = mapModel, let displayConfig = displayConfig {
-            compositeImage = generateCompositeTexture(baseImage: cgImage, mapModel: mapModel, displayConfig: displayConfig)
+            compositeImage = generateCompositeTexture(
+                baseImage: cgImage,
+                mapModel: mapModel,
+                displayConfig: displayConfig,
+                isGameMaster: isGameMaster
+            )
         } else {
             compositeImage = cgImage
         }
@@ -151,18 +156,31 @@ struct Board: EntityEquipment {
     }
     
     // Generate a composite texture with fog of war overlays drawn on top of the base image
-    @MainActor private func generateCompositeTexture(baseImage: CGImage, mapModel: MapModel, displayConfig: DisplayConfigModel) -> CGImage {
-        print("🖼️ Generating composite texture with fog of war")
+    @MainActor private func generateCompositeTexture(
+        baseImage: CGImage,
+        mapModel: MapModel,
+        displayConfig: DisplayConfigModel,
+        isGameMaster: Bool
+    ) -> CGImage {
+        print("🖼️ Generating composite texture with fog of war (Game Master: \(isGameMaster))")
         
         let imageWidth = CGFloat(baseImage.width)
         let imageHeight = CGFloat(baseImage.height)
         
-        // Filter to only hidden entries (not shown to players)
-        let hiddenEntries = mapModel.entries.filter { !$0.isShown }
-        print("🖼️ Found \(hiddenEntries.count) hidden entries to render")
+        // Filter entries based on mode
+        let entriesToRender: [MapEntryModel]
+        if isGameMaster {
+            // Game Master sees ALL entries (both hidden and shown)
+            entriesToRender = mapModel.entries
+        } else {
+            // Players only see hidden entries as solid fog
+            entriesToRender = mapModel.entries.filter { !$0.isShown }
+        }
         
-        // If no hidden entries, return the original image
-        guard !hiddenEntries.isEmpty else {
+        print("🖼️ Found \(entriesToRender.count) entries to render")
+        
+        // If no entries, return the original image
+        guard !entriesToRender.isEmpty else {
             print("🖼️ No fog of war needed - returning original image")
             return baseImage
         }
@@ -174,8 +192,8 @@ struct Board: EntityEquipment {
                 .aspectRatio(contentMode: .fit)
             
             Canvas { context, size in
-                // Draw each hidden entry as a filled polygon
-                for entry in hiddenEntries {
+                // Draw each entry as a polygon
+                for entry in entriesToRender {
                     guard !entry.coordinates.isEmpty else { continue }
                     
                     // Create a path from the entry coordinates
@@ -190,16 +208,40 @@ struct Board: EntityEquipment {
                     // Close the path
                     path.closeSubpath()
                     
-                    // Fill with the fog color
-                    context.fill(path, with: .color(displayConfig.color))
-                    
-                    // Draw border if configured
-                    if displayConfig.hasBorder {
-                        context.stroke(
-                            path,
-                            with: .color(displayConfig.borderColor),
-                            lineWidth: displayConfig.borderThickness
-                        )
+                    if isGameMaster {
+                        // Game Master: Show transparent green with border (matching MapViewer .master mode)
+                        if entry.isShown {
+                            // Shown areas: light green (opacity 0.1) with green border
+                            context.fill(path, with: .color(Color.green.opacity(0.1)))
+                            context.stroke(
+                                path,
+                                with: .color(Color.green.opacity(0.8)),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round)
+                            )
+                        } else {
+                            // Hidden areas: semi-transparent green (opacity 0.5) with green border
+                            context.fill(path, with: .color(Color.green.opacity(0.5)))
+                            context.stroke(
+                                path,
+                                with: .color(Color.green.opacity(0.8)),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round)
+                            )
+                        }
+                    } else {
+                        // Player: Only show solid fog for hidden areas (matching MapViewer .player mode)
+                        if !entry.isShown {
+                            // Fill with the configured fog color
+                            context.fill(path, with: .color(displayConfig.color))
+                            
+                            // Draw border if configured
+                            if displayConfig.hasBorder {
+                                context.stroke(
+                                    path,
+                                    with: .color(displayConfig.borderColor),
+                                    lineWidth: displayConfig.borderThickness
+                                )
+                            }
+                        }
                     }
                 }
             }
