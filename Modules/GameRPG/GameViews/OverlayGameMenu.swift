@@ -37,9 +37,12 @@ private extension OverlayGameMenu {
                     .padding(.horizontal, marginWidth)
                     .padding(.leading, marginWidth / 2)
                     .zIndex(2)
-
+                
                 toolIconView
                 enlargerView
+                
+                // TableTop Kit Table Volume Button
+                gameTableButton
 
                 wifiView
                 closeView
@@ -408,6 +411,45 @@ private extension OverlayGameMenu {
                 .foregroundStyle(.teal)
                 .padding(.leading, marginWidth)
         }
+    }
+    
+    // MARK: - TableTop Kit Table Volume Button (visionOS only)
+    
+    @ViewBuilder
+    var gameTableButton: some View {
+#if os(visionOS)
+        @Bindable var gameScreenModel = gameScreenModel
+        Button {
+            withAnimation {
+                appSettingsModel.showGameTableVolume.toggle()
+                handleGameTableToggle()
+            }
+        } label: {
+            Image(systemName: "cube.transparent")
+                .imageScale(.medium)
+        }
+        .selectedBorderedStype(isSelected: appSettingsModel.showGameTableVolume)
+        .help(appSettingsModel.showGameTableVolume ? "Hide table volume" : "Show table volume")
+#else
+        EmptyView()
+#endif
+    }
+    
+    /// Handles the show/hide of the TableTop Kit table volume (visionOS only)
+    func handleGameTableToggle() {
+#if os(visionOS)
+        if appSettingsModel.showGameTableVolume {
+            // Open the table volume
+            if sceneManager.getSceneState(for: SceneId.gameTable) != .opened {
+                sceneManager.openWindow(SceneId.gameTable)
+            }
+        } else {
+            // Close the table volume
+            if sceneManager.getSceneState(for: SceneId.gameTable) != .closed {
+                sceneManager.dismissWindow(SceneId.gameTable)
+            }
+        }
+#endif
     }
 }
 

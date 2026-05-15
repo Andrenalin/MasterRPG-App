@@ -14,14 +14,14 @@ struct MasterGameScreen: View {
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(AppSettingsModel.self) private var appSettingsModel
-
+    
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
-
+    
     @Environment(ScenesManager.self) private var sceneManager
-
+    
     @State private var diceShowOptionModel = DiceDisplayModel()
-
+    
     var body: some View {
         ZStack(alignment: .topLeading) {
             GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object") { mapId in
@@ -75,7 +75,7 @@ struct MasterGameScreen: View {
                 .environment(diceShowOptionModel)
                 .environment(gameScreenModel)
                 .padding(.bottom, 12)
-
+            
         }
         .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .leading) {
             VStack {
@@ -107,7 +107,7 @@ private extension MasterGameScreen {
         Task {
             try? await Task.sleep(for: .seconds(0.6))
             
-            #if os(macOS) || os(visionOS)
+#if os(macOS) || os(visionOS)
             // Restore three-state display mode from UserDefaults
             let savedMode = GameMainTabDisplayMode(rawValue: appSettingsModel.masterMainTabDisplayMode) ?? .hidden
             gameScreenModel.gameMainTabDisplayMode = savedMode
@@ -126,7 +126,8 @@ private extension MasterGameScreen {
                     sceneManager.openWindow(SceneId.viewerId(for: .adventure), selection: WindowItemSelection(itemId: adventureId))
                 }
             }
-            #else
+            
+#else
             // iOS/tvOS: Simple show/hide toggle
             let isShown = appSettingsModel.autoShowMasterMainTab
             gameScreenModel.showMainTabIOS = isShown
@@ -136,10 +137,19 @@ private extension MasterGameScreen {
             } else {
                 withAnimation { gameScreenModel.showMainTab = .none }
             }
-            #endif
+#endif
+            
+#if os(visionOS)
+            // Restore table volume state
+            if appSettingsModel.showGameTableVolume {
+                sceneManager.openWindow(SceneId.gameTable)
+            }
+#endif
+            
+            
         }
     }
-
+    
     var overlayMenu: some View {
         OverlayGameLayout(root: root, hideDice: false) {
 #if os(visionOS)
@@ -170,7 +180,7 @@ private extension MasterGameScreen {
         sceneManager.openWindow(SceneId.sceneId(for: module))
 #endif
     }
-
+    
 #if os(visionOS)
     var menuView: some View {
         Group {
@@ -187,7 +197,7 @@ private extension MasterGameScreen {
         }
         .onChange(of: infoState) {
             guard infoState != .none else { return }
-
+            
             if sceneManager.getSceneState(for: SceneId.sceneId(for: infoState)) == .closed {
                 sceneManager.openWindow(SceneId.sceneId(for: infoState))
             } else {

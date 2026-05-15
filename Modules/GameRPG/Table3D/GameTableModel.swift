@@ -20,7 +20,9 @@ final class GameTableModel {
     let mapRoot: MapRootModel
     let photoRoot: PhotoRootModel
     
-    private var currentMapId: UUID?
+    var currentMapId: UUID?
+    var currentMapImage: AKImage?
+    var currentMapDegrees: Double = 0
 
     @MainActor
     init(mapRoot: MapRootModel, photoRoot: PhotoRootModel) async {
@@ -82,9 +84,45 @@ final class GameTableModel {
             return
         }
         
+        // Cache the current map image and rotation for future updates
+        currentMapImage = akImage
+        currentMapDegrees = degrees
+        
         // Update the board with the new photo, display config, and map model (for fog of war)
         setup.board.updateMap(image: akImage, degrees: degrees, displayConfig: mapModel.displayConfig, mapModel: mapModel)
         print("Map updated successfully: '\(mapModel.name)' (rotation: \(degrees)°)")
+    }
+    
+    /// Updates the fog of war when map entries change (rooms shown/hidden)
+    @MainActor
+    func updateFogOfWar() async {
+        guard let currentItemId = currentMapId else {
+            print("No current map to update fog of war")
+            return
+        }
+        
+        guard let mapModel = await mapRoot.itemControllable.item(for: currentItemId) as? MapModel else {
+            print("Current item is not a MapModel")
+            return
+        }
+        
+        guard let mapImage = currentMapImage else {
+            print("No cached map image - loading full map")
+            await loadMapPhoto(mapModel: mapModel)
+            return
+        }
+        
+        print("🔄 Updating fog of war for map '\(mapModel.name)'")
+        
+        // Regenerate the texture with updated fog of war
+        setup.board.updateMap(
+            image: mapImage,
+            degrees: currentMapDegrees,
+            displayConfig: mapModel.displayConfig,
+            mapModel: mapModel
+        )
+        
+        print("✅ Fog of war updated - \(mapModel.entries.filter { !$0.isShown }.count) hidden areas")
     }
     
     deinit {

@@ -380,6 +380,13 @@ extension PlayerController {
                     for idType in missingImages {
                         await send(counter: 0, type: .store, subType: .store, updated: idType)
                     }
+                    
+                    // Update fog of war on 3D board
+                    #if os(visionOS)
+                    Task { @MainActor in
+                        await root.gameModel.gameTableModel?.updateFogOfWar()
+                    }
+                    #endif
                 } else {
                     return await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: .reveal, subType: .ok, gameConfig: root.gameModel.gameConfig, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
                 }

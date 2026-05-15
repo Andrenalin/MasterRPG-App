@@ -73,6 +73,13 @@ public final class AppSettingsModel: Sendable {
             UserDefaults.standard.set(playerMainTabDisplayMode, forKey: AppSettingsModel.playerMainTabDisplayModeKey)
         }
     }
+    
+    public var showGameTableVolume: Bool = false {
+        didSet {
+            guard oldValue != showGameTableVolume else { return }
+            UserDefaults.standard.set(showGameTableVolume, forKey: AppSettingsModel.showGameTableVolumeKey)
+        }
+    }
 
     // MARK: - Shared Settings Value in AppGroups
     
@@ -167,6 +174,8 @@ public final class AppSettingsModel: Sendable {
         masterMainTabDisplayMode = UserDefaults.standard.integer(forKey: AppSettingsModel.masterMainTabDisplayModeKey)
         playerMainTabDisplayMode = UserDefaults.standard.integer(forKey: AppSettingsModel.playerMainTabDisplayModeKey)
         
+        showGameTableVolume = UserDefaults.standard.bool(forKey: AppSettingsModel.showGameTableVolumeKey)
+        
         // shared App groups
         useCloudKit = UserDefaults.standard.bool(forKey: AppSettingsModel.useCloudKitKey)
         
@@ -192,6 +201,7 @@ public final class AppSettingsModel: Sendable {
     private static let autoShowPlayerMainTabKey = "autoShowPlayerMainTab"
     private static let masterMainTabDisplayModeKey = "masterMainTabDisplayMode"
     private static let playerMainTabDisplayModeKey = "playerMainTabDisplayMode"
+    private static let showGameTableVolumeKey = "showGameTableVolume"
 
     private static let useCloudKitKey = "MasterRPGuseCloudKit"
     

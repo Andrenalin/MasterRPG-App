@@ -29,13 +29,8 @@ struct Board: EntityEquipment {
     // Store the image plane and border as properties so we can update them
     private let imagePlane: ModelEntity
     private let borderPlane: ModelEntity
-    private let fogContainer: Entity
     private let mapSize: Float
     private let boxHeight: Float = 0.02
-    
-    // Store current image dimensions for coordinate conversion
-    private var currentImageWidth: CGFloat = 1
-    private var currentImageHeight: CGFloat = 1
     
     @MainActor
     init(id: ID) {
@@ -88,13 +83,6 @@ struct Board: EntityEquipment {
         boardEntity.addChild(plane)
         self.imagePlane = plane
         
-        // Create fog of war container on top of the image
-        let fog = Entity()
-        fog.name = "FogContainer"
-        fog.position.y = boxHeight / 2 + 0.002  // Higher above the image
-        boardEntity.addChild(fog)
-        self.fogContainer = fog
-        
         self.entity = boardEntity
         
         // Align with table (no rotation)
@@ -131,18 +119,20 @@ struct Board: EntityEquipment {
             planeWidth = mapSize * Float(aspectRatio)
         }
         
-        // Store current image dimensions for fog coordinate conversion
-        if let mapModel = mapModel {
-            currentImageWidth = mapModel.width
-            currentImageHeight = mapModel.height
-        }
-        
         // Update image plane mesh with correct aspect ratio
         imagePlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
         
+        // Generate composite texture with fog of war overlays
+        let compositeImage: CGImage
+        if let mapModel = mapModel, let displayConfig = displayConfig {
+            compositeImage = generateCompositeTexture(baseImage: cgImage, mapModel: mapModel, displayConfig: displayConfig)
+        } else {
+            compositeImage = cgImage
+        }
+        
         // Update the texture using new visionOS 2.0+ API
         do {
-            let texture = try TextureResource(image: cgImage, options: .init(semantic: .color))
+            let texture = try TextureResource(image: compositeImage, options: .init(semantic: .color))
             var mapMaterial = UnlitMaterial()
             mapMaterial.color = .init(texture: .init(texture))
             imagePlane.model?.materials = [mapMaterial]
@@ -158,214 +148,86 @@ struct Board: EntityEquipment {
             let uiColor = UIColor(displayConfig.color)
             borderPlane.model?.materials = [SimpleMaterial(color: uiColor, isMetallic: false)]
         }
-        
-        // Update fog of war overlays
-        if let mapModel = mapModel {
-            updateFogOfWar(entries: mapModel.entries, imageWidth: planeWidth, imageHeight: planeDepth)
-        }
     }
     
-    // Update fog of war based on hidden map entries
-    @MainActor private func updateFogOfWar(entries: [MapEntryModel], imageWidth: Float, imageHeight: Float) {
-        print("🌫️ updateFogOfWar called with \(entries.count) total entries")
-        print("🌫️ Image dimensions - width: \(currentImageWidth), height: \(currentImageHeight)")
-        print("🌫️ Plane dimensions - width: \(imageWidth), depth: \(imageHeight)")
+    // Generate a composite texture with fog of war overlays drawn on top of the base image
+    @MainActor private func generateCompositeTexture(baseImage: CGImage, mapModel: MapModel, displayConfig: DisplayConfigModel) -> CGImage {
+        print("🖼️ Generating composite texture with fog of war")
         
-        // Clear existing fog overlays
-        fogContainer.children.removeAll()
-        print("🌫️ Cleared existing fog overlays")
+        let imageWidth = CGFloat(baseImage.width)
+        let imageHeight = CGFloat(baseImage.height)
         
         // Filter to only hidden entries (not shown to players)
-        let hiddenEntries = entries.filter { !$0.isShown }
-        print("🌫️ Found \(hiddenEntries.count) hidden entries")
+        let hiddenEntries = mapModel.entries.filter { !$0.isShown }
+        print("🖼️ Found \(hiddenEntries.count) hidden entries to render")
         
+        // If no hidden entries, return the original image
         guard !hiddenEntries.isEmpty else {
-            print("🌫️ No hidden areas - fog of war cleared")
-            return
+            print("🖼️ No fog of war needed - returning original image")
+            return baseImage
         }
         
-        // Create fog overlay for each hidden entry
-        var createdCount = 0
-        for (index, entry) in hiddenEntries.enumerated() {
-            print("🌫️ Processing entry \(index): '\(entry.name)' with \(entry.coordinates.count) coordinates")
+        // Create a SwiftUI view that layers the image with fog of war overlays
+        let compositeView = ZStack {
+            Image(akImage: AKImage(cgImage: baseImage))
+                .resizable()
+                .aspectRatio(contentMode: .fit)
             
-            guard !entry.coordinates.isEmpty else {
-                print("🌫️   Skipping - no coordinates")
-                continue
+            Canvas { context, size in
+                // Draw each hidden entry as a filled polygon
+                for entry in hiddenEntries {
+                    guard !entry.coordinates.isEmpty else { continue }
+                    
+                    // Create a path from the entry coordinates
+                    var path = Path()
+                    let firstPoint = entry.coordinates[0]
+                    path.move(to: firstPoint)
+                    
+                    for point in entry.coordinates.dropFirst() {
+                        path.addLine(to: point)
+                    }
+                    
+                    // Close the path
+                    path.closeSubpath()
+                    
+                    // Fill with the fog color
+                    context.fill(path, with: .color(displayConfig.color))
+                    
+                    // Draw border if configured
+                    if displayConfig.hasBorder {
+                        context.stroke(
+                            path,
+                            with: .color(displayConfig.borderColor),
+                            lineWidth: displayConfig.borderThickness
+                        )
+                    }
+                }
             }
-            
-            // Convert coordinates to 3D mesh positions
-            let vertices = entry.coordinates.map { coord -> SIMD3<Float> in
-                convertCoordinate(coord, imageWidth: imageWidth, imageHeight: imageHeight)
-            }
-            
-            print("🌫️   Vertices: \(vertices)")
-            
-            // Create a polygon mesh from the coordinates
-            if let (fogMesh, centerOffset) = createPolygonMesh(from: vertices) {
-                var fogMaterial = SimpleMaterial()
-                fogMaterial.color = .init(tint: UIColor(red: 0, green: 0, blue: 0, alpha: 0.8))
-                fogMaterial.triangleFillMode = .fill  // Ensure triangles are filled
-                
-                let fogEntity = ModelEntity(mesh: fogMesh, materials: [fogMaterial])
-                fogEntity.name = "FogOverlay_\(entry.id)"
-                
-                // Position the entity at its center offset
-                fogEntity.position = SIMD3<Float>(centerOffset.x, 0.0001 * Float(index), centerOffset.y)
-                
-                fogContainer.addChild(fogEntity)
-                createdCount += 1
-                print("🌫️   ✅ Created fog overlay for '\(entry.name)' at position: \(fogEntity.position)")
-                print("🌫️       Entity bounds: \(fogEntity.visualBounds(relativeTo: fogContainer))")
-            } else {
-                print("🌫️   ❌ Failed to create mesh for '\(entry.name)'")
-            }
         }
+        .frame(width: imageWidth, height: imageHeight)
         
-        print("🌫️ Fog of war complete: \(createdCount)/\(hiddenEntries.count) overlays created")
-        print("🌫️ Fog container now has \(fogContainer.children.count) children")
-    }
-    
-    // Convert 2D map coordinate to 3D position on the plane
-    private func convertCoordinate(_ coord: CGPoint, imageWidth: Float, imageHeight: Float) -> SIMD3<Float> {
-        // Normalize coordinates from image space (0...width, 0...height) to plane space (-width/2...width/2)
-        let normalizedX = Float(coord.x / currentImageWidth)
-        let normalizedY = Float(coord.y / currentImageHeight)
+        // Use ImageRenderer to convert the SwiftUI view to a UIImage/NSImage
+        let renderer = ImageRenderer(content: compositeView)
+        renderer.scale = 3.0  // Use 3x scale for high quality
         
-        // Convert to plane coordinates (centered at origin)
-        let x = (normalizedX - 0.5) * imageWidth
-        let z = (normalizedY - 0.5) * imageHeight
-        
-        return SIMD3<Float>(x, 0, z)
-    }
-    
-    // Create a polygon mesh from vertices - creates a solid 3D box
-    // Returns tuple of (mesh, centerOffset) where centerOffset is the XZ position to place the entity
-    @MainActor private func createPolygonMesh(from vertices: [SIMD3<Float>]) -> (MeshResource, SIMD2<Float>)? {
-        guard vertices.count >= 3 else {
-            print("🌫️   Mesh creation failed: need at least 3 vertices, got \(vertices.count)")
-            return nil
+        #if os(macOS)
+        if let nsImage = renderer.nsImage,
+           let tiffData = nsImage.tiffRepresentation,
+           let bitmap = NSBitmapImageRep(data: tiffData),
+           let cgImage = bitmap.cgImage {
+            print("🖼️ ✅ Composite texture generated successfully (macOS)")
+            return cgImage
         }
-        
-        print("🌫️   Creating mesh from \(vertices.count) vertices")
-        
-        // For rectangular areas (4 vertices), use a simpler box approach
-        if vertices.count == 4 {
-            // Calculate bounding box
-            let minX = vertices.map { $0.x }.min() ?? 0
-            let maxX = vertices.map { $0.x }.max() ?? 0
-            let minZ = vertices.map { $0.z }.min() ?? 0
-            let maxZ = vertices.map { $0.z }.max() ?? 0
-            
-            let width = maxX - minX
-            let depth = maxZ - minZ
-            let height: Float = 0.11
-            
-            let centerX = (minX + maxX) / 2
-            let centerZ = (minZ + maxZ) / 2
-            
-            print("🌫️   Rectangle detected - using box generator")
-            print("🌫️   Box: width=\(width), height=\(height), depth=\(depth)")
-            print("🌫️   Center will be positioned at: x=\(centerX), z=\(centerZ)")
-            
-            let mesh = MeshResource.generateBox(width: width, height: height, depth: depth)
-            print("🌫️   ✅ Box mesh generated successfully")
-            return (mesh, SIMD2<Float>(centerX, centerZ))
+        #else
+        if let uiImage = renderer.uiImage,
+           let cgImage = uiImage.cgImage {
+            print("🖼️ ✅ Composite texture generated successfully (iOS/visionOS)")
+            return cgImage
         }
+        #endif
         
-        // For non-rectangular polygons, use extrusion (centered at origin, return center)
-        //let fogHeight: Float = 0.11
-        let bottomY: Float = -0.01
-        let topY: Float = 0.10
-        
-        // Calculate center for positioning
-        let centerX = vertices.map { $0.x }.reduce(0, +) / Float(vertices.count)
-        let centerZ = vertices.map { $0.z }.reduce(0, +) / Float(vertices.count)
-        
-        // Offset vertices to be centered at origin
-        let centeredVertices = vertices.map { SIMD3<Float>($0.x - centerX, 0, $0.z - centerZ) }
-        
-        print("🌫️   Polygon detected - using extrusion (bottom: \(bottomY), top: \(topY))")
-        print("🌫️   Center will be positioned at: x=\(centerX), z=\(centerZ)")
-        
-        var allVertices: [SIMD3<Float>] = []
-        var indices: [UInt32] = []
-        var normals: [SIMD3<Float>] = []
-        var uvs: [SIMD2<Float>] = []
-        
-        // Bottom vertices
-        let bottomVertices = centeredVertices.map { SIMD3<Float>($0.x, bottomY, $0.z) }
-        allVertices.append(contentsOf: bottomVertices)
-        
-        // Top vertices
-        let topVertices = centeredVertices.map { SIMD3<Float>($0.x, topY, $0.z) }
-        allVertices.append(contentsOf: topVertices)
-        
-        // UVs
-        for i in 0..<centeredVertices.count {
-            let u = Float(i) / Float(centeredVertices.count)
-            uvs.append(SIMD2<Float>(u, 0))
-        }
-        for i in 0..<centeredVertices.count {
-            let u = Float(i) / Float(centeredVertices.count)
-            uvs.append(SIMD2<Float>(u, 1))
-        }
-        
-        let vertexCount = centeredVertices.count
-        let bottomOffset: UInt32 = 0
-        let topOffset: UInt32 = UInt32(vertexCount)
-        
-        // Bottom face (triangulated, facing down)
-        for i in 1..<(vertexCount - 1) {
-            indices.append(bottomOffset)
-            indices.append(bottomOffset + UInt32(i + 1))
-            indices.append(bottomOffset + UInt32(i))
-        }
-        
-        // Top face (triangulated, facing up)
-        for i in 1..<(vertexCount - 1) {
-            indices.append(topOffset)
-            indices.append(topOffset + UInt32(i))
-            indices.append(topOffset + UInt32(i + 1))
-        }
-        
-        // Side faces
-        for i in 0..<vertexCount {
-            let nextI = (i + 1) % vertexCount
-            
-            indices.append(bottomOffset + UInt32(i))
-            indices.append(bottomOffset + UInt32(nextI))
-            indices.append(topOffset + UInt32(i))
-            
-            indices.append(topOffset + UInt32(i))
-            indices.append(bottomOffset + UInt32(nextI))
-            indices.append(topOffset + UInt32(nextI))
-        }
-        
-        // Normals
-        for _ in bottomVertices {
-            normals.append(SIMD3<Float>(0, -1, 0))
-        }
-        for _ in topVertices {
-            normals.append(SIMD3<Float>(0, 1, 0))
-        }
-        
-        print("🌫️   Total vertices: \(allVertices.count), indices: \(indices.count) (\(indices.count/3) triangles)")
-        
-        var meshDescriptor = MeshDescriptor()
-        meshDescriptor.positions = MeshBuffers.Positions(allVertices)
-        meshDescriptor.primitives = .triangles(indices)
-        meshDescriptor.normals = MeshBuffers.Normals(normals)
-        meshDescriptor.textureCoordinates = MeshBuffers.TextureCoordinates(uvs)
-        
-        do {
-            let mesh = try MeshResource.generate(from: [meshDescriptor])
-            print("🌫️   ✅ Extruded mesh generated successfully")
-            return (mesh, SIMD2<Float>(centerX, centerZ))
-        } catch {
-            print("🌫️   ❌ Mesh generation error: \(error)")
-            return nil
-        }
+        print("🖼️ ⚠️ Failed to generate composite texture - returning original image")
+        return baseImage
     }
 }
 
