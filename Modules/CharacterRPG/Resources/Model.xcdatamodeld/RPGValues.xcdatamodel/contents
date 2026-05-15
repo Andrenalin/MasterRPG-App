@@ -4,6 +4,7 @@
         <attribute name="diceUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="groupUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="information" optional="YES" attributeType="String" spotlightIndexingEnabled="YES"/>
         <attribute name="name" optional="YES" attributeType="String" spotlightIndexingEnabled="YES"/>
         <attribute name="parentUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>

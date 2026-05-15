@@ -6,7 +6,7 @@ import Observation
 
 @Observable
 public final class ValueModel: Identifiable, @unchecked Sendable {
-    public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .character, displayState: Int = 0, photoId: UUID? = nil, photos: [UUID] = [], entries: [ValueEntryModel] = [], parentId: UUID? = nil, diceId: UUID? = nil) {
+    public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .character, displayState: Int = 0, photoId: UUID? = nil, photos: [UUID] = [], entries: [ValueEntryModel] = [], parentId: UUID? = nil, diceId: UUID? = nil, groupId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -18,9 +18,10 @@ public final class ValueModel: Identifiable, @unchecked Sendable {
         entries_ = CRDTDataUpdate(wrappedValue: entries)
         self.parentId = parentId
         self.diceId = diceId
+        self.groupId = groupId
     }
 
-    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, photos: CRDTDataUpdate<[UUID]>, entries: CRDTDataUpdate<[ValueEntryModel]>, parentId: UUID?, diceId: UUID?) {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, photos: CRDTDataUpdate<[UUID]>, entries: CRDTDataUpdate<[ValueEntryModel]>, parentId: UUID?, diceId: UUID?, groupId: UUID? = nil) {
         self.id = id
         name_ = name
         description_ = description
@@ -32,6 +33,7 @@ public final class ValueModel: Identifiable, @unchecked Sendable {
         entries_ = entries
         self.parentId = parentId
         self.diceId = diceId
+        self.groupId = groupId
     }
 
     public init(from decoder: Decoder) throws {
@@ -48,6 +50,7 @@ public final class ValueModel: Identifiable, @unchecked Sendable {
         self._entries_ = try container.decode(CRDTDataUpdate<[ValueEntryModel]>.self, forKey: ValueModel.CodingKeys._entries_)
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._parentId)
         self._diceId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._diceId)
+        self._groupId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._groupId)
     }
 
     public var id: UUID
@@ -98,6 +101,7 @@ public final class ValueModel: Identifiable, @unchecked Sendable {
     
     public var parentId: UUID?
     public var diceId: UUID?
+    public var groupId: UUID?
     
     public var quickEditEntries: Set<UUID> = []
 }
@@ -192,7 +196,8 @@ extension ValueModel: ItemDiffComparable {
             photos: photos_.merged(other: other.photos_),
             entries: entries_.merged(other: other.entries_),
             parentId: other.parentId,
-            diceId: other.diceId
+            diceId: other.diceId,
+            groupId: other.groupId
         )
     }
 
@@ -206,6 +211,7 @@ extension ValueModel: ItemDiffComparable {
         entries_.update == other.entries_.update &&
         parentId == other.parentId &&
         diceId == other.diceId &&
+        groupId == other.groupId &&
         // santity checks
         entries.count == other.entries.count &&
         entries.enumerated().allSatisfy { index, entry in
@@ -217,11 +223,11 @@ extension ValueModel: ItemDiffComparable {
 extension ValueModel: ItemDuplicatable {
     public func duplicate() -> ValueModel {
         let copyName = duplicateName(from: name)
-        return ValueModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, photos: photos, entries: entries.map { $0.duplicate() }, parentId: nil, diceId: diceId)
+        return ValueModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, photos: photos, entries: entries.map { $0.duplicate() }, parentId: nil, diceId: diceId, groupId: nil)
     }
 
     public func duplicateWithoutCopy() -> ValueModel {
-        ValueModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, photos: photos, entries: entries.map { $0.duplicate() }, parentId: parentId, diceId: diceId)
+        ValueModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, photos: photos, entries: entries.map { $0.duplicate() }, parentId: parentId, diceId: diceId, groupId: groupId)
     }
 
     public func duplicateSubValueIds() -> [UUID] {
@@ -244,7 +250,7 @@ extension ValueModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .value
 
     public func copy() -> ValueModel {
-        ValueModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, photos: photos_, entries: entries_, parentId: parentId, diceId: diceId)
+        ValueModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, photos: photos_, entries: entries_, parentId: parentId, diceId: diceId, groupId: groupId)
     }
 
     public func filter(filter: String, includeEntries: Bool) -> Bool {
@@ -283,6 +289,7 @@ extension ValueModel: ItemDataAccessable {
         entries_ <=> model.entries_
         parentId <=> model.parentId
         diceId <=> model.diceId
+        groupId <=> model.groupId
         return true
     }
 
@@ -311,6 +318,7 @@ extension ValueModel: Codable {
         case _entries_
         case _parentId
         case _diceId
+        case _groupId
     }
 
     public final func encode(to encoder: Encoder) throws {
@@ -327,6 +335,7 @@ extension ValueModel: Codable {
         try container.encode(self._entries_, forKey: ValueModel.CodingKeys._entries_)
         try container.encodeIfPresent(self._parentId, forKey: ValueModel.CodingKeys._parentId)
         try container.encodeIfPresent(self._diceId, forKey: ValueModel.CodingKeys._diceId)
+        try container.encodeIfPresent(self._groupId, forKey: ValueModel.CodingKeys._groupId)
     }
 }
 
