@@ -21,7 +21,7 @@ extension ExportController: ExportControllable {
 
     @MainActor public func exportingAll() -> ItemModuleIds {
         var allIds = rootManager.photoRoot.exportControllable.exportingAll()
-        allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }]))
+        allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }]))
         return allIds
     }
 

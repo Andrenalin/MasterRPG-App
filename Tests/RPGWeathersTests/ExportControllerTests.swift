@@ -31,6 +31,29 @@ struct ExportControllerTests {
         #expect(ids.ids[.weather]!.count == 2)
     }
 
+    @Test func exportingAllAfterDeletion() async throws {
+        let root = await WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
+        await root.itemController.resetData()
+
+        let sut = await root.exportController
+        let edit = await root.editController
+
+        let item = await edit.addNew(type: .item)
+        let deleted = await edit.addNew(type: .item)
+        try #require(item != nil)
+        try #require(deleted != nil)
+        await edit.reset(name: "keep", itemId: item!.id)
+        await edit.reset(name: "delete", itemId: deleted!.id)
+
+        await edit.delete(itemId: deleted!.id)
+
+        let ids = await sut.exportingAll()
+        try #require(ids.ids[.weather] != nil)
+        #expect(ids.ids[.weather]!.contains(item!.id))
+        #expect(!ids.ids[.weather]!.contains(deleted!.id))
+        #expect(ids.ids[.weather]!.count == 1)
+    }
+
     @Test func exporting() async throws {
         let root = await WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
         await root.itemController.resetData()

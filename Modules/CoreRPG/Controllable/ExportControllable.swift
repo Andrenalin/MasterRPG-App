@@ -31,7 +31,7 @@ public extension ExportControllable {
     }
 
     @MainActor func exportingAll() -> ItemModuleIds {
-        ItemModuleIds(dictionary: [itemControllable.config.module: itemControllable.itemDataModel.items.map { $0 }])
+        ItemModuleIds(dictionary: [itemControllable.config.module: itemControllable.itemDataModel.items.filter { itemControllable.itemSync(for: $0)?.displayState != 2 }])
     }
 
     @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {

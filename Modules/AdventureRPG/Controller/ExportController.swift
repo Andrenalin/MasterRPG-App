@@ -28,7 +28,7 @@ struct ExportController: Sendable {
 extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable { itemController }
     
-    public func exportingAll() -> ItemModuleIds {
+    @MainActor public func exportingAll() -> ItemModuleIds {
         var itemIds = rootManager.audioRoot.exportControllable.exportingAll()
         itemIds.merge(other: rootManager.diceRoot.exportControllable.exportingAll())
         itemIds.merge(other: rootManager.mapRoot.exportControllable.exportingAll())
@@ -38,7 +38,7 @@ extension ExportController: ExportControllable {
         itemIds.merge(other: rootManager.tableRoot.exportControllable.exportingAll())
         itemIds.merge(other: rootManager.characterRoot.exportControllable.exportingAll())
         itemIds.merge(other: rootManager.weatherRoot.exportControllable.exportingAll())
-        itemIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }]))
+        itemIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }]))
         return itemIds
     }
     

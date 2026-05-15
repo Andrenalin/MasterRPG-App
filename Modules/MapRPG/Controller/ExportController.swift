@@ -25,7 +25,7 @@ extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable { itemController }
 
     public func exportingAll() -> ItemModuleIds {
-        var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }])
+        var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }])
 
         if !itemControllable.itemDataModel.isGameMode {
             itemIds.merge(other: rootManager.audioRoot.exportControllable.exportingAll())
