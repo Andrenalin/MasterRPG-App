@@ -41,6 +41,26 @@ struct ExportControllerTests {
         #expect(ids.ids[.adventure]!.count == 2)
     }
 
+    @Test func exportingAllAfterDeletion() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let sut = await root.exportController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let deletedId = await root.itemController.addNew(type: .item)
+
+        await root.itemController.save()
+
+        await root.itemController.delete(itemId: deletedId, withFileData: false)
+
+        let ids = await sut.exportingAll()
+        try #require(ids.ids[.adventure] != nil)
+        #expect(ids.ids[.adventure]!.contains(itemId))
+        #expect(!ids.ids[.adventure]!.contains(deletedId))
+        #expect(ids.ids[.adventure]!.count == 1)
+    }
+
     @Test func exporting() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
