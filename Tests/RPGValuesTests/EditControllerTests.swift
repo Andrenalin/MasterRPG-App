@@ -12,102 +12,241 @@ import Testing
 
 @testable import CharacterRPG
 
-//struct EditControllerTests {
-//    @Test func createGroup() async throws {
-//        let root = try await MockRoot.importTestData()
-//        let sut = await root.editController
-//        
-//        let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
-//        #expect(item.entries.count == 11)
-//        let entry = item.entries[0]
-//        #expect(entry.id == UUID(uuidString: "31C20CE9-810A-4009-89AF-E1A73E45B835")!)
-//        #expect(entry.name == "Group")
-//
-//        // no change because editController is not set to this item
-//        await sut.createGroup(itemId: item.id, entryIds: [entry.id])
-//        #expect(entry.id == UUID(uuidString: "31C20CE9-810A-4009-89AF-E1A73E45B835")!)
-//
-//        await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .value))
-//        await sut.createGroup(itemId: item.id, entryIds: [entry.id])
-//        
-//        let groupEntry = item.entries[0]
-//        #expect(groupEntry.id != UUID(uuidString: "31C20CE9-810A-4009-89AF-E1A73E45B835")!)
-//        #expect(groupEntry.name == "Group")
-//        #expect(groupEntry.valueId != nil)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry.valueId!).entries.count == 1)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry.valueId!).parentId == item.id)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry.valueId!).entries[0].id == entry.id)
-//        #expect(item.entries.count == 11)
-//
-//        let entry2 = item.entries[1]
-//        let entry3 = item.entries[2]
-//        #expect(entry2.id == UUID(uuidString: "233BFCF5-4906-490B-A935-1952CBC8A581")!)
-//        #expect(entry.name == "Group")
-//        #expect(entry3.id == UUID(uuidString: "D853CABE-7EC8-4755-B717-9C952CCC8C2B")!)
-//        #expect(entry.name == "Group")
-//
-//        await sut.createGroup(itemId: item.id, entryIds: [entry2.id, entry3.id])
-//        let groupEntry2 = item.entries[1]
-//        #expect(groupEntry2.id != UUID(uuidString: "233BFCF5-4906-490B-A935-1952CBC8A581")!)
-//        #expect(groupEntry2.id != UUID(uuidString: "D853CABE-7EC8-4755-B717-9C952CCC8C2B")!)
-//        #expect(groupEntry2.name == "Group")
-//        #expect(groupEntry2.valueId != nil)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry2.valueId!).parentId == item.id)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry2.valueId!).entries.count == 2)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry2.valueId!).entries[0].id == entry2.id)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry2.valueId!).entries[1].id == entry3.id)
-//        #expect(item.entries.count == 10)
-//
-//        let entry4 = item.entries[9]
-//        let entry5 = item.entries[8]
-//        let entry6 = item.entries[7]
-//        #expect(entry4.id == UUID(uuidString: "304B6C77-CDCB-4000-A0D1-6C8A84070710")!)
-//        #expect(entry.name == "Group")
-//        #expect(entry5.id == UUID(uuidString: "479CBBB0-8BAC-4858-BA69-B917A168CE25")!)
-//        #expect(entry.name == "Group")
-//        #expect(entry6.id == UUID(uuidString: "5E28C6AD-BCEB-4EA8-84EE-C78C7FFE4013")!)
-//        #expect(entry.name == "Group")
-//
-//        await sut.createGroup(itemId: item.id, entryIds: [entry4.id, entry5.id, entry6.id])
-//        let groupEntry3 = item.entries[7]
-//        #expect(groupEntry3.id != UUID(uuidString: "304B6C77-CDCB-4000-A0D1-6C8A84070710")!)
-//        #expect(groupEntry3.name == "Group")
-//        #expect(groupEntry3.valueId != nil)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry3.valueId!).parentId == item.id)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry3.valueId!).entries.count == 3)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry3.valueId!).entries[0].id == entry6.id)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry3.valueId!).entries[1].id == entry5.id)
-//        await #expect(root.itemController.itemOrEmpty(for: groupEntry3.valueId!).entries[2].id == entry4.id)
-//        #expect(item.entries.count == 8)
-//    }
-//    
-//    @Test func ungroup() async throws {
-//        let root = try await MockRoot.importTestData()
-//        let sut = await root.editController
-//
-//        let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
-//        #expect(item.entries.count == 11)
-//        let entry = item.entries[0]
-//        #expect(entry.id == UUID(uuidString: "31C20CE9-810A-4009-89AF-E1A73E45B835")!)
-//        #expect(entry.name == "Group")
-//        #expect(entry.valueId != nil)
-//        let groupValue = await root.itemController.itemOrEmpty(for: entry.valueId.unsafelyUnwrapped)
-//        //#expect(groupValue.parentId, item.id) // should be not nil but test data not repaired.
-//        #expect(groupValue.entries.count == 7)
-//
-//        await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .value))
-//        await sut.ungroup(from: item.id, entryIds: [entry.id])
-//        await #expect(root.itemController.itemDataModel.items.count == 14)
-//        await #expect(!root.itemController.itemDataModel.items.contains(groupValue.id))
-//        #expect(item.entries.count == 17)
-//        groupValue.entries.enumerated().forEach {
-//            #expect($0.element == item.entries[$0.offset])
-//        }
-//    }
-//    
-//    @Test func scanDice() async throws {
-//        // Rest of the test remains unchanged
-//    }
-//
-//}
+struct EditControllerTests {
+
+    // MARK: - addNewGroup
+
+    @Test func addNewGroup() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let entryId = await sut.addNewGroup(itemId: itemId)
+
+        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let groupEntry = try #require(item.entries.first(where: { $0.id == entryId }))
+        let groupItemId = try #require(groupEntry.valueId)
+
+        let groupItem = await root.itemController.itemOrEmpty(for: groupItemId)
+        #expect(groupItem.groupId == itemId)
+        #expect(groupItem.parentId == nil)
+        #expect(groupItem.displayState == 1)
+    }
+
+    // MARK: - willDeleteChildren (called from delete)
+
+    @Test func deleteNonFolderContainerClearsGroupIdOnChildren() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        // Create a parent item and a group child
+        let parentId = await root.itemController.addNew(type: .item)
+        let childId = await sut.addNewGroup(itemId: parentId)
+
+        let parent = await root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry = try #require(parent.entries.first(where: { $0.id == childId }))
+        let groupItemId = try #require(groupEntry.valueId)
+
+        // Precondition: child has groupId set
+        let childBefore = await root.itemController.itemOrEmpty(for: groupItemId)
+        #expect(childBefore.groupId == parentId)
+
+        // Delete the parent (non-folder)
+        await sut.delete(itemId: parentId)
+
+        // groupId on the child must be cleared
+        let childAfter = await root.itemController.itemOrEmpty(for: groupItemId)
+        #expect(childAfter.groupId == nil)
+        // group children stay hidden (displayState 1) — the base delete loop does not reset valueId-based children
+        #expect(childAfter.displayState == 1)
+    }
+
+    // MARK: - willRestore
+
+    @Test func restoreGroupItemClearsGroupIdWhenGroupDeleted() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        // Create parent and child
+        let parentId = await root.itemController.addNew(type: .item)
+        let entryId = await sut.addNewGroup(itemId: parentId)
+        let parent = await root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry = try #require(parent.entries.first(where: { $0.id == entryId }))
+        let childId = try #require(groupEntry.valueId)
+
+        // Soft-delete the parent (displayState 2)
+        await sut.delete(itemId: parentId)
+
+        // Manually set the child back to deleted so restore can run
+        let child = await root.itemController.itemOrEmpty(for: childId)
+        child.groupId = parentId  // re-attach to the deleted parent for the test
+        child.displayState = 2
+        await root.itemController.replace(model: child, isInsert: false)
+
+        // Restore the child
+        await sut.restore(itemId: childId)
+
+        let restoredChild = await root.itemController.itemOrEmpty(for: childId)
+        #expect(restoredChild.displayState == 0)
+        // groupId must be cleared because parent was deleted
+        #expect(restoredChild.groupId == nil)
+    }
+
+    @Test func restoreGroupItemKeepsGroupIdWhenGroupAlive() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        // Create parent and child
+        let parentId = await root.itemController.addNew(type: .item)
+        let entryId = await sut.addNewGroup(itemId: parentId)
+        let parent = await root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry = try #require(parent.entries.first(where: { $0.id == entryId }))
+        let childId = try #require(groupEntry.valueId)
+
+        // Soft-delete only the child
+        let child = await root.itemController.itemOrEmpty(for: childId)
+        child.displayState = 2
+        await root.itemController.replace(model: child, isInsert: false)
+
+        // Restore the child
+        await sut.restore(itemId: childId)
+
+        let restoredChild = await root.itemController.itemOrEmpty(for: childId)
+        #expect(restoredChild.displayState == 0)
+        // Parent is alive → groupId stays
+        #expect(restoredChild.groupId == parentId)
+    }
+
+    // MARK: - isOrphanedHidden
+
+    @Test func isOrphanedHiddenReturnsTrueWhenHiddenWithNoParentAndNoGroup() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let item = await root.itemController.itemOrEmpty(for: itemId)
+        item.displayState = 1
+        item.parentId = nil
+        item.groupId = nil
+        await root.itemController.replace(model: item, isInsert: false)
+
+        let result = await sut.isOrphanedHidden(itemId: itemId)
+        #expect(result == true)
+    }
+
+    @Test func isOrphanedHiddenReturnsFalseWhenGroupIdIsSet() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        // addNewGroup produces a hidden item with groupId set — must NOT be considered orphaned
+        let parentId = await root.itemController.addNew(type: .item)
+        let entryId = await sut.addNewGroup(itemId: parentId)
+        let parent = await root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry = try #require(parent.entries.first(where: { $0.id == entryId }))
+        let childId = try #require(groupEntry.valueId)
+
+        let result = await sut.isOrphanedHidden(itemId: childId)
+        #expect(result == false)
+    }
+
+    @Test func isOrphanedHiddenReturnsFalseWhenVisible() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        // displayState 0 = visible
+        let result = await sut.isOrphanedHidden(itemId: itemId)
+        #expect(result == false)
+    }
+
+    // MARK: - parentFolder
+
+    @Test func parentFolderResolvesGroupIdFirst() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let parentId = await root.itemController.addNew(type: .item)
+        let entryId = await sut.addNewGroup(itemId: parentId)
+        let parent = await root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry = try #require(parent.entries.first(where: { $0.id == entryId }))
+        let childId = try #require(groupEntry.valueId)
+
+        let folder = await sut.parentFolder(itemId: childId)
+        try #require(folder != nil)
+        #expect(folder!.id == parentId)
+    }
+
+    @Test func parentFolderFallsBackToParentIdWhenNoGroupId() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        let child = await root.itemController.itemOrEmpty(for: childId)
+        child.parentId = folderId
+        child.groupId = nil
+        await root.itemController.replace(model: child, isInsert: false)
+
+        let folder = await sut.parentFolder(itemId: childId)
+        try #require(folder != nil)
+        #expect(folder!.id == folderId)
+    }
+
+    @Test func parentFolderReturnsNilWhenNeitherGroupIdNorParentId() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let folder = await sut.parentFolder(itemId: itemId)
+        #expect(folder == nil)
+    }
+
+    // MARK: - duplicate with groups (groupId propagation)
+
+    @Test func duplicateWithGroupsSetsGroupIdOnCopies() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        // Build: parent → group entry → child
+        let parentId = await root.itemController.addNew(type: .item)
+        let entryId = await sut.addNewGroup(itemId: parentId)
+        let parent = await root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry = try #require(parent.entries.first(where: { $0.id == entryId }))
+        let childId = try #require(groupEntry.valueId)
+
+        let copiedId = await sut.duplicate(itemId: parentId, withCopy: true)
+        let copiedParent = await root.itemController.itemOrEmpty(for: copiedId)
+        #expect(copiedParent.id != parentId)
+        #expect(copiedParent.groupId == nil)
+
+        // The copied group child must point to the copy, not the original
+        let copiedEntry = try #require(copiedParent.entries.first)
+        let copiedChildId = try #require(copiedEntry.valueId)
+        #expect(copiedChildId != childId)
+
+        let copiedChild = await root.itemController.itemOrEmpty(for: copiedChildId)
+        #expect(copiedChild.groupId == copiedId)
+        #expect(copiedChild.groupId != parentId)
+    }
+
+    // MARK: - delete / restore round-trip
+
+    @Test func deleteAndRestorePlainItem() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        await sut.reset(name: "TestItem", itemId: itemId)
+
+        await sut.delete(itemId: itemId)
+        let deleted = await root.itemController.itemOrEmpty(for: itemId)
+        #expect(deleted.displayState == 2)
+
+        await sut.restore(itemId: itemId)
+        let restored = await root.itemController.itemOrEmpty(for: itemId)
+        #expect(restored.displayState == 0)
+        #expect(restored.parentId == nil)
+        #expect(restored.groupId == nil)
+    }
+}
 #endif

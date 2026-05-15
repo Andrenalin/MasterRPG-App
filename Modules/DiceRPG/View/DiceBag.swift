@@ -29,7 +29,7 @@ struct DiceBag: View {
             Button {
                 withAnimation { root.editController.add(die: die, itemId: model.id) }
             } label: {
-                ThumbnailDice(die: die)
+                ThumbnailDice(die: die, listDisplayModel: root.listDisplayModel)
                     .padding(4)
             }
             .borderLessTVBottonStyle()

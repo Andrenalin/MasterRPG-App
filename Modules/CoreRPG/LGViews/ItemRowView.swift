@@ -3,10 +3,11 @@
 import SwiftUI
 
 public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
-    public init(root: any ItemRootControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, isSelected: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
+    public init(root: any ItemRootControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, isSelected: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.root = root
         self.model = model
         self.cacheItemListModel = cacheItemListModel
+        self.listDisplayModel = listDisplayModel
         self.isSelected = isSelected
         self.thumbnail = thumbnail()
         self.actionBar = actionBar()
@@ -15,11 +16,10 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     let root: any ItemRootControllable
     let model: any ItemDataAccessable
     let cacheItemListModel: CacheItemListModel
+    let listDisplayModel: ListDisplayModel
     let isSelected: Bool
     let thumbnail: Thumbnail
     let actionBar: ActionBar
-    
-    @Environment(ListDisplayModel.self) private var listDisplayModel
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -29,7 +29,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
             specialCategoryIcon
             
             VStack(alignment: .leading, spacing: 4) {
-                NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
+                NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel, listDisplayModel: listDisplayModel)
                     .font(.headline)
 
                 if listDisplayModel.displayMode == .regular {

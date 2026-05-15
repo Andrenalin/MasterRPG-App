@@ -44,7 +44,7 @@ public final class CharacterRootModel {
         _searchController = SearchController(itemController: itemController)
         _sheetController = SheetController(itemController: itemController, linkController: linkController, linkRegisterController: linkRegisterController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), searchModel: searchModel, itemControllable: itemController)
 
         _rootController = ItemRootController(
             config: config,
@@ -209,7 +209,12 @@ extension CharacterRootModel {
                     continue
                 }
                 if let valueItem = editController.editModel(for: valueId) {
-                    valueItem.parentId <=> model.id
+                    valueItem.groupId <=> model.id
+                    // Only clear parentId if it was used as the group reference (Phase 2 data).
+                    // A real folder parentId (pointing to a folder, not the group owner) must be kept.
+                    if valueItem.parentId == model.id {
+                        valueItem.parentId = nil
+                    }
                     valueItem.displayState <=> 1
                     editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues", bundle: .module).localizedString)
                 }

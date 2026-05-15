@@ -48,9 +48,17 @@ public final class ValueModel: Identifiable, @unchecked Sendable {
         self._photoId_ = try container.decode(CRDT<UUID?>.self, forKey: ValueModel.CodingKeys._photoId_)
         self._photos_ = try container.decode(CRDTDataUpdate<[UUID]>.self, forKey: ValueModel.CodingKeys._photos_)
         self._entries_ = try container.decode(CRDTDataUpdate<[ValueEntryModel]>.self, forKey: ValueModel.CodingKeys._entries_)
-        self._parentId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._parentId)
+        let decodedParentId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._parentId)
         self._diceId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._diceId)
-        self._groupId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._groupId)
+        let decodedGroupId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._groupId)
+        // Migrate pre-groupId data: items with displayState==1 used parentId for group membership
+        if decodedGroupId == nil && self._displayState == 1, let parentId = decodedParentId {
+            self._parentId = nil
+            self._groupId = parentId
+        } else {
+            self._parentId = decodedParentId
+            self._groupId = decodedGroupId
+        }
     }
 
     public var id: UUID

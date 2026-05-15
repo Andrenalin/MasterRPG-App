@@ -192,7 +192,7 @@ private extension ItemDetailRootView {
         ZStack(alignment: .bottom) {
             header
             
-            ItemDetailOverlayView(model: currentModel(model: model))
+            ItemDetailOverlayView(model: currentModel(model: model), listDisplayModel: detailListController.listDisplayModel)
                 .padding()
         }
         .overlay(alignment: .top) {
@@ -235,7 +235,7 @@ private extension ItemDetailRootView {
     func editorContentView(model: any ItemDataAccessable) -> some View {
         Group {
             if model.specialCategory {
-                ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
+                ItemDetailOverlayView(model: model, listDisplayModel: detailListController.listDisplayModel, fullHeader: false, onlyDescription: true)
                     .padding()
                 
                 ListRootView(root: root, listController: detailListController, parentModel: model)
@@ -259,7 +259,7 @@ private extension ItemDetailRootView {
             ScrollView {
                 LazyVStack(spacing: 8) {
                     if model.description.isEmpty == false {
-                        ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
+                        ItemDetailOverlayView(model: model, listDisplayModel: detailListController.listDisplayModel, fullHeader: false, onlyDescription: true)
                     }
                     
                     editor
@@ -305,7 +305,7 @@ private extension ItemDetailRootView {
     }
     
     func overlayDescription(model: any ItemDataAccessable) -> some View {
-        ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true, lines: 3)
+        ItemDetailOverlayView(model: model, listDisplayModel: detailListController.listDisplayModel, fullHeader: false, onlyDescription: true, lines: 3)
             .padding(.horizontal, 8)
             .padding(6)
 #if !os(visionOS)

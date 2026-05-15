@@ -36,7 +36,7 @@ public struct LinkItemListView: View {
         ManagedNavigationStack(name: "LinkInspector") { navigator in
             VStack {
                 if type == .inspector {
-                    LinkItemPickerView(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                    LinkItemPickerView(root: root)
 
                     LinkItemFilterFieldView(
                         searchModel: root.folderLinkControllable.searchModel,
@@ -130,6 +130,20 @@ private extension LinkItemListView {
                     }
                     .contentShape(.rect)
                     .contextMenu {
+                        Button {
+                            openDetail(for: item)
+                        } label: {
+                            Label("Open Details", systemImage: "arrow.up.right.square")
+                        }
+                        ControlGroup {
+                            CompactDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                            MediumDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                            RegularDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                        }
+                        ControlGroup {
+                            ListModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                            FolderModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                        }
                         closeEntrySection(for: item)
                     }
 #if !os(tvOS)
@@ -146,6 +160,15 @@ private extension LinkItemListView {
                                 openDetail(for: item)
                             } label: {
                                 Label("Open Details", systemImage: "arrow.up.right.square")
+                            }
+                            ControlGroup {
+                                CompactDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                                MediumDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                                RegularDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                            }
+                            ControlGroup {
+                                ListModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                                FolderModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
                             }
                         }
                 }
@@ -167,7 +190,7 @@ private extension LinkItemListView {
 
     func itemRow(item: ListItemModel) -> some View {
         HStack {
-            ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false) {
+            ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, listDisplayModel: root.folderLinkControllable.listDisplayModel, isSelected: false) {
                 if root.viewControllable.thumbnailRowViewType == .custom {
                     root.viewControllable.thumbnailRowView(for: item.model.id)
                 } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
@@ -237,13 +260,16 @@ private extension LinkItemListView {
 
 // MARK: - Extracted subviews to scope @Bindable allocations
 
-/// Picker subview — @Bindable is allocated only when this subview's dependencies change,
-/// not on every LinkItemListView body update.
+/// Picker subview — root is passed directly so @Observable tracking fires on listMode changes.
 private struct LinkItemPickerView: View {
-    @Bindable var listDisplayModel: ListDisplayModel
+    let root: any ItemRootControllable
 
     var body: some View {
-        Picker(selection: $listDisplayModel.listMode) {
+        let listDisplayModel = root.folderLinkControllable.listDisplayModel
+        Picker(selection: Binding(
+            get: { listDisplayModel.listMode },
+            set: { listDisplayModel.listMode = $0 }
+        )) {
             ForEach(ListDisplayModel.ListMode.allCases) { mode in
                 Text(mode.title, bundle: .module)
                     .tag(mode)

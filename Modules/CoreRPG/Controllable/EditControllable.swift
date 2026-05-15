@@ -17,6 +17,10 @@ public protocol EditControllable: Sendable {
     // overwrite extensions
     @MainActor func duplicate(item: any ItemDataAccessable) async
     @MainActor func validateBeforeSave(model: Model)
+    @MainActor func willDeleteChildren(of item: Model)
+    @MainActor func willRestore(item: inout Model)
+    @MainActor func isOrphanedHidden(itemId: UUID) -> Bool
+    @MainActor func willRepairOrphan(itemId: UUID)
 }
 
 public extension EditControllable {
@@ -27,6 +31,8 @@ public extension EditControllable {
     }
 
     @MainActor func validateBeforeSave(model: Model) {}
+    @MainActor func willDeleteChildren(of item: Model) {}
+    @MainActor func willRestore(item: inout Model) {}
 }
 
 // MARK: - Editor Basic Properties
@@ -124,6 +130,13 @@ public extension EditControllable {
 // MARK: - Other
 
 public extension EditControllable {
+    @MainActor func isOrphanedHidden(itemId: UUID) -> Bool {
+        guard let item = itemControllable.itemSync(for: itemId) else { return false }
+        return item.parentId == nil && item.displayState == 1
+    }
+
+    @MainActor func willRepairOrphan(itemId: UUID) {}
+
     @MainActor func repairFolder(itemId: UUID) {
         guard let item = editModel(for: itemId), item.parentId != nil else { return }
         for id in itemControllable.itemDataModel.items {
@@ -316,6 +329,7 @@ public extension EditControllable {
             }
             return
         }
+        willDeleteChildren(of: item)
         for entry in item.entries {
             if var entryItem = editModel(for: entry.childId) {
                 if item.category == .folder {
@@ -373,6 +387,7 @@ public extension EditControllable {
                 }
             }
         } else {
+            willRestore(item: &item)
             // If this is a child being restored, check if its parent folder still exists and is not deleted
             if let parentId = item.parentId, let parentItem = editModel(for: parentId), parentItem.displayState == 2 {
                 // Parent folder is deleted, move child to root level

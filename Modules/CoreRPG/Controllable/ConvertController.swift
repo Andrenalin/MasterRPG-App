@@ -34,8 +34,9 @@ public struct ConvertController: Sendable {
                 }
             }
 
-            if item.parentId == nil && item.displayState == 1 {
-                editController.reset(hidden: false, itemId: item.id)
+            if editController.isOrphanedHidden(itemId: itemId) {
+                editController.willRepairOrphan(itemId: itemId)
+                editController.reset(hidden: false, itemId: itemId)
             }
 
             if !item.specialCategory && item.category != .entry {

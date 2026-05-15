@@ -6,8 +6,8 @@ struct NameItemNewRow: View {
     let itemId: UUID
     let name: String
     let cacheItemListModel: CacheItemListModel
-    
-    @Environment(ListDisplayModel.self) private var listDisplayModel
+    let listDisplayModel: ListDisplayModel
+
     @Environment(SearchModel.self) private var searchModel
 
     var body: some View {
@@ -50,7 +50,7 @@ struct NameItemNewRow: View {
             cache.reset(search: searchText)
         }
 
-        NameItemNewRow(itemId: itemId, name: "**Super cool Name** cool and more **cool**", cacheItemListModel: cache)
+        NameItemNewRow(itemId: itemId, name: "**Super cool Name** cool and more **cool**", cacheItemListModel: cache, listDisplayModel: ListDisplayModel())
     }
     .environment(searchModel)
 }

@@ -20,7 +20,7 @@ struct DiceViewer: View {
                         }
                     } label: {
                         HStack(alignment: .top, spacing: 8) {
-                            ThumbnailDice(die: die)
+                            ThumbnailDice(die: die, listDisplayModel: root.listDisplayModel)
                                 .padding(4)
                             
                             if isEditor {

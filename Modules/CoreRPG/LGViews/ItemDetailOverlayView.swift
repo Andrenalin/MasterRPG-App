@@ -4,15 +4,17 @@ import SwiftData
 import SwiftUI
 
 public struct ItemDetailOverlayView: View {
-    public init(model: any ItemDataAccessable, fullHeader: Bool = false, onlyDescription: Bool = false, lines: Int = 20) {
+    public init(model: any ItemDataAccessable, listDisplayModel: ListDisplayModel, fullHeader: Bool = false, onlyDescription: Bool = false, lines: Int = 20) {
         self.model = model
+        self.listDisplayModel = listDisplayModel
         self.fullHeader = fullHeader
         self.onlyDescription = onlyDescription
         self.lines = lines
         self.cacheItemListModel = CacheItemListModel()
     }
-    
+
     let model: any ItemDataAccessable
+    let listDisplayModel: ListDisplayModel
     let fullHeader: Bool
     let onlyDescription: Bool
     let lines: Int
@@ -21,7 +23,7 @@ public struct ItemDetailOverlayView: View {
     public var body: some View {
         VStack(alignment: .leading) {
             if fullHeader || onlyDescription == false {
-                NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
+                NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel, listDisplayModel: listDisplayModel)
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundStyle(.primary)

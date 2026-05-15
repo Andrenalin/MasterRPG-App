@@ -11,7 +11,7 @@ struct ThumbnailDiceRow: View, Equatable {
     
     var body: some View {
         if let die = model?.dice.first {
-            ThumbnailDice(die: die)
+            ThumbnailDice(die: die, listDisplayModel: root.listDisplayModel)
         }
     }
     

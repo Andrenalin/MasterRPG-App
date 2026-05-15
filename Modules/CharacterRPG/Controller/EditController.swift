@@ -147,8 +147,9 @@ extension EditController {
     }
 
     @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? {
-        guard let item = itemControllable.itemSync(for: itemId) as? Model, let parentId = item.parentId else { return nil }
-        guard let parent = itemControllable.itemSync(for: parentId) as? Model else { return nil }
+        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return nil }
+        let resolvedParentId = item.groupId ?? item.parentId
+        guard let resolvedParentId, let parent = itemControllable.itemSync(for: resolvedParentId) as? Model else { return nil }
         return FolderRepresentable(id: parent.id, name: parent.name)
     }
 }
@@ -190,7 +191,7 @@ extension EditController {
             guard let valueId = entry.valueId else { continue }
             if let copyId = mapper[valueId] {
                 copyItem.entries[index].valueId = copyId
-                duplicates.first(where: { $0.id == copyId })?.parentId = copyItem.id
+                duplicates.first(where: { $0.id == copyId })?.groupId = copyItem.id
             }
         }
         return (duplicates, copyItem.id, mapper)
@@ -217,11 +218,44 @@ extension EditController {
         save(updated: item, message: String(localized: "remove photos", bundle: .module).localizedString)
     }
 
+    @MainActor func isOrphanedHidden(itemId: UUID) -> Bool {
+        guard let item = itemControllable.itemSync(for: itemId) as? ValueModel else { return false }
+        guard item.displayState == 1 && item.parentId == nil else { return false }
+        if let groupId = item.groupId {
+            // Hidden with a groupId: orphaned if the parent is gone or deleted
+            let parent = itemControllable.itemSync(for: groupId)
+            return parent == nil || parent?.displayState == 2
+        }
+        return true  // no parentId, no groupId → Phase 1 orphan
+    }
+
+    @MainActor func willRepairOrphan(itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        guard item.groupId != nil else { return }
+        item.groupId = nil
+        save(updated: item, message: String(localized: "Repair orphan", bundle: .module).localizedString)
+    }
+
+    @MainActor func willRestore(item: inout ValueModel) {
+        if let groupId = item.groupId, let groupItem = editModel(for: groupId), groupItem.displayState == 2 {
+            item.groupId = nil
+        }
+    }
+
+    @MainActor func willDeleteChildren(of item: ValueModel) {
+        guard item.category != .folder else { return }
+        for entry in item.entries {
+            guard let valueId = entry.valueId, let entryItem = editModel(for: valueId) else { continue }
+            entryItem.groupId = nil
+            save(updated: entryItem, message: String(localized: "Remove parent", bundle: .module).localizedString)
+        }
+    }
+
     @MainActor func addNewGroup(itemId: UUID) async -> UUID {
         let groupId = await itemController.addNew(type: .item)
         reset(hidden: true, itemId: groupId)
         guard let group = editModel(for: groupId) else { return groupId }
-        group.parentId = itemId
+        group.groupId = itemId
         save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
         var entry = Model.Entry.empty
         entry.name = group.name

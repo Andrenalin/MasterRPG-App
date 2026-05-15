@@ -6,8 +6,7 @@ import SwiftUI
 struct ThumbnailDice: View {
     let die: DieModel
     var withoutResult: Bool = false
-    
-    @Environment(ListDisplayModel.self) private var listDisplayModel
+    let listDisplayModel: ListDisplayModel
     
     var body: some View {
         die.diceImage(for: die.die.max)
@@ -31,7 +30,7 @@ struct ThumbnailDice: View {
 #Preview(traits: .mockData) {
     @Previewable @Environment(DiceRootModel.self) var root
 
-    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]).dice[0], withoutResult: false)
-    
-    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[1]).dice[0], withoutResult: false)
+    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]).dice[0], withoutResult: false, listDisplayModel: root.listDisplayModel)
+
+    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[1]).dice[0], withoutResult: false, listDisplayModel: root.listDisplayModel)
 }

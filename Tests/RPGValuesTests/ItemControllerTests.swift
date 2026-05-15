@@ -28,7 +28,7 @@ struct ItemControllerTests {
         
         for subitemId in item.entries.compactMap({ $0.valueId }) {
             let subitem = await root.itemController.itemOrEmpty(for: subitemId)
-            #expect(subitem.parentId == originalId)
+            #expect(subitem.groupId == originalId)
         }
 
         let _ = await root.editController.duplicate(itemId: originalId, withCopy: true)
@@ -46,8 +46,8 @@ struct ItemControllerTests {
             let subCopy = await root.itemController.itemOrEmpty(for: valueId)
             let subOrig = await root.itemController.itemOrEmpty(for: item.entries[index].valueId!)
             #expect(!subCopy.isSame(subOrig))
-            #expect(subCopy.parentId == copiedItem.id)
-            #expect(subOrig.parentId == item.id)
+            #expect(subCopy.groupId == copiedItem.id)
+            #expect(subOrig.groupId == item.id)
         }
     }
 }

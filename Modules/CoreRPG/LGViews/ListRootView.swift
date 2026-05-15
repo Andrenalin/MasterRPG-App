@@ -148,7 +148,7 @@ private extension ListRootView {
         
         ForEach(displayItems) { item in
             HStack {
-                ItemRowView(root: root, model: item.model, cacheItemListModel: listController.cacheListItemModel, isSelected: false) {
+                ItemRowView(root: root, model: item.model, cacheItemListModel: listController.cacheListItemModel, listDisplayModel: listController.listDisplayModel, isSelected: false) {
                     if root.viewControllable.thumbnailRowViewType == .custom {
                         root.viewControllable.thumbnailRowView(for: item.model.id)
                     } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
