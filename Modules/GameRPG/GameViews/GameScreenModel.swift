@@ -50,4 +50,7 @@ final class GameScreenModel {
     
     // Game main tab display mode (for macOS/visionOS three-state button)
     var gameMainTabDisplayMode: GameMainTabDisplayMode = .hidden
+    
+    // Simple show/hide state for iOS/tvOS
+    var showMainTabIOS: Bool = false
 }

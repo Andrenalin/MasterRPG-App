@@ -178,15 +178,19 @@ private extension OverlayGameMenu {
         } else {
             toolIconMacViewPlayer
         }
-#else
-        firstOptionView
-#if os(visionOS)
+#elseif os(visionOS)
         if isMaster {
-            secondOptionView
+            toolIconVisionViewMaster
+        } else {
+            toolIconVisionViewPlayer
         }
 #else
-        secondOptionView
-#endif
+        // iOS and tvOS
+        if isMaster {
+            toolIconIOSViewMaster
+        } else {
+            toolIconIOSViewPlayer
+        }
 #endif
     }
     
@@ -257,8 +261,91 @@ private extension OverlayGameMenu {
         }
     }
     
+    // MARK: - visionOS Views
+    
+    @ViewBuilder
+    var toolIconVisionViewMaster: some View {
+        @Bindable var gameScreenModel = gameScreenModel
+        
+        firstOptionView
+        secondOptionView
+        
+        GameMainTabButtonView(isMaster: true, displayMode: $gameScreenModel.gameMainTabDisplayMode)
+            .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
+                handleMainTabDisplayModeChange(oldValue: oldValue, newValue: newValue, isMaster: true)
+            }
+    }
+    
+    @ViewBuilder
+    var toolIconVisionViewPlayer: some View {
+        @Bindable var gameScreenModel = gameScreenModel
+        
+        firstOptionView
+        
+        GameMainTabButtonView(isMaster: false, displayMode: $gameScreenModel.gameMainTabDisplayMode)
+            .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
+                handleMainTabDisplayModeChange(oldValue: oldValue, newValue: newValue, isMaster: false)
+            }
+    }
+    
+    // MARK: - iOS/tvOS Views
+    
+    @ViewBuilder
+    var toolIconIOSViewMaster: some View {
+        @Bindable var gameScreenModel = gameScreenModel
+        
+        // Main game tab button (replaces firstOptionView)
+        GameMainTabToggleButtonView(isMaster: true, isShown: $gameScreenModel.showMainTabIOS)
+            .onChange(of: gameScreenModel.showMainTabIOS) { oldValue, newValue in
+                handleMainTabToggle(isShown: newValue, isMaster: true)
+            }
+        
+        // Settings button
+        secondOptionView
+    }
+    
+    @ViewBuilder
+    var toolIconIOSViewPlayer: some View {
+        @Bindable var gameScreenModel = gameScreenModel
+        
+        // Main game tab button (replaces firstOptionView)
+        GameMainTabToggleButtonView(isMaster: false, isShown: $gameScreenModel.showMainTabIOS)
+            .onChange(of: gameScreenModel.showMainTabIOS) { oldValue, newValue in
+                handleMainTabToggle(isShown: newValue, isMaster: false)
+            }
+        
+        // Settings button
+        secondOptionView
+    }
+    
+    /// Handles the simple show/hide toggle for iOS/tvOS
+    func handleMainTabToggle(isShown: Bool, isMaster: Bool) {
+        // Save the state to UserDefaults
+        if isMaster {
+            appSettingsModel.autoShowMasterMainTab = isShown
+        } else {
+            appSettingsModel.autoShowPlayerMainTab = isShown
+        }
+        
+        // Update the display
+        withAnimation {
+            if isShown {
+                gameScreenModel.showMainTab = isMaster ? .game : .value
+            } else {
+                gameScreenModel.showMainTab = .none
+            }
+        }
+    }
+    
     /// Handles the three-state main tab display mode changes
     func handleMainTabDisplayModeChange(oldValue: GameMainTabDisplayMode, newValue: GameMainTabDisplayMode, isMaster: Bool) {
+        // Save the display mode to UserDefaults
+        if isMaster {
+            appSettingsModel.masterMainTabDisplayMode = newValue.rawValue
+        } else {
+            appSettingsModel.playerMainTabDisplayMode = newValue.rawValue
+        }
+        
         switch newValue {
         case .hidden:
             // Hide the game view
@@ -277,13 +364,6 @@ private extension OverlayGameMenu {
                 }
             }
             
-            // Save preference
-            if isMaster {
-                appSettingsModel.autoShowMasterMainTab = false
-            } else {
-                appSettingsModel.autoShowPlayerMainTab = false
-            }
-            
         case .inline:
             // Show game view inline
             gameScreenModel.showMainTab = isMaster ? .game : .value
@@ -297,13 +377,6 @@ private extension OverlayGameMenu {
                 if sceneManager.getSceneState(for: SceneId.valueViewer) == .opened {
                     sceneManager.dismissWindow(SceneId.valueViewer)
                 }
-            }
-            
-            // Save preference
-            if isMaster {
-                appSettingsModel.autoShowMasterMainTab = true
-            } else {
-                appSettingsModel.autoShowPlayerMainTab = true
             }
             
         case .window:
@@ -324,13 +397,6 @@ private extension OverlayGameMenu {
                 }
             }
             #endif
-            
-            // Save preference (consider window mode as "shown")
-            if isMaster {
-                appSettingsModel.autoShowMasterMainTab = true
-            } else {
-                appSettingsModel.autoShowPlayerMainTab = true
-            }
         }
     }
     

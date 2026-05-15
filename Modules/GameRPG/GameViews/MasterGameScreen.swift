@@ -107,14 +107,36 @@ private extension MasterGameScreen {
         Task {
             try? await Task.sleep(for: .seconds(0.6))
             
-            // Set display mode based on user preference
-            if appSettingsModel.autoShowMasterMainTab {
-                gameScreenModel.gameMainTabDisplayMode = .inline
+            #if os(macOS) || os(visionOS)
+            // Restore three-state display mode from UserDefaults
+            let savedMode = GameMainTabDisplayMode(rawValue: appSettingsModel.masterMainTabDisplayMode) ?? .hidden
+            gameScreenModel.gameMainTabDisplayMode = savedMode
+            
+            // Apply the saved mode
+            switch savedMode {
+            case .hidden:
+                withAnimation { gameScreenModel.showMainTab = .none }
+                
+            case .inline:
+                withAnimation { gameScreenModel.showMainTab = .game }
+                
+            case .window:
+                // Open the adventure viewer window
+                if let adventureId = root.gameModel.selectedAdventure {
+                    sceneManager.openWindow(SceneId.viewerId(for: .adventure), selection: WindowItemSelection(itemId: adventureId))
+                }
+            }
+            #else
+            // iOS/tvOS: Simple show/hide toggle
+            let isShown = appSettingsModel.autoShowMasterMainTab
+            gameScreenModel.showMainTabIOS = isShown
+            
+            if isShown {
                 withAnimation { gameScreenModel.showMainTab = .game }
             } else {
-                gameScreenModel.gameMainTabDisplayMode = .hidden
                 withAnimation { gameScreenModel.showMainTab = .none }
             }
+            #endif
         }
     }
 

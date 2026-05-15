@@ -59,6 +59,20 @@ public final class AppSettingsModel: Sendable {
             UserDefaults.standard.set(autoShowPlayerMainTab, forKey: AppSettingsModel.autoShowPlayerMainTabKey)
         }
     }
+    
+    public var masterMainTabDisplayMode: Int = 0 {
+        didSet {
+            guard oldValue != masterMainTabDisplayMode else { return }
+            UserDefaults.standard.set(masterMainTabDisplayMode, forKey: AppSettingsModel.masterMainTabDisplayModeKey)
+        }
+    }
+    
+    public var playerMainTabDisplayMode: Int = 0 {
+        didSet {
+            guard oldValue != playerMainTabDisplayMode else { return }
+            UserDefaults.standard.set(playerMainTabDisplayMode, forKey: AppSettingsModel.playerMainTabDisplayModeKey)
+        }
+    }
 
     // MARK: - Shared Settings Value in AppGroups
     
@@ -150,6 +164,9 @@ public final class AppSettingsModel: Sendable {
         autoShowMasterMainTab = UserDefaults.standard.value(forKey: AppSettingsModel.autoShowMasterMainTabKey) as? Bool ?? true
         autoShowPlayerMainTab = UserDefaults.standard.value(forKey: AppSettingsModel.autoShowPlayerMainTabKey) as? Bool ?? true
         
+        masterMainTabDisplayMode = UserDefaults.standard.integer(forKey: AppSettingsModel.masterMainTabDisplayModeKey)
+        playerMainTabDisplayMode = UserDefaults.standard.integer(forKey: AppSettingsModel.playerMainTabDisplayModeKey)
+        
         // shared App groups
         useCloudKit = UserDefaults.standard.bool(forKey: AppSettingsModel.useCloudKitKey)
         
@@ -173,6 +190,8 @@ public final class AppSettingsModel: Sendable {
     private static let appColorSchemeKey = "appColorScheme"
     private static let autoShowMasterMainTabKey = "autoShowMasterMainTab"
     private static let autoShowPlayerMainTabKey = "autoShowPlayerMainTab"
+    private static let masterMainTabDisplayModeKey = "masterMainTabDisplayMode"
+    private static let playerMainTabDisplayModeKey = "playerMainTabDisplayMode"
 
     private static let useCloudKitKey = "MasterRPGuseCloudKit"
     

@@ -4,15 +4,18 @@ import CoreRPG
 import SwiftUI
 
 /// Display mode for the game main tab
-enum GameMainTabDisplayMode: Equatable {
+enum GameMainTabDisplayMode: Int, Equatable {
     /// Game tab is hidden
-    case hidden
+    case hidden = 0
     /// Game tab is shown inline within the game screen
-    case inline
-    /// Game tab is shown in a separate window
-    case window
+    case inline = 1
+    /// Game tab is shown in a separate window (macOS/visionOS only)
+    case window = 2
 }
 
+// MARK: - macOS/visionOS Three-State Button
+
+/// Three-state button for macOS and visionOS (hidden/inline/window)
 struct GameMainTabButtonView: View {
     let isMaster: Bool
     @Binding var displayMode: GameMainTabDisplayMode
@@ -26,9 +29,6 @@ struct GameMainTabButtonView: View {
             }
         } label: {
             Image(systemName: iconName)
-#if os(iOS)
-                .frame(height: 24)
-#endif
         }
         .selectedBorderedStype(isSelected: displayMode != .hidden)
         .help(helpText)
@@ -61,18 +61,38 @@ struct GameMainTabButtonView: View {
         case .hidden:
             displayMode = .inline
         case .inline:
-            #if os(macOS) || os(visionOS)
             displayMode = .window
-            #else
-            displayMode = .hidden
-            #endif
         case .window:
             displayMode = .hidden
         }
     }
 }
 
-#Preview {
+// MARK: - iOS/iPadOS/tvOS Simple Toggle Button
+
+/// Simple toggle button for iOS, iPadOS, and tvOS (show/hide only)
+struct GameMainTabToggleButtonView: View {
+    let isMaster: Bool
+    @Binding var isShown: Bool
+    
+    var body: some View {
+        Button {
+            withAnimation {
+                isShown.toggle()
+            }
+        } label: {
+            Image(systemName: NetworkModules.game.icon)
+#if os(iOS)
+                .frame(height: 24)
+#endif
+        }
+        .selectedBorderedStype(isSelected: isShown)
+    }
+}
+
+// MARK: - Previews
+
+#Preview("Three-State (macOS/visionOS)") {
     HStack {
         GameMainTabButtonView(isMaster: true, displayMode: .constant(.hidden))
         GameMainTabButtonView(isMaster: true, displayMode: .constant(.inline))
@@ -81,3 +101,13 @@ struct GameMainTabButtonView: View {
     .padding()
     .background(.ultraThinMaterial)
 }
+
+#Preview("Toggle (iOS/tvOS)") {
+    HStack {
+        GameMainTabToggleButtonView(isMaster: true, isShown: .constant(false))
+        GameMainTabToggleButtonView(isMaster: true, isShown: .constant(true))
+    }
+    .padding()
+    .background(.ultraThinMaterial)
+}
+

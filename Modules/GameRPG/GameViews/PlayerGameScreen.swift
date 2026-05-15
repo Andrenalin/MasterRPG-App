@@ -100,14 +100,36 @@ private extension PlayerGameScreen {
         Task {
             try? await Task.sleep(for: .seconds(0.6))
             
-            // Set display mode based on user preference  
-            if appSettingsModel.autoShowPlayerMainTab {
-                gameScreenModel.gameMainTabDisplayMode = .inline
+            #if os(macOS) || os(visionOS)
+            // Restore three-state display mode from UserDefaults  
+            let savedMode = GameMainTabDisplayMode(rawValue: appSettingsModel.playerMainTabDisplayMode) ?? .hidden
+            gameScreenModel.gameMainTabDisplayMode = savedMode
+            
+            // Apply the saved mode
+            switch savedMode {
+            case .hidden:
+                withAnimation { gameScreenModel.showMainTab = .none }
+                
+            case .inline:
+                withAnimation { gameScreenModel.showMainTab = .value }
+                
+            case .window:
+                // Open the character viewer window
+                if let characterId = root.gameModel.selectedCharacter {
+                    sceneManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
+                }
+            }
+            #else
+            // iOS/tvOS: Simple show/hide toggle
+            let isShown = appSettingsModel.autoShowPlayerMainTab
+            gameScreenModel.showMainTabIOS = isShown
+            
+            if isShown {
                 withAnimation { gameScreenModel.showMainTab = .value }
             } else {
-                gameScreenModel.gameMainTabDisplayMode = .hidden
                 withAnimation { gameScreenModel.showMainTab = .none }
             }
+            #endif
         }
     }
 
