@@ -61,7 +61,8 @@ struct GameRootViewer<MapContent: View>: View {
             scenesManager.openWindow(SceneId.imageSpaceViewer)
         }
         .task(id: root.mapRoot.gameControllable.gameModel.currentItemId) {
-            await root.gameModel.gameTableModel?.handleMapChange()
+            let isGameMaster = root.gameModel.gameConfig.isMaster
+            await root.gameModel.gameTableModel?.handleMapChange(isGameMaster: isGameMaster)
         }
 
 #endif

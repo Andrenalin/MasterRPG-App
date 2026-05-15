@@ -47,7 +47,7 @@ final class GameTableModel {
         self.resetGame()
     }
         
-    @MainActor func handleMapChange() async {
+    @MainActor func handleMapChange(isGameMaster: Bool) async {
         guard let currentItemId = mapRoot.gameControllable.gameModel.currentItemId else {
             print("No current map selected in game")
             return
@@ -65,12 +65,12 @@ final class GameTableModel {
             return
         }
         
-        // Load the map photo similar to RootCanvasMap's reloadImage()
-        await loadMapPhoto(mapModel: mapModel)
+        // Load the map photo with the game master flag
+        await loadMapPhoto(mapModel: mapModel, isGameMaster: isGameMaster)
     }
     
     @MainActor
-    private func loadMapPhoto(mapModel: MapModel) async {
+    private func loadMapPhoto(mapModel: MapModel, isGameMaster: Bool) async {
         guard let photoId = mapModel.photoId else {
             print("Map '\(mapModel.name)' has no photo")
             return
@@ -89,13 +89,19 @@ final class GameTableModel {
         currentMapDegrees = degrees
         
         // Update the board with the new photo, display config, and map model (for fog of war)
-        setup.board.updateMap(image: akImage, degrees: degrees, displayConfig: mapModel.displayConfig, mapModel: mapModel)
-        print("Map updated successfully: '\(mapModel.name)' (rotation: \(degrees)°)")
+        setup.board.updateMap(
+            image: akImage,
+            degrees: degrees,
+            displayConfig: mapModel.displayConfig,
+            mapModel: mapModel,
+            isGameMaster: isGameMaster
+        )
+        print("Map updated successfully: '\(mapModel.name)' (rotation: \(degrees)°, GM: \(isGameMaster))")
     }
     
     /// Updates the fog of war when map entries change (rooms shown/hidden)
     @MainActor
-    func updateFogOfWar() async {
+    func updateFogOfWar(isGameMaster: Bool) async {
         guard let currentItemId = currentMapId else {
             print("No current map to update fog of war")
             return
@@ -108,7 +114,7 @@ final class GameTableModel {
         
         guard let mapImage = currentMapImage else {
             print("No cached map image - loading full map")
-            await loadMapPhoto(mapModel: mapModel)
+            await loadMapPhoto(mapModel: mapModel, isGameMaster: isGameMaster)
             return
         }
         
@@ -119,10 +125,11 @@ final class GameTableModel {
             image: mapImage,
             degrees: currentMapDegrees,
             displayConfig: mapModel.displayConfig,
-            mapModel: mapModel
+            mapModel: mapModel,
+            isGameMaster: isGameMaster
         )
         
-        print("✅ Fog of war updated - \(mapModel.entries.filter { !$0.isShown }.count) hidden areas")
+        print("✅ Fog of war updated - \(mapModel.entries.filter { !$0.isShown }.count) hidden areas (GM: \(isGameMaster))")
     }
     
     deinit {

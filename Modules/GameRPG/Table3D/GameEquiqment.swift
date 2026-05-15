@@ -95,7 +95,7 @@ struct Board: EntityEquipment {
     }
         
     // Method to update map from PhotoModel data with aspect ratio and border color
-    @MainActor mutating func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?) {
+    @MainActor mutating func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool) {
         guard let cgImage = image.cgImage else {
             print("Failed to create image from photo data")
             return

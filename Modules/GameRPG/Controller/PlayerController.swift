@@ -384,7 +384,8 @@ extension PlayerController {
                     // Update fog of war on 3D board
                     #if os(visionOS)
                     Task { @MainActor in
-                        await root.gameModel.gameTableModel?.updateFogOfWar()
+                        let isGameMaster = root.gameModel.gameConfig.isMaster
+                        await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
                     }
                     #endif
                 } else {
