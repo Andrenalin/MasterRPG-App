@@ -36,7 +36,7 @@ public struct LinkItemListView: View {
         ManagedNavigationStack(name: "LinkInspector") { navigator in
             VStack {
                 if type == .inspector {
-                    LinkItemPickerView(root: root)
+                    LinkItemPickerView(listDisplayModel: root.folderLinkControllable.listDisplayModel)
 
                     LinkItemFilterFieldView(
                         searchModel: root.folderLinkControllable.searchModel,
@@ -260,16 +260,12 @@ private extension LinkItemListView {
 
 // MARK: - Extracted subviews to scope @Bindable allocations
 
-/// Picker subview — root is passed directly so @Observable tracking fires on listMode changes.
+/// Picker subview — @Bindable on the concrete ListDisplayModel registers @Observable tracking.
 private struct LinkItemPickerView: View {
-    let root: any ItemRootControllable
+    @Bindable var listDisplayModel: ListDisplayModel
 
     var body: some View {
-        let listDisplayModel = root.folderLinkControllable.listDisplayModel
-        Picker(selection: Binding(
-            get: { listDisplayModel.listMode },
-            set: { listDisplayModel.listMode = $0 }
-        )) {
+        Picker(selection: $listDisplayModel.listMode) {
             ForEach(ListDisplayModel.ListMode.allCases) { mode in
                 Text(mode.title, bundle: .module)
                     .tag(mode)
