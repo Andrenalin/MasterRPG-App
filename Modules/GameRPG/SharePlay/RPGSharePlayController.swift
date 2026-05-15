@@ -41,7 +41,7 @@ final class RPGSharePlayController {
     private var cancellables: Set<AnyCancellable> = []
     
     private var messenger: GroupSessionMessenger?
-    private var subscriptions = Set<AnyCancellable>()
+    var subscriptions = Set<AnyCancellable>()
     private var tasks = Set<Task<Void, Never>>()
     private var journal: GroupSessionJournal?
     
@@ -85,10 +85,15 @@ final class RPGSharePlayController {
     }
     
     #if os(visionOS)
-    func setup(tabletopGame: TabletopGame) {
+    func setup(tabletopGame: TabletopGame, gameTableModel: GameTableModel? = nil) {
         self.tabletopGame = tabletopGame
         guard let groupSession else { return }
         tabletopGame.coordinateWithSession(groupSession)
+        
+        // Set up seat assignment if game table model is provided
+        if let gameTableModel = gameTableModel {
+            setupSeatAssignment(gameTableModel: gameTableModel)
+        }
     }
     #endif
 }
@@ -272,6 +277,18 @@ extension RPGSharePlayController {
         playBack?.coordinateWithSession(groupSession)
         #if os(visionOS)
         tabletopGame?.coordinateWithSession(groupSession)
+        
+        // Set up seat assignments when session is configured
+        if tabletopGame != nil {
+            Task { @MainActor in
+                // Try to get the game table model from the game model
+                if let gameTableModel = self.gameModel?.gameTableModel {
+                    self.setupSeatAssignment(gameTableModel: gameTableModel)
+                } else {
+                    print("📍 GameTableModel not available yet - seats will be assigned when table is shown")
+                }
+            }
+        }
         #endif
     }
 

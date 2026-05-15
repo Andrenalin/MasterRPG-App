@@ -40,11 +40,28 @@ final class GameTableModel {
         tabletopGame.addRenderDelegate(renderer)
         renderer.game = self
 
-        // Claim any seat when launching in single-player mode; a player must be seated to interact with the game.
-        tabletopGame.claimAnySeat()
+        // Note: Initial seat claiming is handled by SharePlay coordinator
+        // If SharePlay is active, seats will be assigned through setupSeatAssignment
+        // If not active, claim any seat for single-player mode
+        // This will be called from the view when the immersive space is opened
 
         // Shuffles the card deck.
         self.resetGame()
+    }
+    
+    /// Called when the 3D table view appears to set up seating
+    @MainActor
+    func setupSeating(sharePlayController: RPGSharePlayController) {
+        if sharePlayController.isActive, let groupSession = sharePlayController.groupSession {
+            print("📍 Setting up seating with SharePlay")
+            assignSeatsForSharePlay(groupSession: groupSession)
+            
+            // Also register with the share play controller for participant changes
+            sharePlayController.setupSeatAssignment(gameTableModel: self)
+        } else {
+            print("📍 Setting up seating for single-player")
+            tabletopGame.claimAnySeat()
+        }
     }
         
     @MainActor func handleMapChange(isGameMaster: Bool) async {
