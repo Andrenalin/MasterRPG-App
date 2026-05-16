@@ -386,6 +386,7 @@ extension PlayerController {
                     Task { @MainActor in
                         let isGameMaster = root.gameModel.gameConfig.isMaster
                         await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
+                        await root.gameModel.gameTableModel?.syncPawnsWithMapPins()
                     }
                     #endif
                 } else {
