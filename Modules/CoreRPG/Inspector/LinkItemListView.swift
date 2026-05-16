@@ -201,9 +201,7 @@ private extension LinkItemListView {
                 specialCategoryFolderIndicator(item: item)
             }
             .contentShape(.rect)
-#if !os(tvOS)
             .draggable(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name.withoutLink())
-#endif
         }
     }
 
@@ -232,9 +230,9 @@ private extension LinkItemListView {
                     .foregroundStyle(.red)
                     .contentShape(.circle)
                     .frame(width: 32, height: 32)
-#if !os(visionOS)
-                    .glassEffectAll(.clear.interactive())
-#endif
+                #if !os(visionOS)
+                    .glassEffect(.clear.interactive())
+                #endif
             }
             .borderLessTVBottonStyle()
             .padding(.trailing, 4)
@@ -253,65 +251,6 @@ private extension LinkItemListView {
                 Text("Close parent folder", bundle: .module)
             } icon: {
                 Image(systemName: "folder.circle")
-            }
-        }
-    }
-}
-
-// MARK: - Extracted subviews to scope @Bindable allocations
-
-/// Picker subview — @Bindable on the concrete ListDisplayModel registers @Observable tracking.
-private struct LinkItemPickerView: View {
-    @Bindable var listDisplayModel: ListDisplayModel
-
-    var body: some View {
-        Picker(selection: $listDisplayModel.listMode) {
-            ForEach(ListDisplayModel.ListMode.allCases) { mode in
-                Text(mode.title, bundle: .module)
-                    .tag(mode)
-            }
-        } label: {
-            Text("List Mode", bundle: .module)
-        }
-        .labelsHidden()
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
-    }
-}
-
-/// Filter field subview — @Bindable allocation and Text prompt construction are scoped here,
-/// not recomputed on every parent body update.
-private struct LinkItemFilterFieldView: View {
-    @Bindable var searchModel: SearchModel
-    let prompt: Text
-    let onSearchChange: () -> Void
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .imageScale(.small)
-            TextField(text: $searchModel.searchText, prompt: prompt) {
-                prompt
-            }
-#if os(iOS)
-            .autocapitalization(.none)
-            .textContentType(.name)
-#endif
-            .disableAutocorrection(true)
-            .labelsHidden()
-            .submitLabel(.return)
-            .textFieldStyle(.plain)
-        }
-        .padding(6)
-        .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(.secondary, lineWidth: 1)
-        }
-        .padding(.horizontal)
-        .onChange(of: searchModel.searchText) {
-            withAnimation {
-                onSearchChange()
             }
         }
     }
