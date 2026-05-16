@@ -14,19 +14,27 @@ public struct LinkItemRootView: View {
         self.root = root
         self.type = type
         self.itemSelectionModel = itemSelectionModel
+        if let parentId = itemSelectionModel.onlyChildrenFrom {
+            self._parentModel = State(initialValue: root.itemControllable.itemSync(for: parentId))
+        } else {
+            self._parentModel = State(initialValue: nil)
+        }
     }
     
     let root: any ItemRootControllable
     let type: LinkRootType
     let itemSelectionModel: ItemSelectionModel
+    
+    @State private var parentModel: (any ItemDataAccessable)?
         
     public var body: some View {
-        let _ = Self._printChanges()
         LinkItemListView(root: root, type: type, selectionModel: itemSelectionModel, parentModel: parentModel)
-    }
-    
-    var parentModel: (any ItemDataAccessable)? {
-        guard let parentId = itemSelectionModel.onlyChildrenFrom else { return nil }
-        return root.itemControllable.itemSync(for: parentId)
+            .onChange(of: itemSelectionModel.onlyChildrenFrom) { _, newValue in
+                if let newValue {
+                    parentModel = root.itemControllable.itemSync(for: newValue)
+                } else {
+                    parentModel = nil
+                }
+            }
     }
 }

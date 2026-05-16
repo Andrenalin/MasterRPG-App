@@ -19,19 +19,15 @@ public struct EditorLinkView: View {
     let destinationModule: NetworkModules?
     
     public var body: some View {
-        let _ = Self._printChanges()
         VStack {
             pickerAll
             
-            ZStack {
-                ForEach(editorLinkModel.modulesRow, id: \.self) { module in
-                    ManagedNavigationStack(name: "EditorLink") {
-                        linkLinkView(module: module)
-                    }
-                    .opacity(editorLinkModel.selection == module ? 1 : 0)
-                }
+            ManagedNavigationStack(name: "EditorLink") {
+                linkLinkView(module: editorLinkModel.selection)
             }
+            .id(editorLinkModel.selection)
             .frame(maxWidth: .infinity, alignment: .top)
+            .transition(.opacity)
         }
         .applyIf(selectionMode) {
             $0
@@ -56,17 +52,14 @@ public struct EditorLinkView: View {
             }
         }
         .onChange(of: editorLinkModel.selection, initial: true) { oldValue, newValue in
-            // Only update when selection actually changes (not on initial load if already set)
             if oldValue != newValue {
                 editorLinkModel.updateListController()
             }
         }
         .onChange(of: editorLinkModel.folderListController.listDisplayModel.displayMode) { _, _ in
-            // Only update when this is the active selection mode
             editorLinkModel.update()
         }
         .onChange(of: editorLinkModel.folderListController.listDisplayModel.listMode) { oldValue, newValue in
-            // Avoid triggering update if the mode didn't actually change
             guard oldValue != newValue else { return }
             editorLinkModel.update()
         }

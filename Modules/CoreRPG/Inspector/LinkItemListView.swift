@@ -8,8 +8,8 @@ public struct LinkItemListView: View {
         self.type = type
         self.selectionModel = selectionModel
         self.parentModel = parentModel
-        // Store the parent model ID for tracking changes
         self._parentModelId = State(initialValue: parentModel?.id)
+        self._scrollPosition = State(initialValue: root.folderLinkControllable.listModel.scrollId)
     }
 
     let root: any ItemRootControllable
@@ -18,6 +18,7 @@ public struct LinkItemListView: View {
     let parentModel: (any ItemDataAccessable)?
     
     @State private var parentModelId: UUID?
+    @State private var scrollPosition: String?
 
 #if os(macOS)
     @Environment(ScenesManager.self) private var scenesManager
@@ -52,9 +53,17 @@ public struct LinkItemListView: View {
                         await configureParentFiltering()
                     }
                     .onAppear {
-                        // Initial setup - only runs once when view first appears
+                        let savedScroll = root.folderLinkControllable.listModel.scrollId
                         root.folderLinkControllable.resetItemOnce()
                         root.folderLinkControllable.resetFilter()
+                        root.folderLinkControllable.listModel.scrollId = savedScroll
+                        
+                        if let savedPosition = root.folderLinkControllable.listModel.scrollId {
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .milliseconds(100))
+                                scrollPosition = savedPosition
+                            }
+                        }
                     }
                     .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode) {
                         root.folderLinkControllable.resetFilter()
@@ -129,35 +138,50 @@ private extension LinkItemListView {
                 }
             }
             .animation(.smooth, value: items.count)
-#if os(macOS)
-            .listStyle(.sidebar)
-#endif
             .scrollIndicatorsFlash(onAppear: true)
-            .scrollIndicatorsFlash(trigger: items.count)
 #if !os(visionOS)
-            .scrollEdgeEffectStyle(.hard, for: .top)
             .scrollDismissesKeyboard(.immediately)
 #endif
     }
 
     func listView(items: [ListItemModel]) -> some View {
-        List {
-            itemRows(items: items)
+        ScrollView {
+            LazyVStack(spacing: 0, pinnedViews: []) {
+                ForEach(items) { item in
+                    VStack(spacing: 0) {
+                        HStack(spacing: 0) {
+                            itemRowContent(item: item)
+                                .selectListItem(isActive: isSelectionActive(item: item)) {
+                                    selectionModel.toggleSelection(itemId: item.model.id, entryId: item.entryId, isCollection: item.model.specialCategory)
+                                } isSelected: {
+                                    selectionModel.selection.contains(where: { $0.itemId == item.model.id && $0.entryId == item.entryId })
+                                }
+                        }
+                        .padding(.leading, CGFloat(item.level * 16 + 8))
+                        .padding(.trailing, 8)
+                        .padding(.vertical, 2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(.rect)
+                        
+                        if item.isOpen || item.entryId != nil {
+                            Divider()
+                                .padding(.leading, 8)
+                        }
+                    }
+                    .id(item.id)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .scrollTargetLayout()
+        }
+        .scrollPosition(id: $scrollPosition, anchor: .top)
+        .onChange(of: scrollPosition) { _, newValue in
+            root.folderLinkControllable.listModel.scrollId = newValue
         }
     }
 
     func itemRows(items: [ListItemModel]) -> some View {
-        ForEach(items) { item in
-            itemRowContent(item: item)
-                .selectListItem(isActive: isSelectionActive(item: item)) {
-                    selectionModel.toggleSelection(itemId: item.model.id, entryId: item.entryId, isCollection: item.model.specialCategory)
-                } isSelected: {
-                    selectionModel.selection.contains(where: { $0.itemId == item.model.id && $0.entryId == item.entryId })
-                }
-                .padding(.leading, CGFloat(item.level * 16))
-                .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
-                .listRowSeparatorAll(item.isOpen || item.entryId != nil ? .visible : .hidden, edges: .bottom)
-        }
+        EmptyView()  // Not used anymore
     }
     
     @ViewBuilder
