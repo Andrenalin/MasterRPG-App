@@ -31,7 +31,6 @@ public struct LinkItemListView: View {
     private static let filterPrompt = Text("Filter", bundle: .module)
 
     public var body: some View {
-        let _ = Self._printChanges()
         ManagedNavigationStack(name: "LinkInspector") { navigator in
             VStack {
                 if type == .inspector {
@@ -50,13 +49,13 @@ public struct LinkItemListView: View {
                     .tint(root.configurable.module.tint)
                     .onAppear {
                         root.folderLinkControllable.resetItemOnce()
-                        withAnimation { root.folderLinkControllable.resetFilter() }
+                        root.folderLinkControllable.resetFilter()
                     }
                     .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode) {
-                        withAnimation { root.folderLinkControllable.resetFilter() }
+                        root.folderLinkControllable.resetFilter()
                     }
                     .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
-                        withAnimation { root.folderLinkControllable.resetFilter() }
+                        root.folderLinkControllable.resetFilter()
                     }
                     .listModelUpdatesModifier(listControllable: root.folderLinkControllable, itemControllable: root.itemControllable)
                     .applyIf(type != .inspector && type != .selectionInline) { content in
@@ -89,14 +88,16 @@ private extension LinkItemListView {
         parentModel == nil ? listModel.displayedItems : listModel.displayedParentItems
     }
 
+    @ViewBuilder
     var contentView: some View {
-        // Capture once — prevents multiple observation registrations per body update
         let items = displayItems
         let searchText = root.folderLinkControllable.searchModel.searchText
-        return listView(items: items)
+        let isEmpty = items.isEmpty && !searchText.isEmpty
+        
+        listView(items: items)
             .frame(minWidth: 150, idealWidth: 250)
             .overlay {
-                if items.isEmpty && !searchText.isEmpty {
+                if isEmpty {
                     ContentUnavailableView.search
                 }
             }
@@ -120,66 +121,89 @@ private extension LinkItemListView {
 
     func itemRows(items: [ListItemModel]) -> some View {
         ForEach(items) { item in
-            Group {
-                if let entryId = item.entryId {
-                    HStack {
-                        LinkEntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
-
-                        specialCategoryFolderIndicator(item: item)
-                    }
-                    .contentShape(.rect)
-                    .contextMenu {
-                        Button {
-                            openDetail(for: item)
-                        } label: {
-                            Label("Open Details", systemImage: "arrow.up.right.square")
-                        }
-                        ControlGroup {
-                            CompactDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                            MediumDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                            RegularDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                        }
-                        ControlGroup {
-                            ListModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                            FolderModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                        }
-                        closeEntrySection(for: item)
-                    }
-#if !os(tvOS)
-                    .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name.withoutLink())
-#endif
-                } else {
-                    itemRow(item: item)
-                        .onTapGesture(count: 2) {
-                            openDetail(for: item)
-                        }
-                        .accessibilityHint("Double-tap to open details")
-                        .contextMenu {
-                            Button {
-                                openDetail(for: item)
-                            } label: {
-                                Label("Open Details", systemImage: "arrow.up.right.square")
-                            }
-                            ControlGroup {
-                                CompactDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                                MediumDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                                RegularDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                            }
-                            ControlGroup {
-                                ListModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                                FolderModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                            }
-                        }
+            itemRowContent(item: item)
+                .selectListItem(isActive: isSelectionActive(item: item)) {
+                    selectionModel.toggleSelection(itemId: item.model.id, entryId: item.entryId, isCollection: item.model.specialCategory)
+                } isSelected: {
+                    selectionModel.selection.contains(where: { $0.itemId == item.model.id && $0.entryId == item.entryId })
                 }
+                .padding(.leading, CGFloat(item.level * 16))
+                .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
+                .listRowSeparatorAll(item.isOpen || item.entryId != nil ? .visible : .hidden, edges: .bottom)
+        }
+    }
+    
+    @ViewBuilder
+    private func itemRowContent(item: ListItemModel) -> some View {
+        if let entryId = item.entryId {
+            entryRow(item: item, entryId: entryId)
+        } else {
+            standardItemRow(item: item)
+        }
+    }
+    
+    private func entryRow(item: ListItemModel, entryId: UUID) -> some View {
+        HStack {
+            LinkEntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
+            specialCategoryFolderIndicator(item: item)
+        }
+        .contentShape(.rect)
+        .contextMenu {
+            entryContextMenu(item: item)
+        }
+#if !os(tvOS)
+        .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name.withoutLink())
+#endif
+    }
+    
+    private func standardItemRow(item: ListItemModel) -> some View {
+        itemRow(item: item)
+            .onTapGesture(count: 2) {
+                openDetail(for: item)
             }
-            .selectListItem(isActive: isSelectionActive(item: item)) {
-                withAnimation { selectionModel.toggleSelection(itemId: item.model.id, entryId: item.entryId, isCollection: item.model.specialCategory) }
-            } isSelected: {
-                selectionModel.selection.contains(where: { $0.itemId == item.model.id && $0.entryId == item.entryId })
+            .accessibilityHint("Double-tap to open details")
+            .contextMenu {
+                standardItemContextMenu(item: item)
             }
-            .padding(.leading, CGFloat(item.level * 16))
-            .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
-            .listRowSeparatorAll(item.isOpen || item.entryId != nil ? .visible : .hidden, edges: .bottom)
+    }
+    
+    @ViewBuilder
+    private func entryContextMenu(item: ListItemModel) -> some View {
+        Button {
+            openDetail(for: item)
+        } label: {
+            Label("Open Details", systemImage: "arrow.up.right.square")
+        }
+        displayModeControls
+        listModeControls
+        closeEntrySection(for: item)
+    }
+    
+    @ViewBuilder
+    private func standardItemContextMenu(item: ListItemModel) -> some View {
+        Button {
+            openDetail(for: item)
+        } label: {
+            Label("Open Details", systemImage: "arrow.up.right.square")
+        }
+        displayModeControls
+        listModeControls
+    }
+    
+    @ViewBuilder
+    private var displayModeControls: some View {
+        ControlGroup {
+            CompactDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+            MediumDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+            RegularDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+        }
+    }
+    
+    @ViewBuilder
+    private var listModeControls: some View {
+        ControlGroup {
+            ListModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+            FolderModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
         }
     }
 
@@ -188,20 +212,18 @@ private extension LinkItemListView {
     }
 
     func itemRow(item: ListItemModel) -> some View {
-        HStack {
-            ItemRowView(root: root, model: item.model, cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: root.folderLinkControllable.listDisplayModel, searchModel: root.folderLinkControllable.searchModel, isSelected: false) {
-                if root.viewControllable.thumbnailRowViewType == .custom {
-                    root.viewControllable.thumbnailRowView(for: item.model.id)
-                } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
-                    ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                }
+        ItemRowView(root: root, model: item.model, cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: root.folderLinkControllable.listDisplayModel, searchModel: root.folderLinkControllable.searchModel, isSelected: false) {
+            if root.viewControllable.thumbnailRowViewType == .custom {
+                root.viewControllable.thumbnailRowView(for: item.model.id)
+            } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
+                ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: root.folderLinkControllable.listDisplayModel)
             }
-            .overlay(alignment: .trailing) {
-                specialCategoryFolderIndicator(item: item)
-            }
-            .contentShape(.rect)
-            .draggable(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name.withoutLink())
         }
+        .overlay(alignment: .trailing) {
+            specialCategoryFolderIndicator(item: item)
+        }
+        .contentShape(.rect)
+        .draggable(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name.withoutLink())
     }
 
     func openDetail(for item: ListItemModel) {
@@ -214,7 +236,7 @@ private extension LinkItemListView {
         } else {
             showDetailsView = root.folderLinkControllable.viewerDestination(for: item.model.id)
         }
-        withAnimation { showDetails.toggle() }
+        showDetails.toggle()
 #endif
     }
 

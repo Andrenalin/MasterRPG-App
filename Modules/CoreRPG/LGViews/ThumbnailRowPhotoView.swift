@@ -99,7 +99,7 @@ private extension ThumbnailRowPhotoView {
             let fileId = entryId ?? model.id
             await cacheController.thumbnailId(for: fileId, item: model)
             let newImage = await cacheController.thumbnail(for: fileId)
-            withAnimation { cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: fileId, image: newImage) }
+            cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: fileId, image: newImage)
             isLoading = false
         }
     }
