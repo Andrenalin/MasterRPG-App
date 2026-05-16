@@ -9,8 +9,6 @@ struct DetailListView: View, Equatable {
 
     @Environment(\.navigator) private var navigator
 
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
-
     static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
         lhs.model.id == rhs.model.id
     }
@@ -21,11 +19,6 @@ struct DetailListView: View, Equatable {
             .toolbar {
                 toolbarContent
             }
-            .environment(openFileWindowModel)
-            .environment(root.folderListController.cacheListItemModel)
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.rootController)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in

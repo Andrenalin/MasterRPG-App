@@ -9,8 +9,6 @@ struct DetailListView: View, Equatable {
 
     @Environment(\.navigator) private var navigator
 
-    @State private var openFileWindowModel = OpenFileWindowModel()
-
     static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
         lhs.model.id == rhs.model.id
     }
@@ -23,11 +21,6 @@ struct DetailListView: View, Equatable {
                     playButton
                 }
             }
-            .environment(openFileWindowModel)
-            .environment(root.folderListController.cacheListItemModel)
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.rootController)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in

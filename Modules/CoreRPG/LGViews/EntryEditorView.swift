@@ -233,7 +233,3 @@ struct EntryContentEditor: View {
 #endif
     }
 }
-
-//#Preview {
-//    EntryEditRow(editController: FakeEditController.fake, itemId: UUID(), entry: FakeEntryModel.empty, cacheItemListModel: CacheItemListModel())
-//}

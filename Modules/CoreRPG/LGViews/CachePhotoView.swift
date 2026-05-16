@@ -3,17 +3,17 @@
 import SwiftUI
 
 public struct CachePhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, highResolution: Bool = true) {
+    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, highResolution: Bool = true) {
         self.cacheController = cacheController
         self.model = model
+        self.cacheItemListModel = cacheItemListModel
         self.highResolution = highResolution
     }
 
     let cacheController: ImageCacheControllable
     let model: any ItemDataAccessable
+    let cacheItemListModel: CacheItemListModel
     let highResolution: Bool
-
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
 
     @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
@@ -86,8 +86,7 @@ private extension CachePhotoView {
 }
 
 #Preview {
-    CachePhotoView(cacheController: FakeImageCacheController(), model: FakeItemModel(name: "Test"), highResolution: false)
-        .environment(CacheItemListModel())
+    CachePhotoView(cacheController: FakeImageCacheController(), model: FakeItemModel(name: "Test"), cacheItemListModel: CacheItemListModel(), highResolution: false)
         .tint(NetworkModules.space.tint)
         .accentColor(NetworkModules.space.tint)
 }

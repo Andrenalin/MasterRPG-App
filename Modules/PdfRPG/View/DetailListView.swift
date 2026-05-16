@@ -9,8 +9,6 @@ struct DetailListView: View, Equatable {
 
     @Environment(\.navigator) private var navigator
 
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.pdf.viewerWindowId, route: { DetailRoute.viewer($0, nil) })
-
     static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
         lhs.model.id == rhs.model.id
     }
@@ -23,11 +21,6 @@ struct DetailListView: View, Equatable {
                 toolbarContent
             }
 #endif
-            .environment(openFileWindowModel)
-            .environment(root.folderListController.cacheListItemModel)
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.rootController)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in
@@ -48,7 +41,7 @@ struct DetailListView: View, Equatable {
                             Image(systemName: NetworkModules.generator.icon)
                         }
                     }
-                    .disabled(openFileWindowModel.showItem)
+                    .disabled(root.openFileWindowModel.showItem)
                 }
             }
     }

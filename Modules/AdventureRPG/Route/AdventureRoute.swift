@@ -71,8 +71,5 @@ private struct DetailRootViewWrapper: View {
     var body: some View {
         DetailRootView(root: root, model: model)
             .equatable()  // Only recreate if model.id changes
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.rootController)
     }
 }

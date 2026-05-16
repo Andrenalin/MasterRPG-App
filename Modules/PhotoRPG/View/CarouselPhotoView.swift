@@ -113,7 +113,7 @@ private extension CarouselPhotoView {
         } label: {
             Group {
                 if let cacheControllable = root.cacheControllable {
-                    GroupedPhotoView(cacheController: cacheControllable, itemControllable: root.itemControllable, model: nil)
+                    GroupedPhotoView(cacheController: cacheControllable, itemControllable: root.itemControllable, model: nil, cacheItemListModel: root.editController.cacheItemListModel)
                 }
             }
             .environment(GroupItemSelectionModel(selectedItem: itemId))

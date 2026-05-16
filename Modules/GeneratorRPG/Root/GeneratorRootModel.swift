@@ -134,6 +134,10 @@ public final class GeneratorRootModel {
             selection: .none
         )
     }()
+    
+    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = {
+        OpenFileWindowModel()
+    }()
 }
 
 @MainActor

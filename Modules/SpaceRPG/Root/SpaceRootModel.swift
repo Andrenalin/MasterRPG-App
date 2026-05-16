@@ -123,6 +123,9 @@ public final class SpaceRootModel {
             selection: .none
         )
     }()
+    
+    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
+    }()
 }
 
 @MainActor

@@ -9,7 +9,6 @@ struct DetailFolderListView: View, Equatable {
     let model: TableModel
     private let navigationModel: ModuleNavigationModel
 
-    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
@@ -102,13 +101,12 @@ private struct DetailFolderContentView: View {
     let model: TableModel
     let listController: any FolderListControllable
 
-    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
-
     var body: some View {
         ItemDetailRootView(
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
+            openFileWindowModel: root.openFileWindowModel,
             configuration: .init(editorAsBackground: false, hasOverlay: false)
         ) {
             EmptyView()
@@ -120,9 +118,9 @@ private struct DetailFolderContentView: View {
             EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: root.editController.sheetEditorModel, linkTypes: LinkTableModuleTransferable.self)
         }
         .overlay {
-            if openFileWindowModel.showItem {
-                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
-                    openFileWindowModel.showItem = false
+            if root.openFileWindowModel.showItem {
+                root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
+                    root.openFileWindowModel.showItem = false
                 }
             }
         }

@@ -125,6 +125,9 @@ public final class MapRootModel {
         )
     }()
     
+    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.map.viewerWindowId, route: { DetailRoute.viewer($0) })
+    }()
+
     var cacheController: CacheController? { itemController.cacheController }
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }

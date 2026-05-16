@@ -4,13 +4,14 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditRow: View {
-    public init(root: any ItemRootControllable, editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel) {
+    public init(root: any ItemRootControllable, editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel) {
         self.root = root
         self.editController = editController
         self.itemId = itemId
         self.entry = entry
         self.cacheItemListModel = cacheItemListModel
         self.listDisplayModel = listDisplayModel
+        self.searchModel = searchModel
     }
 
     let root: any ItemRootControllable
@@ -19,15 +20,15 @@ public struct EntryEditRow: View {
     let entry: any EntryDataAccessable
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
+    let searchModel: SearchModel
 
-    @Environment(SearchModel.self) private var searchModel
     @Environment(\.navigator) private var navigator
     
     public var body: some View {
         VStack {
             if hasThumbnail, let cacheController = root.cacheControllable {
                 HStack {
-                    ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: listDisplayModel, entryId: entry.id)
+                    ThumbnailRowPhotoView(cacheController: cacheController, model: model, cacheItemListModel: cacheItemListModel, listDisplayModel: listDisplayModel, entryId: entry.id)
                     
                     if editController.additioanlEnrtryViewType == .custom {
                         editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), textModel: nil)
@@ -59,7 +60,7 @@ private extension EntryEditRow {
     }
     
     var linkTextModel: LinkHighlightTextModel {
-        editController.linkTextModel(itemId: itemId, for: entry, linkController: root.linkControllable, searchModel: searchModel)
+        editController.linkTextModel(itemId: itemId, for: entry, linkController: root.linkControllable, cacheItemListModel: cacheItemListModel, searchModel: searchModel)
     }
     
     var hasThumbnail: Bool {

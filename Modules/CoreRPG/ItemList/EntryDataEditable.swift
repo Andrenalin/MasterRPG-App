@@ -277,7 +277,7 @@ public extension EntryDataEditable {
 }
 
 public extension EntryDataEditable {
-    @MainActor func linkTextModel(itemId: UUID, for entry: any EntryDataAccessable, linkController: any LinkControllable, searchModel: SearchModel, toggler: ((UUID, NetworkModules) async -> Void)? = nil) -> LinkHighlightTextModel {
+    @MainActor func linkTextModel(itemId: UUID, for entry: any EntryDataAccessable, linkController: any LinkControllable, cacheItemListModel: CacheItemListModel, searchModel: SearchModel, toggler: ((UUID, NetworkModules) async -> Void)? = nil) -> LinkHighlightTextModel {
         let nameText = rowText(itemId: itemId, entry: entry)
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entry.id) else {
             let model = LinkHighlightTextModel(linkControllable: linkController, text: nameText, highlightedText: searchModel.searchText, toggler: toggler)        

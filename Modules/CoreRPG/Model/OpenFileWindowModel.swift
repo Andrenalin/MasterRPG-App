@@ -28,9 +28,9 @@ public final class OpenFileWindowModel {
 
 struct OpenFileViewerViewModifier: ViewModifier {
     let model: any ItemDataAccessable
+    let openFileWindowModel: OpenFileWindowModel
     let module: NetworkModules
     
-    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(GroupItemSelectionModel.self) private var selection
     
     func body(content: Content) -> some View {

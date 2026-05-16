@@ -7,8 +7,6 @@ struct DetailListView: View, Equatable {
     let root: SpaceRootModel
     let model: SpaceModel
 
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
-
     static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
         lhs.model.id == rhs.model.id
     }
@@ -16,11 +14,6 @@ struct DetailListView: View, Equatable {
     var body: some View {
         DetailFolderListView(root: root, model: model)
             .equatable()
-            .environment(openFileWindowModel)
-            .environment(root.folderListController.cacheListItemModel)
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.rootController)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in

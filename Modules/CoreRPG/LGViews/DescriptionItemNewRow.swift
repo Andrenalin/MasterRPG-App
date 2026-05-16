@@ -6,9 +6,8 @@ struct DescriptionItemNewRow: View {
     let itemId: UUID
     let description: String
     let cacheItemListModel: CacheItemListModel
-
-    @Environment(SearchModel.self) private var searchModel
-
+    let searchModel: SearchModel
+    
     var body: some View {    
         Group {
             if !description.isEmpty {
@@ -32,5 +31,5 @@ struct DescriptionItemNewRow: View {
 }
 
 #Preview {
-    DescriptionItemNewRow(itemId: UUID(), description: "Very long desciption view text for fun", cacheItemListModel: CacheItemListModel())
+    DescriptionItemNewRow(itemId: UUID(), description: "Very long desciption view text for fun", cacheItemListModel: CacheItemListModel(), searchModel: SearchModel.preview())
 }

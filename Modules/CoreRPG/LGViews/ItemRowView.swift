@@ -3,11 +3,12 @@
 import SwiftUI
 
 public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
-    public init(root: any ItemRootControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, isSelected: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
+    public init(root: any ItemRootControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, isSelected: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.root = root
         self.model = model
         self.cacheItemListModel = cacheItemListModel
         self.listDisplayModel = listDisplayModel
+        self.searchModel = searchModel
         self.isSelected = isSelected
         self.thumbnail = thumbnail()
         self.actionBar = actionBar()
@@ -17,6 +18,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     let model: any ItemDataAccessable
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
+    let searchModel: SearchModel
     let isSelected: Bool
     let thumbnail: Thumbnail
     let actionBar: ActionBar
@@ -29,7 +31,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
             specialCategoryIcon
             
             VStack(alignment: .leading, spacing: 4) {
-                NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel, listDisplayModel: listDisplayModel)
+                NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
                     .font(.headline)
 
                 if listDisplayModel.displayMode == .regular {
@@ -44,7 +46,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
                 }
 
                 if listDisplayModel.displayMode != .compact {
-                    DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
+                    DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel, searchModel: searchModel)
                         .foregroundStyle(.secondary)
                         .font(.footnote)
                         .lineLimit(3)

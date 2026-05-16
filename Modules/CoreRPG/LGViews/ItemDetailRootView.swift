@@ -31,6 +31,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
         root: any ItemRootControllable,
         detailListController: FolderListControllable,
         selectedModel: any ItemDataAccessable,
+        openFileWindowModel: OpenFileWindowModel,
         configuration: Configuration = Configuration(),
         @ViewBuilder header: () -> Header,
         @ViewBuilder editor: () -> Editor,
@@ -40,6 +41,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
         self.root = root
         self.detailListController = detailListController
         self.selectedModel = selectedModel
+        self.openFileWindowModel = openFileWindowModel
         self.editorAsBackground = configuration.editorAsBackground
         self.header = header()
         self.editor = editor()
@@ -50,6 +52,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
 
     let root: any ItemRootControllable
     let selectedModel: any ItemDataAccessable
+    let openFileWindowModel: OpenFileWindowModel
     let editorAsBackground: Bool
     let header: Header
     let editor: Editor
@@ -61,8 +64,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
 
-    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
-        
     @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
     @State private var selection = GroupItemSelectionModel()
@@ -136,7 +137,7 @@ private extension ItemDetailRootView {
         .sheet(item: $editingItem) { item in
             editingSheet(model: item.model)
         }
-        .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), module: root.configurable.module))
+        .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), openFileWindowModel: openFileWindowModel, module: root.configurable.module))
         .toolbar {
             toolbarContent(model: model)
         }
@@ -193,7 +194,7 @@ private extension ItemDetailRootView {
         ZStack(alignment: .bottom) {
             header
             
-            ItemDetailOverlayView(model: currentModel(model: model), listDisplayModel: detailListController.listDisplayModel)
+            ItemDetailOverlayView(model: currentModel(model: model), cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel)
                 .padding()
         }
         .overlay(alignment: .top) {
@@ -236,7 +237,7 @@ private extension ItemDetailRootView {
     func editorContentView(model: any ItemDataAccessable) -> some View {
         Group {
             if model.specialCategory {
-                ItemDetailOverlayView(model: model, listDisplayModel: detailListController.listDisplayModel, fullHeader: false, onlyDescription: true)
+                ItemDetailOverlayView(model: model, cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel, fullHeader: false, onlyDescription: true)
                     .padding()
                 
                 ListRootView(root: root, listController: detailListController, parentModel: model)
@@ -260,7 +261,7 @@ private extension ItemDetailRootView {
             ScrollView {
                 LazyVStack(spacing: 8) {
                     if model.description.isEmpty == false {
-                        ItemDetailOverlayView(model: model, listDisplayModel: detailListController.listDisplayModel, fullHeader: false, onlyDescription: true)
+                        ItemDetailOverlayView(model: model, cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel, fullHeader: false, onlyDescription: true)
                     }
                     
                     editor
@@ -306,7 +307,7 @@ private extension ItemDetailRootView {
     }
     
     func overlayDescription(model: any ItemDataAccessable) -> some View {
-        ItemDetailOverlayView(model: model, listDisplayModel: detailListController.listDisplayModel, fullHeader: false, onlyDescription: true, lines: 3)
+        ItemDetailOverlayView(model: model, cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel, fullHeader: false, onlyDescription: true, lines: 3)
             .padding(.horizontal, 8)
             .padding(6)
 #if !os(visionOS)

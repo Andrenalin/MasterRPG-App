@@ -55,9 +55,6 @@ struct GeneratorRouteDestinationView: View {
     var body: some View {
         if let model = root.itemController.itemSync(for: itemId) {
             DetailRootView(root: root, model: model)
-                .environment(root.listDisplayModel)
-                .environment(root.searchModel)
-                .environment(root.rootController)
         }
     }
 }

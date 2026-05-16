@@ -125,6 +125,10 @@ public final class DiceRootModel {
             selection: .none
         )
     }()
+    
+    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = {
+        OpenFileWindowModel()
+    }()
 }
 
 @MainActor

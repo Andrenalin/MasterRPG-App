@@ -132,6 +132,9 @@ public final class PhotoRootModel {
             selection: .none
         )
     }()
+    
+    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.photo.viewerWindowId, route: { DetailRoute.viewer($0) })
+    }()
 }
 
 @MainActor

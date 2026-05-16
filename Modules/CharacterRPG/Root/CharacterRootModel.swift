@@ -105,6 +105,9 @@ public final class CharacterRootModel {
         )
     }()
     
+    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
+    }()
+
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }
     @ObservationIgnored private(set) var _syncDataController: SyncDataController?

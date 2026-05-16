@@ -76,6 +76,10 @@ public final class AudioRootModel {
         }
     }
     
+    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = {
+        OpenFileWindowModel()
+    }()
+
     public let config: ModuleConfiguration
     
     public let listDisplayModel: ListDisplayModel

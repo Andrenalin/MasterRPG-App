@@ -19,8 +19,7 @@ struct InlineRowViewer: View, Equatable {
         if let cacheController = root.cacheController {
             HStack {
                 if source.entryId == nil {
-                    ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: root.listDisplayModel, entryId: source.entryId)
-                        .environment(root.editController.cacheItemListModel)
+                    ThumbnailRowPhotoView(cacheController: cacheController, model: model, cacheItemListModel: root.editController.cacheItemListModel, listDisplayModel: root.listDisplayModel, entryId: source.entryId)
                 }
                 Button {
                     actionHandler()

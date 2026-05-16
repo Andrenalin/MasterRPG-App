@@ -9,8 +9,6 @@ struct DetailListView: View, Equatable {
     let root: AdventureRootModel
     let model: AdventureModel
 
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
-
     // Equatable conformance: only recreate if model.id changes
     static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
         lhs.model.id == rhs.model.id
@@ -23,11 +21,6 @@ struct DetailListView: View, Equatable {
             .toolbar {
                 toolbarContent
             }
-            .environment(openFileWindowModel)
-            .environment(root.folderListController.cacheListItemModel)
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.rootController)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in
@@ -37,7 +30,7 @@ struct DetailListView: View, Equatable {
 
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
-            if !model.specialCategory && !openFileWindowModel.showItem {
+            if !model.specialCategory && !root.openFileWindowModel.showItem {
                 ControlGroup {
                     AdventureQuickEditorButton(model: model)
                     AdventureAddEntryButton(root: root, model: model)

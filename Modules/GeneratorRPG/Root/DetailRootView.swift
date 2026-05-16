@@ -27,8 +27,6 @@ struct DetailListView: View {
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.generator.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
-
     @State private var selection: ItemSelectionModel = ItemSelectionModel()
     
     var body: some View {
@@ -48,6 +46,7 @@ struct DetailListView: View {
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
+            openFileWindowModel: root.openFileWindowModel,
             configuration: .init(editorAsBackground: false, hasOverlay: false)
         ) {
             EmptyView()
@@ -61,17 +60,12 @@ struct DetailListView: View {
             EmptyView()
         }
         .overlay {
-            if openFileWindowModel.showItem {
-                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
-                    openFileWindowModel.showItem = false
+            if root.openFileWindowModel.showItem {
+                root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
+                    root.openFileWindowModel.showItem = false
                 }
             }
         }
-        .environment(openFileWindowModel)
-        .environment(root.folderListController.cacheListItemModel)
-        .environment(root.listDisplayModel)
-        .environment(root.searchModel)
-        .environment(root.rootController)
         .tint(root.configurable.module.tint)
         .accentColor(root.configurable.module.tint)
     }

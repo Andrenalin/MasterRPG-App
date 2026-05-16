@@ -20,9 +20,8 @@ public struct LinkItemListView: View {
     let selectionModel: ItemSelectionModel
     let parentModel: (any ItemDataAccessable)?
 
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
 #if os(macOS)
-    @Environment(\.openWindow) private var openWindow
+    @Environment(ScenesManager.self) private var scenesManager
 #endif
 
     @State private var showDetails: Bool = false
@@ -43,7 +42,7 @@ public struct LinkItemListView: View {
                         prompt: Self.filterPrompt
                     ) {
                         root.folderLinkControllable.resetFilter()
-                        cacheItemListModel.reset(search: root.folderLinkControllable.searchModel.searchText)
+                        root.folderLinkControllable.cacheListItemModel.reset(search: root.folderLinkControllable.searchModel.searchText)
                     }
                 }
 
@@ -124,7 +123,7 @@ private extension LinkItemListView {
             Group {
                 if let entryId = item.entryId {
                     HStack {
-                        EntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                        LinkEntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
 
                         specialCategoryFolderIndicator(item: item)
                     }
@@ -190,11 +189,11 @@ private extension LinkItemListView {
 
     func itemRow(item: ListItemModel) -> some View {
         HStack {
-            ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, listDisplayModel: root.folderLinkControllable.listDisplayModel, isSelected: false) {
+            ItemRowView(root: root, model: item.model, cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: root.folderLinkControllable.listDisplayModel, searchModel: root.folderLinkControllable.searchModel, isSelected: false) {
                 if root.viewControllable.thumbnailRowViewType == .custom {
                     root.viewControllable.thumbnailRowView(for: item.model.id)
                 } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
-                    ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                    ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: root.folderLinkControllable.listDisplayModel)
                 }
             }
             .overlay(alignment: .trailing) {
@@ -208,7 +207,7 @@ private extension LinkItemListView {
     func openDetail(for item: ListItemModel) {
 #if os(macOS)
         guard !item.model.specialCategory else { return }
-        openWindow(id: root.configurable.module.viewerWindowId, value: WindowItemSelection(itemId: item.model.id))
+        scenesManager.openWindow(SceneId.viewerId(for: root.configurable.module), selection: WindowItemSelection(itemId: item.model.id))
 #else
         if item.model.specialCategory {
             showDetailsView = root.folderLinkControllable.detailDestination(for: item.model.id)

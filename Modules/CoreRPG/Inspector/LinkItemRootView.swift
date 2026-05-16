@@ -23,8 +23,6 @@ public struct LinkItemRootView: View {
     public var body: some View {
         let _ = Self._printChanges()
         LinkItemListView(root: root, type: type, selectionModel: itemSelectionModel, parentModel: parentModel)
-            .environment(root.folderLinkControllable.searchModel)
-            .environment(root.folderLinkControllable.cacheListItemModel)
     }
     
     var parentModel: (any ItemDataAccessable)? {

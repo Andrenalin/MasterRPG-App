@@ -47,10 +47,6 @@ struct MockRootViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(root)
-            .environment(root.searchModel)
-            .environment(root.listDisplayModel)
-            .environment(root.rootController)
-            .environment(CacheItemListModel())
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

@@ -145,6 +145,9 @@ public final class AdventureRootModel {
             selection: .table
         )
     }()
+    
+    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
+    }()
 
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }

@@ -124,6 +124,9 @@ public final class WeatherRootModel {
             selection: .none
         )
     }()
+    
+    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.weather.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    }()
 }
 
 @MainActor

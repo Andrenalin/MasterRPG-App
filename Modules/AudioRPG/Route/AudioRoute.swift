@@ -66,8 +66,5 @@ private struct DetailRootViewWrapper: View {
     var body: some View {
         DetailRootView(root: root, model: model)
             .equatable()
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.rootController)
     }
 }

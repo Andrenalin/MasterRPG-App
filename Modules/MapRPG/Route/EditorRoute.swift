@@ -41,7 +41,7 @@ struct DestinationEditorRoute: View {
             RootEditCanvasMap(itemId: itemId)
         case .quickEditor(let itemId):
             QuickEntryEditor(model: root.itemController.itemOrEmpty(for: itemId))
-                .environment(root.listDisplayModel)
+
         case .selectionPdf:
             root.pdfRoot.viewController.linkListView(type: .selection, itemSelectionModel: root.editController.mapEditModel.selectionPdf)
         case .linkSelection(let itemRowModel):

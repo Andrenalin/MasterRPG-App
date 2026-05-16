@@ -15,7 +15,6 @@ public struct ItemRootView: View {
         let _ = Self._printChanges()
         ItemRootListView(root: root)
             .environment(root.folderListControllable.cacheListItemModel)
-            .environment(root.searchModel)
             .environment(root)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)

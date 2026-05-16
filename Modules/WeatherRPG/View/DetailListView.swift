@@ -7,7 +7,6 @@ struct DetailListView: View, Equatable {
     let root: WeatherRootModel
     let model: WeatherModel
 
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.weather.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
     @Environment(\.navigator) private var navigator
 
     @State private var animate: Bool = false
@@ -22,11 +21,6 @@ struct DetailListView: View, Equatable {
             .toolbar {
                 toolbarContent
             }
-            .environment(openFileWindowModel)
-            .environment(root.folderListController.cacheListItemModel)
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.rootController)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in

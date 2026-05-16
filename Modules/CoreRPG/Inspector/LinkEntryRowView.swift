@@ -3,7 +3,7 @@
 import Foundation
 import SwiftUI
 
-struct EntryRowView: View {
+struct LinkEntryRowView: View {
     let root: any ItemRootControllable
     let item: ListItemModel
     let listDisplayModel: ListDisplayModel
@@ -13,7 +13,7 @@ struct EntryRowView: View {
     }
     var body: some View {
         if let editController {
-            EntryEditRow(root: root, editController: editController, itemId: item.model.id, entry: item.model[entryId], cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: listDisplayModel)
+            EntryEditRow(root: root, editController: editController, itemId: item.model.id, entry: item.model[entryId], cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: listDisplayModel, searchModel: root.folderLinkControllable.searchModel)
         } else {
             Text("\(item.model[entryId].name): \(item.model[entryId].content)")
         }

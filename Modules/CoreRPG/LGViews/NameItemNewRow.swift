@@ -7,9 +7,8 @@ struct NameItemNewRow: View {
     let name: String
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
-
-    @Environment(SearchModel.self) private var searchModel
-
+    let searchModel: SearchModel
+    
     var body: some View {
         LinkHighlightTextView(model: linkTextModel)
             .foregroundStyle(name.isEmpty ? .secondary : .primary)
@@ -50,7 +49,6 @@ struct NameItemNewRow: View {
             cache.reset(search: searchText)
         }
 
-        NameItemNewRow(itemId: itemId, name: "**Super cool Name** cool and more **cool**", cacheItemListModel: cache, listDisplayModel: ListDisplayModel())
+        NameItemNewRow(itemId: itemId, name: "**Super cool Name** cool and more **cool**", cacheItemListModel: cache, listDisplayModel: ListDisplayModel(), searchModel: SearchModel.preview())
     }
-    .environment(searchModel)
 }

@@ -10,9 +10,7 @@ extension View {
 
 struct SearchItemListViewModifier: ViewModifier {
     let listControllable: any FolderListControllable
-    
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
-    
+
     func body(content: Content) -> some View {
         @Bindable var searchModel = listControllable.searchModel
         content
@@ -55,7 +53,7 @@ struct SearchItemListViewModifier: ViewModifier {
     func updateSearch() {
         withAnimation {
             listControllable.resetFilter()
-            cacheItemListModel.reset(search: listControllable.searchModel.searchText)
+            listControllable.cacheListItemModel.reset(search: listControllable.searchModel.searchText)
             listControllable.searchModel.updateTagSuggestions()
             listControllable.searchModel.searchFieldText <=> listControllable.searchModel.searchText
         }

@@ -3,20 +3,20 @@
 import SwiftUI
 
 public struct ThumbnailRowPhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, listDisplayModel: ListDisplayModel, entryId: UUID? = nil) {
+    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, entryId: UUID? = nil) {
         self.cacheController = cacheController
         self.model = model
+        self.cacheItemListModel = cacheItemListModel
         self.listDisplayModel = listDisplayModel
         self.entryId = entryId
     }
 
     let cacheController: ImageCacheControllable
     let model: any ItemDataAccessable
+    let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
     let entryId: UUID?
 
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
-    
     @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
     

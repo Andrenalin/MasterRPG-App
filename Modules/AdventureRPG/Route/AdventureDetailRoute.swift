@@ -57,9 +57,6 @@ struct DestinationDetailAdventureRouteView: View {
         switch route {
         case .folder(let itemId):
             DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
-                .environment(root.listDisplayModel)
-                .environment(root.searchModel)
-                .environment(root.rootController)
 
         case .folderInline(let itemId):
             DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))

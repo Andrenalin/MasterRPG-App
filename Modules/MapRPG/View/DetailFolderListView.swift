@@ -110,13 +110,12 @@ private struct DetailFolderContentView: View {
     let model: MapModel
     let listController: any FolderListControllable
 
-    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
-
     var body: some View {
         ItemDetailRootView(
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
+            openFileWindowModel: root.openFileWindowModel,
             configuration: .init(editorAsBackground: false, hasOverlay: false)
         ) {
             EmptyView()

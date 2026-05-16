@@ -8,7 +8,6 @@ struct DetailFolderListView: View, Equatable {
     let model: PhotoModel
     private let navigationModel: ModuleNavigationModel
 
-    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
@@ -63,7 +62,6 @@ private struct DetailFolderContentView: View {
     let model: PhotoModel
     let detailFolderListController: FolderListController
 
-    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @State private var detailRoute: PhotoDetailRoute?
 
@@ -72,6 +70,7 @@ private struct DetailFolderContentView: View {
             root: rootStorage.rootController,
             detailListController: detailFolderListController,
             selectedModel: model,
+            openFileWindowModel: rootStorage.openFileWindowModel,
             configuration: .init(editorAsBackground: true, hasOverlay: false)
         ) {
             EmptyView()
@@ -83,9 +82,9 @@ private struct DetailFolderContentView: View {
             EmptyView()
         }
         .overlay {
-            if openFileWindowModel.showItem {
-                rootStorage.viewController.viewer(root: rootStorage, itemId: openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
-                    openFileWindowModel.showItem = false
+            if rootStorage.openFileWindowModel.showItem {
+                rootStorage.viewController.viewer(root: rootStorage, itemId: rootStorage.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
+                    rootStorage.openFileWindowModel.showItem = false
                 }
             }
         }
