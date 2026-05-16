@@ -51,6 +51,6 @@ public extension ViewController {
     }
 
     @MainActor func gameViewer(root: TableRootModel) -> some View {
-        ViewerRootView(model: root.gameController.currentItem(), configuration: ViewerConfiguration(closeButton: false))
+        ViewerRootView(model: root.gameController.currentItem(), configuration: ViewerConfiguration(closeButton: false, addToolbar: false))
     }
 }

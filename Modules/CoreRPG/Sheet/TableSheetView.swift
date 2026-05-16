@@ -5,12 +5,15 @@ import SwiftUI
 struct TableSheetView: View {
     let root: ItemRootController
     let model: SheetRootModel
+    var addSearchable: Bool = true
 
     var body: some View {
         @Bindable var model = model
 
         listContentView
-            .searchable(text: $model.searchText, placement: .toolbarPrincipalAll, prompt: Text("Find in", bundle: .module))
+            .applyIf(addSearchable) {
+                $0.searchable(text: $model.searchText, placement: .toolbarPrincipalAll, prompt: Text("Find in", bundle: .module))
+            }
     }
 }
 

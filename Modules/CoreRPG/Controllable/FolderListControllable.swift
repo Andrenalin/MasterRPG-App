@@ -187,6 +187,12 @@ private extension FolderListControllable {
             }
         }
         guard !searchModel.searchText.isEmpty else { return item }
+        
+        // Always include the currently selected item, even if it doesn't match the search
+        if item.model.id == listModel.selectedItemId {
+            return item
+        }
+        
         return item.model.name.localizedStandardContains(searchModel.searchText) ||
         item.model.description.localizedStandardContains(searchModel.searchText) ? item : nil
     }

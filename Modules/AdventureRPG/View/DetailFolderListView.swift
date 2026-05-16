@@ -125,7 +125,7 @@ private struct DetailFolderContentView: View {
         }
         .overlay {
             if root.openFileWindowModel.showItem {
-                root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
+                root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true, addToolbar: false)) {
                     root.openFileWindowModel.showItem = false
                 }
             }

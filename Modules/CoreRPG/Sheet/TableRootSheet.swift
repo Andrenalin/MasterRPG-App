@@ -23,7 +23,7 @@ public struct TableRootSheet: View {
     @State private var sheetRootModel: SheetRootModel
     
     public var body: some View {
-        TableSheetView(root: root, model: sheetRootModel)
+        TableSheetView(root: root, model: sheetRootModel, addSearchable: configuration.addToolbar)
 #if os(macOS) || os(visionOS)
             .padding(.top)
 #else
