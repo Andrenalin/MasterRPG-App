@@ -5,7 +5,6 @@ import Foundation
 @MainActor @Observable
 public final class SheetModel: Identifiable, Sendable {
     public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, isFolded: Bool = false, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
-        self.id = UUID()
         self.source = source
         self.destination = destination ?? source
         self.level = level
@@ -22,7 +21,36 @@ public final class SheetModel: Identifiable, Sendable {
         self.showHeader = showHeader
     }
 
-    public let id: UUID
+    /// Computed ID based on source, destination, and type to ensure uniqueness and consistency
+    /// This prevents duplicate ID issues when the same item/entry appears multiple times
+    public var id: String {
+        var components: [String] = []
+        
+        // Add source identifier
+        components.append(source.itemId.uuidString)
+        if let entryId = source.entryId {
+            components.append(entryId.uuidString)
+        }
+        components.append(source.typeId.token)
+        
+        // Add destination if different from source
+        if destination.itemId != source.itemId || destination.entryId != source.entryId {
+            components.append("dest")
+            components.append(destination.itemId.uuidString)
+            if let destEntryId = destination.entryId {
+                components.append(destEntryId.uuidString)
+            }
+        }
+        
+        // Add sheet type for inline entries (dice, photo, etc.)
+        if sheetType != .item {
+            components.append("type")
+            components.append("\(sheetType)")
+        }
+        
+        return components.joined(separator: "-")
+    }
+    
     public var source: ItemRowModel
     public let destination: ItemRowModel
     public let level: Int

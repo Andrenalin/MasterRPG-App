@@ -17,7 +17,7 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     let isEditor: Bool
     let linkTypes: LinkType.Type
     
-    @State private var dropTargetEntryId: UUID?
+    @State private var dropTargetEntryId: String?
     
     var body: some View {
         if sheetModel.showHeader || isEditor {
@@ -52,7 +52,7 @@ private extension SheetView {
                 SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
             }
             
-            LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.id), text: sheetModel.name))
+            LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.source.itemId), text: sheetModel.name))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.title)
         }
@@ -60,15 +60,29 @@ private extension SheetView {
     
     var inlineRows: some View {
         ForEach(sheetModel.inlineEntries) { inlineEntry in
-            SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // Display inline entries directly without SheetEntryView wrapper
+            // to avoid triggering beforeInline/afterInline recursion
+            Group {
+                viewController(for: inlineEntry.source)?.rowViewer(source: inlineEntry.source, destination: inlineEntry.destination)
+            }
+            .applyIf(inlineEntry.sheetType == .photo) {
+                $0.frame(height: 160)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .applyIf(inlineEntry.sheetType != .photo) {
+                $0.frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
+    }
+    
+    func viewController(for source: ItemRowModel) -> ViewControllable? {
+        rootModel.rootController(for: source.typeId)?.viewControllable
     }
     
     @ViewBuilder
     var secondaryRow: some View {
         if let description = rootModel.description(for: sheetModel), !description.isEmpty {
-            LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(sheetModel.id), text: description))
+            LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(sheetModel.source.entryId ?? sheetModel.source.itemId), text: description))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.subheadline)
         }

@@ -63,7 +63,8 @@ private extension SheetEntryView {
         ForEach(entryModel.inlineEntries) { inlineSheet in
             switch inlineSheet.sheetType {
             case .photo:
-                viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                // Use inlineSheet.source (the photo item) not entryModel.source (the parent entry)
+                viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
                     .frame(height: 96)
                     .frame(maxWidth: .infinity, alignment: .center)
             default:
@@ -71,7 +72,7 @@ private extension SheetEntryView {
             }
         }
     }
-    
+
     var mainRow: some View {
         HStack {
             if (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
@@ -80,7 +81,7 @@ private extension SheetEntryView {
             
             switch entryModel.sheetType {
             case .item, .group:
-                LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: entryModel.name, shareResults: shareResult))
+                LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.name, shareResults: shareResult))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.headline)
                 
@@ -93,7 +94,7 @@ private extension SheetEntryView {
             case .audio:
                 HStack {
                     viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.id), text: audioDisplayText, shareResults: shareResult))
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: audioDisplayText, shareResults: shareResult))
                 }
                 .font(.body)
             }
@@ -118,7 +119,7 @@ private extension SheetEntryView {
                 }
                 switch entryModel.sheetType {
                 case .item:
-                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entryContent(entryModel.id), text: entryModel.description, shareResults: shareResult))
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entryContent(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.description, shareResults: shareResult))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.body)
                 default:
@@ -132,9 +133,11 @@ private extension SheetEntryView {
         ForEach(entryModel.inlineEntries) { inlineSheet in
             switch inlineSheet.sheetType {
             case .dice:
-                viewController(for: entryModel.source)?.rowViewer(source: inlineSheet.source, destination: entryModel.destination)
+                // Use inlineSheet.source for both viewController lookup and rowViewer
+                viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
             case .pdf:
-                viewController(for: entryModel.source)?.rowViewer(source: inlineSheet.source, destination: entryModel.destination)
+                // Use inlineSheet.source for both viewController lookup and rowViewer
+                viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
             default:
                 EmptyView()
             }

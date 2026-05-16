@@ -108,7 +108,9 @@ public final class SheetRootModel: Sendable {
     
     func toggleShown(sheetModel: SheetModel, entryId: UUID, linkId: UUID, module: NetworkModules) -> Bool {
         for entrySheetModel in sheetModel.entries {
-            if entrySheetModel.id == entryId {
+            // Compare entryId (UUID) with source.entryId or source.itemId
+            let matchesEntry = entrySheetModel.source.entryId == entryId || entrySheetModel.source.itemId == entryId
+            if matchesEntry {
                 if let existingSheet = entrySheetModel.entries.first(where: { $0.source.itemId == linkId }) {
                     unfold(sheetModel: existingSheet)
                     existingSheet.isShown.toggle()
@@ -167,16 +169,27 @@ public final class SheetRootModel: Sendable {
     
     func removeEntry(entryModel: SheetModel, from parentModel: SheetModel) {
         entryDataEditable(for: entryModel.source)?.removeEntry(source: entryModel.source)
-        parentModel.entries.removeAll(where: { $0.id == entryModel.id })
-        linkTextModel[.entry(entryModel.id)] = nil
+        // Use source identifiers to match and remove
+        parentModel.entries.removeAll(where: { entry in
+            entry.source.itemId == entryModel.source.itemId &&
+            entry.source.entryId == entryModel.source.entryId &&
+            entry.source.typeId == entryModel.source.typeId
+        })
+        // Use source identifiers for linkTextModel cleanup
+        if let entryId = entryModel.source.entryId {
+            linkTextModel[.entry(entryId)] = nil
+        } else {
+            linkTextModel[.entry(entryModel.source.itemId)] = nil
+        }
         updateFilteredEntries()
     }
 
     /// Update the sheet model after inline edits
     func updateSheetModel(entryModel: SheetModel, updatedText: String) {
         entryModel.description = updatedText
-        linkTextModel[.entry(entryModel.id)]?.reset(text: entryModel.name)
-        linkTextModel[.entryContent(entryModel.id)]?.reset(text: entryModel.description)
+        let lookupId = entryModel.source.entryId ?? entryModel.source.itemId
+        linkTextModel[.entry(lookupId)]?.reset(text: entryModel.name)
+        linkTextModel[.entryContent(lookupId)]?.reset(text: entryModel.description)
     }
     
     func addNewEntry(in sheetModel: SheetModel) -> UUID? {
@@ -217,8 +230,9 @@ public final class SheetRootModel: Sendable {
         guard let entryModel = sheetModel.entries.first(where: { $0.source.entryId == previousEntryId }) else { return }
         entryModel.isEditing = false
 
-        linkTextModel[.entry(entryModel.id)]?.reset(text: entryModel.name)
-        linkTextModel[.entryContent(entryModel.id)]?.reset(text: entryModel.description)
+        let lookupId = entryModel.source.entryId ?? entryModel.source.itemId
+        linkTextModel[.entry(lookupId)]?.reset(text: entryModel.name)
+        linkTextModel[.entryContent(lookupId)]?.reset(text: entryModel.description)
     }
 
     /// Set the current item in the edit controller (keeps ItemEditorModel in sync for scroll/other consumers)
@@ -239,7 +253,10 @@ public final class SheetRootModel: Sendable {
 
     func moveEntry(entryModel: SheetModel, in parentModel: SheetModel, up: Bool) {
         guard let editable = entryDataEditable(for: entryModel.source),
-              let index = parentModel.entries.firstIndex(where: { $0.id == entryModel.id }) else { return }
+              let index = parentModel.entries.firstIndex(where: { entry in
+                  entry.source.itemId == entryModel.source.itemId &&
+                  entry.source.entryId == entryModel.source.entryId
+              }) else { return }
         let newIndex = up ? index - 1 : index + 2
         guard newIndex >= 0, newIndex <= parentModel.entries.count else { return }
         parentModel.entries.move(fromOffsets: IndexSet(integer: index), toOffset: newIndex)
@@ -303,7 +320,10 @@ public final class SheetRootModel: Sendable {
             // Check if this is a move within the same parent item (reorder)
             if droppedItem.itemId == parentModel.source.itemId,
                let draggedIndex = parentModel.entries.firstIndex(where: { $0.source.entryId == draggedEntryId }),
-               let targetIndex = parentModel.entries.firstIndex(where: { $0.id == targetEntry.id }),
+               let targetIndex = parentModel.entries.firstIndex(where: { entry in
+                   entry.source.itemId == targetEntry.source.itemId &&
+                   entry.source.entryId == targetEntry.source.entryId
+               }),
                draggedIndex != targetIndex {
                 // Reorder within same parent
                 withAnimation {
@@ -404,15 +424,17 @@ public final class SheetRootModel: Sendable {
 
     private func resetChangedLinkModels(in sheetModel: SheetModel) {
         if sheetModel.hasChanged {
-            linkTextModel[.item(sheetModel.id)]?.reset(text: sheetModel.name)
-            linkTextModel[.entry(sheetModel.id)]?.reset(text: sheetModel.name)
-            linkTextModel[.entryContent(sheetModel.id)]?.reset(text: sheetModel.description)
+            let lookupId = sheetModel.source.entryId ?? sheetModel.source.itemId
+            linkTextModel[.item(sheetModel.source.itemId)]?.reset(text: sheetModel.name)
+            linkTextModel[.entry(lookupId)]?.reset(text: sheetModel.name)
+            linkTextModel[.entryContent(lookupId)]?.reset(text: sheetModel.description)
             sheetModel.hasChanged = false
         }
         for entry in sheetModel.entries {
             if entry.hasChanged {
-                linkTextModel[.entry(entry.id)]?.reset(text: entry.name)
-                linkTextModel[.entryContent(entry.id)]?.reset(text: entry.description)
+                let lookupId = entry.source.entryId ?? entry.source.itemId
+                linkTextModel[.entry(lookupId)]?.reset(text: entry.name)
+                linkTextModel[.entryContent(lookupId)]?.reset(text: entry.description)
                 entry.hasChanged = false
             }
             resetChangedLinkModels(in: entry)

@@ -162,6 +162,7 @@ extension SheetController: SheetControllable {
 
         if let diceId = model.diceId {
             let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
+            // Reuse existing if found, otherwise create new
             let diceSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? createDiceInline(diceId: diceId, itemId: model.id, level: sheetModel.level, isShown: sheetModel.isShown)
             diceSheetModel.source = diceSource
             updatedInlineEntries.append(diceSheetModel)
@@ -169,12 +170,17 @@ extension SheetController: SheetControllable {
 
         if let photoId = model.photoId {
             let photoSource = ItemRowModel(itemId: photoId, typeId: .photo)
+            // Reuse existing if found, otherwise create new
             let photoSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .photo }) ?? createPhotoInline(photoId: photoId, itemId: model.id, level: sheetModel.level, isShown: sheetModel.isShown)
             photoSheetModel.source = photoSource
             updatedInlineEntries.append(photoSheetModel)
         }
 
-        sheetModel.inlineEntries = updatedInlineEntries
+        // Only update if the array actually changed to avoid unnecessary SwiftUI updates
+        if sheetModel.inlineEntries.count != updatedInlineEntries.count ||
+           !zip(sheetModel.inlineEntries, updatedInlineEntries).allSatisfy({ $0.id == $1.id }) {
+            sheetModel.inlineEntries = updatedInlineEntries
+        }
 
         guard !sheetModel.isFolded else {
             let duration = ContinuousClock.now - startTime
