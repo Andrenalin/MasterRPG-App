@@ -161,10 +161,11 @@ private extension LinkItemListView {
                                     selectionModel.selection.contains(where: { $0.itemId == item.model.id && $0.entryId == item.entryId })
                                 }
                         }
-                        .padding(.leading, CGFloat(item.level * 16 + 8))
+                        .padding(.leading, CGFloat(item.level * 4 + 8))
                         .padding(.trailing, 8)
-                        .padding(.vertical, 2)
+                        .padding(.vertical, 4)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(backgroundForLevel(item.level))
                         .contentShape(.rect)
                         
                         if item.isOpen || item.entryId != nil {
@@ -322,6 +323,20 @@ private extension LinkItemListView {
                 Text("Close parent folder", bundle: .module)
             } icon: {
                 Image(systemName: "folder.circle")
+            }
+        }
+    }
+    
+    /// Returns a subtle background color that alternates based on hierarchy level
+    /// to help users visually distinguish between different nesting levels
+    @ViewBuilder
+    func backgroundForLevel(_ level: Int) -> some View {
+        if level > 0 {
+            // Alternate between slightly darker shades for each level
+            if level % 2 == 1 {
+                Color.secondary.opacity(0.2)
+            } else {
+                Color.primary.opacity(0.2)
             }
         }
     }
