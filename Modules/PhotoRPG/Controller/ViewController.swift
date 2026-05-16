@@ -29,13 +29,13 @@ public extension ViewController {
     
     @ViewBuilder @MainActor func thumbnailRow(root: PhotoRootModel, for itemId: UUID, listDisplayModel: ListDisplayModel) -> some View {
         if let model = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
-            ThumbnailRowPhotoView(cacheController: cacheController, model: model, cacheItemListModel: root.editController.cacheItemListModel, listDisplayModel: listDisplayModel)
+            ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: listDisplayModel)
         }
     }
     
     @ViewBuilder @MainActor func photoRow(root: PhotoRootModel, for itemId: UUID) -> some View {
         if let model = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
-            CachePhotoView(cacheController: cacheController, model: model, cacheItemListModel: root.editController.cacheItemListModel, highResolution: true)
+            CachePhotoView(cacheController: cacheController, model: model, highResolution: true)
         }
     }
 

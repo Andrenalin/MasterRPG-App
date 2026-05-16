@@ -8,17 +8,16 @@ public struct LinkItemListView: View {
         self.type = type
         self.selectionModel = selectionModel
         self.parentModel = parentModel
-        if let parentModel {
-            let mode: ListDisplayModel.ListMode = parentModel.category == .folder ? .folder : .list
-            root.folderLinkControllable.listDisplayModel.listMode <=> mode
-            root.folderLinkControllable.resetParentModel(model: parentModel)
-        }
+        // Store the parent model ID for tracking changes
+        self._parentModelId = State(initialValue: parentModel?.id)
     }
 
     let root: any ItemRootControllable
     let type: LinkRootType
     let selectionModel: ItemSelectionModel
     let parentModel: (any ItemDataAccessable)?
+    
+    @State private var parentModelId: UUID?
 
 #if os(macOS)
     @Environment(ScenesManager.self) private var scenesManager
@@ -47,7 +46,13 @@ public struct LinkItemListView: View {
 
                 contentView
                     .tint(root.configurable.module.tint)
+                    .task(id: parentModelId) {
+                        // This task runs whenever parentModelId changes (including initial load)
+                        // It ensures parent filtering is properly configured for this specific view
+                        await configureParentFiltering()
+                    }
                     .onAppear {
+                        // Initial setup - only runs once when view first appears
                         root.folderLinkControllable.resetItemOnce()
                         root.folderLinkControllable.resetFilter()
                     }
@@ -86,6 +91,28 @@ private extension LinkItemListView {
 
     var displayItems: [ListItemModel] {
         parentModel == nil ? listModel.displayedItems : listModel.displayedParentItems
+    }
+    
+    /// Configures parent filtering for this view
+    /// This ensures the correct items are displayed based on whether we're showing
+    /// a parent-filtered view or the full list
+    func configureParentFiltering() async {
+        if let parentModel {
+            // This view needs parent filtering
+            let mode: ListDisplayModel.ListMode = parentModel.category == .folder ? .folder : .list
+            if root.folderLinkControllable.listDisplayModel.listMode != mode {
+                root.folderLinkControllable.listDisplayModel.listMode = mode
+            }
+            root.folderLinkControllable.resetParentModel(model: parentModel)
+        } else {
+            // This view doesn't need parent filtering - clear any existing parent model
+            // This is crucial when switching between tabs where one has parent filtering and another doesn't
+            if root.folderLinkControllable.listModel.parentModel != nil {
+                root.folderLinkControllable.listModel.parentModel = nil
+                root.folderLinkControllable.listModel.parentOriginalItems = []
+                root.folderLinkControllable.resetFilter()
+            }
+        }
     }
 
     @ViewBuilder
@@ -216,7 +243,7 @@ private extension LinkItemListView {
             if root.viewControllable.thumbnailRowViewType == .custom {
                 root.viewControllable.thumbnailRowView(for: item.model.id)
             } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
-                ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, listDisplayModel: root.folderLinkControllable.listDisplayModel)
             }
         }
         .overlay(alignment: .trailing) {

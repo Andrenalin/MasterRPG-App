@@ -152,7 +152,7 @@ private extension ListRootView {
                     if root.viewControllable.thumbnailRowViewType == .custom {
                         root.viewControllable.thumbnailRowView(for: item.model.id)
                     } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
-                        ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, cacheItemListModel: listController.cacheListItemModel, listDisplayModel: listController.listDisplayModel)
+                        ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, listDisplayModel: listController.listDisplayModel)
                     }
                 }
                 .draggable(for: root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)

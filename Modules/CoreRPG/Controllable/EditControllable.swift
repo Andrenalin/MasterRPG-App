@@ -475,7 +475,6 @@ public extension EditControllable {
             // If selecting same file, just reset cache without deleting
             isSameFilePath = await fileUrlDataController.isSameFile(existingFileUrl: existingFileUrl, newUrl: url)
             // reset cach only for the thumbnail, it might be old thumbnail file exists.
-            await cacheItemListModel.resetImageCache(itemId: itemId, includeImage: !isSameFilePath)
             await itemControllable.cacheControllable?.remove(itemId: itemId, includeImage: !isSameFilePath)
 
             if !isSameFilePath {

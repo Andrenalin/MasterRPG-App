@@ -55,16 +55,22 @@ public struct EditorLinkView: View {
                 editorLinkModel.update(selection: selectionSecondRow)
             }
         }
-        .onChange(of: editorLinkModel.selection, initial: true) {
-            editorLinkModel.updateListController()
+        .onChange(of: editorLinkModel.selection, initial: true) { oldValue, newValue in
+            // Only update when selection actually changes (not on initial load if already set)
+            if oldValue != newValue {
+                editorLinkModel.updateListController()
+            }
         }
-        .onChange(of: editorLinkModel.folderListController.listDisplayModel.displayMode) {
+        .onChange(of: editorLinkModel.folderListController.listDisplayModel.displayMode) { _, _ in
+            // Only update when this is the active selection mode
             editorLinkModel.update()
         }
-        .onChange(of: editorLinkModel.folderListController.listDisplayModel.listMode) {
+        .onChange(of: editorLinkModel.folderListController.listDisplayModel.listMode) { oldValue, newValue in
+            // Avoid triggering update if the mode didn't actually change
+            guard oldValue != newValue else { return }
             editorLinkModel.update()
         }
-        .onChange(of: editorLinkModel.folderListController.searchModel.searchText) {
+        .onChange(of: editorLinkModel.folderListController.searchModel.searchText) { _, _ in
             editorLinkModel.update()
         }
         .onAppear {

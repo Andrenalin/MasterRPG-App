@@ -42,7 +42,6 @@ extension EditController {
         dataUrl.convertFile(data, fileExtension: itemController.config.filenameExtension)
 
         let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataUrl, pathExtension: itemController.config.filenameExtension)
-        await cacheItemListModel.resetImageCache(itemId: itemId)
         await itemControllable.cacheControllable?.remove(itemId: itemId)
         await reset(fileUrl: newFileUrl, itemId: item.id)
     }
@@ -54,24 +53,24 @@ extension EditController {
     }
 
     func loadImage(cacheType: CacheItemListModel.CacheType, item: Model, itemId: UUID, fileUrl: FileUrl?, reset: Bool = false) async -> AKImage? {
-        guard fileUrl != nil else { return nil }
+        guard let cacheController, fileUrl != nil else { return nil }
         if reset {
-            await cacheItemListModel.setImageCache(cacheType: .image, itemId: itemId, image: nil)
-            await cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: itemId, image: nil)
+            await cacheController.setCachedImage(nil, for: itemId)
+            await cacheController.setCachedThumbnail(nil, for: itemId)
         }
-        if let newImage = await cacheItemListModel.imageCache(cacheType: cacheType, itemId: itemId) {
+        if let newImage = cacheType == .image ? await cacheController.cachedImage(for: itemId) : await cacheController.cachedThumbnail(for: itemId) {
             return newImage
         }
         var result: AKImage? = nil
         if cacheType == .image {
-            await cacheController?.photoId(for: itemId, item: item, shouldDownload: true)
-            result = await cacheController?.photo(for: itemId)
+            await cacheController.photoId(for: itemId, item: item, shouldDownload: true)
+            result = await cacheController.photo(for: itemId)
             
-            await cacheItemListModel.setImageCache(cacheType: .image, itemId: itemId, image: result)
+            await cacheController.setCachedImage(result, for: itemId)
         }
-        await cacheController?.thumbnailId(for: itemId, item: item)
-        let newThumbnail = await cacheController?.thumbnail(for: itemId)
-        await cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: itemId, image: newThumbnail)
+        await cacheController.thumbnailId(for: itemId, item: item)
+        let newThumbnail = await cacheController.thumbnail(for: itemId)
+        await cacheController.setCachedThumbnail(newThumbnail, for: itemId)
         return cacheType == .image ? result : newThumbnail
     }
         

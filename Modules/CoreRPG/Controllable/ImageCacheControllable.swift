@@ -11,6 +11,9 @@ public protocol ImageCacheControllable: Sendable {
     var imageCacheController: ImageCacheController { get }
     var thumbnailCacheController: ImageCacheController { get }
     var fileUrlDataController: FileUrlDataController? { get }
+    
+    // Observable cache for SwiftUI views
+    @MainActor var observableImageCache: ObservableImageCache { get }
 
     func createImage(for itemId: UUID, item: any ItemDataAccessable) async
     func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async
@@ -41,6 +44,7 @@ extension ImageCacheControllable {
             await imageCacheController.removeObject(for: itemId)
         }
         await thumbnailCacheController.removeObject(for: itemId)
+        await observableImageCache.reset(for: itemId, includeImage: includeImage)
     }
     
     @discardableResult
@@ -71,4 +75,74 @@ extension ImageCacheControllable {
         _ = await imageTask.value
         return await thumbnailCacheController.hasObject(for: itemId) ? itemId : nil
     }
+    
+    // MARK: - Observable Cache Helpers
+    
+    /// Get cached image synchronously for SwiftUI views
+    @MainActor
+    public func cachedImage(for itemId: UUID) -> AKImage? {
+        observableImageCache.image(for: itemId)
+    }
+    
+    /// Get cached thumbnail synchronously for SwiftUI views
+    @MainActor
+    public func cachedThumbnail(for itemId: UUID) -> AKImage? {
+        observableImageCache.thumbnail(for: itemId)
+    }
+    
+    /// Set cached image (called after async load completes)
+    @MainActor
+    public func setCachedImage(_ image: AKImage?, for itemId: UUID) {
+        observableImageCache.setImage(image, for: itemId)
+    }
+    
+    /// Set cached thumbnail (called after async load completes)
+    @MainActor
+    public func setCachedThumbnail(_ image: AKImage?, for itemId: UUID) {
+        observableImageCache.setThumbnail(image, for: itemId)
+    }
 }
+
+// MARK: - Observable Image Cache
+
+/// Observable cache for synchronous image access in SwiftUI views
+/// This bridges the async ImageCacheController with SwiftUI's synchronous observation
+@MainActor @Observable
+public final class ObservableImageCache: Sendable {
+    public init() {}
+    
+    private var imageCache: [UUID: AKImage] = [:]
+    private var thumbnailCache: [UUID: AKImage] = [:]
+    
+    public func image(for itemId: UUID) -> AKImage? {
+        imageCache[itemId]
+    }
+    
+    public func thumbnail(for itemId: UUID) -> AKImage? {
+        thumbnailCache[itemId]
+    }
+    
+    public func setImage(_ image: AKImage?, for itemId: UUID) {
+        imageCache[itemId] = image
+    }
+    
+    public func setThumbnail(_ image: AKImage?, for itemId: UUID) {
+        thumbnailCache[itemId] = image
+    }
+    
+    public func removeImage(for itemId: UUID) {
+        imageCache.removeValue(forKey: itemId)
+    }
+    
+    public func removeThumbnail(for itemId: UUID) {
+        thumbnailCache.removeValue(forKey: itemId)
+    }
+    
+    public func reset(for itemId: UUID, includeImage: Bool = true) {
+        if includeImage {
+            removeImage(for: itemId)
+        }
+        removeThumbnail(for: itemId)
+    }
+}
+

@@ -193,7 +193,7 @@ public extension PhotoRootModel {
         }
         _ = await loaderTask.result
 
-        guard let image = editController.cacheItemListModel.imageCache(cacheType: .image, itemId: model.id) else { return nil }
+        guard let image = editController.cacheController?.cachedImage(for: model.id) else { return nil }
         return (image, model.degrees)
     }
     

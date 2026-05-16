@@ -9,18 +9,18 @@ import os.log
 import QuickLookThumbnailing
 #endif
 
-
 actor MapEntryCacheImageMapper {
     var entryToItem: [UUID: UUID] = [:]
 }
 
 struct CacheController: Sendable {
-    init(photoRoot: PhotoRootModel) {
+    @MainActor init(photoRoot: PhotoRootModel) {
         self.photoRoot = photoRoot
         
         self.imageCacheController = ImageCacheController()
         self.thumbnailCacheController = ImageCacheController()
         self.fileUrlDataController = nil
+        self.observableImageCache = ObservableImageCache()
     }
     
     let photoRoot: PhotoRootModel
@@ -28,6 +28,7 @@ struct CacheController: Sendable {
     let imageCacheController: ImageCacheController
     let thumbnailCacheController: ImageCacheController
     let fileUrlDataController: FileUrlDataController?
+    let observableImageCache: ObservableImageCache
 }
 
 extension CacheController: ImageCacheControllable {

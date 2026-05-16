@@ -13,27 +13,11 @@ public final class CacheItemListModel: Sendable {
         case entryName
         case content
         case row
+        // Note: image and thumbnail cache moved to ImageCacheControllable.observableImageCache
         case image
         case thumbnail
     }
     
-    private static var imageCache: [String: AKImage] = [:]
-
-    public func imageCache(cacheType: CacheType, itemId: UUID) -> AKImage? {
-        CacheItemListModel.imageCache[cacheId(for: cacheType, itemId: itemId)]
-    }
-
-    public func setImageCache(cacheType: CacheType, itemId: UUID, image: AKImage?) {
-        CacheItemListModel.imageCache[cacheId(for: cacheType, itemId: itemId)] = image
-    }
-    
-    public func resetImageCache(itemId: UUID, includeImage: Bool = true) {
-        if includeImage {
-            setImageCache(cacheType: .image, itemId: itemId, image: nil)
-        }
-        setImageCache(cacheType: .thumbnail, itemId: itemId, image: nil)
-    }
-
     @ObservationIgnored
     private var itemLinkCache: [String: LinkHighlightTextModel] = [:]
     

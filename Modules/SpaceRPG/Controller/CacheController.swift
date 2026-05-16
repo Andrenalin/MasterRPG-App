@@ -9,15 +9,17 @@ import QuickLookThumbnailing
 #endif
 
 struct CacheController: Sendable {
-    init(fileUrlDataController: FileUrlDataController) {
+    @MainActor init(fileUrlDataController: FileUrlDataController) {
         self.imageCacheController = ImageCacheController()
         self.thumbnailCacheController = ImageCacheController()
         self.fileUrlDataController = fileUrlDataController
+        self.observableImageCache = ObservableImageCache()
     }
-    
+
     let imageCacheController: ImageCacheController
     let thumbnailCacheController: ImageCacheController
     let fileUrlDataController: FileUrlDataController?
+    let observableImageCache: ObservableImageCache
 }
 
 extension CacheController: ImageCacheControllable {

@@ -19,7 +19,7 @@ struct DropChooseView: View {
         DropItemModuleArea(module: root.configurable.module, contentView: {
             Group {
                 if let itemId = selectionModel.itemId, let item = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
-                    GroupedPhotoView(cacheController: cacheController, itemControllable: root.itemController, model: item, cacheItemListModel: root.editController.cacheItemListModel)
+                    GroupedPhotoView(cacheController: cacheController, itemControllable: root.itemController, model: item)
                         .clipShape(.rect(corners: .concentric))
                 } else {
                     emptyDrop

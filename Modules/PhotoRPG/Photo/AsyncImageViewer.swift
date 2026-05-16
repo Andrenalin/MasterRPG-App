@@ -43,16 +43,16 @@ struct AsyncImageViewer: View {
     }
 
     private func cachedImage(for itemId: UUID) -> AKImage? {
-        cacheItemListModel.imageCache(cacheType: .image, itemId: itemId)
+        cacheController?.cachedImage(for: itemId)
     }
 
-    private var cacheItemListModel: CacheItemListModel {
-        root.editController.cacheItemListModel
+    private var cacheController: CacheController? {
+        root.editController.cacheController
     }
 
     private func loadImage() {
         let editController = root.editController
-        let cacheItemListModel = editController.cacheItemListModel
+        guard let cacheController = editController.cacheController else { return }
         let itemId = model.id
         let fileUrl = model.fileUrl
         Task {
@@ -60,7 +60,7 @@ struct AsyncImageViewer: View {
                 await editController.loadImage(cacheType: .image, item: model, itemId: itemId, fileUrl: fileUrl)
             }
             _ = await loaderTask.result
-            if cacheItemListModel.imageCache(cacheType: .image, itemId: itemId) == nil {
+            if cacheController.cachedImage(for: itemId) == nil {
                 imageError = true
                 Logger.itemController.warning("AsyncImageViewer: No image \(itemId, privacy: .public)")
             } else {

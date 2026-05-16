@@ -28,7 +28,7 @@ public struct EntryEditRow: View {
         VStack {
             if hasThumbnail, let cacheController = root.cacheControllable {
                 HStack {
-                    ThumbnailRowPhotoView(cacheController: cacheController, model: model, cacheItemListModel: cacheItemListModel, listDisplayModel: listDisplayModel, entryId: entry.id)
+                    ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: listDisplayModel, entryId: entry.id)
                     
                     if editController.additioanlEnrtryViewType == .custom {
                         editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), textModel: nil)

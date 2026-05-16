@@ -3,16 +3,14 @@
 import SwiftUI
 
 public struct CachePhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, highResolution: Bool = true) {
+    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, highResolution: Bool = true) {
         self.cacheController = cacheController
         self.model = model
-        self.cacheItemListModel = cacheItemListModel
         self.highResolution = highResolution
     }
 
     let cacheController: ImageCacheControllable
     let model: any ItemDataAccessable
-    let cacheItemListModel: CacheItemListModel
     let highResolution: Bool
 
     @State private var lastFileUrl: FileUrl?
@@ -37,7 +35,9 @@ public struct CachePhotoView: View {
 
 private extension CachePhotoView {
     var cachedImage: AKImage? {
-        cacheItemListModel.imageCache(cacheType: highResolution ? .image : .thumbnail, itemId: model.id)
+        highResolution 
+            ? cacheController.cachedImage(for: model.id)
+            : cacheController.cachedThumbnail(for: model.id)
     }
 
     func imageView(image: AKImage) -> some View {
@@ -79,14 +79,18 @@ private extension CachePhotoView {
                 await cacheController.thumbnailId(for: fileId, item: model)
             }
             let newImage = highResolution ? await cacheController.photo(for: fileId) : await cacheController.thumbnail(for: fileId)
-            withAnimation { cacheItemListModel.setImageCache(cacheType: highResolution ? .image : .thumbnail, itemId: fileId, image: newImage) }
+            if highResolution {
+                cacheController.setCachedImage(newImage, for: fileId)
+            } else {
+                cacheController.setCachedThumbnail(newImage, for: fileId)
+            }
             isLoading = false
         }
     }
 }
 
 #Preview {
-    CachePhotoView(cacheController: FakeImageCacheController(), model: FakeItemModel(name: "Test"), cacheItemListModel: CacheItemListModel(), highResolution: false)
+    CachePhotoView(cacheController: FakeImageCacheController(), model: FakeItemModel(name: "Test"), highResolution: false)
         .tint(NetworkModules.space.tint)
         .accentColor(NetworkModules.space.tint)
 }

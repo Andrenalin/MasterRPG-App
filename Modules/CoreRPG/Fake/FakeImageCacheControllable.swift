@@ -14,6 +14,7 @@ struct FakeImageCacheController: ImageCacheControllable {
         self.imageCacheController = ImageCacheController()
         self.thumbnailCacheController = ImageCacheController()
         self.fileUrlDataController = nil
+        self.observableImageCache = ObservableImageCache()
     }
     
     func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {}
@@ -21,4 +22,5 @@ struct FakeImageCacheController: ImageCacheControllable {
     var imageCacheController: ImageCacheController
     var thumbnailCacheController: ImageCacheController
     var fileUrlDataController: FileUrlDataController?
+    var observableImageCache: ObservableImageCache
 }
