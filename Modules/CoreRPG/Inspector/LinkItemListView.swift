@@ -59,8 +59,9 @@ public struct LinkItemListView: View {
                         root.folderLinkControllable.listModel.scrollId = savedScroll
                         
                         if let savedPosition = root.folderLinkControllable.listModel.scrollId {
-                            Task { @MainActor in
-                                try? await Task.sleep(for: .milliseconds(100))
+                            // Use withAnimation instead of Task.sleep for more reliable timing
+                            // SwiftUI will coordinate this with the view's appearance
+                            withAnimation(.easeInOut(duration: 0.2)) {
                                 scrollPosition = savedPosition
                             }
                         }
@@ -137,7 +138,7 @@ private extension LinkItemListView {
                     ContentUnavailableView.search
                 }
             }
-            .animation(.smooth, value: items.count)
+            .animation(.smooth, value: items.map(\.id))
             .scrollIndicatorsFlash(onAppear: true)
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
@@ -180,9 +181,7 @@ private extension LinkItemListView {
         }
     }
 
-    func itemRows(items: [ListItemModel]) -> some View {
-        EmptyView()  // Not used anymore
-    }
+
     
     @ViewBuilder
     private func itemRowContent(item: ListItemModel) -> some View {
@@ -200,7 +199,7 @@ private extension LinkItemListView {
         }
         .contentShape(.rect)
         .contextMenu {
-            entryContextMenu(item: item)
+            contextMenu(for: item)
         }
 #if !os(tvOS)
         .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name.withoutLink())
@@ -214,31 +213,25 @@ private extension LinkItemListView {
             }
             .accessibilityHint("Double-tap to open details")
             .contextMenu {
-                standardItemContextMenu(item: item)
+                contextMenu(for: item)
             }
     }
     
     @ViewBuilder
-    private func entryContextMenu(item: ListItemModel) -> some View {
+    private func contextMenu(for item: ListItemModel) -> some View {
         Button {
             openDetail(for: item)
         } label: {
             Label("Open Details", systemImage: "arrow.up.right.square")
         }
+        
         displayModeControls
         listModeControls
-        closeEntrySection(for: item)
-    }
-    
-    @ViewBuilder
-    private func standardItemContextMenu(item: ListItemModel) -> some View {
-        Button {
-            openDetail(for: item)
-        } label: {
-            Label("Open Details", systemImage: "arrow.up.right.square")
+        
+        // Only show close entry section for entries
+        if item.entryId != nil {
+            closeEntrySection(for: item)
         }
-        displayModeControls
-        listModeControls
     }
     
     @ViewBuilder

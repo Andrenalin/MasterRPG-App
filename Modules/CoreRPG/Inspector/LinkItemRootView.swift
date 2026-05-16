@@ -29,8 +29,10 @@ public struct LinkItemRootView: View {
         
     public var body: some View {
         LinkItemListView(root: root, type: type, selectionModel: itemSelectionModel, parentModel: parentModel)
-            .onChange(of: itemSelectionModel.onlyChildrenFrom) { _, newValue in
-                if let newValue {
+            .task(id: itemSelectionModel.onlyChildrenFrom) {
+                // Using task instead of onChange for better lifecycle management
+                // and automatic cancellation when the ID changes
+                if let newValue = itemSelectionModel.onlyChildrenFrom {
                     parentModel = root.itemControllable.itemSync(for: newValue)
                 } else {
                     parentModel = nil
