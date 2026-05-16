@@ -12,7 +12,7 @@ struct QuickEntryEditor: View {
     @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
 
     var body: some View {
-        QuickEntryEditorView(editController: root.editController, model: model, referenceText: referenceText, pdfEditorRoute: EditorRoute.selectionPdf) {
+        QuickEntryEditorView(root: root.rootController, editController: root.editController, model: model, referenceText: referenceText, pdfEditorRoute: EditorRoute.selectionPdf) {
             EditorLinkView(root: root.rootController, model: model, editorLinkModel: root.editorLinkModel)
         } pdfOverlay: {
 #if os(iOS) || os(tvOS)

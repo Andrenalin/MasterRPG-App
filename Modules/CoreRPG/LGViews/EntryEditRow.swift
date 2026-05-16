@@ -4,7 +4,8 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditRow: View {
-    public init(editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel) {
+    public init(root: any ItemRootControllable, editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel) {
+        self.root = root
         self.editController = editController
         self.itemId = itemId
         self.entry = entry
@@ -12,31 +13,30 @@ public struct EntryEditRow: View {
         self.listDisplayModel = listDisplayModel
     }
 
+    let root: any ItemRootControllable
     let editController: any EntryDataEditable
     let itemId: UUID
     let entry: any EntryDataAccessable
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
 
-    @Environment(ItemRootController.self) private var itemRootController
     @Environment(SearchModel.self) private var searchModel
-    @Environment(ItemRootController.self) private var root
     @Environment(\.navigator) private var navigator
     
     public var body: some View {
         VStack {
-            if hasThumbnail, let cacheController = itemRootController.cacheControllable {
+            if hasThumbnail, let cacheController = root.cacheControllable {
                 HStack {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: listDisplayModel, entryId: entry.id)
                     
                     if editController.additioanlEnrtryViewType == .custom {
-                        editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemRootController.configurable.module), textModel: nil)
+                        editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), textModel: nil)
                     }
                 }
             }
             
             if editController.additioanlEnrtryViewType == .inline {
-                editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemRootController.configurable.module), textModel: linkTextModel)
+                editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), textModel: linkTextModel)
             } else {
                 LinkHighlightTextView(model: linkTextModel)
                     .multilineTextAlignment(.leading)
@@ -46,7 +46,7 @@ public struct EntryEditRow: View {
             
             if !hasThumbnail {
                 if editController.additioanlEnrtryViewType == .custom {
-                    editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemRootController.configurable.module), textModel: nil)
+                    editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), textModel: nil)
                 }
             }
         }
@@ -59,10 +59,10 @@ private extension EntryEditRow {
     }
     
     var linkTextModel: LinkHighlightTextModel {
-        editController.linkTextModel(itemId: itemId, for: entry, linkController: itemRootController.linkControllable, searchModel: searchModel) 
+        editController.linkTextModel(itemId: itemId, for: entry, linkController: root.linkControllable, searchModel: searchModel)
     }
     
     var hasThumbnail: Bool {
-        editController.thumbnailEntryViewType == .photo && itemRootController.cacheControllable != nil
+        editController.thumbnailEntryViewType == .photo && root.cacheControllable != nil
     }
 }

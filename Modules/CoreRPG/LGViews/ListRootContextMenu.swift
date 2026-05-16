@@ -3,19 +3,20 @@
 import SwiftUI
 
 struct ListRootContextMenu: View {
-    init(controller: ContextMenuMultiController, parentItem: (any ItemDataAccessable)?, currentSelected: UUID? = nil, listController: (any FolderListControllable)? = nil) {
+    init(root: any ItemRootControllable, controller: ContextMenuMultiController, parentItem: (any ItemDataAccessable)?, currentSelected: UUID? = nil, listController: (any FolderListControllable)? = nil) {
+        self.root = root
         self.controller = controller
         self.parentItem = parentItem
         self.currentSelected = currentSelected
         self.listController = listController
     }
 
+    let root: any ItemRootControllable
     let controller: ContextMenuMultiController
     let parentItem: (any ItemDataAccessable)?
     let currentSelected: UUID?
     let listController: (any FolderListControllable)?
 
-    @Environment(ItemRootController.self) private var root
     @Environment(\.navigator) private var navigator
     
     var body: some View {

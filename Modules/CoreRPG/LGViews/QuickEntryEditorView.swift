@@ -3,7 +3,8 @@
 import SwiftUI
 
 public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector: View, PDFOverlay: View>: View {
-    public init(editController: EditController, model: EditController.Model, referenceText: DebouncerModel<String>, pdfEditorRoute: any NavigationDestination, @ViewBuilder inspector: () -> Inspector, @ViewBuilder pdfOverlay: () -> PDFOverlay) {
+    public init(root: any ItemRootControllable, editController: EditController, model: EditController.Model, referenceText: DebouncerModel<String>, pdfEditorRoute: any NavigationDestination, @ViewBuilder inspector: () -> Inspector, @ViewBuilder pdfOverlay: () -> PDFOverlay) {
+        self.root = root
         self.editController = editController
         self.referenceText = referenceText
         self.pdfEditorRoute = pdfEditorRoute
@@ -13,13 +14,13 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
         self.model = model.copy()
     }
     
+    let root: any ItemRootControllable
     let editController: EditController
     let referenceText: DebouncerModel<String>
     let pdfEditorRoute: any NavigationDestination
     let inspector: Inspector
     let pdfOverlay: PDFOverlay
     
-    @Environment(ItemRootController.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
@@ -129,7 +130,7 @@ private extension QuickEntryEditorView {
     private var entryListView: some View {
         List {
             ForEach(model.entries, id: \.id) { entry in
-                EntryEditRow(editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel, listDisplayModel: root.listDisplayModel)
+                EntryEditRow(root: root, editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel, listDisplayModel: root.listDisplayModel)
             }
         }
 #if !os(tvOS)

@@ -28,19 +28,16 @@ public extension ViewController {
     }
 
     @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
-        LinkRootView(type: type)
-            .environment(itemSelectionModel)
+        LinkRootView(type: type, itemSelectionModel: itemSelectionModel)
     }
 
     @MainActor func viewer(root: DiceRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: itemId)
         return ViewerRootView(model: model, configuration: configuration, dismissAction: dismissAction)
-                    .environment(root.listDisplayModel)
     }
 
     @MainActor func gameView(root: DiceRootModel) -> some View {
-        LinkRootView(type: .inspector)
-            .environment(ItemSelectionModel())
+        LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())
     }
 }
 

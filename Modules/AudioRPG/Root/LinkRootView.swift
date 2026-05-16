@@ -5,15 +5,15 @@ import SwiftUI
 
 struct LinkRootView: View {
     let type: LinkRootType
+    let itemSelectionModel: ItemSelectionModel
 
     @Environment(AudioRootModel.self) private var root
     
     var body: some View {
-        LinkItemRootView(root: root.rootController, type: type)
-            .environment(root.rootController)
+        LinkItemRootView(root: root.rootController, type: type, itemSelectionModel: itemSelectionModel)
     }
 }
 
 #Preview(traits: .mockData) {
-    LinkRootView(type: .window)
+    LinkRootView(type: .window, itemSelectionModel: ItemSelectionModel())
 }

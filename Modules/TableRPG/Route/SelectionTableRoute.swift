@@ -20,8 +20,6 @@ struct SelectionTableRouteDestinationView: View {
     @Environment(TableRootModel.self) private var root
     
     var body: some View {
-        LinkRootView(type: .selection)
-            .environment(root.rootController)
-            .environment(root.itemSelectionModel)
+        LinkRootView(type: .selection, itemSelectionModel: root.itemSelectionModel)
     }
 }

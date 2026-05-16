@@ -19,6 +19,6 @@ struct SelectionModuleDestinationView: View {
     @Environment(ItemRootController.self) private var root
     
     var body: some View {
-        LinkItemRootView(root: root, type: .selection)
+        LinkItemRootView(root: root, type: .selection, itemSelectionModel: root.itemSelectionModel)
     }
 }

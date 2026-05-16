@@ -18,8 +18,7 @@ extension ViewController: ViewControllable {
 
 public extension ViewController {
     @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
-        LinkRootView(type: type)
-            .environment(itemSelectionModel)
+        LinkRootView(type: type, itemSelectionModel: itemSelectionModel)
     }
 
     @MainActor func viewer(root: PdfRootModel, itemId: UUID, entryId: UUID?, configuration: ViewerConfiguration, onTextExtracted: ((String) -> Void)? = nil, dismissAction: (() -> Void)? = nil) -> some View {
@@ -28,8 +27,7 @@ public extension ViewController {
     }
     
     @MainActor func gameView(root: PdfRootModel) -> some View {
-        LinkRootView(type: .inspector)
-            .environment(ItemSelectionModel())
+        LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())
     }
 }
 

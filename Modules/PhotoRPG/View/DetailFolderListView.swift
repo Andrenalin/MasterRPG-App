@@ -69,6 +69,7 @@ private struct DetailFolderContentView: View {
 
     var body: some View {
         ItemDetailRootView(
+            root: rootStorage.rootController,
             detailListController: detailFolderListController,
             selectedModel: model,
             configuration: .init(editorAsBackground: true, hasOverlay: false)

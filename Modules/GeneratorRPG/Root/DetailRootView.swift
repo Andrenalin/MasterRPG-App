@@ -9,7 +9,7 @@ struct DetailRootView: View {
 
     var body: some View {
         DetailListView(root: root, model: model)
-            .detailInspectorModifier()
+            .detailInspectorModifier(root: root.rootController)
     }
 }
 
@@ -45,6 +45,7 @@ struct DetailListView: View {
     
     func content(listController: any FolderListControllable) -> some View {
         ItemDetailRootView(
+            root: root.rootController,
             detailListController: listController,
             selectedModel: model,
             configuration: .init(editorAsBackground: false, hasOverlay: false)

@@ -17,7 +17,7 @@ struct ListRootView: View {
 #if !os(tvOS)
             .applyIf(listController.listDisplayModel.isSelectionMode) { content in
                 content.contextMenu(forSelectionType: ListItemModel.ID.self) { selectedItemIDs in
-                    ListRootContextMenu(controller: menuController, parentItem: parentModel, listController: listController)
+                    ListRootContextMenu(root: root, controller: menuController, parentItem: parentModel, listController: listController)
                 }
             }
 #endif
@@ -158,7 +158,7 @@ private extension ListRootView {
                 .draggable(for: root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
                 .applyIf(!listController.listDisplayModel.isSelectionMode) { content in
                     content.contextMenu {
-                        ListRootContextMenu(controller: menuController, parentItem: parentModel, currentSelected: item.model.id, listController: listController)
+                        ListRootContextMenu(root: root, controller: menuController, parentItem: parentModel, currentSelected: item.model.id, listController: listController)
                     }
                 }
                 

@@ -28,6 +28,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
     }
 
     public init(
+        root: any ItemRootControllable,
         detailListController: FolderListControllable,
         selectedModel: any ItemDataAccessable,
         configuration: Configuration = Configuration(),
@@ -36,6 +37,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
         @ViewBuilder overlay: () -> Overlay,
         @ViewBuilder entryEditor: () -> EntryEditor
     ) {
+        self.root = root
         self.detailListController = detailListController
         self.selectedModel = selectedModel
         self.editorAsBackground = configuration.editorAsBackground
@@ -46,6 +48,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
         self.entryEditor = entryEditor()
     }
 
+    let root: any ItemRootControllable
     let selectedModel: any ItemDataAccessable
     let editorAsBackground: Bool
     let header: Header
@@ -59,8 +62,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
     @Environment(\.navigator) private var navigator
 
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
-
-    @Environment(ItemRootController.self) private var root
         
     @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
@@ -376,24 +377,3 @@ private extension ItemDetailRootView {
         }
     }
 }
-
-//#Preview("Folder", traits: .mockData) {
-//    @Previewable @Environment(FakeItemRootController.self) var root
-//    @Previewable @Query var models: [ItemDataModel]
-//
-//    ItemDetailRootView(model: models.first(where: { $0.id == MockData.folderId })!)
-//}
-//
-//#Preview("Collection", traits: .mockData) {
-//    @Previewable @Environment(FakeItemRootController.self) var root
-//    @Previewable @Query var models: [ItemDataModel]
-//
-//    ItemDetailRootView(model: models.first(where: { $0.id == MockData.playlistId })!)
-//}
-//
-//#Preview("Item", traits: .mockData) {
-//    @Previewable @Environment(FakeItemRootController.self) var root
-//    @Previewable @Query var models: [ItemDataModel]
-//
-//    ItemDetailRootView(model: models.first(where: { $0.id == MockData.previewId })!)
-//}

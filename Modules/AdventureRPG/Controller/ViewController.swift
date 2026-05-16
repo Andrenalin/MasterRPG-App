@@ -32,8 +32,7 @@ public extension ViewController {
     }
     
     @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
-        LinkRootView(type: type)
-            .environment(itemSelectionModel)
+        LinkRootView(type: type, itemSelectionModel: itemSelectionModel)
     }
     
     @MainActor func viewer(root: AdventureRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
@@ -50,8 +49,7 @@ public extension ViewController {
             if let select = focusedIds.first {
                 viewer(root: root, itemId: select, configuration: ViewerConfiguration(closeButton: false))
             } else {
-                LinkRootView(type: .inspector)
-                    .environment(ItemSelectionModel())
+                LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())
             }
         }
     }

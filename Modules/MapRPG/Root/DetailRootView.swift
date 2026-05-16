@@ -17,7 +17,7 @@ struct DetailRootView: View, Equatable {
     var body: some View {
         DetailListView(root: root, model: model)
             .equatable()  // Only recreate if model.id changes
-            .detailInspectorModifier()
+            .detailInspectorModifier(root: root.rootController)
             .applyIf(appSizeModel.mode == .regular) {
                 $0.task(id: model.id) {
                     root.navigationModel.folderItems = []

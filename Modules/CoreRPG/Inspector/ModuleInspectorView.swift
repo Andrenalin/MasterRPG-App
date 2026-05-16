@@ -13,8 +13,7 @@ public struct ModuleInspectorView: View {
         let _ = Self._printChanges()
         if let itemId = rootController.navigationModel.selectedItemId, let item = rootController.itemControllable.itemSync(for: itemId) {
             if item.specialCategory {
-                LinkItemRootView(root: rootController, type: .inspector)
-                    .environment(rootController.itemSelectionModel)
+                LinkItemRootView(root: rootController, type: .inspector, itemSelectionModel: rootController.itemSelectionModel)
             } else if let editorLinkModel = rootController.inspectorEditorLinkModel, !editorLinkModel.firstRow.isEmpty {
                 EditorLinkView(root: rootController, model: item, editorLinkModel: editorLinkModel)
             } else {

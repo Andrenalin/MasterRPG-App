@@ -1,12 +1,12 @@
 // @copyright André Trettin
 
-import SwiftData
 import SwiftUI
 
 public struct LinkItemListView: View {
-    init(root: any ItemRootControllable, type: LinkRootType, parentModel: (any ItemDataAccessable)?) {
+    init(root: any ItemRootControllable, type: LinkRootType, selectionModel: ItemSelectionModel, parentModel: (any ItemDataAccessable)?) {
         self.root = root
         self.type = type
+        self.selectionModel = selectionModel
         self.parentModel = parentModel
         if let parentModel {
             let mode: ListDisplayModel.ListMode = parentModel.category == .folder ? .folder : .list
@@ -17,10 +17,10 @@ public struct LinkItemListView: View {
 
     let root: any ItemRootControllable
     let type: LinkRootType
+    let selectionModel: ItemSelectionModel
     let parentModel: (any ItemDataAccessable)?
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ItemSelectionModel.self) private var selectionModel
 #if os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif

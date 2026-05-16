@@ -50,13 +50,11 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor func gameListView(root: PhotoRootModel) -> some View {
-        LinkRootView(type: .inspector)
-            .environment(ItemSelectionModel())
+        LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())
     }
     
     @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
-        LinkRootView(type: type)
-            .environment(itemSelectionModel)
+        LinkRootView(type: type, itemSelectionModel: itemSelectionModel)
     }
 }
 

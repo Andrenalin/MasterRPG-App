@@ -59,12 +59,7 @@ public extension ViewControllable {
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
     @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
     
-    @MainActor func linkListView(rootController: ItemRootController, type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> AnyView {
-        AnyView(
-        LinkItemRootView(root: rootController, type: type)
-            .environment(rootController)
-            .environment(itemSelectionModel)
-        )
+    @MainActor func linkListView(rootController: ItemRootController, type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> LinkItemRootView {
+        LinkItemRootView(root: rootController, type: type, itemSelectionModel: itemSelectionModel)
     }
-
 }
