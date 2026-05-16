@@ -5,6 +5,7 @@ import SwiftUI
 /// Picker subview — @Bindable on the concrete ListDisplayModel registers @Observable tracking.
 struct LinkItemPickerView: View {
     @Bindable var listDisplayModel: ListDisplayModel
+    var isParentFiltering: Bool = false
 
     var body: some View {
         Picker(selection: $listDisplayModel.listMode) {
@@ -18,5 +19,6 @@ struct LinkItemPickerView: View {
         .labelsHidden()
         .pickerStyle(.segmented)
         .padding(.horizontal)
+        .disabled(isParentFiltering)
     }
 }

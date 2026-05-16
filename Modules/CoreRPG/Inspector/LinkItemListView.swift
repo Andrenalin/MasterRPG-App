@@ -34,7 +34,10 @@ public struct LinkItemListView: View {
         ManagedNavigationStack(name: "LinkInspector") { navigator in
             VStack {
                 if type == .inspector {
-                    LinkItemPickerView(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                    LinkItemPickerView(
+                        listDisplayModel: root.folderLinkControllable.listDisplayModel,
+                        isParentFiltering: parentModel != nil
+                    )
 
                     LinkItemFilterFieldView(
                         searchModel: root.folderLinkControllable.searchModel,
@@ -245,9 +248,12 @@ private extension LinkItemListView {
     
     @ViewBuilder
     private var listModeControls: some View {
-        ControlGroup {
-            ListModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-            FolderModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+        // Only show list mode controls if parent filtering is not active
+        if parentModel == nil {
+            ControlGroup {
+                ListModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                FolderModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
+            }
         }
     }
 

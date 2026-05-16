@@ -30,6 +30,10 @@ extension FolderListControllable {
         resetFilter()
     }
 
+    /// Resets the parent model and triggers filtering updates.
+    /// When a parent model is set, the list mode is controlled by LinkItemListView.configureParentFiltering()
+    /// based on the parent's category (folder → .folder mode, others → .list mode).
+    /// UI controls for list mode should be disabled when parentModel is set.
     public func resetParentModel(model: (any ItemDataAccessable)) {
         if listModel.parentModel?.id != model.id {
             listModel.updatedOnce = true
