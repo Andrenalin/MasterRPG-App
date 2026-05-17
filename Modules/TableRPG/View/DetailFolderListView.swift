@@ -109,8 +109,6 @@ private struct DetailFolderContentView: View {
             openFileWindowModel: root.openFileWindowModel,
             configuration: .init(editorAsBackground: false, hasOverlay: false)
         ) {
-            EmptyView()
-        } editor: {
             DetailEditorView(root: root, model: model)
         } overlay: {
             EmptyView()

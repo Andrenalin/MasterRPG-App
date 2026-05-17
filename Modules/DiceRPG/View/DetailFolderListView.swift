@@ -73,8 +73,6 @@ private struct DetailFolderContentView: View {
             openFileWindowModel: rootStorage.openFileWindowModel,
             configuration: .init(editorAsBackground: false, hasOverlay: true)
         ) {
-            EmptyView()
-        } editor: {
             DetailEditorView(model: model)
         } overlay: {
             DiceOverlayView(model: model)

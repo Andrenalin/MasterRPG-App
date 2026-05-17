@@ -73,8 +73,6 @@ private struct DetailFolderContentView: View {
             openFileWindowModel: rootStorage.openFileWindowModel,
             configuration: .init(editorAsBackground: true, hasOverlay: false)
         ) {
-            EmptyView()
-        } editor: {
             SpaceDetailObjectViewer(editController: rootStorage.editController, model: model)
         } overlay: {
             EmptyView()

@@ -108,17 +108,18 @@ private struct DetailFolderContentView: View {
             detailListController: listController,
             selectedModel: model,
             openFileWindowModel: root.openFileWindowModel,
-            configuration: .init(editorAsBackground: false, hasOverlay: true)
-        ) {
-            EmptyView()
-        } editor: {
-            WeatherEditor(model: model)
-        } overlay: {
-            OverlayViewer(model: model, animate: $animate)
-                .allowsHitTesting(false)
-        } entryEditor: {
-            EmptyView()
-        }
+            configuration: .init(editorAsBackground: false, hasOverlay: true),
+            editor: {
+                WeatherEditor(model: model)
+            },
+            overlay: {
+                OverlayViewer(model: model, animate: $animate)
+                    .allowsHitTesting(false)
+            },
+            entryEditor: {
+                EmptyView()
+            }
+        )
         .overlay {
             if root.openFileWindowModel.showItem {
                 root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {

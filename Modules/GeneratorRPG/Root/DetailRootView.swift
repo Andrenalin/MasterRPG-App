@@ -49,8 +49,6 @@ struct DetailListView: View {
             openFileWindowModel: root.openFileWindowModel,
             configuration: .init(editorAsBackground: false, hasOverlay: false)
         ) {
-            EmptyView()
-        } editor: {
             Text("Add a reference character")
 
             detailEditorView(model: model)

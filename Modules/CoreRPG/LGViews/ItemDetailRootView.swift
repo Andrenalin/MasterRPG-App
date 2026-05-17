@@ -14,7 +14,7 @@ struct EditingItem: Identifiable {
     }
 }
 
-public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, EntryEditor: View>: View {
+public struct ItemDetailRootView<Editor: View, Overlay: View, EntryEditor: View>: View {
 
     /// Configuration for ItemDetailRootView behavior
     public struct Configuration {
@@ -33,7 +33,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
         selectedModel: any ItemDataAccessable,
         openFileWindowModel: OpenFileWindowModel,
         configuration: Configuration = Configuration(),
-        @ViewBuilder header: () -> Header,
         @ViewBuilder editor: () -> Editor,
         @ViewBuilder overlay: () -> Overlay,
         @ViewBuilder entryEditor: () -> EntryEditor
@@ -43,7 +42,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
         self.selectedModel = selectedModel
         self.openFileWindowModel = openFileWindowModel
         self.editorAsBackground = configuration.editorAsBackground
-        self.header = header()
         self.editor = editor()
         self.overlay = overlay()
         self.hasOverlay = configuration.hasOverlay
@@ -54,13 +52,11 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
     let selectedModel: any ItemDataAccessable
     let openFileWindowModel: OpenFileWindowModel
     let editorAsBackground: Bool
-    let header: Header
     let editor: Editor
     let overlay: Overlay
     let hasOverlay: Bool
     let entryEditor: EntryEditor
     
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
 
@@ -81,10 +77,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Overlay: View, Entr
 }
 
 private extension ItemDetailRootView {
-    func currentModel(model: any ItemDataAccessable) -> any ItemDataAccessable {
-        model
-    }
-    
     var fileTypes: [UTType] {
         root.editControllable.fileUrlDataController?.fileTypes ?? []
     }
@@ -137,7 +129,7 @@ private extension ItemDetailRootView {
         .sheet(item: $editingItem) { item in
             editingSheet(model: item.model)
         }
-        .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), openFileWindowModel: openFileWindowModel, module: root.configurable.module))
+        .modifier(OpenFileViewerViewModifier(model: model, openFileWindowModel: openFileWindowModel, module: root.configurable.module))
         .toolbar {
             toolbarContent(model: model)
         }
@@ -148,7 +140,7 @@ private extension ItemDetailRootView {
         // Yield once to let the view settle before checking model state
         await Task.yield()
         guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
-        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
+        withAnimation(.easeInOut) { editingItem = EditingItem(model) }
     }
 
     func handleModelIdChange(model: any ItemDataAccessable) {
@@ -167,13 +159,13 @@ private extension ItemDetailRootView {
 
     func handleModelNameChange(model: any ItemDataAccessable) {
         guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
-        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
+        withAnimation(.easeInOut) { editingItem = EditingItem(model) }
     }
 
     func handleModelUrlChange(model: any ItemDataAccessable, oldValue: URL?) {
         guard oldValue == nil else { return }
         guard itemIdHasUrl != model.id else { return }
-        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
+        withAnimation(.easeInOut) { editingItem = EditingItem(model) }
     }
 
     func editingSheet(model: any ItemDataAccessable) -> some View {
@@ -192,9 +184,7 @@ private extension ItemDetailRootView {
     
     func headerView(model: any ItemDataAccessable) -> some View {
         ZStack(alignment: .bottom) {
-            header
-            
-            ItemDetailOverlayView(model: currentModel(model: model), cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel)
+            ItemDetailOverlayView(model: model, cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel)
                 .padding()
         }
         .overlay(alignment: .top) {
@@ -217,7 +207,7 @@ private extension ItemDetailRootView {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .opacity(hasFile(model: currentModel(model: model)) || currentModel(model: model).specialCategory ? 0 : 1)
+        .opacity(hasFile(model: model) || model.specialCategory ? 0 : 1)
         .transition(.scale)
     }
     
@@ -226,10 +216,10 @@ private extension ItemDetailRootView {
         ZStack {
             initialFileImporterView(model: model)
             
-            if currentModel(model: model).specialCategory == false && editorAsBackground {
-                editorContentBackgroundView(model: currentModel(model: model))
+            if model.specialCategory == false && editorAsBackground {
+                editorContentBackgroundView(model: model)
             } else {
-                editorContentView(model: currentModel(model: model))
+                editorContentView(model: model)
             }
         }
     }
@@ -353,9 +343,9 @@ private extension ItemDetailRootView {
     private func toolbarContent(model: any ItemDataAccessable) -> some ToolbarContent {
         if openFileWindowModel.showItem == false {
             ToolbarItem(placement: .primaryAction) {
-                if (hasFile(model: currentModel(model: model)) || currentModel(model: model).specialCategory) {
+                if (hasFile(model: model) || model.specialCategory) {
                     Button {
-                        withAnimation(.easeInOut) { editingItem = EditingItem(currentModel(model: model)) }
+                        withAnimation(.easeInOut) { editingItem = EditingItem(model) }
                     } label: {
                         Label {
                             Text("Edit", bundle: .module)
