@@ -77,6 +77,8 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
             name: editModel.name,
             content: editModel.text
         )
+        
+        withAnimation { editorModel.entryId = nil }
     }
     
     // MARK: - Drop Link Button

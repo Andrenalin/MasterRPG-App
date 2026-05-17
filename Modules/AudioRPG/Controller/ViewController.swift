@@ -6,12 +6,16 @@ import SwiftUI
 
 public struct ViewController: Sendable {
     public let sharingViewType: SharingViewType = .custom
-    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
+    public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
 
 extension ViewController: ViewControllable {
     @MainActor public func sharingView(for itemId: UUID) -> AnyView {
         AnyView(SharingActionView(itemId: itemId, showPlayControl: false).equatable())
+    }
+    
+    @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(AudioPlayPauseButton(itemId: itemId).equatable())
     }
     
     @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
@@ -57,3 +61,4 @@ public extension ViewController {
         PlayerVolumeView(root: root, alignment: alignment)
     }
 }
+
