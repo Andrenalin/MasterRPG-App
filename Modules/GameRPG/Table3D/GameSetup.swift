@@ -196,7 +196,7 @@ class GameSetup {
         }
         
         // Track which monster pawns to keep
-        let monsterPinIds = Set(monsterPins.map { $0.id })
+        //let monsterPinIds = Set(monsterPins.map { $0.id })
         
         // Update existing monster pawns or hide them if pin no longer exists
         for monsterPawn in monsterPawns {

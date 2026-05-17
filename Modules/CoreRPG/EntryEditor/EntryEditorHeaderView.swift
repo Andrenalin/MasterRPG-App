@@ -83,7 +83,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     
     // MARK: - Drop Link Button
     
-    private var dropLinkArea: some View {
+    @ViewBuilder private var dropLinkArea: some View {
 #if !os(tvOS)
         Label {
             Text("Drop Links", bundle: .module)
