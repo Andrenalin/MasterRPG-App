@@ -10,6 +10,7 @@ struct EntryContentEditor: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Description", bundle: .module)
                 .font(.caption)
+                .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
 #if os(tvOS)
@@ -31,6 +32,8 @@ struct EntryContentEditor: View {
     }
 }
 
+// MARK: - Previews
+
 #Preview("Light Mode") {
     @Previewable @FocusState var focus: EntryEditorFocusField?
     @Previewable @State var model = TextEditModel(linkRegisterController: nil)
@@ -39,7 +42,13 @@ struct EntryContentEditor: View {
         EntryContentEditor(editModel: model, currentFocus: $focus)
             .padding()
     }
-    .background(Color.secondary.opacity(0.3))
+#if os(iOS) || os(visionOS)
+    .background(Color(uiColor: .systemGroupedBackground))
+#elseif os(macOS)
+    .background(Color(nsColor: .windowBackgroundColor))
+#else
+    .background(Color.gray.opacity(0.1))
+#endif
     .preferredColorScheme(.light)
     .onAppear {
         model.text = "Sample content with [link](test)"

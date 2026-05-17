@@ -6,27 +6,32 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     let editController: any EntryDataEditable
     let editorModel: SheetEditorModel
     let itemId: UUID
-    let editModel: TextEditModel
+    @Bindable var editModel: TextEditModel
     let entry: any EntryDataAccessable
     let linkTypes: LinkType.Type
     
     @State private var isDropTargeted: Bool = false
+    @State private var isSaving: Bool = false
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         HStack(spacing: 12) {
             dismissButton
             
-            Spacer()
-            
-            dropLinkButton
-            
-            Spacer()
+            dropLinkArea
             
             saveButton
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 8)
+        
+#if os(macOS)
+        .focusable()
+        .onKeyPress(.escape) {
+            withAnimation { editorModel.entryId = nil }
+            return .handled
+        }
+#endif
     }
     
     // MARK: - Dismiss Button
@@ -35,11 +40,10 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
         Button {
             withAnimation { editorModel.entryId = nil }
         } label: {
-            Image(systemName: "xmark.circle.fill")
-                .font(.title2)
-                .symbolRenderingMode(.hierarchical)
+            Image(systemName: "xmark")
         }
         .padding(12)
+        .foregroundStyle(.primary)
 #if !os(visionOS)
         .glassEffectAll(.regular.interactive())
 #endif
@@ -50,11 +54,10 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     
     private var saveButton: some View {
         Button(action: save) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.title2)
-                .symbolRenderingMode(.hierarchical)
+            Image(systemName: "checkmark")
         }
         .padding(12)
+        .foregroundStyle(.primary)
 #if !os(visionOS)
         .glassEffectAll(.regular.interactive())
 #endif
@@ -62,43 +65,53 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     }
     
     func save() {
+#if os(iOS)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+#endif
+        
         editModel.resetText()
-        withAnimation {
-            if let itemId = editorModel.itemId {
-                editController.update(itemId: itemId, entryId: entry.id, name: editModel.name, content: editModel.text)
-            }
-            editorModel.entryId = nil
-        }
+        
+        editController.update(
+            itemId: itemId,
+            entryId: entry.id,
+            name: editModel.name,
+            content: editModel.text
+        )
     }
     
     // MARK: - Drop Link Button
     
-    private var dropLinkButton: some View {
+    private var dropLinkArea: some View {
 #if !os(tvOS)
-        Text("Drop Links", bundle: .module)
-            .font(.subheadline)
-            .fontWeight(.medium)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(dropBackgroundColor)
+        Label {
+            Text("Drop Links", bundle: .module)
+        } icon: {
+            Image(systemName: "square.and.arrow.down")
+                .imageScale(.large)
+        }
+        .font(.caption)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .background {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(dropBackgroundColor)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(dropStrokeColor, lineWidth: 2)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .scaleEffect(isDropTargeted ? 1.1 : 1.0)
+        .dropDestination(for: linkTypes) { items, location in
+            handleDrop(items: items)
+            return true
+        } isTargeted: { isTargeted in
+            withAnimation(.snappy(duration: 0.2)) {
+                isDropTargeted = isTargeted
             }
-            .overlay {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(dropStrokeColor, lineWidth: 2)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .dropDestination(for: linkTypes) { items, location in
-                handleDrop(items: items)
-                return true
-            } isTargeted: { isTargeted in
-                withAnimation(.snappy(duration: 0.2)) {
-                    isDropTargeted = isTargeted
-                }
-            }
-            .accessibilityLabel("Drop links area")
-            .accessibilityHint("Drag and drop links here to add them to this entry")
+        }
+        .accessibilityLabel("Drop links area")
+        .accessibilityHint("Drag and drop links here to add them to this entry")
 #endif
     }
     
@@ -127,6 +140,11 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     // MARK: - Actions
     
     private func handleDrop(items: [LinkType]) {
+        // Enhancement 3: Add haptic feedback on drop
+#if os(iOS)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+#endif
+        
         editModel.resetText()
         editController.update(
             itemId: itemId,
@@ -145,5 +163,13 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
                 destinationEntryId: entry.id
             )
         }
+        
+        // Enhancement 3: Success haptic after drop
+#if os(iOS)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+#endif
     }
 }
