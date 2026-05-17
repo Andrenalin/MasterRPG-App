@@ -19,6 +19,8 @@ struct AudioPlayPauseButton: View, Equatable {
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)
+        .frame(width: 44, height: 44) // Minimum tap target size
+        .contentShape(.rect) // Ensure entire frame is tappable
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint(accessibilityHint)
     }
@@ -26,14 +28,28 @@ struct AudioPlayPauseButton: View, Equatable {
     // MARK: - Actions
     
     private func handlePlayPause() {
+        // If currently playing this item, just toggle pause
+        if isCurrentlyPlaying {
+            root.audioController.pause()
+            return
+        }
+        
+        // If a different item is playing, pause it first
+        if root.audioPlayerModel.isPlaying && root.audioPlayerModel.currentId != itemId {
+            root.audioController.pause()
+        }
+        
         // Check if this item is in the playlist
         let isInPlaylist = root.audioPlayerModel.playList.contains(where: { $0.id == itemId })
         
         if !isInPlaylist {
             // Load and play this audio item
             root.audioController.loadAndPlay(id: itemId)
+        } else if root.audioPlayerModel.currentId == itemId {
+            // Item is the current item but paused, just play it
+            root.audioController.play()
         } else {
-            // Item is already in playlist, just toggle play/pause
+            // Item is in playlist but not current, switch to it
             root.audioController.togglePlay(id: itemId)
         }
     }

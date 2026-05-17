@@ -146,14 +146,19 @@ extension AudioController {
     }
     
     @MainActor func loadAndPlay(id: UUID) {
-        guard model.playList.contains(where: { $0.id != id }) else {
+        // If item is already in playlist, just play it
+        guard !model.playList.contains(where: { $0.id == id }) else {
             togglePlay(id: id)
             return
         }
-        let models = [itemController.itemOrEmpty(for: id)]  // gameController.fetchPlaylist(id: id)
+        // Item not in playlist, load it first
+        let models = [itemController.itemOrEmpty(for: id)]
         guard !models.isEmpty else { return }
         Task {
             await add(audio: models, replace: true)
+            // After loading, set it as current and play
+            model.set(currentId: id)
+            await preparePlay(id: id)
         }
     }
 

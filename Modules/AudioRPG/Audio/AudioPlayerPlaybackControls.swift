@@ -18,6 +18,7 @@ struct AudioPlayerPlaybackControls: View {
                     .labelStyle(.iconOnly)
                     .font(.title3)
                     .frame(width: 32, height: 32)
+                    .contentShape(.rect) // Ensure full frame is tappable
             }
             .buttonStyle(.plain)
             .disabled(!audioPlayerModel.hasPrev)
@@ -34,7 +35,8 @@ struct AudioPlayerPlaybackControls: View {
                 .labelStyle(.iconOnly)
                 .font(.title2)
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
-                .frame(width: 36, height: 36)
+                .frame(width: 44, height: 44) // Larger tap target for primary button
+                .contentShape(.rect) // Ensure full frame is tappable
             }
             .buttonStyle(.plain)
             .disabled(audioPlayerModel.playList.isEmpty)
@@ -48,6 +50,7 @@ struct AudioPlayerPlaybackControls: View {
                     .labelStyle(.iconOnly)
                     .font(.title3)
                     .frame(width: 32, height: 32)
+                    .contentShape(.rect) // Ensure full frame is tappable
             }
             .buttonStyle(.plain)
             .disabled(!audioPlayerModel.hasNext)

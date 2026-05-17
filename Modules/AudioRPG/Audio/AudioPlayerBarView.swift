@@ -19,19 +19,23 @@ struct AudioPlayerBarView: View {
                 AudioPlayerMiniBarView()
                     .glassEffect(.clear)
             }
+            .allowsHitTesting(true) // Ensure touches are registered
         } else {
             GlassEffectContainerView {
                 barContent
                     .glassEffect(.clear)
             }
+            .allowsHitTesting(true) // Ensure touches are registered
         }
 #elseif os(visionOS)
         barContent
+            .allowsHitTesting(true)
 #else
         GlassEffectContainerAll {
             barContent
                 .glassEffectAll(.clear)
         }
+        .allowsHitTesting(true)
 #endif
     }
 
@@ -61,5 +65,6 @@ struct AudioPlayerBarView: View {
             .padding(.horizontal, 8)
         }
         .padding(.vertical, 8)
+        .contentShape(.rect) // Ensure the entire bar area is interactive
     }
 }

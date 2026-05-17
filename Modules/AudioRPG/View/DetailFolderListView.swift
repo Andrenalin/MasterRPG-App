@@ -76,9 +76,10 @@ private struct DetailFolderContentView: View {
             DetailEditorView(rootStorage: rootStorage, model: model)
         }
         .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-            AudioPlayerBarView()
-                .padding()
-                .opacity(0)
+            // Spacer to reserve space for the overlay
+            Color.clear
+                .frame(height: 80)
+                .allowsHitTesting(false) // Critical: don't block touches
         }
         .overlay(alignment: .bottom) {
             AudioPlayerBarView()
