@@ -207,6 +207,9 @@
         }
       }
     },
+    "Pauses the current audio" : {
+
+    },
     "Play" : {
       "localizations" : {
         "de" : {
@@ -243,6 +246,9 @@
       }
     },
     "Playback Position" : {
+
+    },
+    "Plays this audio track" : {
 
     },
     "Previous" : {

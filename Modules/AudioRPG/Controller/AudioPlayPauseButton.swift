@@ -11,34 +11,63 @@ struct AudioPlayPauseButton: View, Equatable {
     
     var body: some View {
         Button {
-            root.audioController.togglePlay(id: itemId)
+            handlePlayPause()
         } label: {
-            Image(systemName: isCurrentlyPlaying ? "pause.circle.fill" : "play.circle.fill")
+            Image(systemName: iconName)
                 .font(.system(size: imageSize))
-                .foregroundStyle(isCurrentlyPlaying ? .primary : .secondary)
+                .foregroundStyle(iconColor)
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)
-//        .frame(width: frameSize, height: frameSize)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint(accessibilityHint)
     }
+    
+    // MARK: - Actions
+    
+    private func handlePlayPause() {
+        // Check if this item is in the playlist
+        let isInPlaylist = root.audioPlayerModel.playList.contains(where: { $0.id == itemId })
+        
+        if !isInPlaylist {
+            // Load and play this audio item
+            root.audioController.loadAndPlay(id: itemId)
+        } else {
+            // Item is already in playlist, just toggle play/pause
+            root.audioController.togglePlay(id: itemId)
+        }
+    }
+    
+    // MARK: - Computed Properties
     
     private var isCurrentlyPlaying: Bool {
         root.audioPlayerModel.currentId == itemId && root.audioPlayerModel.isPlaying
     }
     
-    private var frameSize: CGFloat {
-        switch listDisplayModel.displayMode {
-        case .compact:
-            return 50
-        case .medium:
-            return 60
-        case .regular:
-            return 80
-        }
+    private var iconName: String {
+        isCurrentlyPlaying ? "pause.circle.fill" : "play.circle.fill"
+    }
+    
+    private var iconColor: Color {
+        isCurrentlyPlaying ? .primary : .secondary
     }
     
     private var imageSize: CGFloat {
-        return 32
+        32
+    }
+    
+    // MARK: - Accessibility
+    
+    private var accessibilityLabel: String {
+        isCurrentlyPlaying 
+            ? String(localized: "Pause", bundle: .module)
+            : String(localized: "Play", bundle: .module)
+    }
+    
+    private var accessibilityHint: String {
+        isCurrentlyPlaying 
+            ? String(localized: "Pauses the current audio", bundle: .module)
+            : String(localized: "Plays this audio track", bundle: .module)
     }
     
     // MARK: - Equatable
