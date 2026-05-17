@@ -7,11 +7,12 @@ struct ContentFormattingDefinition: AttributedTextFormattingDefinition {
     typealias Scope = AttributeScopes.ContentAttributes
     
     let links: Set<LinkDataModel.ID>
+    var colorScheme: ColorScheme = .light
 
     var body: some AttributedTextFormattingDefinition<Scope> {
         NormalizeFonts()
-        LinksAreWhite(links: links)
-        LinksHaveBlueBacks(links: links)
+        LinksAreAdaptive(links: links, colorScheme: colorScheme)
+        LinksHaveAdaptiveBacks(links: links, colorScheme: colorScheme)
     }
 }
 
@@ -39,30 +40,34 @@ struct NormalizeFonts: AttributedTextValueConstraint {
     }
 }
 
-struct LinksAreWhite: AttributedTextValueConstraint {
+struct LinksAreAdaptive: AttributedTextValueConstraint {
     typealias Scope = ContentFormattingDefinition.Scope
     typealias AttributeKey = AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute
 
     let links: Set<LinkDataModel.ID>
+    let colorScheme: ColorScheme
 
     func constrain(_ container: inout Attributes) {
         if let link = container.linkContent, links.contains(link) {
-            container.foregroundColor = Color.primary
+            // Adaptive color based on color scheme and accent color
+            container.foregroundColor = colorScheme == .dark ? .white : .primary
         } else {
             container.foregroundColor = nil
         }
     }
 }
 
-struct LinksHaveBlueBacks: AttributedTextValueConstraint {
+struct LinksHaveAdaptiveBacks: AttributedTextValueConstraint {
     typealias Scope = ContentFormattingDefinition.Scope
     typealias AttributeKey = AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute
 
     let links: Set<LinkDataModel.ID>
+    let colorScheme: ColorScheme
 
     func constrain(_ container: inout Attributes) {
         if let link = container.linkContent, links.contains(link) {
-            container.backgroundColor = Color.accentColor
+            // Use accent color with adaptive opacity
+            container.backgroundColor = Color.accentColor.opacity(colorScheme == .dark ? 0.6 : 0.8)
         } else {
             container.backgroundColor = nil
         }

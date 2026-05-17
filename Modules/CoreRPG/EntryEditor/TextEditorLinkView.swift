@@ -12,6 +12,8 @@ public struct TextEditorLinkView: View {
     let maxHeight: CGFloat
     
     @State private var selection: AttributedTextSelection = .init()
+    @State private var formattingDefinition: ContentFormattingDefinition?
+    @Environment(\.colorScheme) private var colorScheme
     
     public var body: some View {
         @Bindable var model = model
@@ -26,19 +28,27 @@ public struct TextEditorLinkView: View {
         }
         .padding(.bottom, 6)
 #else
+        let currentDefinition = formattingDefinition ?? ContentFormattingDefinition(links: [], colorScheme: colorScheme)
+        
         ZStack {
 #if os(macOS)
             Color(nsColor: .controlBackgroundColor)
 #endif
             TextEditor(text: $model.attributedText, selection: $selection)
-                .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))
-#if !os(macOS)
-                .textInputAutocapitalization(.sentences)
+                .attributedTextFormattingDefinition(currentDefinition)
+                .textInputAutocapitalizationAll(.sentences)
                 .writingToolsBehavior(.complete)
-#endif
                 .autocorrectionDisabled(true)
-                //.frame(minHeight: 120, maxHeight: maxHeight)
                 .padding(valueFor(iOS: 0, macOS: 4, tvOS: 0, visionOS: 0))
+                .onChange(of: model.links) { _, newLinks in
+                    updateFormattingDefinition(links: newLinks)
+                }
+                .onChange(of: colorScheme) { _, _ in
+                    updateFormattingDefinition(links: model.links)
+                }
+                .onAppear {
+                    updateFormattingDefinition(links: model.links)
+                }
         }
         .background {
             Color.clear
@@ -50,22 +60,34 @@ public struct TextEditorLinkView: View {
         .frame(minHeight: 120, maxHeight: maxHeight)
 #endif
     }
+    
+    private func updateFormattingDefinition(links: [LinkRegisterModel]) {
+        let linkIds = Set(links.map(\.id))
+        formattingDefinition = ContentFormattingDefinition(links: linkIds, colorScheme: colorScheme)
+    }
 }
 
 #Preview {
     @Previewable @State var model: TextEditModel = .init(linkRegisterController: .fake)
     
-    Color.clear
-        .background {
-            Rectangle().fill(Color.blue.gradient)
+    ZStack(alignment: .top) {
+        Button {
+            
+        } label: {
+            Text("Link")
         }
-        .overlay {
-            TextEditorLinkView(model: model, maxHeight: 200)
-                .padding()
-        }
-        .onAppear() {
-            model.name = "Hello"
-            model.text = "Long Text"
-            model.resetAttributedText()
-        }
+        Color.clear
+    }
+    .background {
+        Rectangle().fill(Color.blue.gradient)
+    }
+    .overlay {
+        TextEditorLinkView(model: model, maxHeight: 200)
+            .padding()
+    }
+    .onAppear() {
+        model.name = "Hello"
+        model.text = "Long Text"
+        model.resetAttributedText()
+    }
 }
