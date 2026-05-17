@@ -71,14 +71,13 @@ private struct DetailFolderContentView: View {
             detailListController: detailFolderListController,
             selectedModel: model,
             openFileWindowModel: rootStorage.openFileWindowModel,
-            configuration: .init(editorAsBackground: false, hasOverlay: true)
+            configuration: .init(editorAsBackground: false, hasOverlay: true, hasEntryEditor: false),
+            linkTypes: EmptyLinkTransferable.self
         ) {
             DetailEditorView(rootStorage: rootStorage, model: model)
         } overlay: {
             AudioPlayerBarView()
                 .padding()
-        } entryEditor: {
-            EmptyView()
         }
         .applyIf(appSizeModel.mode == .compact) {
             $0.navigate(to: $detailRoute)

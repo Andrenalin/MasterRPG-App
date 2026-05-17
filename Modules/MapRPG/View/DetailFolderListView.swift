@@ -116,13 +116,12 @@ private struct DetailFolderContentView: View {
             detailListController: listController,
             selectedModel: model,
             openFileWindowModel: root.openFileWindowModel,
-            configuration: .init(editorAsBackground: false, hasOverlay: false)
+            configuration: .init(editorAsBackground: false, hasOverlay: false),
+            linkTypes: LinkMapModuleTransferable.self
         ) {
             DetailEditorView(root: root, model: model)
         } overlay: {
             EmptyView()
-        } entryEditor: {
-            EntryEditorView(rootManager: root.linkControllable.rootManager, editorModel: root.editController.sheetEditorModel, linkTypes: LinkMapModuleTransferable.self)
         }
     }
 }

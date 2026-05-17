@@ -14,16 +14,35 @@ struct EditingItem: Identifiable {
     }
 }
 
-public struct ItemDetailRootView<Editor: View, Overlay: View, EntryEditor: View>: View {
+/// Empty link transferable for modules that don't support entry editor
+public struct EmptyLinkTransferable: LinkDataTransferable {
+    public let module: NetworkModules
+    public let itemId: UUID
+    public let entryId: UUID?
+    public let name: String
+    public let isMove: Bool
+    
+    public static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .data)
+    }
+}
+
+public struct ItemDetailRootView<Editor: View, Overlay: View, LinkTypes: LinkDataTransferable>: View {
 
     /// Configuration for ItemDetailRootView behavior
     public struct Configuration {
         public var editorAsBackground: Bool
         public var hasOverlay: Bool
+        public var hasEntryEditor: Bool
 
-        public init(editorAsBackground: Bool = false, hasOverlay: Bool = false) {
+        public init(
+            editorAsBackground: Bool = false,
+            hasOverlay: Bool = false,
+            hasEntryEditor: Bool = true
+        ) {
             self.editorAsBackground = editorAsBackground
             self.hasOverlay = hasOverlay
+            self.hasEntryEditor = hasEntryEditor
         }
     }
 
@@ -33,29 +52,27 @@ public struct ItemDetailRootView<Editor: View, Overlay: View, EntryEditor: View>
         selectedModel: any ItemDataAccessable,
         openFileWindowModel: OpenFileWindowModel,
         configuration: Configuration = Configuration(),
+        linkTypes: LinkTypes.Type,
         @ViewBuilder editor: () -> Editor,
-        @ViewBuilder overlay: () -> Overlay,
-        @ViewBuilder entryEditor: () -> EntryEditor
+        @ViewBuilder overlay: () -> Overlay
     ) {
         self.root = root
         self.detailListController = detailListController
         self.selectedModel = selectedModel
         self.openFileWindowModel = openFileWindowModel
-        self.editorAsBackground = configuration.editorAsBackground
+        self.configuration = configuration
         self.editor = editor()
         self.overlay = overlay()
-        self.hasOverlay = configuration.hasOverlay
-        self.entryEditor = entryEditor()
+        self.linkTypes = linkTypes
     }
 
     let root: any ItemRootControllable
     let selectedModel: any ItemDataAccessable
     let openFileWindowModel: OpenFileWindowModel
-    let editorAsBackground: Bool
+    let configuration: Configuration
     let editor: Editor
     let overlay: Overlay
-    let hasOverlay: Bool
-    let entryEditor: EntryEditor
+    let linkTypes: LinkTypes.Type
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
@@ -89,6 +106,17 @@ private extension ItemDetailRootView {
         Text("\(Image(systemName: root.configurable.module.icon)) \(root.configurable.module.title)")
     }
     
+    @ViewBuilder
+    var entryEditor: some View {
+        if configuration.hasEntryEditor {
+            EntryEditorView(
+                rootManager: root.linkControllable.rootManager,
+                editorModel: root.editControllable.sheetEditorModel,
+                linkTypes: LinkTypes.self
+            )
+        }
+    }
+    
     @ViewBuilder func contentScrollView(model: any ItemDataAccessable) -> some View {
         let _ = print("📜 ItemDetailRootView.contentScrollView() for model: \(model.name) (id: \(model.id))")
         HeaderContentScrollView(
@@ -103,7 +131,7 @@ private extension ItemDetailRootView {
             entryEditor
         }
         .overlay(alignment: .bottom) {
-            if hasOverlay {
+            if configuration.hasOverlay {
                 overlay
             }
         }
@@ -216,7 +244,7 @@ private extension ItemDetailRootView {
         ZStack {
             initialFileImporterView(model: model)
             
-            if model.specialCategory == false && editorAsBackground {
+            if model.specialCategory == false && configuration.editorAsBackground {
                 editorContentBackgroundView(model: model)
             } else {
                 editorContentView(model: model)
@@ -239,7 +267,7 @@ private extension ItemDetailRootView {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
         .transition(.scale)
-        .applyIf(hasOverlay) {
+        .applyIf(configuration.hasOverlay) {
             $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
                 overlay.opacity(0)
             }
@@ -289,7 +317,7 @@ private extension ItemDetailRootView {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
             .transition(.scale)
-            .applyIf(hasOverlay) {
+            .applyIf(configuration.hasOverlay) {
                 $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
                     overlay.opacity(0)
                 }

@@ -71,12 +71,11 @@ private struct DetailFolderContentView: View {
             detailListController: detailFolderListController,
             selectedModel: model,
             openFileWindowModel: rootStorage.openFileWindowModel,
-            configuration: .init(editorAsBackground: true, hasOverlay: false)
+            configuration: .init(editorAsBackground: true, hasOverlay: false, hasEntryEditor: false),
+            linkTypes: EmptyLinkTransferable.self            
         ) {
             SelectedPhotoViewerView(model: model)
         } overlay: {
-            EmptyView()
-        } entryEditor: {
             EmptyView()
         }
         .overlay {

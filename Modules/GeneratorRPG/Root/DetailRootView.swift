@@ -47,14 +47,13 @@ struct DetailListView: View {
             detailListController: listController,
             selectedModel: model,
             openFileWindowModel: root.openFileWindowModel,
-            configuration: .init(editorAsBackground: false, hasOverlay: false)
+            configuration: .init(editorAsBackground: false, hasOverlay: false, hasEntryEditor: false),
+            linkTypes: EmptyLinkTransferable.self
         ) {
             Text("Add a reference character")
 
             detailEditorView(model: model)
         } overlay: {
-            EmptyView()
-        } entryEditor: {
             EmptyView()
         }
         .overlay {
