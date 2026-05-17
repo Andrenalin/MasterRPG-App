@@ -70,11 +70,10 @@ private struct DetailFolderContentView: View {
             root: rootStorage.rootController,
             detailListController: detailFolderListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: false, hasOverlay: false, hasEntryEditor: false),
+            configuration: .init(hasEntryEditor: false),
             linkTypes: EmptyLinkTransferable.self
         ) {
             DetailEditorView(rootStorage: rootStorage, model: model)
-        } overlay: {
         }
         .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
             AudioPlayerBarView()

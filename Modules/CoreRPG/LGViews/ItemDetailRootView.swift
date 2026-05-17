@@ -27,23 +27,20 @@ public struct EmptyLinkTransferable: LinkDataTransferable {
     }
 }
 
-public struct ItemDetailRootView<Editor: View, Overlay: View, LinkTypes: LinkDataTransferable>: View {
+public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>: View {
 
     /// Configuration for ItemDetailRootView behavior
     public struct Configuration {
         public var editorAsBackground: Bool
-        public var hasOverlay: Bool
         public var hasEntryEditor: Bool
         public var disableHideHeader: Bool
 
         public init(
             editorAsBackground: Bool = false,
-            hasOverlay: Bool = false,
             hasEntryEditor: Bool = true,
             disableHideHeader: Bool = false
         ) {
             self.editorAsBackground = editorAsBackground
-            self.hasOverlay = hasOverlay
             self.hasEntryEditor = hasEntryEditor
             self.disableHideHeader = disableHideHeader
         }
@@ -55,15 +52,13 @@ public struct ItemDetailRootView<Editor: View, Overlay: View, LinkTypes: LinkDat
         selectedModel: any ItemDataAccessable,
         configuration: Configuration = Configuration(),
         linkTypes: LinkTypes.Type,
-        @ViewBuilder editor: () -> Editor,
-        @ViewBuilder overlay: () -> Overlay
+        @ViewBuilder editor: () -> Editor
     ) {
         self.root = root
         self.detailListController = detailListController
         self.selectedModel = selectedModel
         self.configuration = configuration
         self.editor = editor()
-        self.overlay = overlay()
         self.linkTypes = linkTypes
     }
 
@@ -71,7 +66,6 @@ public struct ItemDetailRootView<Editor: View, Overlay: View, LinkTypes: LinkDat
     let selectedModel: any ItemDataAccessable
     let configuration: Configuration
     let editor: Editor
-    let overlay: Overlay
     let linkTypes: LinkTypes.Type
     
     @Environment(\.colorScheme) private var colorScheme
@@ -129,11 +123,6 @@ private extension ItemDetailRootView {
         }
         .overlay(alignment: .center) {
             entryEditor
-        }
-        .overlay(alignment: .bottom) {
-            if configuration.hasOverlay {
-                overlay
-            }
         }
         .animation(.easeInOut, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -265,11 +254,6 @@ private extension ItemDetailRootView {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
         .transition(.scale)
-        .applyIf(configuration.hasOverlay) {
-            $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-                overlay.opacity(0)
-            }
-        }
     }
     
     func formEditor(model: any ItemDataAccessable) -> some View {
@@ -315,11 +299,6 @@ private extension ItemDetailRootView {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
             .transition(.scale)
-            .applyIf(configuration.hasOverlay) {
-                $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-                    overlay.opacity(0)
-                }
-            }
     }
     
     func overlayDescription(model: any ItemDataAccessable) -> some View {

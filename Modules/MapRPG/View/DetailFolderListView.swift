@@ -115,12 +115,10 @@ private struct DetailFolderContentView: View {
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: false, hasOverlay: false),
+            configuration: .init(),
             linkTypes: LinkMapModuleTransferable.self
         ) {
             DetailEditorView(root: root, model: model)
-        } overlay: {
-            EmptyView()
         }
     }
 }

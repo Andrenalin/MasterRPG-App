@@ -107,12 +107,9 @@ private struct DetailFolderContentView: View {
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: false, hasOverlay: false),
-            linkTypes: LinkCharacterModuleTransferable.self
-        ) {
+            configuration: .init(),
+            linkTypes: LinkCharacterModuleTransferable.self) {
             DetailEditorView(root: root, model: model)
-        } overlay: {
-            EmptyView()
         }
         .overlay {
             if root.openFileWindowModel.showItem {

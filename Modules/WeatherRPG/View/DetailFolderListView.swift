@@ -9,40 +9,40 @@ struct DetailFolderListView: View, Equatable {
     let model: WeatherModel
     @Binding var animate: Bool
     private let navigationModel: ModuleNavigationModel
-
+    
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
-
+    
     @State private var detailRoute: WeatherDetailRoute?
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
     @State private var detailFolderListController: FolderListController
-
+    
     init(root: WeatherRootModel, model: WeatherModel, animate: Binding<Bool>) {
         self.rootStorage = root
         self.model = model
         self._animate = animate
         self.navigationModel = root.navigationModel
-
+        
         let listModel = root.navigationModel.folderModels[model.id]
         let allListModel = listModel ?? root.folderListController.copyModel(parentModel: model)
         if listModel == nil {
             root.navigationModel.folderModels[model.id] = allListModel
         }
-
+        
         let controller = root.folderListController.copy(listModel: allListModel) as! FolderListController
         self._detailFolderListController = State(initialValue: controller)
-
+        
         print("🔄 DetailFolderListView.detailFolderListController created for model: \(model.name)")
     }
-
+    
     static func == (lhs: DetailFolderListView, rhs: DetailFolderListView) -> Bool {
         lhs.model.id == rhs.model.id
     }
     
     var body: some View {
         let _ = Self._printChanges()
-
+        
         content(listController: detailFolderListController)
             .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $detailRoute)
@@ -101,41 +101,31 @@ private struct DetailFolderContentView: View {
     let model: WeatherModel
     let listController: any FolderListControllable
     @Binding var animate: Bool
-
+    
     var body: some View {
         ItemDetailRootView(
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(
-                editorAsBackground: false,
-                hasOverlay: false,
-                hasEntryEditor: false
-            ),
-            linkTypes: EmptyLinkTransferable.self,
-            editor: {
+            configuration: .init(hasEntryEditor: false),
+            linkTypes: EmptyLinkTransferable.self) {
                 WeatherEditor(model: model)
-            },
-            overlay: {
+            }
+            .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+                OverlayViewer(model: model, animate: $animate)
+                    .opacity(0)
+            }
+            .overlay(alignment: .bottom) {
                 OverlayViewer(model: model, animate: $animate)
                     .allowsHitTesting(false)
             }
-        )
-        .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-            OverlayViewer(model: model, animate: $animate)
-                .opacity(0)
-        }
-        .overlay(alignment: .bottom) {
-            OverlayViewer(model: model, animate: $animate)
-                .allowsHitTesting(false)
-        }
-        .overlay {
-            if root.openFileWindowModel.showItem {
-                root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
-                    root.openFileWindowModel.showItem = false
+            .overlay {
+                if root.openFileWindowModel.showItem {
+                    root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
+                        root.openFileWindowModel.showItem = false
+                    }
                 }
             }
-        }
     }
 }
 
@@ -143,7 +133,7 @@ private struct FolderItemsObserver: View {
     let navigationModel: ModuleNavigationModel
     @Binding var lastFolderId: UUID?
     @Binding var showFolderDetail: Bool
-
+    
     var body: some View {
         Color.clear
             .onChange(of: navigationModel.folderItems) {

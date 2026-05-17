@@ -70,12 +70,10 @@ private struct DetailFolderContentView: View {
             root: rootStorage.rootController,
             detailListController: detailFolderListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: true, hasOverlay: false, hasEntryEditor: false),
+            configuration: .init(editorAsBackground: true, hasEntryEditor: false),
             linkTypes: EmptyLinkTransferable.self
         ) {
             ViewerRootView(model: model, configuration: ViewerConfiguration(closeButton: false, addToolbar: false, isGame: false))
-        } overlay: {
-            EmptyView()
         }
         .overlay {
             if rootStorage.openFileWindowModel.showItem {
