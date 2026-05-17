@@ -2,10 +2,13 @@
 
 import SwiftUI
 
-struct EntryEditorContent<Header: View>: View {
-    let entry: any EntryDataAccessable
+struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
+    let editController: any EntryDataEditable
+    let editorModel: SheetEditorModel
+    let itemId: UUID
     let editModel: TextEditModel
-    let header: () -> Header
+    let entry: any EntryDataAccessable
+    let linkTypes: LinkType.Type
     
     @FocusState private var currentFocus: EntryEditorFocusField?
 
@@ -13,7 +16,14 @@ struct EntryEditorContent<Header: View>: View {
         VStack {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    header()
+                    EntryEditorHeaderView(
+                        editController: editController,
+                        editorModel: editorModel,
+                        itemId: itemId,
+                        editModel: editModel,
+                        entry: entry,
+                        linkTypes: linkTypes
+                    )
                     
                     EntryNameEditor(editModel: editModel, currentFocus: $currentFocus)
                     
@@ -30,8 +40,7 @@ struct EntryEditorContent<Header: View>: View {
             .frame(maxHeight: .infinity, alignment: .center)
             .padding(32)
         }
-        .contentShape(.rect)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        //.frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             currentFocus = .name
         }
