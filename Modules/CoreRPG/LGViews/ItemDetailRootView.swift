@@ -4,6 +4,8 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
+// MARK: - Supporting Types
+
 struct EditingItem: Identifiable {
     let id: UUID
     let model: any ItemDataAccessable
@@ -13,6 +15,8 @@ struct EditingItem: Identifiable {
         self.model = model
     }
 }
+
+// MARK: - Main View
 
 public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>: View {
 
@@ -51,120 +55,96 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
     let editor: Editor
     
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.navigator) private var navigator
-
     @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
-
     @State private var detailListController: FolderListControllable
     @State private var headerModel = HeaderScrollModel()
-    
     @Namespace private var editSheetNamespace
     
     public var body: some View {
-        let _ = Self._printChanges()
-        contentScrollView(model: selectedModel)
-            .tint(root.configurable.module.tint)
+        ItemDetailContentView(
+            root: root,
+            model: selectedModel,
+            configuration: configuration,
+            editor: editor,
+            headerModel: headerModel,
+            detailListController: detailListController,
+            editingItem: $editingItem,
+            editSheetNamespace: editSheetNamespace
+        )
+        .tint(root.configurable.module.tint)
+        .onChange(of: selectedModel.id, initial: true) {
+            handleModelIdChange()
+        }
+        .task(id: selectedModel.id) {
+            await openEditorForNewItemIfNeeded()
+        }
+        .onChange(of: selectedModel.name) {
+            handleModelNameChange()
+        }
+        .onChange(of: selectedModel.url) { oldValue, _ in
+            handleModelUrlChange(oldValue: oldValue)
+        }
+        .sheet(item: $editingItem) { item in
+            editingSheet(model: item.model)
+        }
     }
 }
+
+// MARK: - Computed Properties
 
 private extension ItemDetailRootView {
     var fileTypes: [UTType] {
         root.editControllable.fileUrlDataController?.fileTypes ?? []
     }
     
-    func hasFile(model: any ItemDataAccessable) -> Bool {
-        model.url != nil || fileTypes.isEmpty
+    var shouldShowContent: Bool {
+        selectedModel.url != nil || fileTypes.isEmpty || selectedModel.specialCategory
     }
-    
-    var navigationHeader: Text {
-        Text("\(Image(systemName: root.configurable.module.icon)) \(root.configurable.module.title)")
-    }
-    
-    @ViewBuilder
-    var entryEditor: some View {
-        if root.editControllable as? (any EntryDataEditable) != nil {
-            EntryEditorView(
-                rootManager: root.linkControllable.rootManager,
-                editorModel: root.editControllable.sheetEditorModel,
-                linkTypes: LinkTypes.self
-            )
+}
+
+// MARK: - State Handlers
+
+private extension ItemDetailRootView {
+    func openEditingSheet() {
+        withAnimation(.easeInOut) { 
+            editingItem = EditingItem(selectedModel) 
         }
     }
     
-    @ViewBuilder func contentScrollView(model: any ItemDataAccessable) -> some View {
-        let _ = print("📜 ItemDetailRootView.contentScrollView() for model: \(model.name) (id: \(model.id))")
-        HeaderContentScrollView(
-            model: headerModel,
-            backgroundColor: root.configurable.module.color,
-            disableHideHeader: configuration.disableHideHeader
-        ) {
-            headerView(model: model)
-        } content: {
-            contentView(model: model)
-        }
-        .overlay(alignment: .center) {
-            entryEditor
-        }
-        .animation(.easeInOut, value: model.url)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onChange(of: model.id, initial: true) {
-            handleModelIdChange(model: model)
-        }
-        .task(id: model.id) {
-            await openEditorForNewItemIfNeeded(model: model)
-        }
-        .onChange(of: model.name) {
-            handleModelNameChange(model: model)
-        }
-        .onChange(of: model.url) { oldValue, newValue in
-            handleModelUrlChange(model: model, oldValue: oldValue)
-        }
-#if !os(tvOS)
-        .applyIf(model.category != .folder && !fileTypes.isEmpty) {
-            $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: { updateFile(url: $0, model: model)} ))
-        }
-#endif
-        .sheet(item: $editingItem) { item in
-            editingSheet(model: item.model)
-        }
-        .modifier(OpenFileViewerViewModifier(model: model, openFileWindowModel: root.openFileWindowModel, module: root.configurable.module))
-        .toolbar {
-            toolbarContent(model: model)
-        }
-    }
-    
-    func openEditorForNewItemIfNeeded(model: any ItemDataAccessable) async {
-        // Yield once to let the view settle before checking model state
+    func openEditorForNewItemIfNeeded() async {
         await Task.yield()
-        guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
-        withAnimation(.easeInOut) { editingItem = EditingItem(model) }
+        guard selectedModel.name.isEmpty && shouldShowContent else { return }
+        openEditingSheet()
     }
 
-    func handleModelIdChange(model: any ItemDataAccessable) {
-        // Reset editing state when switching items
+    func handleModelIdChange() {
         editingItem = nil
-
-        detailListController.resetParentModel(model: model)
-
-        guard model.url != nil else {
-            itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
-            return
+        detailListController.resetParentModel(model: selectedModel)
+        
+        itemIdHasUrl = if selectedModel.url != nil {
+            selectedModel.id
+        } else if shouldShowContent {
+            selectedModel.id
+        } else {
+            UUID()
         }
-        itemIdHasUrl = model.id
     }
 
-    func handleModelNameChange(model: any ItemDataAccessable) {
-        guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
-        withAnimation(.easeInOut) { editingItem = EditingItem(model) }
+    func handleModelNameChange() {
+        guard selectedModel.name.isEmpty && shouldShowContent else { return }
+        openEditingSheet()
     }
 
-    func handleModelUrlChange(model: any ItemDataAccessable, oldValue: URL?) {
-        guard oldValue == nil else { return }
-        guard itemIdHasUrl != model.id else { return }
-        withAnimation(.easeInOut) { editingItem = EditingItem(model) }
+    func handleModelUrlChange(oldValue: URL?) {
+        guard oldValue == nil, itemIdHasUrl != selectedModel.id else { return }
+        openEditingSheet()
     }
+}
 
+// MARK: - Presentation Views
+
+private extension ItemDetailRootView {
     func editingSheet(model: any ItemDataAccessable) -> some View {
         ItemHeaderEditorView(editControllable: root.editControllable, model: model)
             .colorScheme(colorScheme)
@@ -178,72 +158,281 @@ private extension ItemDetailRootView {
             .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
 #endif
     }
+}
+
+// MARK: - Content View (Extracted)
+
+private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: View {
+    let root: any ItemRootControllable
+    let model: any ItemDataAccessable
+    let configuration: ItemDetailRootView<Editor, LinkTypes>.Configuration
+    let editor: Editor
+    let headerModel: HeaderScrollModel
+    let detailListController: FolderListControllable
+    @Binding var editingItem: EditingItem?
+    let editSheetNamespace: Namespace.ID
     
-    func headerView(model: any ItemDataAccessable) -> some View {
+    var body: some View {
+        HeaderContentScrollView(
+            model: headerModel,
+            backgroundColor: root.configurable.module.color,
+            disableHideHeader: configuration.disableHideHeader
+        ) {
+            ItemDetailHeaderView(
+                module: root.configurable.module,
+                model: model,
+                cacheItemListModel: root.editControllable.cacheItemListModel,
+                listDisplayModel: detailListController.listDisplayModel,
+                searchModel: detailListController.searchModel
+            )
+        } content: {
+            contentBody
+        }
+        .overlay(alignment: .center) {
+            entryEditor
+        }
+        .animation(.easeInOut, value: model.url)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .applyFileDropIfNeeded(model: model, fileTypes: fileTypes, root: root)
+        .modifier(OpenFileViewerViewModifier(
+            model: model,
+            openFileWindowModel: root.openFileWindowModel,
+            module: root.configurable.module
+        ))
+        .toolbar {
+            ItemDetailToolbarContent(
+                root: root,
+                model: model,
+                shouldShowContent: shouldShowContent,
+                editSheetNamespace: editSheetNamespace,
+                onEdit: { openEditingSheet() }
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private var contentBody: some View {
+        ZStack {
+            if !shouldShowContent {
+                ItemFileImporterView(
+                    root: root,
+                    model: model,
+                    fileTypes: fileTypes,
+                    isInitial: true
+                )
+            }
+            
+            if configuration.editorAsBackground && !model.specialCategory {
+                ItemEditorBackgroundView(
+                    editor: editor,
+                    model: model,
+                    root: root,
+                    detailListController: detailListController,
+                    fileTypes: fileTypes,
+                    shouldShowContent: shouldShowContent
+                )
+            } else {
+                ItemEditorForegroundView(
+                    editor: editor,
+                    model: model,
+                    root: root,
+                    detailListController: detailListController,
+                    shouldShowContent: shouldShowContent
+                )
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var entryEditor: some View {
+        if root.editControllable as? (any EntryDataEditable) != nil {
+            EntryEditorView(
+                rootManager: root.linkControllable.rootManager,
+                editorModel: root.editControllable.sheetEditorModel,
+                linkTypes: LinkTypes.self
+            )
+        }
+    }
+    
+    private var fileTypes: [UTType] {
+        root.editControllable.fileUrlDataController?.fileTypes ?? []
+    }
+    
+    private var shouldShowContent: Bool {
+        model.url != nil || fileTypes.isEmpty || model.specialCategory
+    }
+    
+    private func openEditingSheet() {
+        withAnimation(.easeInOut) { 
+            editingItem = EditingItem(model) 
+        }
+    }
+}
+
+// MARK: - Header View (Extracted)
+
+private struct ItemDetailHeaderView: View {
+    let module: NetworkModules
+    let model: any ItemDataAccessable
+    let cacheItemListModel: CacheItemListModel
+    let listDisplayModel: ListDisplayModel
+    let searchModel: SearchModel
+    
+    var body: some View {
         ZStack(alignment: .bottom) {
-            ItemDetailOverlayView(model: model, cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel)
-                .padding()
+            ItemDetailOverlayView(
+                model: model,
+                cacheItemListModel: cacheItemListModel,
+                listDisplayModel: listDisplayModel,
+                searchModel: searchModel
+            )
+            .padding()
         }
         .overlay(alignment: .top) {
-            navigationHeader.font(.title)
+            navigationHeader
+                .font(.title)
                 .padding(.top, -64)
         }
     }
     
-    @ViewBuilder func initialFileImporterView(model: any ItemDataAccessable) -> some View {
+    private var navigationHeader: Text {
+        Text("\(Image(systemName: module.icon)) \(module.title)")
+    }
+}
+
+// MARK: - File Importer View (Extracted & Unified)
+
+private struct ItemFileImporterView: View {
+    let root: any ItemRootControllable
+    let model: any ItemDataAccessable
+    let fileTypes: [UTType]
+    let isInitial: Bool
+    
+    var body: some View {
+        Group {
+            if isInitial {
+                initialStyle
+            } else {
+                overlayStyle
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var initialStyle: some View {
         HStack {
-            if root.viewControllable.fileImporterViewType == .file {
-                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, itemId: model.id)
-                    .padding(32)
+            fileImporterContent
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .opacity(1)
+        .transition(.scale)
+    }
+    
+    @ViewBuilder
+    private var overlayStyle: some View {
+        HStack(alignment: .bottom, spacing: 0) {
+            filePathDisplay
+            Spacer(minLength: 20)
+            fileImporterContent
+                .zIndex(5)
+        }
+    }
+    
+    @ViewBuilder
+    private var fileImporterContent: some View {
+        if root.viewControllable.fileImporterViewType == .file {
+            FileImporterView(
+                editControllable: root.editControllable,
+                fileTypes: fileTypes,
+                itemId: model.id
+            )
+            .applyIf(isInitial) {
+                $0.padding(32)
                     .overlay {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .stroke(.tint, lineWidth: 2)
                     }
-            } else {
-                root.viewControllable.fileImporterView(for: model.id, preopen: true, layoutDown: false)
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .opacity(hasFile(model: model) || model.specialCategory ? 0 : 1)
-        .transition(.scale)
-    }
-    
-    
-    @ViewBuilder func contentView(model: any ItemDataAccessable) -> some View {
-        ZStack {
-            initialFileImporterView(model: model)
-            
-            if model.specialCategory == false && configuration.editorAsBackground {
-                editorContentBackgroundView(model: model)
-            } else {
-                editorContentView(model: model)
-            }
+        } else {
+            root.viewControllable.fileImporterView(
+                for: model.id,
+                preopen: isInitial,
+                layoutDown: !isInitial
+            )
         }
     }
     
-    func editorContentView(model: any ItemDataAccessable) -> some View {
+    @ViewBuilder
+    private var filePathDisplay: some View {
+        if !isInitial {
+            HStack {
+                Text(model.url?.path(percentEncoded: false) ?? 
+                     String(localized: "No file is set", bundle: .module).localizedString)
+                    .font(.callout)
+            }
+            .padding(6)
+#if !os(visionOS)
+            .glassEffectAll(.regular.interactive())
+#endif
+        }
+    }
+}
+
+// MARK: - Editor Foreground View (Extracted)
+
+private struct ItemEditorForegroundView<Editor: View>: View {
+    let editor: Editor
+    let model: any ItemDataAccessable
+    let root: any ItemRootControllable
+    let detailListController: FolderListControllable
+    let shouldShowContent: Bool
+    
+    var body: some View {
         Group {
             if model.specialCategory {
-                ItemDetailOverlayView(model: model, cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel, fullHeader: false, onlyDescription: true)
-                    .padding()
-                
-                ListRootView(root: root, listController: detailListController, parentModel: model)
-                    .environment(detailListController.listDisplayModel)
+                specialCategoryContent
             } else {
-                formEditor(model: model)
+                formEditorContent
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
+        .opacity(shouldShowContent ? 1 : 0)
         .transition(.scale)
     }
     
-    func formEditor(model: any ItemDataAccessable) -> some View {
+    @ViewBuilder
+    private var specialCategoryContent: some View {
+        ItemDetailOverlayView(
+            model: model,
+            cacheItemListModel: root.editControllable.cacheItemListModel,
+            listDisplayModel: detailListController.listDisplayModel,
+            searchModel: detailListController.searchModel,
+            fullHeader: false,
+            onlyDescription: true
+        )
+        .padding()
+        
+        ListRootView(
+            root: root,
+            listController: detailListController,
+            parentModel: model
+        )
+        .environment(detailListController.listDisplayModel)
+    }
+    
+    private var formEditorContent: some View {
         ScrollViewReader { scrollProxy in
             ScrollView {
                 LazyVStack(spacing: 8) {
-                    if model.description.isEmpty == false {
-                        ItemDetailOverlayView(model: model, cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel, fullHeader: false, onlyDescription: true)
+                    if !model.description.isEmpty {
+                        ItemDetailOverlayView(
+                            model: model,
+                            cacheItemListModel: root.editControllable.cacheItemListModel,
+                            listDisplayModel: detailListController.listDisplayModel,
+                            searchModel: detailListController.searchModel,
+                            fullHeader: false,
+                            onlyDescription: true
+                        )
                     }
                     
                     editor
@@ -259,81 +448,75 @@ private extension ItemDetailRootView {
             .scrollBounceBehavior(.basedOnSize)
         }
     }
+}
+
+// MARK: - Editor Background View (Extracted)
+
+private struct ItemEditorBackgroundView<Editor: View>: View {
+    let editor: Editor
+    let model: any ItemDataAccessable
+    let root: any ItemRootControllable
+    let detailListController: FolderListControllable
+    let fileTypes: [UTType]
+    let shouldShowContent: Bool
     
-    func editorContentBackgroundView(model: any ItemDataAccessable) -> some View {
+    var body: some View {
         editor
             .id(model.id)
             .overlay(alignment: .top) {
-                GlassEffectContainerAll {
-                    overlayFileImporter(model: model)
+                if !model.specialCategory {
+                    GlassEffectContainerAll {
+                        ItemFileImporterView(
+                            root: root,
+                            model: model,
+                            fileTypes: fileTypes,
+                            isInitial: false
+                        )
+                    }
+                    .padding()
                 }
-                .padding()
-                .opacity(model.specialCategory ? 0 : 1)
             }
             .overlay(alignment: .bottom) {
-                if model.description.isEmpty == false {
+                if !model.description.isEmpty {
                     GlassEffectContainerAll {
-                        overlayDescription(model: model)
+                        ItemDetailOverlayView(
+                            model: model,
+                            cacheItemListModel: root.editControllable.cacheItemListModel,
+                            listDisplayModel: detailListController.listDisplayModel,
+                            searchModel: detailListController.searchModel,
+                            fullHeader: false,
+                            onlyDescription: true,
+                            lines: 3
+                        )
+                        .padding(.horizontal, 8)
+                        .padding(6)
+#if !os(visionOS)
+                        .glassEffectAll(.regular)
+#endif
                     }
                     .padding()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
+            .opacity(shouldShowContent ? 1 : 0)
             .transition(.scale)
-    }
-    
-    func overlayDescription(model: any ItemDataAccessable) -> some View {
-        ItemDetailOverlayView(model: model, cacheItemListModel: root.editControllable.cacheItemListModel, listDisplayModel: detailListController.listDisplayModel, searchModel: detailListController.searchModel, fullHeader: false, onlyDescription: true, lines: 3)
-            .padding(.horizontal, 8)
-            .padding(6)
-#if !os(visionOS)
-            .glassEffectAll(.regular)
-#endif
-    }
-
-    func overlayFileImporter(model: any ItemDataAccessable) -> some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            HStack {
-                Text(model.url?.path(percentEncoded: false) ?? String(localized: "No file is set", bundle: .module).localizedString)
-                    .font(.callout)
-            }
-            .padding(6)
-#if !os(visionOS)
-            .glassEffectAll(.regular.interactive())
-#endif
-            
-            Spacer(minLength: 20)
-            
-            HStack {
-                if root.viewControllable.fileImporterViewType == .file {
-                    FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, itemId: model.id)
-                } else {
-                    root.viewControllable.fileImporterView(for: model.id, preopen: false, layoutDown: true)
-                }
-            }
-            .zIndex(5)
-        }
-    }
-    
-    func updateFile(url: URL, model: any ItemDataAccessable) {
-        Task {
-            await root.editControllable.resetFile(url: url, itemId: model.id)
-        }
     }
 }
 
-// MARK: - Inspector
+// MARK: - Toolbar Content (Extracted)
 
-private extension ItemDetailRootView {
-    @ToolbarContentBuilder
-    private func toolbarContent(model: any ItemDataAccessable) -> some ToolbarContent {
-        if root.openFileWindowModel.showItem == false {
+private struct ItemDetailToolbarContent: ToolbarContent {
+    let root: any ItemRootControllable
+    let model: any ItemDataAccessable
+    let shouldShowContent: Bool
+    let editSheetNamespace: Namespace.ID
+    let onEdit: () -> Void
+    
+    var body: some ToolbarContent {
+        if !root.openFileWindowModel.showItem {
             ToolbarItem(placement: .primaryAction) {
-                if (hasFile(model: model) || model.specialCategory) {
-                    Button {
-                        withAnimation(.easeInOut) { editingItem = EditingItem(model) }
-                    } label: {
+                if shouldShowContent {
+                    Button(action: onEdit) {
                         Label {
                             Text("Edit", bundle: .module)
                         } icon: {
@@ -353,5 +536,33 @@ private extension ItemDetailRootView {
                 MenuUndoRedoButton(root: root)
             }
         }
+    }
+}
+
+// MARK: - View Extensions
+
+private extension View {
+    @ViewBuilder
+    func applyFileDropIfNeeded(
+        model: any ItemDataAccessable,
+        fileTypes: [UTType],
+        root: any ItemRootControllable
+    ) -> some View {
+#if !os(tvOS)
+        if model.category != .folder && !fileTypes.isEmpty {
+            self.onDrop(of: [.fileURL], delegate: FileDropDelegate(
+                for: fileTypes,
+                updateFile: { url in
+                    Task {
+                        await root.editControllable.resetFile(url: url, itemId: model.id)
+                    }
+                }
+            ))
+        } else {
+            self
+        }
+#else
+        self
+#endif
     }
 }
