@@ -14,34 +14,18 @@ struct EditingItem: Identifiable {
     }
 }
 
-/// Empty link transferable for modules that don't support entry editor
-public struct EmptyLinkTransferable: LinkDataTransferable {
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
-    
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
-    }
-}
-
 public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>: View {
 
     /// Configuration for ItemDetailRootView behavior
     public struct Configuration {
         public var editorAsBackground: Bool
-        public var hasEntryEditor: Bool
         public var disableHideHeader: Bool
 
         public init(
             editorAsBackground: Bool = false,
-            hasEntryEditor: Bool = true,
             disableHideHeader: Bool = false
         ) {
             self.editorAsBackground = editorAsBackground
-            self.hasEntryEditor = hasEntryEditor
             self.disableHideHeader = disableHideHeader
         }
     }
@@ -59,14 +43,12 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
         self.selectedModel = selectedModel
         self.configuration = configuration
         self.editor = editor()
-        self.linkTypes = linkTypes
     }
 
     let root: any ItemRootControllable
     let selectedModel: any ItemDataAccessable
     let configuration: Configuration
     let editor: Editor
-    let linkTypes: LinkTypes.Type
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
@@ -101,7 +83,7 @@ private extension ItemDetailRootView {
     
     @ViewBuilder
     var entryEditor: some View {
-        if configuration.hasEntryEditor {
+        if root.editControllable as? (any EntryDataEditable) != nil {
             EntryEditorView(
                 rootManager: root.linkControllable.rootManager,
                 editorModel: root.editControllable.sheetEditorModel,

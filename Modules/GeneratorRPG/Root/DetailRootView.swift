@@ -46,7 +46,7 @@ struct DetailListView: View {
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(hasEntryEditor: false),
+            configuration: .init(),
             linkTypes: EmptyLinkTransferable.self
         ) {
             Text("Add a reference character")

@@ -53,6 +53,19 @@ extension UTType {
     public static var entryLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Entry") }
 }
 
+/// Empty link transferable for modules that don't support entry editor
+public struct EmptyLinkTransferable: LinkDataTransferable {
+    public let module: NetworkModules
+    public let itemId: UUID
+    public let entryId: UUID?
+    public let name: String
+    public let isMove: Bool
+    
+    public static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .data)
+    }
+}
+
 public struct LinkEntryData: LinkDataTransferable {
     public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules, isMove: Bool = false) {
         self.itemId = itemId

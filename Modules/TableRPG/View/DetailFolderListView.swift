@@ -106,7 +106,7 @@ private struct DetailFolderContentView: View {
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(hasEntryEditor: false),
+            configuration: .init(),
             linkTypes: LinkTableModuleTransferable.self            
         ) {
             DetailEditorView(root: root, model: model)

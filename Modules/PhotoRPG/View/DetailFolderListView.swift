@@ -70,7 +70,7 @@ private struct DetailFolderContentView: View {
             root: rootStorage.rootController,
             detailListController: detailFolderListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: true, hasEntryEditor: false),
+            configuration: .init(editorAsBackground: true),
             linkTypes: EmptyLinkTransferable.self            
         ) {
             ViewerRootView(model: model, configuration: ViewerConfiguration(addToolbar: false))

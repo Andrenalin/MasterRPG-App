@@ -107,7 +107,7 @@ private struct DetailFolderContentView: View {
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
-            configuration: .init(hasEntryEditor: false),
+            configuration: .init(),
             linkTypes: EmptyLinkTransferable.self) {
                 WeatherEditor(model: model)
             }
