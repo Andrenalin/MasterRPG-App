@@ -16,12 +16,14 @@ struct HeaderContentScrollView<Header: View, Content: View>: View {
     let backgroundColor: Color
     let scrollThreshold: CGFloat
     let animation: Animation
+    let disableHideHeader: Bool
     
     init(
         model: HeaderScrollModel,
         backgroundColor: Color,
         scrollThreshold: CGFloat = 20,
         animation: Animation = .easeInOut(duration: 0.2),
+        disableHideHeader: Bool = false,
         @ViewBuilder header: () -> Header,
         @ViewBuilder content: () -> Content
     ) {
@@ -29,6 +31,7 @@ struct HeaderContentScrollView<Header: View, Content: View>: View {
         self.backgroundColor = backgroundColor
         self.scrollThreshold = scrollThreshold
         self.animation = animation
+        self.disableHideHeader = disableHideHeader
         self.header = header()
         self.content = content()
     }
@@ -37,10 +40,12 @@ struct HeaderContentScrollView<Header: View, Content: View>: View {
         content
             .frame(maxWidth: .infinity)
             .scrollBounceBehavior(.basedOnSize)
-            .onScrollGeometryChange(for: CGFloat.self) {
-                max($0.contentOffset.y + $0.contentInsets.top, 0)
-            } action: { oldValue, newValue in
-                handleScrollChange(oldValue: oldValue, newValue: newValue)
+            .applyIf(!disableHideHeader) {
+                $0.onScrollGeometryChange(for: CGFloat.self) {
+                    max($0.contentOffset.y + $0.contentInsets.top, 0)
+                } action: { oldValue, newValue in
+                    handleScrollChange(oldValue: oldValue, newValue: newValue)
+                }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 headerView
@@ -49,6 +54,11 @@ struct HeaderContentScrollView<Header: View, Content: View>: View {
     
     @inline(__always)
     private func handleScrollChange(oldValue: CGFloat, newValue: CGFloat) {
+        // If disableHideHeader is enabled, don't process scroll changes
+        guard !disableHideHeader else {
+            return
+        }
+        
         let scrollDelta = newValue - oldValue
         
         guard abs(scrollDelta) > scrollThreshold else {

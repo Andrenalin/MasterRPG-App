@@ -70,11 +70,16 @@ private struct DetailFolderContentView: View {
             root: rootStorage.rootController,
             detailListController: detailFolderListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: false, hasOverlay: true, hasEntryEditor: false),
+            configuration: .init(editorAsBackground: false, hasOverlay: false, hasEntryEditor: false, disableHideHeader: true),
             linkTypes: EmptyLinkTransferable.self
         ) {
             DetailEditorView(model: model)
         } overlay: {
+        }
+        .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+            DiceOverlayView(model: model).opacity(0)
+        }
+        .overlay(alignment: .bottom) {
             DiceOverlayView(model: model)
         }
         .applyIf(appSizeModel.mode == .compact) {

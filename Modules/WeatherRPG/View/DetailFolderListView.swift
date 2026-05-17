@@ -109,7 +109,7 @@ private struct DetailFolderContentView: View {
             selectedModel: model,
             configuration: .init(
                 editorAsBackground: false,
-                hasOverlay: true,
+                hasOverlay: false,
                 hasEntryEditor: false
             ),
             linkTypes: EmptyLinkTransferable.self,
@@ -121,6 +121,14 @@ private struct DetailFolderContentView: View {
                     .allowsHitTesting(false)
             }
         )
+        .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+            OverlayViewer(model: model, animate: $animate)
+                .opacity(0)
+        }
+        .overlay(alignment: .bottom) {
+            OverlayViewer(model: model, animate: $animate)
+                .allowsHitTesting(false)
+        }
         .overlay {
             if root.openFileWindowModel.showItem {
                 root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {

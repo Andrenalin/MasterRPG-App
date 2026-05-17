@@ -34,15 +34,18 @@ public struct ItemDetailRootView<Editor: View, Overlay: View, LinkTypes: LinkDat
         public var editorAsBackground: Bool
         public var hasOverlay: Bool
         public var hasEntryEditor: Bool
+        public var disableHideHeader: Bool
 
         public init(
             editorAsBackground: Bool = false,
             hasOverlay: Bool = false,
-            hasEntryEditor: Bool = true
+            hasEntryEditor: Bool = true,
+            disableHideHeader: Bool = false
         ) {
             self.editorAsBackground = editorAsBackground
             self.hasOverlay = hasOverlay
             self.hasEntryEditor = hasEntryEditor
+            self.disableHideHeader = disableHideHeader
         }
     }
 
@@ -117,7 +120,8 @@ private extension ItemDetailRootView {
         let _ = print("📜 ItemDetailRootView.contentScrollView() for model: \(model.name) (id: \(model.id))")
         HeaderContentScrollView(
             model: headerModel,
-            backgroundColor: root.configurable.module.color
+            backgroundColor: root.configurable.module.color,
+            disableHideHeader: configuration.disableHideHeader
         ) {
             headerView(model: model)
         } content: {

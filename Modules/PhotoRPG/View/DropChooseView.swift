@@ -21,6 +21,7 @@ struct DropChooseView: View {
                 if let itemId = selectionModel.itemId, let item = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
                     GroupedPhotoView(cacheController: cacheController, itemControllable: root.itemController, model: item)
                         .clipShape(.rect(corners: .concentric))
+                        .environment(GroupItemSelectionModel())
                 } else {
                     emptyDrop
                 }
