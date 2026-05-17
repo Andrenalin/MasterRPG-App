@@ -2,13 +2,8 @@
 
 import SwiftUI
 
-public struct TextEditorLinkView: View {
-    public init(model: TextEditModel, maxHeight: CGFloat = 200.0) {
-        self.model = model
-        self.maxHeight = maxHeight
-    }
-    
-    public let model: TextEditModel
+struct TextEditorLinkView: View {
+    @Bindable public var model: TextEditModel
     let maxHeight: CGFloat
     
     @State private var selection: AttributedTextSelection = .init()
@@ -16,7 +11,6 @@ public struct TextEditorLinkView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     public var body: some View {
-        @Bindable var model = model
 #if os(tvOS)
         TextField(text: $model.text, prompt: Text("Add content", bundle: .module), label: {
             Text("Edit content", bundle: .module)
@@ -70,24 +64,17 @@ public struct TextEditorLinkView: View {
 #Preview {
     @Previewable @State var model: TextEditModel = .init(linkRegisterController: .fake)
     
-    ZStack(alignment: .top) {
-        Button {
-            
-        } label: {
-            Text("Link")
+    Color.clear
+        .background {
+            Rectangle().fill(Color.blue.gradient)
         }
-        Color.clear
-    }
-    .background {
-        Rectangle().fill(Color.blue.gradient)
-    }
-    .overlay {
-        TextEditorLinkView(model: model, maxHeight: 200)
-            .padding()
-    }
-    .onAppear() {
-        model.name = "Hello"
-        model.text = "Long Text"
-        model.resetAttributedText()
-    }
+        .overlay {
+            TextEditorLinkView(model: model, maxHeight: 200)
+                .padding()
+        }
+        .onAppear() {
+            model.name = "Hello"
+            model.text = "Long Text"
+            model.resetAttributedText()
+        }
 }
