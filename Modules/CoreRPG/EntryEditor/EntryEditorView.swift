@@ -16,7 +16,6 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
     let editorModel: SheetEditorModel
     let linkTypes: LinkType.Type
 
-    @FocusState private var currentFocus: EntryEditorFocusField?
     @State private var editModel: TextEditModel
     @State private var isDropTargeted: Bool = false
 
@@ -35,10 +34,6 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                 }
                 .transition(.scale)
                 .animation(.bouncy, value: isActive)
-                .onChange(of: isActive) {
-                    guard isActive else { return }
-                    currentFocus = .name
-                }
         }
     }
     
@@ -47,13 +42,9 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
     }
 
     func content(entry: any EntryDataAccessable) -> some View {
-        EntryEditorContent(
-            entry: entry,
-            editModel: editModel,
-            currentFocus: $currentFocus,
-            onDismiss: { withAnimation { editorModel.entryId = nil } },
-            onSave: save
-        )
+        EntryEditorContent(entry: entry, editModel: editModel) {
+            headerView
+        }
     }
 
     var activeEditController: any EntryDataEditable {
@@ -95,8 +86,7 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
 #endif
     }
 
-    @ViewBuilder
-    var dropLinkButton: some View {
+    @ViewBuilder var dropLinkButton: some View {
 #if !os(tvOS)
         Text("Drop Links", bundle: .module)
             .padding()
@@ -120,63 +110,34 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
             }
 #endif
     }
-}
-
-// MARK: - Entry Editor Content
-private struct EntryEditorContent: View {
-    let entry: any EntryDataAccessable
-    let editModel: TextEditModel
-    @FocusState.Binding var currentFocus: EntryEditorFocusField?
-    let onDismiss: () -> Void
-    let onSave: () -> Void
     
-    var body: some View {
-        VStack {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Button(action: onDismiss) {
-                            Image(systemName: "xmark")
-                                .font(.headline)
-                        }
-                        .padding()
-#if !os(visionOS)
-                        .glassEffectAll(.regular.interactive())
-#endif
-                        Spacer()
-                        
-                        Button(action: onSave) {
-                            Image(systemName: "checkmark")
-                                .font(.headline)
-                        }
-                        .padding()
-#if !os(visionOS)
-                        .glassEffectAll(.regular.interactive())
-#endif
-                    }
-                    .buttonStyle(.borderless)
-                    
-                    EntryNameEditor(editModel: editModel, currentFocus: $currentFocus)
-                    
-                    EntryContentEditor(editModel: editModel, currentFocus: $currentFocus)
-                }
-                .padding()
-                .background {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color.accentColor.opacity(0.95).gradient)
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-                .containerShape(.rect(cornerRadius: 24, style: .continuous))
+    var headerView: some View {
+        HStack {
+            Button {
+                withAnimation { editorModel.entryId = nil }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.headline)
             }
-            .frame(maxHeight: .infinity, alignment: .center)
-            .padding(32)
+            .padding()
+#if !os(visionOS)
+            .glassEffectAll(.regular.interactive())
+#endif
+            Spacer()
+            
+            dropLinkButton
+            
+            Spacer()
+            
+            Button(action: save) {
+                Image(systemName: "checkmark")
+                    .font(.headline)
+            }
+            .padding()
+#if !os(visionOS)
+            .glassEffectAll(.regular.interactive())
+#endif
         }
-        .contentShape(.rect)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .buttonStyle(.borderless)
     }
-}
-
-enum EntryEditorFocusField {
-    case name
-    case information
 }
