@@ -99,13 +99,13 @@ private extension ItemDetailRootView {
     
     @ViewBuilder func contentScrollView(model: any ItemDataAccessable) -> some View {
         let _ = print("📜 ItemDetailRootView.contentScrollView() for model: \(model.name) (id: \(model.id))")
-        HeaderContentScrollView(model: headerModel) {
+        HeaderContentScrollView(
+            model: headerModel,
+            backgroundColor: root.configurable.module.color
+        ) {
             headerView(model: model)
         } content: {
             contentView(model: model)
-        } background: {
-            Rectangle()
-                .fill(root.configurable.module.color)
         }
         .overlay(alignment: .center) {
             entryEditor
