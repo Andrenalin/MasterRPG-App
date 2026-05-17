@@ -73,7 +73,7 @@ private struct DetailFolderContentView: View {
             configuration: .init(editorAsBackground: true, hasOverlay: false, hasEntryEditor: false),
             linkTypes: EmptyLinkTransferable.self            
         ) {
-            SelectedPhotoViewerView(model: model)
+            ViewerRootView(model: model, configuration: ViewerConfiguration(addToolbar: false))
         } overlay: {
             EmptyView()
         }

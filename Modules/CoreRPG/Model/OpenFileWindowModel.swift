@@ -31,8 +31,6 @@ struct OpenFileViewerViewModifier: ViewModifier {
     let openFileWindowModel: OpenFileWindowModel
     let module: NetworkModules
     
-    @Environment(GroupItemSelectionModel.self) private var selection
-    
     func body(content: Content) -> some View {
         content.toolbar {
             ToolbarItemGroup(placement: .secondaryActionAll) {
@@ -47,9 +45,6 @@ struct OpenFileViewerViewModifier: ViewModifier {
         }
         .onChange(of: model.url) {
             openFileWindowModel.url = model.url
-        }
-        .onChange(of: selection.selectedItem) {
-            openFileWindowModel.itemId = selection.selectedItem ?? model.id
         }
     }
 }

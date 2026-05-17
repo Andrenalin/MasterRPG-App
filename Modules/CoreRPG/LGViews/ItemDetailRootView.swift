@@ -76,7 +76,6 @@ public struct ItemDetailRootView<Editor: View, Overlay: View, LinkTypes: LinkDat
 
     @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
-    @State private var selection = GroupItemSelectionModel()
 
     @State private var detailListController: FolderListControllable
     @State private var headerModel = HeaderScrollModel()
@@ -158,7 +157,6 @@ private extension ItemDetailRootView {
         .toolbar {
             toolbarContent(model: model)
         }
-        .environment(selection)
     }
     
     func openEditorForNewItemIfNeeded(model: any ItemDataAccessable) async {
@@ -173,7 +171,6 @@ private extension ItemDetailRootView {
         editingItem = nil
 
         detailListController.resetParentModel(model: model)
-        withAnimation(.easeInOut) { selection.selectedItem = nil }
 
         guard model.url != nil else {
             itemIdHasUrl = hasFile(model: model) ? model.id : UUID()

@@ -73,7 +73,7 @@ private struct DetailFolderContentView: View {
             configuration: .init(editorAsBackground: true, hasOverlay: false, hasEntryEditor: false),
             linkTypes: EmptyLinkTransferable.self
         ) {
-            SpaceDetailObjectViewer(editController: rootStorage.editController, model: model)
+            ViewerRootView(model: model, configuration: ViewerConfiguration(closeButton: false, addToolbar: false, isGame: false))
         } overlay: {
             EmptyView()
         }
