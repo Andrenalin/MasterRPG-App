@@ -14,6 +14,7 @@ public extension ItemRootController {
             searchModel: SearchModel.preview(),
             navigationModel: ModuleNavigationModel(),
             inspectorEditorLinkModel: nil,
+            openFileWindowModel: OpenFileWindowModel(),
             itemSelectionModel: ItemSelectionModel(),
             removeEntryListModel: RemoveEntryListModel(),
             cacheControllable: nil,

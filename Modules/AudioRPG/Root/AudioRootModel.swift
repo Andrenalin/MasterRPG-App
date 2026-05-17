@@ -53,6 +53,7 @@ public final class AudioRootModel {
             searchModel: searchModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
+            openFileWindowModel: openFileWindowModel,
             itemSelectionModel: itemSelectionModel,
             removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
@@ -76,7 +77,7 @@ public final class AudioRootModel {
         }
     }
     
-    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = {
+    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = {
         OpenFileWindowModel()
     }()
 

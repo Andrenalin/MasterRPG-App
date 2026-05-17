@@ -146,7 +146,7 @@ public final class AdventureRootModel {
         )
     }()
     
-    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
+    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
     }()
 
     @ObservationIgnored private(set) var _dataController: DataController?
@@ -192,6 +192,7 @@ public final class AdventureRootModel {
             searchModel: searchModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
+            openFileWindowModel: openFileWindowModel,
             itemSelectionModel: itemSelectionModel,
             removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,

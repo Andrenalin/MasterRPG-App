@@ -50,6 +50,7 @@ public final class PdfRootModel {
             searchModel: searchModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
+            openFileWindowModel: openFileWindowModel,
             itemSelectionModel: itemSelectionModel,
             removeEntryListModel: removeEntryListModel,
             cacheControllable: cacheController,
@@ -132,7 +133,7 @@ public final class PdfRootModel {
         )
     }()
     
-    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.pdf.viewerWindowId, route: { DetailRoute.viewer($0, nil) })
+    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.pdf.viewerWindowId, route: { DetailRoute.viewer($0, nil) })
     }()
 }
 

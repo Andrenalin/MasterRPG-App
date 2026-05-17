@@ -47,6 +47,7 @@ public final class TableRootModel {
             searchModel: searchModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
+            openFileWindowModel: openFileWindowModel,
             itemSelectionModel: itemSelectionModel,
             removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
@@ -98,7 +99,7 @@ public final class TableRootModel {
         )
     }()
     
-    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.table.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
+    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.table.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
     }()
 
     @ObservationIgnored private(set) var _dataController: DataController?

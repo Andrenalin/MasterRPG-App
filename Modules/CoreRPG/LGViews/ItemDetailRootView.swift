@@ -50,7 +50,6 @@ public struct ItemDetailRootView<Editor: View, Overlay: View, LinkTypes: LinkDat
         root: any ItemRootControllable,
         detailListController: FolderListControllable,
         selectedModel: any ItemDataAccessable,
-        openFileWindowModel: OpenFileWindowModel,
         configuration: Configuration = Configuration(),
         linkTypes: LinkTypes.Type,
         @ViewBuilder editor: () -> Editor,
@@ -59,7 +58,6 @@ public struct ItemDetailRootView<Editor: View, Overlay: View, LinkTypes: LinkDat
         self.root = root
         self.detailListController = detailListController
         self.selectedModel = selectedModel
-        self.openFileWindowModel = openFileWindowModel
         self.configuration = configuration
         self.editor = editor()
         self.overlay = overlay()
@@ -68,7 +66,6 @@ public struct ItemDetailRootView<Editor: View, Overlay: View, LinkTypes: LinkDat
 
     let root: any ItemRootControllable
     let selectedModel: any ItemDataAccessable
-    let openFileWindowModel: OpenFileWindowModel
     let configuration: Configuration
     let editor: Editor
     let overlay: Overlay
@@ -157,7 +154,7 @@ private extension ItemDetailRootView {
         .sheet(item: $editingItem) { item in
             editingSheet(model: item.model)
         }
-        .modifier(OpenFileViewerViewModifier(model: model, openFileWindowModel: openFileWindowModel, module: root.configurable.module))
+        .modifier(OpenFileViewerViewModifier(model: model, openFileWindowModel: root.openFileWindowModel, module: root.configurable.module))
         .toolbar {
             toolbarContent(model: model)
         }
@@ -369,7 +366,7 @@ private extension ItemDetailRootView {
 private extension ItemDetailRootView {
     @ToolbarContentBuilder
     private func toolbarContent(model: any ItemDataAccessable) -> some ToolbarContent {
-        if openFileWindowModel.showItem == false {
+        if root.openFileWindowModel.showItem == false {
             ToolbarItem(placement: .primaryAction) {
                 if (hasFile(model: model) || model.specialCategory) {
                     Button {

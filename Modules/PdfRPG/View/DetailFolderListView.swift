@@ -102,7 +102,6 @@ private struct DetailFolderContentView: View {
             root: root.rootController,
             detailListController: listController,
             selectedModel: model,
-            openFileWindowModel: root.openFileWindowModel,
             configuration: .init(editorAsBackground: false, hasOverlay: false),
             linkTypes: LinkPdfModuleTransferable.self
         ) {

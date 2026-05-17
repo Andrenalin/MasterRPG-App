@@ -47,6 +47,7 @@ public final class PhotoRootModel {
             searchModel: searchModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
+            openFileWindowModel: openFileWindowModel,
             itemSelectionModel: itemSelectionModel,
             removeEntryListModel: removeEntryListModel,
             cacheControllable: cacheController,
@@ -133,7 +134,7 @@ public final class PhotoRootModel {
         )
     }()
     
-    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.photo.viewerWindowId, route: { DetailRoute.viewer($0) })
+    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.photo.viewerWindowId, route: { DetailRoute.viewer($0) })
     }()
 }
 

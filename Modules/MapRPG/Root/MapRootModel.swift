@@ -67,6 +67,7 @@ public final class MapRootModel {
             searchModel: searchModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
+            openFileWindowModel: openFileWindowModel,
             itemSelectionModel: itemSelectionModel,
             removeEntryListModel: removeEntryListModel,
             cacheControllable: cacheController,
@@ -125,7 +126,7 @@ public final class MapRootModel {
         )
     }()
     
-    @MainActor @ObservationIgnored lazy var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.map.viewerWindowId, route: { DetailRoute.viewer($0) })
+    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.map.viewerWindowId, route: { DetailRoute.viewer($0) })
     }()
 
     var cacheController: CacheController? { itemController.cacheController }

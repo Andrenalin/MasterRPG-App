@@ -10,6 +10,7 @@ public protocol ItemRootControllable: Sendable {
     var searchModel: SearchModel { get }
     var navigationModel: ModuleNavigationModel { get }
     var inspectorEditorLinkModel: EditorLinkModel? { get }
+    var openFileWindowModel: OpenFileWindowModel { get }
     
     var currentSelectedItemId: UUID? { get }
     var itemSelectionModel: ItemSelectionModel { get }
@@ -39,6 +40,7 @@ public final class ItemRootController: ItemRootControllable {
         searchModel: SearchModel,
         navigationModel: ModuleNavigationModel,
         inspectorEditorLinkModel: EditorLinkModel?,
+        openFileWindowModel: OpenFileWindowModel,
         itemSelectionModel: ItemSelectionModel,
         removeEntryListModel: RemoveEntryListModel,
         cacheControllable: (any ImageCacheControllable)?,
@@ -58,6 +60,7 @@ public final class ItemRootController: ItemRootControllable {
         self.searchModel = searchModel
         self.navigationModel = navigationModel
         self.inspectorEditorLinkModel = inspectorEditorLinkModel
+        self.openFileWindowModel = openFileWindowModel
         self.itemSelectionModel = itemSelectionModel
         self.removeEntryListModel = removeEntryListModel
         self.cacheControllable = cacheControllable
@@ -79,6 +82,7 @@ public final class ItemRootController: ItemRootControllable {
     public let searchModel: SearchModel
     public let navigationModel: ModuleNavigationModel
     public let inspectorEditorLinkModel: EditorLinkModel?
+    public let openFileWindowModel: OpenFileWindowModel
     
     public var itemSelectionModel: ItemSelectionModel
     public var currentSelectedItemId: UUID? {
