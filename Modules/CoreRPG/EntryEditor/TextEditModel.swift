@@ -20,6 +20,9 @@ import SwiftUI
     var links: [LinkRegisterModel] = []
     private var updateTask: Task<Void, Never>?
     
+    // Performance: Cache the last processed text to avoid redundant AttributedString creation
+    private var lastProcessedText: String = ""
+    
     public func reset(text: String, source: ItemRowModel) {
         // Cancel any pending updates
         updateTask?.cancel()
@@ -42,6 +45,10 @@ import SwiftUI
     }
     
     public func resetAttributedText() {
+        // Performance: Skip processing if text hasn't changed
+        guard text != lastProcessedText else { return }
+        lastProcessedText = text
+        
         var att = AttributedString(text)
         guard let links = linkRegisterController?.linkRegisterModel(in: text, for: source) else { 
             self.links = []
@@ -68,7 +75,7 @@ import SwiftUI
     }
     
     public func resetText() {
-        // Build plain text from attributedText by convertind ng link attributed runs back to Markdown
+        // Build plain text from attributedText by converting link attributed runs back to Markdown
         // We expect the custom attribute key path `\.linkContent` to contain the UUID of the link (LinkDataModel.id)
         var result = ""
         let att = attributedText
@@ -92,6 +99,8 @@ import SwiftUI
         
         // Update model state
         text <=> result
+        // Reset cache when text is explicitly updated
+        lastProcessedText = ""
     }
     
     public func updateLinks() {
@@ -104,6 +113,7 @@ import SwiftUI
             try? await Task.sleep(for: .milliseconds(100))
             
             guard !Task.isCancelled else { return }
+            guard linkRegisterController != nil else { return }
             
             resetText()
             resetAttributedText()

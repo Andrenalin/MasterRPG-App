@@ -36,13 +36,19 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onChange(of: entry.content, initial: true) { _, _ in
-                updateEditModel(entry: entry, itemId: itemId)
+            // Optimization: Combine onChange modifiers to prevent duplicate updates
+            .onChange(of: entry.content, initial: true) { _, newContent in
+                // Check if we actually need to update to prevent unnecessary work
+                if editModel.text != newContent || editModel.name != entry.name {
+                    updateEditModel(entry: entry, itemId: itemId)
+                }
             }
-            .onChange(of: entry.name) { _, _ in
-                updateEditModel(entry: entry, itemId: itemId)
+            .onChange(of: entry.name) { _, newName in
+                // Only update if name actually changed and content didn't already trigger update
+                if editModel.name != newName {
+                    updateEditModel(entry: entry, itemId: itemId)
+                }
             }
-
         }
         .background {
             Color.black.opacity(0.4)

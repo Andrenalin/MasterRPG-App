@@ -15,8 +15,15 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
     let linkTypes: LinkType.Type
     
     public var body: some View {
-        if let itemId = editorModel.itemId, let entryId = editorModel.entryId, let editController, !editController.editorModel.deactivateEntryEditor {
-
+        // Optimization: Cache controller lookups to avoid repeated optional chaining
+        let rootController = rootManager.itemRootController(for: editorModel.module)
+        let editController = rootController?.editControllable as? (any EntryDataEditable)
+        
+        if let itemId = editorModel.itemId, 
+           let entryId = editorModel.entryId, 
+           let editController,
+           !editController.editorModel.deactivateEntryEditor {
+            
             EntryEditorContent(
                 editController: editController,
                 editorModel: editorModel,
@@ -28,13 +35,5 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
             .transition(.scale)
             .animation(.bouncy, value: editorModel.entryId)
         }
-    }
-    
-    var rootController: (any ItemRootControllable)? {
-        rootManager.itemRootController(for: editorModel.module)
-    }
-    
-    var editController: (any EntryDataEditable)? {
-        rootController?.editControllable as? (any EntryDataEditable)
     }
 }
