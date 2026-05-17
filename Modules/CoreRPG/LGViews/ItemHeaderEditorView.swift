@@ -4,13 +4,25 @@ import SwiftData
 import SwiftUI
 
 public struct ItemHeaderEditorView: View {
-    public init(editControllable: any EditControllable, model: any ItemDataAccessable) {
+    public init(
+        editControllable: any EditControllable,
+        model: any ItemDataAccessable,
+        needsNavigationStack: Bool = true
+    ) {
         self.editControllable = editControllable
         self.model = model
+        self.needsNavigationStack = needsNavigationStack
+        
+        // Initialize @State properties with model values
+        self._name = State(initialValue: model.name)
+        self._information = State(initialValue: model.description)
+        self._category = State(initialValue: model.category)
+        self._tags = State(initialValue: model.tags)
     }
 
     let editControllable: any EditControllable
     let model: any ItemDataAccessable
+    let needsNavigationStack: Bool
 
     @Environment(\.dismiss) private var dismiss
 
@@ -20,49 +32,85 @@ public struct ItemHeaderEditorView: View {
     }
     @FocusState private var currentFocus: FocusField?
 
-    @State private var name: String = ""
-    @State private var information: String = ""
-    @State private var category: ItemListCategory = .album
-    @State private var tags: [String] = []
+    @State private var name: String
+    @State private var information: String
+    @State private var category: ItemListCategory
+    @State private var tags: [String]
+    @State private var isDirty: Bool = false
+    
+    private var isNameValid: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    
+    private var shouldWrapInNavigationStack: Bool {
+        needsNavigationStack && valueFor(iOS: true, macOS: false, tvOS: false, visionOS: true)
+    }
 
     public var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 4) {
-                nameSection
-                descriptionSection
-                categoryTagsSection
+        editorContent.managedNavigationStack(wrapping: shouldWrapInNavigationStack)
+    }
+    
+    private var editorContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            nameSection
+            descriptionSection
+            categoryTagsSection
 
-                AddTagsEditor(tags: $tags)
-            }
-            .padding()
-            .padding(.bottom, 32)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        withAnimation { dismiss() }
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        editControllable.update(id: model.id, name: name, description: information, category: category, tags: tags)
-                        dismiss()
-                    } label: {
-                        Image(systemName: "checkmark")
-                    }
+            AddTagsEditor(tags: $tags)
+        }
+        .padding()
+        .padding(.bottom, 32)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
                 }
             }
-            .task(id: model.id) {
-                // Initialize local editing state from the model
-                name = model.name
-                information = model.description
-                category = model.category
-                tags = model.tags
-                currentFocus = .name
+            ToolbarItem(placement: .confirmationAction) {
+                Button {
+                    saveChanges()
+                } label: {
+                    Image(systemName: "checkmark")
+                }
+                .disabled(!isNameValid)
             }
         }
+        .animation(.snappy, value: currentFocus)
+        .onAppear {
+            currentFocus = .name
+        }
+        .onChange(of: name) { isDirty = true }
+        .onChange(of: information) { isDirty = true }
+        .onChange(of: category) { isDirty = true }
+        .onChange(of: tags) { isDirty = true }
+        .interactiveDismissDisabled(isDirty)
+#if os(macOS)
+        .onKeyPress(.escape) {
+            dismiss()
+            return .handled
+        }
+#endif
         .resetAppColorScheme()
+    }
+    
+    private func saveChanges() {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        editControllable.update(
+            id: model.id,
+            name: trimmedName,
+            description: information,
+            category: category,
+            tags: tags
+        )
+        
+#if os(iOS)
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+#endif
+        
+        dismiss()
     }
 }
 
@@ -79,17 +127,47 @@ private extension ItemHeaderEditorView {
                 Text("Name", bundle: .module)
             }
             .focused($currentFocus, equals: .name)
+            .onSubmit {
+                currentFocus = .information
+            }
+            .submitLabel(.next)
+#if os(iOS) || os(visionOS)
+            .padding(.horizontal, 6)
+            .padding(.vertical, valueFor(iOS: 8, macOS: 0, tvOS: 0, visionOS: 8))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(currentFocus == .name ? Color.accentColor.opacity(0.7) : Color.secondary, lineWidth: currentFocus == .name ? 4 : 1)
+            }
+#endif
 
             Button {
-                withAnimation { name = "" }
+                name = ""
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.secondary)
             }
-            .opacity(name.isEmpty ? 0: 1)
+            .opacity(name.isEmpty ? 0 : 1)
             .contentTransition(.symbolEffect(.automatic))
         }
         .padding(.bottom, 6)
+    }
+    
+    @ViewBuilder
+    private var descriptionEditor: some View {
+#if os(tvOS)
+        TextField(
+            text: $information,
+            prompt: Text("Insert a description", bundle: .module),
+            axis: .vertical
+        ) {
+            Text("Description", bundle: .module)
+        }
+        .lineLimit(5...10)
+#else
+        TextEditor(text: $information)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+#endif
     }
     
     @ViewBuilder
@@ -97,21 +175,17 @@ private extension ItemHeaderEditorView {
         Text("Description", bundle: .module)
             .font(.caption)
             .foregroundStyle(.secondary)
-#if os(tvOS)
-        TextField(text: $information, prompt: Text("Insert a description", bundle: .module), axis: .vertical) {
-            Text("Description", bundle: .module)
-        }
-        .frame(minHeight: 120, maxHeight: 200)
-        .border(Color.accentColor.secondary)
-        .padding(.bottom, 6)
-        .focused($currentFocus, equals: .information)
-#else
-        TextEditor(text: $information)
+        
+        descriptionEditor
             .frame(minHeight: 120, maxHeight: 200)
-            .border(Color.accentColor.secondary)
-            .padding(.bottom, 6)
             .focused($currentFocus, equals: .information)
-#endif
+            .padding(.horizontal, 2)
+            .padding(.vertical, valueFor(iOS: 0, macOS: 8, tvOS: 0, visionOS: 0))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(currentFocus == .information ? Color.accentColor.opacity(0.7) : Color.secondary, lineWidth: currentFocus == .information ? 4 : 1)
+            }
+            .padding(.bottom, 6)
     }
     
     @ViewBuilder
@@ -130,6 +204,9 @@ private extension ItemHeaderEditorView {
 }
 
 #Preview {
-    ItemHeaderEditorView(editControllable: FakeEditController.fake, model: FakeItemModel(id: UUID(), name: "My great name", category: .album, description: "Log description here", tags: ["One", "2"], displayState: 0, isGroupHiddenToggle: false))
-        .tint(NetworkModules.space.tint)
+    Color.blue.sheet(isPresented: .constant(true)) {
+        ItemHeaderEditorView(editControllable: FakeEditController.fake, model: FakeItemModel(id: UUID(), name: "My great name", category: .album, description: "Log description here", tags: ["One", "2"], displayState: 0, isGroupHiddenToggle: false))
+            .tint(NetworkModules.space.tint)
+    }
+    .environment(AppSettingsModel())
 }
