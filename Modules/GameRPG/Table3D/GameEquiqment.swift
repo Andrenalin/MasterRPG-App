@@ -332,6 +332,91 @@ struct PlayerPawn: EntityEquipment {
     }
 }
 
+// MARK: - Monster Pawn
+
+/// Represents a monster pawn on the 3D tabletop, synced with monster pins from the map
+struct MonsterPawn: EntityEquipment {
+    let id: ID
+    let pinId: UUID // Links this pawn to a specific map pin
+    let entity: Entity
+    var initialState: BaseEquipmentState
+    
+    /// Creates a monster pawn with a simple colored sphere
+    @MainActor
+    init(id: ID, pinId: UUID, position: SIMD3<Float>, color: Color, size: MapPinModel.MapPinSize) {
+        self.id = id
+        self.pinId = pinId
+        
+        // Create a simple entity for the monster
+        let monsterEntity = Entity()
+        
+        // Calculate scale based on pin size
+        let scale = Self.scaleForPinSize(size)
+        
+        // Create a sphere mesh for the monster
+        let mesh = MeshResource.generateSphere(radius: 0.02 * scale)
+        
+        // Create material with the pin color
+        var material = PhysicallyBasedMaterial()
+        material.baseColor = .init(tint: UIColor(color))
+        material.metallic = 0.3
+        material.roughness = 0.7
+        
+        let modelEntity = ModelEntity(mesh: mesh, materials: [material])
+        monsterEntity.addChild(modelEntity)
+        
+        // Add a label above the monster (optional - can be toggled)
+        // This would require TextEntity or similar in RealityKit
+        
+        self.entity = monsterEntity
+        
+        // Set initial position
+        let pose = TableVisualState.Pose2D(
+            position: .init(x: Double(position.x), z: Double(position.z)),
+            rotation: .degrees(0)
+        )
+        
+        initialState = .init(
+            parentID: .tableID,
+            seatControl: .restricted([]), // Only GM can move
+            pose: pose,
+            entity: self.entity
+        )
+    }
+    
+    /// Returns scale multiplier based on pin size
+    static func scaleForPinSize(_ size: MapPinModel.MapPinSize) -> Float {
+        switch size {
+        case .tiny: return 0.5
+        case .small: return 0.75
+        case .normal: return 1.0
+        case .large: return 1.5
+        case .huge: return 2.0
+        case .colossal: return 3.0
+        }
+    }
+    
+    /// Updates the monster pawn's position and appearance
+    @MainActor
+    mutating func update(position: SIMD3<Float>, color: Color, size: MapPinModel.MapPinSize) {
+        // Update position
+        entity.position = position
+        
+        // Update scale
+        let scale = Self.scaleForPinSize(size)
+        entity.scale = SIMD3<Float>(repeating: scale)
+        
+        // Update color
+        if let modelEntity = entity.children.first as? ModelEntity {
+            var material = PhysicallyBasedMaterial()
+            material.baseColor = .init(tint: UIColor(color))
+            material.metallic = 0.3
+            material.roughness = 0.7
+            modelEntity.model?.materials = [material]
+        }
+    }
+}
+
 struct Die20: EntityEquipment {
     let id: ID
     let entity: Entity
