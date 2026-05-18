@@ -5,10 +5,9 @@ import DiceRPG
 import PhotoRPG
 import SwiftUI
 
-struct DetailFolderListView: View, Equatable {
-    private let rootStorage: CharacterRootModel
+struct DetailFolderListView: View {
+    let root: CharacterRootModel
     let model: ValueModel
-    private let navigationModel: ModuleNavigationModel
 
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
@@ -16,51 +15,29 @@ struct DetailFolderListView: View, Equatable {
     @State private var detailRoute: CharacterDetailRoute?
     @State private var lastFolderId: UUID?
     @State private var showFolderDetail: Bool = false
-    @State private var detailFolderListController: FolderListController
-
-    init(root: CharacterRootModel, model: ValueModel) {
-        self.rootStorage = root
-        self.model = model
-        self.navigationModel = root.navigationModel
-
-        let listModel = root.navigationModel.folderModels[model.id]
-        let allListModel = listModel ?? root.folderListController.copyModel(parentModel: model)
-        if listModel == nil {
-            root.navigationModel.folderModels[model.id] = allListModel
-        }
-
-        let controller = root.folderListController.copy(listModel: allListModel) as! FolderListController
-        self._detailFolderListController = State(initialValue: controller)
-
-        print("🔄 DetailFolderListView.detailFolderListController created for model: \(model.name)")
-    }
-
-    static func == (lhs: DetailFolderListView, rhs: DetailFolderListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
     
     var body: some View {
         let _ = Self._printChanges()
 
-        content(listController: detailFolderListController)
+        content
             .onAppear {
-                rootStorage.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: rootStorage.config.module))
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
             }
             .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $detailRoute)
-                    .onChange(of: detailFolderListController.listModel.subFolderRoute) {
-                        guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
+                    .onChange(of: currentListModel.subFolderRoute) {
+                        guard let subItemId = currentListModel.subFolderRoute else { return }
                         detailRoute = CharacterDetailRoute.folder(subItemId)
                     }
-                    .onChange(of: detailRoute) { oldRoute, newRoute in
+                    .onChange(of: detailRoute) { _, _ in
                         guard detailRoute == nil else { return }
-                        detailFolderListController.listModel.resetListModel()
+                        currentListModel.resetListModel()
                     }
             }
             .applyIf(appSizeModel.mode == .regular) {
                 $0.background {
                     FolderItemsObserver(
-                        navigationModel: navigationModel,
+                        navigationModel: root.navigationModel,
                         lastFolderId: $lastFolderId,
                         showFolderDetail: $showFolderDetail
                     )
@@ -72,9 +49,7 @@ struct DetailFolderListView: View, Equatable {
                             .toolbar {
                                 ToolbarItem(placement: .cancellationAction) {
                                     Button {
-                                        showFolderDetail = false
-                                        self.lastFolderId = nil
-                                        detailFolderListController.listModel.resetListModel()
+                                        closeFolderOverlay()
                                     } label: {
                                         Image(systemName: "xmark")
                                     }
@@ -86,40 +61,62 @@ struct DetailFolderListView: View, Equatable {
             }
     }
     
-    @ViewBuilder
-    func content(listController: any FolderListControllable) -> some View {
-        let _ = print("🔍 DetailFolderListView.content() called for model: \(model.name)")
-        DetailFolderContentView(
-            root: rootStorage,
-            model: model,
-            listController: listController
-        )
+    // MARK: - Computed Properties
+    
+    /// Returns the current list model for this view's model, creating it if needed
+    private var currentListModel: FolderListModel {
+        if let existing = root.navigationModel.folderModels[model.id] {
+            return existing
+        }
+        
+        let newModel = root.folderListController.copyModel(parentModel: model)
+        root.navigationModel.folderModels[model.id] = newModel
+        return newModel
     }
-}
-
-private struct DetailFolderContentView: View {
-    let root: CharacterRootModel
-    let model: ValueModel
-    let listController: any FolderListControllable
-
-    var body: some View {
+    
+    /// Creates a controller instance for the current list model
+    private var detailListController: FolderListControllable {
+        root.folderListController.copy(listModel: currentListModel)
+    }
+    
+    // MARK: - Content
+    
+    @ViewBuilder
+    private var content: some View {
         ItemDetailRootView(
             root: root.rootController,
-            detailListController: listController,
+            detailListController: detailListController,
             selectedModel: model,
             configuration: .init(),
-            linkTypes: LinkCharacterModuleTransferable.self) {
+            linkTypes: LinkCharacterModuleTransferable.self
+        ) {
             DetailEditorView(root: root, model: model)
         }
         .overlay {
             if root.openFileWindowModel.showItem {
-                root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
+                root.viewController.viewer(
+                    root: root,
+                    itemId: root.openFileWindowModel.itemId,
+                    configuration: ViewerConfiguration(closeButton: true)
+                ) {
                     root.openFileWindowModel.showItem = false
                 }
             }
         }
     }
+    
+    // MARK: - Actions
+    
+    private func closeFolderOverlay() {
+        showFolderDetail = false
+        lastFolderId = nil
+        currentListModel.resetListModel()
+    }
 }
+
+// MARK: - Supporting Views
+
+
 
 private struct FolderItemsObserver: View {
     let navigationModel: ModuleNavigationModel
