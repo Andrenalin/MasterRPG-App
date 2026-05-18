@@ -3,23 +3,19 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailRootView: View, Equatable {
+struct DetailRootView: View {
     let root: MapRootModel
     let model: MapModel
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
-    // Equatable conformance: only recreate if model.id changes
-    static func == (lhs: DetailRootView, rhs: DetailRootView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
         DetailListView(root: root, model: model)
-            .equatable()  // Only recreate if model.id changes
+            .id(model.id)
             .detailInspectorModifier(root: root.rootController)
-            .applyIf(appSizeModel.mode == .regular) {
-                $0.task(id: model.id) {
+            .task(id: model.id) {
+                // Reset folder navigation when switching items in regular mode
+                if appSizeModel.mode == .regular {
                     root.navigationModel.folderItems = []
                     root.navigationModel.folderModels = [:]
                 }

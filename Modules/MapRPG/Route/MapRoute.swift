@@ -53,20 +53,8 @@ struct MapRouteDestinationView: View {
     @Environment(MapRootModel.self) private var root
 
     var body: some View {
-        // Fetch model once to avoid repeated lookups
         if let model = root.itemController.itemSync(for: itemId) {
-            DetailRootViewWrapper(root: root, model: model)
+            DetailRootView(root: root, model: model)
         }
-    }
-}
-
-// Separate wrapper to isolate observable dependencies
-private struct DetailRootViewWrapper: View {
-    let root: MapRootModel
-    let model: MapModel
-
-    var body: some View {
-        DetailRootView(root: root, model: model)
-            .equatable()  // Only recreate if model.id changes
     }
 }

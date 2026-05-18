@@ -5,18 +5,12 @@ import DiceRPG
 import PhotoRPG
 import SwiftUI
 
-struct DetailListView: View, Equatable {
+struct DetailListView: View {
     let root: MapRootModel
     let model: MapModel
 
-    // Equatable conformance: only recreate if model.id changes
-    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
         DetailFolderListView(root: root, model: model)
-            .equatable()  // Only recreate if model.id changes
             .toolbar {
                 toolbarContent
             }
@@ -118,6 +112,7 @@ struct AddEntryButton: View {
     var body: some View {
         Button {
             withAnimation {
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                 let entryId = root.editController.addNewEntry(itemId: model.id)
                 root.editController.sheetEditorModel.entryId = entryId
                 Task {
