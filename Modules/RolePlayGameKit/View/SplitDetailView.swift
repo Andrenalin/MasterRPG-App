@@ -26,17 +26,9 @@ struct SplitDetailView: View {
     var body: some View {
         let _ = Self._printChanges()
 
-        detailView(for: selectedModule)
-    }
-
-    @ViewBuilder
-    private func detailView(for module: NetworkModules) -> some View {
-        switch module {
+        switch selectedModule {
         case .adventure:
-            AdventureFactory.detailView(
-                root: appModel.adventureRoot,
-                selectedItemId: appModel.adventureRoot.navigationModel.selectedItemId
-            )
+            AdventureFactory.detailView(root: appModel.adventureRoot)
         case .audio:
             AudioFactory.detailView(
                 root: appModel.audioRoot,
@@ -95,7 +87,7 @@ struct SplitDetailView: View {
             )
         case .setting: EmptyView()
         default:
-            ContentUnavailableView(module.title, image: module.icon)
+            ContentUnavailableView(selectedModule.title, image: selectedModule.icon)
         }
     }
 
@@ -103,6 +95,7 @@ struct SplitDetailView: View {
         isExtendedRoutes ? (appModel.selectedEditorModule ?? .pdfs).module : (appModel.selectedModule ?? .game).module
     }
 }
+
 
 #Preview {
     SplitDetailView(isExtendedRoutes: false)

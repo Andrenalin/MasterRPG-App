@@ -49,10 +49,13 @@ public enum AdventureFactory {
         AdventureRootView()
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: AdventureRootModel, selectedItemId: UUID?) -> some View {
-        // selectedItemId passed explicitly to avoid observable dependency
-        if let itemId = selectedItemId {
-            ItemSplitDetailRouteRootView(root: root.rootController, route: AdventureRoute.detail(itemId))
+    @MainActor @ViewBuilder public static func detailView(root: AdventureRootModel) -> some View {
+        if let itemId = root.navigationModel.selectedItemId {
+            //ManagedNavigationStack(name: "Split-Adventure") {
+                DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+            //}
+       // } else {
+       //     SplitContentUnavailableView(module: root.configurable.module)
         }
     }
 }

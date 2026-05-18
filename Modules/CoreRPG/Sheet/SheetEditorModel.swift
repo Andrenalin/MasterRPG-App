@@ -19,5 +19,5 @@ import SwiftUI
         self.itemId = source.itemId
         self.entryId = source.entryId
         self.module = source.typeId        
-    }
+    }    
 }

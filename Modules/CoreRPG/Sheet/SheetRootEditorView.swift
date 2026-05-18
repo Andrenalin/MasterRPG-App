@@ -32,13 +32,8 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
             Text(headerTitle)
         }
         .onChange(of: model.id) { oldValue, newValue in
-            sheetRootModel = SheetRootModel(
-                linkControllable: root.linkControllable,
-                sheetControllable: root.sheetControllable,
-                itemId: newValue,
-                isEditor: true,
-                editorModel: sheetRootModel.editorModel
-            )
+            guard sheetRootModel.sheetModel.source.itemId != newValue else { return }
+            sheetRootModel.reset(itemId: model.id)
         }
     }
 }

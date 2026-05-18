@@ -53,6 +53,8 @@ struct DestinationAdventureRouteView: View {
     @Environment(AdventureRootModel.self) private var root
 
     var body: some View {
+        let _ = Self._printChanges()
+        
         if let model = root.itemController.itemSync(for: itemId) {
             DetailRootView(root: root, model: model)
         }

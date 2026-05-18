@@ -12,6 +12,7 @@ enum LinkHighlightTextModelId: Hashable {
 public final class SheetRootModel: Sendable {
     public init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool) {
         self.linkControllable = linkControllable
+        self.sheetControllable = sheetControllable
         self.isEditor = isEditor
         let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         self.sheetModel = sheetModel
@@ -22,6 +23,7 @@ public final class SheetRootModel: Sendable {
 
     public init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool, editorModel: SheetEditorModel) {
         self.linkControllable = linkControllable
+        self.sheetControllable = sheetControllable
         self.isEditor = isEditor
         let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         self.sheetModel = sheetModel
@@ -58,8 +60,17 @@ public final class SheetRootModel: Sendable {
         }
     }
     
+    @ObservationIgnored let sheetControllable: SheetControllable
     @ObservationIgnored let linkControllable: any LinkControllable
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
+    
+    func reset(itemId: UUID) {
+        let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
+        self.sheetModel = sheetModel
+        self.editorModel.setEdit(source: sheetModel.source)
+        // Initialize lastIsShown to match isShown so first search clear works correctly
+        initializeLastIsShownState(sheetModel: sheetModel)
+    }
     
     func rootController(for module: NetworkModules) -> ItemRootController? {
         linkControllable.rootManager.itemRootController(for: module)
