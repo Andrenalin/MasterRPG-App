@@ -12,8 +12,10 @@ struct DetailListView: View {
         DetailFolderListView(root: root, model: model)
             .toolbar {
                 ToolbarItemGroup(placement: .secondaryActionAll) {
-                    ControlGroup {
-                        ConvertImageEditor(model: model)
+                    if model.url != nil && !model.specialCategory {
+                        ControlGroup {
+                            ConvertImageEditor(model: model)
+                        }
                     }
                 }
             }

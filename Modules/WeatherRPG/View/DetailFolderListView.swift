@@ -20,11 +20,18 @@ struct DetailFolderListView: View {
             root: root.rootController,
             detailListController: detailListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: true),
-            linkTypes: EmptyLinkTransferable.self
-        ) {
-            ViewerRootView(model: model, configuration: ViewerConfiguration(addToolbar: false))
-        }
+            configuration: .init(),
+            linkTypes: EmptyLinkTransferable.self) {
+                WeatherEditor(model: model)
+            }
+            .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+                OverlayViewer(model: model, animate: $animate)
+                    .opacity(0)
+            }
+            .overlay(alignment: .bottom) {
+                OverlayViewer(model: model, animate: $animate)
+                    .allowsHitTesting(false)
+            }
         .overlay {
             overlayContent
         }

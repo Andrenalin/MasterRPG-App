@@ -24,7 +24,6 @@ struct DetailRootView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(WeatherRootModel.self) var root
-    
     ManagedNavigationStack {
         DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? WeatherModel.previewId))
             .preferredColorScheme(.dark)

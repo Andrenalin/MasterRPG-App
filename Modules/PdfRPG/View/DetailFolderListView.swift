@@ -19,10 +19,10 @@ struct DetailFolderListView: View {
             root: root.rootController,
             detailListController: detailListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: true),
-            linkTypes: EmptyLinkTransferable.self
+            configuration: .init(),
+            linkTypes: LinkPdfModuleTransferable.self
         ) {
-            ViewerRootView(model: model, configuration: ViewerConfiguration(addToolbar: false))
+            DetailEditorView(root: root, model: model)
         }
         .overlay {
             overlayContent

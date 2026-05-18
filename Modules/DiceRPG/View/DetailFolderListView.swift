@@ -19,10 +19,16 @@ struct DetailFolderListView: View {
             root: root.rootController,
             detailListController: detailListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: true),
+            configuration: .init(disableHideHeader: true),
             linkTypes: EmptyLinkTransferable.self
         ) {
-            ViewerRootView(model: model, configuration: ViewerConfiguration(addToolbar: false))
+            DetailEditorView(model: model)
+        }
+        .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+            DiceOverlayView(model: model).opacity(0)
+        }
+        .overlay(alignment: .bottom) {
+            DiceOverlayView(model: model)
         }
         .overlay {
             overlayContent

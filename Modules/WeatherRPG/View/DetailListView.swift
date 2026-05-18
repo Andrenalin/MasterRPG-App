@@ -7,8 +7,6 @@ struct DetailListView: View {
     let root: WeatherRootModel
     let model: WeatherModel
 
-    @Environment(\.navigator) private var navigator
-
     @State private var animate: Bool = false
 
     var body: some View {

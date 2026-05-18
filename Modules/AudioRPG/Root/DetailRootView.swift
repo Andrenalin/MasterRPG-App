@@ -3,19 +3,14 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailRootView: View, Equatable {
+struct DetailRootView: View {
     let root: AudioRootModel
     let model: AudioModel
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
-    static func == (lhs: DetailRootView, rhs: DetailRootView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
         DetailListView(root: root, model: model)
-            .equatable()
             .detailInspectorModifier(root: root.rootController)
             .applyIf(appSizeModel.mode == .regular) {
                 $0.task(id: model.id) {

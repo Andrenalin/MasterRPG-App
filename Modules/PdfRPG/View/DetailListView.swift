@@ -28,16 +28,7 @@ struct DetailListView: View {
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
             ToolbarItem(placement: .secondaryAction) {
                 if model.url != nil && !model.specialCategory {
-                    Button {
-                        navigator.navigate(to: PdfDetailRoute.pdfExtraction(model.id), method: .managedSheet)
-                    } label: {
-                        Label {
-                            Text("Extract Information", bundle: .module)
-                        } icon: {
-                            Image(systemName: NetworkModules.generator.icon)
-                        }
-                    }
-                    .disabled(root.openFileWindowModel.showItem)
+                    ExtractToolBarButton(root: root, model: model)
                 }
             }
     }
@@ -47,7 +38,6 @@ struct DetailListView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(PdfRootModel.self) var root
-    
     ManagedNavigationStack {
         DetailListView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId))
             .preferredColorScheme(.dark)

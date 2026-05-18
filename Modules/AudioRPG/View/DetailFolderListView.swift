@@ -3,77 +3,26 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailFolderListView: View, Equatable {
-    private let rootStorage: AudioRootModel
+struct DetailFolderListView: View {
+    let root: AudioRootModel
     let model: AudioModel
-    private let navigationModel: ModuleNavigationModel
 
-    @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     @State private var detailRoute: AudioDetailRoute?
-    @State private var lastFolderId: UUID?
-    @State private var showFolderDetail: Bool = false
-    @State private var detailFolderListController: FolderListController
-
-    init(root: AudioRootModel, model: AudioModel) {
-        self.rootStorage = root
-        self.model = model
-        self.navigationModel = root.navigationModel
-
-        let listModel = root.navigationModel.folderModels[model.id]
-        let allListModel = listModel ?? root.folderListController.copyModel(parentModel: model)
-        if listModel == nil {
-            root.navigationModel.folderModels[model.id] = allListModel
-        }
-
-        let controller = root.folderListController.copy(listModel: allListModel) as! FolderListController
-        self._detailFolderListController = State(initialValue: controller)
-
-        print("🔄 DetailFolderListView.detailFolderListController created for model: \(model.name)")
-    }
-
-    static func == (lhs: DetailFolderListView, rhs: DetailFolderListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
+    @State private var showFolderOverlay: Bool = false
     
     var body: some View {
         let _ = Self._printChanges()
-
-        DetailFolderContentView(
-            rootStorage: rootStorage,
-            model: model,
-            detailFolderListController: detailFolderListController
-        )
-        .background {
-            FolderItemsObserver(
-                navigationModel: navigationModel,
-                appSizeModel: appSizeModel,
-                lastFolderId: $lastFolderId,
-                showFolderDetail: $showFolderDetail,
-                detailFolderListController: detailFolderListController
-            )
-        }
-    }
-}
-
-private struct DetailFolderContentView: View {
-    let rootStorage: AudioRootModel
-    let model: AudioModel
-    let detailFolderListController: FolderListController
-
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-    @State private var detailRoute: AudioDetailRoute?
-
-    var body: some View {
+        
         ItemDetailRootView(
-            root: rootStorage.rootController,
-            detailListController: detailFolderListController,
+            root: root.rootController,
+            detailListController: detailListController,
             selectedModel: model,
             configuration: .init(),
             linkTypes: EmptyLinkTransferable.self
         ) {
-            DetailEditorView(rootStorage: rootStorage, model: model)
+            DetailEditorView(root: root, model: model)
         }
         .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
             // Spacer to reserve space for the overlay
@@ -85,77 +34,88 @@ private struct DetailFolderContentView: View {
             AudioPlayerBarView()
                 .padding()
         }
+        .overlay {
+            overlayContent
+        }
         .applyIf(appSizeModel.mode == .compact) {
             $0.navigate(to: $detailRoute)
-                .onChange(of: detailFolderListController.listModel.subFolderRoute) {
-                    guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
-                    detailRoute = AudioDetailRoute.folder(subItemId)
-                }
-                .onChange(of: detailRoute) { oldRoute, newRoute in
-                    guard detailRoute == nil else { return }
-                    detailFolderListController.listModel.resetListModel()
-                }
-        }
-    }
-}
-
-private struct DetailEditorView: View {
-    let rootStorage: AudioRootModel
-    let model: AudioModel
-
-    var body: some View {
-        HStack {
-            HStack {
-                FileImporterView(
-                    editControllable: rootStorage.editController,
-                    fileTypes: rootStorage.editController.fileUrlDataController?.fileTypes ?? [],
-                    itemId: model.id
-                )
-
-                Text(model.url?.path(percentEncoded: false) ?? "No file is set")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .opacity(model.specialCategory ? 0 : 1)
-        }
-        .padding()
-    }
-}
-
-private struct FolderItemsObserver: View {
-    let navigationModel: ModuleNavigationModel
-    let appSizeModel: AppWindowSizeModel
-    @Binding var lastFolderId: UUID?
-    @Binding var showFolderDetail: Bool
-    let detailFolderListController: FolderListController
-
-    var body: some View {
-        Color.clear
-            .applyIf(appSizeModel.mode == .regular) {
-                $0.onChange(of: navigationModel.folderItems) {
-                    guard lastFolderId == nil, let subItemId = navigationModel.folderItems.last else { return }
-                    lastFolderId = subItemId
-                    withAnimation {
-                        showFolderDetail = true
+                .onChange(of: currentListModel.subFolderRoute) { _, newRoute in
+                    if let subItemId = newRoute {
+                        detailRoute = AudioDetailRoute.folder(subItemId)
                     }
                 }
-            }
-            .overlay {
-                if appSizeModel.mode == .regular, showFolderDetail, let lastFolderId {
-                    AudioDetailRoute.folderInline(lastFolderId)
-                        .padding(.top, 36)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button {
-                                    showFolderDetail = false
-                                    self.lastFolderId = nil
-                                    detailFolderListController.listModel.resetListModel()
-                                } label: {
-                                    Image(systemName: "xmark")
-                                }
-                            }
-                        }
-                        .transition(.move(edge: .bottom))
+                .onChange(of: detailRoute) { _, newRoute in
+                    if newRoute == nil {
+                        currentListModel.resetListModel()
+                    }
                 }
+        }
+        .onChange(of: root.navigationModel.folderItems) {
+            handleFolderItemsChange()
+        }
+    }
+    
+    
+    // MARK: - Computed Properties
+    
+    private var detailListController: FolderListControllable {
+        root.folderListController.copy(listModel: currentListModel)
+    }
+    
+    private var currentListModel: FolderListModel {
+        if let existing = root.navigationModel.folderModels[model.id] {
+            return existing
+        }
+        
+        let newModel = root.folderListController.copyModel(parentModel: model)
+        root.navigationModel.folderModels[model.id] = newModel
+        return newModel
+    }
+    
+    // MARK: - Overlays
+    
+    @ViewBuilder private var overlayContent: some View {
+        if root.openFileWindowModel.showItem {
+            root.viewController.viewer(
+                root: root,
+                itemId: root.openFileWindowModel.itemId,
+                configuration: ViewerConfiguration(closeButton: true)
+            ) {
+                root.openFileWindowModel.showItem = false
             }
+        }
+        
+        if appSizeModel.mode == .regular,
+           showFolderOverlay,
+           let folderId = root.navigationModel.folderItems.last {
+            AudioDetailRoute.folderInline(folderId)
+                .padding(.top, 36)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            closeFolderOverlay()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                    }
+                }
+                .transition(.move(edge: .bottom))
+        }
+    }
+    
+    // MARK: - Actions
+    
+    private func handleFolderItemsChange() {
+        guard appSizeModel.mode == .regular else { return }
+        guard !showFolderOverlay, root.navigationModel.folderItems.last != nil else { return }
+        
+        withAnimation {
+            showFolderOverlay = true
+        }
+    }
+    
+    private func closeFolderOverlay() {
+        showFolderOverlay = false
+        currentListModel.resetListModel()
     }
 }

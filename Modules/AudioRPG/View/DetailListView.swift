@@ -3,22 +3,17 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailListView: View, Equatable {
+struct DetailListView: View {
     let root: AudioRootModel
     let model: AudioModel
 
-    @Environment(\.navigator) private var navigator
-
-    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
         DetailFolderListView(root: root, model: model)
-            .equatable()
             .toolbar {
                 ToolbarItem(placement: .secondaryActionAll) {
-                    playButton
+                    if model.url != nil || model.specialCategory {
+                        PlayToolbarButton(root: root, model: model)
+                    }
                 }
             }
             .tint(root.configurable.module.tint)
@@ -26,30 +21,5 @@ struct DetailListView: View, Equatable {
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in
                 UserActivity.addPayLoad(for: activity, title: model.name, module: root.config.module, itemId: model.id)
             }
-    }
-    
-    var playButton: some View {
-        Button {
-            Task {
-                let list = root.itemController.audioList(itemId: model.id)
-                await root.audioController.add(audio: list, replace: true)
-                root.audioController.togglePlay(id: list.first?.id)
-            }
-        } label: {
-            Label {
-                Text("Play", bundle: .module)
-            } icon: {
-                Image(systemName: "play.rectangle.on.rectangle")
-            }
-        }
-        .disabled(!root.itemController.hasAudio(itemId: model.id))
-    }
-}
-
-#Preview(traits: .mockData) {
-    @Previewable @Environment(AudioRootModel.self) var root
-    ManagedNavigationStack {
-        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId))
-            .preferredColorScheme(.dark)
     }
 }
