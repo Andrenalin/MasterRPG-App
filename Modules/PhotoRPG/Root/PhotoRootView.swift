@@ -9,7 +9,7 @@ struct PhotoRootView: View {
 
     var body: some View {
         ItemRootView(root: root.rootController)
-            .overlay {
+            .background {
                 StateRestorationView(root: root)
             }
             .onNavigationReceive { (route: PhotoRoute, navigator) in
