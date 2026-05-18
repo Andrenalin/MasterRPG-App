@@ -2,6 +2,7 @@
 
 import CoreRPG
 import SwiftUI
+import DiceRPG
 
 struct DetailFolderListView: View {
     let root: TableRootModel
@@ -19,10 +20,10 @@ struct DetailFolderListView: View {
             root: root.rootController,
             detailListController: detailListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: true),
-            linkTypes: EmptyLinkTransferable.self
+            configuration: .init(),
+            linkTypes: LinkTableModuleTransferable.self
         ) {
-            ViewerRootView(model: model, configuration: ViewerConfiguration(addToolbar: false))
+            DetailEditorView(root: root, model: model)
         }
         .overlay {
             overlayContent
@@ -107,5 +108,23 @@ struct DetailFolderListView: View {
     private func closeFolderOverlay() {
         showFolderOverlay = false
         currentListModel.resetListModel()
+    }
+}
+
+private struct DetailEditorView: View {
+    let root: TableRootModel
+    let model: TableModel
+
+    var body: some View {
+        root.diceRoot.viewController.dropChooseView(model: root.editController.tableEditModel.selectionDice)
+            .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
+                withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, itemId: model.id) }
+            }
+            .task(id: model.diceId) {
+                root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil)
+            }
+
+        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Entries", bundle: .module).localizedString, linkTypes: LinkTableModuleTransferable.self)
+            .id(model.id)
     }
 }
