@@ -10,7 +10,7 @@ public enum WeatherRoute: Equatable, Hashable, Codable {
 extension WeatherRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
-            case .detail(let id): "detail/\(id.uuidString)"
+        case .detail(let id): "detail/\(id.uuidString)"
         }
     }
 
@@ -18,8 +18,8 @@ extension WeatherRoute: RawRepresentable {
         let values = rawValue.split(separator: "/")
         guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
         switch token {
-            case "detail": self = .detail(uuid)
-            default: return nil
+        case "detail": self = .detail(uuid)
+        default: return nil
         }
     }
 }
@@ -41,7 +41,7 @@ extension WeatherRoute: ItemDetailRoute {
     
     public func detail() -> UUID? {
         switch self {
-            case .detail(let id): return id
+        case .detail(let id): return id
         }
     }
 }
@@ -53,17 +53,7 @@ struct WeatherRouteDestinationView: View {
 
     var body: some View {
         if let model = root.itemController.itemSync(for: itemId) {
-            DetailRootViewWrapper(root: root, model: model)
+            DetailRootView(root: root, model: model)
         }
-    }
-}
-
-private struct DetailRootViewWrapper: View {
-    let root: WeatherRootModel
-    let model: WeatherModel
-
-    var body: some View {
-        DetailRootView(root: root, model: model)
-            .equatable()
     }
 }

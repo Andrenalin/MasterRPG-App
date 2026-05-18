@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailListView: View, Equatable {
+struct DetailListView: View {
     let root: WeatherRootModel
     let model: WeatherModel
 
@@ -11,13 +11,9 @@ struct DetailListView: View, Equatable {
 
     @State private var animate: Bool = false
 
-    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
+        let _ = Self._printChanges()
         DetailFolderListView(root: root, model: model, animate: $animate)
-            .equatable()
             .toolbar {
                 toolbarContent
             }
