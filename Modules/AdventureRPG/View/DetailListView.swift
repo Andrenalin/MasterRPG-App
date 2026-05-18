@@ -5,19 +5,12 @@ import DiceRPG
 import PhotoRPG
 import SwiftUI
 
-struct DetailListView: View, Equatable {
+struct DetailListView: View {
     let root: AdventureRootModel
     let model: AdventureModel
 
-    // Equatable conformance: only recreate if model.id changes
-    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
-        let _ = Self._printChanges()
         DetailFolderListView(root: root, model: model)
-            .equatable()  // Only recreate if model.id changes
             .toolbar {
                 toolbarContent
             }

@@ -5,112 +5,19 @@ import DiceRPG
 import PhotoRPG
 import SwiftUI
 
-struct DetailFolderListView: View, Equatable {
-    // Store root temporarily for initialization, but don't access in body
-    private let rootStorage: AdventureRootModel
-    let model: AdventureModel
-
-    // Extract only what we need for body evaluation
-    private let navigationModel: ModuleNavigationModel
-
-    @Environment(\.navigator) private var navigator
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-
-    @State private var detailRoute: AdventureDetailRoute?
-    @State private var lastFolderId: UUID?
-    @State private var showFolderDetail: Bool = false
-    @State private var detailFolderListController: FolderListController
-
-    init(root: AdventureRootModel, model: AdventureModel) {
-        self.rootStorage = root
-        self.model = model
-        self.navigationModel = root.navigationModel
-
-        // Get or create the list model
-        let listModel = root.navigationModel.folderModels[model.id]
-        let allListModel = listModel ?? root.folderListController.copyModel(parentModel: model)
-        if listModel == nil {
-            root.navigationModel.folderModels[model.id] = allListModel
-        }
-
-        let controller = root.folderListController.copy(listModel: allListModel) as! FolderListController
-        self._detailFolderListController = State(initialValue: controller)
-
-        print("🔄 DetailFolderListView.detailFolderListController created for model: \(model.name)")
-    }
-
-    // Equatable conformance: only recreate if model.id changes
-    static func == (lhs: DetailFolderListView, rhs: DetailFolderListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
-    var body: some View {
-        let _ = Self._printChanges()
-
-        content(listController: detailFolderListController)
-            .applyIf(appSizeModel.mode == .compact) {
-                $0.navigate(to: $detailRoute)
-                    .onChange(of: detailFolderListController.listModel.subFolderRoute) {
-                        guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
-                        detailRoute = AdventureDetailRoute.folder(subItemId)
-                    }
-                    .onChange(of: detailRoute) { oldRoute, newRoute in
-                        guard detailRoute == nil else { return }
-                        detailFolderListController.listModel.resetListModel()
-                    }
-            }
-            .applyIf(appSizeModel.mode == .regular) {
-                $0.background {
-                    // Isolate folderItems observation to prevent parent re-renders
-                    FolderItemsObserver(
-                        navigationModel: navigationModel,
-                        lastFolderId: $lastFolderId,
-                        showFolderDetail: $showFolderDetail
-                    )
-                }
-                .overlay {
-                    if showFolderDetail, let lastFolderId {
-                        AdventureDetailRoute.folderInline(lastFolderId)
-                            .padding(.top, 36)
-                            .toolbar {
-                                ToolbarItem(placement: .cancellationAction) {
-                                    Button {
-                                        showFolderDetail = false
-                                        self.lastFolderId = nil
-                                        detailFolderListController.listModel.resetListModel()
-                                    } label: {
-                                        Image(systemName: "xmark")
-                                    }
-                                }
-                            }
-                            .transition(.move(edge: .bottom))
-                    }
-                }
-            }
-    }
-
-    @ViewBuilder
-    func content(listController: any FolderListControllable) -> some View {
-        let _ = print("🔍 DetailFolderListView.content() called for model: \(model.name)")
-        DetailFolderContentView(
-            root: rootStorage,
-            model: model,
-            listController: listController
-        )
-    }
-}
-
-// MARK: - Separate Content View to Reduce Observable Dependencies
-
-private struct DetailFolderContentView: View {
+struct DetailFolderListView: View {
     let root: AdventureRootModel
     let model: AdventureModel
-    let listController: any FolderListControllable
-
+    
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
+    
+    @State private var detailRoute: AdventureDetailRoute?
+    @State private var showFolderOverlay: Bool = false
+    
     var body: some View {
         ItemDetailRootView(
             root: root.rootController,
-            detailListController: listController,
+            detailListController: detailListController,
             selectedModel: model,
             configuration: .init(),
             linkTypes: LinkAdventureModuleTransferable.self
@@ -118,16 +25,92 @@ private struct DetailFolderContentView: View {
             DetailEditorView(root: root, model: model)
         }
         .overlay {
-            if root.openFileWindowModel.showItem {
-                root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true, addToolbar: false)) {
-                    root.openFileWindowModel.showItem = false
+            overlayContent
+        }
+        .applyIf(appSizeModel.mode == .compact) {
+            $0.navigate(to: $detailRoute)
+                .onChange(of: currentListModel.subFolderRoute) { _, newRoute in
+                    if let subItemId = newRoute {
+                        detailRoute = AdventureDetailRoute.folder(subItemId)
+                    }
                 }
+                .onChange(of: detailRoute) { _, newRoute in
+                    if newRoute == nil {
+                        currentListModel.resetListModel()
+                    }
+                }
+        }
+        .onChange(of: root.navigationModel.folderItems) {
+            handleFolderItemsChange()
+        }
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var detailListController: FolderListControllable {
+        root.folderListController.copy(listModel: currentListModel)
+    }
+    
+    private var currentListModel: FolderListModel {
+        if let existing = root.navigationModel.folderModels[model.id] {
+            return existing
+        }
+        
+        let newModel = root.folderListController.copyModel(parentModel: model)
+        root.navigationModel.folderModels[model.id] = newModel
+        return newModel
+    }
+    
+    // MARK: - Overlays
+    
+    @ViewBuilder
+    private var overlayContent: some View {
+        if root.openFileWindowModel.showItem {
+            root.viewController.viewer(
+                root: root,
+                itemId: root.openFileWindowModel.itemId,
+                configuration: ViewerConfiguration(closeButton: true, addToolbar: false)
+            ) {
+                root.openFileWindowModel.showItem = false
             }
         }
+        
+        if appSizeModel.mode == .regular,
+           showFolderOverlay,
+           let folderId = root.navigationModel.folderItems.last {
+            AdventureDetailRoute.folderInline(folderId)
+                .padding(.top, 36)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            closeFolderOverlay()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                    }
+                }
+                .transition(.move(edge: .bottom))
+        }
+    }
+    
+    // MARK: - Actions
+    
+    private func handleFolderItemsChange() {
+        guard appSizeModel.mode == .regular else { return }
+        guard !showFolderOverlay, root.navigationModel.folderItems.last != nil else { return }
+        
+        withAnimation {
+            showFolderOverlay = true
+        }
+    }
+    
+    private func closeFolderOverlay() {
+        showFolderOverlay = false
+        currentListModel.resetListModel()
     }
 }
 
-// MARK: - Detail Editor View (Isolated from Parent)
+// MARK: - Detail Editor View
 
 private struct DetailEditorView: View {
     let root: AdventureRootModel
@@ -139,7 +122,6 @@ private struct DetailEditorView: View {
                 withAnimation { root.editController.add(diceId: root.editController.adventureEditModel.selectionDice.itemId, itemId: model.id) }
             }
             .task(id: model.diceId) {
-                // Sync dice selection without triggering animation on initial render
                 root.editController.adventureEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil)
             }
 
@@ -148,30 +130,10 @@ private struct DetailEditorView: View {
                 withAnimation { root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId, itemId: model.id) }
             }
             .task(id: model.photoId) {
-                // Sync photo selection without triggering animation on initial render
                 root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil)
             }
 
         SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Sections", bundle: .module).localizedString, linkTypes: LinkAdventureModuleTransferable.self)
             .id(model.id)
-    }
-}
-
-// MARK: - Folder Items Observer (Isolated Observable Dependency)
-
-private struct FolderItemsObserver: View {
-    let navigationModel: ModuleNavigationModel
-    @Binding var lastFolderId: UUID?
-    @Binding var showFolderDetail: Bool
-
-    var body: some View {
-        Color.clear
-            .onChange(of: navigationModel.folderItems) {
-                guard lastFolderId == nil, let subItemId = navigationModel.folderItems.last else { return }
-                lastFolderId = subItemId
-                withAnimation {
-                    showFolderDetail = true
-                }
-            }
     }
 }
