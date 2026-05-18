@@ -7,8 +7,6 @@ struct DetailListView: View {
     let root: CharacterRootModel
     let model: ValueModel
 
-    @Environment(\.navigator) private var navigator
-
     var body: some View {
         DetailFolderListView(root: root, model: model)
             .toolbar {
@@ -20,75 +18,11 @@ struct DetailListView: View {
                 UserActivity.addPayLoad(for: activity, title: model.name, module: root.config.module, itemId: model.id)
             }
     }
-}
-
-// MARK: - Toolbar Buttons
-
-struct AddEntryButton: View {
-    let root: CharacterRootModel
-    let model: ValueModel
-
-    var body: some View {
-        Button {
-            withAnimation {
-                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-                let entryId = root.editController.addNewEntry(itemId: model.id)
-                root.editController.sheetEditorModel.entryId = entryId
-                Task {
-                    try? await Task.sleep(for: .seconds(0.25))
-                    root.editController.sheetEditorModel.scrollEntryId = entryId
-                }
-            }
-        } label: {
-            Label {
-                Text("Add new Entry", bundle: .module)
-            } icon: {
-                Image(systemName: "note.text.badge.plus")
-            }
-        }
-    }
-}
-
-struct AddGroupButton: View {
-    let root: CharacterRootModel
-    let model: ValueModel
-
-    var body: some View {
-        Button {
-            root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-            let itemId = model.id
-            Task {
-                let entryId = await root.editController.addNewGroup(itemId: itemId)
-                withAnimation {
-                    root.editController.sheetEditorModel.entryId = entryId
-                }
-                try? await Task.sleep(for: .seconds(0.25))
-                root.editController.sheetEditorModel.scrollEntryId = entryId
-            }
-        } label: {
-            Label {
-                Text("Add new Group", bundle: .module)
-            } icon: {
-                Image(systemName: "plus.square.fill.on.square.fill")
-            }
-        }
-    }
-}
-
-private extension DetailListView {
+    
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
-            if !model.specialCategory {
+            if !model.specialCategory && !root.openFileWindowModel.showItem {
                 ControlGroup {
-                    Button {
-                        navigator.navigate(to: EditorRoute.quickEditor(model.id))
-                    } label: {
-                        Label {
-                            Text("Quick Editor", bundle: .module)
-                        } icon: {
-                            Image(systemName: "table.badge.more")
-                        }
-                    }
                     AddEntryButton(root: root, model: model)
                     AddGroupButton(root: root, model: model)
                 }
@@ -97,23 +31,9 @@ private extension DetailListView {
 #if os(iOS)
         ToolbarItemGroup(placement: .keyboard) {
             ForEach(root.editorLinkModel.modulesRow, id: \.self) { module in
-                addLinkButton(module: module)
+                AddLinkButton(root: root, model: model, module: module)
             }
         }
 #endif
-    }
-    
-    private func addLinkButton(module: NetworkModules) -> some View {
-        Button {
-            withAnimation {
-                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
-            }
-        } label: {
-            Label {
-                Text("Link", bundle: .module)
-            } icon: {
-                Image(systemName: module.icon)
-            }
-        }
     }
 }

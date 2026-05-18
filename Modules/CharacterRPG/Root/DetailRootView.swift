@@ -11,10 +11,8 @@ struct DetailRootView: View {
 
     var body: some View {
         DetailListView(root: root, model: model)
-            .id(model.id)
             .detailInspectorModifier(root: root.rootController)
             .task(id: model.id) {
-                // Reset folder navigation when switching items in regular mode
                 if appSizeModel.mode == .regular {
                     root.navigationModel.folderItems = []
                     root.navigationModel.folderModels = [:]

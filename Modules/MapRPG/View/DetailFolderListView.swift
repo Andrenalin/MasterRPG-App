@@ -49,19 +49,15 @@ struct DetailFolderListView: View {
     
     // MARK: - Computed Properties
     
-    /// Creates or retrieves the list controller for this model
-    /// ItemDetailRootView will copy it internally, so we don't need @State
     private var detailListController: FolderListControllable {
         root.folderListController.copy(listModel: currentListModel)
     }
     
-    /// Gets or creates the cached list model for this detail view
     private var currentListModel: FolderListModel {
         if let existing = root.navigationModel.folderModels[model.id] {
             return existing
         }
-        
-        // Create and cache new model
+
         let newModel = root.folderListController.copyModel(parentModel: model)
         root.navigationModel.folderModels[model.id] = newModel
         return newModel
@@ -69,9 +65,7 @@ struct DetailFolderListView: View {
     
     // MARK: - Overlays
     
-    @ViewBuilder
-    private var overlayContent: some View {
-        // File viewer overlay (all modes)
+    @ViewBuilder private var overlayContent: some View {
         if root.openFileWindowModel.showItem {
             root.viewController.viewer(
                 root: root,
@@ -82,7 +76,6 @@ struct DetailFolderListView: View {
             }
         }
         
-        // Folder detail overlay (regular mode only)
         if appSizeModel.mode == .regular,
            showFolderOverlay,
            let folderId = root.navigationModel.folderItems.last {
@@ -118,7 +111,20 @@ struct DetailFolderListView: View {
     }
 }
 
-private struct DetailEditorView: View {
+struct DetailEditorView: View {
+    let root: MapRootModel
+    let model: MapModel
+    
+    var body: some View {
+        DetailSelectionEditorView(root: root, model: model)
+        
+        DisplayConfigEditor(model: model)
+        
+        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Rooms", bundle: .module).localizedString, linkTypes: LinkMapModuleTransferable.self)
+    }
+}
+
+struct DetailSelectionEditorView: View {
     let root: MapRootModel
     let model: MapModel
     
@@ -130,10 +136,5 @@ private struct DetailEditorView: View {
             .task(id: model.photoId) {
                 root.editController.mapEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil)
             }
-        
-        DisplayConfigEditor(model: model)
-        
-        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Rooms", bundle: .module).localizedString, linkTypes: LinkMapModuleTransferable.self)
-            .id(model.id)
     }
 }
