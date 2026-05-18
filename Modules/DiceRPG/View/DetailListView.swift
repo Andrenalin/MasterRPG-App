@@ -3,17 +3,13 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailListView: View, Equatable {
+struct DetailListView: View {
     let root: DiceRootModel
     let model: DiceModel
 
-    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
+        let _ = Self._printChanges()
         DetailFolderListView(root: root, model: model)
-            .equatable()
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in

@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 public enum DiceRoute: Equatable, Hashable, Codable {
@@ -11,7 +10,7 @@ public enum DiceRoute: Equatable, Hashable, Codable {
 extension DiceRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
-            case .detail(let id): "detail/\(id.uuidString)"
+        case .detail(let id): "detail/\(id.uuidString)"
         }
     }
 
@@ -19,8 +18,8 @@ extension DiceRoute: RawRepresentable {
         let values = rawValue.split(separator: "/")
         guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
         switch token {
-            case "detail": self = .detail(uuid)
-            default: return nil
+        case "detail": self = .detail(uuid)
+        default: return nil
         }
     }
 }
@@ -42,7 +41,7 @@ extension DiceRoute: ItemDetailRoute {
     
     public func detail() -> UUID? {
         switch self {
-            case .detail(let id): return id
+        case .detail(let id): return id
         }
     }
 }
@@ -54,17 +53,7 @@ struct DiceRouteDestinationView: View {
 
     var body: some View {
         if let model = root.itemController.itemSync(for: itemId) {
-            DetailRootViewWrapper(root: root, model: model)
+            DetailRootView(root: root, model: model)
         }
-    }
-}
-
-private struct DetailRootViewWrapper: View {
-    let root: DiceRootModel
-    let model: DiceModel
-
-    var body: some View {
-        DetailRootView(root: root, model: model)
-            .equatable()
     }
 }
