@@ -4,19 +4,15 @@ import CoreRPG
 import DiceRPG
 import SwiftUI
 
-struct DetailListView: View, Equatable {
+struct DetailListView: View {
     let root: TableRootModel
     let model: TableModel
 
     @Environment(\.navigator) private var navigator
 
-    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
+        let _ = Self._printChanges()
         DetailFolderListView(root: root, model: model)
-            .equatable()
             .toolbar {
                 toolbarContent
             }

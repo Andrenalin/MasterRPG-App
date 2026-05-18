@@ -53,6 +53,7 @@
 
     },
     "Bookmarks" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

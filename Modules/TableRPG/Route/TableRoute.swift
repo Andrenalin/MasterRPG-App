@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 public enum TableRoute: Equatable, Hashable, Codable {
@@ -11,7 +10,7 @@ public enum TableRoute: Equatable, Hashable, Codable {
 extension TableRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
-            case .detail(let id): "detail/\(id.uuidString)"
+        case .detail(let id): "detail/\(id.uuidString)"
         }
     }
 
@@ -19,8 +18,8 @@ extension TableRoute: RawRepresentable {
         let values = rawValue.split(separator: "/")
         guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
         switch token {
-            case "detail": self = .detail(uuid)
-            default: return nil
+        case "detail": self = .detail(uuid)
+        default: return nil
         }
     }
 }
@@ -29,7 +28,7 @@ extension TableRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DestinationTableRouteView(itemId: itemId)
+            TableRouteDestinationView(itemId: itemId)
                 .navigationAutoReceive(TableDetailRoute.self)
         }
     }
@@ -42,29 +41,19 @@ extension TableRoute: ItemDetailRoute {
     
     public func detail() -> UUID? {
         switch self {
-            case .detail(let id): return id
+        case .detail(let id): return id
         }
     }
 }
 
-struct DestinationTableRouteView: View {
+struct TableRouteDestinationView: View {
     let itemId: UUID
 
     @Environment(TableRootModel.self) private var root
 
     var body: some View {
         if let model = root.itemController.itemSync(for: itemId) {
-            DetailRootViewWrapper(root: root, model: model)
+            DetailRootView(root: root, model: model)
         }
-    }
-}
-
-private struct DetailRootViewWrapper: View {
-    let root: TableRootModel
-    let model: TableModel
-
-    var body: some View {
-        DetailRootView(root: root, model: model)
-            .equatable()
     }
 }

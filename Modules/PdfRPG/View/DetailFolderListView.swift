@@ -66,13 +66,9 @@ struct DetailFolderListView: View {
     @ViewBuilder
     private var overlayContent: some View {
         if root.openFileWindowModel.showItem {
-            root.viewController.viewer(
-                root: root,
-                itemId: root.openFileWindowModel.itemId,
-                configuration: ViewerConfiguration(closeButton: true)
-            ) {
+            root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, entryId: nil, configuration: ViewerConfiguration(closeButton: true, canBookmark: true), onTextExtracted: nil, dismissAction: {
                 root.openFileWindowModel.showItem = false
-            }
+            })
         }
         
         if appSizeModel.mode == .regular,
