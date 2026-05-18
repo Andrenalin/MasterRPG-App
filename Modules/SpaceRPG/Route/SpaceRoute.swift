@@ -54,17 +54,7 @@ struct SpaceRouteDestinationView: View {
 
     var body: some View {
         if let model = root.itemController.itemSync(for: itemId) {
-            DetailRootViewWrapper(root: root, model: model)
+            DetailRootView(root: root, model: model)
         }
-    }
-}
-
-private struct DetailRootViewWrapper: View {
-    let root: SpaceRootModel
-    let model: SpaceModel
-
-    var body: some View {
-        DetailRootView(root: root, model: model)
-            .equatable()
     }
 }

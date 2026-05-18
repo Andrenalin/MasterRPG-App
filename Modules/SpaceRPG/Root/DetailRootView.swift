@@ -3,22 +3,18 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailRootView: View, Equatable {
+struct DetailRootView: View {
     let root: SpaceRootModel
     let model: SpaceModel
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
-    static func == (lhs: DetailRootView, rhs: DetailRootView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
+        let _ = Self._printChanges()
         DetailListView(root: root, model: model)
-            .equatable()
             .detailInspectorModifier(root: root.rootController)
-            .applyIf(appSizeModel.mode == .regular) {
-                $0.task(id: model.id) {
+            .task(id: model.id) {
+                if appSizeModel.mode == .regular {
                     root.navigationModel.folderItems = []
                     root.navigationModel.folderModels = [:]
                 }
@@ -28,7 +24,7 @@ struct DetailRootView: View, Equatable {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(SpaceRootModel.self) var root
-
+    
     ManagedNavigationStack {
         DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId))
             .preferredColorScheme(.dark)
