@@ -16,6 +16,8 @@ struct SheetRootView<LinkType: LinkDataTransferable>: View {
     let linkTypes: LinkType.Type
         
     var body: some View {
+        let _ = Self._printChanges()
+
         SheetView(root: root, rootModel: rootModel, sheetModel: rootModel.sheetModel, isEditor: isEditor, linkTypes: linkTypes)
     }
 }

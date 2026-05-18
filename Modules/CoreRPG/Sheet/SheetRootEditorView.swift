@@ -24,6 +24,8 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
     @State private var sheetRootModel: SheetRootModel
 
     public var body: some View {
+        let _ = Self._printChanges()
+        
         Section {
             SheetRootView(root: root, rootModel: sheetRootModel, isEditor: true, linkTypes: linkTypes)
         } header: {
