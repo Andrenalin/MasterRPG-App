@@ -3,19 +3,15 @@
 import CoreRPG
 import SwiftUI
 
-struct DetailListView: View, Equatable {
+struct DetailListView: View {
     let root: PdfRootModel
     let model: PdfModel
 
     @Environment(\.navigator) private var navigator
 
-    static func == (lhs: DetailListView, rhs: DetailListView) -> Bool {
-        lhs.model.id == rhs.model.id
-    }
-
     var body: some View {
+        let _ = Self._printChanges()
         DetailFolderListView(root: root, model: model)
-            .equatable()
 #if !os(tvOS)
             .toolbar {
                 toolbarContent

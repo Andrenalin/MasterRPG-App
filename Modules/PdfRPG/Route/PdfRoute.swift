@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 public enum PdfRoute: Equatable, Hashable, Codable {
@@ -29,7 +28,7 @@ extension PdfRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DestinationPdfRouteView(itemId: itemId)
+            PdfRouteDestinationView(itemId: itemId)
                 .navigationAutoReceive(PdfDetailRoute.self)
         }
     }
@@ -42,29 +41,19 @@ extension PdfRoute: ItemDetailRoute {
     
     public func detail() -> UUID? {
         switch self {
-            case .detail(let id): return id
+        case .detail(let id): return id
         }
     }
 }
 
-struct DestinationPdfRouteView: View {
+struct PdfRouteDestinationView: View {
     let itemId: UUID
 
     @Environment(PdfRootModel.self) private var root
 
     var body: some View {
         if let model = root.itemController.itemSync(for: itemId) {
-            DetailRootViewWrapper(root: root, model: model)
+            DetailRootView(root: root, model: model)
         }
-    }
-}
-
-private struct DetailRootViewWrapper: View {
-    let root: PdfRootModel
-    let model: PdfModel
-
-    var body: some View {
-        DetailRootView(root: root, model: model)
-            .equatable()
     }
 }
