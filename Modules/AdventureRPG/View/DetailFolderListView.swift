@@ -15,6 +15,8 @@ struct DetailFolderListView: View {
     @State private var showFolderOverlay: Bool = false
     
     var body: some View {
+        let _ = Self._printChanges()
+        
         ItemDetailRootView(
             root: root.rootController,
             detailListController: detailListController,
@@ -63,8 +65,7 @@ struct DetailFolderListView: View {
     
     // MARK: - Overlays
     
-    @ViewBuilder
-    private var overlayContent: some View {
+    @ViewBuilder private var overlayContent: some View {
         if root.openFileWindowModel.showItem {
             root.viewController.viewer(
                 root: root,

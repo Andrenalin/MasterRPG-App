@@ -10,6 +10,7 @@ struct DetailListView: View {
     let model: AdventureModel
 
     var body: some View {
+        let _ = Self._printChanges()
         DetailFolderListView(root: root, model: model)
             .toolbar {
                 toolbarContent
