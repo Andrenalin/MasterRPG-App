@@ -23,7 +23,7 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
         let _ = Self._printChanges()
         
         if sheetModel.showHeader || isEditor {
-            GameShareView(root: root, model: model) {
+            GameShareView(root: root, itemId: sheetModel.source.itemId) {
                 nameRow
             }
             .sheetBorderColor(level: sheetModel.level)
@@ -42,6 +42,7 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
         
         endRow
             .onChange(of: rootModel.editorModel.entryId) { previousEntryId, currentEntryId in
+                guard previousEntryId != currentEntryId else { return }
                 rootModel.update(sheetModel: sheetModel, previousEntryId: previousEntryId, currentEntryId: currentEntryId)
             }
     }
@@ -50,7 +51,7 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
 private extension SheetView {
     var nameRow: some View {
         HStack {
-            if isEditor && sheetModel.canAdd && entryDataEditable != nil {
+            if isEditor && sheetModel.canAdd {
                 SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
             }
             
@@ -126,13 +127,5 @@ private extension SheetView {
     var endRow: some View {
         Color.accentColor.opacity(0.3)
             .frame(height: 8)
-    }
-    
-    var model: any ItemDataAccessable {
-        root.itemControllable.itemOrEmpty(for: sheetModel.source.itemId)
-    }
-    
-    var entryDataEditable: (any EntryDataEditable)? {
-        rootModel.entryDataEditable(for: sheetModel.source)
     }
 }

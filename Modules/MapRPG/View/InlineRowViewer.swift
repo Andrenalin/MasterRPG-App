@@ -17,7 +17,7 @@ struct InlineRowViewer: View, Equatable {
     
     var body: some View {
         if let cacheController = root.cacheController {
-            GameShareView(root: root.rootController, model: model) {
+            GameShareView(root: root.rootController, itemId: model.id) {
                 HStack {
                     VStack {
                         ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: root.listDisplayModel, entryId: source.entryId)

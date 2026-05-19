@@ -3,14 +3,14 @@
 import SwiftUI
 
 public struct GameShareView<Content: View>: View {
-    public init(root: any ItemRootControllable, model: any ItemDataAccessable, @ViewBuilder content: () -> Content = EmptyView.init) {
+    public init(root: any ItemRootControllable, itemId: UUID, @ViewBuilder content: () -> Content = EmptyView.init) {
         self.root = root
-        self.model = model
+        self.itemId = itemId
         self.content = content()
     }
 
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let itemId: UUID
     let content: Content
         
     @Environment(AppGameStateModel.self) private var appGameStateModel
@@ -30,7 +30,7 @@ public struct GameShareView<Content: View>: View {
             content
                 .shareListItem(isActive: canShare, feedBackEnabled: true, action: shareAction)
         case .custom:
-            root.viewControllable.sharingView(for: model.id)
+            root.viewControllable.sharingView(for: itemId)
         }
     }
     
@@ -55,9 +55,9 @@ public struct GameShareView<Content: View>: View {
     func shareAction() {
         Task {
             if appGameStateModel.gameModus == .master {
-                await networkActions?.shareId(root.gameControllable.share(id: model.id))
+                await networkActions?.shareId(root.gameControllable.share(id: itemId))
             } else {
-                if let result = try? await root.gameControllable.createGameData(for: model.id) {
+                if let result = try? await root.gameControllable.createGameData(for: itemId) {
                     networkActions?.game(result, .generic, nil)
                 }
             }

@@ -41,7 +41,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
                         collectionCategory: root.itemControllable.collectionCategory
                     )
                 }
-                GameShareView(root: root, model: model) {
+                GameShareView(root: root, itemId: model.id) {
                     actionBar
                 }
 

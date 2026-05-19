@@ -65,6 +65,8 @@ public final class SheetRootModel: Sendable {
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
     
     func reset(itemId: UUID) {
+        guard sheetModel.source.itemId != itemId else { return }
+        print("Here reset change")
         let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         self.sheetModel = sheetModel
         self.editorModel.setEdit(source: sheetModel.source)

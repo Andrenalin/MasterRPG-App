@@ -16,8 +16,8 @@ import SwiftUI
     public var scrollEntryId: UUID?
     
     func setEdit(source: ItemRowModel) {
-        self.itemId = source.itemId
-        self.entryId = source.entryId
-        self.module = source.typeId        
-    }    
+        self.itemId <=> source.itemId
+        self.entryId <=> source.entryId
+        self.module <=> source.typeId
+    }
 }

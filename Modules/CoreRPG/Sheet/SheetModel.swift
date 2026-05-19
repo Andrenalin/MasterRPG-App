@@ -3,7 +3,14 @@
 import Foundation
 
 @MainActor @Observable
-public final class SheetModel: Identifiable, Sendable {
+public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(source)
+        hasher.combine(destination)
+        hasher.combine(level)
+        hasher.combine(sheetType)
+    }
+    
     public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, isFolded: Bool = false, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
         self.source = source
         self.destination = destination ?? source
@@ -52,10 +59,10 @@ public final class SheetModel: Identifiable, Sendable {
     }
     
     public var source: ItemRowModel
-    public let destination: ItemRowModel
-    public let level: Int
+    public var destination: ItemRowModel
+    public var level: Int
 
-    public let sheetType: SheetModelType
+    public var sheetType: SheetModelType
     public var isShown: Bool
     public var lastIsShown: Bool = false
     public var isHidden: Bool = false
@@ -72,8 +79,8 @@ public final class SheetModel: Identifiable, Sendable {
     public var isEditing: Bool = false
     public var hasChanged: Bool = false
     
-    public let canAdd: Bool
-    public let showHeader: Bool
+    public var canAdd: Bool
+    public var showHeader: Bool
 
     func filter(searchText: String, shouldRestoreState: Bool = false) -> Bool {
         var hasResult: Bool = false
@@ -104,8 +111,52 @@ public final class SheetModel: Identifiable, Sendable {
         return !isHidden
     }
     
+    func reset(with otherSheetModel: SheetModel) {
+        source <=> otherSheetModel.source
+        destination <=> otherSheetModel.destination
+        level <=> otherSheetModel.level
+        
+        sheetType <=> otherSheetModel.sheetType
+        isShown <=> otherSheetModel.isShown
+        lastIsShown <=> otherSheetModel.lastIsShown
+        isHidden <=> otherSheetModel.isHidden
+        isFolded <=> otherSheetModel.isFolded
+        
+        name <=> otherSheetModel.name
+        description <=> otherSheetModel.description
+        inlineEntries <=> otherSheetModel.inlineEntries
+        entries = otherSheetModel.entries
+        
+        editType <=> otherSheetModel.editType
+        isEditing <=> otherSheetModel.isEditing
+        hasChanged <=> otherSheetModel.hasChanged
+        
+        canAdd <=> otherSheetModel.canAdd
+        showHeader <=> otherSheetModel.showHeader
+    }
+    
     public static var empty: SheetModel {
         SheetModel(source: .empty, level: 0, name: "", description: "", entries: [])
+    }
+    
+    public static func == (lhs: SheetModel, rhs: SheetModel) -> Bool {
+        return lhs._source == rhs._source &&
+        lhs._destination == rhs._destination &&
+        lhs._level == rhs._level &&
+        lhs._sheetType == rhs._sheetType &&
+        lhs._isShown == rhs._isShown &&
+        lhs._lastIsShown == rhs._lastIsShown &&
+        lhs._isHidden == rhs._isHidden &&
+        lhs._isFolded == rhs._isFolded &&
+        lhs._name == rhs._name &&
+        lhs._description == rhs._description &&
+        lhs._inlineEntries == rhs._inlineEntries &&
+        lhs._entries == rhs._entries &&
+        lhs._editType == rhs._editType &&
+        lhs._isEditing == rhs._isEditing &&
+        lhs._hasChanged == rhs._hasChanged &&
+        lhs._canAdd == rhs._canAdd &&
+        lhs._showHeader == rhs._showHeader
     }
 }
 
