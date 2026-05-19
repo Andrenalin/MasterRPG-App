@@ -17,9 +17,13 @@ public enum CharacterRootFactory {
         CharacterRootView()
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: CharacterRootModel, selectedItemId: UUID?) -> some View {
-        if let itemId = selectedItemId {
-            ItemSplitDetailRouteRootView(root: root.rootController, route: CharacterRoute.detail(itemId))
+    @MainActor @ViewBuilder public static func detailView(root: CharacterRootModel) -> some View {
+        if let itemId = root.navigationModel.selectedItemId {
+            ManagedNavigationStack(name: "Split-Character") {
+                ItemSplitDetailRouteRootView(root: root.rootController, route: CharacterRoute.detail(itemId))
+            }
+        } else {
+            SplitContentUnavailableView(module: root.configurable.module)
         }
     }
 }

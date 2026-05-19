@@ -12,9 +12,13 @@ public enum PhotoFactory {
         PhotoRootView()
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: PhotoRootModel, selectedItemId: UUID?) -> some View {
-        if let itemId = selectedItemId {
-            ItemSplitDetailRouteRootView(root: root.rootController, route: PhotoRoute.detail(itemId))
+    @MainActor @ViewBuilder public static func detailView(root: PhotoRootModel) -> some View {
+        if let itemId = root.navigationModel.selectedItemId {
+            ManagedNavigationStack(name: "Split-Photo") {
+                ItemSplitDetailRouteRootView(root: root.rootController, route: PhotoRoute.detail(itemId))
+            }
+        } else {
+            SplitContentUnavailableView(module: root.configurable.module)
         }
     }
 }

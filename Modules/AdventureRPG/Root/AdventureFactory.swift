@@ -51,11 +51,11 @@ public enum AdventureFactory {
     
     @MainActor @ViewBuilder public static func detailView(root: AdventureRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
-            //ManagedNavigationStack(name: "Split-Adventure") {
+            ManagedNavigationStack(name: "Split-Adventure") {
                 DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
-            //}
-       // } else {
-       //     SplitContentUnavailableView(module: root.configurable.module)
+            }
+        } else {
+            SplitContentUnavailableView(module: root.configurable.module)
         }
     }
 }

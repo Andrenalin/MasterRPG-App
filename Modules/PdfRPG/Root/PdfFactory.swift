@@ -14,9 +14,13 @@ public enum PdfFactory {
         PdfRootView()
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: PdfRootModel, selectedItemId: UUID?) -> some View {
-        if let itemId = selectedItemId {
-            ItemSplitDetailRouteRootView(root: root.rootController, route: PdfRoute.detail(itemId))
+    @MainActor @ViewBuilder public static func detailView(root: PdfRootModel) -> some View {
+        if let itemId = root.navigationModel.selectedItemId {
+            ManagedNavigationStack(name: "Split-Pdf") {
+                ItemSplitDetailRouteRootView(root: root.rootController, route: PdfRoute.detail(itemId))
+            }
+        } else {
+            SplitContentUnavailableView(module: root.configurable.module)
         }
     }
 }

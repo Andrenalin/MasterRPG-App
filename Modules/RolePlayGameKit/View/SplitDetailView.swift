@@ -30,61 +30,31 @@ struct SplitDetailView: View {
         case .adventure:
             AdventureFactory.detailView(root: appModel.adventureRoot)
         case .audio:
-            AudioFactory.detailView(
-                root: appModel.audioRoot,
-                selectedItemId: appModel.audioRoot.navigationModel.selectedItemId
-            )
+            AudioFactory.detailView(root: appModel.audioRoot)
         case .dice:
-            DiceFactory.detailView(
-                root: appModel.diceRoot,
-                selectedItemId: appModel.diceRoot.navigationModel.selectedItemId
-            )
+            DiceFactory.detailView(root: appModel.diceRoot)
         case .game: EmptyView()
         case .generator:
 #if os(tvOS)
             EmptyView()
 #else
-            GeneratorRootFactory.detailView(
-                root: appModel.generatorRoot,
-                selectedItemId: appModel.generatorRoot.navigationModel.selectedItemId
-            )
+            GeneratorRootFactory.detailView(root: appModel.generatorRoot)
 #endif
         case .map:
-            MapRootFactory.detailView(
-                root: appModel.mapRoot,
-                selectedItemId: appModel.mapRoot.navigationModel.selectedItemId
-            )
+            MapRootFactory.detailView(root: appModel.mapRoot)
         case .pdf:
-            PdfFactory.detailView(
-                root: appModel.pdfRoot,
-                selectedItemId: appModel.pdfRoot.navigationModel.selectedItemId
-            )
+            PdfFactory.detailView(root: appModel.pdfRoot)
         case .photo:
-            PhotoFactory.detailView(
-                root: appModel.photoRoot,
-                selectedItemId: appModel.photoRoot.navigationModel.selectedItemId
-            )
+            PhotoFactory.detailView(root: appModel.photoRoot)
         case .search: GameFactory.detailSearchView(root: appModel.gameRoot, navigator: appModel.navigator)
         case .space:
-            SpaceFactory.detailView(
-                root: appModel.spaceRoot,
-                selectedItemId: appModel.spaceRoot.navigationModel.selectedItemId
-            )
+            SpaceFactory.detailView(root: appModel.spaceRoot)
         case .table:
-            TableFactory.detailView(
-                root: appModel.tableRoot,
-                selectedItemId: appModel.tableRoot.navigationModel.selectedItemId
-            )
+            TableFactory.detailView(root: appModel.tableRoot)
         case .value:
-            CharacterRootFactory.detailView(
-                root: appModel.characterRoot,
-                selectedItemId: appModel.characterRoot.navigationModel.selectedItemId
-            )
+            CharacterRootFactory.detailView(root: appModel.characterRoot)
         case .weather:
-            WeatherRootFactory.detailView(
-                root: appModel.weatherRoot,
-                selectedItemId: appModel.weatherRoot.navigationModel.selectedItemId
-            )
+            WeatherRootFactory.detailView(root: appModel.weatherRoot)
         case .setting: EmptyView()
         default:
             ContentUnavailableView(selectedModule.title, image: selectedModule.icon)
