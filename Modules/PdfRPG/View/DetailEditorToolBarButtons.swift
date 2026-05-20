@@ -3,6 +3,8 @@
 import CoreRPG
 import SwiftUI
 
+#if !os(tvOS)
+
 struct ExtractToolBarButton: View {
     let root: PdfRootModel
     let model: PdfModel
@@ -22,3 +24,5 @@ struct ExtractToolBarButton: View {
         .disabled(root.openFileWindowModel.showItem)
     }
 }
+
+#endif
