@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
+import CoreRPG
 import CoreTransferable
 import GroupActivities
 import SwiftUI
@@ -58,7 +59,9 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
             }
             .tint(.green)
             .sheet(isPresented: $isActivitySharingViewPresented) {
-                activitySharingView
+                ManagedPresentationView {
+                    activitySharingView
+                }
             }
             .alert("Unable to start game", isPresented: $isActivationErrorViewPresented) {
                 Button("Ok", role: .cancel) { }

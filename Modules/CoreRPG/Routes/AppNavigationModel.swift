@@ -25,8 +25,6 @@ import SwiftUI
     public var modeRouteType: AppModeRouteType { appGameStateModel.isGameRunning ? .game : AppNavigationModel.defaultMode
     }
     
-    public var navigationType: AppNavigationRouteType = .split
-    
 #if os(iOS)
     static private let defaultMode = AppModeRouteType.editor
 #elseif os(visionOS)

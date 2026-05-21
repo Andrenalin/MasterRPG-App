@@ -5,10 +5,12 @@ import SwiftUI
 
 struct TabbedSplitNavigation: View {
     @Environment(AppModel.self) private var appModel
-    
+    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
+    @Environment(AppNavigationModel.self) private var appNavigationModel
+
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
-    
+
     @AppStorage("contentColumnWidth") private var contentColumnWidth: Double = 350
     @State private var fallbackNavigationModel = ModuleNavigationModel()
 
@@ -16,6 +18,11 @@ struct TabbedSplitNavigation: View {
         @Bindable var appModel = appModel
         let controller = appModel.itemRootController(for: selectedModule)
         @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
+        let canShow = appNavigationModel.canShowInspector(appSizeModel: appWindowSizeModel)
+        let inspectorBinding = Binding(
+            get: { canShow && model.showInspector },
+            set: { if canShow { model.showInspector = $0 } }
+        )
 
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
             TabSidebar()
@@ -35,8 +42,8 @@ struct TabbedSplitNavigation: View {
             SplitDetailView(isExtendedRoutes: false)
                 .environment(appModel.itemRootController(for: selectedModule))
         }
-        .inspectorAll(isPresented: $model.showInspector) {
-            if model.showInspector {
+        .inspectorAll(isPresented: inspectorBinding) {
+            if canShow && model.showInspector {
                 AppInspectorView(isExtendedRoutes: false)
             }
         }

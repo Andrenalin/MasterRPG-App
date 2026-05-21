@@ -124,7 +124,9 @@ struct InlineImporterView: View, Equatable {
 #endif
 #if os(iOS) && !targetEnvironment(simulator)
         .sheet(isPresented: $showScanner) {
-            Scanner3DRootView()
+            ManagedPresentationView {
+                Scanner3DRootView()
+            }
         }
 #endif
     }

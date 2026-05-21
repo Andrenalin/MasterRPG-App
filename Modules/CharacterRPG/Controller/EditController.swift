@@ -130,7 +130,7 @@ extension EditController {
     }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
-        EditorRoute.linkSelection(itemRowModel)
+        CharacterEditorRoute.linkSelection(itemRowModel)
     }
     
     @MainActor public func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {

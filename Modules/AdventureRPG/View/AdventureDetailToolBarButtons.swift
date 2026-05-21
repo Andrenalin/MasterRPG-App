@@ -9,7 +9,7 @@ struct AdventureQuickEditorButton: View {
 
     var body: some View {
         Button {
-            navigator.navigate(to: EditorRoute.quickEditor(model.id))
+            navigator.navigate(to: AdventureEditorRoute.quickEditor(model.id))
         } label: {
             Label {
                 Text("Quick Editor", bundle: .module)
@@ -56,7 +56,7 @@ struct AdventureAIAssistantButton: View {
 #if os(visionOS) || os(macOS)
             sceneManager.openWindow(.generateAdventure)
 #else
-            navigator.navigate(to: EditorRoute.generator(model.id))
+            navigator.navigate(to: AdventureEditorRoute.generator(model.id))
 #endif
         } label: {
             Label {
@@ -77,7 +77,7 @@ struct AdventureAddLinkButton: View {
     var body: some View {
         Button {
             withAnimation {
-                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
+                navigator.navigate(to: AdventureEditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
             }
         } label: {
             Label {

@@ -35,10 +35,14 @@ extension GeneratorDetailRoute: NavigationDestination {
 }
 
 extension GeneratorDetailRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        GeneratorDetailRoute.folder(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         GeneratorDetailRoute.folder(detail)
     }
-    
+
     public func detail() -> UUID? {
         switch self {
             case .folder(let id): return id

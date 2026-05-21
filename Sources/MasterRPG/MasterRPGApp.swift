@@ -73,7 +73,7 @@ struct MasterRPGApp: App {
 //#endif
 
 
-    @State private var appModel: AppModel = AppModel.shared
+    private let appModel: AppModel = AppModel.shared
     
     // MARK: - User Activity Handling
     

@@ -21,7 +21,7 @@ extension SpaceDetailRoute: RawRepresentable {
         guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
         switch token {
         case "folder": self = .folder(uuid)
-        case "folderInline": self = .folder(uuid)
+        case "folderInline": self = .folderInline(uuid)
         default: return nil
         }
     }
@@ -34,6 +34,10 @@ extension SpaceDetailRoute: NavigationDestination {
 }
 
 extension SpaceDetailRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        SpaceDetailRoute.folder(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         SpaceDetailRoute.folder(detail)
     }

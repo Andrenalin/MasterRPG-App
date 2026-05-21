@@ -154,12 +154,19 @@ private struct SplitWithDetailView: View {
     @Binding var preferredCompactColumn: NavigationSplitViewColumn
     let appModel: AppModel
 
+    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
+    @Environment(AppNavigationModel.self) private var appNavigationModel
     @State private var fallbackNavigationModel = ModuleNavigationModel()
 
     var body: some View {
         let _ = Self._printChanges()
         let controller = appModel.itemRootController(for: tab.module)
         @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
+        let canShow = appNavigationModel.canShowInspector(appSizeModel: appWindowSizeModel)
+        let inspectorBinding = Binding(
+            get: { canShow && model.showInspector },
+            set: { if canShow { model.showInspector = $0 } }
+        )
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             ManagedPresentationView {
                 tab
@@ -169,8 +176,8 @@ private struct SplitWithDetailView: View {
             SplitDetailView(isExtendedRoutes: false)
                 .environment(controller)
         }
-        .inspectorAll(isPresented: $model.showInspector) {
-            if model.showInspector {
+        .inspectorAll(isPresented: inspectorBinding) {
+            if canShow && model.showInspector {
                 AppInspectorView(isExtendedRoutes: false)
             }
         }

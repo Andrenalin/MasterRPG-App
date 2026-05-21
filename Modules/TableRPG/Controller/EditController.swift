@@ -69,7 +69,7 @@ extension EditController {
     }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
-        EditorRoute.linkSelection(itemRowModel)
+        TableEditorRoute.linkSelection(itemRowModel)
     }
 }
 

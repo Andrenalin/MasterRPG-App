@@ -5,7 +5,7 @@ import SwiftUI
 public protocol ItemDetailRoute: NavigationDestination {
     func detail() -> UUID?
     func reset(detail: UUID) -> Self
-    
+    static func detailRoute(itemId: UUID) -> Self
 }
 
 public extension View {

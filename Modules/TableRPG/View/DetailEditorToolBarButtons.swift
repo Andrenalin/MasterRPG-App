@@ -11,7 +11,7 @@ struct QuickEditorButton: View {
     
     var body: some View {
         Button {
-            navigator.navigate(to: EditorRoute.quickEditor(model.id))
+            navigator.navigate(to: TableEditorRoute.quickEditor(model.id))
         } label: {
             Label {
                 Text("Quick Editor", bundle: .module)
@@ -58,7 +58,7 @@ struct AddLinkButton: View {
     var body: some View {
         Button {
             withAnimation {
-                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
+                navigator.navigate(to: TableEditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
             }
         } label: {
             Label {

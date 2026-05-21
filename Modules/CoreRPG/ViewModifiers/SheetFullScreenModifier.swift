@@ -24,20 +24,26 @@ struct SizedSheetViewModifier<SheetContent: View>: ViewModifier {
         content
 #if os(macOS)
             .sheet(isPresented: isPresented, onDismiss: onDismiss) {
-                sheetContent()
-                    .frame(idealWidth: idealSize.width, idealHeight: idealSize.height)
-                    .environment(\.colorScheme, colorScheme)
+                ManagedPresentationView {
+                    sheetContent()
+                        .frame(idealWidth: idealSize.width, idealHeight: idealSize.height)
+                        .environment(\.colorScheme, colorScheme)
+                }
             }
 #elseif os(tvOS)
             .fullScreenCover(isPresented: isPresented, onDismiss: onDismiss) {
-                sheetContent()
-                    .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
-                    .environment(\.colorScheme, colorScheme)
+                ManagedPresentationView {
+                    sheetContent()
+                        .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
+                        .environment(\.colorScheme, colorScheme)
+                }
             }
 #else
             .sheet(isPresented: isPresented, onDismiss: onDismiss) {
-                sheetContent()
-                    .environment(\.colorScheme, colorScheme)
+                ManagedPresentationView {
+                    sheetContent()
+                        .environment(\.colorScheme, colorScheme)
+                }
             }
 #endif
     }
@@ -55,17 +61,21 @@ struct SheetFullScreenViewModifier<SheetContent: View>: ViewModifier {
         content
 #if os(macOS)
             .sheet(isPresented: isPresented, onDismiss: onDismiss) {
-                sheetContent()
-                    .frame(idealWidth: idealSize.width, idealHeight: idealSize.height)
-                    .environment(\.colorScheme, colorScheme)
+                ManagedPresentationView {
+                    sheetContent()
+                        .frame(idealWidth: idealSize.width, idealHeight: idealSize.height)
+                        .environment(\.colorScheme, colorScheme)
+                }
             }
 #else
             .fullScreenCover(isPresented: isPresented, onDismiss: onDismiss) {
-                sheetContent()
+                ManagedPresentationView {
+                    sheetContent()
 #if os(tvOS)
-                    .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
+                        .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
-                    .environment(\.colorScheme, colorScheme)
+                        .environment(\.colorScheme, colorScheme)
+                }
             }
 #endif
     }

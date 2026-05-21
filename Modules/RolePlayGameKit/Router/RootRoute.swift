@@ -105,7 +105,7 @@ extension RootRoute: RawRepresentable {
         case NetworkModules.table.token: self = .tables
         case NetworkModules.value.token: self = .values
         case NetworkModules.weather.token: self = .weathers
-        default: self = .game
+        default: return nil
         }
     }
 }
@@ -135,10 +135,6 @@ extension RootRoute: NavigationDestination {
 
     public static var visionEditorTabs: [RootRoute] {
         [.pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
-    }
-
-    public static var macTabs: [RootRoute] {
-        [.adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
     }
 
     static var fiveTabs: [RootRoute] {

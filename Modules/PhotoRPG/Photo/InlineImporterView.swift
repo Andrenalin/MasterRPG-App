@@ -162,8 +162,10 @@ struct InlineImporterView: View, Equatable {
 #endif
 #if os(iOS)
         .sheet(isPresented: $showCamera) {
-            CaptureImagePicker(shown: $showCamera) { [id = itemId] image in
-                await update(id: id, image: image)
+            ManagedPresentationView {
+                CaptureImagePicker(shown: $showCamera) { [id = itemId] image in
+                    await update(id: id, image: image)
+                }
             }
         }
 #endif

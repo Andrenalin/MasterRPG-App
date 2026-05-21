@@ -181,7 +181,7 @@ private extension WindowRouter {
         // Settings has its own SwiftUI Settings window — opened via Cmd-, not by ScenesManager.
         if module == .setting {
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(150))
+                try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
                 appModel.navigator(for: module).perform(route: route)
             }
             return []

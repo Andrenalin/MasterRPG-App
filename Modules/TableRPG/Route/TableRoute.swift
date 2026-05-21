@@ -35,10 +35,14 @@ extension TableRoute: NavigationDestination {
 }
 
 extension TableRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        TableRoute.detail(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         TableRoute.detail(detail)
     }
-    
+
     public func detail() -> UUID? {
         switch self {
         case .detail(let id): return id

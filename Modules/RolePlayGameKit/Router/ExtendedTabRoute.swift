@@ -117,7 +117,9 @@ struct ExtendedTabRouteDestionationView: View {
         case .weathers:
             WeatherRootFactory.rootView()
         case .settings:
-            SettingsView(store: appModel)
+            ManagedNavigationStack {
+                SettingsView(store: appModel)
+            }
         }
     }
 }

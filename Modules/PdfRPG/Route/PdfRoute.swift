@@ -35,10 +35,14 @@ extension PdfRoute: NavigationDestination {
 }
 
 extension PdfRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        PdfRoute.detail(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         PdfRoute.detail(detail)
     }
-    
+
     public func detail() -> UUID? {
         switch self {
         case .detail(let id): return id

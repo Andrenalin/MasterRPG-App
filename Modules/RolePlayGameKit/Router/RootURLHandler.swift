@@ -48,7 +48,7 @@ public struct RootURLHandler: NavigationURLHandler {
             navigator.perform(route: KnownRoutes.settings)
         } else {
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(150))
+                try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
                 target.perform(route: KnownRoutes.settings)
             }
         }

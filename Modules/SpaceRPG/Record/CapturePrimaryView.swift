@@ -7,6 +7,7 @@ Top-level view for the object capture session that shows the info panel and othe
 
 #if os(iOS) && !targetEnvironment(simulator)
 
+import CoreRPG
 import Foundation
 import RealityKit
 import SwiftUI
@@ -31,14 +32,18 @@ struct CapturePrimaryView: View {
             }
         }
         .sheet(isPresented: $showInfo) {
-            HelpPageView(showInfo: $showInfo)
-                .padding()
+            ManagedPresentationView {
+                HelpPageView(showInfo: $showInfo)
+                    .padding()
+            }
         }
         .sheet(isPresented: $showOnboardingView,
                onDismiss: { [weak appModel] in appModel?.setPreviewModelState(shown: false) },
                content: {[weak appModel] in
-            if let appModel = appModel, let onboardingState = appModel.determineCurrentOnboardingState() {
-                OnboardingView(state: onboardingState)
+            ManagedPresentationView {
+                if let appModel = appModel, let onboardingState = appModel.determineCurrentOnboardingState() {
+                    OnboardingView(state: onboardingState)
+                }
             }
         })
         .task {

@@ -65,7 +65,7 @@ struct DropChooseView: View {
 #if os(macOS)
             sceneManager.openWindow(SceneId(rawValue: root.config.module.linkWindowId))
 #else
-            navigator.navigate(to: SelectionCharacterRoute.selection, method: .managedSheet)
+            navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
 #endif
         } label: {
             VStack {

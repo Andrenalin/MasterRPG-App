@@ -72,7 +72,7 @@ extension EditController: EntryDataEditable {
     public var linkModules: [NetworkModules] { [.audio, .value, .dice, .map, .pdf, .photo, .table] }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
-        EditorRoute.linkSelection(itemRowModel)
+        MapEditorRoute.linkSelection(itemRowModel)
     }
     
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {

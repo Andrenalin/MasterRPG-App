@@ -114,10 +114,12 @@ struct MapPinActionView: View, Equatable {
 #endif
             }
             .sheet(isPresented: $showPhotoSelection) {
-                root.viewController.photoSelection(root: root, selectionModel: selectedPhoto)
+                ManagedPresentationView {
+                    root.viewController.photoSelection(root: root, selectionModel: selectedPhoto)
 #if !os(macOS)
-                    .navigationTransition(.zoom(sourceID: MapPinButtonType.photo.label, in: photoSpace))
+                        .navigationTransition(.zoom(sourceID: MapPinButtonType.photo.label, in: photoSpace))
 #endif
+                }
             }
             .onChange(of: showPhotoSelection, initial: false) {
                 guard !showPhotoSelection, !selectedPhoto.selection.isEmpty else { return }

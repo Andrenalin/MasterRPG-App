@@ -62,8 +62,10 @@ public final class AppModel: Sendable {
     /// editors→`ExtendedTabRoute` compound.
     @ObservationIgnored public var isCompactGameWindow: Bool = false
 
+    public static let defaultEditorModule: RootRoute = .pdfs
+
     var selectedModule: RootRoute? = .game
-    var selectedEditorModule: RootRoute? = .pdfs
+    var selectedEditorModule: RootRoute? = AppModel.defaultEditorModule
     var selectedExtendedModule: ExtendedTabRoute? = nil
     var menuSelectedModule: NetworkModules = .game
     
@@ -353,7 +355,7 @@ extension AppModel {
         guard let selectedTab: NetworkModules = selectedModule?.module else { return }
         let itemId: UUID? = root[selectedTab]?.currentSelectedItemId
         Task {
-            try await Task.sleep(for: .milliseconds(150))
+            try await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
             navigator(for: selectedTab).perform(route: KnownRoutes.route(module: selectedTab, itemId: itemId, entryId: nil))
         }
     }
@@ -396,7 +398,7 @@ extension AppModel {
         let rootNavigator = navigator(for: module)
         if opening {
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(150))
+                try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
                 rootNavigator.perform(route: route)
             }
         } else {

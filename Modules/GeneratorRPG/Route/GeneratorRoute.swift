@@ -26,10 +26,14 @@ extension GeneratorRoute: RawRepresentable {
 }
 
 extension GeneratorRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        GeneratorRoute.detail(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         GeneratorRoute.detail(detail)
     }
-    
+
     public func detail() -> UUID? {
         switch self {
             case .detail(let id): return id

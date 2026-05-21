@@ -35,10 +35,14 @@ extension PhotoRoute: NavigationDestination {
 }
 
 extension PhotoRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        PhotoRoute.detail(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         PhotoRoute.detail(detail)
     }
-    
+
     public func detail() -> UUID? {
         switch self {
             case .detail(let id): return id

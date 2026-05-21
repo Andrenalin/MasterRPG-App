@@ -36,10 +36,14 @@ extension MapRoute: NavigationDestination {
 }
 
 extension MapRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        MapRoute.detail(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         MapRoute.detail(detail)
     }
-    
+
     public func detail() -> UUID? {
         switch self {
             case .detail(let id): return id

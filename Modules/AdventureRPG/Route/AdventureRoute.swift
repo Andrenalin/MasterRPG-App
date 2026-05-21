@@ -36,10 +36,14 @@ extension AdventureRoute: NavigationDestination {
 }
 
 extension AdventureRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        AdventureRoute.detail(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         AdventureRoute.detail(detail)
     }
-    
+
     public func detail() -> UUID? {
         switch self {
             case .detail(let id): return id

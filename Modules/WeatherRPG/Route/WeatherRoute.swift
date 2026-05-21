@@ -35,10 +35,14 @@ extension WeatherRoute: NavigationDestination {
 }
 
 extension WeatherRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        WeatherRoute.detail(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         WeatherRoute.detail(detail)
     }
-    
+
     public func detail() -> UUID? {
         switch self {
         case .detail(let id): return id

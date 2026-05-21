@@ -78,10 +78,12 @@ struct EditToolBarViewModifier: ViewModifier {
                 .padding(.bottom, bottomPadding)
             }
             .sheet(isPresented: $showPinSelection) {
-                root.viewController.characterSelection(root: root, selectionModel: selectedPin)
+                ManagedPresentationView {
+                    root.viewController.characterSelection(root: root, selectionModel: selectedPin)
 #if !os(macOS)
-                .navigationTransition(.zoom(sourceID: "pin", in: pinSpace))
+                        .navigationTransition(.zoom(sourceID: "pin", in: pinSpace))
 #endif
+                }
             }
             .onChange(of: model.pinScale, initial: true) {
                 pinScale <=> model.pinScale

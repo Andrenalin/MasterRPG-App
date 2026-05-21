@@ -9,7 +9,7 @@ struct QuickEditorButton: View {
 
     var body: some View {
         Button {
-            navigator.navigate(to: EditorRoute.quickEditor(model.id))
+            navigator.navigate(to: MapEditorRoute.quickEditor(model.id))
         } label: {
             Label {
                 Text("Quick Editor", bundle: .module)
@@ -30,7 +30,7 @@ struct MapEditorButton: View {
 #if os(visionOS) || os(macOS)
             sceneManager.openWindow(.mapEditor)
 #else
-            navigator.navigate(to: EditorRoute.mapEditor(model.id))
+            navigator.navigate(to: MapEditorRoute.mapEditor(model.id))
 #endif
         } label: {
             Label {
@@ -52,7 +52,7 @@ struct EditTileButton: View {
 #if os(visionOS) || os(macOS)
             sceneManager.openWindow(.mapEditor)
 #else
-            navigator.navigate(to: EditorRoute.mapEditor(model.id))
+            navigator.navigate(to: MapEditorRoute.mapEditor(model.id))
 #endif
         } label: {
             Label { Text("Edit Tile", bundle: .module) } icon: { Image(systemName: "skew") }
@@ -94,7 +94,7 @@ struct AddLinkButton: View {
     var body: some View {
         Button {
             withAnimation {
-                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
+                navigator.navigate(to: MapEditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
             }
         } label: {
             Label {

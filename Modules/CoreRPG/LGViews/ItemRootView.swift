@@ -63,27 +63,6 @@ public struct ItemSplitDetailRouteRootView<Route: NavigationDestination>: View {
 
 
 
-public struct ItemSplitDetailRootView<Content: View>: View {
-    public init(root: ItemRootController, @ViewBuilder content: @escaping () -> Content) {
-        self.root = root
-        self.content = content
-    }
-    
-    let root: ItemRootController
-    let content: () -> Content
-    
-    public var body: some View {
-        let _ = Self._printChanges()
-        ManagedNavigationStack(name: "Split-") {
-            
-        }
-        .environment(root)
-        .tint(root.configurable.module.tint)
-        .accentColor(root.configurable.module.tint)
-    }
-}
-
-
 struct SplitContentDetailRootView: View {
     let root: ItemRootController
     let itemId: UUID?

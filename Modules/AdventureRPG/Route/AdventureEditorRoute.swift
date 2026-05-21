@@ -7,7 +7,7 @@ import GeneratorRPG
 import PdfRPG
 import SwiftUI
 
-enum EditorRoute: Equatable, Hashable, Codable {
+enum AdventureEditorRoute: Equatable, Hashable, Codable {
     case quickEditor(UUID)
     case selectionPdf
     case linkSelection(ItemRowModel)
@@ -15,7 +15,7 @@ enum EditorRoute: Equatable, Hashable, Codable {
     case generator(UUID)
 }
 
-extension EditorRoute: NavigationDestination {
+extension AdventureEditorRoute: NavigationDestination {
     public var method: NavigationMethod {
         switch self {
         case .quickEditor:
@@ -28,12 +28,12 @@ extension EditorRoute: NavigationDestination {
     }
 
     public var body: some View {
-        DestinationEditorRoute(route: self)
+        DestinationAdventureEditorRouteView(route: self)
     }
 }
 
-struct DestinationEditorRoute: View {
-    let route: EditorRoute
+struct DestinationAdventureEditorRouteView: View {
+    let route: AdventureEditorRoute
     
     @Environment(AdventureRootModel.self) private var root
     

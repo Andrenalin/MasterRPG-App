@@ -5,19 +5,18 @@ import CoreRPG
 import PdfRPG
 import SwiftUI
 
-enum EditorRoute: Equatable, Hashable, Codable {
-    case mapEditor(UUID)
+enum CharacterEditorRoute: Equatable, Hashable, Codable {
     case quickEditor(UUID)
     case selectionPdf
     case linkSelection(ItemRowModel)
     case addLink(ItemRowModel)
 }
 
-extension EditorRoute: NavigationDestination {
+extension CharacterEditorRoute: NavigationDestination {
     public var method: NavigationMethod {
         switch self {
-        case .quickEditor, .mapEditor:
-            return .managedCover
+        case .quickEditor:
+            return .cover
         case .addLink:
             return .managedSheet
         case .selectionPdf, .linkSelection:
@@ -26,24 +25,21 @@ extension EditorRoute: NavigationDestination {
     }
 
     public var body: some View {
-        DestinationEditorRoute(route: self)
+        DestinationCharacterEditorRouteView(route: self)
     }
 }
 
-struct DestinationEditorRoute: View {
-    let route: EditorRoute
+struct DestinationCharacterEditorRouteView: View {
+    let route: CharacterEditorRoute
     
-    @Environment(MapRootModel.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     
     var body: some View {
         switch route {
-        case .mapEditor(let itemId):
-            RootEditCanvasMap(itemId: itemId)
         case .quickEditor(let itemId):
             QuickEntryEditor(model: root.itemController.itemOrEmpty(for: itemId))
-
         case .selectionPdf:
-            root.pdfRoot.viewController.linkListView(type: .selection, itemSelectionModel: root.editController.mapEditModel.selectionPdf)
+            root.pdfRoot.viewController.linkListView(type: .selection, itemSelectionModel: root.editController.valueEditModel.selectionPdf)
         case .linkSelection(let itemRowModel):
             EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedEntryId: itemRowModel.entryId, destinationModule: itemRowModel.typeId)
         case .addLink(let itemRowModel):

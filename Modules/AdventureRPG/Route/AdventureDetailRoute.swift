@@ -22,7 +22,7 @@ extension AdventureDetailRoute: RawRepresentable {
         guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
         switch token {
         case "folder": self = .folder(uuid)
-        case "folderInline": self = .folder(uuid)
+        case "folderInline": self = .folderInline(uuid)
         default: return nil
         }
     }
@@ -35,6 +35,10 @@ extension AdventureDetailRoute: NavigationDestination {
 }
 
 extension AdventureDetailRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        AdventureDetailRoute.folder(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         AdventureDetailRoute.folder(detail)
     }

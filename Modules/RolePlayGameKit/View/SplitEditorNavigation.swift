@@ -47,6 +47,7 @@ struct SplitEditorNavigation: View {
                 menuView
             }
             .padding(12)
+            .environment(sceneManager)
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
             Button {
@@ -59,12 +60,13 @@ struct SplitEditorNavigation: View {
                 }
             }
             .padding([.top, .leading], 12)
+            .environment(sceneManager)
         }
 #endif
     }
     
     var selectedModule: NetworkModules {
-        (appModel.selectedEditorModule?.module) ?? .pdf
+        (appModel.selectedEditorModule ?? AppModel.defaultEditorModule).module
     }
     
     @ViewBuilder func tabView(tab: RootRoute) -> some View {

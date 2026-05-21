@@ -19,7 +19,7 @@ struct AppInspectorView: View {
     }
     
     var selectedModule: NetworkModules {
-        isExtendedRoutes ? (appModel.selectedEditorModule ?? .pdfs).module : (appModel.selectedModule ?? .game).module
+        isExtendedRoutes ? (appModel.selectedEditorModule ?? AppModel.defaultEditorModule).module : (appModel.selectedModule ?? .game).module
     }
 }
 

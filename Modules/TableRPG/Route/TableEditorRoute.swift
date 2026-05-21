@@ -5,14 +5,14 @@ import DiceRPG
 import PdfRPG
 import SwiftUI
 
-public enum EditorRoute: Equatable, Hashable, Codable {
+public enum TableEditorRoute: Equatable, Hashable, Codable {
     case quickEditor(UUID)
     case selectionPdf
     case linkSelection(ItemRowModel)
     case addLink(ItemRowModel)
 }
 
-extension EditorRoute: NavigationDestination {
+extension TableEditorRoute: NavigationDestination {
     public var method: NavigationMethod {
         switch self {
         case .quickEditor:
@@ -25,12 +25,12 @@ extension EditorRoute: NavigationDestination {
     }
 
     public var body: some View {
-        DestinationTableEditorRoute(route: self)
+        DestinationTableEditorRouteView(route: self)
     }
 }
 
-struct DestinationTableEditorRoute: View {
-    let route: EditorRoute
+struct DestinationTableEditorRouteView: View {
+    let route: TableEditorRoute
     
     @Environment(TableRootModel.self) private var root
     

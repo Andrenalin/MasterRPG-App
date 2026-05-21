@@ -60,7 +60,7 @@ struct DropChooseView: View {
 #if os(macOS)
             sceneManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
 #else
-            navigator.navigate(to: SelectionPhotoRoute.selection, method: .managedSheet)
+            navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
 #endif
         } label: {
             VStack {

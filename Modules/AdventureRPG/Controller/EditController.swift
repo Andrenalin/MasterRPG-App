@@ -93,7 +93,7 @@ extension EditController {
     public var linkModules: [NetworkModules] { [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather] }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
-        EditorRoute.linkSelection(itemRowModel)
+        AdventureEditorRoute.linkSelection(itemRowModel)
     }
 }
 

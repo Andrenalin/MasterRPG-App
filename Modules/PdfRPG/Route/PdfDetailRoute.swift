@@ -29,7 +29,7 @@ extension PdfDetailRoute: RawRepresentable {
         guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
         switch token {
         case "folder": self = .folder(uuid)
-        case "folderInline": self = .folder(uuid)
+        case "folderInline": self = .folderInline(uuid)
 #if !os(tvOS)
         case "pdfExtraction": self = .pdfExtraction(uuid)
         case "pdfBlockExtraction": self = .pdfBlockExtraction(uuid)
@@ -46,6 +46,10 @@ extension PdfDetailRoute: NavigationDestination {
 }
 
 extension PdfDetailRoute: ItemDetailRoute {
+    public static func detailRoute(itemId: UUID) -> Self {
+        PdfDetailRoute.folder(itemId)
+    }
+
     public func reset(detail: UUID) -> Self {
         PdfDetailRoute.folder(detail)
     }

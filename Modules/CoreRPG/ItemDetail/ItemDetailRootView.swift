@@ -86,7 +86,9 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
             handleModelUrlChange(oldValue: oldValue)
         }
         .sheet(item: $editingItem) { item in
-            editingSheet(model: item.model)
+            ManagedPresentationView {
+                editingSheet(model: item.model)
+            }
         }
     }
 }

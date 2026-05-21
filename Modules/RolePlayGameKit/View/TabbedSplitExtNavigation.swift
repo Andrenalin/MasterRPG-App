@@ -47,6 +47,7 @@ struct TabbedSplitExtNavigation: View {
                 menuView
             }
             .padding(12)
+            .environment(sceneManager)
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
             Button {
@@ -59,6 +60,7 @@ struct TabbedSplitExtNavigation: View {
                 }
             }
             .padding([.top, .leading], 12)
+            .environment(sceneManager)
         }
 #endif
     }
