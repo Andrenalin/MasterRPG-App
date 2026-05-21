@@ -53,7 +53,7 @@ extension Navigator {
 
     /// Returns NavigationDestination of sheet or cover we're currently presenting, if any.
     public var presentingSheetOrCover: (any NavigationDestination)? {
-        (sheet ?? cover)?.wrapped as? (any NavigationDestination)
+        (sheet ?? cover)?.wrapped as? NavigationDestination
     }
 }
 
@@ -85,8 +85,8 @@ extension View {
     /// }
     /// ```
     /// > Warning: Failure to tag presented views as such can lead to inconsistent deep linking and navigation behavior.
-    public func managedPresentationView() -> some View {
-        ManagedPresentationView {
+    public func managedPresentationView(name: String? = nil) -> some View {
+        ManagedPresentationView(name: name) {
             self
         }
     }
@@ -115,9 +115,9 @@ internal struct NavigationPresentationModifiers: ViewModifier {
     }
 
     @ViewBuilder func managedView(for destination: AnyNavigationDestination) -> some View {
-        ManagedPresentationView {
+        ManagedPresentationView(name: destination.presentationName) {
             if destination.method.requiresNavigationStack {
-                ManagedNavigationStack {
+                ManagedNavigationStack(name: destination.presentationName) {
                     navigator.mappedPresentationView(for: destination.wrapped)
                 }
             } else {

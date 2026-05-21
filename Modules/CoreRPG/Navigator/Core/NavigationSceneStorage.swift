@@ -110,11 +110,11 @@ internal struct NavigationSceneStorageModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: scenePhase) {
+            .onChange(of: scenePhase) { _, phase in
                 guard name != nil else {
                     return
                 }
-                if scenePhase == .active, let data = sceneStorage {
+                if phase == .active, let data = sceneStorage {
                     navigator.restore(from: data)
                 } else {
                     sceneStorage = navigator.encoded()

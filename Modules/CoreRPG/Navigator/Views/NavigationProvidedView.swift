@@ -36,7 +36,7 @@ public struct NavigationProvidedView<D: NavigationDestination, P: View>: View {
     
     private let destination: D
     private let placeholder: P?
-    
+
     /// Creates a provided view that resolves the given destination using
     /// any registered `onNavigationProvidedView` handlers.
     ///
@@ -45,7 +45,7 @@ public struct NavigationProvidedView<D: NavigationDestination, P: View>: View {
         self.destination = destination
         self.placeholder = nil
     }
-    
+
     /// Creates a provided view with a custom placeholder.
     ///
     /// The placeholder content is shown whenever no provider is available
@@ -58,7 +58,7 @@ public struct NavigationProvidedView<D: NavigationDestination, P: View>: View {
         self.destination = destination
         self.placeholder = placeholder()
     }
-    
+
     /// The resolved destination view, a placeholder view, or an empty view.
     public var body: some View {
         if let view = navigator.navigationProvidedView(for: destination) {
@@ -66,15 +66,11 @@ public struct NavigationProvidedView<D: NavigationDestination, P: View>: View {
         } else if let placeholder {
             placeholder
         } else {
-#if DEBUG
-            Text(message)
-#else
+            #if DEBUG
+            Text("Missing Provider for \(type(of: self)).\(self)")
+            #else
             EmptyView()
-#endif
+            #endif
         }
-    }
-    
-    private var message: String {
-        "Missing Provider for \(type(of: self)).\(self)"
     }
 }
