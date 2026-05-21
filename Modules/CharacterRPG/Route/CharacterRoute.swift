@@ -29,7 +29,7 @@ extension CharacterRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            CHaracterRouteDestinationView(itemId: itemId)
+            CharacterRouteDestinationView(itemId: itemId)
                 .navigationAutoReceive(CharacterDetailRoute.self)
         }
     }
@@ -47,7 +47,7 @@ extension CharacterRoute: ItemDetailRoute {
     }
 }
 
-struct CHaracterRouteDestinationView: View {
+struct CharacterRouteDestinationView: View {
     let itemId: UUID
 
     @Environment(CharacterRootModel.self) private var root

@@ -74,7 +74,7 @@ struct RootRouteRouter: NavigationRouteHandling {
         case .search:
             return [.send(RootRoute.search)]
         case .settings:
-            return [.send(RootRoute.editors)]
+            return [.send(RootRoute.settings)]
         case .tables(let itemId, _):
             if let itemId {
                 return [.send(RootRoute.tables), .reset, .send(TableRoute.detail(itemId))]

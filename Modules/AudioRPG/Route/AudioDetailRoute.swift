@@ -29,7 +29,7 @@ extension AudioDetailRoute: RawRepresentable {
 
 extension AudioDetailRoute: NavigationDestination {
     public var body: some View {
-        AuduioDetailRoutelDestinationView(route: self)
+        AudioDetailRouteDestinationView(route: self)
     }
 }
 
@@ -46,7 +46,7 @@ extension AudioDetailRoute: ItemDetailRoute {
     }
 }
 
-struct AuduioDetailRoutelDestinationView: View {
+struct AudioDetailRouteDestinationView: View {
     let route: AudioDetailRoute
 
     @Environment(AudioRootModel.self) private var root

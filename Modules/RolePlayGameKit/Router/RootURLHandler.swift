@@ -14,8 +14,9 @@ public struct RootURLHandler: NavigationURLHandler {
     
     @MainActor public func handles(_ url: URL, with navigator: Navigator) -> Bool {
         guard !url.isGmzDocument else {
-            // GMZ document
+            // GMZ document — surface the import in the Settings tab so the user can see progress.
             if appModel.appNavigationModel.initialRouteType == .ready {
+                navigator.perform(route: KnownRoutes.settings)
                 _ = appModel.adventureRoot.importControllable.importUrl(from: url)
             }
             return true
