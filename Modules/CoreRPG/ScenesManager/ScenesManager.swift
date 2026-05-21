@@ -328,6 +328,19 @@ import OSLog
 #endif
     }
     
+    
+    @MainActor
+    public func openWindow(for module: NetworkModules) -> Bool {
+        let sceneId = module.sceneId
+#if !os(tvOS)
+        if getSceneState(for: sceneId) != .opened {
+            openWindow(sceneId)
+            return true
+        }
+#endif
+        return false
+    }
+
 #if os(visionOS)
     /// Toggles the immersive space between open and closed states.
     ///

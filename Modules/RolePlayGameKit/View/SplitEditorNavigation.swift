@@ -41,8 +41,6 @@ struct SplitEditorNavigation: View {
             appModel.selectedEditorModule = route
             return .after(0.8)
         }
-        .onNavigationRoute(RootVisionRouteRouter(appModel: appModel))
-        .onNavigationOpenURL(RootURLHandler(appModel: appModel))
 #if os(visionOS)
         .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .leading) {
             VStack {

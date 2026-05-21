@@ -118,4 +118,22 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
         case .weather: "cloud.bolt.rain"
         }
     }
+
+    var module: NetworkModules {
+        switch self {
+        case .adventure: .adventure
+        case .audio: .audio
+        case .character: .value
+        case .dice: .dice
+        case .game: .game
+        case .generator: .generator
+        case .map: .map
+        case .pdf: .pdf
+        case .photo: .photo
+        case .search: .search
+        case .space: .space
+        case .table: .table
+        case .weather: .weather
+        }
+    }
 }

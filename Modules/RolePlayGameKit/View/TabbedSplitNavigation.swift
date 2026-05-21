@@ -45,9 +45,7 @@ struct TabbedSplitNavigation: View {
             appModel.menuSelectedModule = selected.module
         }
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
-        .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
-        .onNavigationRoute(RootRouteRouter(appModel: appModel))
-        .onNavigationOpenURL(RootURLHandler(appModel: appModel))
+        .onNavigationReceive(assign: $appModel.selectedModule)
         .navigationSplitViewStyle(.prominentDetail)
     }
     

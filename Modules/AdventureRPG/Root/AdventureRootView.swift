@@ -16,7 +16,10 @@ struct AdventureRootView: View {
             .onNavigationReceive { (route: AdventureRoute, navigator) in
                 // Handle deep links from send() calls
                 guard let itemId = route.detail() else { return .cancel }
-                root.navigationModel.selectedItemId = itemId
+                if root.folderListController.listModel.selectedItemId == itemId {
+                    return .immediately
+                }
+                root.folderListController.listModel.set(selectedItemId: itemId)
                 return .auto
             }
     }

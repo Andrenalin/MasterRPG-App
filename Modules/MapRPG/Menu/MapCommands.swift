@@ -6,16 +6,16 @@ import SwiftUI
 
 #if !os(tvOS)
 public struct MapCommands: Commands {
-    public init(root: MapRootModel, navigator: Navigator) {
+    public init(root: MapRootModel, routeActions: RouteActions) {
         self.root = root
-        self.navigator = navigator
+        self.routeActions = routeActions
     }
-    
+
     let root: MapRootModel
-    let navigator: Navigator
+    let routeActions: RouteActions
 
     public var body: some Commands {
-        ModuleCommands(root: root, navigator: navigator, key: "5")
+        ModuleCommands(root: root, routeActions: routeActions, key: "5")
     }
 }
 

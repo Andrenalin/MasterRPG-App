@@ -4,16 +4,16 @@ import SwiftUI
 
 #if !os(tvOS)
 public struct ModuleCommands: Commands {
-    public init(root: any ItemRootControllable, navigator: Navigator, key: AKKeyEquivalent) {
+    public init(root: any ItemRootControllable, routeActions: RouteActions, key: AKKeyEquivalent) {
         self.root = root
-        self.navigator = navigator
+        self.routeActions = routeActions
         self.key = key
     }
-    
+
     let root: any ItemRootControllable
-    let navigator: Navigator
+    let routeActions: RouteActions
     let key: AKKeyEquivalent
-    
+
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
@@ -21,10 +21,10 @@ public struct ModuleCommands: Commands {
             LinkWindowCommandView(networkModule: root.configurable.module, key: key)
         }
         CommandGroup(after: .toolbar) {
-            NavigateButton(root: root, navigator: navigator, key: key)
+            NavigateButton(root: root, routeActions: routeActions, key: key)
         }
         CommandGroup(after: .newItem) {
-            AddItemButton(root: root, navigator: navigator, key: key)
+            AddItemButton(root: root, routeActions: routeActions, key: key)
         }
         CommandGroup(before: .textEditing) {
             if selectedModule == root.configurable.module {
@@ -49,12 +49,12 @@ public struct ModuleCommands: Commands {
 
 struct NavigateButton: View {
     let root: any ItemRootControllable
-    let navigator: Navigator
+    let routeActions: RouteActions
     let key: AKKeyEquivalent
 
     var body: some View {
         Button {
-            navigator.perform(route: KnownRoutes.route(module: root.configurable.module, itemId: nil, entryId: nil))
+            routeActions.routePage(root.configurable.module, nil, nil)
         } label: {
             Label { Text("Show \(root.configurable.module.title)", bundle: .module) } icon: { Image(systemName: "eye") }
         }
@@ -64,14 +64,14 @@ struct NavigateButton: View {
 
 struct AddItemButton: View {
     let root: any ItemRootControllable
-    let navigator: Navigator
+    let routeActions: RouteActions
     let key: AKKeyEquivalent
 
     var body: some View {
         Button {
             Task {
                 guard let item = await root.editControllable.addNew(type: .item) else { return }
-                navigator.perform(route: KnownRoutes.route(module: root.configurable.module, itemId: item.id, entryId: nil))
+                routeActions.routePage(root.configurable.module, item.id, nil)
             }
         } label: {
             Label { Text("New \(root.configurable.module.title)", bundle: .module) } icon: { Image(systemName: "plus") }

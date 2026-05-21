@@ -13,11 +13,15 @@ struct TabRootView: View {
         let _ = Self._printChanges()
         layout
             .appExitNotifications(handler: appModel.adventureRoot.save)
+            .onAppear {
+                appModel.isCompactGameWindow = appSizeModel.mode == .compact
+            }
             .onChange(of: appSizeModel.mode) { oldValue, newValue in
+                appModel.isCompactGameWindow = newValue == .compact
                 appModel.resetNavigation()
             }
     }
-    
+
     private var layout: AppNavigationRouteType {
         valueFor(iOS: appSizeModel.mode == .compact ? .tabbed : .split, macOS: .tabbedSplit, tvOS: .tabbed, visionOS: .visionSplit)
     }

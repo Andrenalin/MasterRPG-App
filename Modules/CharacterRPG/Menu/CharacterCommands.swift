@@ -6,16 +6,16 @@ import SwiftUI
 
 #if !os(tvOS)
 public struct CharacterCommands: Commands {
-    public init(root: CharacterRootModel, navigator: Navigator) {
+    public init(root: CharacterRootModel, routeActions: RouteActions) {
         self.root = root
-        self.navigator = navigator
+        self.routeActions = routeActions
     }
-    
+
     let root: CharacterRootModel
-    let navigator: Navigator
+    let routeActions: RouteActions
 
     public var body: some Commands {
-        ModuleCommands(root: root, navigator: navigator, key: "2")
+        ModuleCommands(root: root, routeActions: routeActions, key: "2")
     }
 }
 

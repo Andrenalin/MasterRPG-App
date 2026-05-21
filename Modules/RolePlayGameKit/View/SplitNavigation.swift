@@ -29,8 +29,6 @@ struct SplitNavigation: View {
             }
             .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
             .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
-            .onNavigationRoute(RootRouteRouter(appModel: appModel))
-            .onNavigationOpenURL(RootURLHandler(appModel: appModel))
     }
     
     var selectedModule: NetworkModules {

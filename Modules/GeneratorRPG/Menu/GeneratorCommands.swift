@@ -6,16 +6,16 @@ import SwiftUI
 
 #if !os(tvOS)
 public struct GeneratorCommands: Commands {
-    public init(root: GeneratorRootModel, navigator: Navigator) {
+    public init(root: GeneratorRootModel, routeActions: RouteActions) {
         self.root = root
-        self.navigator = navigator
+        self.routeActions = routeActions
     }
-    
+
     let root: GeneratorRootModel
-    let navigator: Navigator
+    let routeActions: RouteActions
 
     public var body: some Commands {
-        ModuleCommands(root: root, navigator: navigator, key: "-")
+        ModuleCommands(root: root, routeActions: routeActions, key: "-")
     }
 }
 

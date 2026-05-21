@@ -25,6 +25,9 @@ struct WindowMacList: Scene {
                 ManagedNavigationStack {
                     SettingsView(store: appModel)
                 }
+                .onNavigationRoute(WindowRouter(appModel: appModel, role: .settings))
+                .onNavigationOpenURL(RootURLHandler(appModel: appModel, role: .settings))
+                .navigationRoot(appModel.settingsNavigator)
                 .environmentSetUp(appModel)
                 .tint(.teal)
                 .frame(minWidth: 600, minHeight: 400)

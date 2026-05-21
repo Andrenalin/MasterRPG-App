@@ -101,19 +101,29 @@ struct WindowViewerList: Scene {
             BaseWindow("Search", id: SceneId.search.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     NavigationSplitView {
-                        GameFactory.rootSearchView(root: appModel.gameRoot, navigator: appModel.navigator)
+                        GameFactory.rootSearchView(root: appModel.gameRoot, navigator: appModel.navigator(for: .search))
                     } detail: {
-                        GameFactory.detailSearchView(root: appModel.gameRoot, navigator: appModel.navigator)
+                        GameFactory.detailSearchView(root: appModel.gameRoot, navigator: appModel.navigator(for: .search))
                     }
                     .frame(minWidth: 1000, minHeight: 600)
                 }
+#if os(macOS)
+                .onNavigationRoute(WindowRouter(appModel: appModel, role: .search))
+                .onNavigationOpenURL(RootURLHandler(appModel: appModel, role: .search))
+                .navigationRoot(appModel.searchNavigator)
+                .sceneTracker(for: SceneId.search)
+#endif
                 .setAppSizeMode()
                 .environmentSetUp(appModel)
+                .environmentActionSetUp(appModel)
             }
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))
 #if !os(iOS)
         .restorationBehavior(.disabled)
+#endif
+#if os(macOS) || os(visionOS)
+            .defaultLaunchBehavior(.suppressed)
 #endif
 #if os(macOS)
             .keyboardShortcut("S", modifiers: [.command, .shift, .option])

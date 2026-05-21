@@ -116,7 +116,32 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     public var linkAltWindowId: String {
         linkWindowId + "Alt"
     }
-    
+
+    /// SceneId of the window that owns this module's UI on the current platform.
+    ///
+    /// Mirrors `AppModel.navigator(for:)` so callers can open the right window before sending a route.
+    /// - macOS: only `.game` lives in the Game window; `.search` and `.setting` have their own
+    ///   windows; every other module surfaces in the Editor window.
+    /// - visionOS: editor modules live in `.editor`; `.setting` stays inside the Game window.
+    /// - iOS / iPadOS / tvOS: everything lives in the Game window.
+    public var sceneId: SceneId {
+#if os(macOS)
+        switch self {
+        case .game, .none: return .game
+        case .search: return .search
+        case .setting: return .settings
+        default: return .editor
+        }
+#elseif os(visionOS)
+        switch self {
+        case .game, .adventure, .value, .search, .setting, .generator, .none: return .game
+        default: return .editor
+        }
+#else
+        return .game
+#endif
+    }
+
     public var color: Color {
         switch self {
         case .adventure: Color("AdventureBackground", bundle: .module)

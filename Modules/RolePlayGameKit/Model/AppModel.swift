@@ -49,7 +49,19 @@ public final class AppModel: Sendable {
     public let inAppController: InAppController
     
     // Routing models
-    @ObservationIgnored public var navigator: Navigator
+    @ObservationIgnored public var gameNavigator: Navigator
+    @ObservationIgnored public var editorNavigator: Navigator
+    @ObservationIgnored public var searchNavigator: Navigator
+    @ObservationIgnored public var settingsNavigator: Navigator
+
+    /// Backwards-compat alias — points at the Game window's navigator.
+    @ObservationIgnored public var navigator: Navigator { gameNavigator }
+
+    /// True when the Game window is in compact horizontal layout (iPhone portrait / split). Used by
+    /// `WindowRouter` to decide whether routes flatten to top-level `RootRoute`s or thread through the
+    /// editors→`ExtendedTabRoute` compound.
+    @ObservationIgnored public var isCompactGameWindow: Bool = false
+
     var selectedModule: RootRoute? = .game
     var selectedEditorModule: RootRoute? = .pdfs
     var selectedExtendedModule: ExtendedTabRoute? = nil
@@ -87,9 +99,33 @@ public final class AppModel: Sendable {
         
         self.inAppController = InAppController(model: inAppModel)
         
-        self.navigator = Navigator(
+        self.gameNavigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "1.0.13",
+                restorationKey: "game.1.0.13",
+                executionDelay: 0.4,
+                verbosity: .info,
+                autoDestinationMode: true
+            )
+        )
+        self.editorNavigator = Navigator(
+            configuration: NavigationConfiguration(
+                restorationKey: "editor.1.0.13",
+                executionDelay: 0.4,
+                verbosity: .info,
+                autoDestinationMode: true
+            )
+        )
+        self.searchNavigator = Navigator(
+            configuration: NavigationConfiguration(
+                restorationKey: "search.1.0.13",
+                executionDelay: 0.4,
+                verbosity: .info,
+                autoDestinationMode: true
+            )
+        )
+        self.settingsNavigator = Navigator(
+            configuration: NavigationConfiguration(
+                restorationKey: "settings.1.0.13",
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true
@@ -286,34 +322,85 @@ extension AppModel {
     func itemRootController(for module: NetworkModules) -> ItemRootController? {
         root.itemRootController(for: module)
     }
-        
+
+    /// Returns the Navigator that owns the window where the given module surfaces.
+    /// - macOS: editor modules → `editorNavigator`, `.setting` → `settingsNavigator`, else `gameNavigator`.
+    /// - visionOS: editor modules → `editorNavigator` (Settings stays in Game window), else `gameNavigator`.
+    /// - iOS / iPadOS / tvOS: always `gameNavigator` (editor lives as tabs inside the Game window).
+    @MainActor public func navigator(for module: NetworkModules) -> Navigator {
+        navigator(forScene: module.sceneId)
+    }
+
+    /// Returns the root Navigator for the given window scene.
+    ///
+    /// Callers that have just opened a window via `openWindowForModule(...)` should resolve the
+    /// navigator through this method so the navigator they get matches the window that's actually
+    /// on screen — looking it up on the module before the window opens can yield the wrong one
+    /// on platforms where module-to-window mapping is platform-conditional.
+    ///
+    /// Named `forScene:` rather than overloading `for:` so call sites passing leaf-static members
+    /// (`.game`, `.search`, ...) don't become ambiguous between `NetworkModules` and `SceneId`.
+    @MainActor public func navigator(forScene sceneId: SceneId) -> Navigator {
+        switch sceneId {
+        case .editor: return editorNavigator
+        case .search: return searchNavigator
+        case .settings: return settingsNavigator
+        default: return gameNavigator
+        }
+    }
+
     public func resetNavigation() {
         guard let selectedTab: NetworkModules = selectedModule?.module else { return }
         let itemId: UUID? = root[selectedTab]?.currentSelectedItemId
         Task {
             try await Task.sleep(for: .milliseconds(150))
-            navigator.perform(route: KnownRoutes.route(module: selectedTab, itemId: itemId, entryId: nil))
+            navigator(for: selectedTab).perform(route: KnownRoutes.route(module: selectedTab, itemId: itemId, entryId: nil))
         }
     }
 
-    
+
     @MainActor var externalRouter: any NavigationRouting<KnownRoutes> {
-        NavigationRouter(navigator) { route in
+        NavigationRouter(gameNavigator) { route in
             switch route {
             case .adventures:
-                self.navigator.perform(route: KnownRoutes.adventures(nil, nil))
+                self.navigator(for: .adventure).perform(route: KnownRoutes.adventures(nil, nil))
             case .audios:
-                self.navigator.perform(route: KnownRoutes.audios(nil, nil))
+                self.navigator(for: .audio).perform(route: KnownRoutes.audios(nil, nil))
             default:
                 break
             }
         }
     }
-    
+
     @MainActor public var routeActions: RouteActions {
         RouteActions { [weak self] module, itemId, entryId in
-            guard module != .none, let itemId else { return }
-            self?.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: entryId))
+            guard let self, module != .none else { return }
+            self.routeToModule(module, itemId: itemId, entryId: entryId)
+        }
+    }
+
+    /// Opens the window that owns `module` (if needed) and performs the corresponding `KnownRoutes`
+    /// route on that window's root navigator. On multi-window platforms, waits 150ms after opening
+    /// so the navigation stack has time to mount before the route is sent — performing the route
+    /// before the stack subscribes drops it on the floor.
+    ///
+    /// Detail navigation rides through the route as a deep link: when `itemId` is non-nil the
+    /// router emits `[.send(RootRoute.X), .reset, .send(ModuleRoute.detail(itemId))]`, and each
+    /// module's root view has an `onNavigationReceive` for its own route type that writes the
+    /// selection into `navigationModel.selectedItemId`. The 0.8s `assign` delay on the editor
+    /// tab receiver gives the module body time to mount before the detail send fires.
+    @MainActor public func routeToModule(_ module: NetworkModules, itemId: UUID? = nil, entryId: UUID? = nil) {
+        guard module != .none else { return }
+        let route = KnownRoutes.route(module: module, itemId: itemId, entryId: entryId)
+        let opening = sceneManager.openWindow(for: module)
+        let rootNavigator = navigator(for: module)
+        if opening {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(150))
+                rootNavigator.perform(route: route)
+            }
+        } else {
+            rootNavigator.perform(route: route)
         }
     }
 }

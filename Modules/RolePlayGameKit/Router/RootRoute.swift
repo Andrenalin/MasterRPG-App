@@ -192,7 +192,7 @@ struct RouteRouteDestionationView: View {
             case .weathers:
                 WeatherRootFactory.rootView()
             case .search:
-                GameFactory.rootSearchView(root: appModel.gameRoot, navigator: appModel.navigator)
+                GameFactory.rootSearchView(root: appModel.gameRoot, navigator: appModel.navigator(for: .search))
             }
         }
         .tint(route.module.tint)

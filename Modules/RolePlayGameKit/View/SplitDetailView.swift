@@ -46,7 +46,7 @@ struct SplitDetailView: View {
             PdfFactory.detailView(root: appModel.pdfRoot)
         case .photo:
             PhotoFactory.detailView(root: appModel.photoRoot)
-        case .search: GameFactory.detailSearchView(root: appModel.gameRoot, navigator: appModel.navigator)
+        case .search: GameFactory.detailSearchView(root: appModel.gameRoot, navigator: appModel.navigator(for: .search))
         case .space:
             SpaceFactory.detailView(root: appModel.spaceRoot)
         case .table:

@@ -83,39 +83,18 @@ struct MasterRPGApp: App {
         let module = UserActivity.module(from: userActivity)
         guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
         let childId = UserActivity.childId(from: userActivity)
-        
+
         Logger.bootStrap.info("Handling user activity for module: \(module.rawValue), itemId: \(itemId)")
-        
-        // On macOS/visionOS, open the appropriate window if needed
-        #if os(macOS) || os(visionOS)
-        openWindowForModule(module)
-        #endif
-        
-        // Navigate to the requested content after a small delay to ensure window is ready
-        Task {
-            try? await Task.sleep(for: .milliseconds(150))
-            appModel.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: childId))
-        }
-    }
-    
-    /// Opens the appropriate window for the given module on multi-window platforms
-    private func openWindowForModule(_ module: NetworkModules) {
-#if os(macOS)
-        appModel.sceneManager.openWindow(SceneId.editor)
-#elseif os(visionOS)
-        switch module {
-        case .adventure, .value, .generator, .search, .setting:
-            appModel.sceneManager.openWindow(SceneId.game)
-        default:
-            appModel.sceneManager.openWindow(SceneId.editor)
-        }
-#else
-#endif
+
+        appModel.routeToModule(module, itemId: itemId, entryId: childId)
     }
     
     var body: some Scene {
         BaseWindow("Game", id: SceneId.game.rawValue) {
             InitialRootView()
+                .onNavigationRoute(WindowRouter(appModel: appModel, role: .game))
+                .onNavigationOpenURL(RootURLHandler(appModel: appModel, role: .game))
+                .navigationRoot(appModel.gameNavigator)
                 .sceneTracker(for: SceneId.game)
                 .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                     handleUserActivity(userActivity)
@@ -163,6 +142,9 @@ struct MasterRPGApp: App {
                         handleUserActivity(userActivity)
                     }
             }
+            .onNavigationRoute(WindowRouter(appModel: appModel, role: .editor))
+            .onNavigationOpenURL(RootURLHandler(appModel: appModel, role: .editor))
+            .navigationRoot(appModel.editorNavigator)
             .setAppSizeMode()
             .sceneTracker(for: SceneId.editor)
             .environmentSetUp(appModel)
@@ -170,6 +152,9 @@ struct MasterRPGApp: App {
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(.leading(SceneId.game.rawValue))
         .restorationBehaviorAll(.disabled)
+#if os(macOS) || os(visionOS)
+        .defaultLaunchBehavior(.suppressed)
+#endif
 #if os(macOS)
         .keyboardShortcut("E", modifiers: [.command, .shift, .option])
 #endif

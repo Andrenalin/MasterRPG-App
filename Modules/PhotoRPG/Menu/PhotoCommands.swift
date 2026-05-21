@@ -6,16 +6,16 @@ import SwiftUI
 
 #if !os(tvOS)
 public struct PhotoCommands: Commands {
-    public init(root: PhotoRootModel, navigator: Navigator) {
+    public init(root: PhotoRootModel, routeActions: RouteActions) {
         self.root = root
-        self.navigator = navigator
+        self.routeActions = routeActions
     }
-    
+
     let root: PhotoRootModel
-    let navigator: Navigator
+    let routeActions: RouteActions
 
     public var body: some Commands {
-        ModuleCommands(root: root, navigator: navigator, key: "8")
+        ModuleCommands(root: root, routeActions: routeActions, key: "8")
     }
 }
 

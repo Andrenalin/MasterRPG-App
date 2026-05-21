@@ -22,34 +22,7 @@ struct NavigateIntent: AppIntent {
     @Dependency var appModel: AppModel
     
     func perform() async throws -> some IntentResult {
-        switch navigationOption {
-        case .adventure:
-            await appModel.navigator.perform(route: KnownRoutes.adventures(nil, nil))
-        case .audio:
-            await appModel.navigator.perform(route: KnownRoutes.audios(nil, nil))
-        case .character:
-            await appModel.navigator.perform(route: KnownRoutes.values(nil, nil))
-        case .dice:
-            await appModel.navigator.perform(route: KnownRoutes.dice(nil, nil))
-        case .game:
-            await appModel.navigator.perform(route: KnownRoutes.game)
-        case .generator:
-            await appModel.navigator.perform(route: KnownRoutes.generators(nil, nil))
-        case .map:
-            await appModel.navigator.perform(route: KnownRoutes.maps(nil, nil))
-        case .pdf:
-            await appModel.navigator.perform(route: KnownRoutes.pdfs(nil, nil))
-        case .photo:
-            await appModel.navigator.perform(route: KnownRoutes.photos(nil, nil))
-        case .space:
-            await appModel.navigator.perform(route: KnownRoutes.spaces(nil, nil))
-        case .search:
-            await appModel.navigator.perform(route: KnownRoutes.search)
-        case .table:
-            await appModel.navigator.perform(route: KnownRoutes.tables(nil, nil))
-        case .weather:
-            await appModel.navigator.perform(route: KnownRoutes.weathers(nil, nil))
-        }
+        await appModel.routeToModule(navigationOption.module)
         return .result()
     }
 }

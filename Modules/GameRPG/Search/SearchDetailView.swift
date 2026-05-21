@@ -16,7 +16,9 @@ import SpaceRPG
 struct SearchDetailView: View {
     let root: GameRoot
     let navigator: Navigator
-    
+
+    @Environment(\.routeActions) private var routeActions
+
     public var body: some View {
         @Bindable var model = root.searchController.model
         if let selection = model.selection {
@@ -38,7 +40,7 @@ struct SearchDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigation) {
                     Button {
-                        navigator.perform(route: KnownRoutes.route(module: selection.module, itemId: selection.itemId, entryId: selection.entryId))
+                        routeActions.routePage(selection.module, selection.itemId, selection.entryId)
                     } label: {
                         Image(systemName: selection.module.icon)
                     }

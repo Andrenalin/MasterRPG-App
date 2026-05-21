@@ -55,8 +55,6 @@ struct TabbedNavigation: View {
             appModel.selectedModule = route
             return .after(0.8)
         }
-        .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
-        .onNavigationOpenURL(RootURLHandler(appModel: appModel))
     }
     
     var selectedModule: NetworkModules {

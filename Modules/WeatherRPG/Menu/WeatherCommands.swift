@@ -6,16 +6,16 @@ import SwiftUI
 
 #if !os(tvOS)
 public struct WeatherCommands: Commands {
-    public init(root: WeatherRootModel, navigator: Navigator) {
+    public init(root: WeatherRootModel, routeActions: RouteActions) {
         self.root = root
-        self.navigator = navigator
+        self.routeActions = routeActions
     }
-    
+
     let root: WeatherRootModel
-    let navigator: Navigator
+    let routeActions: RouteActions
 
     public var body: some Commands {
-        ModuleCommands(root: root, navigator: navigator, key: "0")
+        ModuleCommands(root: root, routeActions: routeActions, key: "0")
     }
 }
 

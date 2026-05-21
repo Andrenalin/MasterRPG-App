@@ -22,20 +22,21 @@ struct MenuCommandList: Commands {
 
     var body: some Commands {
         if appModel.appNavigationModel.initialRouteType == .ready {
+            let routeActions = appModel.routeActions
             Group {
                 Group {
-                    AdventureCommands(root: appModel.adventureRoot, navigator: appModel.navigator)
-                    CharacterCommands(root: appModel.characterRoot, navigator: appModel.navigator)
-                    PdfCommands(root: appModel.pdfRoot, navigator: appModel.navigator)
-                    TableCommands(root: appModel.tableRoot, navigator: appModel.navigator)
-                    MapCommands(root: appModel.mapRoot, navigator: appModel.navigator)
+                    AdventureCommands(root: appModel.adventureRoot, routeActions: routeActions)
+                    CharacterCommands(root: appModel.characterRoot, routeActions: routeActions)
+                    PdfCommands(root: appModel.pdfRoot, routeActions: routeActions)
+                    TableCommands(root: appModel.tableRoot, routeActions: routeActions)
+                    MapCommands(root: appModel.mapRoot, routeActions: routeActions)
                 }
                 Group {
-                    AudioCommands(root: appModel.audioRoot, navigator: appModel.navigator)
-                    DiceCommands(root: appModel.diceRoot, navigator: appModel.navigator)
-                    PhotoCommands(root: appModel.photoRoot, navigator: appModel.navigator)
-                    SpaceCommands(root: appModel.spaceRoot, navigator: appModel.navigator)
-                    WeatherCommands(root: appModel.weatherRoot, navigator: appModel.navigator)
+                    AudioCommands(root: appModel.audioRoot, routeActions: routeActions)
+                    DiceCommands(root: appModel.diceRoot, routeActions: routeActions)
+                    PhotoCommands(root: appModel.photoRoot, routeActions: routeActions)
+                    SpaceCommands(root: appModel.spaceRoot, routeActions: routeActions)
+                    WeatherCommands(root: appModel.weatherRoot, routeActions: routeActions)
                 }
             }
         }

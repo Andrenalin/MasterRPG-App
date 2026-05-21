@@ -26,7 +26,6 @@ struct AppGameTypeDestinationView: View {
                 GameFactory.rootSetupView(root: appModel.gameRoot)
             case .editor:
                 TabRootView(appModel: appModel)
-                    .navigationRoot(appModel.navigator)
             }
         }
         .tint(.blue)
