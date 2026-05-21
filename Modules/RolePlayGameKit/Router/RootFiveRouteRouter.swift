@@ -82,7 +82,7 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
         case .search:
             return [.send(RootRoute.search)]
         case .settings:
-            return [.send(RootRoute.settings)]
+            return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.settings)]
         case .tables(let itemId, _):
             var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.tables)]
             if let itemId {

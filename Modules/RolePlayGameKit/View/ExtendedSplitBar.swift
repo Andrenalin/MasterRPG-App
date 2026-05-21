@@ -20,7 +20,6 @@ struct ExtendedSplitBar: View {
     var body: some View {
         allCustomTabs
             .navigationAutoReceive(ExtendedTabRoute.self)
-            .onNavigationRoute(RootVisionRouteRouter(appModel: appModel))
             .onChange(of: currentModule, initial: true) {
                 appModel.selectedExtendedModule <=> currentModule
                 guard let currentModule else { return }
