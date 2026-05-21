@@ -25,9 +25,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     
-#if os(macOS) || os(visionOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
 
     private enum Field: Hashable {
         case editor
@@ -253,7 +251,7 @@ private extension QuickEntryEditorView {
     var pdfButton: some View {
         Button {
 #if os(macOS) || os(visionOS)
-            openWindow(id: NetworkModules.pdf.linkWindowId)
+            sceneManager.openWindow(SceneId(rawValue: NetworkModules.pdf.linkWindowId))
 #else
             withAnimation { showResult <=> true }
             navigator.navigate(to: pdfEditorRoute, method: .sheet)

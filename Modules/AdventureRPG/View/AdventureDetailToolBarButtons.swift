@@ -49,14 +49,12 @@ struct AdventureAIAssistantButton: View {
     let root: AdventureRootModel
     let model: AdventureModel
     @Environment(\.navigator) private var navigator
-#if os(visionOS) || os(macOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
 
     var body: some View {
         Button {
 #if os(visionOS) || os(macOS)
-            openWindow(id: SceneId.generateAdventure.rawValue)
+            sceneManager.openWindow(.generateAdventure)
 #else
             navigator.navigate(to: EditorRoute.generator(model.id))
 #endif

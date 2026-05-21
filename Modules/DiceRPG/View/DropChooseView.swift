@@ -11,9 +11,7 @@ struct DropChooseView: View {
     @Environment(DiceRootModel.self) private var root
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.navigator) private var navigator
-#if os(macOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
 
     var body: some View {
         DropItemModuleArea(module: root.configurable.module, contentView: {
@@ -62,7 +60,7 @@ struct DropChooseView: View {
         Button {
             root.itemSelectionModel = selectionModel
 #if os(macOS)
-            openWindow(id: NetworkModules.dice.linkWindowId)
+            sceneManager.openWindow(SceneId(rawValue: NetworkModules.dice.linkWindowId))
 #else
             navigator.navigate(to: SelectionDiceRoute.selection, method: .managedSheet)
 #endif

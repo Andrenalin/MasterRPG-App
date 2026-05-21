@@ -11,9 +11,7 @@ struct DropChooseView: View {
     @Environment(PhotoRootModel.self) private var root
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.navigator) private var navigator
-#if os(macOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
 
     var body: some View {
         DropItemModuleArea(module: root.configurable.module, contentView: {
@@ -60,7 +58,7 @@ struct DropChooseView: View {
         Button {
             root.itemSelectionModel = selectionModel
 #if os(macOS)
-            openWindow(id: NetworkModules.photo.linkWindowId)
+            sceneManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
 #else
             navigator.navigate(to: SelectionPhotoRoute.selection, method: .managedSheet)
 #endif

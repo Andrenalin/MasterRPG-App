@@ -23,14 +23,12 @@ struct QuickEditorButton: View {
 struct MapEditorButton: View {
     let model: MapModel
     @Environment(\.navigator) private var navigator
-#if os(visionOS) || os(macOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
 
     var body: some View {
         Button {
 #if os(visionOS) || os(macOS)
-            openWindow(id: SceneId.mapEditor.rawValue)
+            sceneManager.openWindow(.mapEditor)
 #else
             navigator.navigate(to: EditorRoute.mapEditor(model.id))
 #endif
@@ -47,14 +45,12 @@ struct MapEditorButton: View {
 struct EditTileButton: View {
     let model: MapModel
     @Environment(\.navigator) private var navigator
-#if os(visionOS) || os(macOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
 
     var body: some View {
         Button {
 #if os(visionOS) || os(macOS)
-            openWindow(id: SceneId.mapEditor.rawValue)
+            sceneManager.openWindow(.mapEditor)
 #else
             navigator.navigate(to: EditorRoute.mapEditor(model.id))
 #endif

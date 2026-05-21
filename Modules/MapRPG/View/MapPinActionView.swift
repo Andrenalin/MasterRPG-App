@@ -80,9 +80,7 @@ struct MapPinActionView: View, Equatable {
     let dragEndAction: (() -> Void)?
     
     @Environment(MapRootModel.self) private var root
-#if os(macOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
+    @Environment(ScenesManager.self) private var sceneManager
     
     @Namespace private var glassNamespace
     @Namespace private var photoSpace
@@ -156,7 +154,7 @@ struct MapPinActionView: View, Equatable {
                 model.copyPin(id: pinId)
             case .photo:
 #if os(macOS)
-            openWindow(id: NetworkModules.photo.linkWindowId)
+            sceneManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
 #else
             showPhotoSelection.toggle()
 #endif

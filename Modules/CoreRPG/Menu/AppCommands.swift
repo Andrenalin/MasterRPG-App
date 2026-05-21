@@ -24,11 +24,11 @@ public struct AltLinkWindowCommandView: View {
     let windowId: String
     let key: AKKeyEquivalent
 
-    @Environment(\.openWindow) private var openWindow
-    
+    @Environment(ScenesManager.self) private var sceneManager
+
     public var body: some View {
         Button {
-            openWindow(id: windowId)
+            sceneManager.openWindow(SceneId(rawValue: windowId))
         } label: {
             Label(titleWindow(), systemImage: icon)
         }

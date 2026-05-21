@@ -60,10 +60,8 @@ struct GameToolBar: View {
     @Environment(\.networkActions) private var networkActions
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     
-#if os(macOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
-    
+    @Environment(ScenesManager.self) private var sceneManager
+
     @State private var showPinSelection: Bool = false
     @State private var pinSelection: [UUID] = []
     
@@ -157,7 +155,7 @@ struct GameToolBar: View {
 
         Button {
 #if os(macOS)
-            openWindow(id: NetworkModules.value.linkWindowId)
+            sceneManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
 #else
             showPinSelection.toggle()
 #endif
