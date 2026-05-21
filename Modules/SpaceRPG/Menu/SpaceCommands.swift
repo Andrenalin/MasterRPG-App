@@ -6,16 +6,18 @@ import SwiftUI
 
 #if !os(tvOS)
 public struct SpaceCommands: Commands {
-    public init(root: SpaceRootModel, routeActions: RouteActions) {
+    public init(root: SpaceRootModel, scenesManager: ScenesManager, routeActions: RouteActions) {
         self.root = root
+        self.scenesManager = scenesManager
         self.routeActions = routeActions
     }
 
     let root: SpaceRootModel
+    let scenesManager: ScenesManager
     let routeActions: RouteActions
 
     public var body: some Commands {
-        ModuleCommands(root: root, routeActions: routeActions, key: "9")
+        ModuleCommands(root: root, scenesManager: scenesManager, routeActions: routeActions, key: "9")
     }
 }
 

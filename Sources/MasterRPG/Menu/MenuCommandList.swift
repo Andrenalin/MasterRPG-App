@@ -25,18 +25,18 @@ struct MenuCommandList: Commands {
             let routeActions = appModel.routeActions
             Group {
                 Group {
-                    AdventureCommands(root: appModel.adventureRoot, routeActions: routeActions)
-                    CharacterCommands(root: appModel.characterRoot, routeActions: routeActions)
-                    PdfCommands(root: appModel.pdfRoot, routeActions: routeActions)
-                    TableCommands(root: appModel.tableRoot, routeActions: routeActions)
-                    MapCommands(root: appModel.mapRoot, routeActions: routeActions)
+                    AdventureCommands(root: appModel.adventureRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
+                    CharacterCommands(root: appModel.characterRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
+                    PdfCommands(root: appModel.pdfRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
+                    TableCommands(root: appModel.tableRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
+                    MapCommands(root: appModel.mapRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
                 }
                 Group {
-                    AudioCommands(root: appModel.audioRoot, routeActions: routeActions)
-                    DiceCommands(root: appModel.diceRoot, routeActions: routeActions)
-                    PhotoCommands(root: appModel.photoRoot, routeActions: routeActions)
-                    SpaceCommands(root: appModel.spaceRoot, routeActions: routeActions)
-                    WeatherCommands(root: appModel.weatherRoot, routeActions: routeActions)
+                    AudioCommands(root: appModel.audioRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
+                    DiceCommands(root: appModel.diceRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
+                    PhotoCommands(root: appModel.photoRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
+                    SpaceCommands(root: appModel.spaceRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
+                    WeatherCommands(root: appModel.weatherRoot, scenesManager: appModel.sceneManager, routeActions: routeActions)
                 }
             }
         }

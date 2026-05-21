@@ -6,16 +6,19 @@ import SwiftUI
 
 #if !os(tvOS)
 public struct AudioCommands: Commands {
-    public init(root: AudioRootModel, routeActions: RouteActions) {
+    public init(root: AudioRootModel, scenesManager: ScenesManager, routeActions: RouteActions) {
         self.root = root
+        self.scenesManager = scenesManager
         self.routeActions = routeActions
+
     }
 
     let root: AudioRootModel
+    let scenesManager: ScenesManager
     let routeActions: RouteActions
 
     public var body: some Commands {
-        ModuleCommands(root: root, routeActions: routeActions, key: "6")
+        ModuleCommands(root: root, scenesManager: scenesManager, routeActions: routeActions, key: "6")
     }
 }
 

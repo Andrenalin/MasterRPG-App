@@ -103,7 +103,7 @@ public final class AppModel: Sendable {
         
         self.gameNavigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "game.1.0.13",
+                restorationKey: "game.1.0.14",
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true
@@ -111,7 +111,7 @@ public final class AppModel: Sendable {
         )
         self.editorNavigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "editor.1.0.13",
+                restorationKey: "editor.1.0.14",
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true
@@ -119,7 +119,7 @@ public final class AppModel: Sendable {
         )
         self.searchNavigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "search.1.0.13",
+                restorationKey: "search.1.0.14",
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true

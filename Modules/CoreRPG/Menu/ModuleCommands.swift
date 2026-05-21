@@ -4,13 +4,15 @@ import SwiftUI
 
 #if !os(tvOS)
 public struct ModuleCommands: Commands {
-    public init(root: any ItemRootControllable, routeActions: RouteActions, key: AKKeyEquivalent) {
+    public init(root: any ItemRootControllable, scenesManager: ScenesManager, routeActions: RouteActions, key: AKKeyEquivalent) {
         self.root = root
+        self.scenesManager = scenesManager
         self.routeActions = routeActions
         self.key = key
     }
 
     let root: any ItemRootControllable
+    let scenesManager: ScenesManager
     let routeActions: RouteActions
     let key: AKKeyEquivalent
 
@@ -18,7 +20,7 @@ public struct ModuleCommands: Commands {
 
     public var body: some Commands {
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(networkModule: root.configurable.module, key: key)
+            LinkWindowCommandView(networkModule: root.configurable.module, scenesManager: scenesManager, key: key)
         }
         CommandGroup(after: .toolbar) {
             NavigateButton(root: root, routeActions: routeActions, key: key)
