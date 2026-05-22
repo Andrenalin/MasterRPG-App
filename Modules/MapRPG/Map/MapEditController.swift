@@ -132,7 +132,7 @@ extension MapEditController {
 }
 
 // MARK: - Coordinate / Tap Handling
-
+#if !os(tvOS)
 extension MapEditController {
     @MainActor
     func releaseAction(
@@ -168,6 +168,7 @@ extension MapEditController {
         editorModel.workingCopy?[updatedEntry.id] = updatedEntry
     }
 }
+#endif
 
 // MARK: - Drop Pin
 
@@ -179,7 +180,7 @@ extension MapEditController {
         monsters: [ItemRowModel],
         editorModel: MapEditorModel
     ) {
-        guard let copy = editorModel.workingCopy else { return }
+        guard editorModel.workingCopy != nil else { return }
         let location = (point - editorModel.imageModel.offset) / editorModel.imageModel.scale
         let entry = editorModel.entry(for: location, in: map)
 

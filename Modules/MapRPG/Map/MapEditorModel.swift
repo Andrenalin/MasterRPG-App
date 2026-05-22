@@ -365,7 +365,7 @@ final class MapEditorModel {
     }
 
     // MARK: - Gesture Handlers
-
+    #if !os(tvOS)
     func pressAction(_ value: DragGesture.Value) {
         isTapping = dragPoint(location: value.location)
     }
@@ -387,7 +387,8 @@ final class MapEditorModel {
             break
         }
     }
-
+    #endif
+    
     func dragEndAction() {}
 
     func endAction() {

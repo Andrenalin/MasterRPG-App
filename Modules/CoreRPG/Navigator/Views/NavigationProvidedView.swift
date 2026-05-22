@@ -67,10 +67,14 @@ public struct NavigationProvidedView<D: NavigationDestination, P: View>: View {
             placeholder
         } else {
             #if DEBUG
-            Text("Missing Provider for \(type(of: self)).\(self)")
+            Text(message)
             #else
             EmptyView()
             #endif
         }
+    }
+    
+    private var message: String {
+        "Missing Provider for \(type(of: self)).\(self)"
     }
 }

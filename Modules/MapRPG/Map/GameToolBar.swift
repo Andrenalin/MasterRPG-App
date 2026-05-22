@@ -236,7 +236,7 @@ struct GameToolBar: View {
     @Previewable var editController: EditController = .preview
     @Previewable var editorModel = MapEditorModel(
         map: .empty,
-        image: AKImage(systemName: "photo")!,
+        image: AKImage(),
         photoDegrees: 0,
         containerSize: CGSize(width: 400, height: 600),
         mapMode: .gameMaster
