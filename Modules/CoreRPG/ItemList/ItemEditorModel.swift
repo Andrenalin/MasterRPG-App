@@ -19,7 +19,7 @@ public final class ItemEditorModel: Sendable {
     
     public var cacheItemListModel: CacheItemListModel = CacheItemListModel()
 
-    @ObservationIgnored var undoManaged: UndoManaged<ModelType?>
+    @ObservationIgnored public var undoManaged: UndoManaged<ModelType?>
 
     func reset() {
         if undoManaged.value != nil {

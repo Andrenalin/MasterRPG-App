@@ -18,9 +18,12 @@ final class EditToolBarModel {
     var mapModel: MapModel?
     var pinScale: CGFloat = 1
     var hexScale: Double = 1
-    
+
     var hideCloseButton: Bool = false
-    
+
+    var saveAction: (() -> Void)?
+    var cancelAction: (() -> Void)?
+
     var displayMode: MapDisplayMode = .master
     func toggleDisplayMode() {
         displayMode =
@@ -147,6 +150,9 @@ struct EditToolBarViewModifier: ViewModifier {
 
 #if !os(macOS)
                 ToolbarItem(placement: bottomBarPlacement) {
+                    cancelButtonView
+                }
+                ToolbarItem(placement: bottomBarPlacement) {
                     closeButtonView
                 }
 #endif
@@ -208,11 +214,25 @@ private extension EditToolBarViewModifier {
     @ViewBuilder var closeButtonView: some View {
         if !model.hideCloseButton {
             Button {
+                model.saveAction?()
                 dismiss()
             } label: {
                 let symbolName = "checkmark"
                 Image(systemName: symbolName)
-                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Close")
+                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Save")
+            }
+        }
+    }
+
+    @ViewBuilder var cancelButtonView: some View {
+        if !model.hideCloseButton, model.cancelAction != nil {
+            Button(role: .destructive) {
+                model.cancelAction?()
+                dismiss()
+            } label: {
+                let symbolName = "xmark"
+                Image(systemName: symbolName)
+                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Cancel")
             }
         }
     }

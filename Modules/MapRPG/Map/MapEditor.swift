@@ -10,39 +10,40 @@ struct MapEditor: View {
         self.image = image
         self.photoDegrees = photoDegrees
         self.map = map
-        self.toolBarModel = EditToolBarModel(mapModel: map, pinScale: map.pinScale, hexScale: map.hexMapScale, hideCloseButton: false)
+        self._toolBarModel = State(wrappedValue: EditToolBarModel(mapModel: map, pinScale: map.pinScale, hexScale: map.hexMapScale, hideCloseButton: false))
         self.viewMode = viewMode
         self.tile = tile
         self.isPinEdit = isPinEdit
         self.containerSize = containerSize
         self.closeAction = closeAction
-        
-        toolBarModel.displayMode = viewMode
-        self._viewModel = State(wrappedValue: MapEditorViewModel(map: map, image: image, photoDegrees: photoDegrees, containerSize: containerSize))
+        self.mapEditController = MapEditController(editController: editController)
+
+        self._viewModel = State(wrappedValue: MapEditorModel(map: map, image: image, photoDegrees: photoDegrees, containerSize: containerSize))
     }
-    
+
     let editController: EditController
     let image: AKImage
     let photoDegrees: Double
     let map: MapModel
-    let toolBarModel: EditToolBarModel
     let viewMode: MapDisplayMode
     let tile: MapEntryModel?
     let isPinEdit: Bool
     let containerSize: CGSize
     let closeAction: (() -> Void)?
-    
-    @State private var viewModel: MapEditorViewModel
-    
+    let mapEditController: MapEditController
+
+    @State private var toolBarModel: EditToolBarModel
+    @State private var viewModel: MapEditorModel
+
     @Environment(\.colorScheme) private var colorScheme
     @Environment(MapRootModel.self) private var root
     @Environment(DropPinModel.self) private var dropPinModel
-    
+
     var body: some View {
         ManagedNavigationStack(name: "MapEditor") { navigator in
             ZStack(alignment: .topLeading) {
                 Color.clear
-                
+
                 Image(akImage: image)
                     .overlay(alignment: .topLeading) {
                         overlayMap
@@ -66,16 +67,19 @@ struct MapEditor: View {
                 viewModel.changeImage(map: map, hexScale: &toolBarModel.hexScale, pinScale: &toolBarModel.pinScale)
             }
             .onChange(of: editController.sheetEditorModel.entryId, initial: true) {
-                viewModel.changeMap(map: map, currentEntryId: editController.sheetEditorModel.entryId, editController: editController)
+                mapEditController.changeMap(
+                    map: map,
+                    currentEntryId: editController.sheetEditorModel.entryId,
+                    editorModel: viewModel
+                )
             }
             .onChange(of: map.mapPins) {
                 viewModel.resetPlayerAndPins(newPins: map.mapPins, map: map, pinScale: toolBarModel.pinScale)
+                mapEditController.mergeExternalPins(newMap: map, editorModel: viewModel)
             }
             .onChange(of: map.entries) {
                 viewModel.resetEntries(newEntries: map.entries, map: map)
-            }
-            .onChange(of: viewModel.pins.mapPins) {
-                viewModel.resetPinsToMap(pins: viewModel.pins.mapPins, map: map, editController: editController)
+                mapEditController.mergeExternalEntries(newMap: map, editorModel: viewModel)
             }
             .onChange(of: toolBarModel.hexScale) {
                 guard toolBarModel.hexScale != 0 && toolBarModel.hexScale != map.hexMapScale else { return }
@@ -89,12 +93,17 @@ struct MapEditor: View {
             }
             .onAppear {
                 viewModel.firstAppear(map: map)
-            }
-            .onDisappear() {
-                viewModel.saveChanges(map: map, pinScale: toolBarModel.pinScale, editController: editController)
+                toolBarModel.displayMode = viewMode
+                mapEditController.prepareWorkingCopy(from: map, editorModel: viewModel)
+                toolBarModel.saveAction = {
+                    mapEditController.commitChanges(editorModel: viewModel, pinScale: toolBarModel.pinScale)
+                }
+                toolBarModel.cancelAction = {
+                    mapEditController.discardChanges(editorModel: viewModel)
+                }
             }
             .modifier(EditToolBarViewModifier(editController: editController, model: toolBarModel))
-       }
+        }
     }
 }
 
@@ -103,47 +112,47 @@ private extension MapEditor {
         ZStack(alignment: .topLeading) {
             drawEntryViews(isShowing: true)
             drawEntryViews(isShowing: false)
-            
+
             if let editEntry = viewModel.editEntries.entries.first {
                 drawEntryView(entries: viewModel.editEntries, entry: editEntry)
             }
-            
+
             drawPins
-            
+
             if let scalePinId = viewModel.pins.isExpandedId {
                 drawPin(id: scalePinId)
             }
-            
+
             if toolBarModel.displayMode == .master || toolBarModel.displayMode == .reader {
                 drawEntryPins()
             }
-            
+
             if let magnifyPoint = viewModel.editEntries.selectedNeedleCoordinate {
                 drawCrosshair(location: magnifyPoint)
                     .zIndex(500)
             }
         }
     }
-    
+
     @ViewBuilder
     var backColor: some View {
         colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea()
     }
-    
+
     var loupeSize: CGFloat {
         12 / MapEditorGeometry.imageSize(image, degrees: photoDegrees).width
     }
 
     func dropPin() {
         guard !dropPinModel.items.isEmpty else { return }
-        
-        viewModel.dropPin(
+
+        mapEditController.dropPin(
             at: dropPinModel.point,
             map: map,
             monsters: dropPinModel.items,
-            editController: editController
+            editorModel: viewModel
         )
-        
+
         dropPinModel.items = []
         dropPinModel.isTarget = false
     }
@@ -154,11 +163,11 @@ private extension MapEditor {
 extension MapEditor {
     @ViewBuilder
     func drawEntryViews(isShowing: Bool) -> some View {
-        ForEach(viewModel.entries.entries.filter { $0.isShown == isShowing && $0.id != viewModel.editEntries.entries.first?.id }) {  entry in
+        ForEach(viewModel.entries.entries.filter { $0.isShown == isShowing && $0.id != viewModel.editEntries.entries.first?.id }) { entry in
             drawEntryView(entries: viewModel.entries, entry: entry)
         }
     }
-    
+
     func drawEntryView(entries: MapEntryViewerModel, entry: MapEntryModel) -> some View {
         MapEntryViewer(model: entries, entryId: entry.id, displayMode: toolBarModel.displayMode, displayConfig: map.displayConfig, activateGestures: toolBarModel.displayMode == .master && viewModel.editEntries.entries.isEmpty) {
             viewModel.editEntries.addedNewNeedlePoint = nil
@@ -188,35 +197,26 @@ extension MapEditor {
             drawPin(id: pin.id)
         }
     }
-    
+
     @ViewBuilder
     func drawPin(id: UUID) -> some View {
         if let pin = viewModel.pins.pinPointer(for: id) {
             let scaleFact: CGFloat = viewModel.pins.isExpandedId == id ? 4.0 : 1.0
             let pinSize = pin.size.size * toolBarModel.pinScale * scaleFact
             let location: CGPoint = (pin.location) - (pinSize / CGFloat(2.0))
-            
+
             MapPinActionView(model: viewModel.pins, pinId: id, layoutDown: true, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
-                    guard var updatedPin = viewModel.pins.pinPointer(for: pin.id) else { return }
-                    updatedPin.isShown.toggle()
-                    viewModel.pins.setPinPointer(updatedPin: updatedPin)
-
-                    guard let model = editController.editModel(for: map.id) else { return }
-                    model.setPinPointer(updatedPin: updatedPin)
-                    editController.save(updated: model, message: String(localized: "toggle pin visibility", bundle: .module).localizedString)
+                mapEditController.togglePinVisibility(pinId: pin.id, editorModel: viewModel)
             } dragEndAction: {
-                    guard let updatedPin = viewModel.pins.pinPointer(for: pin.id) else { return }
-
-                    guard let model = editController.editModel(for: map.id) else { return }
-                    model.setPinPointer(updatedPin: updatedPin)
-                    editController.save(updated: model, message: String(localized: "move pin", bundle: .module).localizedString)
+                guard let updatedPin = viewModel.pins.pinPointer(for: pin.id) else { return }
+                mapEditController.updatePinMove(pin: updatedPin, editorModel: viewModel)
             }
             .equatable()
             .opacity(toolBarModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
             .offset(x: location.x, y: location.y)
         }
     }
-    
+
     func borderColorForPin(position: MapPinModel) -> Color {
         if position.location != map.mapPins.first(where: { $0.id == position.id })?.location {
             return .red
@@ -232,7 +232,7 @@ private extension MapEditor {
     func drawEntryPins() -> some View {
         if let entry = viewModel.editEntries.entries.first {
             ForEach(entry.coordinates.indexed(), id: \.index) { (index, point) in
-                NeedleMapPin(entries: viewModel.editEntries, entryId: entry.id, index: index, map: map)
+                NeedleMapPin(entries: viewModel.editEntries, entryId: entry.id, index: index, map: map, mapEditController: mapEditController)
                     .offset(x: point.x - 22, y: point.y - 110)
             }
         }
@@ -314,35 +314,35 @@ private extension MapEditor {
     func pressAction(_ value: DragGesture.Value) {
         viewModel.pressAction(value)
     }
-    
+
     func releaseAction(_ value: DragGesture.Value) {
         let hasEditableEntry = tile != nil || !viewModel.editEntries.entries.isEmpty
-        viewModel.releaseAction(value, map: map, editController: editController, hasEditableEntry: hasEditableEntry)
+        mapEditController.releaseAction(value, map: map, editorModel: viewModel, hasEditableEntry: hasEditableEntry)
     }
-    
+
     func longPressAction(_ value: DragGesture.Value) {}
-    
+
     func doubleTapAction(_ value: DragGesture.Value) {
         viewModel.onDoubleTapped(with: value.location)
     }
-    
+
     func dragStartAction(_ value: DragGesture.Value) {
         viewModel.dragStartAction(value)
     }
-    
+
     func dragAction(_ value: DragGesture.Value) {
         viewModel.dragAction(value)
     }
-    
+
     func dragEndAction(_: DragGesture.Value) {
         viewModel.dragEndAction()
     }
-    
+
     func endAction(_: DragGesture.Value) {
         viewModel.endAction()
     }
 #endif
-    
+
     func magnifierAction(_ value: CGFloat, isFirst: Bool) {
         viewModel.updateScale(value, updateLast: isFirst)
     }
@@ -350,7 +350,7 @@ private extension MapEditor {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(MapRootModel.self) var root
-    
+
     Group {
 #if os(macOS)
         MapEditor(editController: root.editController, image: AKImage(named: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))

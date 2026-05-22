@@ -63,4 +63,8 @@ public final class UndoManaged<T> {
     public var canRedo: Bool {
         !redoStack.isEmpty
     }
+
+    public var undoDepth: Int {
+        undoTitles.count
+    }
 }

@@ -8,12 +8,12 @@ struct NeedleMapPin: View {
     let entryId: UUID
     let index: Int
     let map: MapModel
-    
+    let mapEditController: MapEditController
+
     @Namespace var glassNamespace
-    
+
     @GestureState private var isDragging = false
     @State private var isDraggingStarts = false
-    @Environment(MapRootModel.self) private var root
     
     var coordinate: CGPoint {
         let entry = entries.entry(entryId)
@@ -114,33 +114,13 @@ struct NeedleMapPin: View {
         
     func addPin() {
         withAnimation(.bouncy) {
-            var updatedEntry = entries.entry(entryId)
-            let next = index + 1 < updatedEntry.coordinates.count ? index + 1 : 0
-            var nextPoint = updatedEntry.coordinates[next]
-            if next == 0 {
-                nextPoint = nextPoint + CGPoint(x: 50, y: 50)
-            } else {
-                nextPoint = nextPoint - (nextPoint - updatedEntry.coordinates[index]) / 2
-            }
-            updatedEntry.coordinates.insert(nextPoint, at: next)
-
-            guard let mapModel = root.editController.editModel(for: map.id) else { return }
-            mapModel[updatedEntry.id] = updatedEntry
-            root.editController.save(updated: mapModel, message: String(localized: "add needle point", bundle: .module).localizedString)
+            mapEditController.addNeedlePoint(at: index, entryId: entryId, entries: entries, map: map)
         }
     }
-    
+
     func removePin() {
         withAnimation(.bouncy) {
-            entries.selectedNeedleIndex = nil
-            var updatedEntry = entries.entry(entryId)
-            if index >= 0 && index < updatedEntry.coordinates.count {
-                updatedEntry.coordinates.remove(at: index)
-
-                guard let mapModel = root.editController.editModel(for: map.id) else { return }
-                mapModel[updatedEntry.id] = updatedEntry
-                root.editController.save(updated: mapModel, message: String(localized: "remove needle point", bundle: .module).localizedString)
-            }
+            mapEditController.removeNeedlePoint(at: index, entryId: entryId, entries: entries, map: map)
         }
     }
     
@@ -161,9 +141,7 @@ struct NeedleMapPin: View {
     }
     
     func updateCoordinate() {
-        guard let mapModel = root.editController.editModel(for: map.id) else { return }
-        mapModel[entryId] = entries.entry(entryId)
-        root.editController.save(updated: mapModel, message: String(localized: "move needle point", bundle: .module).localizedString)
+        mapEditController.updateNeedleCoordinate(entryId: entryId, entries: entries, map: map)
     }
     
     var combinedGesture: some Gesture {
@@ -277,10 +255,11 @@ enum NeedleMapPinButtonType: String {
 #Preview(traits: .mockData) {
     @Previewable @Environment(MapRootModel.self) var root
     @Previewable var entries = MapEntryViewerModel(mapId: MapModel.previewId, entries: [.empty(MapModel.previewId)])
+    let mapEditController = MapEditController(editController: root.editController)
 
     VStack {
         ForEach(entries.entries[0].coordinates.indexed(), id: \.index) { (index, point) in
-            NeedleMapPin(entries: entries, entryId: MapModel.previewId, index: index, map: MapModel.preview)
+            NeedleMapPin(entries: entries, entryId: MapModel.previewId, index: index, map: MapModel.preview, mapEditController: mapEditController)
                 .offset(x: entries.entries[0].coordinates[index].x, y: entries.entries[0].coordinates[index].y)
         }
         Spacer()
