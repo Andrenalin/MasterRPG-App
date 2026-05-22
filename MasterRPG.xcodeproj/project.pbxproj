@@ -1504,6 +1504,7 @@
 		8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSection.swift; sourceTree = "<group>"; };
 		8E5104E82BD2413900F10E87 /* SharingInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingInput.swift; sourceTree = "<group>"; };
 		8E5104EC2BD2440300F10E87 /* ItemProviderImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemProviderImporter.swift; sourceTree = "<group>"; };
+		8E5CD1A62FC08C6400BA2067 /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
 		8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		8E6761E52A04B58F001AAE0E /* LinkWindowCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkWindowCommands.swift; sourceTree = "<group>"; };
 		8E6A8A9C2F6E538E00149E06 /* WindowVisionList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowVisionList.swift; sourceTree = "<group>"; };
@@ -2135,6 +2136,7 @@
 		8EC4E46028DDA29600D0279F = {
 			isa = PBXGroup;
 			children = (
+				8E5CD1A62FC08C6400BA2067 /* CLAUDE.md */,
 				8E8EEC3E2CD8EC3A0010A25B /* Modules */,
 				8EC4E48A28DDAAF300D0279F /* Resources */,
 				8EC4E47C28DDAAF300D0279F /* Sources */,

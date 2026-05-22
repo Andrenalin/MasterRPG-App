@@ -5,74 +5,31 @@ import PhotoRPG
 import SwiftUI
 import CharacterRPG
 
-@Observable
-final class EditToolBarModel {
-    init(mapModel: MapModel, pinScale: CGFloat = 1, hexScale: Double = 1, hideCloseButton: Bool = false, displayMode: MapDisplayMode = .master) {
-        self.mapModel = mapModel
-        self.pinScale = pinScale
-        self.hexScale = hexScale
-        self.hideCloseButton = hideCloseButton
-        self.displayMode = displayMode
-    }
-    
-    var mapModel: MapModel?
-    var pinScale: CGFloat = 1
-    var hexScale: Double = 1
-
-    var hideCloseButton: Bool = false
-
-    var saveAction: (() -> Void)?
-    var cancelAction: (() -> Void)?
-    var addMonstersAction: ((_ entryId: UUID?, _ monsters: [ItemRowModel]) -> Void)?
-    var toggleHexAction: (() -> Void)?
-    var updateHexScaleAction: ((_ scale: Double) -> Void)?
-
-    var isHexMap: Bool = false
-
-    var displayMode: MapDisplayMode = .master
-    func toggleDisplayMode() {
-        displayMode =
-        switch displayMode {
-        case .master: .player
-        case .player: .reader
-        case .reader: .master
-        }
-    }
-    var iconDisplaMode: String {
-        switch displayMode {
-        case .master: "rectangle.3.offgrid.fill"
-        case .player: "rectangle.lefthalf.inset.filled"
-        case .reader: "rectangle.3.offgrid"
-        }
-    }
-}
-
 struct EditToolBarViewModifier: ViewModifier {
-    let editController: EditController
-    let model: EditToolBarModel
-    
+    let mapEditController: MapEditController
+    let editorModel: MapEditorModel
+
     @Environment(\.dismiss) private var dismiss
     @Environment(ScenesManager.self) private var sceneManager
     @Environment(MapRootModel.self) private var root
-    
+
     @State private var hideScales: Bool = true
     @State private var showPinSelection: Bool = false
-    
-    @State private var pinScale: CGFloat = 1
-    @State private var hexScale: Double = 1
-    
+
     @State private var selectedPin: ItemSelectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: true)
-    
+
     @Namespace private var pinSpace
-    
+
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .bottom) {
                 GlassEffectContainerView {
                     VStack(spacing: 8) {
-                        pinScaleView
-                        
-                        hexMapScaleView
+                        PinScaleView(model: editorModel)
+
+                        HexMapScaleView(model: editorModel) { scale in
+                            mapEditController.updateHexScale(scale, editorModel: editorModel)
+                        }
                     }
                     .padding()
                     #if !os(visionOS)
@@ -93,17 +50,13 @@ struct EditToolBarViewModifier: ViewModifier {
 #endif
                 }
             }
-            .onChange(of: model.pinScale, initial: true) {
-                pinScale <=> model.pinScale
-            }
-            .onChange(of: model.hexScale, initial: true) {
-                hexScale <=> model.hexScale
-            }
-            .onChange(of: showPinSelection, initial: false) {
-                guard !showPinSelection, !selectedPin.selection.isEmpty else { return }
-                let entryId = editController.sheetEditorModel.entryId
+            .onChange(of: showPinSelection, initial: false) { _, newValue in
+                guard !newValue, !selectedPin.selection.isEmpty else { return }
+                let entryId = mapEditController.editController.sheetEditorModel.entryId
                 let monsters = selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }
-                withAnimation { model.addMonstersAction?(entryId, monsters) }
+                withAnimation {
+                    mapEditController.addMonsters(entryId: entryId, location: nil, monsters: monsters, number: 1, editorModel: editorModel)
+                }
                 selectedPin.resetSelection(itemId: nil, entryId: nil)
             }
         #if os(macOS)
@@ -116,7 +69,7 @@ struct EditToolBarViewModifier: ViewModifier {
                 ToolbarItem(placement: .confirmationAction) {
                     nextEntryButton
                 }
-                
+
 #if os(macOS)
                 ToolbarSpacer(.fixed, placement: bottomBarPlacement)
 #else
@@ -124,21 +77,21 @@ struct EditToolBarViewModifier: ViewModifier {
                     Text(titlename)
                         .foregroundStyle(.white)
                 }
-                
+
                 ToolbarItem(placement: subtitlePlacement) {
                     Text(subtitleName)
                         .foregroundStyle(.white)
                 }
 #endif
-                
+
                 ToolbarItem(placement: bottomBarPlacement) {
                     hideScaleButton
                 }
-                
+
 #if !os(visionOS) && !os(tvOS)
                 ToolbarSpacer(.fixed, placement: bottomBarPlacement)
 #endif
-                
+
                 ToolbarItemGroup(placement: bottomBarPlacement) {
                     undoButton
                     redoButton
@@ -149,7 +102,7 @@ struct EditToolBarViewModifier: ViewModifier {
                     showPinSelectionButton
                         .matchedTransitionSource(id: "pin", in: pinSpace)
                 }
-                
+
 #if !os(visionOS) && !os(tvOS)
                 ToolbarSpacer(.flexible, placement: bottomBarPlacement)
 #endif
@@ -174,28 +127,29 @@ private extension EditToolBarViewModifier {
         80
 #endif
     }
-    
+
+    var editController: EditController { mapEditController.editController }
+
     var navTitle: String {
         guard editController.sheetEditorModel.entryId != nil else { return titlename }
         return subtitleName
     }
-    
+
     var titlename: String {
-        model.mapModel?.name ?? "Untitled"
+        editorModel.workingCopy?.name ?? "Untitled"
     }
-    
+
     var subtitleName: String {
-        guard let mapModel = model.mapModel else { return "" }
-        guard let entryId = editController.sheetEditorModel.entryId else { return "\(editController.editEntries(for: mapModel).count) Entries" }
-        let current: String
-        if let currentIndex {
-            current = "\(currentIndex + 1)/"
-        } else {
-            current = ""
+        guard let mapModel = editorModel.workingCopy else { return "" }
+        let entries = editController.editEntries(for: mapModel)
+        guard let entryId = editController.sheetEditorModel.entryId else {
+            return "\(entries.count) Entries"
         }
-        return "\(mapModel[entryId].name) \(current)\(editController.editEntries(for: mapModel).count)"
+        let current = entries.firstIndex(where: { $0.id == entryId })
+            .map { "\($0 + 1)/" } ?? ""
+        return "\(mapModel[entryId].name) \(current)\(entries.count)"
     }
-    
+
     @ViewBuilder var nextEntryButton: some View {
         Button {
             resetSelectedIndex(shouldIncrease: true)
@@ -218,9 +172,9 @@ private extension EditToolBarViewModifier {
     }
 
     @ViewBuilder var closeButtonView: some View {
-        if !model.hideCloseButton {
+        if !editorModel.hideCloseButton {
             Button {
-                model.saveAction?()
+                mapEditController.commitChanges(editorModel: editorModel)
                 dismiss()
             } label: {
                 let symbolName = "checkmark"
@@ -231,9 +185,9 @@ private extension EditToolBarViewModifier {
     }
 
     @ViewBuilder var cancelButtonView: some View {
-        if !model.hideCloseButton, model.cancelAction != nil {
+        if !editorModel.hideCloseButton {
             Button(role: .destructive) {
-                model.cancelAction?()
+                mapEditController.discardChanges(editorModel: editorModel)
                 dismiss()
             } label: {
                 let symbolName = "xmark"
@@ -260,21 +214,24 @@ private extension EditToolBarViewModifier {
 
     @ViewBuilder var toggleDisplayModeButton: some View {
         Button {
-            withAnimation { model.toggleDisplayMode() }
+            withAnimation { editorModel.toggleDisplayMode() }
         } label: {
-            Image(systemName: model.iconDisplaMode)
+            Image(systemName: editorModel.iconDisplayMode)
                 .contentTransition(.symbolEffect(.replace.byLayer))
-                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: model.iconDisplaMode) ?? "Display mode")
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: editorModel.iconDisplayMode) ?? "Display mode")
+                .accessibilityValue(editorModel.displayMode == .master ? "Master" :
+                                   editorModel.displayMode == .player ? "Player" : "Reader")
         }
     }
 
     @ViewBuilder var hideScaleButton: some View {
-        if !model.hideCloseButton {
+        if !editorModel.hideCloseButton {
             Button {
                 hideScales.toggle()
             } label: {
-                let symbolName = "square.arrowtriangle.4.outward"
+                let symbolName = (hideScales == true) ? ("square.bottomhalf.filled") : ("square.split.1x2.fill")
                 Image(systemName: symbolName)
+                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
                     .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Toggle scales")
             }
         }
@@ -283,11 +240,11 @@ private extension EditToolBarViewModifier {
     @ViewBuilder var hexCreationButton: some View {
         Button {
             withAnimation {
-                model.toggleHexAction?()
-                withAnimation { hideScales <=> false }
+                mapEditController.toggleHexMap(editorModel: editorModel)
+                hideScales = false
             }
         } label: {
-            let symbolName = model.isHexMap ? "hexagon.fill" : "hexagon"
+            let symbolName = editorModel.isHexMap ? "hexagon.fill" : "hexagon"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Hex map")
@@ -315,85 +272,47 @@ private extension EditToolBarViewModifier {
         }
         .disabled(!editController.canRedo)
     }
-    
-    @ViewBuilder var pinScaleView: some View {
-        @Bindable var model = model
-        HStack {
-#if !os(tvOS)
-            Text("Pin Scale", bundle: .module)
-                .foregroundStyle(.white)
-            
-            Slider(value: $pinScale, in: 0.5 ... 3.5) {
-                Text("Pin Scale", bundle: .module)
-            }
-            .onChange(of: pinScale) {
-                model.pinScale = pinScale
-            }
-            .labelsHidden()
-#endif
-        }
-        .opacity(model.hideCloseButton ? 0 : 1)
-    }
-    
-    @ViewBuilder var hexMapScaleView: some View {
-        @Bindable var model = model
-        HStack {
-#if !os(tvOS)
-            Text("Hex Scale", bundle: .module)
-                .foregroundStyle(.white)
-            
-            Slider(value: $hexScale, in: 20 ... 200) {
-                Text("Hex Scale", bundle: .module)
-            }
-            .onChange(of: hexScale) {
-                model.updateHexScaleAction?(hexScale)
-            }
-            .labelsHidden()
-#endif
-        }
-        .opacity(model.hideCloseButton ? 0 : 1)
-    }
-    
+
     func resetSelectedIndex(shouldIncrease: Bool) {
-        guard let mapModel = model.mapModel else { return }
+        guard let mapModel = editorModel.workingCopy else { return }
         if shouldIncrease && !canIncrease {
             let entryId = editController.addNewEntry(itemId: mapModel.id)
             withAnimation { editController.sheetEditorModel.entryId = entryId }
             return
         }
-        
+
+        let entries = editController.editEntries(for: mapModel)
         guard editController.sheetEditorModel.entryId != nil else {
-            
-            if let first = editController.editEntries(for: mapModel).first {
+            if let first = entries.first {
                 withAnimation { editController.sheetEditorModel.entryId = first.id }
             }
             return
         }
         guard let index = currentIndex else { return }
-        
+
         let nextIndex = shouldIncrease ? index.advanced(by: 1) : index.advanced(by: -1)
-        if nextIndex >= 0 && nextIndex < editController.editEntries(for: mapModel).count {
-            withAnimation { editController.sheetEditorModel.entryId = editController.editEntries(for: mapModel)[nextIndex].id }
+        if nextIndex >= 0 && nextIndex < entries.count {
+            withAnimation { editController.sheetEditorModel.entryId = entries[nextIndex].id }
         }
     }
-    
+
     var canIncrease: Bool {
-        guard let mapModel = model.mapModel else { return false }
+        guard let mapModel = editorModel.workingCopy else { return false }
         guard editController.sheetEditorModel.entryId != nil else {
             return !editController.editEntries(for: mapModel).isEmpty
         }
-        
+
         guard let index = currentIndex else { return false }
-        
+
         return index + 1 < editController.editEntries(for: mapModel).count
     }
-    
+
     var currentIndex: Int? {
-        guard let mapModel = model.mapModel else { return nil }
+        guard let mapModel = editorModel.workingCopy else { return nil }
         guard let entryId = editController.sheetEditorModel.entryId else { return nil }
         return editController.editEntries(for: mapModel).firstIndex(where: { $0.id == entryId })
     }
-    
+
     var bottomBarPlacement: ToolbarItemPlacement {
 #if os(macOS)
         .automatic
@@ -401,7 +320,7 @@ private extension EditToolBarViewModifier {
         .bottomBar
 #endif
     }
-    
+
     var titlePlacement: ToolbarItemPlacement {
 #if os(iOS)
         .title
@@ -409,7 +328,7 @@ private extension EditToolBarViewModifier {
         .automatic
 #endif
     }
-    
+
     var subtitlePlacement: ToolbarItemPlacement {
 #if os(iOS)
         .subtitle
@@ -419,14 +338,64 @@ private extension EditToolBarViewModifier {
     }
 }
 
+private struct PinScaleView: View {
+    @Bindable var model: MapEditorModel
+
+    var body: some View {
+        HStack {
+#if !os(tvOS)
+            Text("Pin Scale", bundle: .module)
+                .foregroundStyle(.white)
+            Slider(value: $model.pinScale, in: 0.5 ... 3.5) {
+                Text("Pin Scale", bundle: .module)
+            }
+            .accessibilityValue(String(format: "%.1f×", model.pinScale))
+            .labelsHidden()
+#endif
+        }
+        .opacity(model.hideCloseButton ? 0 : 1)
+    }
+}
+
+private struct HexMapScaleView: View {
+    @Bindable var model: MapEditorModel
+    let onScaleChanged: (Double) -> Void
+
+    var body: some View {
+        HStack {
+#if !os(tvOS)
+            Text("Hex Scale", bundle: .module)
+                .foregroundStyle(.white)
+            Slider(value: $model.hexScale, in: 20 ... 200) {
+                Text("Hex Scale", bundle: .module)
+            }
+            .onChange(of: model.hexScale) {
+                onScaleChanged(model.hexScale)
+            }
+            .accessibilityValue(String(format: "%.0f", model.hexScale))
+            .labelsHidden()
+#endif
+        }
+        .opacity(model.hideCloseButton ? 0 : 1)
+    }
+}
+
 #Preview("New Modifier") {
-    @Previewable var model = EditToolBarModel(mapModel: .empty)
     @Previewable var editController: EditController = .preview
-    
+    @Previewable var editorModel = MapEditorModel(
+        map: .empty,
+        image: AKImage(systemName: "photo")!,
+        photoDegrees: 0,
+        containerSize: CGSize(width: 400, height: 600)
+    )
+
     NavigationStack {
         VStack {
             Rectangle().fill(Color.green.gradient).ignoresSafeArea()
         }
-        .modifier(EditToolBarViewModifier(editController: editController, model: model))
+        .modifier(EditToolBarViewModifier(
+            mapEditController: MapEditController(editController: editController),
+            editorModel: editorModel
+        ))
     }
 }

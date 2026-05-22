@@ -42,6 +42,10 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 - Module Factory builds the root model and root views
 - Domain Model mapped into the Core Data model
 
+### Controllers
+
+- **ItemController**
+
 ### Targets
 - **MasterRPG**: Main iOS/visionOS app
 - **MasterMac**: Mac app

@@ -10,7 +10,6 @@ struct MapEditor: View {
         self.image = image
         self.photoDegrees = photoDegrees
         self.map = map
-        self._toolBarModel = State(wrappedValue: EditToolBarModel(mapModel: map, pinScale: map.pinScale, hexScale: map.hexMapScale, hideCloseButton: false))
         self.viewMode = viewMode
         self.tile = tile
         self.isPinEdit = isPinEdit
@@ -18,7 +17,7 @@ struct MapEditor: View {
         self.closeAction = closeAction
         self.mapEditController = MapEditController(editController: editController)
 
-        self._viewModel = State(wrappedValue: MapEditorModel(map: map, image: image, photoDegrees: photoDegrees, containerSize: containerSize))
+        self._viewModel = State(wrappedValue: MapEditorModel(map: map, image: image, photoDegrees: photoDegrees, containerSize: containerSize, displayMode: viewMode))
     }
 
     let editController: EditController
@@ -32,7 +31,6 @@ struct MapEditor: View {
     let closeAction: (() -> Void)?
     let mapEditController: MapEditController
 
-    @State private var toolBarModel: EditToolBarModel
     @State private var viewModel: MapEditorModel
 
     @Environment(\.colorScheme) private var colorScheme
@@ -64,7 +62,7 @@ struct MapEditor: View {
             .dragTapGesture(isActive: true, pressAction: pressAction(_:), releaseAction: releaseAction(_:), longPressAction: longPressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
             .onChange(of: editController.sheetEditorModel.itemId) {
-                viewModel.changeImage(map: map, hexScale: &toolBarModel.hexScale, pinScale: &toolBarModel.pinScale)
+                viewModel.changeImage(map: map)
             }
             .onChange(of: editController.sheetEditorModel.entryId, initial: true) {
                 mapEditController.changeMap(
@@ -74,13 +72,12 @@ struct MapEditor: View {
                 )
             }
             .onChange(of: map.mapPins) {
-                viewModel.resetPlayerAndPins(newPins: map.mapPins, map: map, pinScale: toolBarModel.pinScale)
+                viewModel.resetPlayerAndPins(newPins: map.mapPins, map: map, pinScale: viewModel.pinScale)
                 mapEditController.mergeExternalPins(newMap: map, editorModel: viewModel)
             }
             .onChange(of: map.entries) {
                 viewModel.resetEntries(newEntries: map.entries, map: map)
                 mapEditController.mergeExternalEntries(newMap: map, editorModel: viewModel)
-                toolBarModel.isHexMap = mapEditController.isHexMap(editorModel: viewModel)
             }
             .onChange(of: containerSize) {
                 viewModel.updateContainerSize(containerSize)
@@ -90,29 +87,9 @@ struct MapEditor: View {
             }
             .onAppear {
                 viewModel.firstAppear(map: map)
-                toolBarModel.displayMode = viewMode
                 mapEditController.prepareWorkingCopy(from: map, editorModel: viewModel)
-                toolBarModel.isHexMap = mapEditController.isHexMap(editorModel: viewModel)
-                toolBarModel.saveAction = {
-                    mapEditController.commitChanges(editorModel: viewModel, pinScale: toolBarModel.pinScale)
-                }
-                toolBarModel.cancelAction = {
-                    mapEditController.discardChanges(editorModel: viewModel)
-                }
-                toolBarModel.addMonstersAction = { entryId, monsters in
-                    mapEditController.addMonsters(map: map, entryId: entryId, location: nil, monsters: monsters, number: 1, editorModel: viewModel)
-                }
-                toolBarModel.toggleHexAction = {
-                    mapEditController.toggleHexMap(editorModel: viewModel)
-                    toolBarModel.isHexMap = mapEditController.isHexMap(editorModel: viewModel)
-                    toolBarModel.hexScale = viewModel.workingCopy?.hexMapScale ?? toolBarModel.hexScale
-                }
-                toolBarModel.updateHexScaleAction = { scale in
-                    mapEditController.updateHexScale(scale, editorModel: viewModel)
-                    toolBarModel.isHexMap = mapEditController.isHexMap(editorModel: viewModel)
-                }
             }
-            .modifier(EditToolBarViewModifier(editController: editController, model: toolBarModel))
+            .modifier(EditToolBarViewModifier(mapEditController: mapEditController, editorModel: viewModel))
         }
     }
 }
@@ -133,7 +110,7 @@ private extension MapEditor {
                 drawPin(id: scalePinId)
             }
 
-            if toolBarModel.displayMode == .master || toolBarModel.displayMode == .reader {
+            if viewModel.displayMode == .master || viewModel.displayMode == .reader {
                 drawEntryPins()
             }
 
@@ -179,7 +156,7 @@ extension MapEditor {
     }
 
     func drawEntryView(entries: MapEntryViewerModel, entry: MapEntryModel) -> some View {
-        MapEntryViewer(entry: entry, displayMode: toolBarModel.displayMode, displayConfig: map.displayConfig, activateGestures: toolBarModel.displayMode == .master && viewModel.editEntries.entries.isEmpty) {
+        MapEntryViewer(entry: entry, displayMode: viewModel.displayMode, displayConfig: map.displayConfig, activateGestures: viewModel.displayMode == .master && viewModel.editEntries.entries.isEmpty) {
             viewModel.editEntries.addedNewNeedlePoint = nil
             viewModel.editEntries.eaten = true
 
@@ -207,7 +184,7 @@ extension MapEditor {
 
 extension MapEditor {
     var drawPins: some View {
-        ForEach(viewModel.pins.mapPins.filter({ $0.id != viewModel.pins.isExpandedId && (toolBarModel.displayMode != .player || $0.isShown) })) { pin in
+        ForEach(viewModel.pins.mapPins.filter({ $0.id != viewModel.pins.isExpandedId && (viewModel.displayMode != .player || $0.isShown) })) { pin in
             drawPin(id: pin.id)
         }
     }
@@ -216,7 +193,7 @@ extension MapEditor {
     func drawPin(id: UUID) -> some View {
         if let pin = viewModel.pins.pinPointer(for: id) {
             let scaleFact: CGFloat = viewModel.pins.isExpandedId == id ? 4.0 : 1.0
-            let pinSize = pin.size.size * toolBarModel.pinScale * scaleFact
+            let pinSize = pin.size.size * viewModel.pinScale * scaleFact
             let location: CGPoint = (pin.location) - (pinSize / CGFloat(2.0))
 
             MapPinActionView(model: viewModel.pins, pinId: id, layoutDown: true, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
@@ -226,7 +203,7 @@ extension MapEditor {
                 mapEditController.updatePinMove(pin: updatedPin, editorModel: viewModel)
             }
             .equatable()
-            .opacity(toolBarModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
+            .opacity(viewModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
             .offset(x: location.x, y: location.y)
         }
     }

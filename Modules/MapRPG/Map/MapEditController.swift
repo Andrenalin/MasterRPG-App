@@ -16,16 +16,17 @@ extension MapEditController {
     func prepareWorkingCopy(from map: MapModel, editorModel: MapEditorModel) {
         editorModel.workingCopy = map.copy()
         editorModel.undoDepthAtOpen = editController.editorModel.undoManaged.undoDepth
+        editorModel.isHexMap = editorModel.workingCopy?.entries.contains(where: { $0.isHexGrid }) ?? false
     }
 
     @MainActor
-    func commitChanges(editorModel: MapEditorModel, pinScale: CGFloat) {
+    func commitChanges(editorModel: MapEditorModel) {
         guard let copy = editorModel.workingCopy else { return }
         // Flush any in-progress entry edit into the working copy before saving
         for entry in editorModel.editEntries.entries {
             copy[entry.id] = entry
         }
-        copy.pinScale = pinScale
+        copy.pinScale = editorModel.pinScale
         copy.mapPins = editorModel.pins.mapPins
         editController.save(
             updated: copy,
@@ -183,7 +184,7 @@ extension MapEditController {
         let entry = editorModel.entry(for: location, in: map)
 
         withAnimation(.bouncy) {
-            addMonsters(map: copy, entryId: entry?.id, location: location, monsters: monsters, number: 1, editorModel: editorModel)
+            addMonsters(entryId: entry?.id, location: location, monsters: monsters, number: 1, editorModel: editorModel)
         }
     }
 }
@@ -192,7 +193,7 @@ extension MapEditController {
 
 extension MapEditController {
     @MainActor
-    func addMonsters(map: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int, editorModel: MapEditorModel) {
+    func addMonsters(entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int, editorModel: MapEditorModel) {
         guard let copy = editorModel.workingCopy else { return }
 
         let pinCount = min(max(1, number), 25)
@@ -257,6 +258,8 @@ extension MapEditController {
             replaceHexGrid(entries: calculateGrid(for: scale, in: CGRect(origin: .zero, size: CGSize(width: copy.width, height: copy.height))), in: copy)
         }
         syncDisplayEntries(from: copy, editorModel: editorModel)
+        editorModel.isHexMap = copy.entries.contains(where: { $0.isHexGrid })
+        editorModel.hexScale = copy.hexMapScale
     }
 
     @MainActor
@@ -265,6 +268,7 @@ extension MapEditController {
         copy.hexMapScale = scale
         replaceHexGrid(entries: calculateGrid(for: scale, in: CGRect(origin: .zero, size: CGSize(width: copy.width, height: copy.height))), in: copy)
         syncDisplayEntries(from: copy, editorModel: editorModel)
+        editorModel.isHexMap = copy.entries.contains(where: { $0.isHexGrid })
     }
 
     @MainActor

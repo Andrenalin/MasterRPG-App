@@ -19,6 +19,30 @@ final class MapEditorModel {
     var workingCopy: MapModel?
     var undoDepthAtOpen: Int = 0
 
+    // MARK: - Toolbar State (merged from EditToolBarModel)
+
+    var pinScale: CGFloat
+    var hexScale: Double
+    var isHexMap: Bool = false
+    var displayMode: MapDisplayMode = .master
+    var hideCloseButton: Bool = false
+
+    var iconDisplayMode: String {
+        switch displayMode {
+        case .master: "rectangle.3.offgrid.fill"
+        case .player: "rectangle.lefthalf.inset.filled"
+        case .reader: "rectangle.3.offgrid"
+        }
+    }
+
+    func toggleDisplayMode() {
+        displayMode = switch displayMode {
+        case .master: .player
+        case .player: .reader
+        case .reader: .master
+        }
+    }
+
     enum DraggingType: Hashable {
         case nothing
         case image
@@ -35,10 +59,13 @@ final class MapEditorModel {
 
     // MARK: - Initialization
 
-    init(map: MapModel, image: AKImage, photoDegrees: Double, containerSize: CGSize) {
+    init(map: MapModel, image: AKImage, photoDegrees: Double, containerSize: CGSize, displayMode: MapDisplayMode = .master) {
         self.image = image
         self.photoDegrees = photoDegrees
         self.containerSize = containerSize
+        self.pinScale = map.pinScale
+        self.hexScale = map.hexMapScale
+        self.displayMode = displayMode
 
         self.imageModel = ImageViewerModel(offset: .zero, scale: 1)
         self.pins = MapPinViewModel(mapPins: map.mapPins, pointer: .empty)
@@ -122,7 +149,7 @@ final class MapEditorModel {
 
     // MARK: - Change Management (view state only — no save)
 
-    func changeImage(map: MapModel, hexScale: inout Double, pinScale: inout CGFloat) {
+    func changeImage(map: MapModel) {
         hexScale = map.hexMapScale
         pinScale = map.pinScale
 
