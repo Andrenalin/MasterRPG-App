@@ -216,8 +216,11 @@ extension MapViewer {
     @ViewBuilder
     func drawEntryViews(isShowing: Bool) -> some View {
         ForEach(entries.entries.filter { $0.isShown == isShowing }, id: \.id) { entry in
-            MapEntryViewer(model: entries, entryId: entry.id, displayMode: toolBarModel.displayMode, displayConfig: map.displayConfig, activateGestures: toolBarModel.displayMode == .master) {
-                map[entry.id] = entries.entry(entry.id)
+            MapEntryViewer(entry: entry, displayMode: toolBarModel.displayMode, displayConfig: map.displayConfig, activateGestures: toolBarModel.displayMode == .master) {
+                var toggled = entries.entry(entry.id)
+                toggled.isShown.toggle()
+                entries.setEntry(entry: toggled)
+                map[entry.id] = toggled
                 if toolBarModel.isStreaming {
                     sendMapUpdates()
                 }

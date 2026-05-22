@@ -10,21 +10,16 @@ final class MapPinViewModel {
         self.mapPins = mapPins
         self.pointer = pointer
     }
-    
+
     var mapPins: [MapPinModel]
     var pointer: MapPinModel
     var isExpandedId: UUID?
-    
+
     func pinPointer(for id: UUID) -> MapPinModel? {
-        if pointer.id == id {
-            return pointer
-        }
-        if let index = mapPins.firstIndex(where: { $0.id == id }) {
-            return mapPins[index]
-        }
-        return nil
+        if pointer.id == id { return pointer }
+        return mapPins.first { $0.id == id }
     }
-    
+
     func setPinPointer(updatedPin: MapPinModel) {
         if pointer.id == updatedPin.id {
             pointer = updatedPin
@@ -32,20 +27,18 @@ final class MapPinViewModel {
             mapPins[index] = updatedPin
         }
     }
-    
+
     func removePin(id: UUID) {
-        mapPins.removeAll(where: { $0.id == id })
-        if isExpandedId == id {
-            isExpandedId = nil
-        }
+        mapPins.removeAll { $0.id == id }
+        if isExpandedId == id { isExpandedId = nil }
     }
-    
+
     func replacePhoto(pinId: UUID, itemId: UUID?) {
         guard var updatedPin = pinPointer(for: pinId) else { return }
         updatedPin.photoId = itemId
         setPinPointer(updatedPin: updatedPin)
     }
-    
+
     func copyPin(id: UUID) {
         guard var pin = pinPointer(for: id) else { return }
         pin.id = UUID()
@@ -56,7 +49,7 @@ final class MapPinViewModel {
             mapPins.append(pin)
         }
     }
-    
+
     func resizePin(id: UUID) {
         guard var updatedPin = pinPointer(for: id) else { return }
         updatedPin.size = updatedPin.size.nextSize()
@@ -73,50 +66,37 @@ struct MapPinView: View, Equatable {
     let canDrag: Bool
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
-    
+
     @Environment(MapRootModel.self) private var root
-    
+
     @GestureState private var isDragging = false
     @State private var isDraggingStarts = false
-    
-    // Equatable implementation: compare stable properties that affect rendering
+
     static func == (lhs: MapPinView, rhs: MapPinView) -> Bool {
-        lhs.pinId == rhs.pinId &&
-        lhs.pinSize == rhs.pinSize &&
-        lhs.isShown == rhs.isShown &&
-        lhs.borderColor == rhs.borderColor &&
-        lhs.canDrag == rhs.canDrag &&
-        lhs.model.pinPointer(for: lhs.pinId)?.location == rhs.model.pinPointer(for: rhs.pinId)?.location &&
-        lhs.model.pinPointer(for: lhs.pinId)?.size == rhs.model.pinPointer(for: rhs.pinId)?.size &&
-        lhs.model.pinPointer(for: lhs.pinId)?.photoId == rhs.model.pinPointer(for: rhs.pinId)?.photoId
+        guard lhs.pinId == rhs.pinId,
+              lhs.pinSize == rhs.pinSize,
+              lhs.isShown == rhs.isShown,
+              lhs.borderColor == rhs.borderColor,
+              lhs.canDrag == rhs.canDrag else { return false }
+        let lp = lhs.model.pinPointer(for: lhs.pinId)
+        let rp = rhs.model.pinPointer(for: rhs.pinId)
+        return lp?.location == rp?.location
+            && lp?.size == rp?.size
+            && lp?.photoId == rp?.photoId
     }
-    
+
     var body: some View {
 #if os(macOS)
         pinView
 #else
-        Button {
-            guard !isDraggingStarts else { return }
-            withAnimation {
-                model.isExpandedId = model.isExpandedId == pinId ? nil : pinId
-            }
-        } label: {
-            pinView
-#if os(visionOS)
-                .hoverEffect(.highlight)
-                .hoverEffect { effect, isActive, _ in
-                    effect.scaleEffect(isActive ? 1.2 : 1)
-                }
-#endif
-        }
-        .buttonStyle(.borderless)
+        pinView
 #endif
     }
-    
+
     private var position: MapPinModel? {
         model.pinPointer(for: pinId)
     }
-    
+
     private var pinView: some View {
         VStack {
             if let position {
@@ -125,7 +105,7 @@ struct MapPinView: View, Equatable {
         }
         .clipShape(.circle)
         .padding(2)
-        .frame(width: pinSize.width , height: pinSize.height)
+        .frame(width: pinSize.width, height: pinSize.height)
         .padding(2)
         .background(borderColor)
         .overlay {
@@ -133,63 +113,59 @@ struct MapPinView: View, Equatable {
         }
         .clipShape(.circle)
         .shadow(color: .black, radius: 4, x: 4, y: 4)
+#if os(visionOS)
+        .hoverEffect(.highlight)
+        .hoverEffect { effect, isActive, _ in
+            effect.scaleEffect(isActive ? 1.2 : 1)
+        }
+#endif
         .highPriorityGesture(combinedGesture)
         .onChange(of: isDragging) {
             guard !isDragging else { return }
-            Task {
-                isDraggingStarts = false
-                dragEndAction?()
-            }
+            isDraggingStarts = false
+            dragEndAction?()
         }
     }
-    
+
     private var combinedGesture: some Gesture {
         let tapGesture = TapGesture().onEnded {
             withAnimation {
                 model.isExpandedId = model.isExpandedId == pinId ? nil : pinId
             }
         }
-        return doubeDragGesture.exclusively(before: tapGesture)
-    }
-    
-    private var doubeDragGesture: some Gesture {
-#if os(tvOS)
-        doubeTapGesture
-#else
-        dragGesture.simultaneously(with: doubeTapGesture)
-#endif
-    }
-    
-    private var doubeTapGesture: some Gesture {
-        TapGesture(count: 2).onEnded {
+        let doubleTap = TapGesture(count: 2).onEnded {
             withAnimation { doubleTapAction?() }
         }
+#if os(tvOS)
+        return doubleTap.exclusively(before: tapGesture)
+#else
+        return dragGesture.simultaneously(with: doubleTap.exclusively(before: tapGesture))
+#endif
     }
+
 #if !os(tvOS)
     private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 3).updating($isDragging) { value, state, _ in
-            guard canDrag else {
-                state = false
-                return
+        DragGesture(minimumDistance: 3)
+            .updating($isDragging) { _, state, _ in
+                state = true
             }
-            Task {
+            .onChanged { value in
+                guard canDrag, var pos = position else { return }
                 isDraggingStarts = true
-                guard var position = position else { return }
-                let x = position.location.x + (value.location.x - value.startLocation.x)
-                let y = position.location.y + (value.location.y - value.startLocation.y)
-                position.location = CGPoint(x: x, y: y)
-                position.timeInterval = Date.now.timeIntervalSince1970
-                model.setPinPointer(updatedPin: position)
+                pos.location = CGPoint(
+                    x: pos.location.x + (value.location.x - value.startLocation.x),
+                    y: pos.location.y + (value.location.y - value.startLocation.y)
+                )
+                pos.timeInterval = Date.now.timeIntervalSince1970
+                model.setPinPointer(updatedPin: pos)
             }
-            state = true
-        }
     }
 #endif
 }
 
 #Preview {
     @Previewable var model: MapPinViewModel = MapPinViewModel(mapPins: [MapPinModel.empty(MapModel.previewId), MapPinModel.empty(UUID())], pointer: .empty(UUID()))
-    
+
     MapPinView(model: model, pinId: MapModel.previewId, pinSize: model.mapPins[0].size == .normal ? CGSize(width: 64, height: 64) : CGSize(width: 128, height: 128), isShown: false, borderColor: .yellow, canDrag: true) {
         var pin = model.mapPins[0]
         pin.isShown.toggle()

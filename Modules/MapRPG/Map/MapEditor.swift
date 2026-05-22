@@ -179,12 +179,16 @@ extension MapEditor {
     }
 
     func drawEntryView(entries: MapEntryViewerModel, entry: MapEntryModel) -> some View {
-        MapEntryViewer(model: entries, entryId: entry.id, displayMode: toolBarModel.displayMode, displayConfig: map.displayConfig, activateGestures: toolBarModel.displayMode == .master && viewModel.editEntries.entries.isEmpty) {
+        MapEntryViewer(entry: entry, displayMode: toolBarModel.displayMode, displayConfig: map.displayConfig, activateGestures: toolBarModel.displayMode == .master && viewModel.editEntries.entries.isEmpty) {
             viewModel.editEntries.addedNewNeedlePoint = nil
             viewModel.editEntries.eaten = true
 
+            var toggled = entries.entry(entry.id)
+            toggled.isShown.toggle()
+            entries.setEntry(entry: toggled)
+
             guard let mapModel = editController.editModel(for: map.id) else { return }
-            mapModel[entry.id] = entries.entry(entry.id)
+            mapModel[entry.id] = toggled
             editController.save(updated: mapModel, message: String(localized: "update entry", bundle: .module).localizedString)
         } longPressAction: {
             viewModel.editEntries.addedNewNeedlePoint = nil
