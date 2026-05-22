@@ -18,7 +18,7 @@ struct MapEditor: View {
         self.closeAction = closeAction
         
         toolBarModel.displayMode = viewMode
-        self._model = State(wrappedValue: ImageViewerModel(offset: .zero, scale: 1))
+        self._viewModel = State(wrappedValue: MapEditorViewModel(map: map, image: image, photoDegrees: photoDegrees, containerSize: containerSize))
     }
     
     let editController: EditController
@@ -32,25 +32,11 @@ struct MapEditor: View {
     let containerSize: CGSize
     let closeAction: (() -> Void)?
     
-    @State private var model: ImageViewerModel
+    @State private var viewModel: MapEditorViewModel
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(MapRootModel.self) private var root
     @Environment(DropPinModel.self) private var dropPinModel
-    
-    @State private var pins: MapPinViewModel = MapPinViewModel(mapPins: [], pointer: .empty)
-    @State private var entries: MapEntryViewerModel = MapEntryViewerModel(mapId: UUID(), entries: [])
-    @State private var editEntries: MapEntryViewerModel = MapEntryViewerModel(mapId: UUID(), entries: [])
-    @State private var focusId: MapEntryModel.ID? = nil
-    @State private var appeared = false
-    
-    enum DraggingType: Hashable {
-        case nothing
-        case image
-    }
-    
-    @State private var isDragging: DraggingType = .nothing
-    @State private var isTapping: DraggingType = .nothing
     
     var body: some View {
         ManagedNavigationStack(name: "MapEditor") { navigator in
@@ -61,11 +47,11 @@ struct MapEditor: View {
                     .overlay(alignment: .topLeading) {
                         overlayMap
                     }
-                    .scaleEffect(model.scale)
+                    .scaleEffect(viewModel.imageModel.scale)
                     .rotationEffect(Angle(degrees: photoDegrees))
-                    .offset(x: model.offset.x, y: model.offset.y)
+                    .offset(x: viewModel.imageModel.offset.x, y: viewModel.imageModel.offset.y)
                     .contentMargins(.all, 50)
-                    .frame(width: currentSize.width, height: currentSize.height)
+                    .frame(width: viewModel.currentSize.width, height: viewModel.currentSize.height)
 
             }
             .frame(width: containerSize.width, height: containerSize.height, alignment: .topLeading)
@@ -77,35 +63,35 @@ struct MapEditor: View {
             .dragTapGesture(isActive: true, pressAction: pressAction(_:), releaseAction: releaseAction(_:), longPressAction: longPressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
             .onChange(of: editController.sheetEditorModel.itemId) {
-                changeImage()
+                viewModel.changeImage(map: map, hexScale: &toolBarModel.hexScale, pinScale: &toolBarModel.pinScale)
             }
             .onChange(of: editController.sheetEditorModel.entryId, initial: true) {
-                changeMap()
+                viewModel.changeMap(map: map, currentEntryId: editController.sheetEditorModel.entryId, editController: editController)
             }
             .onChange(of: map.mapPins) {
-                resetPlayerAndPins(newPins: map.mapPins)
+                viewModel.resetPlayerAndPins(newPins: map.mapPins, map: map, pinScale: toolBarModel.pinScale)
             }
             .onChange(of: map.entries) {
-                resetEntries(newEntries: map.entries)
+                viewModel.resetEntries(newEntries: map.entries, map: map)
             }
-            .onChange(of: pins.mapPins) {
-                resetPinsToMap(pins: pins.mapPins)
+            .onChange(of: viewModel.pins.mapPins) {
+                viewModel.resetPinsToMap(pins: viewModel.pins.mapPins, map: map, editController: editController)
             }
             .onChange(of: toolBarModel.hexScale) {
                 guard toolBarModel.hexScale != 0 && toolBarModel.hexScale != map.hexMapScale else { return }
                 editController.createHexMap(model: map, hexMapScale: toolBarModel.hexScale)
             }
             .onChange(of: containerSize) {
-                resetZoom()
+                viewModel.updateContainerSize(containerSize)
             }
             .onChange(of: dropPinModel.items) {
                 dropPin()
             }
             .onAppear {
-                firstAppear()
+                viewModel.firstAppear(map: map)
             }
             .onDisappear() {
-                saveChanges()
+                viewModel.saveChanges(map: map, pinScale: toolBarModel.pinScale, editController: editController)
             }
             .modifier(EditToolBarViewModifier(editController: editController, model: toolBarModel))
        }
@@ -113,25 +99,18 @@ struct MapEditor: View {
 }
 
 private extension MapEditor {
-    func saveChanges() {
-        guard let model = editController.editModel(for: map.id) else { return }
-        model.pinScale <=> toolBarModel.pinScale
-        model.mapPins <=> pins.mapPins
-        editController.save(updated: model, message: String(localized: "map updated", bundle: .module).localizedString)
-    }
-    
     var overlayMap: some View {
         ZStack(alignment: .topLeading) {
             drawEntryViews(isShowing: true)
             drawEntryViews(isShowing: false)
             
-            if let editEntry = editEntries.entries.first {
-                drawEntryView(entries: editEntries, entry: editEntry)
+            if let editEntry = viewModel.editEntries.entries.first {
+                drawEntryView(entries: viewModel.editEntries, entry: editEntry)
             }
             
             drawPins
             
-            if let scalePinId = pins.isExpandedId {
+            if let scalePinId = viewModel.pins.isExpandedId {
                 drawPin(id: scalePinId)
             }
             
@@ -139,67 +118,10 @@ private extension MapEditor {
                 drawEntryPins()
             }
             
-            if let magnifyPoint = editEntries.selectedNeedleCoordinate {
+            if let magnifyPoint = viewModel.editEntries.selectedNeedleCoordinate {
                 drawCrosshair(location: magnifyPoint)
                     .zIndex(500)
             }
-        }
-    }
-    
-    func firstAppear() {
-        Task {
-            try? await Task.sleep(for: .milliseconds(50))
-            appeared = true
-            resetEntries(newEntries: map.entries)
-            resetPlayerAndPins(newPins: map.mapPins)
-            withAnimation {
-                if focusId == nil {
-                    resetZoom()
-                } else {
-                    focusedMap()
-                }
-            }
-        }
-    }
-
-    func changeImage() {
-        Task {
-            toolBarModel.hexScale = map.hexMapScale
-            toolBarModel.pinScale = map.pinScale
-
-            try? await Task.sleep(for: .milliseconds(150))
-            changeMap()
-        }
-    }
-
-    func changeMap() {
-        let currentEntryId = editController.sheetEditorModel.entryId
-        if currentEntryId != editEntries.entries.first?.id {
-            if map.id == entries.mapId && !editEntries.entries.isEmpty {
-                let mapEdit = map.copy()
-                for entry in editEntries.entries {
-                    entries.setEntry(entry: entry)
-                }
-                mapEdit.entries = entries.entries
-                editController.save(updated: mapEdit, message: String(localized: "Change entry coordinates", bundle: .module).localizedString)
-            }
-            if let currentEntryId {
-                let entry = map[currentEntryId]
-                withAnimation(.bouncy) {
-                    editEntries.resetEntries(mapId: map.id, entries: [entry])
-                }
-            } else {
-                withAnimation(.bouncy) {
-                    editEntries.resetEntries(mapId: map.id, entries: [])
-                }
-            }
-        }
-        isDragging = .nothing
-        isTapping = .nothing
-        editEntries.eaten = false
-        editEntries.addedNewNeedlePoint = nil
-        if appeared {
-            resetZoom()
         }
     }
     
@@ -209,64 +131,19 @@ private extension MapEditor {
     }
     
     var loupeSize: CGFloat {
-        12 / MapEditor.imageSize(image, degrees: photoDegrees).width
+        12 / MapEditorGeometry.imageSize(image, degrees: photoDegrees).width
     }
 
-    func resetPlayerAndPins(newPins: [MapPinModel]) {
-        var modified = newPins
-        if let entry = map.entries.first {
-            var leftCenter = CGPoint(x: entry.xOffset + entry.size.width / 4, y: entry.yOffset + entry.size.height / 2)
-            modified = newPins.map { pin in
-                var changedPin = pin
-                if changedPin.location == .zero {
-                    changedPin.location = leftCenter
-                    leftCenter = leftCenter + changedPin.size.size.width * toolBarModel.pinScale + 5
-                }
-                return changedPin
-            }
-        }
-        
-        guard pins.mapPins != modified else { return }
-        withAnimation(.bouncy) {
-            pins.mapPins = modified
-        }
-    }
-    
-    func resetEntries(newEntries: [MapEntryModel]) {
-        if let editEntry = editEntries.entries.first, let index = newEntries.firstIndex(where: { $0.id == editEntry.id }), editEntry != newEntries[index] {
-            withAnimation(.bouncy) {
-                editEntries.resetEntries(mapId: map.id, entries: [newEntries[index]])
-            }
-        }
-        
-        guard entries.entries != newEntries else { return }
-        
-        withAnimation(.bouncy) {
-            entries.resetEntries(mapId: map.id, entries: newEntries)
-        }
-        
-        let focus = newEntries.first(where: { $0.focused })?.id
-        if focus != focusId {
-            focusId = focus
-            focusedMap()
-        }
-    }
-    
-    func resetPinsToMap(pins: [MapPinModel]) {
-        guard let model = editController.editModel(for: map.id) else { return }
-        model.mapPins <=> pins
-        editController.save(updated: model, message: String(localized: "map pins updated", bundle: .module).localizedString)
-    }
-    
     func dropPin() {
         guard !dropPinModel.items.isEmpty else { return }
         
-        let location = (dropPinModel.point - model.offset) / model.scale
-        let entry = entry(for: location)
+        viewModel.dropPin(
+            at: dropPinModel.point,
+            map: map,
+            monsters: dropPinModel.items,
+            editController: editController
+        )
         
-        withAnimation(.bouncy) {
-            editController.addMonsters(map: map, entryId: entry?.id, location: location, monsters: dropPinModel.items, number: 1)
-        }
         dropPinModel.items = []
         dropPinModel.isTarget = false
     }
@@ -277,22 +154,22 @@ private extension MapEditor {
 extension MapEditor {
     @ViewBuilder
     func drawEntryViews(isShowing: Bool) -> some View {
-        ForEach(entries.entries.filter { $0.isShown == isShowing && $0.id != editEntries.entries.first?.id }) {  entry in
-            drawEntryView(entries: entries, entry: entry)
+        ForEach(viewModel.entries.entries.filter { $0.isShown == isShowing && $0.id != viewModel.editEntries.entries.first?.id }) {  entry in
+            drawEntryView(entries: viewModel.entries, entry: entry)
         }
     }
     
     func drawEntryView(entries: MapEntryViewerModel, entry: MapEntryModel) -> some View {
-        MapEntryViewer(model: entries, entryId: entry.id, displayMode: toolBarModel.displayMode, displayConfig: map.displayConfig, activateGestures: toolBarModel.displayMode == .master && editEntries.entries.isEmpty) {
-            editEntries.addedNewNeedlePoint = nil
-            editEntries.eaten = true
+        MapEntryViewer(model: entries, entryId: entry.id, displayMode: toolBarModel.displayMode, displayConfig: map.displayConfig, activateGestures: toolBarModel.displayMode == .master && viewModel.editEntries.entries.isEmpty) {
+            viewModel.editEntries.addedNewNeedlePoint = nil
+            viewModel.editEntries.eaten = true
 
             guard let mapModel = editController.editModel(for: map.id) else { return }
             mapModel[entry.id] = entries.entry(entry.id)
             editController.save(updated: mapModel, message: String(localized: "update entry", bundle: .module).localizedString)
         } longPressAction: {
-            editEntries.addedNewNeedlePoint = nil
-            editEntries.eaten = true
+            viewModel.editEntries.addedNewNeedlePoint = nil
+            viewModel.editEntries.eaten = true
 
             guard let mapModel = editController.editModel(for: map.id) else { return }
             mapModel.focused(entries.entry(entry.id))
@@ -301,51 +178,34 @@ extension MapEditor {
         .frame(width: entry.width, height: entry.height)
         .offset(x: entry.xOffset, y: entry.yOffset)
     }
-    
-    func subPath(for entry: MapEntryModel) -> Path {
-        Path { path in
-            guard let firstPoint = entry.coordinates.first else {
-                return
-            }
-            path.move(to: firstPoint)
-            for point in entry.coordinates[1...] {
-                path.addLine(to: point)
-            }
-            path.addLine(to: firstPoint)
-            if entry.coordinates.count >= 2 {
-                let secondPoint = entry.coordinates[1]
-                path.addLine(to: secondPoint)
-            }
-        }
-    }
 }
 
 // MARK: - Drawing Map Pins
 
 extension MapEditor {
     var drawPins: some View {
-        ForEach(pins.mapPins.filter({ $0.id != pins.isExpandedId && (toolBarModel.displayMode != .player || $0.isShown) })) { pin in
+        ForEach(viewModel.pins.mapPins.filter({ $0.id != viewModel.pins.isExpandedId && (toolBarModel.displayMode != .player || $0.isShown) })) { pin in
             drawPin(id: pin.id)
         }
     }
     
     @ViewBuilder
     func drawPin(id: UUID) -> some View {
-        if let pin = pins.pinPointer(for: id) {
-            let scaleFact: CGFloat = pins.isExpandedId == id ? 4.0 : 1.0
+        if let pin = viewModel.pins.pinPointer(for: id) {
+            let scaleFact: CGFloat = viewModel.pins.isExpandedId == id ? 4.0 : 1.0
             let pinSize = pin.size.size * toolBarModel.pinScale * scaleFact
             let location: CGPoint = (pin.location) - (pinSize / CGFloat(2.0))
             
-            MapPinActionView(model: pins, pinId: id, layoutDown: true, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
-                    guard var updatedPin = pins.pinPointer(for: pin.id) else { return }
+            MapPinActionView(model: viewModel.pins, pinId: id, layoutDown: true, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
+                    guard var updatedPin = viewModel.pins.pinPointer(for: pin.id) else { return }
                     updatedPin.isShown.toggle()
-                    pins.setPinPointer(updatedPin: updatedPin)
+                    viewModel.pins.setPinPointer(updatedPin: updatedPin)
 
                     guard let model = editController.editModel(for: map.id) else { return }
                     model.setPinPointer(updatedPin: updatedPin)
                     editController.save(updated: model, message: String(localized: "toggle pin visibility", bundle: .module).localizedString)
             } dragEndAction: {
-                    guard let updatedPin = pins.pinPointer(for: pin.id) else { return }
+                    guard let updatedPin = viewModel.pins.pinPointer(for: pin.id) else { return }
 
                     guard let model = editController.editModel(for: map.id) else { return }
                     model.setPinPointer(updatedPin: updatedPin)
@@ -365,21 +225,21 @@ extension MapEditor {
     }
 }
 
-// MARK: - MApEntry Pins
+// MARK: - MapEntry Pins
 
 private extension MapEditor {
     @ViewBuilder
     func drawEntryPins() -> some View {
-        if let entry = editEntries.entries.first {
+        if let entry = viewModel.editEntries.entries.first {
             ForEach(entry.coordinates.indexed(), id: \.index) { (index, point) in
-                NeedleMapPin(entries: editEntries, entryId: entry.id, index: index, map: map)
+                NeedleMapPin(entries: viewModel.editEntries, entryId: entry.id, index: index, map: map)
                     .offset(x: point.x - 22, y: point.y - 110)
             }
         }
     }
 }
 
-// MARK: - Magnifer glass with Crosshair
+// MARK: - Magnifier glass with Crosshair
 
 private extension MapEditor {
     func drawCrosshair(location: CGPoint) -> some View {
@@ -403,10 +263,10 @@ private extension MapEditor {
     func crosshairPosition(for point: CGPoint) -> CGPoint {
         let size = crosshairSizeScaled
         var origin = point - size - CGPoint(x: 0, y: 60)
-        if origin.y + model.offset.y < 0 {
+        if origin.y + viewModel.imageModel.offset.y < 0 {
             origin.y = point.y + 30
         }
-        if origin.x + model.offset.x < 0 {
+        if origin.x + viewModel.imageModel.offset.x < 0 {
             origin.x = point.x
         }
         return origin
@@ -432,8 +292,8 @@ private extension MapEditor {
     var magnifyContent: some View {
         Image(akImage: image)
             .rotationEffect(Angle(degrees: photoDegrees))
-            .offset(imageOffset())
-            .scaleEffect(model.scale * 3)
+            .offset(viewModel.imageOffset())
+            .scaleEffect(viewModel.imageModel.scale * 3)
             .frame(width: crosshairSize.width, height: crosshairSize.height)
             .clipShape(Circle())
     }
@@ -443,243 +303,48 @@ private extension MapEditor {
     }
 
     var crosshairSizeScaled: CGSize {
-        crosshairSize / model.scale
-    }
-
-    func imageOffset() -> CGSize {
-        guard let location = editEntries.selectedNeedleCoordinate else { return .zero }
-
-        let size = MapEditor.imageSize(image, degrees: photoDegrees)
-        let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        return CGSize(width: -1 * (location.x - center.x), height: -1 * (location.y - center.y))
+        crosshairSize / viewModel.imageModel.scale
     }
 }
 
-// MARK: - Zooming
-
-private extension MapEditor {
-    static func zoomToFit(with size: CGSize, image: AKImage, degrees: Double) -> (CGFloat, CGPoint) {
-        let scale = normScale(screenSize: size, image: image, degrees: degrees)
-        let imgSize = imageSize(image, degrees: degrees)
-        let x = (size.width - imgSize.width * scale) / 2.0
-        let y = (size.height - imgSize.height * scale) / 2.0
-        let offset = CGPoint(x: x, y: y)
-        return (scale, offset)
-    }
-    
-    static func normScale(screenSize: CGSize, image: AKImage, degrees: Double) -> CGFloat {
-        let size = imageSize(image, degrees: degrees)
-        let wScale = screenSize.width / size.width
-        let hScale = screenSize.height / size.height
-        return min(wScale, hScale)
-    }
-    
-    static func imageSize(_ image: AKImage, degrees: Double) -> CGSize {
-        (degrees == 0 || degrees == 180) ? image.fixedSize : CGSize(width: image.size.height, height: image.size.width)
-    }
-    
-    var currentSize: CGSize {
-        MapEditor.imageSize(image, degrees: photoDegrees) * model.scale
-    }
-    
-    func resetZoom() {
-        let (newScale, newOffset): (CGFloat, CGPoint)
-        (newScale, newOffset) = MapEditor.zoomToFit(with: containerSize, image: image, degrees: photoDegrees)
-        model.normScale = newScale
-        zoom(scale: newScale, at: newOffset)
-    }
-    
-    func zooming(on location: CGPoint) {
-        let (newScale, newOffset): (CGFloat, CGPoint)
-        if model.scale != model.normScale {
-            (newScale, newOffset) = MapEditor.zoomToFit(with: containerSize, image: image, degrees: photoDegrees )
-        } else {
-            (newScale, newOffset) = zoomIn(at: location)
-        }
-        zoom(scale: newScale, at: newOffset)
-    }
-    
-    func zoom(scale: CGFloat, at offset: CGPoint) {
-        withAnimation {
-            model.scale = scale
-            model.lastScale = model.scale
-            model.offset = offset
-            model.lastOffset = model.offset
-        }
-    }
-    
-    func zoomIn(at point: CGPoint) -> (CGFloat, CGPoint) {
-        let newScale = max(0.1, model.scale * 4)
-        let offPoint = (point - model.offset) / model.scale
-        
-        updateScale(newScale, updateLast: false)
-        
-        let pswidth = (containerSize.width / newScale) / 2
-        let psHeight = (containerSize.height / newScale) / 2
-        let offset = CGPoint(x: -1 * (offPoint.x - pswidth) * model.scale, y: -1 * (offPoint.y - psHeight) * model.scale)
-        return (newScale, offset)
-    }
-    
-    func focusedMap() {
-        if let focusId {
-            let focusMap = map[focusId]
-            let ss = focusMap.size
-            let sw = containerSize.width / (ss.width + 50)
-            let sh = containerSize.height / (ss.height + 50)
-            let newScale = min(sw, sh)
-            withAnimation {
-                model.scale = max(0.1, newScale)
-                model.lastScale = model.scale
-                model.offset = CGPoint(x: -1 * (focusMap.xOffset - 25) * model.scale, y: -1 * (focusMap.yOffset - 25) * model.scale)
-                model.lastOffset = model.offset
-            }
-        } else {
-            zooming(on: .zero)
-        }
-    }
-}
-
-// MARK: - Gesture Magnifyer
-
-private extension MapEditor {
-    func updateScale(_ value: CGFloat, updateLast: Bool) {
-        if updateLast {
-            model.lastScale = value
-        }
-        let delta = value / model.lastScale
-        let newScale = model.scale * delta
-        if newScale < 0.1 {
-            return
-        }
-        
-        let imgSize = MapEditor.imageSize(image, degrees: photoDegrees)
-        let scaleDiff = (newScale - model.scale) / 2
-        let imgOff = imgSize * scaleDiff
-        let newOffsetNew = CGPoint(x: -imgOff.width, y: -imgOff.height)
-        
-        model.lastScale = value
-        model.scale = newScale
-        updateOffset(with: newOffsetNew, firstOffset: model.offset)
-    }
-}
-
-// MARK: - Gesture Drag
-
-private extension MapEditor {
-    func dragPoint(location: CGPoint) -> DraggingType {
-        .image
-    }
-    
-    func updateOffset(with newLocation: CGPoint, firstOffset: CGPoint) {
-        let imgSize = MapEditor.imageSize(image, degrees: photoDegrees)
-        let offX = max(300, (containerSize.width - imgSize.width * model.scale) / 2)
-        let offY = max(300, (containerSize.height - imgSize.height * model.scale) / 2)
-        let minX = containerSize.width - (imgSize.width * model.scale) - offX
-        let minY = containerSize.height - (imgSize.height * model.scale) - offX
-        var newOffset = firstOffset + newLocation
-        if newOffset.x < minX {
-            newOffset.x = minX
-        }
-        if newOffset.x > offX {
-            newOffset.x = offX
-        }
-        if newOffset.y < minY {
-            newOffset.y = minY
-        }
-        if newOffset.y > offY {
-            newOffset.y = offY
-        }
-        model.lastOffset = firstOffset
-        model.offset = newOffset
-    }
-}
-
-// MARK: - Tap
-
-private extension MapEditor {
-    func onTapped(with location: CGPoint) {
-        guard tile != nil || !editEntries.entries.isEmpty else { return }
-        let roomPin = (location - model.offset) / model.scale
-        guard editEntries.eaten == false && editEntries.addedNewNeedlePoint == nil else { return }
-
-        editEntries.addedNewNeedlePoint = roomPin
-        Task {
-            try? await Task.sleep(for: .milliseconds(250))
-            guard let point = editEntries.addedNewNeedlePoint, var updatedEntry = editEntries.entries.first else { return }
-            editEntries.addedNewNeedlePoint = nil
-            updatedEntry.coordinates.append(point)
-
-            guard let mapModel = editController.editModel(for: map.id) else { return }
-            mapModel[updatedEntry.id] = updatedEntry
-            editController.save(updated: mapModel, message: String(localized: "add coordinate", bundle: .module).localizedString)
-        }
-    }
-}
-
-// MARK: - Gesture Double Tap
-
-private extension MapEditor {
-    func onDoubleTapped(with location: CGPoint) {
-        if editEntries.eaten  {
-            editEntries.eaten = false
-            isTapping = .nothing
-        } else {
-            zooming(on: location)
-        }
-    }
-
-    func entry(for location: CGPoint) -> MapEntryModel? {
-        entries.entries.last(where: { entry -> Bool in
-            let path = subPath(for: entry)
-            return path.contains(location)
-        })
-    }
-}
-
-// MARK: - Gesture & updates
+// MARK: - Gesture Handlers
 
 private extension MapEditor {
 #if !os(tvOS)
     func pressAction(_ value: DragGesture.Value) {
-        isTapping = dragPoint(location: value.location)
+        viewModel.pressAction(value)
     }
     
     func releaseAction(_ value: DragGesture.Value) {
-        guard isTapping != .nothing else { return }
-        onTapped(with: value.location)
+        let hasEditableEntry = tile != nil || !viewModel.editEntries.entries.isEmpty
+        viewModel.releaseAction(value, map: map, editController: editController, hasEditableEntry: hasEditableEntry)
     }
     
     func longPressAction(_ value: DragGesture.Value) {}
     
     func doubleTapAction(_ value: DragGesture.Value) {
-        onDoubleTapped(with: value.location)
+        viewModel.onDoubleTapped(with: value.location)
     }
     
     func dragStartAction(_ value: DragGesture.Value) {
-        isDragging = dragPoint(location: value.startLocation)
-        isTapping = .nothing
-        model.lastOffset = model.offset
+        viewModel.dragStartAction(value)
     }
     
     func dragAction(_ value: DragGesture.Value) {
-        switch isDragging {
-        case .image:
-            updateOffset(with: value.location - value.startLocation, firstOffset: model.lastOffset)
-        case .nothing:
-            break
-        }
+        viewModel.dragAction(value)
     }
     
-    func dragEndAction(_: DragGesture.Value) {}
+    func dragEndAction(_: DragGesture.Value) {
+        viewModel.dragEndAction()
+    }
     
     func endAction(_: DragGesture.Value) {
-        isDragging = .nothing
-        isTapping = .nothing
+        viewModel.endAction()
     }
 #endif
     
     func magnifierAction(_ value: CGFloat, isFirst: Bool) {
-        updateScale(value, updateLast: isFirst)
+        viewModel.updateScale(value, updateLast: isFirst)
     }
 }
 
