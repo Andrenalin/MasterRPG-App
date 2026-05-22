@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild -workspace MasterRPG.xcworkspace -scheme \"MasterRPG\" -destination \"platform=iOS Simulator,name=iPhone 17 Pro\" -derivedDataPath .build clean build CODE_SIGNING_ALLOWED=NO)",
+      "Bash(xcodebuild -workspace MasterRPG.xcworkspace -list)",
+      "Bash(xcodebuild -list)",
+      "mcp__cupertino__search",
+      "mcp__cupertino__read_document",
+      "Bash(git *)",
+      "mcp__xcode__XcodeListWindows",
+      "mcp__xcode__BuildProject"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "xcode"
+  ]
+}
