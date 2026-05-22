@@ -68,7 +68,7 @@ public extension ViewController {
 public extension ViewController {
     @MainActor
     func gameMapView(root: MapRootModel, playerId: UUID, external: Bool = false) -> some View {
-        RootCanvasMap(root: root, itemId: root.gameController.gameModel.currentItemId ?? UUID(), mode: .player, toolBarModel: external ? GameToolBarModel() : root.rootModel.toolBarModel, playerPinId: playerId)
+        RootCanvasMap(root: root, itemId: root.gameController.gameModel.currentItemId ?? UUID(), mode: .player, playerPinId: playerId)
             .environment(root)
     }
 
@@ -88,13 +88,15 @@ public extension ViewController {
                 gameController.gameItem(for: itemId).mapPins.append(resetPin)
             }
         }
-        return RootCanvasMap(root: root, itemId: itemId, mode: .master, toolBarModel: root.rootModel.toolBarModel, playerPinId: nil)
+        return RootCanvasMap(root: root, itemId: itemId, mode: .master, playerPinId: nil)
             .environment(root)
     }
     
-    @MainActor
+    @MainActor @ViewBuilder
     func gameToolBarView(root: MapRootModel, isMaster: Bool) -> some View {
-        GameToolBar(editController: root.editController, model: root.rootModel.toolBarModel, isMaster: isMaster)
-            .environment(root)
+        if let model = root.rootModel.gameEditorModel {
+            GameToolBar(editController: root.editController, model: model, isMaster: isMaster)
+                .environment(root)
+        }
     }
 }

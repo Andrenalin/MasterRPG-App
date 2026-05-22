@@ -5,7 +5,21 @@ import PhotoRPG
 import SwiftUI
 
 struct MapEditor: View {
-    init(editController: EditController, image: AKImage, photoDegrees: Double, map: MapModel, viewMode: MapDisplayMode, tile: MapEntryModel? = nil, isPinEdit: Bool, containerSize: CGSize, closeAction: (() -> Void)? = nil) {
+    init(
+        editController: EditController,
+        image: AKImage,
+        photoDegrees: Double,
+        map: MapModel,
+        viewMode: MapDisplayMode,
+        tile: MapEntryModel? = nil,
+        isPinEdit: Bool,
+        containerSize: CGSize,
+        mapMode: MapMode = .edit,
+        playerPinId: UUID? = nil,
+        closeAction: (() -> Void)? = nil,
+        sendMapUpdates: (() -> Void)? = nil,
+        focused: (() -> Void)? = nil
+    ) {
         self.editController = editController
         self.image = image
         self.photoDegrees = photoDegrees
@@ -15,9 +29,15 @@ struct MapEditor: View {
         self.isPinEdit = isPinEdit
         self.containerSize = containerSize
         self.closeAction = closeAction
+        self.sendMapUpdatesAction = sendMapUpdates
+        self.focusedAction = focused
         self.mapEditController = MapEditController(editController: editController)
 
-        self._viewModel = State(wrappedValue: MapEditorModel(map: map, image: image, photoDegrees: photoDegrees, containerSize: containerSize, displayMode: viewMode))
+        self._viewModel = State(wrappedValue: MapEditorModel(
+            map: map, image: image, photoDegrees: photoDegrees,
+            containerSize: containerSize, displayMode: viewMode,
+            mapMode: mapMode, playerPinId: playerPinId
+        ))
     }
 
     let editController: EditController
@@ -29,6 +49,8 @@ struct MapEditor: View {
     let isPinEdit: Bool
     let containerSize: CGSize
     let closeAction: (() -> Void)?
+    let sendMapUpdatesAction: (() -> Void)?
+    let focusedAction: (() -> Void)?
     let mapEditController: MapEditController
 
     @State private var viewModel: MapEditorModel
@@ -51,20 +73,23 @@ struct MapEditor: View {
                     .offset(x: viewModel.imageModel.offset.x, y: viewModel.imageModel.offset.y)
                     .contentMargins(.all, 50)
                     .frame(width: viewModel.currentSize.width, height: viewModel.currentSize.height)
-
             }
             .frame(width: containerSize.width, height: containerSize.height, alignment: .topLeading)
             .background {
                 Rectangle().fill(Color.black.gradient)
                     .ignoresSafeArea()
             }
+            .overlay {
+                backColor.opacity(viewModel.appeared ? 0 : 1)
+            }
 #if !os(tvOS)
-            .dragTapGesture(isActive: true, pressAction: pressAction(_:), releaseAction: releaseAction(_:), longPressAction: longPressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
+            .dragTapGesture(isActive: viewModel.mapMode != .viewer, pressAction: pressAction(_:), releaseAction: releaseAction(_:), longPressAction: longPressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
             .onChange(of: editController.sheetEditorModel.itemId) {
                 viewModel.changeImage(map: map)
             }
             .onChange(of: editController.sheetEditorModel.entryId, initial: true) {
+                guard viewModel.mapMode == .edit else { return }
                 mapEditController.changeMap(
                     map: map,
                     currentEntryId: editController.sheetEditorModel.entryId,
@@ -79,15 +104,52 @@ struct MapEditor: View {
                 viewModel.resetEntries(newEntries: map.entries, map: map)
                 mapEditController.mergeExternalEntries(newMap: map, editorModel: viewModel)
             }
+            .onChange(of: map.pointer) {
+                viewModel.resetPointer(map: map)
+            }
             .onChange(of: containerSize) {
                 viewModel.updateContainerSize(containerSize)
             }
             .onChange(of: dropPinModel.items) {
                 dropPin()
             }
+            // Game mode: propagate scale changes to the live map, and receive them back
+            .onChange(of: map.pinScale) {
+                guard viewModel.mapMode != .edit, map.pinScale != viewModel.pinScale else { return }
+                viewModel.pinScale = map.pinScale
+            }
+            .onChange(of: viewModel.pinScale) {
+                guard viewModel.mapMode != .edit else { return }
+                map.pinScale = viewModel.pinScale
+            }
+            .onChange(of: viewModel.hexScale) {
+                guard viewModel.mapMode != .edit,
+                      viewModel.hexScale != 0,
+                      viewModel.hexScale != map.hexMapScale else { return }
+                editController.createHexMap(model: map, hexMapScale: viewModel.hexScale)
+            }
             .onAppear {
+                viewModel.sendMapUpdates = sendMapUpdatesAction
+                viewModel.focusedCallback = focusedAction
+                if viewModel.mapMode != .edit {
+                    // Copy persistent game state from the previous map session
+                    if let prev = root.rootModel.gameEditorModel, prev !== viewModel {
+                        viewModel.isStreaming = prev.isStreaming
+                        viewModel.isPointing = prev.isPointing
+                        if viewModel.mapMode == .gameMaster {
+                            viewModel.displayMode = prev.displayMode
+                        }
+                    }
+                    root.rootModel.gameEditorModel = viewModel
+                    viewModel.resetReshare()
+                }
                 viewModel.firstAppear(map: map)
-                mapEditController.prepareWorkingCopy(from: map, editorModel: viewModel)
+                if viewModel.mapMode == .edit {
+                    mapEditController.prepareWorkingCopy(from: map, editorModel: viewModel)
+                }
+            }
+            .onDisappear {
+                viewModel.appeared = false
             }
             .modifier(EditToolBarViewModifier(mapEditController: mapEditController, editorModel: viewModel))
         }
@@ -97,26 +159,41 @@ struct MapEditor: View {
 private extension MapEditor {
     var overlayMap: some View {
         ZStack(alignment: .topLeading) {
-            drawEntryViews(isShowing: true)
-            drawEntryViews(isShowing: false)
-
-            if let editEntry = viewModel.editEntries.entries.first {
-                drawEntryView(entries: viewModel.editEntries, entry: editEntry)
+            // Player mode: shown entries → pins → hidden entries (pins appear between layers)
+            if viewModel.displayMode == .player {
+                drawEntryViews(isShowing: true)
+                drawPins
+                drawEntryViews(isShowing: false)
+            } else {
+                drawEntryViews(isShowing: true)
+                drawEntryViews(isShowing: false)
+                drawPins
             }
 
-            drawPins
+            // Pointer pin (game mode)
+            if map.pointer.isShown {
+                drawPin(id: viewModel.pins.pointer.id)
+            }
 
+            // Expanded pin always on top
             if let scalePinId = viewModel.pins.isExpandedId {
                 drawPin(id: scalePinId)
             }
 
-            if viewModel.displayMode == .master || viewModel.displayMode == .reader {
-                drawEntryPins()
-            }
+            // Edit-mode only overlays
+            if viewModel.mapMode == .edit {
+                if let editEntry = viewModel.editEntries.entries.first {
+                    drawEntryView(entries: viewModel.editEntries, entry: editEntry)
+                }
 
-            if let magnifyPoint = viewModel.editEntries.selectedNeedleCoordinate {
-                drawCrosshair(location: magnifyPoint)
-                    .zIndex(500)
+                if viewModel.displayMode == .master || viewModel.displayMode == .reader {
+                    drawEntryPins()
+                }
+
+                if let magnifyPoint = viewModel.editEntries.selectedNeedleCoordinate {
+                    drawCrosshair(location: magnifyPoint)
+                        .zIndex(500)
+                }
             }
         }
     }
@@ -132,14 +209,15 @@ private extension MapEditor {
 
     func dropPin() {
         guard !dropPinModel.items.isEmpty else { return }
-
-        mapEditController.dropPin(
-            at: dropPinModel.point,
-            map: map,
-            monsters: dropPinModel.items,
-            editorModel: viewModel
-        )
-
+        if viewModel.mapMode == .edit {
+            mapEditController.dropPin(at: dropPinModel.point, map: map, monsters: dropPinModel.items, editorModel: viewModel)
+        } else {
+            let location = (dropPinModel.point - viewModel.imageModel.offset) / viewModel.imageModel.scale
+            let entry = viewModel.entry(for: location, in: map)
+            withAnimation(.bouncy) {
+                root.editController.addMonsters(map: map, entryId: entry?.id, location: location, monsters: dropPinModel.items, number: 1)
+            }
+        }
         dropPinModel.items = []
         dropPinModel.isTarget = false
     }
@@ -156,7 +234,9 @@ extension MapEditor {
     }
 
     func drawEntryView(entries: MapEntryViewerModel, entry: MapEntryModel) -> some View {
-        MapEntryViewer(entry: entry, displayMode: viewModel.displayMode, displayConfig: map.displayConfig, activateGestures: viewModel.displayMode == .master && viewModel.editEntries.entries.isEmpty) {
+        let canActivate = viewModel.displayMode == .master
+            && (viewModel.mapMode != .edit || viewModel.editEntries.entries.isEmpty)
+        return MapEntryViewer(entry: entry, displayMode: viewModel.displayMode, displayConfig: map.displayConfig, activateGestures: canActivate) {
             viewModel.editEntries.addedNewNeedlePoint = nil
             viewModel.editEntries.eaten = true
 
@@ -164,16 +244,26 @@ extension MapEditor {
             toggled.isShown.toggle()
             entries.setEntry(entry: toggled)
 
-            guard let mapModel = editController.editModel(for: map.id) else { return }
-            mapModel[entry.id] = toggled
-            editController.save(updated: mapModel, message: String(localized: "update entry", bundle: .module).localizedString)
+            if viewModel.mapMode == .edit {
+                guard let mapModel = editController.editModel(for: map.id) else { return }
+                mapModel[entry.id] = toggled
+                editController.save(updated: mapModel, message: String(localized: "update entry", bundle: .module).localizedString)
+            } else {
+                map[entry.id] = toggled
+                if viewModel.isStreaming { viewModel.sendMapUpdates?() }
+            }
         } longPressAction: {
             viewModel.editEntries.addedNewNeedlePoint = nil
             viewModel.editEntries.eaten = true
 
-            guard let mapModel = editController.editModel(for: map.id) else { return }
-            mapModel.focused(entries.entry(entry.id))
-            editController.save(updated: mapModel, message: String(localized: "focus entry", bundle: .module).localizedString)
+            if viewModel.mapMode == .edit {
+                guard let mapModel = editController.editModel(for: map.id) else { return }
+                mapModel.focused(entries.entry(entry.id))
+                editController.save(updated: mapModel, message: String(localized: "focus entry", bundle: .module).localizedString)
+            } else {
+                map.focused(entries.entry(entry.id))
+                viewModel.focusedCallback?()
+            }
         }
         .frame(width: entry.width, height: entry.height)
         .offset(x: entry.xOffset, y: entry.yOffset)
@@ -194,13 +284,46 @@ extension MapEditor {
         if let pin = viewModel.pins.pinPointer(for: id) {
             let scaleFact: CGFloat = viewModel.pins.isExpandedId == id ? 4.0 : 1.0
             let pinSize = pin.size.size * viewModel.pinScale * scaleFact
-            let location: CGPoint = (pin.location) - (pinSize / CGFloat(2.0))
+            let location: CGPoint = pin.location - (pinSize / CGFloat(2.0))
+            let canDrag = viewModel.mapMode == .edit
+                || viewModel.mapMode == .gameMaster
+                || id == viewModel.playerPinId
+                || id == map.pointer.id
 
-            MapPinActionView(model: viewModel.pins, pinId: id, layoutDown: true, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
-                mapEditController.togglePinVisibility(pinId: pin.id, editorModel: viewModel)
+            MapPinActionView(
+                model: viewModel.pins,
+                pinId: id,
+                layoutDown: true,
+                pinSize: pinSize,
+                isShown: pin.isShown,
+                borderColor: borderColorForPin(position: pin),
+                canDrag: canDrag,
+                showActions: viewModel.mapMode == .edit
+            ) {
+                if viewModel.mapMode == .edit {
+                    mapEditController.togglePinVisibility(pinId: pin.id, editorModel: viewModel)
+                } else if viewModel.mapMode == .gameMaster {
+                    guard var updatedPin = viewModel.pins.pinPointer(for: id) else { return }
+                    updatedPin.isShown.toggle()
+                    viewModel.pins.setPinPointer(updatedPin: updatedPin)
+                    map.setPinPointer(updatedPin: updatedPin)
+                    if viewModel.isStreaming { viewModel.sendMapUpdates?() }
+                }
             } dragEndAction: {
                 guard let updatedPin = viewModel.pins.pinPointer(for: pin.id) else { return }
-                mapEditController.updatePinMove(pin: updatedPin, editorModel: viewModel)
+                if map.pointer.id == updatedPin.id {
+                    viewModel.updatePointer(location: updatedPin.location, map: map, withOutRelocation: true)
+                } else if viewModel.mapMode == .edit {
+                    mapEditController.updatePinMove(pin: updatedPin, editorModel: viewModel)
+                } else if viewModel.mapMode == .gameMaster || updatedPin.id == viewModel.playerPinId {
+                    map[MapPinId.id, updatedPin.id] = updatedPin
+                    if let idx = root.gameController.mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
+                        root.gameController.mapGameModel.playerPins[idx] = updatedPin
+                    }
+                    if viewModel.displayMode == .player || viewModel.isStreaming {
+                        viewModel.sendMapUpdates?()
+                    }
+                }
             }
             .equatable()
             .opacity(viewModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
@@ -209,10 +332,7 @@ extension MapEditor {
     }
 
     func borderColorForPin(position: MapPinModel) -> Color {
-        if position.location != map.mapPins.first(where: { $0.id == position.id })?.location {
-            return .red
-        }
-        return .gray
+        position.location != map.mapPins.first(where: { $0.id == position.id })?.location ? .red : .gray
     }
 }
 
@@ -254,23 +374,17 @@ private extension MapEditor {
     func crosshairPosition(for point: CGPoint) -> CGPoint {
         let size = crosshairSizeScaled
         var origin = point - size - CGPoint(x: 0, y: 60)
-        if origin.y + viewModel.imageModel.offset.y < 0 {
-            origin.y = point.y + 30
-        }
-        if origin.x + viewModel.imageModel.offset.x < 0 {
-            origin.x = point.x
-        }
+        if origin.y + viewModel.imageModel.offset.y < 0 { origin.y = point.y + 30 }
+        if origin.x + viewModel.imageModel.offset.x < 0 { origin.x = point.x }
         return origin
     }
 
     func crosshair(in rect: CGRect) -> Path {
         var p = Path()
-
         let crossHairLength = rect.size.width / 3.0
         let height = rect.origin.y + rect.size.height / 2.0
         var start = CGPoint(x: rect.origin.x, y: height).rounded()
         let offset = CGPoint(x: crossHairLength, y: 0).rounded()
-
         p.move(to: start)
         p.addLine(to: start + offset)
         start = start + offset + offset
@@ -289,13 +403,9 @@ private extension MapEditor {
             .clipShape(Circle())
     }
 
-    var crosshairSize: CGSize {
-        CGSize(width: 160, height: 160)
-    }
+    var crosshairSize: CGSize { CGSize(width: 160, height: 160) }
 
-    var crosshairSizeScaled: CGSize {
-        crosshairSize / viewModel.imageModel.scale
-    }
+    var crosshairSizeScaled: CGSize { crosshairSize / viewModel.imageModel.scale }
 }
 
 // MARK: - Gesture Handlers
@@ -307,8 +417,12 @@ private extension MapEditor {
     }
 
     func releaseAction(_ value: DragGesture.Value) {
-        let hasEditableEntry = tile != nil || !viewModel.editEntries.entries.isEmpty
-        mapEditController.releaseAction(value, map: map, editorModel: viewModel, hasEditableEntry: hasEditableEntry)
+        if viewModel.mapMode == .edit {
+            let hasEditableEntry = tile != nil || !viewModel.editEntries.entries.isEmpty
+            mapEditController.releaseAction(value, map: map, editorModel: viewModel, hasEditableEntry: hasEditableEntry)
+        } else {
+            viewModel.updatePointer(location: value.location, map: map)
+        }
     }
 
     func longPressAction(_ value: DragGesture.Value) {}

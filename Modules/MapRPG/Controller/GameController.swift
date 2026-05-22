@@ -82,7 +82,7 @@ extension GameController: GameControllable {
 
 extension GameController: MapGameStorable {
     @MainActor func startGameAsMaster() {
-        root.rootModel.toolBarModel.displayMode = .master
+        root.rootModel.gameEditorModel?.displayMode = .master
     }
     
     @MainActor
@@ -220,7 +220,18 @@ private extension GameController {
                 if let pointer = mapPins.first {
                     model.pointer = pointer
                 }
-                model.mapPins = Array(mapPins.dropFirst())
+                let incoming = Array(mapPins.dropFirst())
+                // For player pins, keep the local version when it is newer than the
+                // received snapshot — prevents a stale master broadcast from overwriting
+                // a pin that the player has already moved.
+                model.mapPins = incoming.map { incomingPin in
+                    if incomingPin.isPlayer,
+                       let local = model.mapPins.first(where: { $0.id == incomingPin.id }),
+                       local.timeInterval > incomingPin.timeInterval {
+                        return local
+                    }
+                    return incomingPin
+                }
             }
         }
 

@@ -4,69 +4,25 @@ import CoreRPG
 import SwiftUI
 import CharacterRPG
 
-@Observable
-final class GameToolBarModel {
-    var isStreaming: Bool = false
-    var isPointing: Bool = false
-
-    var pinScale: CGFloat = 1
-    var hexScale: Double = 1
-
-    var lastPinScale: CGFloat = 1
-    var lastHexScale: Double = 1
-
-    var hideCloseButton: Bool = true
-
-    var displayMode: MapDisplayMode = .player
-    func toggleDisplayMode() {
-        displayMode =
-        switch displayMode {
-        case .master: .player
-        case .player: .reader
-        case .reader: .master
-        }
-    }
-    var iconDisplaMode: String {
-        switch displayMode {
-        case .master: "rectangle.3.offgrid.fill"
-        case .player: "rectangle.lefthalf.inset.filled"
-        case .reader: "rectangle.3.offgrid"
-        }
-    }
-
-    func resetScales(from map: MapModel) {
-        pinScale = map.pinScale
-        hexScale = map.hexMapScale
-        resetReshare()
-    }
-
-    func resetReshare() {
-        lastPinScale = pinScale
-        lastHexScale = hexScale
-    }
-
-    var canReshare: Bool {
-        lastHexScale != hexScale || lastPinScale != pinScale
-    }
-}
-
 struct GameToolBar: View {
     let editController: EditController
-    let model: GameToolBarModel
+    let model: MapEditorModel
     let isMaster: Bool
-    
+
     @Environment(MapRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.networkActions) private var networkActions
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
-    
+
     @Environment(ScenesManager.self) private var sceneManager
 
     @State private var showPinSelection: Bool = false
-    @State private var pinSelection: [UUID] = []
-    
+    @State private var selectedPin: ItemSelectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: true)
+
     @State private var showToolBar: Bool = true
     @State private var hideScales: Bool = true
+
+    @Namespace private var pinSpace
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -105,12 +61,12 @@ struct GameToolBar: View {
                             Button {
                                 withAnimation { model.toggleDisplayMode() }
                             } label: {
-                                Image(systemName: model.iconDisplaMode)
+                                Image(systemName: model.iconDisplayMode)
                                     .contentTransition(.symbolEffect(.replace.byLayer))
                                     .frame(width: 28, height: 24)
-                                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: model.iconDisplaMode) ?? "Display mode")
+                                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: model.iconDisplayMode) ?? "Display mode")
                             }
-                            
+
                             barButtonViews
 
                             if appWindowSizeModel.mode == .regular {
@@ -139,8 +95,26 @@ struct GameToolBar: View {
         .padding(.horizontal)
         .animation(.bouncy.delay(hideScales ? 0 : 0.25), value: showToolBar)
         .buttonStyle(.borderedProminent)
+        .sheet(isPresented: $showPinSelection) {
+            ManagedPresentationView {
+                root.viewController.characterSelection(root: root, selectionModel: selectedPin)
+#if !os(macOS)
+                    .navigationTransition(.zoom(sourceID: "gamePin", in: pinSpace))
+#endif
+            }
+        }
+        .onChange(of: showPinSelection, initial: false) { _, newValue in
+            guard !newValue, !selectedPin.selection.isEmpty else { return }
+            let map = root.gameController.currentItem()
+            let monsters = selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }
+            withAnimation(.bouncy) {
+                root.editController.addMonsters(map: map, entryId: nil, location: nil, monsters: monsters, number: 1)
+            }
+            if model.isStreaming { model.sendMapUpdates?() }
+            selectedPin.resetSelection(itemId: nil, entryId: nil)
+        }
     }
-    
+
     @ViewBuilder
     var barButtonViews: some View {
         Button {
@@ -162,9 +136,11 @@ struct GameToolBar: View {
         } label: {
             let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
             Image(systemName: symbolName)
+                .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .frame(width: 24, height: 24)
                 .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Pin selection")
         }
+        .matchedTransitionSource(id: "gamePin", in: pinSpace)
 
         Button {
             withAnimation { model.isPointing.toggle() }
@@ -203,9 +179,10 @@ struct GameToolBar: View {
                     let map = root.gameController.currentItem()
                     let _ = editController.toggleHexMap(for: map)
                     model.hexScale = map.hexMapScale
+                    model.isHexMap = map.entries.contains(where: { $0.isHexGrid })
                 }
             } label: {
-                let symbolName = editController.isHexMap(for: root.gameController.currentItem()) ? "hexagon.fill" : "hexagon"
+                let symbolName = model.isHexMap ? "hexagon.fill" : "hexagon"
                 Image(systemName: symbolName)
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
                     .frame(width: 24, height: 24)
@@ -253,13 +230,19 @@ struct GameToolBar: View {
         .disabled(!model.canReshare)
         .opacity(hideScales ? 0 : 1)
     }
-
 }
 
-
 #Preview {
+    @Previewable var editController: EditController = .preview
+    @Previewable var editorModel = MapEditorModel(
+        map: .empty,
+        image: AKImage(systemName: "photo")!,
+        photoDegrees: 0,
+        containerSize: CGSize(width: 400, height: 600),
+        mapMode: .gameMaster
+    )
     HStack {
-        GameToolBar(editController: .preview, model: GameToolBarModel(), isMaster: true)
+        GameToolBar(editController: editController, model: editorModel, isMaster: true)
             .environment(MapRootModel.preview)
     }
     .frame(maxWidth: .infinity, alignment: .leading)

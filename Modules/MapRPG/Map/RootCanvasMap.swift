@@ -12,21 +12,16 @@ final class DropPinModel {
 }
 
 struct RootCanvasMap: View {
-    init(root: MapRootModel, itemId: UUID, mode: MapDisplayMode, toolBarModel: GameToolBarModel, playerPinId: UUID? = nil) {
+    init(root: MapRootModel, itemId: UUID, mode: MapDisplayMode, playerPinId: UUID? = nil) {
         self.root = root
         self.itemId = itemId
         self.mode = mode
-        if mode == .player {
-            toolBarModel.displayMode = .player
-        }
-        self.toolBarModel = toolBarModel
         self.playerPinId = playerPinId
     }
 
     let root: MapRootModel
     let itemId: UUID
     let mode: MapDisplayMode
-    let toolBarModel: GameToolBarModel
     let playerPinId: UUID?
 
     @Environment(\.networkActions) private var networkActions
@@ -38,22 +33,18 @@ struct RootCanvasMap: View {
     var body: some View {
         GeometryReader { geo in
             if let image {
-                RootGameMapViewer(root: root, itemId: itemId, mode: mode, toolBarModel: toolBarModel, playerPinId: playerPinId, image: image, degrees: degrees, containerSize: geo.size)
+                RootGameMapViewer(root: root, itemId: itemId, mode: mode, playerPinId: playerPinId, image: image, degrees: degrees, containerSize: geo.size)
                     .environment(dropPinModel)
             } else {
                 Color.clear
             }
         }
         .onChange(of: mapModel.id, initial: true) {
-            Task {
-                await reloadImage()
-            }
+            Task { await reloadImage() }
         }
         .onChange(of: mapModel.entries, initial: false) {
             guard image == nil else { return }
-            Task {
-                await reloadImage()
-            }
+            Task { await reloadImage() }
         }
 #if !os(tvOS)
         .dropDestination(for: LinkData.self) { items, point in
@@ -84,17 +75,16 @@ private extension RootCanvasMap {
 }
 
 #Preview {
-    RootCanvasMap(root: .previewWithData, itemId: MapModel.previewId, mode: .master, toolBarModel: GameToolBarModel(), playerPinId: nil)
+    RootCanvasMap(root: .previewWithData, itemId: MapModel.previewId, mode: .master, playerPinId: nil)
         .environment(MapRootModel.previewWithData)
 }
 
 
 struct RootGameMapViewer: View {
-    init(root: MapRootModel, itemId: UUID, mode: MapDisplayMode, toolBarModel: GameToolBarModel, playerPinId: UUID?, image: AKImage, degrees: Double, containerSize: CGSize) {
+    init(root: MapRootModel, itemId: UUID, mode: MapDisplayMode, playerPinId: UUID?, image: AKImage, degrees: Double, containerSize: CGSize) {
         self.root = root
         self.itemId = itemId
         self.mode = mode
-        self.toolBarModel = toolBarModel
         self.playerPinId = playerPinId
         self.image = image
         self.degrees = degrees
@@ -104,18 +94,28 @@ struct RootGameMapViewer: View {
     let root: MapRootModel
     let itemId: UUID
     let mode: MapDisplayMode
-    let toolBarModel: GameToolBarModel
     let playerPinId: UUID?
     let image: AKImage
     let degrees: Double
     let containerSize: CGSize
-    
+
     @Environment(\.networkActions) private var networkActions
 
-
     var body: some View {
-        MapViewer(image: image, photoDegrees: degrees, map: mapModel, toolBarModel: toolBarModel, playerPinId: playerPinId, mapMode: mode == .player ? .player : .gameMaster, containerSize: containerSize, sendMapUpdates: sendMapUpdates, focused: focused)
-            .id(itemId)
+        MapEditor(
+            editController: root.editController,
+            image: image,
+            photoDegrees: degrees,
+            map: mapModel,
+            viewMode: mode == .player ? .player : .master,
+            isPinEdit: false,
+            containerSize: containerSize,
+            mapMode: mode == .player ? .player : .gameMaster,
+            playerPinId: playerPinId,
+            sendMapUpdates: sendMapUpdates,
+            focused: focused
+        )
+        .id(itemId)
     }
 }
 
@@ -142,4 +142,3 @@ private extension RootGameMapViewer {
         networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
     }
 }
-

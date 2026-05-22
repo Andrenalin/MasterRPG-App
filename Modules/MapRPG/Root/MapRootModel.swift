@@ -14,7 +14,7 @@ import SwiftUI
 @MainActor @Observable
 public final class RootModel: Sendable {
     @MainActor
-    var toolBarModel = GameToolBarModel()
+    var gameEditorModel: MapEditorModel? = nil
 }
 
 @MainActor @Observable

@@ -4,6 +4,13 @@ import CoreRPG
 import PhotoRPG
 import SwiftUI
 
+enum MapMode {
+    case edit
+    case gameMaster
+    case player
+    case viewer
+}
+
 @MainActor @Observable
 final class MapEditorModel {
     // MARK: - View State
@@ -23,9 +30,33 @@ final class MapEditorModel {
 
     var pinScale: CGFloat
     var hexScale: Double
+    var lastPinScale: CGFloat = 1
+    var lastHexScale: Double = 1
     var isHexMap: Bool = false
     var displayMode: MapDisplayMode = .master
     var hideCloseButton: Bool = false
+
+    var canReshare: Bool { lastHexScale != hexScale || lastPinScale != pinScale }
+
+    func resetScales(from map: MapModel) {
+        pinScale = map.pinScale
+        hexScale = map.hexMapScale
+        resetReshare()
+    }
+
+    func resetReshare() {
+        lastPinScale = pinScale
+        lastHexScale = hexScale
+    }
+
+    // MARK: - Game Mode State
+
+    var mapMode: MapMode = .edit
+    var playerPinId: UUID? = nil
+    var isStreaming: Bool = false
+    var isPointing: Bool = false
+    var sendMapUpdates: (() -> Void)? = nil
+    var focusedCallback: (() -> Void)? = nil
 
     var iconDisplayMode: String {
         switch displayMode {
@@ -59,17 +90,24 @@ final class MapEditorModel {
 
     // MARK: - Initialization
 
-    init(map: MapModel, image: AKImage, photoDegrees: Double, containerSize: CGSize, displayMode: MapDisplayMode = .master) {
+    init(map: MapModel, image: AKImage, photoDegrees: Double, containerSize: CGSize, displayMode: MapDisplayMode = .master, mapMode: MapMode = .edit, playerPinId: UUID? = nil) {
         self.image = image
         self.photoDegrees = photoDegrees
         self.containerSize = containerSize
         self.pinScale = map.pinScale
         self.hexScale = map.hexMapScale
+        self.lastPinScale = map.pinScale
+        self.lastHexScale = map.hexMapScale
+        self.isHexMap = map.entries.contains(where: { $0.isHexGrid })
         self.displayMode = displayMode
+        self.mapMode = mapMode
+        self.playerPinId = playerPinId
 
         self.imageModel = ImageViewerModel(offset: .zero, scale: 1)
-        self.pins = MapPinViewModel(mapPins: map.mapPins, pointer: .empty)
-        self.entries = MapEntryViewerModel(mapId: map.id, entries: [])
+        self.pins = MapPinViewModel(mapPins: map.mapPins, pointer: map.pointer)
+        // Game mode seeds entries immediately (no working-copy merge needed); edit mode
+        // starts empty and lets firstAppear/resetEntries do the merge against the working copy.
+        self.entries = MapEntryViewerModel(mapId: map.id, entries: mapMode == .edit ? [] : map.entries)
         self.editEntries = MapEntryViewerModel(mapId: map.id, entries: [])
     }
 
@@ -126,11 +164,18 @@ final class MapEditorModel {
             return incoming
         }
 
-        // Preserve hex entries that were generated into the working copy but don't exist
-        // in the live map yet (they only reach the store on checkmark).
-        let localHexEntries = entries.entries.filter { $0.isHexGrid }
-        let mergedIds = Set(merged.map { $0.id })
-        let hexToAppend = localHexEntries.filter { !mergedIds.contains($0.id) }
+        // Preserve hex entries that were generated into the working copy but don't exist in
+        // the live map yet (they only reach the store on checkmark). Skip in game mode —
+        // the live map is the single source of truth, so stale local hex entries must not
+        // be re-appended after the user toggles hex off.
+        let hexToAppend: [MapEntryModel]
+        if workingCopy != nil {
+            let localHexEntries = entries.entries.filter { $0.isHexGrid }
+            let mergedIds = Set(merged.map { $0.id })
+            hexToAppend = localHexEntries.filter { !mergedIds.contains($0.id) }
+        } else {
+            hexToAppend = []
+        }
         let final = merged + hexToAppend
 
         guard entries.entries != final else { return }
@@ -138,6 +183,7 @@ final class MapEditorModel {
         withAnimation(.bouncy) {
             entries.resetEntries(mapId: map.id, entries: final)
         }
+        isHexMap = final.contains(where: { $0.isHexGrid })
 
         // Update focus if needed
         let focus = final.first(where: { $0.focused })?.id
@@ -152,6 +198,7 @@ final class MapEditorModel {
     func changeImage(map: MapModel) {
         hexScale = map.hexMapScale
         pinScale = map.pinScale
+        resetReshare()
 
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(150))
@@ -174,16 +221,13 @@ final class MapEditorModel {
 
     func firstAppear(map: MapModel) {
         Task {
-            try? await Task.sleep(for: .milliseconds(50))
+            let delay: Duration = mapMode == .edit ? .milliseconds(50) : .milliseconds(150)
+            try? await Task.sleep(for: delay)
             await MainActor.run {
                 appeared = true
                 resetEntries(newEntries: map.entries, map: map)
                 withAnimation {
-                    if focusId == nil {
-                        resetZoom()
-                    } else {
-                        focusedMap()
-                    }
+                    if focusId == nil { resetZoom() } else { focusedMap() }
                 }
             }
         }
@@ -373,6 +417,32 @@ final class MapEditorModel {
                 path.addLine(to: secondPoint)
             }
         }
+    }
+
+    // MARK: - Pointer (game mode)
+
+    func resetPointer(map: MapModel) {
+        guard pins.pointer != map.pointer else { return }
+        if appeared {
+            withAnimation(.bouncy) { pins.pointer = map.pointer }
+        } else {
+            pins.pointer = map.pointer
+        }
+    }
+
+    func updatePointer(location: CGPoint, map: MapModel, withOutRelocation: Bool = false) {
+        guard map.pointer.isShown || isPointing else { return }
+        if withOutRelocation {
+            map.pointer.location = location
+        } else {
+            map.pointer.location = (location - imageModel.offset) / imageModel.scale
+            pins.setPinPointer(updatedPin: map.pointer)
+        }
+        if mapMode == .gameMaster {
+            map.pointer.isShown = isPointing
+            pins.setPinPointer(updatedPin: map.pointer)
+        }
+        sendMapUpdates?()
     }
 
     // MARK: - Computed Properties

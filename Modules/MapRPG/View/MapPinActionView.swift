@@ -55,6 +55,7 @@ struct MapPinActionView: View, Equatable {
     let isShown: Bool
     let borderColor: Color
     let canDrag: Bool
+    let showActions: Bool
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
 
@@ -75,7 +76,8 @@ struct MapPinActionView: View, Equatable {
               lhs.pinSize == rhs.pinSize,
               lhs.isShown == rhs.isShown,
               lhs.borderColor == rhs.borderColor,
-              lhs.canDrag == rhs.canDrag else { return false }
+              lhs.canDrag == rhs.canDrag,
+              lhs.showActions == rhs.showActions else { return false }
         let lp = lhs.model.pinPointer(for: lhs.pinId)
         let rp = rhs.model.pinPointer(for: rhs.pinId)
         return lp?.location == rp?.location
@@ -86,15 +88,17 @@ struct MapPinActionView: View, Equatable {
     var body: some View {
         MapPinView(model: model, pinId: pinId, pinSize: pinSize, isShown: isShown, borderColor: borderColor, canDrag: canDrag, doubleTapAction: doubleTapAction, dragEndAction: dragEndAction)
             .overlay {
+                if showActions {
 #if os(visionOS)
-                actionButtons
-#else
-                GlassEffectContainer {
                     actionButtons
-                }
+#else
+                    GlassEffectContainer {
+                        actionButtons
+                    }
 #endif
+                }
             }
-            .sheet(isPresented: $showPhotoSelection) {
+            .sheet(isPresented: showActions ? $showPhotoSelection : .constant(false)) {
                 ManagedPresentationView {
                     root.viewController.photoSelection(root: root, selectionModel: selectedPhoto)
 #if !os(macOS)
@@ -103,7 +107,7 @@ struct MapPinActionView: View, Equatable {
                 }
             }
             .onChange(of: showPhotoSelection) {
-                guard !showPhotoSelection, !selectedPhoto.selection.isEmpty else { return }
+                guard showActions, !showPhotoSelection, !selectedPhoto.selection.isEmpty else { return }
                 withAnimation { model.replacePhoto(pinId: pinId, itemId: selectedPhoto.itemId) }
                 selectedPhoto.resetSelection(itemId: nil, entryId: nil)
             }
@@ -188,7 +192,7 @@ private struct MapPinActionButtons: View {
     @Previewable @State var model = MapPinViewModel(mapPins: [], pointer: .empty)
     ZStack {
         Color.blue
-        MapPinActionView(model: model, pinId: id, layoutDown: true, pinSize: CGSize(width: 80, height: 80), isShown: true, borderColor: .red, canDrag: true) {
+        MapPinActionView(model: model, pinId: id, layoutDown: true, pinSize: CGSize(width: 80, height: 80), isShown: true, borderColor: .red, canDrag: true, showActions: true) {
             print("double tap")
         } dragEndAction: {
             print("end move")

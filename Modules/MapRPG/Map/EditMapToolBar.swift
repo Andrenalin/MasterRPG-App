@@ -20,7 +20,11 @@ struct EditToolBarViewModifier: ViewModifier {
 
     @Namespace private var pinSpace
 
+    @ViewBuilder
     func body(content: Content) -> some View {
+        if editorModel.mapMode != .edit {
+            content
+        } else {
         content
             .overlay(alignment: .bottom) {
                 GlassEffectContainerView {
@@ -116,6 +120,7 @@ struct EditToolBarViewModifier: ViewModifier {
                 }
 #endif
             }
+        } // end else (edit mode)
     }
 }
 
