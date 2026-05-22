@@ -92,7 +92,27 @@ extension MapRootModel: RootControllable {
 extension MapModel {
     static let previewId = UUID(uuidString: "50DFDB6F-E8B1-41A4-A409-911D888119E8")!
     @MainActor
-    static let preview = MapModel(id: previewId, name: "Mega Dungeon", description: "Heavy Dunegon", tags: ["Master", "Monster", "Hardcore"], category: .dungeon, displayState: 0, entries: [MapEntryModel.preview], photoId: UUID(uuidString: "F3CA87E3-940B-402F-B059-F09EC602AC52")!, width: 1000, height: 800, scale: 1.0, degrees: 0.0)
+    static let preview = MapModel(
+        id: previewId,
+        name: "Mega Dungeon",
+        description: "Heavy Dungeon",
+        tags: ["Master", "Monster", "Hardcore"],
+        category: .dungeon,
+        displayState: 0,
+        entries: [
+            MapEntryModel.previewEntrance,
+            MapEntryModel.previewGreatHall,
+            MapEntryModel.previewTreasureRoom,
+            MapEntryModel.previewCorridor,
+        ],
+        photoId: UUID(uuidString: "F3CA87E3-940B-402F-B059-F09EC602AC52")!,
+        width: 1000,
+        height: 800,
+        mapPins: MapPinModel.previewPins,
+        pinScale: 1.0,
+        scale: 1.0,
+        degrees: 0.0
+    )
 }
 
 extension ItemRowTreeModel {
@@ -190,9 +210,71 @@ extension MapModel {
 }
 
 extension MapEntryModel {
-    static let previewId: UUID = UUID()
+    static let previewId: UUID = UUID(uuidString: "A1B2C3D4-E5F6-7890-ABCD-EF1234567890")!
+
+    // Kept for backward compatibility — aliases the entrance room
     @MainActor
-    static let preview = MapEntryModel(id: MapEntryModel.previewId, name: "TestEntry", content: "Super view Text", coordinates: [.zero, CGPoint(x: 400, y: 0), CGPoint(x: 400, y: 200)])
+    static var preview: MapEntryModel { previewEntrance }
+
+    // Entrance room — bottom-left area
+    @MainActor
+    static let previewEntrance = MapEntryModel(
+        id: UUID(uuidString: "A1B2C3D4-E5F6-7890-ABCD-EF1234567890")!,
+        name: "Entrance",
+        content: "The dungeon entrance. Torches flicker on damp stone walls.",
+        coordinates: [
+            CGPoint(x: 50, y: 550),
+            CGPoint(x: 250, y: 550),
+            CGPoint(x: 250, y: 700),
+            CGPoint(x: 50, y: 700),
+        ],
+        isShown: true
+    )
+
+    // Great Hall — center of the map
+    @MainActor
+    static let previewGreatHall = MapEntryModel(
+        id: UUID(uuidString: "B2C3D4E5-F6A7-8901-BCDE-F12345678901")!,
+        name: "Great Hall",
+        content: "A vast pillared hall. Ancient banners hang from the ceiling.",
+        coordinates: [
+            CGPoint(x: 300, y: 200),
+            CGPoint(x: 700, y: 200),
+            CGPoint(x: 700, y: 550),
+            CGPoint(x: 300, y: 550),
+        ],
+        isShown: false
+    )
+
+    // Treasure Room — top-right corner
+    @MainActor
+    static let previewTreasureRoom = MapEntryModel(
+        id: UUID(uuidString: "C3D4E5F6-A7B8-9012-CDEF-123456789012")!,
+        name: "Treasure Room",
+        content: "Glittering gold fills every corner. Beware the trap floor.",
+        coordinates: [
+            CGPoint(x: 720, y: 80),
+            CGPoint(x: 940, y: 80),
+            CGPoint(x: 940, y: 280),
+            CGPoint(x: 720, y: 280),
+        ],
+        isShown: false
+    )
+
+    // Narrow corridor connecting entrance to the hall
+    @MainActor
+    static let previewCorridor = MapEntryModel(
+        id: UUID(uuidString: "D4E5F6A7-B8C9-0123-DEF0-234567890123")!,
+        name: "Corridor",
+        content: "A narrow passage. The floor is slippery with moisture.",
+        coordinates: [
+            CGPoint(x: 250, y: 600),
+            CGPoint(x: 300, y: 600),
+            CGPoint(x: 300, y: 550),
+            CGPoint(x: 250, y: 550),
+        ],
+        isShown: true
+    )
     func generateModel() -> String {
         """
             EntryViewModel(
@@ -213,6 +295,45 @@ extension MapEntryModel {
     private func generateCoords() -> String {
         coordinates.map { "CGPoint(x: \($0.x), y: \($0.y)), " }.reduce("[") { $0 + $1 } + "]"
     }
+}
+
+extension MapPinModel {
+    // Pins placed at center-points of preview rooms
+    @MainActor
+    static let previewPins: [MapPinModel] = [
+        MapPinModel(
+            id: UUID(uuidString: "E5F6A7B8-C9D0-1234-EF01-345678901234")!,
+            name: "Goblin Guard",
+            color: .red,
+            location: CGPoint(x: 150, y: 625),
+            size: .normal,
+            isShown: true
+        ),
+        MapPinModel(
+            id: UUID(uuidString: "F6A7B8C9-D0E1-2345-F012-456789012345")!,
+            name: "Dragon",
+            color: .orange,
+            location: CGPoint(x: 500, y: 375),
+            size: .huge,
+            isShown: true
+        ),
+        MapPinModel(
+            id: UUID(uuidString: "07B8C9D0-E1F2-3456-0123-567890123456")!,
+            name: "Treasure Chest",
+            color: .yellow,
+            location: CGPoint(x: 830, y: 180),
+            size: .small,
+            isShown: false
+        ),
+        MapPinModel(
+            id: UUID(uuidString: "18C9D0E1-F203-4567-1234-678901234567")!,
+            name: "Secret Door",
+            color: .blue,
+            location: CGPoint(x: 275, y: 575),
+            size: .tiny,
+            isShown: false
+        ),
+    ]
 }
 
 extension DisplayConfigModel {
