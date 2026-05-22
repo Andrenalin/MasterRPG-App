@@ -23,6 +23,11 @@ final class EditToolBarModel {
 
     var saveAction: (() -> Void)?
     var cancelAction: (() -> Void)?
+    var addMonstersAction: ((_ entryId: UUID?, _ monsters: [ItemRowModel]) -> Void)?
+    var toggleHexAction: (() -> Void)?
+    var updateHexScaleAction: ((_ scale: Double) -> Void)?
+
+    var isHexMap: Bool = false
 
     var displayMode: MapDisplayMode = .master
     func toggleDisplayMode() {
@@ -95,9 +100,10 @@ struct EditToolBarViewModifier: ViewModifier {
                 hexScale <=> model.hexScale
             }
             .onChange(of: showPinSelection, initial: false) {
-                guard !showPinSelection, !selectedPin.selection.isEmpty, let mapModel = model.mapModel else { return }
+                guard !showPinSelection, !selectedPin.selection.isEmpty else { return }
                 let entryId = editController.sheetEditorModel.entryId
-                withAnimation { editController.addMonsters(map: mapModel, entryId: entryId, location: nil, monsters: selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }, number: 1) }
+                let monsters = selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }
+                withAnimation { model.addMonstersAction?(entryId, monsters) }
                 selectedPin.resetSelection(itemId: nil, entryId: nil)
             }
         #if os(macOS)
@@ -276,13 +282,12 @@ private extension EditToolBarViewModifier {
 
     @ViewBuilder var hexCreationButton: some View {
         Button {
-            guard let mapModel = model.mapModel else { return }
             withAnimation {
-                let _ = editController.toggleHexMap(for: mapModel)
+                model.toggleHexAction?()
                 withAnimation { hideScales <=> false }
             }
         } label: {
-            let symbolName = editController.isHexMap(for: model.mapModel ?? MapModel.empty) ? "hexagon.fill" : "hexagon"
+            let symbolName = model.isHexMap ? "hexagon.fill" : "hexagon"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Hex map")
@@ -341,7 +346,7 @@ private extension EditToolBarViewModifier {
                 Text("Hex Scale", bundle: .module)
             }
             .onChange(of: hexScale) {
-                model.hexScale = hexScale
+                model.updateHexScaleAction?(hexScale)
             }
             .labelsHidden()
 #endif

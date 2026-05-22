@@ -81,23 +81,39 @@ final class MapEditorModel {
     // MARK: - Entries Management
 
     func resetEntries(newEntries: [MapEntryModel], map: MapModel) {
-        // Update edit entry if it exists and has changed
-        if let editEntry = editEntries.entries.first,
-           let index = newEntries.firstIndex(where: { $0.id == editEntry.id }),
-           editEntry != newEntries[index] {
-            withAnimation(.bouncy) {
-                editEntries.resetEntries(mapId: map.id, entries: [newEntries[index]])
+        let activeEntryId = editEntries.entries.first?.id
+
+        // Merge incoming entries: prefer working-copy version for any entry that has
+        // been locally edited (active edit entry and anything already flushed into entries).
+        let merged = newEntries.map { incoming -> MapEntryModel in
+            // Active edit entry: keep what the user is working on, never overwrite with live
+            if incoming.id == activeEntryId {
+                return editEntries.entries.first ?? incoming
             }
+            // Previously-edited entries reflected in display: keep local version if it differs
+            // from the live map (it was flushed from editEntries and not yet committed).
+            if let local = entries.entries.first(where: { $0.id == incoming.id }),
+               workingCopy?.entries.contains(where: { $0.id == incoming.id && $0 != incoming }) == true {
+                return local
+            }
+            return incoming
         }
 
-        guard entries.entries != newEntries else { return }
+        // Preserve hex entries that were generated into the working copy but don't exist
+        // in the live map yet (they only reach the store on checkmark).
+        let localHexEntries = entries.entries.filter { $0.isHexGrid }
+        let mergedIds = Set(merged.map { $0.id })
+        let hexToAppend = localHexEntries.filter { !mergedIds.contains($0.id) }
+        let final = merged + hexToAppend
+
+        guard entries.entries != final else { return }
 
         withAnimation(.bouncy) {
-            entries.resetEntries(mapId: map.id, entries: newEntries)
+            entries.resetEntries(mapId: map.id, entries: final)
         }
 
         // Update focus if needed
-        let focus = newEntries.first(where: { $0.focused })?.id
+        let focus = final.first(where: { $0.focused })?.id
         if focus != focusId {
             focusId = focus
             focusedMap()

@@ -3,6 +3,7 @@
 import CoreRPG
 import PhotoRPG
 import SwiftUI
+import CharacterRPG
 
 struct MapEditController {
     let editController: EditController
@@ -100,9 +101,11 @@ extension MapEditController {
     @MainActor
     func changeMap(map: MapModel, currentEntryId: UUID?, editorModel: MapEditorModel) {
         if currentEntryId != editorModel.editEntries.entries.first?.id {
-            // Flush current edit entry into working copy (not the store)
+            // Flush current edit entry into working copy and display entries
             for entry in editorModel.editEntries.entries {
                 editorModel.workingCopy?[entry.id] = entry
+                // Also update the display entries so the edited shape stays visible
+                editorModel.entries.setEntry(entry: entry)
             }
 
             // Load new entry from working copy into editEntries
@@ -180,16 +183,142 @@ extension MapEditController {
         let entry = editorModel.entry(for: location, in: map)
 
         withAnimation(.bouncy) {
-            editController.addMonsters(
-                map: copy,
-                entryId: entry?.id,
-                location: location,
-                monsters: monsters,
-                number: 1
-            )
+            addMonsters(map: copy, entryId: entry?.id, location: location, monsters: monsters, number: 1, editorModel: editorModel)
         }
-        // Sync pin UI model from updated working copy
+    }
+}
+
+// MARK: - Add Monsters (working copy only)
+
+extension MapEditController {
+    @MainActor
+    func addMonsters(map: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int, editorModel: MapEditorModel) {
+        guard let copy = editorModel.workingCopy else { return }
+
+        let pinCount = min(max(1, number), 25)
+        var pins: [MapPinModel] = []
+        for _ in 0..<pinCount {
+            pins.append(contentsOf: monsters.map { monster in
+                MapPinModel(
+                    id: UUID(),
+                    name: editController.root.characterRoot.linkControllable.name(for: monster.itemId),
+                    color: .random,
+                    photoId: editController.root.characterRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(),
+                    location: location ?? .zero,
+                    size: .normal,
+                    isShown: true
+                )
+            })
+        }
+
+        if let entryId, location == nil {
+            pins = calculatePinLocations(in: copy, for: pins, entryId: entryId)
+        }
+
+        for pin in pins {
+            let index = copy.mapPins.count
+            copy.mapPins.insert(pin, at: index)
+        }
+
         editorModel.pins.mapPins = copy.mapPins
+    }
+
+    private func calculatePinLocations(in model: MapModel, for pins: [MapPinModel], entryId: UUID) -> [MapPinModel] {
+        let entry = model[entryId]
+        var leftCenter = CGPoint(x: entry.xOffset + entry.size.width / 4, y: entry.yOffset + entry.size.height / 2)
+        return pins.map { pin in
+            var updated = pin
+            if updated.location == .zero {
+                updated.location = leftCenter
+                leftCenter = leftCenter + updated.size.size.width * model.pinScale + 5
+            }
+            return updated
+        }
+    }
+}
+
+// MARK: - Hex Map (working copy only)
+
+extension MapEditController {
+    @MainActor
+    func isHexMap(editorModel: MapEditorModel) -> Bool {
+        editorModel.workingCopy?.entries.contains(where: { $0.isHexGrid }) ?? false
+    }
+
+    @MainActor
+    func toggleHexMap(editorModel: MapEditorModel) {
+        guard let copy = editorModel.workingCopy else { return }
+        if isHexMap(editorModel: editorModel) {
+            copy.entries.removeAll { $0.isHexGrid }
+            copy.hexMapScale = 0
+        } else {
+            let scale = initHexGridSize(model: copy, size: copy.hexMapScale)
+            copy.hexMapScale = scale
+            replaceHexGrid(entries: calculateGrid(for: scale, in: CGRect(origin: .zero, size: CGSize(width: copy.width, height: copy.height))), in: copy)
+        }
+        syncDisplayEntries(from: copy, editorModel: editorModel)
+    }
+
+    @MainActor
+    func updateHexScale(_ scale: Double, editorModel: MapEditorModel) {
+        guard let copy = editorModel.workingCopy, scale > 0, scale != copy.hexMapScale else { return }
+        copy.hexMapScale = scale
+        replaceHexGrid(entries: calculateGrid(for: scale, in: CGRect(origin: .zero, size: CGSize(width: copy.width, height: copy.height))), in: copy)
+        syncDisplayEntries(from: copy, editorModel: editorModel)
+    }
+
+    @MainActor
+    private func syncDisplayEntries(from copy: MapModel, editorModel: MapEditorModel) {
+        let activeEntryId = editorModel.editEntries.entries.first?.id
+        let displayEntries = copy.entries.filter { $0.id != activeEntryId }
+        editorModel.entries.resetEntries(mapId: copy.id, entries: displayEntries)
+    }
+
+    private func initHexGridSize(model: MapModel, size: Double) -> Double {
+        guard size < 10 else { return size }
+        let wScale = model.width / (12 * sqrt(3))
+        let hScale = model.height / (12 * (3.0 / 2.0))
+        return max(wScale, hScale)
+    }
+
+    private func replaceHexGrid(entries: [MapEntryModel], in model: MapModel) {
+        model.entries.removeAll { $0.isHexGrid }
+        model.entries.append(contentsOf: entries)
+    }
+
+    private func calculateGrid(for size: Double, in rect: CGRect) -> [MapEntryModel] {
+        let hexWidth = sqrt(3) * size
+        let hexHeight = 2 * size
+        let columns = Int((rect.width + hexWidth / 2) / hexWidth) + 1
+        let rows = Int((rect.height + size / 2) / (3 * size / 2)) + 1
+
+        var hexa: [MapEntryModel] = []
+        for row in 0..<rows {
+            let offsetY = Double(row) * hexHeight - Double(row) * size / 2
+            let offsetRow = (row % 2 != 0) ? -(hexWidth / 2) : 0
+            for col in 0..<columns {
+                let offsetX = Double(col) * hexWidth + offsetRow
+                let coords = calculateHex(at: CGPoint(x: offsetX, y: offsetY), maxPoint: CGPoint(x: rect.width, y: rect.height), size: size)
+                hexa.append(MapEntryModel(id: UUID(), name: "\(col) - \(row)", content: "", coordinates: coords, isHexGrid: true, displayState: DisplayStateMask.groupHidden.rawValue))
+            }
+        }
+        return hexa
+    }
+
+    private func calculateHex(at offset: CGPoint, maxPoint: CGPoint, size: Double) -> [CGPoint] {
+        let width = sqrt(3) * size
+        let height = 2 * size
+        func clamp(_ p: CGPoint) -> CGPoint {
+            CGPoint(x: min(max(p.x, 0), maxPoint.x), y: min(max(p.y, 0), maxPoint.y))
+        }
+        return [
+            clamp(CGPoint(x: offset.x,             y: offset.y)),
+            clamp(CGPoint(x: offset.x + width / 2,  y: offset.y - height / 4)),
+            clamp(CGPoint(x: offset.x + width,       y: offset.y)),
+            clamp(CGPoint(x: offset.x + width,       y: offset.y + size)),
+            clamp(CGPoint(x: offset.x + width / 2,  y: offset.y + 3 * height / 4)),
+            clamp(CGPoint(x: offset.x,             y: offset.y + size)),
+        ]
     }
 }
 

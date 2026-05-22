@@ -80,10 +80,7 @@ struct MapEditor: View {
             .onChange(of: map.entries) {
                 viewModel.resetEntries(newEntries: map.entries, map: map)
                 mapEditController.mergeExternalEntries(newMap: map, editorModel: viewModel)
-            }
-            .onChange(of: toolBarModel.hexScale) {
-                guard toolBarModel.hexScale != 0 && toolBarModel.hexScale != map.hexMapScale else { return }
-                editController.createHexMap(model: map, hexMapScale: toolBarModel.hexScale)
+                toolBarModel.isHexMap = mapEditController.isHexMap(editorModel: viewModel)
             }
             .onChange(of: containerSize) {
                 viewModel.updateContainerSize(containerSize)
@@ -95,11 +92,24 @@ struct MapEditor: View {
                 viewModel.firstAppear(map: map)
                 toolBarModel.displayMode = viewMode
                 mapEditController.prepareWorkingCopy(from: map, editorModel: viewModel)
+                toolBarModel.isHexMap = mapEditController.isHexMap(editorModel: viewModel)
                 toolBarModel.saveAction = {
                     mapEditController.commitChanges(editorModel: viewModel, pinScale: toolBarModel.pinScale)
                 }
                 toolBarModel.cancelAction = {
                     mapEditController.discardChanges(editorModel: viewModel)
+                }
+                toolBarModel.addMonstersAction = { entryId, monsters in
+                    mapEditController.addMonsters(map: map, entryId: entryId, location: nil, monsters: monsters, number: 1, editorModel: viewModel)
+                }
+                toolBarModel.toggleHexAction = {
+                    mapEditController.toggleHexMap(editorModel: viewModel)
+                    toolBarModel.isHexMap = mapEditController.isHexMap(editorModel: viewModel)
+                    toolBarModel.hexScale = viewModel.workingCopy?.hexMapScale ?? toolBarModel.hexScale
+                }
+                toolBarModel.updateHexScaleAction = { scale in
+                    mapEditController.updateHexScale(scale, editorModel: viewModel)
+                    toolBarModel.isHexMap = mapEditController.isHexMap(editorModel: viewModel)
                 }
             }
             .modifier(EditToolBarViewModifier(editController: editController, model: toolBarModel))
