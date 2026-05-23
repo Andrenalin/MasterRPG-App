@@ -186,7 +186,7 @@ private extension PlayerGameScreen {
 #endif
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     PlayerGameScreen(root: .preview, playerController: PlayerController.preview)
         .environment(GameScreenModel())
 }
