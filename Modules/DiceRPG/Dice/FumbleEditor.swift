@@ -5,22 +5,22 @@ import SwiftUI
 
 struct FumbleEditor: View {
     let model: DiceModel
-    
+
     @Environment(DiceRootModel.self) private var root
 
     @State private var isDiceValueFumble = false
     @State private var fumbleValue: Double = 0.0
-    
+
     var body: some View {
         @Bindable var model = model
         Section {
             fumbleValueView
-            
+
             ToggleDiceValue(model: model, toggleKetpath: \.fumbleOnlyOnFirstDie, title: "Only first die can fumble", bundle: .module, icon: "dice", saveMessage: String(localized: "change fumble option", bundle: .module).localizedString)
                 .disabled(model.fumbleValues.contains(where: { $0.isResult }))
-            
+
             fumbleEditorView
-            
+
             ToggleEditor(value: $isDiceValueFumble, title: isFumbleMatchTitle, bundle: .module, icon: "123.rectangle")
         } header: {
 #if os(macOS)
@@ -46,7 +46,7 @@ private extension FumbleEditor {
                 HStack(spacing: 8) {
                     ForEach(model.fumbleValues) { fumble in
                         Button {
-                            withAnimation { root.editController.remove(fumble: fumble, itemId: model.id) }
+                            withAnimation(.easeInOut) { root.editController.remove(fumble: fumble, itemId: model.id) }
                         } label: {
                             HStack(spacing: 4) {
                                 Label(fumble.text, systemImage: fumble.icon)
@@ -70,9 +70,7 @@ private extension FumbleEditor {
         LabeledContent {
             HStack {
                 Button {
-                    Task {
-                        await addCurrentFumble()
-                    }
+                    addCurrentFumble()
                 } label: {
                     Image(systemName: "plus")
                         .imageScale(.large)
@@ -88,8 +86,8 @@ private extension FumbleEditor {
         }
     }
 
-    func addCurrentFumble() async {
-        withAnimation {
+    func addCurrentFumble() {
+        withAnimation(.easeInOut) {
             root.editController.add(fumble: Int(fumbleValue), isDiceValueFumble: isDiceValueFumble, itemId: model.id)
             fumbleValue = 0.0
         }
@@ -98,6 +96,6 @@ private extension FumbleEditor {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(DiceRootModel.self) var root
-    
+
     FumbleEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }

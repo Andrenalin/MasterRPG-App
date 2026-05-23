@@ -6,8 +6,6 @@ import SwiftUI
 struct DiceEditor: View {
     let model: DiceModel
     
-    @Environment(DiceRootModel.self) private var root
-    
     var body: some View {
         Section {
             LabeledContent {
