@@ -15,21 +15,23 @@ public struct ConvertController: Sendable {
         for itemId in itemController.itemDataModel.items {
             guard let item = itemController.itemSync(for: itemId) else { continue }
 
+            // Increment progress and yield so @Observable notifies SwiftUI before continuing.
+            // Without the yield every update queues up and SwiftUI renders them all at once at the end.
+            reportModel.increaseCurrent()
+            await Task.yield()
+
             if item.isFolder {
                 editController.cleanFolder(itemId: itemId)
             }
 
             let repairFolder = itemController.config.module != .value
-            // Repair orphaned items: if item has parentId but parent doesn't contain it in entries
             if repairFolder, let parentId = item.parentId {
                 if let parent = itemController.itemSync(for: parentId) {
                     let isOrphaned = !parent.entries.contains(where: { $0.childId == item.id })
                     if isOrphaned {
-                        // Reset orphaned item to root level
                         editController.removeItemFromParent(itemId: item.id, oneUp: false, moveFiles: false)
                     }
                 } else {
-                    // Parent doesn't exist - reset to root level
                     editController.removeItemFromParent(itemId: item.id, oneUp: false, moveFiles: false)
                 }
             }

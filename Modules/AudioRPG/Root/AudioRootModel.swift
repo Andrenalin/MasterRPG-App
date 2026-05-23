@@ -209,4 +209,8 @@ extension AudioRootModel {
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.repairHiddenAndFolders(reportModel: reportModel)
     }
+
+    public func validateLinks(reportModel: ValidateRepairModel) async {
+        await linkController.validateLinks(reportModel: reportModel)
+    }
 }

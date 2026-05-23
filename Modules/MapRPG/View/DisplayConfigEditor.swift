@@ -18,9 +18,9 @@ struct DisplayConfigEditor: View {
             
             activateBorderView
             
-            if model.displayConfig.hasBorder {
-                DisplayConfigBorderEditor(model: model)
-            }
+            DisplayConfigBorderEditor(model: model)
+                .opacity(model.displayConfig.hasBorder ? 1 : 0)
+                .frame(maxHeight: model.displayConfig.hasBorder ? .infinity : 1)
 #endif
         } header: {
             Text("Config", bundle: .module)
@@ -66,7 +66,7 @@ struct DisplayConfigEditor: View {
     @ViewBuilder private var activateBorderView: some View {
         ToggleEditor(model: borderToggleEditModel, title: "Activate Border", bundle: .module, icon: "rectangle")
             .onChange(of: model.displayConfig.hasBorder) {
-                updateToggleValue()
+                withAnimation { updateToggleValue() }
             }
     }
     

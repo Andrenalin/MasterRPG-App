@@ -287,16 +287,31 @@ extension AdventureRootModel: StoreManiplable {
 
     public func validate() {
         Task { @MainActor in
-            linkController.validateLinks()
-            audioRoot.linkControllable.validateLinks()
-            diceRoot.linkControllable.validateLinks()
-            mapRoot.linkControllable.validateLinks()
-            pdfRoot.linkControllable.validateLinks()
-            photoRoot.linkControllable.validateLinks()
-            spaceRoot.linkControllable.validateLinks()
-            tableRoot.linkControllable.validateLinks()
-            characterRoot.linkControllable.validateLinks()
-            weatherRoot.linkControllable.validateLinks()
+            let report = ValidateRepairModel()
+
+            report.update(phase: .repairFolders)
+            await checkFolders(reportModel: report)
+            await audioRoot.checkFolders(reportModel: report)
+            await diceRoot.checkFolders(reportModel: report)
+            await mapRoot.checkFolders(reportModel: report)
+            await pdfRoot.checkFolders(reportModel: report)
+            await photoRoot.checkFolders(reportModel: report)
+            await spaceRoot.checkFolders(reportModel: report)
+            await tableRoot.checkFolders(reportModel: report)
+            await characterRoot.checkFolders(reportModel: report)
+            await weatherRoot.checkFolders(reportModel: report)
+
+            report.update(phase: .validateLinks)
+            await validateLinks(reportModel: report)
+            await audioRoot.validateLinks(reportModel: report)
+            await diceRoot.validateLinks(reportModel: report)
+            await mapRoot.validateLinks(reportModel: report)
+            await pdfRoot.validateLinks(reportModel: report)
+            await photoRoot.validateLinks(reportModel: report)
+            await spaceRoot.validateLinks(reportModel: report)
+            await tableRoot.validateLinks(reportModel: report)
+            await characterRoot.validateLinks(reportModel: report)
+            await weatherRoot.validateLinks(reportModel: report)
         }
     }
 }
@@ -348,5 +363,9 @@ public extension AdventureRootModel {
     func checkFolders(reportModel: ValidateRepairModel) async {
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.repairHiddenAndFolders(reportModel: reportModel)
+    }
+
+    func validateLinks(reportModel: ValidateRepairModel) async {
+        await linkController.validateLinks(reportModel: reportModel)
     }
 }

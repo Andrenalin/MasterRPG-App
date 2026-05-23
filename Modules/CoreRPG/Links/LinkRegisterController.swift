@@ -4,15 +4,21 @@ import CoreData
 import Foundation
 import os.log
 
+/// Two-layer cross-module link registry: in-memory (`LinkRegisterListModel`) backed by CoreData (`LinkReferenceDataModel`).
+///
+/// Links are keyed by `destination.itemId`. Registration happens on every item save (via `EditControllable`),
+/// on inline editor link insertion, and on import. The register is rebuilt from CoreData on `setup(context:)`.
+/// Use `linksFrom(source:)` in SheetControllers for O(1) outgoing-link lookup instead of re-parsing entry text.
 @MainActor public struct LinkRegisterController: Sendable {
     public init(root: RootManager?) {
         self.root = root
         self.model = LinkRegisterListModel()
     }
-    
+
     let root: RootManager?
     @MainActor public let model: LinkRegisterListModel
-    
+
+    /// Fetches all persisted `LinkReferenceDataModel` rows from CoreData and populates `model.items`. Call once on startup.
     @MainActor public func setup(context: NSManagedObjectContext?) {
         guard let context else { return }
         model.context = context
@@ -40,6 +46,7 @@ import os.log
 }
 
 public extension LinkRegisterController {
+    /// Returns `true` if any registered link points to `link` as its destination (i.e. the item is referenced somewhere).
     @MainActor func isUsed(link: ItemRowModel) -> Bool {
         let keyId = link.itemId
         let used = !(model.items[keyId]?.isEmpty ?? true)
@@ -48,12 +55,14 @@ public extension LinkRegisterController {
 //        return !(model.items[link.itemId]?.isEmpty ?? true)
     }
     
+    /// Clears in-memory links whose destination matches `item`. Call before deletion to avoid stale references.
     @MainActor func resetUsedLink(for item: ItemRowModel) {
         let keyId = item.itemId
         var itemLinks = model.items[keyId, default: []]
         itemLinks.removeAll(where: { $0.destination == item })
     }
 
+    /// Returns all source items that link to `link` as their destination — used to populate "used by" UI.
     @MainActor func used(for link: ItemRowModel) -> [EffectedItemModel] {
         let keyId = link.itemId
         let links = model.items[keyId, default: []]
@@ -69,8 +78,7 @@ public extension LinkRegisterController {
         }
     }
 
-    /// Get links FROM a source entry (outgoing links from this entry to other items)
-    /// This searches through all registered links to find ones where this entry is the source
+    /// Returns outgoing links from a source entry — all items this entry references. O(n items) lookup; prefer over re-parsing entry text in SheetControllers.
     @MainActor func linksFrom(source: ItemRowModel) -> [LinkRegisterModel] {
         guard source.entryId != nil else { return [] }
 
@@ -86,6 +94,7 @@ public extension LinkRegisterController {
         return foundLinks
     }
     
+    /// Triggers `validateLinks` on every source module that has a registered link pointing to any of `items` — call on deletion or move.
     @MainActor func repairLinks(for items: [ItemRowModel]) {
         for item in items {
             let keyId = item.itemId
@@ -99,6 +108,7 @@ public extension LinkRegisterController {
 }
 
 public extension LinkRegisterController {
+    /// Adds links to the in-memory store and persists each to CoreData. Called by `EditControllable` on save and on import.
     @MainActor func register(links: [LinkRegisterModel]) {
         for link in links {
             let keyId = link.destination.itemId
@@ -106,6 +116,7 @@ public extension LinkRegisterController {
         }
     }
     
+    /// Removes links from the in-memory store and deletes the matching CoreData rows. Called by `EditControllable` on save when links are removed.
     @MainActor func deregister(links: [LinkRegisterModel]) {
         for link in links {
             let keyId = link.destination.itemId
@@ -203,6 +214,7 @@ private extension LinkRegisterController {
 // MARK: - Editor
 
 public extension LinkRegisterController {
+    /// Finds a single registered link by its UUID, scanning all destinations. Returns `nil` if not found.
     @MainActor func linkRegisterModel(linkId: UUID) -> LinkRegisterModel? {
         for (_, links) in model.items {
             if let found = links.first(where: { $0.id == linkId }) {
@@ -212,6 +224,7 @@ public extension LinkRegisterController {
         return nil
     }
 
+    /// Parses `text` for embedded markdown links, registers any that are new, and returns all matching `LinkRegisterModel`s for `source`.
     @MainActor func linkRegisterModel(in text: String, for source: ItemRowModel) -> [LinkRegisterModel] {
         let links = LinkReplaceController.links(for: text)
         return links.compactMap { rawLink -> LinkRegisterModel? in

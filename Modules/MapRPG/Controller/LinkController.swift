@@ -89,6 +89,8 @@ extension LinkController: LinkControllable {
             Logger.linkController.info("Map: \(replacedItem.name, privacy: .public) will be replaced from reparing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
+        
+        defer { resetLinkRegister(replacedItem) }
 
         guard let photoId = inspectedItem.photoId, let replacedItem = itemController.copy(of: itemId) else { return }
         if rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
@@ -96,9 +98,9 @@ extension LinkController: LinkControllable {
                 await editController.resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
             }
         } else {
-                Logger.linkController.warning("Map: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
-                replacedItem.photoId = nil
-                itemController.replace(model: replacedItem, isInsert: false)
+            Logger.linkController.warning("Map: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
+            replacedItem.photoId = nil
+            itemController.replace(model: replacedItem, isInsert: false)
         }
     }
 }

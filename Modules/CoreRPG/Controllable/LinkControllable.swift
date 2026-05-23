@@ -74,7 +74,7 @@ public protocol LinkControllable: Sendable {
     @MainActor func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String
 
     // MARK: Validate
-    @MainActor func validateLinks()
+    @MainActor func validateLinks(reportModel: ValidateRepairModel) async
     @MainActor func validateLinks(on itemId: UUID)
 
     // Link
@@ -253,13 +253,29 @@ public extension LinkControllable {
 // MARK: - Validate Links
 
 public extension LinkControllable {
-    @MainActor func validateLinks() {
+    @MainActor func validateLinks(reportModel: ValidateRepairModel) async {
+        reportModel.update(phase: .validateLinks)
         for inspectedId in itemControllable.itemDataModel.items {
+            reportModel.increaseCurrent()
+            await Task.yield()
+            guard !Task.isCancelled else { return }
             validateLinks(on: inspectedId)
         }
     }
-    
+
     @MainActor func validateLinks(on itemId: UUID) {}
+
+    /// Clears all registered links whose source is `item`, then re-registers `item.linkRegisterModels`.
+    /// Call unconditionally inside `validateLinks(on:)` — safe no-op when the item has no links.
+    @MainActor func resetLinkRegister<M: ItemLinkRegistable>(_ item: M) {
+        let register = itemControllable.linkRegisterController
+        var existing: [LinkRegisterModel] = []
+        for links in register.model.items.values {
+            existing.append(contentsOf: links.filter { $0.source.itemId == item.id })
+        }
+        register.deregister(links: existing)
+        register.register(links: item.linkRegisterModels)
+    }
 
     @MainActor func validateLink(itemId: UUID) -> Bool {
         validateLink(itemId: itemId, entryId: nil)
