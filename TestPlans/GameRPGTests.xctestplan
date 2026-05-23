@@ -1,16 +1,14 @@
 {
   "configurations" : [
     {
-      "id" : "1FBF3351-DC91-491E-8B19-06691FE27219",
-      "name" : "Configuration 1",
+      "id" : "C66B7A2B-A05D-47D4-AF67-EC4533A92CDE",
+      "name" : "Test Scheme Action",
       "options" : {
 
       }
     }
   ],
   "defaultOptions" : {
-    "language" : "en",
-    "testTimeoutsEnabled" : true,
     "threadSanitizerEnabled" : true,
     "undefinedBehaviorSanitizerEnabled" : true
   },
@@ -18,8 +16,8 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE852CD8EEA9004E7103",
-        "name" : "RPGWeathersTests"
+        "identifier" : "8EBED0B52CD8EF94004E7103",
+        "name" : "GameRPGTests"
       }
     }
   ],

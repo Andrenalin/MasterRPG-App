@@ -1,8 +1,8 @@
 {
   "configurations" : [
     {
-      "id" : "A66EA7C9-B25E-4B99-980C-3EB3490DA3F5",
-      "name" : "Test Scheme Action",
+      "id" : "6D1DD1BB-41AD-4422-AFD1-1233FE8B2880",
+      "name" : "Configuration 1",
       "options" : {
 
       }
@@ -10,6 +10,7 @@
   ],
   "defaultOptions" : {
     "language" : "en",
+    "testTimeoutsEnabled" : true,
     "threadSanitizerEnabled" : true,
     "undefinedBehaviorSanitizerEnabled" : true
   },
@@ -17,8 +18,8 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBED0D62CD8EFA5004E7103",
-        "name" : "RPGMapsTests"
+        "identifier" : "8EBECE222CD8EE85004E7103",
+        "name" : "SpaceRPGTests"
       }
     }
   ],

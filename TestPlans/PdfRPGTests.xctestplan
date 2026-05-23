@@ -18,7 +18,7 @@
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8E8EE87A2CD8EB430010A25B",
-        "name" : "RPGPdfsTests"
+        "name" : "PdfRPGTests"
       }
     }
   ],

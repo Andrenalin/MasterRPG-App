@@ -1,7 +1,7 @@
 {
   "configurations" : [
     {
-      "id" : "6573C823-884D-458A-B546-0AD39B54216C",
+      "id" : "0DEB197C-4345-4F42-8EFA-F151B4BC394A",
       "name" : "Test Scheme Action",
       "options" : {
 
@@ -18,8 +18,8 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE642CD8EE9D004E7103",
-        "name" : "RPGValuesTests"
+        "identifier" : "8EBECD972CD8EDED004E7103",
+        "name" : "DiceRPGTests"
       }
     }
   ],

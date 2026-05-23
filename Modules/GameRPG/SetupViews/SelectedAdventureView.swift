@@ -14,12 +14,10 @@ struct SelectedAdventureView: View {
     
     var body: some View {
         GroupBoxTV(isCard: true) {
-            VStack {
-                root.adventureRoot.viewController.dropChooseView(model: selection)
-            }
-            .frame(maxWidth: .infinity)
+            root.adventureRoot.viewController.dropChooseView(model: selection)
+                .frame(maxWidth: .infinity)
 #if os(macOS)
-            .padding()
+                .padding()
 #endif
         } label: {
             Label {
@@ -30,12 +28,9 @@ struct SelectedAdventureView: View {
                     .imageScale(.large)
             }
         }
-        .onAppear {
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(2))
-                root.resetSelectedAdventure(uuidString: lastAdventureUUID)
-                selection.resetSelection(itemId: root.gameModel.selectedAdventure, entryId: nil)
-            }
+        .task {
+            root.resetSelectedAdventure(uuidString: lastAdventureUUID)
+            selection.resetSelection(itemId: root.gameModel.selectedAdventure, entryId: nil)
         }
         .onChange(of: lastAdventureUUID, initial: true) {
             root.gameModel.selectedAdventure <=> selection.itemId
@@ -43,8 +38,8 @@ struct SelectedAdventureView: View {
         .onChange(of: selection.itemId) {
             root.gameModel.selectedAdventure <=> selection.itemId
         }
-        .onChange(of: root.gameModel.selectedAdventure) {
-            if let adventureId = root.gameModel.selectedAdventure {
+        .onChange(of: root.gameModel.selectedAdventure) { _, newAdventure in
+            if let adventureId = newAdventure {
                 selection.resetSelection(itemId: adventureId, entryId: nil)
                 lastAdventureUUID <=> adventureId.uuidString
             }

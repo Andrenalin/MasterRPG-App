@@ -5,10 +5,7 @@ import SwiftUI
 
 struct SelectorView: View {
     let root: GameRoot
-    
-    @AppStorage("lastSelectedGameType", store: .standard)
-    private var gameTypeInt: Int = 0
-    
+
     enum GameType: Int, Hashable, CaseIterable, Identifiable {
         #if !os(tvOS)
         case player = 0
@@ -16,16 +13,16 @@ struct SelectorView: View {
         #endif
         case proxy = 2
         case observer = 3
-        
+
         var id: Int { rawValue }
         var text: LocalizedStringKey {
             switch self {
-#if !os(tvOS)
+            #if !os(tvOS)
             case .player:
                 return "Player"
             case .master:
                 return "Master"
-#endif
+            #endif
             case .proxy:
                 return "Proxy"
             case .observer:
@@ -33,12 +30,15 @@ struct SelectorView: View {
             }
         }
     }
-#if !os(tvOS)
-    @State private var selected: GameType = .player
-#else
-    @State private var selected: GameType = .proxy
-#endif
-    
+
+    #if !os(tvOS)
+    @AppStorage("lastSelectedGameType", store: .standard)
+    private var selected: GameType = .player
+    #else
+    @AppStorage("lastSelectedGameType", store: .standard)
+    private var selected: GameType = .proxy
+    #endif
+
     var body: some View {
         VStack {
             Picker(selection: $selected) {
@@ -51,15 +51,15 @@ struct SelectorView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            
-            ZStack(alignment: .top) {
+
+            Group {
                 switch selected {
-#if !os(tvOS)
+                #if !os(tvOS)
                 case .player:
                     playerView
                 case .master:
                     gameMasterView
-#endif
+                #endif
                 case .proxy:
                     proxyView
                 case .observer:
@@ -67,48 +67,35 @@ struct SelectorView: View {
                 }
             }
         }
-        .onAppear {
-#if !os(tvOS)
-            withAnimation { selected <=> GameType(rawValue: gameTypeInt) ?? .player }
-#else
-            withAnimation { selected <=> GameType(rawValue: gameTypeInt) ?? .proxy }
-#endif
-        }
-        .onChange(of: selected) {
-            gameTypeInt <=> selected.rawValue
-        }
     }
-    
-    @MainActor
+
     private var playerView: some View {
         ScrollView {
             VStack {
                 SelectedPlayerView(root: root)
-                
                 PlayerStartView(root: root)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     private var gameMasterView: some View {
         ScrollView {
             VStack {
                 SelectedAdventureView(root: root)
-                
                 MasterStartView(root: root)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     private var observerView: some View {
         ScrollView {
             SelectObserverGameView(root: root)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     private var proxyView: some View {
         ScrollView {
             SearchProxyView(root: root)
@@ -117,7 +104,8 @@ struct SelectorView: View {
     }
 }
 
-#Preview {
-    SelectorView(root: .preview)
-        .environment(AppSettingsModel())
+#Preview(traits: .mockData) {
+    ManagedNavigationStack {
+        SelectorView(root: .preview)
+    }
 }
