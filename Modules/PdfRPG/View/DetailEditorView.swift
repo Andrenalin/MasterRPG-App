@@ -8,18 +8,17 @@ struct DetailEditorView: View {
     let model: PdfModel
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                HStack {
-                    FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], itemId: model.id)
+        HStack {
+            FileImporterView(
+                editControllable: root.editController,
+                fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [],
+                itemId: model.id
+            )
 
-                    Text(model.url?.path(percentEncoded: false) ?? "No file is set")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                }
-                .opacity(model.specialCategory ? 0 : 1)
-            }
+            Text(model.url?.path(percentEncoded: false) ?? "No file is set")
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .opacity(model.specialCategory ? 0 : 1)
         .padding()
 
         SheetRootEditorView(

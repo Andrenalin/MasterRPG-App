@@ -8,12 +8,10 @@ import SwiftUI
 struct DetailEditorView: View {
     let root: CharacterRootModel
     let model: ValueModel
-    
+
     var body: some View {
-        let _ = Self._printChanges()
-        
         DetailSelectionEditorView(root: root, model: model)
-        
+
         SheetRootEditorView(
             root: root.rootController,
             linkControllable: root.linkControllable,
@@ -32,21 +30,40 @@ struct DetailEditorView: View {
 struct DetailSelectionEditorView: View {
     let root: CharacterRootModel
     let model: ValueModel
-    
+
     var body: some View {
-        let _ = Self._printChanges()
-        
+        DiceDropSection(root: root, model: model)
+        PhotoDropSection(root: root, model: model)
+    }
+}
+
+private struct DiceDropSection: View {
+    let root: CharacterRootModel
+    let model: ValueModel
+
+    var body: some View {
         root.diceRoot.viewController.dropChooseView(model: root.editController.valueEditModel.selectionDice)
             .onChange(of: root.editController.valueEditModel.selectionDice.selection) {
-                withAnimation { root.editController.add(diceId: root.editController.valueEditModel.selectionDice.itemId, itemId: model.id) }
+                withAnimation(.easeInOut) {
+                    root.editController.add(diceId: root.editController.valueEditModel.selectionDice.itemId, itemId: model.id)
+                }
             }
             .task(id: model.diceId) {
                 root.editController.valueEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil)
             }
-        
+    }
+}
+
+private struct PhotoDropSection: View {
+    let root: CharacterRootModel
+    let model: ValueModel
+
+    var body: some View {
         root.photoRoot.viewController.carouselPhotos(root: root.photoRoot, photoSelection: root.editController.valueEditModel.selectionPhoto)
             .onChange(of: root.editController.valueEditModel.selectionPhoto.selection) {
-                withAnimation { root.editController.add(selection: root.editController.valueEditModel.selectionPhoto.selection, itemId: model.id) }
+                withAnimation(.easeInOut) {
+                    root.editController.add(selection: root.editController.valueEditModel.selectionPhoto.selection, itemId: model.id)
+                }
             }
             .task(id: model.photoId) {
                 root.editController.valueEditModel.selectionPhoto.resetSelection(selectionIds: model.photos)
