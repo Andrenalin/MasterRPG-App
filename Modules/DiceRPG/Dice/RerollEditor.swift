@@ -42,7 +42,6 @@ private extension RerollEditor {
 
     @ViewBuilder
     var rerollValueView: some View {
-        @Bindable var model = model
         LabeledContent {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
@@ -80,7 +79,6 @@ private extension RerollEditor {
 
     @ViewBuilder
     var rerollEditorView: some View {
-        @Bindable var model = model
         LabeledContent {
             HStack {
                 Button {
@@ -110,7 +108,6 @@ private extension RerollEditor {
 
     @ViewBuilder
     var rerollReplaceEditorView: some View {
-        @Bindable var model = model
         LabeledContent {
             HStack {
                 Button {

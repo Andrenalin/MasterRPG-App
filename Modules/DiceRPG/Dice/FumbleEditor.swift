@@ -12,7 +12,6 @@ struct FumbleEditor: View {
     @State private var fumbleValue: Double = 0.0
 
     var body: some View {
-        @Bindable var model = model
         Section {
             fumbleValueView
 

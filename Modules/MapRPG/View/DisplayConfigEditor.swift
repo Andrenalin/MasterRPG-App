@@ -27,13 +27,15 @@ struct DisplayConfigEditor: View {
         }
         .animation(.default, value: model.displayConfig.hasBorder)
         .onChange(of: model.id, initial: true) {
+#if !os(tvOS)
             resetColor()
             updateToggleValue()
+#endif
         }
     }
     
 #if !os(tvOS)
-    @ViewBuilder var coverColorView: some View {
+    @ViewBuilder private var coverColorView: some View {
         LabeledContent {
             ColorPicker(selection: $color, supportsOpacity: false) {
                 Text("Cover color", bundle: .module)
@@ -53,6 +55,7 @@ struct DisplayConfigEditor: View {
 #endif
 
     private func resetColor() {
+        guard color != model.displayConfig.color else { return }
         color <=> model.displayConfig.color
     }
 
@@ -60,14 +63,14 @@ struct DisplayConfigEditor: View {
         root.editController.reset(coverColor: color, itemId: model.id)
     }
 
-    @ViewBuilder var activateBorderView: some View {
+    @ViewBuilder private var activateBorderView: some View {
         ToggleEditor(model: borderToggleEditModel, title: "Activate Border", bundle: .module, icon: "rectangle")
             .onChange(of: model.displayConfig.hasBorder) {
                 updateToggleValue()
             }
     }
     
-    func updateToggleValue() {
+    private func updateToggleValue() {
         let toggleValue = model.displayConfig.hasBorder
         if model.id != borderToggleEditModel.valueId || toggleValue != borderToggleEditModel.value {
             let editController = root.editController

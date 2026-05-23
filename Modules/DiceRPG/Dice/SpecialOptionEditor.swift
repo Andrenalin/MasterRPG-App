@@ -5,13 +5,12 @@ import SwiftUI
 
 struct SpecialOptionEditor: View {
     let model: DiceModel
-    
+
     @Environment(DiceRootModel.self) private var root
 
     @State private var addValueModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
-    
+
     var body: some View {
-        @Bindable var model = model
         Section {
             ToggleDiceValue(model: model, toggleKetpath: \.reorderDice, title: "Reorder dice by value", bundle: .module, icon: "textformat.123", saveMessage: String(localized: "change reorder dice option", bundle: .module).localizedString)
 
@@ -30,12 +29,18 @@ struct SpecialOptionEditor: View {
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .onChange(of: model.id, initial: true) {
-            let editController = root.editController
-            addValueModel.reset(valueId: model.id, value: Double(model.addDiceEvery)) { itemId, value in
-                editController.reset(addValue: value, itemId: itemId)
-            }
+            syncAddValueModel()
         }
+        .onChange(of: model.addDiceEvery) {
+            syncAddValueModel()
+        }
+    }
 
+    private func syncAddValueModel() {
+        let editController = root.editController
+        addValueModel.reset(valueId: model.id, value: Double(model.addDiceEvery)) { itemId, value in
+            editController.reset(addValue: value, itemId: itemId)
+        }
     }
 }
 
@@ -43,7 +48,6 @@ private extension SpecialOptionEditor {
 
     @ViewBuilder
     var addDiceEditorView: some View {
-        @Bindable var model = model
         LabeledContent {
             TextIntEditor(model: addValueModel, title: "Add Dice each Value", icon: "plus", prompt: "value", bundle: .module, range: model.minFirstValue...model.maxFirstValue)
         } label: {
@@ -54,6 +58,6 @@ private extension SpecialOptionEditor {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(DiceRootModel.self) var root
-    
+
     SpecialOptionEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }

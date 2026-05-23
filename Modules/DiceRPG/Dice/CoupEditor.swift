@@ -12,7 +12,6 @@ struct CoupEditor: View {
     @State private var coupValue = 0.0
     
     var body: some View {
-        @Bindable var model = model
         Section {
             coupValueView
 
@@ -90,7 +89,7 @@ struct CoupEditor: View {
     }
 
     func addCurrentCoup() {
-        withAnimation {
+        withAnimation(.easeInOut) {
             root.editController.add(coup: Int(coupValue), isDiceValueCoup: isDiceValueCoup, itemId: model.id)
             coupValue = 0.0
         }
