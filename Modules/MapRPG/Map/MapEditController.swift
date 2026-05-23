@@ -179,7 +179,7 @@ extension MapEditController {
         monsters: [ItemRowModel],
         editorModel: MapEditorModel
     ) {
-        guard let copy = editorModel.workingCopy else { return }
+        guard editorModel.workingCopy != nil else { return }
         let location = (point - editorModel.imageModel.offset) / editorModel.imageModel.scale
         let entry = editorModel.entry(for: location, in: map)
 
