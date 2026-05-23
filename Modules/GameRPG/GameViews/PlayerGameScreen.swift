@@ -21,7 +21,7 @@ struct PlayerGameScreen: View {
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
 #endif
     
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
 
     @State private var diceShowOptionModel = DiceDisplayModel()
 
@@ -116,7 +116,7 @@ private extension PlayerGameScreen {
                 // Open the character viewer window
                 #if os(macOS) || os(visionOS)
                 if let characterId = root.gameModel.selectedCharacter {
-                    sceneManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
+                    scenesManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
                 }
                 #endif
             }
@@ -124,7 +124,7 @@ private extension PlayerGameScreen {
             #if os(visionOS)
             // Restore table volume state
             if appSettingsModel.showGameTableVolume {
-                sceneManager.openWindow(SceneId.gameTable)
+                scenesManager.openWindow(SceneId.gameTable)
             }
             #endif
         }
@@ -156,8 +156,8 @@ private extension PlayerGameScreen {
 
     func showWindow(for module: NetworkModules) {
 #if os(macOS) || os(visionOS)
-        guard sceneManager.getSceneState(for: SceneId.sceneId(for: module)) == .closed else { return }
-        sceneManager.openWindow(SceneId.sceneId(for: module))
+        guard scenesManager.getSceneState(for: SceneId.sceneId(for: module)) == .closed else { return }
+        scenesManager.openWindow(SceneId.sceneId(for: module))
 #endif
     }
 
@@ -175,10 +175,10 @@ private extension PlayerGameScreen {
         .onChange(of: infoState) {
             guard infoState != .none else { return }
 
-            if sceneManager.getSceneState(for: SceneId.sceneId(for: infoState)) == .closed {
-                sceneManager.openWindow(SceneId.sceneId(for: infoState))
+            if scenesManager.getSceneState(for: SceneId.sceneId(for: infoState)) == .closed {
+                scenesManager.openWindow(SceneId.sceneId(for: infoState))
             } else {
-                sceneManager.dismissWindow(SceneId.sceneId(for: infoState))
+                scenesManager.dismissWindow(SceneId.sceneId(for: infoState))
             }
             infoState = .none
         }

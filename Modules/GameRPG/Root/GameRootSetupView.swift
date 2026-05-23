@@ -7,7 +7,7 @@ struct GameRootSetupView: View {
     let root: GameRoot
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
     
     var body: some View {
         ZStack {
@@ -22,7 +22,7 @@ struct GameRootSetupView: View {
             ScrollView {
 #if os(macOS)
                 Button {
-                    sceneManager.openWindow(SceneId.editor)
+                    scenesManager.openWindow(SceneId.editor)
                 } label: {
                     Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
                 }

@@ -31,7 +31,7 @@ public final class AppModel: Sendable {
     
     // App State Models
     @ObservationIgnored public let appGameStateModel: AppGameStateModel
-    @ObservationIgnored public let sceneManager: ScenesManager
+    @ObservationIgnored public let scenesManager: ScenesManager
 
     @ObservationIgnored public let optionKeyDownModel: OptionKeyDownModel
     @ObservationIgnored public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
@@ -95,7 +95,7 @@ public final class AppModel: Sendable {
     @MainActor public init() {
         let gameStateModel = AppGameStateModel()
         self.appGameStateModel = gameStateModel
-        self.sceneManager = ScenesManager()
+        self.scenesManager = ScenesManager()
         self.optionKeyDownModel = OptionKeyDownModel()
         self.settingsModel = AppSettingsModel()
         
@@ -394,7 +394,7 @@ extension AppModel {
     @MainActor public func routeToModule(_ module: NetworkModules, itemId: UUID? = nil, entryId: UUID? = nil) {
         guard module != .none else { return }
         let route = KnownRoutes.route(module: module, itemId: itemId, entryId: entryId)
-        let opening = sceneManager.openWindow(for: module)
+        let opening = scenesManager.openWindow(for: module)
         let rootNavigator = navigator(for: module)
         if opening {
             Task { @MainActor in

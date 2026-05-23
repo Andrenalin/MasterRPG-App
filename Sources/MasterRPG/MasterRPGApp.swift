@@ -109,7 +109,7 @@ struct MasterRPGApp: App {
 #if os(visionOS)
 //                .groupActivityAssociation(.primary(SceneId.game.rawValue))
                 .onAppear {
-                    appModel.sceneManager.setActions(
+                    appModel.scenesManager.setActions(
                         openWindow: openWindow,
                         dismissWindow: dismissWindow,
                         openImmersiveSpace: openImmersiveSpace,
@@ -119,7 +119,7 @@ struct MasterRPGApp: App {
                 }
 #else
                 .onAppear {
-                    appModel.sceneManager.setActions(
+                    appModel.scenesManager.setActions(
                         openWindow: openWindow,
                         dismissWindow: dismissWindow
                     )

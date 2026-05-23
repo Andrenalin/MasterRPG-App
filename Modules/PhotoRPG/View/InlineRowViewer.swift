@@ -9,7 +9,7 @@ struct InlineRowViewer: View, Equatable {
     
     @Environment(PhotoRootModel.self) private var root
     
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.navigator) private var navigator
 
     var body: some View {
@@ -32,7 +32,7 @@ struct InlineRowViewer: View, Equatable {
     
     private func actionHandler() {
 #if os(visionOS) || os(macOS)
-        sceneManager.openWindow(SceneId(rawValue: root.configurable.module.viewerWindowId), selection: WindowItemSelection(itemId: source.itemId, entryId: nil))
+        scenesManager.openWindow(SceneId(rawValue: root.configurable.module.viewerWindowId), selection: WindowItemSelection(itemId: source.itemId, entryId: nil))
 #else
         navigator.navigate(to: DetailRoute.viewer(source.itemId), method: .managedSheet)
 #endif

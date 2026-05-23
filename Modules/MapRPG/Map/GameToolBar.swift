@@ -14,7 +14,7 @@ struct GameToolBar: View {
     @Environment(\.networkActions) private var networkActions
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
 
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
 
     @State private var showPinSelection: Bool = false
     @State private var selectedPin: ItemSelectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: true)
@@ -129,7 +129,7 @@ struct GameToolBar: View {
 
         Button {
 #if os(macOS)
-            sceneManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
+            scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
 #else
             showPinSelection.toggle()
 #endif
@@ -236,7 +236,7 @@ struct GameToolBar: View {
     @Previewable var editController: EditController = .preview
     @Previewable var editorModel = MapEditorModel(
         map: .empty,
-        image: AKImage(systemName: "photo")!,
+        image: AKImage(),
         photoDegrees: 0,
         containerSize: CGSize(width: 400, height: 600),
         mapMode: .gameMaster

@@ -52,7 +52,7 @@ struct WindowLinkList: Scene {
                 }
             }
             .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
-            .environment(model.sceneManager)
+            .environment(model.scenesManager)
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(model.windowPlacement(for: module))

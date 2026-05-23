@@ -9,6 +9,15 @@
     }
   ],
   "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8E79C4A12E6AEE0400893928",
+          "name" : "AdventureRPG"
+        }
+      ]
+    },
     "language" : "en",
     "threadSanitizerEnabled" : true,
     "undefinedBehaviorSanitizerEnabled" : true

@@ -120,6 +120,7 @@ private extension SplitNavigation {
         Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
             tabView(tab: tab)
                 .tint(tab.module.tint)
+                .environment(appModel.itemRootController(for: tab.module))
         }
     }
     
@@ -132,10 +133,9 @@ private extension SplitNavigation {
     }
     
     func contentView(tab: RootRoute) -> some View {
-        ManagedPresentationView {
+        ManagedPresentationView(name: tab.title) {
             tab
         }
-        .environment(appModel.itemRootController(for: tab.module))
     }
     
     func splitWithDetail(tab: RootRoute) -> some View {

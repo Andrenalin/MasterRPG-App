@@ -14,7 +14,7 @@ struct SpaceQuickLook: View {
     let gameMode: Bool
     let dismiss: (() -> Void)?
         
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
     
     @State private var selected: URL?
     
@@ -40,7 +40,7 @@ struct SpaceQuickLook: View {
     func loader() {
 #if os(visionOS)
         Task {
-            await sceneManager.toggleImmersiveSpace()
+            await scenesManager.toggleImmersiveSpace()
         }
 #endif
     }

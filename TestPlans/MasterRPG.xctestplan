@@ -17,24 +17,44 @@
     "codeCoverage" : {
       "targets" : [
         {
-          "containerPath" : "container:..\/RPGModules\/andrenalinkit",
-          "identifier" : "AndrenalinKit",
-          "name" : "AndrenalinKit"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8E79C4A12E6AEE0400893928",
+          "name" : "AdventureRPG"
         },
         {
-          "containerPath" : "container:..\/RPGModules\/adventure",
-          "identifier" : "Adventure",
-          "name" : "Adventure"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "593D0D2B2E31F2D000410232",
+          "name" : "AudioRPG"
         },
         {
-          "containerPath" : "container:..\/RPGModules\/datastore",
-          "identifier" : "Datastore",
-          "name" : "Datastore"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8EA5A7D22E6A8EDB00E70E9C",
+          "name" : "CharacterRPG"
         },
         {
-          "containerPath" : "container:..\/RPGModules\/dice",
-          "identifier" : "Dice",
-          "name" : "Dice"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8E3620AC2E1A80FF00E5C99A",
+          "name" : "CoreRPG"
+        },
+        {
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8EB640052E47471400799690",
+          "name" : "DiceRPG"
+        },
+        {
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "59CE1E9B2E84F011009C6CB5",
+          "name" : "GameRPG"
+        },
+        {
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "599DCACF2E8E30C00056E46C",
+          "name" : "GeneratorRPG"
+        },
+        {
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8E79C4812E6AEDD500893928",
+          "name" : "MapRPG"
         },
         {
           "containerPath" : "container:MasterRPG.xcodeproj",
@@ -42,39 +62,34 @@
           "name" : "MasterRPG"
         },
         {
-          "containerPath" : "container:..\/RPGModules\/rpgaudio",
-          "identifier" : "RPGAudio",
-          "name" : "RPGAudio"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8EEF8E042E3639E200393DAD",
+          "name" : "PdfRPG"
         },
         {
-          "containerPath" : "container:..\/RPGModules\/rpggame",
-          "identifier" : "RPGGame",
-          "name" : "RPGGame"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8E3620DA2E1A9EAF00E5C99A",
+          "name" : "PhotoRPG"
         },
         {
-          "containerPath" : "container:..\/RPGModules\/rpgmap",
-          "identifier" : "RPGMap",
-          "name" : "RPGMap"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8ED3AB982E2B45AE00FF3AE8",
+          "name" : "RolePlayGameKit"
         },
         {
-          "containerPath" : "container:..\/RPGModules\/rpgphoto",
-          "identifier" : "RPGPhoto",
-          "name" : "RPGPhoto"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8E983DA52E27D057002B25C2",
+          "name" : "SpaceRPG"
         },
         {
-          "containerPath" : "container:..\/RPGModules\/rpgtables",
-          "identifier" : "RPGTables",
-          "name" : "RPGTables"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8EA804502E62EBC60009479F",
+          "name" : "TableRPG"
         },
         {
-          "containerPath" : "container:..\/RPGModules\/rpgvalues",
-          "identifier" : "RPGValues",
-          "name" : "RPGValues"
-        },
-        {
-          "containerPath" : "container:..\/RPGModules\/weather",
-          "identifier" : "Weather",
-          "name" : "Weather"
+          "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "8EF512862E5E03C200B4CE44",
+          "name" : "WeatherRPG"
         }
       ]
     },
@@ -98,27 +113,6 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBED0D62CD8EFA5004E7103",
-        "name" : "MapRPGTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8E8EE87A2CD8EB430010A25B",
-        "name" : "PdfRPGTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE642CD8EE9D004E7103",
-        "name" : "CharacterRPGTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBED0942CD8EF68004E7103",
         "name" : "AdventureRPGTests"
       }
@@ -126,22 +120,15 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE852CD8EEA9004E7103",
-        "name" : "WeatherRPGTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8E4B218C2CD78EF3009AB4D1",
-        "name" : "CoreRPGTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8E8EE8502CD8EA5D0010A25B",
         "name" : "AudioRPGTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8EBECE642CD8EE9D004E7103",
+        "name" : "CharacterRPGTests"
       }
     },
     {
@@ -161,15 +148,29 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE432CD8EE92004E7103",
-        "name" : "TableRPGTests"
+        "identifier" : "8EBED0B52CD8EF94004E7103",
+        "name" : "GameRPGTests"
       }
     },
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBED0B52CD8EF94004E7103",
-        "name" : "GameRPGTests"
+        "identifier" : "599DCAD72E8E30C00056E46C",
+        "name" : "GeneratorRPGTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8EBED0D62CD8EFA5004E7103",
+        "name" : "MapRPGTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8E8EE87A2CD8EB430010A25B",
+        "name" : "PdfRPGTests"
       }
     },
     {
@@ -184,6 +185,20 @@
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBECE222CD8EE85004E7103",
         "name" : "SpaceRPGTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8EBECE432CD8EE92004E7103",
+        "name" : "TableRPGTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8EBECE852CD8EEA9004E7103",
+        "name" : "WeatherRPGTests"
       }
     }
   ],

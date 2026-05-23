@@ -8,9 +8,9 @@ struct CarouselPhotoView: View {
     let selection: GroupItemSelectionModel
     
     @Environment(PhotoRootModel.self) private var root
-    
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.navigator) private var navigator
+    @Environment(ScenesManager.self) private var scenesManager
 
     enum SheetType: Identifiable {
         case selection
@@ -74,8 +74,13 @@ private extension CarouselPhotoView {
                 Image(systemName: "square.and.arrow.down")
                     .imageScale(.large)
             }
+            
             Button {
+                #if os(macOS)
+                scenesManager.openWindow(SceneId.sceneId(for: .photo))
+                #else
                 withAnimation(.easeInOut) { activeSheet = .selection }
+                #endif
             } label: {
                 VStack {
                     Text("Select", bundle: .module)
@@ -94,8 +99,7 @@ private extension CarouselPhotoView {
             switch sheet {
             case .selection:
                 ManagedPresentationView {
-                    SelectionModuleRoute.selection
-                        .environment(root.rootController)
+                    SelectionRoute.mutliSelection
                         .environment(photoIds)
                 }
             }

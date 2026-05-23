@@ -229,7 +229,7 @@ public struct AltOpenWindowButton: View {
     let module: NetworkModules
     
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
 
     public var body: some View {
         if supportsMultipleWindows {
@@ -237,9 +237,9 @@ public struct AltOpenWindowButton: View {
 #if !os(tvOS)
                 withAnimation {
                     if isPressed {
-                        sceneManager.openWindow(SceneId(rawValue: module.linkAltWindowId))
+                        scenesManager.openWindow(SceneId(rawValue: module.linkAltWindowId))
                     } else {
-                        sceneManager.openWindow(SceneId(rawValue: module.linkWindowId))
+                        scenesManager.openWindow(SceneId(rawValue: module.linkWindowId))
                     }
                 }
 #endif

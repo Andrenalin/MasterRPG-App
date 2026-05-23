@@ -57,7 +57,7 @@ struct OpenFileWindowView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
     
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
 
     @Environment(\.navigator) private var navigator
     
@@ -73,7 +73,7 @@ struct OpenFileWindowView: View {
 #if os(iOS)
             if UIDevice.current.userInterfaceIdiom == .pad {
                 Button {
-                    sceneManager.openWindow(SceneId(rawValue: windowId), selection: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
+                    scenesManager.openWindow(SceneId(rawValue: windowId), selection: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
                 } label: {
                     Label {
                         Text("Open in Window", bundle: .module)
@@ -98,7 +98,7 @@ struct OpenFileWindowView: View {
     
     private func actionHandler(windowId: String) {
 #if os(visionOS) || os(macOS)
-        sceneManager.openWindow(SceneId(rawValue: windowId), selection: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
+        scenesManager.openWindow(SceneId(rawValue: windowId), selection: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
 #elseif os(iOS)
         if horizontalSizeClass == .compact, let route = model.route?(model.itemId) {
             navigator.navigate(to: route, method: .managedCover)
