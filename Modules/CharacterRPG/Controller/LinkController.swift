@@ -67,8 +67,12 @@ extension LinkController: LinkControllable {
         return result
     }
     
-    @MainActor public func validateLinks() {
+    @MainActor public func validateLinks(reportModel: ValidateRepairModel) async {
+        reportModel.update(phase: .validateLinks)
         for inspectedId in itemController.itemDataModel.items {
+            reportModel.increaseCurrent()
+            await Task.yield()
+            guard !Task.isCancelled else { return }
             validateLinks(on: inspectedId)
         }
         validateParentId()
@@ -124,8 +128,9 @@ extension LinkController: LinkControllable {
             Logger.linkController.info("Value: \(replacedItem.name, privacy: .public) will be replaced from reparing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
+        resetLinkRegister(replacedItem)
     }
-    
+
     @MainActor func validateParentId() {
         for inspectedId in itemController.itemDataModel.items {
             let item = itemController.itemOrEmpty(for: inspectedId)

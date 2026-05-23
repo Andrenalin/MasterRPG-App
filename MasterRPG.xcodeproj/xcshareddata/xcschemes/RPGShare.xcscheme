@@ -51,8 +51,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8E4B218C2CD78EF3009AB4D1"
-               BuildableName = "AndrenalinKitTests.xctest"
-               BlueprintName = "AndrenalinKitTests"
+               BuildableName = "CoreRPGTests.xctest"
+               BlueprintName = "CoreRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -183,8 +183,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8E8EE8502CD8EA5D0010A25B"
-               BuildableName = "RPGAudiosTests.xctest"
-               BlueprintName = "RPGAudiosTests"
+               BuildableName = "AudioRPGTests.xctest"
+               BlueprintName = "AudioRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -194,8 +194,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8E8EE87A2CD8EB430010A25B"
-               BuildableName = "RPGPdfsTests.xctest"
-               BlueprintName = "RPGPdfsTests"
+               BuildableName = "PdfRPGTests.xctest"
+               BlueprintName = "PdfRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -205,8 +205,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8E8EE89B2CD8EB620010A25B"
-               BuildableName = "RPGPhotosTests.xctest"
-               BlueprintName = "RPGPhotosTests"
+               BuildableName = "PhotoRPGTests.xctest"
+               BlueprintName = "PhotoRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -216,8 +216,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8EBECD972CD8EDED004E7103"
-               BuildableName = "RPGDieTests.xctest"
-               BlueprintName = "RPGDieTests"
+               BuildableName = "DiceRPGTests.xctest"
+               BlueprintName = "DiceRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -227,8 +227,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8EBECE222CD8EE85004E7103"
-               BuildableName = "RPGSpacesTests.xctest"
-               BlueprintName = "RPGSpacesTests"
+               BuildableName = "SpaceRPGTests.xctest"
+               BlueprintName = "SpaceRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -238,8 +238,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8EBECE432CD8EE92004E7103"
-               BuildableName = "RPGTablesTests.xctest"
-               BlueprintName = "RPGTablesTests"
+               BuildableName = "TableRPGTests.xctest"
+               BlueprintName = "TableRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -249,8 +249,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8EBECE642CD8EE9D004E7103"
-               BuildableName = "RPGValuesTests.xctest"
-               BlueprintName = "RPGValuesTests"
+               BuildableName = "CharacterRPGTests.xctest"
+               BlueprintName = "CharacterRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -260,8 +260,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8EBECE852CD8EEA9004E7103"
-               BuildableName = "RPGWeathersTests.xctest"
-               BlueprintName = "RPGWeathersTests"
+               BuildableName = "WeatherRPGTests.xctest"
+               BlueprintName = "WeatherRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -271,8 +271,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8EBED0942CD8EF68004E7103"
-               BuildableName = "RPGAdventuresTests.xctest"
-               BlueprintName = "RPGAdventuresTests"
+               BuildableName = "AdventureRPGTests.xctest"
+               BlueprintName = "AdventureRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -282,8 +282,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8EBED0B52CD8EF94004E7103"
-               BuildableName = "RPGGamesTests.xctest"
-               BlueprintName = "RPGGamesTests"
+               BuildableName = "GameRPGTests.xctest"
+               BlueprintName = "GameRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -293,8 +293,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8EBED0D62CD8EFA5004E7103"
-               BuildableName = "RPGMapsTests.xctest"
-               BlueprintName = "RPGMapsTests"
+               BuildableName = "MapRPGTests.xctest"
+               BlueprintName = "MapRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -303,7 +303,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8E3620B42E1A810000E5C99A"
+               BlueprintIdentifier = "8E4B218C2CD78EF3009AB4D1"
                BuildableName = "CoreRPGTests.xctest"
                BlueprintName = "CoreRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
@@ -314,7 +314,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8E983DAD2E27D057002B25C2"
+               BlueprintIdentifier = "8EBECE222CD8EE85004E7103"
                BuildableName = "SpaceRPGTests.xctest"
                BlueprintName = "SpaceRPGTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">

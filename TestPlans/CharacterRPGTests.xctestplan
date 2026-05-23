@@ -1,7 +1,7 @@
 {
   "configurations" : [
     {
-      "id" : "41B5B8DB-4889-484F-9D68-24168B4C0463",
+      "id" : "6573C823-884D-458A-B546-0AD39B54216C",
       "name" : "Test Scheme Action",
       "options" : {
 
@@ -10,6 +10,7 @@
   ],
   "defaultOptions" : {
     "language" : "en",
+    "region" : "US",
     "threadSanitizerEnabled" : true,
     "undefinedBehaviorSanitizerEnabled" : true
   },
@@ -17,8 +18,8 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8E8EE8502CD8EA5D0010A25B",
-        "name" : "RPGAudiosTests"
+        "identifier" : "8EBECE642CD8EE9D004E7103",
+        "name" : "CharacterRPGTests"
       }
     }
   ],

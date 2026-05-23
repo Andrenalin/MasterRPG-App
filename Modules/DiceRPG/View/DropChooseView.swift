@@ -7,11 +7,8 @@ import SwiftUI
 
 struct DropChooseView: View {
     let selectionModel: ItemSelectionModel
-    
+
     @Environment(DiceRootModel.self) private var root
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-    @Environment(\.navigator) private var navigator
-    @Environment(ScenesManager.self) private var sceneManager
 
     var body: some View {
         DropItemModuleArea(module: root.configurable.module, contentView: {
@@ -19,11 +16,12 @@ struct DropChooseView: View {
                 if let model {
                     DiceViewer(model: model, isEditor: false)
                 } else {
-                    emptyDrop
+                    EmptyDropButton(selectionModel: selectionModel)
                 }
             }
             .frame(height: 128)
         }, dropAction: addLink(name:itemId:entryId:))
+        .containerShape(.rect(cornerRadius: 24))
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.accentColor.tertiary)
@@ -43,55 +41,65 @@ struct DropChooseView: View {
                     .imageScale(.large)
                     .foregroundStyle(.white, .red, .red)
             }
+            .accessibilityLabel(Text("Remove", bundle: .module))
             .borderLessTVBottonStyle()
             .padding(4)
             .contentShape(.circle)
-            .glassEffectAll()
+#if !os(visionOS)
+            .glassEffect(.regular.interactive())
+#endif
             .opacity(selectionModel.itemId != nil ? 1.0 : 0.0)
         }
     }
-    
+
     private var model: DiceModel? {
         guard let itemId = selectionModel.itemId else { return nil }
         return root.itemController.itemSync(for: itemId)
     }
-    
-    private var emptyDrop: some View {
+
+    private func addLink(name: String, itemId: UUID, entryId: UUID?) {
+        selectionModel.selection = [WindowItemSelection(itemId: itemId, entryId: entryId)]
+    }
+}
+
+private struct EmptyDropButton: View {
+    let selectionModel: ItemSelectionModel
+
+    @Environment(DiceRootModel.self) private var root
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
+    @Environment(\.navigator) private var navigator
+    @Environment(ScenesManager.self) private var scenesManager
+
+    var body: some View {
         Button {
             root.itemSelectionModel = selectionModel
 #if os(macOS)
-            sceneManager.openWindow(SceneId(rawValue: NetworkModules.dice.linkWindowId))
+            scenesManager.openWindow(SceneId(rawValue: NetworkModules.dice.linkWindowId))
 #else
-            navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
+            // we need module specific SelectionRoute, cannot use generic one (itemSelection will not work)
+            navigator.navigate(to: SelectionRoute.selection, method: .managedSheet)
 #endif
         } label: {
             VStack {
-                if showDrop {
+                if appSizeModel.mode == .regular {
                     Text("Drop \(root.configurable.module.title)", bundle: .module)
-                    
+
                     Image(systemName: "square.and.arrow.down")
                         .imageScale(.large)
                 }
-                Text(chosseText, bundle: .module)
+                Text(chooseText, bundle: .module)
             }
             .padding(.horizontal, 12)
         }
+        .contentShape(.rect)
     }
-    
-    private var chosseText: LocalizedStringKey {
-        #if os(macOS)
+
+    private var chooseText: LocalizedStringKey {
+#if os(macOS)
         "Open \(root.configurable.module.title)"
-        #else
+#else
         "Choose \(root.configurable.module.title)"
-        #endif
-    }
-    
-    private var showDrop: Bool {
-        appSizeModel.mode == .regular
-    }
-    
-    private func addLink(name: String, itemId: UUID, entryId: UUID?) {
-        selectionModel.selection = [WindowItemSelection(itemId: itemId, entryId: entryId)]
+#endif
     }
 }
 

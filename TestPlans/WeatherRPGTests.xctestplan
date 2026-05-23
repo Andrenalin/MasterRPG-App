@@ -19,7 +19,7 @@
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBECE852CD8EEA9004E7103",
-        "name" : "RPGWeathersTests"
+        "name" : "WeatherRPGTests"
       }
     }
   ],

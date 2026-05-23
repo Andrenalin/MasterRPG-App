@@ -9,18 +9,16 @@ struct DetailEditorView: View {
 
     var body: some View {
         HStack {
-            HStack {
-                FileImporterView(
-                    editControllable: root.editController,
-                    fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [],
-                    itemId: model.id
-                )
+            FileImporterView(
+                editControllable: root.editController,
+                fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [],
+                itemId: model.id
+            )
 
-                Text(model.url?.path(percentEncoded: false) ?? "No file is set")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .opacity(model.specialCategory ? 0 : 1)
+            Text(model.url?.path(percentEncoded: false) ?? "No file is set")
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .opacity(model.specialCategory ? 0 : 1)
         .padding()
     }
 }

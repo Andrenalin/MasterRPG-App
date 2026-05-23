@@ -14,12 +14,10 @@ struct SelectedPlayerView: View {
     
     var body: some View {
         GroupBoxTV(isCard: true) {
-            VStack {
-                root.characterRoot.viewController.dropChooseView(model: selection)
-            }
-            .frame(maxWidth: .infinity)
+            root.characterRoot.viewController.dropChooseView(model: selection)
+                .frame(maxWidth: .infinity)
 #if os(macOS)
-            .padding()
+                .padding()
 #endif
         } label: {
             Label {
@@ -30,12 +28,9 @@ struct SelectedPlayerView: View {
                     .imageScale(.large)
             }
         }
-        .onAppear {
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(2))
-                root.resetSelectedCharacter(uuidString: playerUUID)
-                selection.resetSelection(itemId: root.gameModel.selectedCharacter, entryId: nil)
-            }
+        .task {
+            root.resetSelectedCharacter(uuidString: playerUUID)
+            selection.resetSelection(itemId: root.gameModel.selectedCharacter, entryId: nil)
         }
         .onChange(of: playerUUID, initial: true) {
             root.gameModel.selectedCharacter <=> selection.itemId
@@ -43,8 +38,8 @@ struct SelectedPlayerView: View {
         .onChange(of: selection.itemId) {
             root.gameModel.selectedCharacter <=> selection.itemId
         }
-        .onChange(of: root.gameModel.selectedCharacter, initial: false) {
-            if let playerId = root.gameModel.selectedCharacter {
+        .onChange(of: root.gameModel.selectedCharacter, initial: false) { _, newCharacter in
+            if let playerId = newCharacter {
                 selection.resetSelection(itemId: playerId, entryId: nil)
                 playerUUID <=> playerId.uuidString
             }

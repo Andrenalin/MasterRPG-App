@@ -1,16 +1,14 @@
 {
   "configurations" : [
     {
-      "id" : "C59AACED-9042-45FC-9B15-03E19BDB7C32",
-      "name" : "Configuration 1",
+      "id" : "C66B7A2B-A05D-47D4-AF67-EC4533A92CDE",
+      "name" : "Test Scheme Action",
       "options" : {
 
       }
     }
   ],
   "defaultOptions" : {
-    "language" : "en",
-    "region" : "US",
     "threadSanitizerEnabled" : true,
     "undefinedBehaviorSanitizerEnabled" : true
   },
@@ -18,8 +16,8 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8E8EE89B2CD8EB620010A25B",
-        "name" : "RPGPhotosTests"
+        "identifier" : "8EBED0B52CD8EF94004E7103",
+        "name" : "GameRPGTests"
       }
     }
   ],

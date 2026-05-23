@@ -7,7 +7,7 @@ struct TabbedSplitExtNavigation: View {
     @SceneStorage("GameRoute") private var storedTab: RootRoute = .game
     
     @Environment(AppModel.self) private var appModel
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
@@ -47,11 +47,11 @@ struct TabbedSplitExtNavigation: View {
                 menuView
             }
             .padding(12)
-            .environment(sceneManager)
+            .environment(scenesManager)
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
             Button {
-                sceneManager.openWindow(SceneId.editor)
+                scenesManager.openWindow(SceneId.editor)
             } label: {
                 Label {
                     Text("Editor", bundle: .module)
@@ -60,7 +60,7 @@ struct TabbedSplitExtNavigation: View {
                 }
             }
             .padding([.top, .leading], 12)
-            .environment(sceneManager)
+            .environment(scenesManager)
         }
 #endif
     }

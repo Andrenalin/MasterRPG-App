@@ -1,7 +1,7 @@
 {
   "configurations" : [
     {
-      "id" : "489CE582-C402-4565-854E-989FDB12B240",
+      "id" : "41B5B8DB-4889-484F-9D68-24168B4C0463",
       "name" : "Test Scheme Action",
       "options" : {
 
@@ -17,8 +17,8 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE432CD8EE92004E7103",
-        "name" : "RPGTablesTests"
+        "identifier" : "8E8EE8502CD8EA5D0010A25B",
+        "name" : "AudioRPGTests"
       }
     }
   ],

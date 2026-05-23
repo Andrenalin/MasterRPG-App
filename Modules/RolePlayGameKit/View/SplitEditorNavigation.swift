@@ -7,7 +7,7 @@ struct SplitEditorNavigation: View {
     @SceneStorage("EditorRoute") private var storedTab: RootRoute = .pdfs
     
     @Environment(AppModel.self) private var appModel
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
@@ -47,11 +47,11 @@ struct SplitEditorNavigation: View {
                 menuView
             }
             .padding(12)
-            .environment(sceneManager)
+            .environment(scenesManager)
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
             Button {
-                sceneManager.openWindow(SceneId.game)
+                scenesManager.openWindow(SceneId.game)
             } label: {
                 Label {
                     Text("Game", bundle: .module)
@@ -60,7 +60,7 @@ struct SplitEditorNavigation: View {
                 }
             }
             .padding([.top, .leading], 12)
-            .environment(sceneManager)
+            .environment(scenesManager)
         }
 #endif
     }

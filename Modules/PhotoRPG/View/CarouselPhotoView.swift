@@ -6,41 +6,19 @@ import SwiftUI
 struct CarouselPhotoView: View {
     let photoIds: ItemSelectionModel
     let selection: GroupItemSelectionModel
-    
-    @Environment(PhotoRootModel.self) private var root
-    
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-    @Environment(\.navigator) private var navigator
 
-    enum SheetType: Identifiable {
-        case selection
-        var id: Self { self }
-    }
-    @State private var activeSheet: SheetType?
-    
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack {
-                ForEach(photoIds.selection, id: \.self.itemId) { photoId in
-                    itemView(itemId: photoId.itemId, selectedItemId: photoId.itemId)
-                        .overlay(alignment: .topTrailing) {
-                            Button(role: .destructive) {
-                                withAnimation(.easeInOut) { photoIds.selection.removeAll(where: { $0 == photoId }) }
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .imageScale(.large)
-                                    .foregroundStyle(.white, .red, .red)
-                            }
-                            .borderLessTVBottonStyle()
-                            .padding(4)
-                            .contentShape(.circle)
-#if !os(visionOS)
-                            .glassEffect(.regular.interactive())
-#endif
-                        }
+                ForEach(photoIds.selection, id: \.self.itemId) { photoSelection in
+                    CarouselPhotoItemView(
+                        photoSelection: photoSelection,
+                        photoIds: photoIds,
+                        groupSelection: selection
+                    )
                 }
-                
-                dropItemView
+
+                CarouselDropAreaView(photoIds: photoIds)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -49,12 +27,80 @@ struct CarouselPhotoView: View {
     }
 }
 
-private extension CarouselPhotoView {
-    @ViewBuilder
-    var dropItemView: some View {
+// MARK: - Photo Item
+
+private struct CarouselPhotoItemView: View {
+    let photoSelection: WindowItemSelection
+    let photoIds: ItemSelectionModel
+    let groupSelection: GroupItemSelectionModel
+
+    @Environment(PhotoRootModel.self) private var root
+    @State private var itemSelectionModel: GroupItemSelectionModel
+
+    init(photoSelection: WindowItemSelection, photoIds: ItemSelectionModel, groupSelection: GroupItemSelectionModel) {
+        self.photoSelection = photoSelection
+        self.photoIds = photoIds
+        self.groupSelection = groupSelection
+        _itemSelectionModel = State(wrappedValue: GroupItemSelectionModel(selectedItem: photoSelection.itemId))
+    }
+
+    var body: some View {
+        Button {
+            withAnimation(.easeInOut) { groupSelection.selectedItem = photoSelection.itemId }
+        } label: {
+            Group {
+                if let cacheControllable = root.cacheControllable {
+                    GroupedPhotoView(cacheController: cacheControllable, itemControllable: root.itemControllable, model: nil)
+                }
+            }
+            .environment(itemSelectionModel)
+            .frame(height: 110)
+            .clipShape(.rect(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .dropDestination(for: root.configurable.module, handler: addLink(name:itemId:entryId:))
+        .padding(1)
+        .overlay(alignment: .topTrailing) {
+            Button(role: .destructive) {
+                withAnimation(.easeInOut) {
+                    photoIds.selection.removeAll(where: { $0 == photoSelection })
+                }
+            } label: {
+                Image(systemName: "minus.circle.fill")
+                    .imageScale(.large)
+                    .foregroundStyle(.white, .red, .red)
+            }
+            .accessibilityLabel(Text("Remove", bundle: .module))
+            .borderLessTVBottonStyle()
+            .padding(4)
+            .contentShape(.circle)
+#if !os(visionOS)
+            .glassEffect(.regular.interactive())
+#endif
+        }
+    }
+
+    private func addLink(name: String, itemId: UUID, entryId: UUID?) {
+        guard !photoIds.selection.contains(where: { $0.itemId == itemId }) else { return }
+        withAnimation(.easeInOut) { photoIds.selection.append(WindowItemSelection(itemId: itemId)) }
+    }
+}
+
+// MARK: - Drop Area
+
+private struct CarouselDropAreaView: View {
+    let photoIds: ItemSelectionModel
+
+    @Environment(PhotoRootModel.self) private var root
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
+    @Environment(ScenesManager.self) private var scenesManager
+
+    @State private var showSheet = false
+
+    var body: some View {
         DropItemModuleArea(module: root.configurable.module, contentView: {
-            areaButton
-        }, dropAction: linkHandler(name:itemId:entryId:))
+            areaContent
+        }, dropAction: addLink(name:itemId:entryId:))
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.accentColor.tertiary)
@@ -65,17 +111,22 @@ private extension CarouselPhotoView {
         }
         .padding(1)
     }
-    
-    var areaButton: some View {
+
+    private var areaContent: some View {
         VStack {
             if appSizeModel.mode == .regular {
                 Text("Drop \(root.configurable.module.title)", bundle: .module)
-                
+
                 Image(systemName: "square.and.arrow.down")
                     .imageScale(.large)
             }
+
             Button {
-                withAnimation(.easeInOut) { activeSheet = .selection }
+#if os(macOS)
+                scenesManager.openWindow(SceneId.sceneId(for: .photo))
+#else
+                withAnimation(.easeInOut) { showSheet = true }
+#endif
             } label: {
                 VStack {
                     Text("Select", bundle: .module)
@@ -90,44 +141,22 @@ private extension CarouselPhotoView {
         .padding(.horizontal, 12)
         .frame(minWidth: 100)
         .frame(height: 100)
-        .sheet(item: $activeSheet) { sheet in
-            switch sheet {
-            case .selection:
-                ManagedPresentationView {
-                    SelectionModuleRoute.selection
-                        .environment(root.rootController)
-                        .environment(photoIds)
-                }
+        .sheet(isPresented: $showSheet) {
+            ManagedPresentationView {
+                SelectionRoute.mutliSelection
+                    .environment(photoIds)
             }
         }
     }
-    
-    func linkHandler(name: String, itemId: UUID, entryId: UUID?) {
+
+    private func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard !photoIds.selection.contains(where: { $0.itemId == itemId }) else { return }
         withAnimation(.easeInOut) { photoIds.selection.append(WindowItemSelection(itemId: itemId)) }
-    }
-    
-    func itemView(itemId: UUID, selectedItemId: UUID?) -> some View {
-        Button {
-            withAnimation(.easeInOut) { selection.selectedItem = selectedItemId }
-        } label: {
-            Group {
-                if let cacheControllable = root.cacheControllable {
-                    GroupedPhotoView(cacheController: cacheControllable, itemControllable: root.itemControllable, model: nil)
-                }
-            }
-            .environment(GroupItemSelectionModel(selectedItem: itemId))
-            .frame(height: 110)
-            .clipShape(.rect(cornerRadius: 20, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .dropDestination(for: root.configurable.module, handler: linkHandler(name:itemId:entryId:))
-        .padding(1)
     }
 }
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(PhotoRootModel.self) var root
-    
+
     CarouselPhotoView(photoIds: ItemSelectionModel(selection: root.itemController.itemDataModel.items.map { WindowItemSelection(itemId: $0) }, isSingleSelection: false), selection: GroupItemSelectionModel())
 }

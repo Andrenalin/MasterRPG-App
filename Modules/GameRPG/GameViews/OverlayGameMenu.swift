@@ -10,7 +10,7 @@ struct OverlayGameMenu: View {
     let isMaster: Bool
     
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     @Environment(AppSettingsModel.self) private var appSettingsModel
     
@@ -160,7 +160,7 @@ private extension OverlayGameMenu {
     var secondOptionView: some View {
         Button {
 #if os(macOS) || os(visionOS)
-            sceneManager.openWindow(SceneId.logs)
+            scenesManager.openWindow(SceneId.logs)
 #else
             withAnimation { gameScreenModel.resetToSettingsTab() }
 #endif
@@ -217,10 +217,10 @@ private extension OverlayGameMenu {
             .padding(.trailing, marginWidth)
             .onChange(of: gameScreenModel.showGameType) {
                 guard gameScreenModel.showGameType != .none && gameScreenModel.showGameType != .game else { return }
-                if sceneManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
-                    sceneManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+                if scenesManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
+                    scenesManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
                 } else {
-                    sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+                    scenesManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
                 }
             }
             .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
@@ -253,10 +253,10 @@ private extension OverlayGameMenu {
         .padding(.trailing, marginWidth)
         .onChange(of: gameScreenModel.showGameType) {
             guard gameScreenModel.showGameType != .none && gameScreenModel.showGameType != .game else { return }
-            if sceneManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
-                sceneManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+            if scenesManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
+                scenesManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
             } else {
-                sceneManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
+                scenesManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
             }
         }
         .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
@@ -357,13 +357,13 @@ private extension OverlayGameMenu {
             // Close the appropriate window if it was open
             if isMaster {
                 // Master: Close adventure viewer window
-                if sceneManager.getSceneState(for: SceneId.adventureViewer) == .opened {
-                    sceneManager.dismissWindow(SceneId.adventureViewer)
+                if scenesManager.getSceneState(for: SceneId.adventureViewer) == .opened {
+                    scenesManager.dismissWindow(SceneId.adventureViewer)
                 }
             } else {
                 // Player: Close character viewer window
-                if sceneManager.getSceneState(for: SceneId.valueViewer) == .opened {
-                    sceneManager.dismissWindow(SceneId.valueViewer)
+                if scenesManager.getSceneState(for: SceneId.valueViewer) == .opened {
+                    scenesManager.dismissWindow(SceneId.valueViewer)
                 }
             }
             
@@ -373,12 +373,12 @@ private extension OverlayGameMenu {
             
             // Close the window if it was open
             if isMaster {
-                if sceneManager.getSceneState(for: SceneId.adventureViewer) == .opened {
-                    sceneManager.dismissWindow(SceneId.adventureViewer)
+                if scenesManager.getSceneState(for: SceneId.adventureViewer) == .opened {
+                    scenesManager.dismissWindow(SceneId.adventureViewer)
                 }
             } else {
-                if sceneManager.getSceneState(for: SceneId.valueViewer) == .opened {
-                    sceneManager.dismissWindow(SceneId.valueViewer)
+                if scenesManager.getSceneState(for: SceneId.valueViewer) == .opened {
+                    scenesManager.dismissWindow(SceneId.valueViewer)
                 }
             }
             
@@ -390,13 +390,13 @@ private extension OverlayGameMenu {
             #if os(macOS) || os(visionOS)
             if isMaster {
                 // Master: Open adventure viewer with current adventure
-                if sceneManager.getSceneState(for: SceneId.adventureViewer) == .closed, let adventureId = root.gameModel.selectedAdventure {
-                    sceneManager.openWindow(SceneId.viewerId(for: .adventure), selection: WindowItemSelection(itemId: adventureId))
+                if scenesManager.getSceneState(for: SceneId.adventureViewer) == .closed, let adventureId = root.gameModel.selectedAdventure {
+                    scenesManager.openWindow(SceneId.viewerId(for: .adventure), selection: WindowItemSelection(itemId: adventureId))
                 }
             } else {
                 // Player: Open character viewer with current character
-                if sceneManager.getSceneState(for: SceneId.valueViewer) == .closed, let characterId = root.gameModel.selectedCharacter {
-                    sceneManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
+                if scenesManager.getSceneState(for: SceneId.valueViewer) == .closed, let characterId = root.gameModel.selectedCharacter {
+                    scenesManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
                 }
             }
             #endif
@@ -440,13 +440,13 @@ private extension OverlayGameMenu {
 #if os(visionOS)
         if appSettingsModel.showGameTableVolume {
             // Open the table volume
-            if sceneManager.getSceneState(for: SceneId.gameTable) != .opened {
-                sceneManager.openWindow(SceneId.gameTable)
+            if scenesManager.getSceneState(for: SceneId.gameTable) != .opened {
+                scenesManager.openWindow(SceneId.gameTable)
             }
         } else {
             // Close the table volume
-            if sceneManager.getSceneState(for: SceneId.gameTable) != .closed {
-                sceneManager.dismissWindow(SceneId.gameTable)
+            if scenesManager.getSceneState(for: SceneId.gameTable) != .closed {
+                scenesManager.dismissWindow(SceneId.gameTable)
             }
         }
 #endif

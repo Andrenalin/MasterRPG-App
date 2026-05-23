@@ -52,7 +52,7 @@ struct WindowLinkList: Scene {
                 }
             }
             .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
-            .environment(model.sceneManager)
+            .environment(model.scenesManager)
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(model.windowPlacement(for: module))
@@ -76,7 +76,7 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
             .handlesExternalEvents(preferring: [], allowing: [])
             .sceneTracker(for: SceneId.sceneId(for: module))
             .environmentSetUp(model)
-            .environment(\.networkActions, model.gameRoot.networkActions())
+            .environment(\.networkActions, model.gameRoot.networkActions)
             .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)
             .environment(\.sharingFeatureActions, model.gameRoot.sharingFeatureActions)
 #if os(macOS)

@@ -1,7 +1,7 @@
 {
   "configurations" : [
     {
-      "id" : "0DEB197C-4345-4F42-8EFA-F151B4BC394A",
+      "id" : "A66EA7C9-B25E-4B99-980C-3EB3490DA3F5",
       "name" : "Test Scheme Action",
       "options" : {
 
@@ -10,7 +10,6 @@
   ],
   "defaultOptions" : {
     "language" : "en",
-    "region" : "US",
     "threadSanitizerEnabled" : true,
     "undefinedBehaviorSanitizerEnabled" : true
   },
@@ -18,8 +17,8 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECD972CD8EDED004E7103",
-        "name" : "RPGDieTests"
+        "identifier" : "8EBED0D62CD8EFA5004E7103",
+        "name" : "MapRPGTests"
       }
     }
   ],

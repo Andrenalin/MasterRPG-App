@@ -118,6 +118,7 @@ struct GroupEditorView: View {
                     } label: {
                         Image(systemName: "xmark")
                     }
+                    .accessibilityLabel(Text("Cancel", bundle: .module))
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -126,6 +127,7 @@ struct GroupEditorView: View {
                     } label: {
                         Image(systemName: "checkmark")
                     }
+                    .accessibilityLabel(Text("Save", bundle: .module))
                 }
             }
         }
@@ -198,22 +200,20 @@ private extension GroupEditorView {
     
     @ViewBuilder var categoryTagsSection: some View {
         @Bindable var model = groupEditorController.model
-        
-        HStack(alignment: .top) {
-            VStack(alignment: .leading) {
-                HStack {
-                    Text("Tags", bundle: .module)
-                    
-                    if model.tags.isEmpty {
-                        Text(model.tagsPlaceHolder)
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
 
-                RemoveTagsEditor(tags: $model.tags)
-                    .offset(y: -8)
+        VStack(alignment: .leading) {
+            HStack {
+                Text("Tags", bundle: .module)
+
+                if model.tags.isEmpty {
+                    Text(model.tagsPlaceHolder)
+                }
             }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            RemoveTagsEditor(tags: $model.tags)
+                .offset(y: -8)
         }
     }
 }

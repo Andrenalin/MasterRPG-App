@@ -45,7 +45,7 @@ extension EditController: EntryDataEditable {
     public var linkModules: [NetworkModules] { [] }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
-        SelectionModuleRoute.selection
+        SelectionRoute.selection
     }
 
     func create(name: String, content: String) -> PdfEntryModel {

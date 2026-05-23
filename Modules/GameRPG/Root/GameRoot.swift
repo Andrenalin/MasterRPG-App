@@ -147,6 +147,48 @@ public final class GameRoot: @unchecked Sendable {
     @MainActor lazy var searchController: SearchController = {
         SearchController(root: self)
     }()
+
+    @MainActor public lazy var networkActions: NetworkActions = NetworkActions { @MainActor [weak self] idType in
+        guard let store = self?.gameModel.masterController else { return }
+        Task {
+            await store.show(for: idType)
+        }
+    } send: { @MainActor [weak self] update in
+        let masterStore = self?.gameModel.masterController
+        let playerStore = self?.gameModel.playerController
+        Task {
+            if let masterStore {
+                await masterStore.send(updated: update)
+            } else {
+                await playerStore?.send(updated: update)
+            }
+        }
+    } game: { @MainActor [weak self] message, actionType, playerId in
+        let masterStore = self?.gameModel.masterController
+        let playerStore = self?.gameModel.playerController
+        Task {
+            if let masterStore {
+                await masterStore.game(message: message, actionType: actionType, playerId: playerId)
+            } else {
+                await playerStore?.game(message: message, actionType: actionType)
+            }
+        }
+    }
+
+    @MainActor public lazy var sharingControlActions: SharingControlActions = SharingControlActions { [weak self] in
+        self?.gameModel.gameConfig.controls ?? []
+    } update: { [weak self] newControls in
+        if self?.gameModel.gameConfig.controls != newControls {
+            self?.gameModel.gameConfig.controls = newControls
+        }
+        Task {
+            await self?.gameModel.masterController?.resetPlayers()
+        }
+    }
+
+    @MainActor public lazy var sharingFeatureActions: SharingFeatureActions = SharingFeatureActions { [weak self] in
+        self?.gameModel.gameConfig.features ?? GameFeatureModel()
+    }
     
     @MainActor
     var characterName: String {
@@ -380,59 +422,6 @@ extension GameRoot {
     }
 }
 
-public extension GameRoot {
-    func networkActions() -> NetworkActions {
-        NetworkActions { @MainActor [weak self] idType in
-            guard let store = self?.gameModel.masterController else { return }
-            Task {
-                await store.show(for: idType)
-            }
-        } send: { @MainActor [weak self] update in
-            let masterStore = self?.gameModel.masterController
-            let playerStore = self?.gameModel.playerController
-            
-            Task {
-                if let masterStore {
-                    await masterStore.send(updated: update)
-                } else {
-                    await playerStore?.send(updated: update)
-                }
-            }
-        } game: { @MainActor [weak self] message, actionType, playerId in
-            let masterStore = self?.gameModel.masterController
-            let playerStore = self?.gameModel.playerController
-            
-            Task {
-                if let masterStore {
-                    await masterStore.game(message: message, actionType: actionType, playerId: playerId)
-                } else {
-                    await playerStore?.game(message: message, actionType: actionType)
-                }
-            }
-        }
-    }
-    
-    @MainActor
-    var sharingControlActions: SharingControlActions {
-        SharingControlActions { [weak self] in
-            self?.gameModel.gameConfig.controls ?? []
-        } update: { [weak self] newControls in
-            if self?.gameModel.gameConfig.controls != newControls {
-                self?.gameModel.gameConfig.controls = newControls
-            }
-            Task {
-                await self?.gameModel.masterController?.resetPlayers()
-            }
-        }
-    }
-    
-    @MainActor
-    var sharingFeatureActions: SharingFeatureActions {
-        SharingFeatureActions { [weak self] in
-            self?.gameModel.gameConfig.features ?? GameFeatureModel()
-        }
-    }
-}
 
 // MARK: - Search Helpers
 

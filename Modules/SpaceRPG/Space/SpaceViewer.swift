@@ -21,7 +21,7 @@ struct SpaceViewer: View {
         }
     }
 
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
 
     @Environment(\.dismiss) private var dismiss
 
@@ -259,7 +259,7 @@ private extension SpaceViewer {
                 Attachment(id: "NameBarView") {
                     Button {
                         Task {
-                            await sceneManager.toggleImmersiveSpace()
+                            await scenesManager.toggleImmersiveSpace()
                         }
                     } label: {
                         Label {

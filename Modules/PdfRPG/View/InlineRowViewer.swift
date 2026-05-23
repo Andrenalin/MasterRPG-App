@@ -9,7 +9,7 @@ struct InlineRowViewer: View, Equatable {
     
     @Environment(PdfRootModel.self) private var root
     
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.navigator) private var navigator
 
 
@@ -41,7 +41,7 @@ struct InlineRowViewer: View, Equatable {
     
     private func actionHandler() {
 #if os(visionOS) || os(macOS)
-        sceneManager.openWindow(SceneId(rawValue: root.configurable.module.viewerWindowId), selection: WindowItemSelection(itemId: destination.itemId, entryId: destination.entryId))
+        scenesManager.openWindow(SceneId(rawValue: root.configurable.module.viewerWindowId), selection: WindowItemSelection(itemId: destination.itemId, entryId: destination.entryId))
 #else
         navigator.navigate(to: DetailRoute.viewer(destination.itemId, destination.entryId), method: .managedSheet)
 #endif

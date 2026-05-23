@@ -10,7 +10,7 @@ struct EditToolBarViewModifier: ViewModifier {
     let editorModel: MapEditorModel
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(ScenesManager.self) private var sceneManager
+    @Environment(ScenesManager.self) private var scenesManager
     @Environment(MapRootModel.self) private var root
 
     @State private var hideScales: Bool = true
@@ -205,7 +205,7 @@ private extension EditToolBarViewModifier {
     @ViewBuilder var showPinSelectionButton: some View {
         Button {
 #if os(macOS)
-            sceneManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
+            scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
 #else
             showPinSelection.toggle()
 #endif

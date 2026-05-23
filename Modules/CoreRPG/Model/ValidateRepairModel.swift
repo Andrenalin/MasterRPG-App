@@ -2,20 +2,34 @@
 
 import SwiftUI
 
+public enum ValidatePhase: String, Sendable {
+    case repairFolders
+    case validateLinks
+
+    public var title: String {
+        switch self {
+        case .repairFolders: "Repair Folders"
+        case .validateLinks: "Validate Links"
+        }
+    }
+}
+
 @MainActor @Observable public final class ValidateRepairModel {
-    public init(total: Int = 0, current: Int = 0, currentModule: NetworkModules = .none, currentSection: String = "") {
+    public init(total: Int = 0, current: Int = 0, currentModule: NetworkModules = .none, currentSection: String = "", currentPhase: ValidatePhase = .repairFolders) {
         self.total = total
         self.current = current
         self.currentModule = currentModule
         self.currentSection = currentSection
+        self.currentPhase = currentPhase
     }
-    
+
     public var total: Int = 0
     public var current: Int = 0
-    
+
     public var currentModule: NetworkModules = .none
     public var currentSection: String = ""
-    
+    public var currentPhase: ValidatePhase = .repairFolders
+
     public func increaseCurrent() {
         current += 1
     }
@@ -30,6 +44,10 @@ import SwiftUI
 
     public func update(total: Int) {
         self.total = total
+    }
+
+    public func update(phase: ValidatePhase) {
+        self.currentPhase = phase
     }
 }
 

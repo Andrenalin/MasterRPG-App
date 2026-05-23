@@ -55,7 +55,7 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 - **SheetController** generates a sheet representation of the item / entries
    
 ### Key Patterns
-**State Management**: Uses modern `@Observable` macro (iOS 17+) instead of `ObservableObject`. Views use `@Environment(Type.self)` for dependency injection, not `@EnvironmentObject`.
+**State Management**: Uses modern `@Observable` macro (iOS 26+) instead of `ObservableObject`. Views use `@Environment(Type.self)` for dependency injection, not `@EnvironmentObject`.
 **Data Persistence**: Core Data with CloudKit sync (`NSPersistentCloudKitContainer`). Saved rpg data across all devices in  iCloud or stores only locally
 
 ### Key Modules
@@ -92,6 +92,7 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
  
 ## Platform Conditionals
 Use `#if os(iOS)`, `#if os(macOS)`, `#if os(tvOS)`, `#if os(visionOS)` for platform-specific code. Widget extension code uses `#if !WIDGET_EXTENSION` to exclude unavailable APIs.
+All modules using the bundle version of SwiftUI views for example `Text("Editor Window", bundle: .module)` for the correct Localizations.
 
 ## App Groups & Entitlements
 - App Group: `group.de.andretrettin.MasterRPG` (shared data between app and widgets)

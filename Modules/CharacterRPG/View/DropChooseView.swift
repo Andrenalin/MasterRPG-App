@@ -5,11 +5,8 @@ import SwiftUI
 
 struct DropChooseView: View {
     let selectionModel: ItemSelectionModel
-    
+
     @Environment(CharacterRootModel.self) private var root
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-    @Environment(\.navigator) private var navigator
-    @Environment(ScenesManager.self) private var sceneManager
 
     var body: some View {
         DropItemModuleArea(module: root.configurable.module, contentView: {
@@ -19,7 +16,7 @@ struct DropChooseView: View {
                         .clipShape(.rect(corners: .concentric))
                     Text(model.name)
                 } else {
-                    emptyDrop
+                    EmptyDropButton(selectionModel: selectionModel)
                 }
             }
             .frame(height: 128)
@@ -44,6 +41,7 @@ struct DropChooseView: View {
                     .imageScale(.large)
                     .foregroundStyle(.white, .red, .red)
             }
+            .accessibilityLabel(Text("Remove", bundle: .module))
             .borderLessTVBottonStyle()
             .padding(4)
             .contentShape(.circle)
@@ -53,49 +51,54 @@ struct DropChooseView: View {
             .opacity(selectionModel.itemId != nil ? 1.0 : 0.0)
         }
     }
-    
+
     private var model: ValueModel? {
         guard let itemId = selectionModel.itemId else { return nil }
         return root.itemController.itemSync(for: itemId)
     }
 
-    private var emptyDrop: some View {
+    private func addLink(name: String, itemId: UUID, entryId: UUID?) {
+        selectionModel.selection = [WindowItemSelection(itemId: itemId, entryId: entryId)]
+    }
+}
+
+private struct EmptyDropButton: View {
+    let selectionModel: ItemSelectionModel
+
+    @Environment(CharacterRootModel.self) private var root
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
+    @Environment(\.navigator) private var navigator
+    @Environment(ScenesManager.self) private var scenesManager
+
+    var body: some View {
         Button {
             root.itemSelectionModel = selectionModel
 #if os(macOS)
-            sceneManager.openWindow(SceneId(rawValue: root.config.module.linkWindowId))
+            scenesManager.openWindow(SceneId.sceneId(for: .value))
 #else
-            navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
+            navigator.navigate(to: SelectionRoute.selection, method: .managedSheet)
 #endif
         } label: {
             VStack {
-                if showDrop {
+                if appSizeModel.mode == .regular {
                     Text("Drop \(root.configurable.module.title)", bundle: .module)
-                    
+
                     Image(systemName: "square.and.arrow.down")
                         .imageScale(.large)
                 }
-                Text(chosseText, bundle: .module)
+                Text(chooseText, bundle: .module)
             }
             .padding(.horizontal, 12)
-            .contentShape(.rect)
         }
+        .contentShape(.rect)
     }
-    
-    private var chosseText: LocalizedStringKey {
+
+    private var chooseText: LocalizedStringKey {
 #if os(macOS)
         "Open \(root.configurable.module.title)"
 #else
         "Choose \(root.configurable.module.title)"
 #endif
-    }
-    
-    private var showDrop: Bool {
-        appSizeModel.mode == .regular
-    }
-    
-    private func addLink(name: String, itemId: UUID, entryId: UUID?) {
-        selectionModel.selection = [WindowItemSelection(itemId: itemId, entryId: entryId)]
     }
 }
 

@@ -7,33 +7,37 @@ struct GameRootView: View {
     let root: GameRoot
 
     @Environment(AppGameStateModel.self) private var appGameStateModel
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         gameView
-            .environment(\.colorScheme, colorScheme)
-            .onChange(of: root.gameModel.gameConfig.state, initial: true) {
-                appGameStateModel.isGameRunning = root.gameModel.gameConfig.state == .started
-                if root.gameModel.gameConfig.state == .started {
-                    appGameStateModel.gameModus = root.gameModel.gameConfig.isMaster ? .master : .player
-                } else {
-                    appGameStateModel.gameModus = .edit
+            .onChange(of: root.gameModel.gameConfig.state, initial: true) { _, newState in
+                let isRunning = newState == .started
+                if appGameStateModel.isGameRunning != isRunning {
+                    appGameStateModel.isGameRunning = isRunning
+                }
+                let newModus: GameModus = isRunning
+                    ? (root.gameModel.gameConfig.isMaster ? .master : .player)
+                    : .edit
+                if appGameStateModel.gameModus != newModus {
+                    appGameStateModel.gameModus = newModus
                 }
                 root.widgetGameRunningChanged()
             }
     }
 
-    var gameView: some View {
+    private var gameView: some View {
         Group {
             if let playerController = root.gameModel.playerController {
                 if root.gameModel.gameConfig.type == .master {
-                    MasterGameScreen(root: root, playerController: playerController, adventureId: root.gameModel.gameConfig.master.adventureId!)
+                    if let adventureId = root.gameModel.gameConfig.master.adventureId {
+                        MasterGameScreen(root: root, playerController: playerController, adventureId: adventureId)
+                    }
                 } else {
                     PlayerGameScreen(root: root, playerController: playerController)
                 }
             }
         }
-        .environment(\.networkActions, root.networkActions())
+        .environment(\.networkActions, root.networkActions)
         .environment(\.sharingControlActions, root.sharingControlActions)
         .environment(\.sharingFeatureActions, root.sharingFeatureActions)
 
@@ -47,7 +51,6 @@ struct GameRootView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     GameRootView(root: .preview)
-        .environment(AppSettingsModel())
 }

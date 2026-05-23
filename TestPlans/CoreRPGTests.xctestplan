@@ -1,7 +1,7 @@
 {
   "configurations" : [
     {
-      "id" : "23777BDD-C253-43DE-90DB-F429A527F169",
+      "id" : "1D48DECF-508A-4D0F-B2D0-3B1A65D79381",
       "name" : "Configuration 1",
       "options" : {
 
@@ -15,7 +15,7 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8E3620B42E1A810000E5C99A",
+        "identifier" : "8E4B218C2CD78EF3009AB4D1",
         "name" : "CoreRPGTests"
       }
     }

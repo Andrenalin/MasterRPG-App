@@ -141,7 +141,7 @@ struct WindowViewerList: Scene {
                 .sceneTracker(for: SceneId.viewerId(for: module))
                 .modifier(WindowViewerSetUpViewModifier(model: model, module: module))
             }
-            .environment(model.sceneManager)
+            .environment(model.scenesManager)
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(model.windowPlacement(for: module))
@@ -172,7 +172,7 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
             .handlesExternalEvents(preferring: [], allowing: [])
             .tint(module.tint)
             .environmentSetUp(model)
-            .environment(\.networkActions, model.gameRoot.networkActions())
+            .environment(\.networkActions, model.gameRoot.networkActions)
             .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)
             .environment(\.sharingFeatureActions, model.gameRoot.sharingFeatureActions)
 #if os(macOS)

@@ -5,7 +5,7 @@ import SwiftUI
 
 struct RerollEditor: View {
     let model: DiceModel
-    
+
     @Environment(DiceRootModel.self) private var root
 
     @State private var rerollValue = 0.0
@@ -14,7 +14,7 @@ struct RerollEditor: View {
 
     var body: some View {
         Section {
-            reroleValueView
+            rerollValueView
 
             rerollEditorView
 
@@ -41,14 +41,13 @@ private extension RerollEditor {
     }
 
     @ViewBuilder
-    var reroleValueView: some View {
-        @Bindable var model = model
+    var rerollValueView: some View {
         LabeledContent {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
                     ForEach(model.rerollOptions) { reroll in
                         Button {
-                            withAnimation { root.editController.remove(reroll: reroll, itemId: model.id) }
+                            withAnimation(.easeInOut) { root.editController.remove(reroll: reroll, itemId: model.id) }
                         } label: {
                             HStack(spacing: 4) {
                                 Label {
@@ -70,7 +69,7 @@ private extension RerollEditor {
             Text("Re-roll", bundle: .module)
         }
     }
-    
+
     func labelText(for reroll: DiceModel.RerollOption) -> LocalizedStringKey {
         if reroll.maxDiceValue {
             return "\(reroll.number) → Max Value"
@@ -80,13 +79,10 @@ private extension RerollEditor {
 
     @ViewBuilder
     var rerollEditorView: some View {
-        @Bindable var model = model
         LabeledContent {
             HStack {
                 Button {
-                    Task {
-                        await addCurrentReroll()
-                    }
+                    addCurrentReroll()
                 } label: {
                     Image(systemName: "plus")
                         .imageScale(.large)
@@ -102,8 +98,8 @@ private extension RerollEditor {
         }
     }
 
-    func addCurrentReroll() async {
-        withAnimation {
+    func addCurrentReroll() {
+        withAnimation(.easeInOut) {
             root.editController.add(reroll: Int(rerollValue), value: Int(replaceValue), isMaxDiceValue: isMaxDiceValue, itemId: model.id)
             rerollValue = 0.0
             replaceValue = 0.0
@@ -112,13 +108,10 @@ private extension RerollEditor {
 
     @ViewBuilder
     var rerollReplaceEditorView: some View {
-        @Bindable var model = model
         LabeledContent {
             HStack {
                 Button {
-                    Task {
-                        await addCurrentReroll()
-                    }
+                    addCurrentReroll()
                 } label: {
                     Image(systemName: "plus")
                         .imageScale(.large)
@@ -137,6 +130,6 @@ private extension RerollEditor {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(DiceRootModel.self) var root
-    
+
     RerollEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }

@@ -62,6 +62,7 @@ extension LinkController: LinkControllable {
             Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .public) will be replaced from reparing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
+        resetLinkRegister(replacedItem)
     }
 
     @MainActor public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {

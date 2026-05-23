@@ -11,7 +11,6 @@ struct DisplayConfigBorderEditor: View {
     @State private var color = Color.red
     
     var body: some View {
-        @Bindable var model = model
         Group {
             LabeledContent {
 #if !os(tvOS)
@@ -33,8 +32,10 @@ struct DisplayConfigBorderEditor: View {
             resetBorderValue()
             resetColor()
         }
-        .onChange(of: model.displayConfig) {
+        .onChange(of: model.displayConfig.borderThicknessDouble) {
             resetBorderValue()
+        }
+        .onChange(of: model.displayConfig.border.color) {
             resetColor()
         }
         .onChange(of: color) {
@@ -47,6 +48,7 @@ struct DisplayConfigBorderEditor: View {
     }
 
     private func resetColor() {
+        guard color != model.displayConfig.border.color else { return }
         color <=> model.displayConfig.border.color
     }
     

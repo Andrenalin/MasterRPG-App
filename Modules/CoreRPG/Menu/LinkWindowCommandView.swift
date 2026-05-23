@@ -9,7 +9,7 @@ public struct LinkWindowCommandView: View {
         self.title = "\(networkModule.title) Link"
         self.icon = networkModule.icon
         self.windowId = isAlt ? networkModule.linkAltWindowId : networkModule.linkWindowId
-        self.sceneManager = scenesManager
+        self.scenesManager = scenesManager
         self.key = key
         self.isAlt = isAlt
     }
@@ -17,13 +17,13 @@ public struct LinkWindowCommandView: View {
     let title: String
     let icon: String
     let windowId: String
-    let sceneManager: ScenesManager
+    let scenesManager: ScenesManager
     let key: AKKeyEquivalent
     let isAlt: Bool
 
     public var body: some View {
         Button {
-            sceneManager.openWindow(SceneId(rawValue: windowId))
+            scenesManager.openWindow(SceneId(rawValue: windowId))
         } label: {
             Label(titleWindow, systemImage: icon)
         }

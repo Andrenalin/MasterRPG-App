@@ -2,6 +2,7 @@
 
 import CoreRPG
 import SwiftUI
+import CharacterRPG
 
 struct GameOptionView: View {
     let root: GameRoot
@@ -29,7 +30,15 @@ struct GameOptionView: View {
 #if os(macOS)
                 .padding()
 #endif
-            Spacer()
         }
     }
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @State var root = GameRoot.preview
+    
+    ManagedNavigationStack {
+        GameOptionView(root: .preview)
+    }
+    .environment(root.characterRoot.rootController)
 }

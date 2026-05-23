@@ -155,7 +155,8 @@ extension LinkController: LinkControllable {
             Logger.linkController.info("Adventure: \(replacedItem.name, privacy: .public) will be replaced from reparing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
-    }    
+        resetLinkRegister(replacedItem)
+    }
 }
 
 extension LinkController {
