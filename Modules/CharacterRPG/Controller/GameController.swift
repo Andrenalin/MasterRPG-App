@@ -182,11 +182,7 @@ extension GameController: ValueGameStorable {
 
     public func updatePlayer(data: NetworkCodableDataType) async throws {
         if let encodedData = data.data {
-            do {
-                try await importNetwork(from: encodedData, forceSave: true)
-            } catch {
-                Logger.gameController.error("Error in updating the character from player: \(error.localizedDescription, privacy: .public)")
-            }
+            try await importNetwork(from: encodedData, forceSave: true)
         } else {
             guard data.type == itemControllable.config.module else { throw ItemGameStorableError.wrongData }
         }

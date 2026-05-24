@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import DiceRPG
@@ -190,4 +189,3 @@ struct ConverterControllerTests {
         #expect(childAfter.groupId == ownerId)
     }
 }
-#endif

@@ -240,10 +240,11 @@ public extension EditControllable {
     }
 
     @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool, moveFiles: Bool = true) {
-        guard var item = editModel(for: itemId), let parentId = item.parentId, let parentItem = editModel(for: parentId) else { return }
+        guard var item = editModel(for: itemId), let parentId = item.parentId else { return }
         item.parentId = nil
         save(updated: item, message: String(localized: "Removed parent", bundle: .module).localizedLowercase.localizedString)
             
+        guard let parentItem = editModel(for: parentId) else { return }
         var entries = parentItem.entries
         entries.removeAll(where: { $0.childId == itemId })
         parentItem.entries = entries
