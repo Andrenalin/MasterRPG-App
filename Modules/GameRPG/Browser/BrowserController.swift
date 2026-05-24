@@ -46,7 +46,7 @@ struct BrowserController: Sendable {
 
 extension BrowserController {
     @MainActor
-    func toggleBrowsing() async {
+    func toggleBrowsing() {
         if isBrowsing {
             stop()
         } else {
@@ -68,7 +68,7 @@ extension BrowserController {
         let name = serviceType.serviceName
         Logger.browserController.debug("Browser: Stop browsing \(name)")
 
-        Task {
+        Task { @concurrent in
             await stopBrowsing()
         }
         model.statusMessage = "Stop browsing"
@@ -116,7 +116,7 @@ private extension BrowserController {
         let state = "\(newState)"
         let name = serviceType.serviceName
         Logger.browserController.debug("Browser: Newstate \(name, privacy: .public) state \(state, privacy: .public)")
-        Task {
+        Task { @concurrent in
             switch newState {
             case let .failed(error):
                 Logger.browserController.error("Browser: Failed \(name, privacy: .public) with \(error.localizedDescription, privacy: .public)")
@@ -141,7 +141,7 @@ private extension BrowserController {
     func refreshResults(results: Set<NWBrowser.Result>, changes: Set<NWBrowser.Result.Change>?) {
         let name = serviceType.serviceName
         Logger.browserController.debug("Browser: Results \(name, privacy: .public) with \(results.debugDescription, privacy: .public)")
-        Task {
+        Task { @concurrent in
             if let changes {
                 for change in changes {
                     switch change {
@@ -169,9 +169,7 @@ private extension BrowserController {
     func displayBrowseError(_ error: NWError) async {
         Logger.browserController.error("Browser: Error \(error.localizedDescription, privacy: .public)")
         await stopBrowsing()
-        Task { @MainActor in
-            model.statusMessage = "Error: \(error.localizedDescription)"
-        }
+        await MainActor.run { model.statusMessage = "Error: \(error.localizedDescription)" }
     }
 }
 
@@ -185,7 +183,7 @@ private extension BrowserController {
     }
 
     func createViewModel(from model: BrowserDataModel.BrowserResultModel) -> BrowserDeviceModel {
-        BrowserDeviceModel(id: model.id, deviceName: String(model.result.endpoint.debugDescription.prefix(while: { $0 != "." })))
+        BrowserDeviceModel(id: model.id, deviceName: String(model.result.endpoint.debugDescription.prefix(while: { $0 != "." })), connectionMode: serviceType.connectionMode)
     }
 
     func replace(_ old: NWBrowser.Result, with new: NWBrowser.Result) async {
@@ -218,7 +216,7 @@ private extension BrowserController {
     }
 }
 
-fileprivate actor BrowserDataModel: Sendable {
+fileprivate actor BrowserDataModel {
     struct BrowserResultModel: Sendable {
         let id: UUID
         let result: NWBrowser.Result

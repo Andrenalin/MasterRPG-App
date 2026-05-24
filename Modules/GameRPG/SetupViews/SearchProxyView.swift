@@ -6,35 +6,52 @@ import SwiftUI
 struct SearchProxyView: View {
     let root: GameRoot
 
-    @State private var playerNetworkController: (any PlayerNetworkControllable)?
-    
     var body: some View {
         ScrollView {
-            VStack {
+            LazyVStack {
                 GroupBoxTV(isCard: true, withoutGroup: true) {
-                    VStack {
-                        Text("Conntect as proxy to extent your game view. The proxy will be acting as the same player as it is connected to. It can be use as second screen and as a sceond audio source. That has the advantage to have a const volume for the music during the game. On a shareplay device the music get ducked by the facetime environment.", bundle: .module)
-                            .lineLimit(10)
-                    }
+                    Text("Observe any hosted game in the local network, or connect as proxy to extend a player to a second screen and audio source.", bundle: .module)
+                        .lineLimit(10)
                 } label: {
                     Label {
-                        Text("Search a game as Proxy", bundle: .module)
+                        Text("Find a game", bundle: .module)
                             .font(.headline)
                     } icon: {
-                        Image(systemName: "arrow.uturn.backward.circle.fill")
+                        Image(systemName: "magnifyingglass.circle.fill")
                             .imageScale(.large)
                     }
                 }
-                if let playerNetworkController {
-                    BrowserView(root: root, playerNetworkControllable: playerNetworkController)
-                        .environment(\.browserMode, .proxy)
-                        .frame(maxWidth: .infinity, alignment: .center)
+
+                if let observerController = root.networkStore.model.playerStore {
+                    ForEach(observerController.browserController.model.browsers) { browser in
+                        BrowserRowView(root: root, playerNetworkControllable: observerController, model: browser)
+                            .environment(\.browserMode, .observer)
+                    }
+                }
+
+                if let proxyController = root.networkProxyStore.model.playerNetworkController {
+                    ForEach(visibleProxyBrowsers(for: proxyController)) { browser in
+                        BrowserRowView(root: root, playerNetworkControllable: proxyController, model: browser)
+                            .environment(\.browserMode, .proxy)
+                    }
                 }
             }
-            .task {
-                playerNetworkController = root.networkProxyStore.model.playerNetworkController
-            }
+            .frame(maxWidth: .infinity, alignment: .center)
         }
+        .onAppear {
+            root.networkStore.model.playerStore?.browserController.start()
+            root.networkProxyStore.model.playerNetworkController?.browserController.start()
+        }
+    }
+}
+
+private extension SearchProxyView {
+    func visibleProxyBrowsers(for controller: any PlayerNetworkControllable) -> [BrowserDeviceModel] {
+        let observerNames = Set(
+            (root.networkStore.model.playerStore?.browserController.model.browsers ?? [])
+                .map { $0.deviceName }
+        )
+        return controller.browserController.model.browsers.filter { !observerNames.contains($0.deviceName) }
     }
 }
 

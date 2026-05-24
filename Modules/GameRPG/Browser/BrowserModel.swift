@@ -5,7 +5,7 @@ import Network
 import SwiftUI
 
 @MainActor @Observable
-final class BrowserModel: Sendable {
+final class BrowserModel {
     private(set) var browsers: [BrowserDeviceModel] = []
     private(set) var removed: [NWBrowser.Result] = []
     
@@ -42,4 +42,5 @@ final class BrowserModel: Sendable {
 struct BrowserDeviceModel: Equatable, Hashable, Identifiable, Sendable {
     let id: UUID
     let deviceName: String
+    let connectionMode: BrowserConnectionMode
 }

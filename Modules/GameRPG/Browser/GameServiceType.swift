@@ -2,6 +2,11 @@
 
 import Foundation
 
+enum BrowserConnectionMode: Sendable {
+    case observer
+    case proxy
+}
+
 enum GameServiceType {
     case player
     case master
@@ -18,6 +23,13 @@ enum GameServiceType {
             return "_gamemasterproxyserver._tcp"
         case .proxyClient:
             return "_gamemasterproxyclient._tcp"
+        }
+    }
+
+    var connectionMode: BrowserConnectionMode {
+        switch self {
+        case .player: .observer
+        case .master, .proxyServer, .proxyClient: .proxy
         }
     }
 }

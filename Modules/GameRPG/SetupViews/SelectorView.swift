@@ -12,7 +12,6 @@ struct SelectorView: View {
         case master = 1
         #endif
         case proxy = 2
-        case observer = 3
 
         var id: Int { rawValue }
         var text: LocalizedStringKey {
@@ -24,9 +23,7 @@ struct SelectorView: View {
                 return "Master"
             #endif
             case .proxy:
-                return "Proxy"
-            case .observer:
-                return "Observer"
+                return "Join"
             }
         }
     }
@@ -62,8 +59,6 @@ struct SelectorView: View {
                 #endif
                 case .proxy:
                     proxyView
-                case .observer:
-                    observerView
                 }
             }
         }
@@ -89,18 +84,9 @@ struct SelectorView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var observerView: some View {
-        ScrollView {
-            SelectObserverGameView(root: root)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
     private var proxyView: some View {
-        ScrollView {
-            SearchProxyView(root: root)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SearchProxyView(root: root)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

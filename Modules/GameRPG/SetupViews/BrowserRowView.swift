@@ -11,26 +11,42 @@ struct BrowserRowView: View {
     @Environment(\.browserMode) private var browserMode
 
     var body: some View {
-        Group {
-            if isDeactivate {
-                EmptyView()
-            } else {
-                VStack {
-                    Button {
-                        Task {
-                            await root.startGame(to: model, mode: gameType)
-                        }
-                    } label: {
-                        Text(labelText, bundle: .module)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isDeactivate)
+        if !isDeactivate {
+            Button {
+                Task {
+                    await root.startGame(to: model, mode: gameType)
                 }
-                .padding()
+            } label: {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(labelText, bundle: .module)
+                        Text(connectionModeLabel, bundle: .module)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: connectionModeIcon)
+                        .imageScale(.large)
+                }
             }
+            .buttonStyle(.borderedProminent)
         }
     }
-    
+
+    private var connectionModeIcon: String {
+        switch model.connectionMode {
+        case .observer: "crown.fill"
+        case .proxy: "arrow.uturn.backward.circle.fill"
+        }
+    }
+
+    private var connectionModeLabel: LocalizedStringKey {
+        switch model.connectionMode {
+        case .observer: "Game Master"
+        case .proxy: "Player"
+        }
+    }
+
     private var labelText: LocalizedStringKey {
         if isConnected {
             return "Disconnect from: \(model.deviceName)"
@@ -43,12 +59,9 @@ struct BrowserRowView: View {
 
     private var gameType: GameType {
         switch browserMode {
-        case .observer:
-            return .observer
-        case .player:
-            return .player
-        case .proxy:
-            return .proxy
+        case .observer: .observer
+        case .player: .player
+        case .proxy: .proxy
         }
     }
 }
@@ -59,10 +72,15 @@ private extension BrowserRowView {
     }
 
     var isDeactivate: Bool {
-        playerNetworkControllable.networkModel.playerConnectionId != nil && playerNetworkControllable.networkModel.playerConnectionId != model.id
+        let id = playerNetworkControllable.networkModel.playerConnectionId
+        return id != nil && id != model.id
     }
 }
 
 #Preview {
-    BrowserRowView(root: .preview, playerNetworkControllable: PlayerNetworkController(name: "TestPLayer"), model: BrowserDeviceModel(id: UUID(), deviceName: "iPad 10"))
+    BrowserRowView(
+        root: .preview,
+        playerNetworkControllable: PlayerNetworkController(name: "TestPlayer"),
+        model: BrowserDeviceModel(id: UUID(), deviceName: "iPad 10", connectionMode: .observer)
+    )
 }
