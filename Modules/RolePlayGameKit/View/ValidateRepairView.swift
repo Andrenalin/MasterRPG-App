@@ -13,21 +13,29 @@ import TableRPG
 import SpaceRPG
 import WeatherRPG
 
-enum ValidateRoute {
+enum SettingsRoute {
     case validate
+    case export
 }
 
-extension ValidateRoute: NavigationDestination {
+extension SettingsRoute: NavigationDestination {
     var body: some View {
-        ValidateDestinationRoute()
+        ValidateDestinationRoute(route: self)
     }
 }
 
 struct ValidateDestinationRoute: View {
+    let route: SettingsRoute
+    
     @Environment(AppModel.self) private var appModel
     
     var body: some View {
-        ValidateRepairView(controller: ValidateRepairController(appModel: appModel, model: ValidateRepairModel()))
+        switch route {
+        case .validate:
+            ValidateRepairView(controller: ValidateRepairController(appModel: appModel, model: ValidateRepairModel()))
+        case .export:
+            AppExportView(controller: AppExportController(appModel: appModel, model: ValidateRepairModel()))
+        }
     }
 }
 

@@ -5,7 +5,7 @@ import os.log
 import Observation
 
 @MainActor @Observable
-public final class ItemDataImportModel: Sendable {
+public final class ItemDataImportModel {
     public init() {}
 
     public var gameImporter: Bool = false
@@ -54,31 +54,25 @@ public extension ImportControllable {
             // it should be a gmz file and version should be the supported one
             guard fileHeader.token == ExportDataToken.counter.rawValue && fileHeader.version == ExportDataToken.version_2024.rawValue else { throw ItemDataImportableError.notEnoughData }
 
-            let counterTask = Task { @MainActor in
+            await MainActor.run {
                 model.withOverwrite = withOverwrite
                 model.importedItems = 0
                 model.totalImportingItems = fileHeader.counter
                 model.isImportRunning = true
             }
-            let _ = await counterTask.result
-            
+
             do {
-                try await self.importStream(from: inputStream, forceSave: true,  counterUpdater: self.updaterImport)
-                let runningTask = Task { @MainActor in
-                    model.isImportRunning = false
-                }
-                let _ = await runningTask.result
+                try await self.importStream(from: inputStream, forceSave: true, counterUpdater: self.updaterImport)
+                await MainActor.run { model.isImportRunning = false }
             } catch {
-                Task { @MainActor in
-                    model.isImportRunning = false
-                }
+                await MainActor.run { model.isImportRunning = false }
                 throw Task.isCancelled ? ItemDataImportableError.cancel : error
             }
         }
     }
 
     /// import the data from a stream
-    func importStream(from inputStream: InputStream, forceSave: Bool, counterUpdater: @Sendable @escaping () async -> Void) async throws {
+    func importStream(from inputStream: InputStream, forceSave: Bool, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws {
         guard !Task.isCancelled && inputStream.hasBytesAvailable else { return }
 
         try await additionalImport(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
@@ -139,9 +133,10 @@ public extension ImportControllable {
     }
 
     func logImport(title: String, count: Int) async {
-        let token = await self.token()
-        let counter = await progress()
-        Logger.importController.info("\(title, privacy: .public) \(token, privacy: .public) currentItems \(count), importedItems \(counter.count), total: \(counter.total)")
+        let (token, importedItems, totalItems) = await MainActor.run {
+            (itemControllable.config.module.rawValue, importModel.importedItems, importModel.totalImportingItems)
+        }
+        Logger.importController.info("\(title, privacy: .public) \(token, privacy: .public) currentItems \(count), importedItems \(importedItems), total: \(totalItems)")
     }
 }
 
@@ -151,12 +146,7 @@ private extension ImportControllable {
         itemControllable.config.module.rawValue
     }
     
-    @MainActor
-    func progress() async -> (count: Int, total: Int) {
-        (importModel.importedItems, importModel.totalImportingItems)
-    }
-
-    func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, counterUpdater: @escaping () async -> Void) async throws {
+    func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, counterUpdater: @MainActor @escaping () async -> Void) async throws {
         let finalItem: ModelType?
         let itemController = itemControllable
         if await importModel.withOverwrite {
@@ -190,13 +180,9 @@ private extension ImportControllable {
         }
     }
 
-    @Sendable
+    @MainActor @Sendable
     func updaterImport() async {
-        let model = importModel
-        let updateTask = Task { @MainActor in
-            model.importedItems += 1
-        }
-        let _ = await updateTask.result
+        importModel.importedItems += 1
     }
 
     func addFile(data: Data, to item: any Observable) async throws {

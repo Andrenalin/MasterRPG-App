@@ -9,26 +9,16 @@ public protocol StoreManiplable: Sendable {
 }
 
 public struct SettingsView<Store, ImportContent: View>: View where Store: StoreManiplable {
-    public init(store: Store, exportController: any ExportControllable, importController: any ImportControllable, audioFileStore: FileUrlDataController, pdfFileStore: FileUrlDataController, photoFileStore: FileUrlDataController, spaceFileStore: FileUrlDataController, @ViewBuilder importContent: () -> ImportContent) {
+    public init(store: Store, exportController: any ExportControllable, importController: any ImportControllable, @ViewBuilder importContent: () -> ImportContent) {
         self.store = store
         self.exportController = exportController
         self.importController = importController
-        self.audioFileStore = audioFileStore
-        self.pdfFileStore = pdfFileStore
-        self.photoFileStore = photoFileStore
-        self.spaceFileStore = spaceFileStore
         self.importContentView = importContent()
     }
     
     let store: Store
     let exportController: any ExportControllable
-    let importController: any ImportControllable
-    
-    let audioFileStore: FileUrlDataController
-    let pdfFileStore: FileUrlDataController
-    let photoFileStore: FileUrlDataController
-    let spaceFileStore: FileUrlDataController
-    
+    let importController: any ImportControllable        
     let importContentView: ImportContent
     
     @State private var showResetAlert = false
@@ -75,7 +65,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
                 Text("Validate the links", bundle: .module)
             }
             
-            StorageOptionEditor(audioFileStore: audioFileStore, pdfFileStore: pdfFileStore, photoFileStore: photoFileStore, spaceFileStore: spaceFileStore)
+            StorageOptionEditor()
             
             SectionGroupEditorView {
                 Button(role: .destructive) {

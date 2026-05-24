@@ -3,11 +3,6 @@
 import SwiftUI
 
 struct StorageOptionEditor: View {
-    let audioFileStore: FileUrlDataController
-    let pdfFileStore: FileUrlDataController
-    let photoFileStore: FileUrlDataController
-    let spaceFileStore: FileUrlDataController
-    
     @Environment(AppSettingsModel.self) private var appSettings
     
     @State private var showExitAlert = false
@@ -66,5 +61,5 @@ struct StorageOptionEditor: View {
 }
 
 #Preview {
-    StorageOptionEditor(audioFileStore: .empty(), pdfFileStore: .empty(), photoFileStore: .empty(), spaceFileStore: .empty())
+    StorageOptionEditor()
 }

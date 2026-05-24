@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import Testing
@@ -107,5 +106,44 @@ struct ValueModelTests {
         #expect(m2.photos == a.photos)
         #expect(m2.entries == sut.entries)
     }
+
+    @Test func folderMergeCombinesAndSortsChildren() {
+        let folderId = UUID()
+        let folder1 = ValueModel(
+            id: folderId,
+            name: "Folder",
+            category: .folder,
+            entries: [
+                ValueEntryModel.fixture(name: "Bravo"),
+                ValueEntryModel.fixture(name: "Alpha"),
+            ]
+        )
+        let folder2 = ValueModel(
+            id: folderId,
+            name: "Folder",
+            category: .folder,
+            entries: [
+                ValueEntryModel.fixture(name: "Delta"),
+                ValueEntryModel.fixture(name: "Charlie"),
+            ]
+        )
+
+        let merged = folder1.merge(folder2)
+        #expect(merged.entries.count == 4)
+        #expect(merged.entries.map(\.name) == ["Alpha", "Bravo", "Charlie", "Delta"])
+
+        let collection1 = ValueModel(
+            id: folderId,
+            name: "Collection",
+            category: .collection,
+            entries: [
+                ValueEntryModel.fixture(name: "Delta"),
+                ValueEntryModel.fixture(name: "Charlie"),
+            ]
+        )
+
+        let merged2 = folder1.merge(collection1)
+        #expect(merged2.entries.count == 2)
+        #expect(merged2.entries.map(\.name) == ["Delta", "Charlie"])
+    }
 }
-#endif

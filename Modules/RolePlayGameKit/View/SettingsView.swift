@@ -23,7 +23,17 @@ public struct SettingsView: View {
     @Environment(\.navigator) private var navigator
     
     public var body: some View {
-        CoreRPG.SettingsView(store: store.adventureRoot, exportController: store.adventureRoot.exportControllable, importController: store.adventureRoot.importControllable, audioFileStore: store.audioRoot.fileUrlDataController!, pdfFileStore: store.pdfRoot.fileUrlDataController!, photoFileStore: store.photoRoot.fileUrlDataController!, spaceFileStore: store.spaceRoot.fileUrlDataController!) {
+        CoreRPG.SettingsView(store: store.adventureRoot, exportController: store.adventureRoot.exportControllable, importController: store.adventureRoot.importControllable) {
+
+            SectionGroupEditorView {
+                Button {
+                    navigator.navigate(to: SettingsRoute.export, method: .managedSheet)
+                } label: {
+                    Label("Export", systemImage: "folder")
+                }
+            } header: {
+                Text("Export / Import", bundle: .module)
+            }
 
 //            SectionGroupEditorView {
 //                InAppView(inAppController: store.inAppController)
@@ -33,7 +43,7 @@ public struct SettingsView: View {
 
             SectionGroupEditorView {
                 Button {
-                    navigator.navigate(to: ValidateRoute.validate, method: .managedSheet)
+                    navigator.navigate(to: SettingsRoute.validate, method: .managedSheet)
                 } label: {
                     Label("Validate Folders", systemImage: "folder")
                 }
