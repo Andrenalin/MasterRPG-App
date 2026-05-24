@@ -8,7 +8,7 @@ public protocol ItemGameReportable {
 }
 
 @MainActor @Observable
-public final class ItemGameModel: Sendable {
+public final class ItemGameModel {
     public typealias ModelType = Observable & Sendable
     
     public init(itemDataModel: ItemDataModel) {
@@ -134,10 +134,13 @@ public extension GameControllable {
     }
 
     func setCurrent(itemId: UUID) async -> Bool {
-        if let index = await gameModel.items.firstIndex(where: { $0 == itemId }) {
-            if index != 0 {
-                let id = await gameModel.items[index]
-                await gameModel.insert(itemId: id, at: 0, removeIndex: index)
+        let existing = await MainActor.run { () -> (id: UUID, index: Int)? in
+            guard let index = gameModel.items.firstIndex(where: { $0 == itemId }) else { return nil }
+            return (id: gameModel.items[index], index: index)
+        }
+        if let existing {
+            if existing.index != 0 {
+                await gameModel.insert(itemId: existing.id, at: 0, removeIndex: existing.index)
             }
             return true
         }
@@ -168,10 +171,11 @@ public extension GameControllable {
     }
     
     func focus(on id: UUID?) async {
-        let currentId = await gameModel.currentItemId
-        let newFocusId = id ?? currentId
-        if let newFocusId {
-            await gameModel.focus(on: [newFocusId])
+        await MainActor.run {
+            let newFocusId = id ?? gameModel.currentItemId
+            if let newFocusId {
+                gameModel.focus(on: [newFocusId])
+            }
         }
     }
 
@@ -184,12 +188,9 @@ public extension GameControllable {
 
         let stream = OutputStream.toMemory()
         stream.open()
+        defer { stream.close() }
 
-        do {
-            let _ = try await exportControllable.rootExportController.export(itemIds: itemIds, into: stream) { _, _ in }
-        } catch {
-            print(error.localizedDescription)
-        }
+        _ = try await exportControllable.rootExportController.export(itemIds: itemIds, into: stream) { _, _ in }
 
         guard let data = stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data else {
             throw ItemGameStorableError.memoryStreamError
@@ -238,15 +239,16 @@ public extension GameControllable {
             await gameModel.append(itemId: data.id)
         } else {
             let index = await gameModel.items.firstIndex(where: { $0 == data.id })
-            await gameModel.insert(itemId: data.id, at: 0, removeIndex: (index ?? 0 > 0 ? index : nil))
+            await gameModel.insert(itemId: data.id, at: 0, removeIndex: ((index ?? 0) > 0 ? index : nil))
         }
         await gameModel.append(itemId: data.id, item: item, onlyItem: true)
         if !hide {
             await itemControllable.replace(model: item, isInsert: true, forceSave: true)
-            var otherIds = await Set(gameModel.items).subtracting(beforeIds)
-            otherIds = otherIds.subtracting([data.id])
-            for otherId in otherIds {
-                let otherItem = await gameModel.itemData[otherId]
+            let otherItems = await MainActor.run {
+                Set(gameModel.items).subtracting(beforeIds).subtracting([data.id])
+                    .compactMap { gameModel.itemData[$0] }
+            }
+            for otherItem in otherItems {
                 await itemControllable.replace(model: otherItem, isInsert: true, forceSave: true)
             }
         }
