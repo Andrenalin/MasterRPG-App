@@ -155,13 +155,6 @@
     {
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "599DCAD72E8E30C00056E46C",
-        "name" : "GeneratorRPGTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBED0D62CD8EFA5004E7103",
         "name" : "MapRPGTests"
       }

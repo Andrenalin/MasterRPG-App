@@ -41,8 +41,10 @@ extension ExportController: ExportControllable {
             }
             checkIds.append(contentsOf: ids)
         }
+        let partialFolderIds: Set<UUID> = exportingFolder(results: &results)
         var allIds = itemIds
         allIds.ids[itemController.config.module] = Array(results)
+        allIds.mergePartial(ids: Array(partialFolderIds), for: itemController.config.module)
         return allIds
     }
 }

@@ -21,10 +21,10 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 ```
 
 ## Tech Stack
-- **Language**: Swift 6.3
+- **Language**: Swift 6.3 and `SWIFT_STRICT_CONCURRENCY = complete` for all targets
 - **SDK**: iOS26, iPadOS26, tvOS26, visionOS26, macOS26
 - **UI**: SwiftUI
-- **Pattern**: MVC
+- **Pattern**: Model View Controller
 - **Dependency management**: Swift Package Manager for visionOS 3d content
 
 ## Architecture
@@ -79,7 +79,15 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 ### Dependencies (SPM)
 - **RPGTabletopGameContent**: visionOS 3D content
 
-### Folder strrcture in modules
+### Folder Structure
+
+- **Modules** Source code for the modules / dynamic frameworks
+- **Resources** info.plist, entitlements and Resource Modules
+- **Sources** Target Apps specific source code
+- **Tests** Tests for modules
+- **TestPlans** Test plan for MasterRPG and modules
+
+#### Module Folder Sturcture
 - **Controller** for the different controllers
 - **Intent** for App-Intentm, Siri, Shrotcuts and Widgets
 - **Menu** for Menu on mac / iPad command

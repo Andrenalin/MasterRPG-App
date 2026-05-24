@@ -12,7 +12,7 @@ public protocol ExportControllable: Sendable {
 
     @MainActor func exportingAll() -> ItemModuleIds
     @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds
-    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor (Int?, Bool) async -> Void) async throws -> ItemModuleIds
+    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds
 }
 
 public extension ExportControllable {
@@ -38,7 +38,41 @@ public extension ExportControllable {
         itemIds
     }
     
-    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
+    @MainActor func exportingFolder(results: inout Set<UUID>) -> Set<UUID> {
+        // Phase 1: promote folders bottom-up — a folder is promoted when ALL its valid children are in results.
+        // Processing bottom-up via queue ensures a promoted inner folder triggers its parent check.
+        var queue: [UUID] = Array(results)
+        while !queue.isEmpty {
+            let id = queue.removeLast()
+            guard let item = itemControllable.itemSync(for: id),
+                  let parentId = item.parentId,
+                  !results.contains(parentId),
+                  let parent = itemControllable.itemSync(for: parentId),
+                  parent.isFolder else { continue }
+            let validChildIds = parent.entries.map { $0.childId }.filter { itemControllable.itemSync(for: $0) != nil }
+            guard validChildIds.allSatisfy({ results.contains($0) }) else { continue }
+            results.insert(parentId)
+            queue.append(parentId)
+        }
+        // Phase 2: walk ancestor folders not yet promoted → partial export
+        var partialFolderIds: Set<UUID> = []
+        var seen: Set<UUID> = results
+        var ancestorQueue: [UUID] = Array(results)
+        while !ancestorQueue.isEmpty {
+            let id = ancestorQueue.removeLast()
+            guard let item = itemControllable.itemSync(for: id),
+                  let parentId = item.parentId,
+                  !seen.contains(parentId),
+                  let parent = itemControllable.itemSync(for: parentId),
+                  parent.isFolder else { continue }
+            seen.insert(parentId)
+            partialFolderIds.insert(parentId)
+            ancestorQueue.append(parentId)
+        }
+        return partialFolderIds
+    }
+    
+    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
         itemIds
     }
 
@@ -54,8 +88,11 @@ public extension ExportControllable {
             outputStream.open()
             defer { outputStream.close() }
 
-            let itemIds = await self.exporting(itemIds: itemIds)
-            await self.updaterExport(itemCount: itemIds.count, increment: false)
+            let itemIds = await MainActor.run {
+                let ids = self.exporting(itemIds: itemIds)
+                self.exportModel.totalExportingItems = ids.count
+                return ids
+            }
             do {
                 try outputStream.append(fileHeader: GmzFileHeader(counter: itemIds.count, token: ExportDataToken.counter.rawValue, version: ExportDataToken.version_2024.rawValue))
                 _ = try await exportController.export(itemIds: itemIds, into: outputStream, counterUpdater: self.updaterExport(itemCount:increment:))
@@ -91,22 +128,27 @@ public extension ExportControllable {
         }
     }
 
-    func export(itemIds: ItemModuleIds, into stream: OutputStream, counterUpdater: @MainActor (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
+    func export(itemIds: ItemModuleIds, into stream: OutputStream, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
 
         await logExport(title: "export", count: itemIds.count)
 
         var updatedIds = try await additionalExport(itemIds: itemIds, stream: stream, counterUpdater: counterUpdater)
-        
+
         try await extract(itemIds: updatedIds, stream: stream) {
             await counterUpdater(nil, true)
         }
-        updatedIds.ids.removeValue(forKey: await token())
+        let module = await token()
+        updatedIds.ids.removeValue(forKey: module)
+        updatedIds.partialIds.removeValue(forKey: module)
         await logExport(title: "export after extract", count: updatedIds.count)
         return updatedIds
     }
 
     private func extract(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: () async -> Void) async throws {
-        let allIds = itemIds.ids[await token(), default: []]
+        let module = await token()
+        let fullIds = itemIds.ids[module, default: []]
+        let partialIds = itemIds.partialIds[module, default: []]
+        let allIds = fullIds + partialIds
 
         await logExport(title: "extract", count: allIds.count)
 
@@ -118,14 +160,14 @@ public extension ExportControllable {
             guard index < allIds.endIndex else { return nil }
             let itemId = allIds[index]
             await indexModel.update(index: allIds.index(after: index))
-            guard let item = await self.itemControllable.item(for: itemId) else {
+            guard let item = await self.itemControllable.item(for: itemId, fullIds: fullIds, partialIds: partialIds) else {
                 throw ItemDataExportableError.writeError
             }
             return ExportStream(id: itemId, data: try encoder.encode(item))
         }
 
         let version = itemControllable.itemDataModel.version
-        try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: await token().rawValue, version: version))
+        try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: module.rawValue, version: version))
 
         for try await exportData in dataStream {
             if let data = await inlineFiles(for: exportData.id) {
@@ -155,9 +197,10 @@ public extension ExportControllable {
     }
 
     func logExport(title: String, count: Int) async {
-        let token = await token()
-        let counter = await progress()
-        Logger.exportController.info("\(title, privacy: .public) \(token.token, privacy: .public) currentItems \(count), exportedItems \(counter.count), total: \(counter.total)")
+        let (module, exportedItems, totalItems) = await MainActor.run {
+            (itemControllable.config.module, exportModel.exportedItems, exportModel.totalExportingItems)
+        }
+        Logger.exportController.info("\(title, privacy: .public) \(module.token, privacy: .public) currentItems \(count), exportedItems \(exportedItems), total: \(totalItems)")
     }
 
     @MainActor

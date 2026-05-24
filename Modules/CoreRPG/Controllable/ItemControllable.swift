@@ -194,7 +194,17 @@ public extension ItemControllable {
     func item(for itemId: UUID) async -> Model? {
         await itemDataModel.item(for: itemId) as? Model
     }
-    
+
+    func item(for itemId: UUID, fullIds: [UUID], partialIds: [UUID]) async -> Model? {
+        guard let model = await itemDataModel.item(for: itemId) as? Model else { return nil }
+        guard partialIds.contains(itemId) else { return model }
+        let partial = model.copy()
+        partial.entries = model.entries.filter {
+            partialIds.contains($0.childId) || fullIds.contains($0.childId)
+        }
+        return partial
+    }
+
     func item(for itemId: UUID, version: Int) async -> Model? {
         let item = await self.item(for: itemId)
         guard version != 0, let item else { return item }

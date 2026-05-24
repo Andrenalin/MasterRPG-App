@@ -5,7 +5,7 @@ import os.log
 import Observation
 
 @MainActor @Observable
-public final class ItemDataExportModel: Sendable {
+public final class ItemDataExportModel {
     public init() {}
 
     public var exportedItems: Int = 0

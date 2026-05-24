@@ -130,8 +130,10 @@ extension ExportController: ExportControllable {
                 }
             }
         }
+        let partialFolderIds: Set<UUID> = exportingFolder(results: &results)
         var allIds = itemIds
         allIds.ids[itemController.config.module] = Array(results)
+        allIds.mergePartial(ids: Array(partialFolderIds), for: itemController.config.module)
         let newAudioIds = rootManager.audioRoot.exportControllable.exporting(ids: audioIds)
         allIds.merge(other: newAudioIds)
         let newDiceIds = rootManager.diceRoot.exportControllable.exporting(ids: diceIds)

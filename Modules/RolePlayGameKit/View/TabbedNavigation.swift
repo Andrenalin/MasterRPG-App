@@ -17,7 +17,6 @@ struct TabbedNavigation: View {
             ForEach(RootRoute.fiveTabs) { tab in
                 Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
                     ManagedNavigationStack(name: tab.title) { navigator in
-                        let _ = print(tab.title)
                         tab
                     }
                     .environment(appModel.itemRootController(for: tab.module))

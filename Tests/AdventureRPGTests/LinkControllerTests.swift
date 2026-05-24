@@ -54,7 +54,7 @@ struct LinkControllerTests {
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry2.id] == entry2)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry3.id] == entry3)
         
-        await sut.validateLinks()
+        await sut.validateLinks(reportModel: ValidateRepairModel())
         await #expect(root.itemController.itemOrEmpty(for: itemId).photoId == photoId)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry1.id] == entry1)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry2.id] == entry2)

@@ -6,14 +6,17 @@ import UniformTypeIdentifiers
 public struct ItemModuleIds: Sendable, Equatable, Hashable {
     public init(dictionary: [NetworkModules: [UUID]] = [:]) {
         self.ids = dictionary
+        self.partialIds = [:]
     }
 
     public init(ids: Set<UUID>, module: NetworkModules) {
         self.ids = [module: Array(ids)]
+        self.partialIds = [:]
     }
 
     public init(ids: [UUID], module: NetworkModules) {
         self.ids = [module: Array(Set(ids))]
+        self.partialIds = [:]
     }
 
     public init(items: [ItemRowTreeModel]) {
@@ -25,9 +28,13 @@ public struct ItemModuleIds: Sendable, Equatable, Hashable {
             }
         }
         self.ids = itemModules.ids
+        self.partialIds = [:]
     }
 
     public var ids: [NetworkModules: [UUID]]
+    /// Folder IDs whose children are only partially included in the export.
+    /// These folders are still written to the export stream but are not promoted to `ids`.
+    public var partialIds: [NetworkModules: [UUID]]
 
     public func extract(module: NetworkModules) -> ItemModuleIds {
         ItemModuleIds(ids: ids[module, default: []], module: module)
@@ -37,6 +44,9 @@ public struct ItemModuleIds: Sendable, Equatable, Hashable {
         for key in other.ids.keys {
             merge(ids: other.ids[key, default: []], for: key)
         }
+        for key in other.partialIds.keys {
+            mergePartial(ids: other.partialIds[key, default: []], for: key)
+        }
     }
 
     public mutating func merge(ids: [UUID], for key: NetworkModules) {
@@ -45,8 +55,15 @@ public struct ItemModuleIds: Sendable, Equatable, Hashable {
         self.ids[key] = Array(keyIds)
     }
 
+    public mutating func mergePartial(ids: [UUID], for key: NetworkModules) {
+        guard !ids.isEmpty else { return }
+        var keyIds = Set(self.partialIds[key, default: []])
+        keyIds.formUnion(ids)
+        self.partialIds[key] = Array(keyIds)
+    }
+
     public var count: Int {
-        ids.keys.reduce(0) { $0 + (ids[$1]?.count ?? 0)}
+        ids.values.reduce(0) { $0 + $1.count } + partialIds.values.reduce(0) { $0 + $1.count }
     }
 }
 
