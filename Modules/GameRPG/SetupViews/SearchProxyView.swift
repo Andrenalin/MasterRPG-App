@@ -32,7 +32,7 @@ struct SearchProxyView: View {
                 }
             }
             .task {
-                playerNetworkController = await root.networkProxyStore.model.playerNetworkController
+                playerNetworkController = root.networkProxyStore.model.playerNetworkController
             }
         }
     }

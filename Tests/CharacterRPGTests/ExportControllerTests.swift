@@ -246,8 +246,6 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
 
         let sut = await root.exportController
-        //let diceId = await root.diceRoot.itemControllable.addNew(type: .item)
-        
         let diceId = try #require(await root.diceRoot.exportControllable.exportingAll().ids[.dice]?.first)
         let pdfId = await root.pdfRoot.itemControllable.addNew(type: .item)
         let tableId = try #require(await root.tableRoot.exportControllable.exportingAll().ids[.table]?.first)

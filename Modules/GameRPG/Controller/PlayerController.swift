@@ -86,8 +86,8 @@ final class PlayerController: Sendable {
             proxyMasterController = MasterController(root: root, asProxy: true)
         }
         Task {
-            await root.networkStore.model.setPlayer(delegate: self)
-            await root.networkProxyStore.model.setPlayer(delegate: self)
+            root.networkStore.model.setPlayer(delegate: self)
+            root.networkProxyStore.model.setPlayer(delegate: self)
         }
         Logger.networking.debug("PlayerController: Init")
     }
@@ -104,7 +104,7 @@ extension PlayerController {
     func start(to model: BrowserDeviceModel?) async -> Bool {
         Logger.networking.debug("PlayerController: Start")
         if root.gameModel.gameConfig.type == .player {
-            await root.networkProxyStore.startProxyServer()
+            root.networkProxyStore.startProxyServer()
         } else if root.gameModel.gameConfig.type == .proxy {
             return await root.networkProxyStore.startPlayerGame(to: model)
         }

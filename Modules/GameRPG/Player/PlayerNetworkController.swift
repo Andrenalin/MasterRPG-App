@@ -7,7 +7,8 @@ import CoreRPG
 
 final class PlayerNetworkController {
     let proxy: Bool
-    private unowned let delegate: PlayerNetworkControllerDelegate?
+    // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
+    nonisolated(unsafe) private weak var delegate: (any PlayerNetworkControllerDelegate)?
 
     let browserController: BrowserController
     let networkModel: PlayerNetworkNodel
@@ -128,7 +129,7 @@ extension PlayerNetworkController {
         _ = withObservationTracking {
             browserController.model.removed
         } onChange: { [weak self] in
-            Task {
+            Task { @concurrent in
                 await self?.checkForRemoval()
             }
         }

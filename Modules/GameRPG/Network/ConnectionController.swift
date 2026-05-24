@@ -23,7 +23,8 @@ protocol ConnectionControllerDelegate: Sendable & AnyObject {
 final class ConnectionController: Sendable, Identifiable {
     let id: UUID
     private let connection: NWConnection
-    private unowned let delegate: ConnectionControllerDelegate?
+    // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
+    nonisolated(unsafe) private weak var delegate: (any ConnectionControllerDelegate)?
     
     init(id: UUID, endpoint: NWEndpoint, delegate: ConnectionControllerDelegate) {
         self.id = id
@@ -63,7 +64,7 @@ extension ConnectionController: ConnectionControllable {
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Start \(connectionContext, privacy: .public)")
 
         connection.stateUpdateHandler = { [self] newState in
-            Task {
+            Task { @concurrent in
                 await self.stateChanged(newState)
             }
         }
@@ -112,7 +113,6 @@ private extension ConnectionController {
 
         case .cancelled:
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Cancelled \(connectionContext, privacy: .public)")
-            cancel()
             await lostConnection()
 
         default:
@@ -124,12 +124,8 @@ private extension ConnectionController {
 private extension ConnectionController {
     // Receive a message, deliver it to your delegate, and continue receiving more messages.
     func receiveNextMessage() {
-//        guard let connection else {
-//            delegate?.lostConnection()
-//            return
-//        }
         connection.receiveMessage { [self] content, context, _, error in
-            Task {
+            Task { @concurrent in
                 await process(content: content, context: context, error: error)
             }
         }

@@ -39,7 +39,7 @@ final class NetworkController: Sendable {
     }
 
     @MainActor
-    func setup(gameModel: GameModel) async {
+    func setup(gameModel: GameModel) {
         guard !model.isSetup else { return }
         sharePlayStore.setup(gameModel: gameModel)
         sharePlayStore.delegate = self
@@ -133,13 +133,11 @@ extension NetworkController: MasterNetworkControllerDelegate {
     func masterReceived(data: Data?, for connectionId: ConnectionController.ID, fileJournal: Bool) async {
         guard let gameData = GameNetworkModel.decodeData(of: data) else {
             Logger.networking.debug("NetworkController: Master Received invalid game data from \(connectionId)")
-            preconditionFailure()
+            return
         }
         // send all other player the same data to simulate SharePlay
         await model.masterStore?.sendResponse(data: gameData, except: connectionId)
-        Task { @MainActor in
-            sharePlayStore.sendData(gameData, fileJournal: fileJournal)
-        }
+        await MainActor.run { sharePlayStore.sendData(gameData, fileJournal: fileJournal) }
         // state
         await model.masterDelegate?.received(gameData, connectionId: connectionId)
     }
@@ -180,16 +178,16 @@ extension NetworkController: PlayerNetworkControllerDelegate {
 
 extension NetworkController: SharePlayControllerDelegate {
     func handleInitial(_ model: GameNetworkModel) {
-        Task {
+        Task { @concurrent in
             await self.model.playerDelegate?.received(model)
         }
     }
 
     func handleUpdate(_ model: GameNetworkModel, id: UUID) {
-        Task {
+        Task { @concurrent in
             await self.model.playerDelegate?.received(model)
             await self.model.masterDelegate?.received(model, connectionId: id)
-            
+
             if await self.model.hasLocalPlayer {
                 await self.model.masterStore?.sendResponse(data: model)
             }
@@ -197,18 +195,18 @@ extension NetworkController: SharePlayControllerDelegate {
     }
 
     func handleFileUpdate(_ model: GameNetworkModel) {
-        Task {
+        Task { @concurrent in
             await self.model.playerDelegate?.receivedFile(model)
             await self.model.masterDelegate?.receivedFile(model)
-            
+
             if await self.model.hasLocalPlayer {
                 await self.model.masterStore?.sendResponse(data: model)
             }
         }
     }
-    
+
     func sharePlayLostPlayer(id: UUID) {
-        Task {
+        Task { @concurrent in
             await model.masterDelegate?.lostPlayer(for: id)
         }
     }

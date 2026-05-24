@@ -16,7 +16,8 @@ protocol ListenerControllable: Sendable & AnyObject {
 }
 
 final class ListenerController: Sendable {
-    private unowned let delegate: ListenerControllerDelegate?
+    // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
+    nonisolated(unsafe) private weak var delegate: (any ListenerControllerDelegate)?
     private let listener: NWListener?
     private let name: String
     private let serviceType: GameServiceType
@@ -60,8 +61,8 @@ extension ListenerController: ListenerControllable {
         
         guard let listener  else {
             Logger.networking.fault("Listener: \(listenerName, privacy: .public) and service: \(serviceName) failed to create listener")
-            Task {
-                await delegate?.cancelled()
+            Task { @concurrent in
+                await self.delegate?.cancelled()
             }
             return
         }
@@ -91,8 +92,8 @@ extension ListenerController: ListenerControllable {
 
 private extension ListenerController {
     func handleNewConnection(for newConnection: NWConnection) {
-        Task {
-            await delegate?.newConnection(for: newConnection)
+        Task { @concurrent in
+            await self.delegate?.newConnection(for: newConnection)
         }
     }
     func handleState(_ state: NWListener.State) {
@@ -109,8 +110,8 @@ private extension ListenerController {
             listener?.cancel()
 
         case .cancelled:
-            Task {
-                await delegate?.cancelled()
+            Task { @concurrent in
+                await self.delegate?.cancelled()
             }
         default:
             break

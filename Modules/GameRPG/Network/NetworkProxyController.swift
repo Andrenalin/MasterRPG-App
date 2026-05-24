@@ -21,9 +21,7 @@ final class NetworkProxyController: Sendable {
         self.model = NetworkProxyControllerModel(name: name)
         let masterNetworkController = masterBuilder(name, self)
         let playerNetworkController = playerBuilder(name, self)
-        Task {
-            await model.setControllers(master: masterNetworkController, player: playerNetworkController)
-        }
+        model.setControllers(master: masterNetworkController, player: playerNetworkController)
         Logger.networking.debug("NetworkProxy: Init \(name)")
     }
 
@@ -37,10 +35,10 @@ final class NetworkProxyController: Sendable {
 
 extension NetworkProxyController {
     @MainActor
-    func startProxyServer() async {
+    func startProxyServer() {
         let name = model.name
         Logger.networking.debug("NetworkProxy: start proxy game \(name)")
-        await model.masterNetworkController?.startProxyStreaming()
+        model.masterNetworkController?.startProxyStreaming()
     }
 
     @MainActor
@@ -58,8 +56,8 @@ extension NetworkProxyController {
     func stopGame() async {
         let name = model.name
         Logger.networking.debug("NetworkProxy: stop game \(name)")
-        if await model.masterNetworkController?.networkModel.isStreaming ?? false {
-            await model.masterNetworkController?.stopStreaming()
+        if model.masterNetworkController?.networkModel.isStreaming ?? false {
+            model.masterNetworkController?.stopStreaming()
             await model.playerNetworkController?.stop()
         } else {
             await model.playerNetworkController?.stop()
@@ -113,13 +111,13 @@ extension NetworkProxyController {
 
 extension NetworkProxyController: PlayerNetworkControllerDelegate {
     func playerLostMaster() {
-        Task {
+        Task { @concurrent in
             await model.playerDelegate?.lostProxyConnection()
         }
     }
 
     func playerReady() {
-        Task {
+        Task { @concurrent in
             await model.playerDelegate?.readyProxy()
         }
     }
@@ -127,10 +125,10 @@ extension NetworkProxyController: PlayerNetworkControllerDelegate {
     func playerReceived(data: Data?) {
         guard let gameData = GameNetworkModel.decodeData(of: data) else {
             Logger.networking.debug("NetworkProxy: Player received invalid game data")
-            preconditionFailure()
+            return
         }
 
-        Task {
+        Task { @concurrent in
             await model.playerDelegate?.receivedProxy(gameData)
         }
     }
@@ -146,8 +144,8 @@ extension NetworkProxyController {
     // TODO: better in start Game with name?
     func resetName(name: String) {
         Task { @MainActor in
-            await model.masterNetworkController?.networkModel.name = name
-            await model.playerNetworkController?.networkModel.name = name
+            model.masterNetworkController?.networkModel.name = name
+            model.playerNetworkController?.networkModel.name = name
         }
     }
 }

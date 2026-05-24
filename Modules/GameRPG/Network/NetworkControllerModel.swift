@@ -21,7 +21,7 @@ protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
 }
 
 @MainActor
-final class NetworkControllerModel: Sendable {
+final class NetworkControllerModel {
     init(name: String) {
         self.name = name
     }
@@ -53,11 +53,11 @@ final class NetworkControllerModel: Sendable {
         playerStore = player
     }
     
-    func setMaster(delegate: MasterNetworkStoreDelegate) async {
+    func setMaster(delegate: MasterNetworkStoreDelegate) {
         _masterDelegate = delegate
     }
-    
-    func setPlayer(delegate: PlayerNetworkStoreDelegate) async {
+
+    func setPlayer(delegate: PlayerNetworkStoreDelegate) {
         _playerDelegate = delegate
     }
     

@@ -34,7 +34,7 @@ struct GameRootSetupView: View {
             }
         }
         .task {
-            await root.networkStore.setup(gameModel: root.gameModel)
+            root.networkStore.setup(gameModel: root.gameModel)
         }
         .onChange(of: root.gameModel.gameConfig.state, initial: true) { _, newState in
             appGameStateModel.isGameRunning = newState == .started

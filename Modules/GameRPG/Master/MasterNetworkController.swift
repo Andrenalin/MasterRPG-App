@@ -6,7 +6,8 @@ import os.log
 import CoreRPG
 
 final class MasterNetworkController: Sendable {
-    private unowned let delegate: MasterNetworkControllerDelegate?
+    // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
+    nonisolated(unsafe) private weak var delegate: (any MasterNetworkControllerDelegate)?
     let listnerBuilder: @Sendable (String, Bool, ListenerControllerDelegate) -> ListenerControllable
     let networkModel: MasterNetworkNodel
     
@@ -67,6 +68,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         observeConnections()
     }
 
+    @MainActor
     func stopStreaming() {
         Logger.networking.debug("MasterNetworkController: Stop Streaming")
 
@@ -158,7 +160,7 @@ extension MasterNetworkController {
         _ = withObservationTracking {
             browserController.model.browsers
         } onChange: { [weak self] in
-            Task {
+            Task { @concurrent in
                 await self?.checkForConnections()
             }
         }
@@ -167,9 +169,9 @@ extension MasterNetworkController {
     @MainActor
     func checkForConnections() {
         guard let browserController = networkModel.browserController else { return }
-        Task {
+        Task { @concurrent in
             let results = await browserController.allResults()
-            refresh(results: results)
+            await MainActor.run { [weak self] in self?.refresh(results: results) }
         }
         observeConnections()
     }

@@ -46,9 +46,9 @@ final class MasterController: Sendable {
         
         Task {
             if asProxy {
-                await root.networkProxyStore.model.setMaster(delegate: self)
+                root.networkProxyStore.model.setMaster(delegate: self)
             } else {
-                await root.networkStore.model.setMaster(delegate: self)
+                root.networkStore.model.setMaster(delegate: self)
             }
         }
         Logger.networking.debug("MasterController: Init")
@@ -66,7 +66,7 @@ extension MasterController {
     func start() async {
         Logger.networking.debug("MasterController: Start")
         await root.networkStore.startMasterGame(game: root.gameModel.gameConfig, titleImage: root.adventureRoot.titleImage(for: root.gameModel.gameConfig.master.adventureId!))
-        await root.networkProxyStore.startProxyServer()
+        root.networkProxyStore.startProxyServer()
     }
     
     @MainActor

@@ -16,36 +16,33 @@ protocol PlayerNetworkProxyControllerDelegate: Sendable & AnyObject {
     func receivedProxy(_ model: GameNetworkModel) async
 }
 
-actor NetworkProxyControllerModel: Sendable {
+@MainActor
+final class NetworkProxyControllerModel {
     init(name: String) {
         self.name = name
     }
-    
+
     let name: String
-    
-    var masterDelegate: MasterNetworkProxyControllerDelegate? {
-        _masterDelegate
-    }
-    var playerDelegate: PlayerNetworkProxyControllerDelegate? {
-        _playerDelegate
-    }
-    
+
+    var masterDelegate: (any MasterNetworkProxyControllerDelegate)? { _masterDelegate }
+    var playerDelegate: (any PlayerNetworkProxyControllerDelegate)? { _playerDelegate }
+
     private(set) var masterNetworkController: (any MasterNetworkControllable)?
     private(set) var playerNetworkController: (any PlayerNetworkControllable)?
 
-    func setControllers(master: MasterNetworkControllable, player: PlayerNetworkControllable) async {
+    func setControllers(master: any MasterNetworkControllable, player: any PlayerNetworkControllable) {
         masterNetworkController = master
         playerNetworkController = player
     }
-    
-    func setMaster(delegate: MasterNetworkProxyControllerDelegate) async {
+
+    func setMaster(delegate: any MasterNetworkProxyControllerDelegate) {
         _masterDelegate = delegate
     }
-    
-    func setPlayer(delegate: PlayerNetworkProxyControllerDelegate) async {
+
+    func setPlayer(delegate: any PlayerNetworkProxyControllerDelegate) {
         _playerDelegate = delegate
     }
-    
-    private weak var _masterDelegate: MasterNetworkProxyControllerDelegate?
-    private weak var _playerDelegate: PlayerNetworkProxyControllerDelegate?
+
+    private weak var _masterDelegate: (any MasterNetworkProxyControllerDelegate)?
+    private weak var _playerDelegate: (any PlayerNetworkProxyControllerDelegate)?
 }
