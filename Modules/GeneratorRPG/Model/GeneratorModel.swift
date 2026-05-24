@@ -112,14 +112,25 @@ extension GeneratorModel: ItemLinkRegistable {}
 
 extension GeneratorModel: ItemDiffComparable {
     func merge(_ other: GeneratorModel) -> GeneratorModel {
-        GeneratorModel(
+        let mergedCategory = category_.merged(other: other.category_)
+        let mergedEntries: CRDTDataUpdate<[ChildEntryModel]>
+        if mergedCategory.wrappedValue == .folder {
+            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
+            let combined = allIds
+                .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
+                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            mergedEntries = CRDTDataUpdate(wrappedValue: combined)
+        } else {
+            mergedEntries = entries_.merged(other: other.entries_)
+        }
+        return GeneratorModel(
             id: id,
             name: name_.merged(other: other.name_),
             description: description_.merged(other: other.description_),
             tags: tags_.merged(other: other.tags_),
-            category: category_.merged(other: other.category_),
+            category: mergedCategory,
             displayState: other.displayState,
-            entries: entries_.merged(other: other.entries_),
+            entries: mergedEntries,
             parentId: other.parentId,
             genType: other.genType,
             referenceId: other.referenceId

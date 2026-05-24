@@ -331,14 +331,25 @@ extension MapModel: ItemDiffComparable {
     public func merge(_ other: MapModel) -> MapModel {
         let mergedPhotoId = photoId_.merged(other: other.photoId_)
         let mergedMapPins = mapPins_.merged(other: other.mapPins_)
+        let mergedCategory = category_.merged(other: other.category_)
+        let mergedEntries: CRDTDataUpdate<[MapEntryModel]>
+        if mergedCategory.wrappedValue == .folder {
+            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
+            let combined = allIds
+                .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
+                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            mergedEntries = CRDTDataUpdate(wrappedValue: combined)
+        } else {
+            mergedEntries = entries_.merged(other: other.entries_)
+        }
         return MapModel(
             id: id,
             name: name_.merged(other: other.name_),
             description: description_.merged(other: other.description_),
             tags: tags_.merged(other: other.tags_),
-            category: category_.merged(other: other.category_),
+            category: mergedCategory,
             displayState: other.displayState,
-            entries: entries_.merged(other: other.entries_),
+            entries: mergedEntries,
             displayConfig: displayConfig_.merged(other: other.displayConfig_),
             photoId: mergedPhotoId,
             width: mergedPhotoId.update == photoId_.update ? width : other.width,

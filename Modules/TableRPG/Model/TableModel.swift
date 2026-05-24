@@ -172,16 +172,27 @@ extension TableModel: ItemLinkRegistable {
 
 extension TableModel: ItemDiffComparable {
     public func merge(_ other: TableModel) -> TableModel {
-        TableModel(
+        let mergedCategory = category_.merged(other: other.category_)
+        let mergedEntries: CRDTDataUpdate<[TableEntryModel]>
+        if mergedCategory.wrappedValue == .folder {
+            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
+            let combined = allIds
+                .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
+                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            mergedEntries = CRDTDataUpdate(wrappedValue: combined)
+        } else {
+            mergedEntries = entries_.merged(other: other.entries_)
+        }
+        return TableModel(
             id: id,
             name: name_.merged(other: other.name_),
             description: description_.merged(other: other.description_),
             tags: tags_.merged(other: other.tags_),
-            category: category_.merged(other: other.category_),
+            category: mergedCategory,
             displayState: other.displayState,
             tableType: tableType_.merged(other: other.tableType_),
             diceId: diceId_.merged(other: other.diceId_),
-            entries: entries_.merged(other: other.entries_),
+            entries: mergedEntries,
             diceResult: other.diceResult,
             parentId: other.parentId
         )
