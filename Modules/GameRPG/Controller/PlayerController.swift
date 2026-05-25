@@ -85,10 +85,8 @@ final class PlayerController: Sendable {
         } else {
             proxyMasterController = MasterController(root: root, asProxy: true)
         }
-        Task {
-            root.networkStore.model.setPlayer(delegate: self)
-            root.networkProxyStore.model.setPlayer(delegate: self)
-        }
+        root.networkStore.model.setPlayer(delegate: self)
+        root.networkProxyStore.model.setPlayer(delegate: self)
         Logger.networking.debug("PlayerController: Init")
     }
     
@@ -215,7 +213,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         
         if !fromProxy {
             await root.networkProxyStore.sendPlayer(data: model)
-            await sendCharacter()
+            Task { await self.sendCharacter() }
         }
         
         await gameModel.gameModelMessage.append(model)
@@ -223,7 +221,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     }
     
     func processMessages() async {
-        if let message = await gameModel.gameModelMessage.next() {
+        while let message = await gameModel.gameModelMessage.next() {
             let response = try? await handle(message)
             if let response {
                 await send(model: response)
@@ -234,7 +232,6 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 await gameModel.increaseMessageCounter()
             }
             await gameModel.gameModelMessage.processed()
-            await processMessages()
         }
     }
 }
@@ -363,8 +360,10 @@ extension PlayerController {
                 }
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
-                if await gameModel.gameUpdateType == .photo {
-                    await gameModel.setGameUpdateType(.none)
+                await MainActor.run {
+                    if gameModel.gameUpdateType == .photo {
+                        gameModel.gameUpdateType = .none
+                    }
                 }
                 return await response(for: model, isSuccess: true, requestData: true)
             }
@@ -576,21 +575,22 @@ extension PlayerController {
         case .update:
             try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: false, deep: true)
             let characterId = model.data.id
-            Task { @MainActor in
+            Task {
                 _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
                 await root.characterRoot.gameControllable.focus(on: characterId)
                 try await Task.sleep(for: .seconds(1))
-                root.gameModel.selectedCharacter = characterId
+                await MainActor.run { root.gameModel.selectedCharacter = characterId }
             }
             return nil
         }
     }
     
-    @MainActor func response(for model: GameNetworkModel, isSuccess: Bool, requestData: Bool) -> GameNetworkModel {
+    nonisolated func response(for model: GameNetworkModel, isSuccess: Bool, requestData: Bool) async -> GameNetworkModel {
+        let gameConfig = await root.gameModel.gameConfig
         if requestData {
-            return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: root.gameModel.gameConfig, data: model.data)
+            return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: gameConfig, data: model.data)
         }
-        return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: isSuccess ? .ok : .failed, gameConfig: root.gameModel.gameConfig, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
+        return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: isSuccess ? .ok : .failed, gameConfig: gameConfig, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
     }
     
     func sendCharacter() async {
@@ -601,7 +601,11 @@ extension PlayerController {
         if let result = try? await root.characterRoot.gameControllable.createGameData(for: characterId) {
             await send(counter: 0, type: .update, subType: .store, updated: result, useJournal: true)
         }
-        try? await Task.sleep(for: .seconds(5))
+        do {
+            try await Task.sleep(for: .seconds(5))
+        } catch {
+            return
+        }
         await sendAudioList()
     }
 
