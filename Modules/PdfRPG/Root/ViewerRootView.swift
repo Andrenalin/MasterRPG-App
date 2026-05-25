@@ -82,9 +82,7 @@ struct ViewerRootView: View {
 #endif
         .applyIf(configuration.aiExtractor == false) {
             $0.navigationTitle(Text(model.name))
-#if !os(macOS) && !os(tvOS)
-                .navigationBarTitleDisplayMode(.inline)
-#endif
+                .navigationBarTitleDisplayModeAll(.inline)
         }
         .onChange(of: model, initial: true) {
             let id = model.id

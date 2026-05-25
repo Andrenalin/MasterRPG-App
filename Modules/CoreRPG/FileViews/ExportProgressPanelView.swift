@@ -13,7 +13,7 @@ public struct ExportProgressPanelView: View {
     let exporter: () -> (Task<Void, any Error>, URL)
     let finishAction: () -> Void
 
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.navigator) private var navigator
 
     @State private var showExporter = false
     @State private var exportTask: Task<Void, any Error>?
@@ -37,8 +37,10 @@ public struct ExportProgressPanelView: View {
                     switch outcome {
                     case .running:
                         Text("Exporting \(exportModel.exportedItems) of \(exportModel.totalExportingItems)", bundle: .module)
+                    case .finished:
+                        Text("Export is finished, \(exportModel.totalExportingItems) are successfully exported.", bundle: .module)
                     case .cancelled:
-                        Text("Export is cancelled, but \(exportModel.exportedItems) are successfully exported.", bundle: .module)
+                        Text("Export is cancelled, nothing written", bundle: .module)
                     case .failed(let message):
                         Text(message)
                     }
@@ -47,7 +49,7 @@ public struct ExportProgressPanelView: View {
             }
             .padding()
             .navigationTitle(Text("Exporting", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayModeAll(.inline)
             .task {
                 do {
                     try await Task.sleep(for: .seconds(0.5))
@@ -65,13 +67,14 @@ public struct ExportProgressPanelView: View {
 #if !os(tvOS)
             .fileMover(isPresented: $showExporter, file: saveUrl) { _ in
                 finishAction()
+                outcome = .finished
             }
 #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
                         exportTask?.cancel()
-                        dismiss()
+                        navigator.dismiss()
                     } label: {
                         Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark") }
                     }
@@ -79,7 +82,7 @@ public struct ExportProgressPanelView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        dismiss()
+                        navigator.dismiss()
                     } label: {
                         Label { Text("Ok", bundle: .module) } icon: { Image(systemName: "checkmark") }
                     }
@@ -91,6 +94,7 @@ public struct ExportProgressPanelView: View {
 
     private enum ExportOutcome {
         case running
+        case finished
         case cancelled
         case failed(String)
     }

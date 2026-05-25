@@ -48,9 +48,7 @@ public struct QuickLinkEditor<EntryViewModel: ItemLinkEditable, ActionView: View
                     .animation(.default, value: showHelp)
                 }
                 .navigationTitle(title)
-#if os(iOS) || os(visionOS)
-                .navigationBarTitleDisplayMode(.inline)
-#endif
+                .navigationBarTitleDisplayModeAll(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button {

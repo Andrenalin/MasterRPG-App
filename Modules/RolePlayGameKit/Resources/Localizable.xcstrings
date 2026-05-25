@@ -194,6 +194,7 @@
 
     },
     "Explanation data packages to see how the app works. It explain with real data how to use and add data." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -250,6 +251,7 @@
 
     },
     "Import Explanation English Data" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -260,6 +262,7 @@
       }
     },
     "Import Explanation German Data" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -270,6 +273,7 @@
       }
     },
     "Import Prebundled Examples" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

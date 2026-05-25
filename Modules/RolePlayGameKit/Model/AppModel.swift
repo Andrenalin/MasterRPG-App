@@ -217,11 +217,11 @@ extension AppModel {
     public func resetData() async {
         await adventureRoot.resetData()
     }
-
+    
     public func save() async {
         await adventureRoot.save()
     }
-
+    
     public func cleanDatabase() async {
         try? await adventureRoot.itemDataCleanup()
         try? await audioRoot.itemDataCleanup()
@@ -234,6 +234,7 @@ extension AppModel {
         try? await spaceRoot.itemDataCleanup()
         try? await weatherRoot.itemDataCleanup()
     }
+
     public func installExampleData(isGerman: Bool = false) {
         let importController = adventureRoot.importControllable
         let bundle = RPGResources.Resources.bundle
@@ -299,6 +300,17 @@ extension AppModel {
         @unknown default:
             fatalError()
         }
+    }
+}
+
+// MARK: ExampleUrlProvider
+
+extension AppModel: ExampleUrlProvider {
+    public func urlExampleData(isGerman: Bool) -> URL? {
+        let bundle = RPGResources.Resources.bundle
+        let name = isGerman ? RPGResources.Resources.exampleFirstGermanData : RPGResources.Resources.exampleFirstData
+        guard let url = bundle.url(forResource: name, withExtension: "gmz") else { return nil }
+        return url
     }
 }
 

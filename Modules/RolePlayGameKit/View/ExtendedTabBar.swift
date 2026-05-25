@@ -33,9 +33,7 @@ struct ExtendedTabBar: View {
             }
         }
         .navigationTitle(Text(NetworkModules.editor.title))
-#if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-#endif
+        .navigationBarTitleDisplayModeAll(.inline)
         .navigationModifier { destination in
             if let extened = destination as? ExtendedTabRoute {
                 destination()

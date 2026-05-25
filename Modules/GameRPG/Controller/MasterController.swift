@@ -124,7 +124,7 @@ extension MasterController {
         if let playerId {
             game.controls = game.controls.filter { $0.id == playerId }
         }
-        let networtData = await GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subtype, gameConfig: game, data: updated)
+        let networtData = GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subtype, gameConfig: game, data: updated)
 
         await root.logGameController.addMessage(counter: counter, type: type, subType: subtype, module: updated.type, itemId: updated.id)
         await gameModel.increaseMessageCounter()

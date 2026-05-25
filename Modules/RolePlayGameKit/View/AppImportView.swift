@@ -8,15 +8,11 @@ struct AppImportView: View {
     let appModel: AppModel
         
     var body: some View {
-        ExportProgressPanelView(exportController: exportController) {
-            let exportIds = exportController.exportingAll()
-            return exportController.export(ids: exportIds)
-        }
-        .presentationDetents([.height(160)])
+        ImportProgressPanelView(urlProvider: appModel, importController: importController)
     }
     
-    var exportController: ExportControllable {
-        appModel.adventureRoot.exportControllable
+    var importController: ImportControllable {
+        appModel.adventureRoot.importControllable
     }
 }
 

@@ -541,6 +541,9 @@
         }
       }
     },
+    "Choose file" : {
+
+    },
     "Clear name" : {
 
     },
@@ -932,6 +935,9 @@
         }
       }
     },
+    "English Data" : {
+
+    },
     "Enter a name" : {
       "localizations" : {
         "de" : {
@@ -973,6 +979,9 @@
           }
         }
       }
+    },
+    "Explanation data packages to see how the app works. It explain with real data how to use and add data." : {
+
     },
     "Export" : {
       "extractionState" : "stale",
@@ -1045,6 +1054,12 @@
           }
         }
       }
+    },
+    "Export is cancelled, nothing written" : {
+
+    },
+    "Export is finished, %lld are successfully exported." : {
+
     },
     "Export progress" : {
 
@@ -1137,6 +1152,9 @@
         }
       }
     },
+    "German Data" : {
+
+    },
     "Group Editor for %@" : {
       "localizations" : {
         "de" : {
@@ -1223,6 +1241,21 @@
           }
         }
       }
+    },
+    "Import is cancelled, but %lld are successfully imported." : {
+
+    },
+    "Import is finished, %lld are successfully imported." : {
+
+    },
+    "Import Prebundled Examples" : {
+
+    },
+    "Import progress" : {
+
+    },
+    "Importing" : {
+
     },
     "Importing %lld of %lld" : {
       "localizations" : {
@@ -1772,6 +1805,9 @@
           }
         }
       }
+    },
+    "Overwrite existing data" : {
+
     },
     "Path" : {
       "localizations" : {

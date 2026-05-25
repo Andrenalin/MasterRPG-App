@@ -56,7 +56,7 @@ public struct EffectedLinkActionPanelView: View {
                     .disabled(disabledRemove)
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button {
+                    Button(role: .cancel) {
                         restoreItems(models: removeEntryList.linkTree.map { $0.item })
                         navigator.dismiss()
                     } label: {

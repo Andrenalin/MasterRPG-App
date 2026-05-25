@@ -29,9 +29,7 @@ struct ViewerRootView: View {
                 toolbarContent
             }
             .navigationTitle(Text(model.name))
-    #if !os(macOS) && !os(tvOS)
-            .navigationBarTitleDisplayMode(.inline)
-    #endif
+            .navigationBarTitleDisplayModeAll(.inline)
         }
 #if !os(visionOS)
         .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())

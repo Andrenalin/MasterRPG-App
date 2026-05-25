@@ -71,8 +71,8 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                 }
                 .navigationTitle(model.name)
                 .navigationBarBackButtonHidden(true)
+                .navigationBarTitleDisplayModeAll(.inline)
 #if os(iOS) || os(visionOS)
-                .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackgroundVisibility(.visible, for: .navigationBar)
 #endif
                 .toolbar {

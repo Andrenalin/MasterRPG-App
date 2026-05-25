@@ -43,9 +43,7 @@ struct ViewerRootView: View {
                 toolbarContent
             }
             .navigationTitle(Text(model.name))
-#if !os(macOS) && !os(tvOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
+            .navigationBarTitleDisplayModeAll(.inline)
         }
         .applyIf(configuration.isGame) {
             $0.overlay(alignment: .bottomLeading)  {

@@ -97,17 +97,59 @@ extension View {
 #endif
     }
 
-    /// Applies file exporter on platforms that support it (excludes tvOS)
-#if !os(tvOS)
-    nonisolated public func fileExporterAll<C>(isPresented: Binding<Bool>, document: C?, contentType: UTType, defaultFilename: String? = nil, onCompletion: @escaping (Result<URL, Error>) -> Void) -> some View where C : FileDocument {
-        fileExporter(isPresented: isPresented, document: document, contentType: contentType, defaultFilename: defaultFilename, onCompletion: onCompletion)
+    /// Applies scroll dismisses keyboard on platforms that support it (excludes visionOS)
+    nonisolated public func scrollDismissesKeyboardAll(_ mode: ScrollDismissesKeyboardModeAll) -> some View {
+#if os(visionOS)
+        self
+#else
+        scrollDismissesKeyboard(mode.mode)
+#endif
+    }
+    
+    nonisolated public func navigationBarTitleDisplayModeAll(_ displayMode: TitleDisplayModeAll) -> some View {
+#if os(iOS)
+        navigationBarTitleDisplayMode(displayMode.mode)
+#else
+        self
+#endif
+
+    }
+
+}
+
+public enum ScrollDismissesKeyboardModeAll : Sendable {
+
+    case automatic
+    case immediately
+    case interactively
+    case never
+    
+#if !os(visionOS)
+    var mode: ScrollDismissesKeyboardMode {
+        switch self {
+        case .automatic: .automatic
+        case .immediately: .immediately
+        case .interactively: .interactively
+        case .never: .never
+        }
+    }
+#endif
+    
+}
+
+public enum TitleDisplayModeAll : Sendable {
+    case automatic
+    case inline
+    case large
+    
+#if os(iOS)
+    var mode: NavigationBarItem.TitleDisplayMode {
+        switch self {
+        case .automatic: .automatic
+        case .inline: .inline
+        case .large: .large
+        }
     }
 #endif
 
-    /// Applies scroll dismisses keyboard on platforms that support it (excludes visionOS)
-#if !os(visionOS)
-    nonisolated public func scrollDismissesKeyboardAll(_ mode: ScrollDismissesKeyboardMode) -> some View {
-        scrollDismissesKeyboard(mode)
-    }
-#endif
 }

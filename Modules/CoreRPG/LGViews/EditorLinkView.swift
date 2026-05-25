@@ -71,9 +71,7 @@ public struct EditorLinkView: View {
             withAnimation { editorLinkModel.update(selection: preselectedModule) }
         }
         .navigationTitle(editorLinkModel.selection.title)
-#if os(iOS) || os(visionOS)
-        .navigationBarTitleDisplayMode(.inline)
-#endif
+        .navigationBarTitleDisplayModeAll(.inline)
     }
 }
 

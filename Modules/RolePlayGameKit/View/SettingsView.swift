@@ -42,16 +42,6 @@ public struct SettingsView: View {
                 Text("Manage Data", bundle: .module)
             }
             
-//            SectionGroupEditorView {
-//                ImportDataModels(importController: importController, overwrite: true) {
-//                }
-//                
-//            } header: {
-//                Text("Export & Import from files", bundle: .module)
-//            } footer: {
-//                Text("Import GMZ data files you got from friends or others", bundle: .module)
-//            }
-
 
             SectionGroupEditorView {
                 Button {
@@ -61,24 +51,6 @@ public struct SettingsView: View {
                 }
             } header: {
                 Text("Data Checks", bundle: .module)
-            }
-
-            SectionGroupEditorView {
-                Button {
-                    store.installExampleData()
-                } label: {
-                    Label("Import Explanation English Data", systemImage: "square.and.arrow.down")
-                }
-
-                Button {
-                    store.installExampleData(isGerman: true)
-                } label: {
-                    Label("Import Explanation German Data", systemImage: "square.and.arrow.down")
-                }
-            } header: {
-                Text("Import Prebundled Examples", bundle: .module)
-            } footer: {
-                Text("Explanation data packages to see how the app works. It explain with real data how to use and add data.", bundle: .module)
             }
 
             SectionGroupEditorView {

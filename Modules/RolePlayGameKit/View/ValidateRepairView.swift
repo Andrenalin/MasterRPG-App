@@ -124,7 +124,7 @@ struct ValidateRepairController {
 struct ValidateRepairView: View {
     let controller: ValidateRepairController
     
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.navigator) private var navigator
     
     @State private var converterTask: Task<Void, Never>?
     
@@ -148,15 +148,15 @@ struct ValidateRepairView: View {
             }
             Task {
                 _ = await converterTask?.result
-                dismiss()
+                navigator.dismiss()
             }
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button {
+                Button(role: .cancel) {
                     converterTask?.cancel()
                     converterTask = nil
-                    dismiss()
+                    navigator.dismiss()
                 } label: {
                     Label {
                         Text("Cancel", bundle: .module)
