@@ -57,6 +57,15 @@
         }
       }
     },
+    "%@ — New" : {
+
+    },
+    "%@ — Not in Import" : {
+
+    },
+    "%@ — Updated" : {
+
+    },
     "%@ %@" : {
       "localizations" : {
         "de" : {
@@ -337,6 +346,9 @@
           }
         }
       }
+    },
+    "Apply" : {
+
     },
     "Audio" : {
       "localizations" : {
@@ -1255,6 +1267,9 @@
     "Import is finished, %lld are successfully imported." : {
 
     },
+    "Import Mode" : {
+
+    },
     "Import Prebundled Examples" : {
 
     },
@@ -1311,6 +1326,12 @@
           }
         }
       }
+    },
+    "Keep" : {
+
+    },
+    "Keep Existing" : {
+
     },
     "Light" : {
       "localizations" : {
@@ -1401,6 +1422,9 @@
         }
       }
     },
+    "Manual" : {
+
+    },
     "Map" : {
       "localizations" : {
         "de" : {
@@ -1472,6 +1496,9 @@
           }
         }
       }
+    },
+    "Merge" : {
+
     },
     "Missing Provider for %@.%@" : {
       "extractionState" : "stale",
@@ -1814,7 +1841,7 @@
         }
       }
     },
-    "Overwrite existing data" : {
+    "Overwrite" : {
 
     },
     "Path" : {
@@ -2622,6 +2649,9 @@
           }
         }
       }
+    },
+    "Use Imported" : {
+
     },
     "Validate Data" : {
       "localizations" : {

@@ -4,6 +4,25 @@ import Foundation
 import os.log
 import Observation
 
+public enum ImportMode: Hashable, Sendable, CaseIterable {
+    case merge, overwrite, manual
+}
+
+public enum ImportResolution: Hashable, Sendable, CaseIterable {
+    case old, new, merge
+}
+
+public struct ImportReviewItem: Identifiable, Sendable {
+    public enum Kind: Sendable { case new, updated, deleted }
+
+    public let id: UUID
+    public let name: String
+    public let moduleName: String
+    public let kind: Kind
+    public var resolution: ImportResolution
+    let applyResolution: @MainActor @Sendable (ImportResolution) async -> Void
+}
+
 @MainActor @Observable
 public final class ItemDataImportModel {
     public init() {}
@@ -11,7 +30,11 @@ public final class ItemDataImportModel {
     public var importedItems: Int = 0
     public var totalImportingItems: Int = 0
     public var isImportRunning: Bool = false
-    public var withOverwrite: Bool = false
+    public var importMode: ImportMode = .merge
+    public var reviewItems: [ImportReviewItem] = []
+    public var isReviewReady: Bool = false
+
+    var withOverwrite: Bool { importMode == .overwrite }
 }
 
 public protocol ImportControllable: Sendable {
@@ -34,10 +57,10 @@ public extension ImportControllable {
 
     func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {}
 
-    // Import from file URL with caller-owned model (progress UI)
-    func importUrl(from url: URL, withOverwrite: Bool = false, importModel: ItemDataImportModel) -> Task<Void, any Error> {
+    // Import from file URL with caller-owned model (progress UI); mode is read from importModel.importMode
+    func importUrl(from url: URL, importModel: ItemDataImportModel) -> Task<Void, any Error> {
         Task.detached(priority: .userInitiated) {
-            try await self.performImport(from: url, withOverwrite: withOverwrite, importModel: importModel)
+            try await self.performImport(from: url, importModel: importModel)
         }
     }
 
@@ -45,7 +68,8 @@ public extension ImportControllable {
     func importUrl(from url: URL, withOverwrite: Bool = false) -> Task<Void, any Error> {
         Task.detached(priority: .userInitiated) {
             let importModel = await MainActor.run { ItemDataImportModel() }
-            try await self.performImport(from: url, withOverwrite: withOverwrite, importModel: importModel)
+            await MainActor.run { importModel.importMode = withOverwrite ? .overwrite : .merge }
+            try await self.performImport(from: url, importModel: importModel)
         }
     }
 
@@ -107,8 +131,32 @@ public extension ImportControllable {
         }
 
         guard !Task.isCancelled else { return }
-        let cc = ConvertController(itemController: itemControllable, editController: editControllable)
-        await cc.repairHiddenAndFolders(reportModel: ValidateRepairModel(), importedIds: importedIds)
+        let mode = await importModel.importMode
+        if mode == .manual {
+            // Collect local items absent from the import stream as deletion candidates
+            if itemCount > 0 {
+                let module = itemControllable.config.module
+                let ic = itemControllable
+                let allLocalIds = await MainActor.run { Set(ic.itemDataModel.items) }
+                for deletedId in allLocalIds.subtracting(importedIds) {
+                    let itemName = await MainActor.run { ic.nameSync(itemId: deletedId) }
+                    let reviewItem = ImportReviewItem(
+                        id: deletedId,
+                        name: itemName,
+                        moduleName: module.title,
+                        kind: .deleted,
+                        resolution: .old,
+                        applyResolution: { resolution in
+                            if resolution == .new { await ic.delete(itemId: deletedId) }
+                        }
+                    )
+                    await MainActor.run { importModel.reviewItems.append(reviewItem) }
+                }
+            }
+        } else {
+            let cc = ConvertController(itemController: itemControllable, editController: editControllable)
+            await cc.repairHiddenAndFolders(reportModel: ValidateRepairModel(), importedIds: importedIds)
+        }
     }
 
     // Convenience for game networking imports — no progress tracking needed
@@ -131,7 +179,7 @@ private extension ImportControllable {
         itemControllable.config.module.rawValue
     }
 
-    func performImport(from url: URL, withOverwrite: Bool, importModel: ItemDataImportModel) async throws {
+    func performImport(from url: URL, importModel: ItemDataImportModel) async throws {
         _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         guard let inputStream = InputStream(url: url) else { throw ItemDataImportableError.openError }
@@ -143,7 +191,6 @@ private extension ImportControllable {
         guard fileHeader.token == ExportDataToken.counter.rawValue && fileHeader.version == ExportDataToken.version_2024.rawValue else { throw ItemDataImportableError.notEnoughData }
 
         await MainActor.run {
-            importModel.withOverwrite = withOverwrite
             importModel.importedItems = 0
             importModel.totalImportingItems = fileHeader.counter
             importModel.isImportRunning = true
@@ -151,7 +198,10 @@ private extension ImportControllable {
 
         do {
             try await self.importStream(from: inputStream, forceSave: true, importModel: importModel)
-            await MainActor.run { importModel.isImportRunning = false }
+            await MainActor.run {
+                importModel.isImportRunning = false
+                if importModel.importMode == .manual { importModel.isReviewReady = true }
+            }
         } catch {
             await MainActor.run { importModel.isImportRunning = false }
             throw Task.isCancelled ? ItemDataImportableError.cancel : error
@@ -159,19 +209,51 @@ private extension ImportControllable {
     }
 
     func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, importModel: ItemDataImportModel) async throws {
-        let finalItem: ModelType?
+        let mode = await importModel.importMode
         let itemController = itemControllable
-        if await importModel.withOverwrite {
-            finalItem = importedItem
-        } else {
-            finalItem = await itemController.merge(with: importedItem, forceMerge: forceSave)
+        let editCtrl = editControllable
+
+        switch mode {
+        case .merge:
+            let finalItem = await itemController.merge(with: importedItem, forceMerge: forceSave)
+            if let finalItem {
+                await itemController.replace(model: finalItem, isInsert: true, forceSave: forceSave)
+                await editCtrl.repairFolder(itemId: id)
+            }
+
+        case .overwrite:
+            await itemController.replace(model: importedItem, isInsert: true, forceSave: forceSave)
+            await editCtrl.repairFolder(itemId: id)
+
+        case .manual:
+            let existsLocally = await MainActor.run { itemController.itemSync(for: id) != nil }
+            let kind: ImportReviewItem.Kind = existsLocally ? .updated : .new
+            let mergedItem: ModelType? = existsLocally ? await itemController.merge(with: importedItem) : importedItem
+            let itemName = (importedItem as? any ItemDataAccessable)?.name ?? id.uuidString
+            let moduleName = itemController.config.module.title
+            let reviewItem = ImportReviewItem(
+                id: id,
+                name: itemName,
+                moduleName: moduleName,
+                kind: kind,
+                resolution: kind == .new ? .new : .merge,
+                applyResolution: { resolution in
+                    switch resolution {
+                    case .old: break
+                    case .new:
+                        await itemController.replace(model: importedItem, isInsert: true, forceSave: true)
+                        await editCtrl.repairFolder(itemId: id)
+                    case .merge:
+                        if let merged = mergedItem {
+                            await itemController.replace(model: merged, isInsert: true, forceSave: true)
+                            await editCtrl.repairFolder(itemId: id)
+                        }
+                    }
+                }
+            )
+            await MainActor.run { importModel.reviewItems.append(reviewItem) }
         }
-        guard let finalItem else {
-            await MainActor.run { importModel.importedItems += 1 }
-            return
-        }
-        await itemController.replace(model: finalItem, isInsert: true, forceSave: forceSave)
-        await editControllable.repairFolder(itemId: id)
+
         await MainActor.run { importModel.importedItems += 1 }
         try Task.checkCancellation()
     }

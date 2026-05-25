@@ -13,9 +13,7 @@ public struct ExternalGameRootView: View {
     public var body: some View {
         VStack {
             if let playerController = root.gameModel.playerController {
-                GameRootViewer(root: root, playerController: playerController, emptyTitle: "Waiting for Gamemaster") { _ in
-                    root.mapRoot.viewController.gameMapView(root: root.mapRoot, playerId: root.gameModel.gameConfig.id, external: true)
-                }
+                GameRootViewer(root: root, playerController: playerController, emptyTitle: "Waiting for Gamemaster", contentType: .externalPlayer)
                 #if os(iOS) || os(visionOS)
                     .statusBar(hidden: true)
                 #endif

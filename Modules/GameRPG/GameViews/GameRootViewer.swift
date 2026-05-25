@@ -9,11 +9,15 @@ import SpaceRPG
 import PhotoRPG
 import PdfRPG
 
-struct GameRootViewer<MapContent: View>: View {
+enum GameMapContentType: Hashable {
+    case master, player, externalPlayer
+}
+
+struct GameRootViewer: View {
     let root: GameRoot
     let playerController: PlayerController
     let emptyTitle: LocalizedStringKey
-    let mapContentView: (UUID) -> MapContent
+    let contentType: GameMapContentType
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(ScenesManager.self) private var scenesManager
@@ -21,7 +25,7 @@ struct GameRootViewer<MapContent: View>: View {
     var body: some View {
         Group {
             if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
-                mapContentView(mapId)
+                mapView(for: mapId)
                     .id(mapId)
                     .overlay {
                         if playerController.gameModel.gameUpdateType != .map {
@@ -68,6 +72,18 @@ struct GameRootViewer<MapContent: View>: View {
 #endif
     }
     
+    @ViewBuilder
+    private func mapView(for mapId: UUID) -> some View {
+        switch contentType {
+        case .master:
+            root.mapRoot.viewController.gameMasterMapView(root: root.mapRoot, id: mapId)
+        case .player:
+            root.mapRoot.viewController.gameMapView(root: root.mapRoot, playerId: root.gameModel.gameConfig.id)
+        case .externalPlayer:
+            root.mapRoot.viewController.gameMapView(root: root.mapRoot, playerId: root.gameModel.gameConfig.id, external: true)
+        }
+    }
+
     @MainActor @ViewBuilder
     private func otherViews<Content: View>(@ViewBuilder defaultContentView: () -> Content) -> some View {
         Group {
@@ -108,7 +124,5 @@ struct GameRootViewer<MapContent: View>: View {
 }
 
 #Preview {
-    GameRootViewer(root: .preview, playerController: .preview, emptyTitle: "Hello RPG world") { id in
-        Text(id.uuidString)
-    }
+    GameRootViewer(root: .preview, playerController: .preview, emptyTitle: "Hello RPG world", contentType: .master)
 }

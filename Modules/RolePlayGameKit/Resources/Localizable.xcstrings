@@ -289,6 +289,9 @@
     "Initializing Database" : {
 
     },
+    "It is recommended to validate the database to ensure your data is consistent." : {
+
+    },
     "Library" : {
       "localizations" : {
         "de" : {
@@ -381,6 +384,9 @@
       }
     },
     "Not now" : {
+
+    },
+    "Not Now" : {
 
     },
     "Ok" : {
@@ -580,6 +586,12 @@
           }
         }
       }
+    },
+    "Validate" : {
+
+    },
+    "Validate Database" : {
+
     },
     "Validate Folders" : {
 

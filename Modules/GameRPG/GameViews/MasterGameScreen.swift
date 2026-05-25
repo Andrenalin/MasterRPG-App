@@ -18,14 +18,9 @@ struct MasterGameScreen: View {
 
     @State private var gameScreenModel = GameScreenModel()
     @State private var diceShowOptionModel = DiceDisplayModel()
-#if os(visionOS)
-    @State private var infoState: NetworkModules = .none
-#endif
 
     var body: some View {
-        GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object") { mapId in
-            root.mapRoot.viewController.gameMasterMapView(root: root.mapRoot, id: mapId)
-        }
+        GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object", contentType: .master)
         .overlay(alignment: .topLeading) {
             MasterOverlayMenu(root: root, adventureId: adventureId, playerController: playerController)
                 .environment(diceShowOptionModel)
@@ -33,13 +28,11 @@ struct MasterGameScreen: View {
         }
         .environment(\.mapActions, root.mapRoot.mapActions)
         .environment(\.valueActions, root.characterRoot.valueActions)
-        .overlay(alignment: .center) {
+        .sheet(isPresented: $gameScreenModel.showExport) {
             if gameScreenModel.showExport {
                 ExportProgressPanelView(exportController: root.adventureRoot.exportControllable, isSaveGame: true) {
                     root.saveGame()
-                } finishedAction: {
-                    gameScreenModel.showExport = false
-                }
+                } 
             }
         }
         .alert(Text("Save Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
@@ -81,7 +74,7 @@ struct MasterGameScreen: View {
         }
         .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .leading) {
             VStack {
-                menuView
+                MasterMenuView()
             }
             .padding(12)
         }
@@ -152,9 +145,14 @@ private extension MasterGameScreen {
             await root.stopGame()
         }
     }
+}
 
 #if os(visionOS)
-    var menuView: some View {
+private struct MasterMenuView: View {
+    @Environment(ScenesManager.self) private var scenesManager
+    @State private var infoState: NetworkModules = .none
+
+    var body: some View {
         Group {
             GameToolBarButtonView(valueType: .adventure, alwaysSet: true, showType: $infoState)
             GameToolBarButtonView(valueType: .audio, alwaysSet: true, showType: $infoState)
@@ -169,7 +167,6 @@ private extension MasterGameScreen {
         }
         .onChange(of: infoState) {
             guard infoState != .none else { return }
-
             if scenesManager.getSceneState(for: SceneId.sceneId(for: infoState)) == .closed {
                 scenesManager.openWindow(SceneId.sceneId(for: infoState))
             } else {
@@ -178,8 +175,8 @@ private extension MasterGameScreen {
             infoState = .none
         }
     }
-#endif
 }
+#endif
 
 private struct MasterOverlayMenu: View {
     let root: GameRoot
@@ -196,18 +193,11 @@ private struct MasterOverlayMenu: View {
             OverlayGameMenu(root: root, playerController: nil, isMaster: true)
 #endif
         } sideOverlay: {
-            OverlayMasterTabBar(root: root, adventureId: adventureId, openAction: showWindow(for:))
+            OverlayMasterTabBar(root: root, adventureId: adventureId)
         } toolBarOverlay: {
             OverlayToolBar(root: root, playerController: playerController, isMaster: true)
         }
         .padding([.top, .leading], valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
-    }
-
-    private func showWindow(for module: NetworkModules) {
-#if os(macOS) || os(visionOS)
-        guard scenesManager.getSceneState(for: SceneId.sceneId(for: module)) == .closed else { return }
-        scenesManager.openWindow(SceneId.sceneId(for: module))
-#endif
     }
 }
 

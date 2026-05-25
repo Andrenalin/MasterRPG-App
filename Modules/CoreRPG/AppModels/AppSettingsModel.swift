@@ -81,6 +81,13 @@ public final class AppSettingsModel: Sendable {
         }
     }
 
+    public var needsValidateDatabase: Bool = true {
+        didSet {
+            guard oldValue != needsValidateDatabase else { return }
+            UserDefaults.standard.set(needsValidateDatabase, forKey: AppSettingsModel.needsValidateDatabaseKey)
+        }
+    }
+
     // MARK: - Shared Settings Value in AppGroups
     
     public private(set) var useCloudKit: Bool = false {
@@ -175,7 +182,8 @@ public final class AppSettingsModel: Sendable {
         playerMainTabDisplayMode = UserDefaults.standard.integer(forKey: AppSettingsModel.playerMainTabDisplayModeKey)
         
         showGameTableVolume = UserDefaults.standard.bool(forKey: AppSettingsModel.showGameTableVolumeKey)
-        
+        needsValidateDatabase = UserDefaults.standard.value(forKey: AppSettingsModel.needsValidateDatabaseKey) as? Bool ?? true
+
         // shared App groups
         useCloudKit = UserDefaults.standard.bool(forKey: AppSettingsModel.useCloudKitKey)
         
@@ -202,6 +210,7 @@ public final class AppSettingsModel: Sendable {
     private static let masterMainTabDisplayModeKey = "masterMainTabDisplayMode"
     private static let playerMainTabDisplayModeKey = "playerMainTabDisplayMode"
     private static let showGameTableVolumeKey = "showGameTableVolume"
+    private static let needsValidateDatabaseKey = "needsValidate"
 
     private static let useCloudKitKey = "MasterRPGuseCloudKit"
     

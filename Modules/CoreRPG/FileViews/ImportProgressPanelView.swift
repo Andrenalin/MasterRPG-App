@@ -27,7 +27,6 @@ public struct ImportProgressPanelView: View {
 
     @State private var importModel = ItemDataImportModel()
     @State private var showImportFileChooser = false
-    @State private var isOverwrite = false
     @State private var outcome: ImportOutcome = .notStarted
 
     @State private var loadUrl: URL?
@@ -35,19 +34,24 @@ public struct ImportProgressPanelView: View {
 
     public var body: some View {
         NavigationStack {
-            VStack {
-                progressView
-
-                statusText
+            Group {
+                if importModel.isReviewReady {
+                    reviewContent
+                } else {
+                    VStack {
+                        progressView
+                        statusText
+                    }
+                    .padding()
+                }
             }
-            .padding()
             .navigationTitle(Text("Importing", bundle: .module))
             .navigationBarTitleDisplayModeAll(.inline)
             .task(id: loadUrl) {
                 guard let loadUrl else { return }
                 do {
                     outcome = .running
-                    importTask = importController.importUrl(from: loadUrl, withOverwrite: isOverwrite, importModel: importModel)
+                    importTask = importController.importUrl(from: loadUrl, importModel: importModel)
                     try await importTask?.value
                     outcome = .finished
                 } catch is CancellationError {
@@ -79,13 +83,15 @@ public struct ImportProgressPanelView: View {
                     }
                 }
 
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        navigator.dismiss()
-                    } label: {
-                        Label { Text("Ok", bundle: .module) } icon: { Image(systemName: "checkmark") }
+                if !importModel.isReviewReady {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button {
+                            navigator.dismiss()
+                        } label: {
+                            Label { Text("Ok", bundle: .module) } icon: { Image(systemName: "checkmark") }
+                        }
+                        .disabled(importModel.isImportRunning)
                     }
-                    .disabled(importModel.isImportRunning)
                 }
             }
         }
@@ -101,6 +107,19 @@ public struct ImportProgressPanelView: View {
 }
 
 private extension ImportProgressPanelView {
+    @ViewBuilder var reviewContent: some View {
+        @Bindable var bm = importModel
+        ImportReviewView(reviewItems: $bm.reviewItems) {
+            let items = importModel.reviewItems
+            for item in items {
+                await item.applyResolution(item.resolution)
+            }
+            importModel.isReviewReady = false
+            importModel.reviewItems = []
+            navigator.dismiss()
+        }
+    }
+
     @ViewBuilder var progressView: some View {
         if importModel.isImportRunning && importModel.totalImportingItems > 0 {
             ProgressView(
@@ -151,13 +170,18 @@ private extension ImportProgressPanelView {
                 }
                 .padding(.bottom, 20)
 
-                Toggle(isOn: $isOverwrite) {
-                    Label {
-                        Text("Overwrite existing data")
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle")
-                    }
+                @Bindable var bm = importModel
+                Picker(selection: $bm.importMode) {
+                    Label { Text("Merge", bundle: .module) } icon: { Image(systemName: "arrow.triangle.merge") }
+                        .tag(ImportMode.merge)
+                    Label { Text("Overwrite", bundle: .module) } icon: { Image(systemName: "exclamationmark.triangle") }
+                        .tag(ImportMode.overwrite)
+                    Label { Text("Manual", bundle: .module) } icon: { Image(systemName: "list.bullet.clipboard") }
+                        .tag(ImportMode.manual)
+                } label: {
+                    Text("Import Mode", bundle: .module)
                 }
+                .pickerStyle(.menu)
             }
         }
         .disabled(showImportFileChooser)

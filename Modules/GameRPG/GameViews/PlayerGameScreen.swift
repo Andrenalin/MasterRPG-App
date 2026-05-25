@@ -16,14 +16,9 @@ struct PlayerGameScreen: View {
 
     @State private var gameScreenModel = GameScreenModel()
     @State private var diceShowOptionModel = DiceDisplayModel()
-#if os(visionOS)
-    @State private var infoState: NetworkModules = .none
-#endif
 
     var body: some View {
-        GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running") { _ in
-            root.mapRoot.viewController.gameMapView(root: root.mapRoot, playerId: root.gameModel.gameConfig.id)
-        }
+        GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running", contentType: .player)
         .overlay(alignment: .topLeading) {
             PlayerOverlayMenu(root: root, playerController: playerController)
                 .environment(diceShowOptionModel)
@@ -47,13 +42,7 @@ struct PlayerGameScreen: View {
             await prepareWindows()
         }
 #if os(visionOS)
-        .task(id: root.networkStore.sharePlayStore.switchToImmersive) {
-            if root.networkStore.sharePlayStore.switchToImmersive {
-                await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: root.spaceRoot.gameControllable.currentId, entryId: nil))
-            } else {
-                await scenesManager.dismissSpaceViewer()
-            }
-        }
+        .modifier(ImmersiveSpaceHandler(root: root))
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
             root.diceRoot.viewController.dicePlayerView(root: root.diceRoot)
                 .environment(diceShowOptionModel)
@@ -66,7 +55,7 @@ struct PlayerGameScreen: View {
         }
         .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .leading) {
             VStack {
-                menuView
+                PlayerMenuView()
             }
             .padding(12)
         }
@@ -129,15 +118,30 @@ private extension PlayerGameScreen {
         }
     }
 
-    func showWindow(for module: NetworkModules) {
-#if os(macOS) || os(visionOS)
-        guard scenesManager.getSceneState(for: SceneId.sceneId(for: module)) == .closed else { return }
-        scenesManager.openWindow(SceneId.sceneId(for: module))
-#endif
-    }
+}
 
 #if os(visionOS)
-    var menuView: some View {
+private struct ImmersiveSpaceHandler: ViewModifier {
+    let root: GameRoot
+
+    @Environment(ScenesManager.self) private var scenesManager
+
+    func body(content: Content) -> some View {
+        content.task(id: root.networkStore.sharePlayStore.switchToImmersive) {
+            if root.networkStore.sharePlayStore.switchToImmersive {
+                await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: root.spaceRoot.gameControllable.currentId, entryId: nil))
+            } else {
+                await scenesManager.dismissSpaceViewer()
+            }
+        }
+    }
+}
+
+private struct PlayerMenuView: View {
+    @Environment(ScenesManager.self) private var scenesManager
+    @State private var infoState: NetworkModules = .none
+
+    var body: some View {
         Group {
             GameToolBarButtonView(valueType: .value, alwaysSet: true, showType: $infoState)
             GameToolBarButtonView(valueType: .table, alwaysSet: true, showType: $infoState)
@@ -149,7 +153,6 @@ private extension PlayerGameScreen {
         }
         .onChange(of: infoState) {
             guard infoState != .none else { return }
-
             if scenesManager.getSceneState(for: SceneId.sceneId(for: infoState)) == .closed {
                 scenesManager.openWindow(SceneId.sceneId(for: infoState))
             } else {
@@ -158,8 +161,8 @@ private extension PlayerGameScreen {
             infoState = .none
         }
     }
-#endif
 }
+#endif
 
 private struct PlayerOverlayMenu: View {
     let root: GameRoot
