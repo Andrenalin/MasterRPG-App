@@ -27,19 +27,31 @@ public struct SettingsView: View {
 
             SectionGroupEditorView {
                 Button {
-                    navigator.navigate(to: SettingsRoute.export, method: .managedSheet)
+                    navigator.navigate(to: SettingsRoute.exportData, method: .managedSheet)
                 } label: {
-                    Label("Export", systemImage: "folder")
+                    Label("Export", systemImage: "square.and.arrow.up")
                 }
-            } header: {
-                Text("Export / Import", bundle: .module)
-            }
 
+                Button {
+                    navigator.navigate(to: SettingsRoute.importData, method: .managedSheet)
+                } label: {
+                    Label("Import", systemImage: "square.and.arrow.down")
+                }
+
+            } header: {
+                Text("Manage Data", bundle: .module)
+            }
+            
 //            SectionGroupEditorView {
-//                InAppView(inAppController: store.inAppController)
+//                ImportDataModels(importController: importController, overwrite: true) {
+//                }
+//                
 //            } header: {
-//                Text("In App Purchase")
+//                Text("Export & Import from files", bundle: .module)
+//            } footer: {
+//                Text("Import GMZ data files you got from friends or others", bundle: .module)
 //            }
+
 
             SectionGroupEditorView {
                 Button {
@@ -86,6 +98,14 @@ public struct SettingsView: View {
             } header: {
                 Text("iCloud Sync Status", bundle: .module)
             }
+            
+            //            SectionGroupEditorView {
+            //                InAppView(inAppController: store.inAppController)
+            //            } header: {
+            //                Text("In App Purchase")
+            //            }
+
+
         }
         .environment(store.settingsModel)
     }

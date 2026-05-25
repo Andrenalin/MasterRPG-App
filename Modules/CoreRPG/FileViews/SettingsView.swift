@@ -28,29 +28,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
 #if os(iOS)
             ColorSchemeSettingsView()
 #endif
-            
-            SectionGroupEditorView {
-                ExportDataModels(exportController: exportController) {
-                    let url = URL.cachesDirectory.appending(path: "Export.gmz")
-                    let exportedIds = exportController.exportingAll()
-                    return exportController.createExport(itemIds: exportedIds, into: url)
-                }
-                ImportDataModels(importController: importController) {
-                }
-                
-#if os(macOS)
-                Divider()
-#endif
-                
-                ImportDataModels(importController: importController, overwrite: true) {
-                }
-                
-            } header: {
-                Text("Export & Import from files", bundle: .module)
-            } footer: {
-                Text("Import GMZ data files you got from friends or others", bundle: .module)
-            }
-            
+                        
             importContentView
             
             SectionGroupEditorView {

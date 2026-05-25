@@ -419,6 +419,7 @@
       }
     },
     "Cancel Export" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -974,6 +975,7 @@
       }
     },
     "Export" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -984,6 +986,7 @@
       }
     },
     "Export & Import from files" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1042,6 +1045,12 @@
           }
         }
       }
+    },
+    "Export progress" : {
+
+    },
+    "Exporting" : {
+
     },
     "Exporting %lld of %lld" : {
       "localizations" : {
@@ -1205,6 +1214,7 @@
       }
     },
     "Import GMZ data files you got from friends or others" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
