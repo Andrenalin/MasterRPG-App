@@ -112,8 +112,8 @@ public extension ItemControllable {
         try decoder.decode(Model.self, from: data)
     }
 
-    @MainActor func merge(with model: ModelType) async -> ModelType? {
-        guard itemDataModel.isGameMode == false else { return model }
+    @MainActor func merge(with model: ModelType, forceMerge: Bool = false) async -> ModelType? {
+        guard forceMerge == true || itemDataModel.isGameMode == false else { return model }
         guard let model = model as? Model, let current = await self.item(for: model.id) else { return model }
         if model.isSame(current) {
             return nil

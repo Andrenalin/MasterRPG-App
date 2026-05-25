@@ -182,7 +182,7 @@ public extension ExportControllable {
         try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: module.rawValue, version: version))
 
         for try await exportData in dataStream {
-            if await exportModel.exportFileData, let data = await inlineFiles(for: exportData.id) {
+            if await !exportModel.exportWithoutFileData, let data = await inlineFiles(for: exportData.id) {
                 try outputStream.append(counter: data.count, token: ExportDataToken.file.rawValue)
                 try outputStream.write(data: data)
             }

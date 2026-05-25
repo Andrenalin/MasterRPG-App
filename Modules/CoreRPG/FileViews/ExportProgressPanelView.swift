@@ -139,7 +139,7 @@ private extension ExportProgressPanelView {
                 Text("Start export", bundle: .module)
             }
             
-            Toggle(isOn: $exportModel.exportFileData) {
+            Toggle(isOn: $exportModel.exportWithoutFileData) {
                 Label {
                     Text("Export only data not the files")
                 } icon: {

@@ -164,7 +164,7 @@ private extension ImportControllable {
         if await importModel.withOverwrite {
             finalItem = importedItem
         } else {
-            finalItem = await itemController.merge(with: importedItem)
+            finalItem = await itemController.merge(with: importedItem, forceMerge: forceSave)
         }
         guard let finalItem else {
             await MainActor.run { importModel.importedItems += 1 }

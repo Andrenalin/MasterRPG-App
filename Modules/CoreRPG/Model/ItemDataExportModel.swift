@@ -12,7 +12,7 @@ public final class ItemDataExportModel {
     public var totalExportingItems: Int = 0
     public var isExportRunning: Bool = false
     
-    public var exportFileData: Bool = true
+    public var exportWithoutFileData: Bool = false
 }
 
 public enum ItemDataExportableError: Error {
