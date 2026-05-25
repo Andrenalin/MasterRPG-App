@@ -25,6 +25,7 @@ public struct ImportProgressPanelView: View {
 
     @Environment(\.navigator) private var navigator
 
+    @State private var importModel = ItemDataImportModel()
     @State private var showImportFileChooser = false
     @State private var isOverwrite = false
     @State private var outcome: ImportOutcome = .notStarted
@@ -34,7 +35,6 @@ public struct ImportProgressPanelView: View {
 
     public var body: some View {
         NavigationStack {
-            let importModel = importController.makeImportConfiguration().importModel
             VStack {
                 progressView
 
@@ -47,7 +47,7 @@ public struct ImportProgressPanelView: View {
                 guard let loadUrl else { return }
                 do {
                     outcome = .running
-                    importTask = importController.importUrl(from: loadUrl, withOverwrite: isOverwrite)
+                    importTask = importController.importUrl(from: loadUrl, withOverwrite: isOverwrite, importModel: importModel)
                     try await importTask?.value
                     outcome = .finished
                 } catch is CancellationError {
@@ -102,8 +102,6 @@ public struct ImportProgressPanelView: View {
 
 private extension ImportProgressPanelView {
     @ViewBuilder var progressView: some View {
-        let importModel = importController.makeImportConfiguration().importModel
-
         if importModel.isImportRunning && importModel.totalImportingItems > 0 {
             ProgressView(
                 value: Double(importModel.importedItems),
@@ -113,7 +111,7 @@ private extension ImportProgressPanelView {
             .accessibilityLabel(Text("Import progress", bundle: .module))
         }
     }
-    
+
     var chooseUrlButtons: some View {
         VStack(spacing: 20) {
             Button {
@@ -143,7 +141,7 @@ private extension ImportProgressPanelView {
                         } label: {
                             Label { Text("German Data", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
                         }
-                        
+
                         Text("Explanation data packages to see how the app works. It explain with real data how to use and add data.", bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -152,25 +150,21 @@ private extension ImportProgressPanelView {
                     Text("Import Prebundled Examples", bundle: .module)
                 }
                 .padding(.bottom, 20)
-                
+
                 Toggle(isOn: $isOverwrite) {
                     Label {
                         Text("Overwrite existing data")
                     } icon: {
                         Image(systemName: "exclamationmark.triangle")
                     }
-                    
                 }
-
             }
         }
         .disabled(showImportFileChooser)
     }
-    
+
     var statusText: some View {
         VStack {
-            let importModel = importController.makeImportConfiguration().importModel
-            
             switch outcome {
             case .notStarted:
                 chooseUrlButtons

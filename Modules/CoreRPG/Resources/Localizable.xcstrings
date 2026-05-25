@@ -1063,6 +1063,9 @@
     "Export is finished, %lld are successfully exported." : {
 
     },
+    "Export only data not the files" : {
+
+    },
     "Export progress" : {
 
     },
@@ -2368,6 +2371,9 @@
         }
       }
     },
+    "Start export" : {
+
+    },
     "Store Database in iCloud" : {
       "localizations" : {
         "de" : {
@@ -2495,6 +2501,9 @@
           }
         }
       }
+    },
+    "This option let you export only the database data without the files included in the export. If you store your file in iCloud but don't want to use CloudKit for sync the database. Use this option with care you might losing the file data and you cannot exchange it with other users." : {
+
     },
     "Toggle Folder" : {
       "localizations" : {

@@ -18,13 +18,11 @@ struct ImportController: Sendable {
         self.root = root
         self.itemController = itemController
         self.editController = root.editController
-        self.importModel = ItemDataImportModel()
     }
 
     let root: AdventureRootModel
     let itemController: ItemController
     let editController: EditController
-    let importModel: ItemDataImportModel
 }
 
 extension ImportController: ImportControllable {
@@ -34,20 +32,16 @@ extension ImportController: ImportControllable {
 
     var editControllable: any EditControllable { editController }
 
-    @MainActor public func makeImportConfiguration() -> ImportConfiguration {
-        ImportConfiguration(importModel: importModel)
-    }
-
-    public func additionalImport(from inputStream: InputStream, forceSave: Bool, configuration: ImportConfiguration, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws {
-        await logImport(title: "additional", count: 0, configuration: configuration)
-        try await root.audioRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, configuration: configuration, counterUpdater: counterUpdater)
-        try await root.diceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, configuration: configuration, counterUpdater: counterUpdater)
-        try await root.mapRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, configuration: configuration, counterUpdater: counterUpdater)
-        try await root.pdfRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, configuration: configuration, counterUpdater: counterUpdater)
-        try await root.photoRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, configuration: configuration, counterUpdater: counterUpdater)
-        try await root.spaceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, configuration: configuration, counterUpdater: counterUpdater)
-        try await root.tableRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, configuration: configuration, counterUpdater: counterUpdater)
-        try await root.characterRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, configuration: configuration, counterUpdater: counterUpdater)
-        try await root.weatherRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, configuration: configuration, counterUpdater: counterUpdater)
+    public func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {
+        await logImport(title: "additional", count: 0, importModel: importModel)
+        try await root.audioRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await root.diceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await root.mapRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await root.pdfRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await root.photoRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await root.spaceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await root.tableRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await root.characterRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await root.weatherRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
     }
 }

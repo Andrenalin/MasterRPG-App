@@ -8,7 +8,7 @@ struct AppExportView: View {
     let appModel: AppModel
         
     var body: some View {
-        ExportProgressPanelView(exportController: exportController) {
+        ExportProgressPanelView(exportController: exportController, showOptions: true) {
             exportController.exportingAll()
         }
         .presentationDetents([.height(160)])

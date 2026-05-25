@@ -190,7 +190,7 @@ public extension GameControllable {
         stream.open()
         defer { stream.close() }
 
-        _ = try await exportControllable.rootExportController.export(itemIds: itemIds, into: stream) { _, _ in }
+        _ = try await exportControllable.rootExportController.export(itemIds: itemIds, into: stream)
 
         guard let data = stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data else {
             throw ItemGameStorableError.memoryStreamError
@@ -271,6 +271,6 @@ public extension GameControllable {
         stream.open()
         defer { stream.close() }
         let importController = await exportControllable.rootManager.adventureRoot.importControllable
-        try await importController.importStream(from: stream, forceSave: forceSave, counterUpdater: {})
+        try await importController.importStream(from: stream, forceSave: forceSave)
     }
 }
