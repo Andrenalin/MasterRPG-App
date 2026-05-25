@@ -192,10 +192,6 @@ extension AudioRootModel {
         }
     }
 
-    public func moveFiles() async throws {
-        //try await fileController.moveFiles()
-    }
-    
     public func itemDataCleanup() async throws {
         for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }

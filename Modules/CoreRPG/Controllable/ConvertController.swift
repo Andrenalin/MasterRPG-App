@@ -11,8 +11,9 @@ public struct ConvertController: Sendable {
     let itemController: any ItemControllable
     let editController: any EditControllable
     
-    @MainActor public func repairHiddenAndFolders(reportModel: ValidateRepairModel) async {
+    @MainActor public func repairHiddenAndFolders(reportModel: ValidateRepairModel, importedIds: Set<UUID> = []) async {
         for itemId in itemController.itemDataModel.items {
+            guard importedIds.isEmpty || importedIds.contains(itemId) else { continue }
             guard let item = itemController.itemSync(for: itemId) else { continue }
 
             // Increment progress and yield so @Observable notifies SwiftUI before continuing.
@@ -89,8 +90,8 @@ public struct ConvertController: Sendable {
             }
         }
         
-        // If we found/created folders, add the photo to the deepest one
-        if let folderModel = currentFolderModel {
+        // If we found/created folders, add the item to the deepest one — skip if already there
+        if let folderModel = currentFolderModel, item.parentId != folderModel.id {
             editController.addItem(itemId: item.id, parentId: folderModel.id)
         }
     }

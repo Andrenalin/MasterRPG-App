@@ -72,6 +72,7 @@ public extension ImportControllable {
 
         let decoder = JSONDecoder()
         var currentFile: Data?
+        var importedIds: Set<UUID> = []
 
         var counter = 0
         while !Task.isCancelled && counter < itemCount {
@@ -92,6 +93,7 @@ public extension ImportControllable {
                             try await addFile(data: currentFile, to: newItem)
                         }
                         try await addItem(importedItem: newItem, id: newItem.id, forceSave: forceSave, importModel: importModel)
+                        importedIds.insert(newItem.id)
                     } catch {
                         await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
                     }
@@ -106,7 +108,7 @@ public extension ImportControllable {
 
         guard !Task.isCancelled else { return }
         let cc = ConvertController(itemController: itemControllable, editController: editControllable)
-        await cc.repairHiddenAndFolders(reportModel: ValidateRepairModel())
+        await cc.repairHiddenAndFolders(reportModel: ValidateRepairModel(), importedIds: importedIds)
     }
 
     // Convenience for game networking imports — no progress tracking needed
@@ -190,17 +192,16 @@ private extension ImportControllable {
         }
     }
 
-    func addFile(data: Data, to item: any Observable) async throws {
-        guard var item = item as? (any ItemDataAccessable), let fileUrlDataController, var fileUrl = item.fileUrl else { return }
+    func addFile(data: Data, to item: any ItemDataAccessable) async throws {
+        guard let fileUrlDataController, var fileUrl = item.fileUrl else { return }
+        var item = item
         fileUrl.resetData(data)
         do {
             let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
-            if updated != fileUrl {
-                await itemControllable.reset(fileUrl: updated, item: &item)
-            }
+            await itemControllable.reset(fileUrl: updated ?? fileUrl, item: &item)
         } catch {
             let module = await MainActor.run { itemControllable.config.module.rawValue }
-            Logger.importController.info("Cannot save bookmark \(module, privacy: .public), file stored as data")
+            Logger.importController.error("Cannot save bookmark \(module, privacy: .public), file stored as data")
             await itemControllable.reset(fileUrl: fileUrl, item: &item)
         }
     }

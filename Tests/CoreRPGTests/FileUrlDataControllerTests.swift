@@ -16,10 +16,7 @@ struct FileUrlDataControllerTests {
 }
 
 fileprivate struct FakeFileUrAccessible: FileUrlAccessible {
-    func fetchFileUrl() async -> [FileUrl] { [] }
     func saveFileUrl(fileUrl: FileUrl) async {}
-    func fileUrl(item: any Observable) async -> FileUrl? { nil }
-    func setFileUrl(_ fileUrl: FileUrl?, item: any Observable) async {}
 }
 
 fileprivate struct TestDataModel: Identifiable, Storeable, Codable {

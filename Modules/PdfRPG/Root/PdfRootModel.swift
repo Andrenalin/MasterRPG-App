@@ -166,19 +166,6 @@ extension PdfRootModel {
     
     public static let thumbnailSize: CGSize = .init(width: 64.0, height: 64.0)
     
-    public func moveFiles() async throws {
-        func moveFiles() async throws {
-            let itemIds = itemController.itemDataModel.items
-            for itemId in itemIds {
-                let item = itemController.itemOrEmpty(for: itemId)
-                guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
-                if let newFileUrl = try? await fileUrlDataController?.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
-                    editController.reset(fileUrl: newFileUrl, itemId: itemId)
-                }
-            }
-        }
-    }
-    
     @MainActor
     public func listItems() -> [PdfModel] {
         itemController.itemDataModel.items.map {
