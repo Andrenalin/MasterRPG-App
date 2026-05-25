@@ -8,16 +8,13 @@ public protocol ExportControllable: Sendable {
     var rootManager: RootManager { get }
     var itemControllable: any ItemControllable { get }
 
-    var exportModel: ItemDataExportModel { get }
-
     @MainActor func exportingAll() -> ItemModuleIds
     @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds
-    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds
+    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds
 }
 
 public extension ExportControllable {
     // Overwritten in specific
-    
     @MainActor func exportingAll() -> ItemModuleIds {
         ItemModuleIds(dictionary: [itemControllable.config.module: itemControllable.itemDataModel.items.filter { itemControllable.itemSync(for: $0)?.displayState != 2 }])
     }
@@ -25,18 +22,17 @@ public extension ExportControllable {
     @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         itemIds
     }
-    
-    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
+
+    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
         itemIds
     }
 
     // MARK: - Utilities
 
-
     @MainActor var rootExportController: ExportControllable {
         rootManager.adventureRoot.exportControllable
     }
-    
+
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
     func exportUrl(isSaveGame: Bool) -> URL {
@@ -84,22 +80,26 @@ public extension ExportControllable {
         }
         return partialFolderIds
     }
-    
+
     func logExport(title: String, count: Int) async {
+        let module = await MainActor.run { itemControllable.config.module }
+        Logger.exportController.info("\(title, privacy: .public) \(module.token, privacy: .public) count: \(count)")
+    }
+
+    func logExport(title: String, count: Int, exportModel: ItemDataExportModel) async {
         let (module, exportedItems, totalItems) = await MainActor.run {
             (itemControllable.config.module, exportModel.exportedItems, exportModel.totalExportingItems)
         }
         Logger.exportController.info("\(title, privacy: .public) \(module.token, privacy: .public) currentItems \(count), exportedItems \(exportedItems), total: \(totalItems)")
     }
-    
+
     // MARK: - Exporters
-    
+
     // Save Game / normal export
-    @MainActor func createExport(itemIds: ItemModuleIds, into url: URL) -> Task<Void, any Error> {
+    @MainActor func createExport(itemIds: ItemModuleIds, into url: URL, exportModel: ItemDataExportModel) -> Task<Void, any Error> {
         let exportController = rootExportController
 
         return Task.detached(priority: .userInitiated) {
-            await self.resetStartState()
             let _ = url.startAccessingSecurityScopedResource()
             defer { url.stopAccessingSecurityScopedResource() }
             guard let outputStream = OutputStream(url: url, append: false) else { throw ItemDataExportableError.openError }
@@ -107,62 +107,69 @@ public extension ExportControllable {
             outputStream.open()
             defer { outputStream.close() }
 
+            await MainActor.run {
+                exportModel.isExportRunning = true
+                exportModel.exportedItems = 0
+                exportModel.totalExportingItems = 0
+            }
+
             let itemIds = await MainActor.run {
                 let ids = self.exporting(itemIds: itemIds)
-                self.exportModel.totalExportingItems = ids.count
+                exportModel.totalExportingItems = ids.count
                 return ids
             }
+
+            let updater: @MainActor @Sendable (Int?, Bool) async -> Void = { [exportModel] itemCount, increment in
+                if let itemCount { exportModel.totalExportingItems = itemCount }
+                if increment { exportModel.exportedItems += 1 }
+            }
+
             do {
                 try outputStream.append(fileHeader: GmzFileHeader(counter: itemIds.count, token: ExportDataToken.counter.rawValue, version: ExportDataToken.version_2024.rawValue))
-                _ = try await exportController.export(itemIds: itemIds, into: outputStream, counterUpdater: self.updaterExport(itemCount:increment:))
-                await setExportRunning(false)
+                _ = try await exportController.export(itemIds: itemIds, into: outputStream, exportModel: exportModel, counterUpdater: updater)
+                await MainActor.run { exportModel.isExportRunning = false }
             } catch {
-                await setExportRunning(false)
+                await MainActor.run { exportModel.isExportRunning = false }
                 throw error
             }
         }
     }
-    
+
     // Game direct and Adventure for all other modules export
-    func export(itemIds: ItemModuleIds, into stream: OutputStream, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
+    func export(itemIds: ItemModuleIds, into stream: OutputStream, exportModel: ItemDataExportModel, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
+        await logExport(title: "export", count: itemIds.count, exportModel: exportModel)
 
-        await logExport(title: "export", count: itemIds.count)
+        var updatedIds = try await additionalExport(itemIds: itemIds, stream: stream, exportModel: exportModel, counterUpdater: counterUpdater)
 
-        var updatedIds = try await additionalExport(itemIds: itemIds, stream: stream, counterUpdater: counterUpdater)
-
-        try await extract(itemIds: updatedIds, stream: stream) {
+        try await extract(itemIds: updatedIds, stream: stream, exportModel: exportModel) {
             await counterUpdater(nil, true)
         }
         let module = await token()
         updatedIds.ids.removeValue(forKey: module)
         updatedIds.partialIds.removeValue(forKey: module)
-        await logExport(title: "export after extract", count: updatedIds.count)
+        await logExport(title: "export after extract", count: updatedIds.count, exportModel: exportModel)
         return updatedIds
     }
-        
+
+    // Convenience without configuration (for game networking exports — no progress tracking)
+    func export(itemIds: ItemModuleIds, into stream: OutputStream, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
+        let exportModel = await MainActor.run { ItemDataExportModel() }
+        return try await export(itemIds: itemIds, into: stream, exportModel: exportModel, counterUpdater: counterUpdater)
+    }
+
     // List Selection & Setting export
-    @MainActor func export(ids: ItemModuleIds) -> (Task<Void, any Error>, URL) {
+    @MainActor func export(ids: ItemModuleIds, exportModel: ItemDataExportModel) -> (Task<Void, any Error>, URL) {
         let url = exportUrl(isSaveGame: false)
-        return (createExport(itemIds: ids, into: url), url)
+        return (createExport(itemIds: ids, into: url, exportModel: exportModel), url)
     }
 
-    @MainActor
-    private func updaterExport(itemCount: Int?, increment: Bool) async {
-        if let itemCount {
-            exportModel.totalExportingItems = itemCount
-        }
-        if increment {
-            exportModel.exportedItems += 1
-        }
-    }
-
-    private func extract(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: () async -> Void) async throws {
+    private func extract(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel, counterUpdater: () async -> Void) async throws {
         let module = await token()
         let fullIds = itemIds.ids[module, default: []]
         let partialIds = itemIds.partialIds[module, default: []]
         let allIds = fullIds + partialIds
 
-        await logExport(title: "extract", count: allIds.count)
+        await logExport(title: "extract", count: allIds.count, exportModel: exportModel)
 
         let encoder = JSONEncoder()
         let indexModel = ExportIndexModel(index: allIds.startIndex)
@@ -182,7 +189,7 @@ public extension ExportControllable {
         try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: module.rawValue, version: version))
 
         for try await exportData in dataStream {
-            if let data = await inlineFiles(for: exportData.id) {
+            if await exportModel.exportFileData, let data = await inlineFiles(for: exportData.id) {
                 try outputStream.append(counter: data.count, token: ExportDataToken.file.rawValue)
                 try outputStream.write(data: data)
             }
@@ -193,10 +200,6 @@ public extension ExportControllable {
         }
     }
 
-    @MainActor private func setExportRunning(_ isRunning: Bool) async {
-        exportModel.isExportRunning = isRunning
-    }
-
     private func inlineFiles(for itemId: UUID) async -> Data? {
         guard let fileUrlDataController, let item = await itemControllable.item(for: itemId), let fileUrl = item.fileUrl else { return nil }
         return try? await fileUrlDataController.loadData(for: fileUrl)
@@ -204,15 +207,5 @@ public extension ExportControllable {
 
     @MainActor private func token() async -> NetworkModules {
         itemControllable.config.module
-    }
-
-    @MainActor private func progress() async -> (count: Int, total: Int) {
-        (exportModel.exportedItems, exportModel.totalExportingItems)
-    }
-
-    @MainActor private func resetStartState() async {
-        exportModel.isExportRunning = true
-        exportModel.exportedItems = 0
-        exportModel.totalExportingItems = 0
     }
 }

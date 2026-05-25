@@ -9,6 +9,7 @@ struct MasterStartView: View {
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.navigator) private var navigator
     
     var sharePlayStore: RPGSharePlayController {
         root.networkStore.sharePlayStore
@@ -34,15 +35,16 @@ struct MasterStartView: View {
                 startSharePlayAnimation = sharePlayStore.canActivateSharePlay
             }
             
-            #if !os(tvOS)
+#if !os(tvOS)
             SharePlayButton("Play RPG Online", activity: RPGActivity())
                 .opacity(startSharePlayAnimation ? 0 : 1)
-            #endif
+#endif
             
-            ImportDataModels(importController: root.adventureRoot.gameImportControllable, isSaveGame: true) {
-                await startGame()
+            Button {
+                navigator.navigate(to: ImportRoute.importGame, method: .managedSheet)
+            } label: {
+                Label("Import Saved Game", systemImage: "square.and.arrow.down")
             }
-            .padding()
         }
     }
     

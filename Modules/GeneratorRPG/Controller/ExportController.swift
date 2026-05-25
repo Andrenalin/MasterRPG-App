@@ -7,12 +7,10 @@ struct ExportController: Sendable {
     @MainActor init(rootManager: RootManager, itemController: ItemController) {
         self.rootManager = rootManager
         self.itemController = itemController
-        self.exportModel = ItemDataExportModel()
     }
 
     let rootManager: RootManager
     let itemController: ItemController
-    public let exportModel: ItemDataExportModel
 }
 
 extension ExportController: ExportControllable {

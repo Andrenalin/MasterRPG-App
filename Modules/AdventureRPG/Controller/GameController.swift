@@ -18,7 +18,7 @@ public protocol AdventureStoreGameable {
     @MainActor func startGame(with id: UUID)
     @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func resetGame()
-    @MainActor func saveGame() -> (Task<Void, any Error>, URL)
+    @MainActor func saveGame() -> ItemModuleIds
 }
 
 struct GameController: Sendable {
@@ -98,10 +98,8 @@ extension GameController: AdventureStoreGameable {
     }
 
     @MainActor
-    func saveGame() -> (Task<Void, any Error>, URL) {
+    func saveGame() -> ItemModuleIds {
         // save only the map state, later we could save more states
-        let ids = root.mapRoot.mapGameControllable.saveAll()
-        let url = exportController.rootExportController.exportUrl(isSaveGame: true)
-        return (exportController.rootExportController.createExport(itemIds: ids, into: url), url)
+        root.mapRoot.mapGameControllable.saveAll()
     }
 }

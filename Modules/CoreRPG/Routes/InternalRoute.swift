@@ -23,8 +23,7 @@ struct InternalRouteDestinationView: View {
         switch route {
         case .export(let ids):
             ExportProgressPanelView(exportController: root.exportControllable) {
-                let exportIds = root.exportControllable.exporting(ids: Set(ids))
-                return root.exportControllable.export(ids: exportIds)
+                root.exportControllable.exporting(ids: Set(ids))
             }
             .presentationDetents([.height(160)])
         case .groupEditor(let ids):

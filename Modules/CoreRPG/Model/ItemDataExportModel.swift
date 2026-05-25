@@ -11,6 +11,8 @@ public final class ItemDataExportModel {
     public var exportedItems: Int = 0
     public var totalExportingItems: Int = 0
     public var isExportRunning: Bool = false
+    
+    public var exportFileData: Bool = true
 }
 
 public enum ItemDataExportableError: Error {

@@ -430,6 +430,7 @@
       }
     },
     "Cancel Import" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1016,6 +1017,7 @@
       }
     },
     "Export is cancelled, but %lld are successfully exported." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "variations" : {
@@ -1212,6 +1214,7 @@
       }
     },
     "Import" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1222,6 +1225,7 @@
       }
     },
     "Import and Overwrite" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1364,6 +1368,7 @@
       }
     },
     "Load Game" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

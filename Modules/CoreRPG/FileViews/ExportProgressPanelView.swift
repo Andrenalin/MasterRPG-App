@@ -3,18 +3,21 @@
 import SwiftUI
 
 public struct ExportProgressPanelView: View {
-    public init(exportController: any ExportControllable, exporter: @escaping () -> (Task<Void, any Error>, URL), finishedAction: @escaping () -> Void = {}) {
+    public init(exportController: any ExportControllable, isSaveGame: Bool = false, exporter: @escaping () -> ItemModuleIds, finishedAction: @escaping () -> Void = {}) {
         self.exportController = exportController
+        self.isSaveGame = isSaveGame
         self.exporter = exporter
         self.finishAction = finishedAction
     }
 
     let exportController: any ExportControllable
-    let exporter: () -> (Task<Void, any Error>, URL)
+    let isSaveGame: Bool
+    let exporter: () -> (ItemModuleIds)
     let finishAction: () -> Void
 
     @Environment(\.navigator) private var navigator
 
+    @State private var exportModel = ItemDataExportModel()
     @State private var showExporter = false
     @State private var exportTask: Task<Void, any Error>?
     @State private var saveUrl: URL?
@@ -22,7 +25,6 @@ public struct ExportProgressPanelView: View {
 
     public var body: some View {
         NavigationStack {
-            let exportModel = exportController.exportModel
             VStack {
                 if exportModel.isExportRunning && exportModel.totalExportingItems > 0 {
                     ProgressView(
@@ -53,10 +55,17 @@ public struct ExportProgressPanelView: View {
             .task {
                 do {
                     try await Task.sleep(for: .seconds(0.5))
-                    let (task, url) = exporter()
-                    exportTask = task
-                    saveUrl = url
-                    _ = try await task.value
+                    if isSaveGame {
+                        let url = exportController.exportUrl(isSaveGame: true)
+                        let task = exportController.createExport(itemIds: exporter(), into: url, exportModel: exportModel)
+                        exportTask = task
+                        saveUrl = url
+                    } else {
+                        let (task, url) = exportController.export(ids: exporter(), exportModel: exportModel)
+                        exportTask = task
+                        saveUrl = url
+                    }
+                    _ = try await exportTask?.value
                     showExporter.toggle()
                 } catch is CancellationError {
                     outcome = .cancelled
@@ -66,7 +75,6 @@ public struct ExportProgressPanelView: View {
             }
 #if !os(tvOS)
             .fileMover(isPresented: $showExporter, file: saveUrl) { _ in
-                finishAction()
                 outcome = .finished
             }
 #endif
@@ -83,6 +91,7 @@ public struct ExportProgressPanelView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         navigator.dismiss()
+                        finishAction()
                     } label: {
                         Label { Text("Ok", bundle: .module) } icon: { Image(systemName: "checkmark") }
                     }

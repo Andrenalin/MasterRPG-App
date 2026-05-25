@@ -5,37 +5,37 @@ import SwiftUI
 
 struct SelectorView: View {
     let root: GameRoot
-
+    
     enum GameType: Int, Hashable, CaseIterable, Identifiable {
-        #if !os(tvOS)
+#if !os(tvOS)
         case player = 0
         case master = 1
-        #endif
+#endif
         case proxy = 2
-
+        
         var id: Int { rawValue }
         var text: LocalizedStringKey {
             switch self {
-            #if !os(tvOS)
+#if !os(tvOS)
             case .player:
                 return "Player"
             case .master:
                 return "Master"
-            #endif
+#endif
             case .proxy:
                 return "Join"
             }
         }
     }
-
-    #if !os(tvOS)
-    @AppStorage("lastSelectedGameType", store: .standard)
-    private var selected: GameType = .player
-    #else
+    
+#if os(tvOS)
     @AppStorage("lastSelectedGameType", store: .standard)
     private var selected: GameType = .proxy
-    #endif
-
+#else
+    @AppStorage("lastSelectedGameType", store: .standard)
+    private var selected: GameType = .player
+#endif
+    
     var body: some View {
         VStack {
             Picker(selection: $selected) {
@@ -48,22 +48,22 @@ struct SelectorView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-
+            
             Group {
                 switch selected {
-                #if !os(tvOS)
+#if !os(tvOS)
                 case .player:
                     playerView
                 case .master:
                     gameMasterView
-                #endif
+#endif
                 case .proxy:
                     proxyView
                 }
             }
         }
     }
-
+    
     private var playerView: some View {
         ScrollView {
             VStack {
@@ -73,7 +73,7 @@ struct SelectorView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
+    
     private var gameMasterView: some View {
         ScrollView {
             VStack {
@@ -83,7 +83,7 @@ struct SelectorView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
+    
     private var proxyView: some View {
         SearchProxyView(root: root)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

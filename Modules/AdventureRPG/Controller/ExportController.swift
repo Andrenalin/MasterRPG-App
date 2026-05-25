@@ -16,13 +16,10 @@ struct ExportController: Sendable {
     @MainActor init(rootManager: RootManager, itemController: ItemController) {
         self.rootManager = rootManager
         self.itemController = itemController
-        self.exportModel = ItemDataExportModel()
     }
-    
+
     let rootManager: RootManager
     let itemController: ItemController
-    
-    public let exportModel: ItemDataExportModel
 }
 
 extension ExportController: ExportControllable {
@@ -155,17 +152,16 @@ extension ExportController: ExportControllable {
         return allIds
     }
     
-    public func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
-        
-        let ids1 = try await rootManager.audioRoot.exportControllable.export(itemIds: itemIds, into: outputStream, counterUpdater: counterUpdater)
-        let ids2 = try await rootManager.diceRoot.exportControllable.export(itemIds: ids1, into: outputStream, counterUpdater: counterUpdater)
-        let ids3 = try await rootManager.mapRoot.exportControllable.export(itemIds: ids2, into: outputStream, counterUpdater: counterUpdater)
-        let ids4 = try await rootManager.pdfRoot.exportControllable.export(itemIds: ids3, into: outputStream, counterUpdater: counterUpdater)
-        let ids5 = try await rootManager.photoRoot.exportControllable.export(itemIds: ids4, into: outputStream, counterUpdater: counterUpdater)
-        let ids6 = try await rootManager.spaceRoot.exportControllable.export(itemIds: ids5, into: outputStream, counterUpdater: counterUpdater)
-        let ids7 = try await rootManager.tableRoot.exportControllable.export(itemIds: ids6, into: outputStream, counterUpdater: counterUpdater)
-        let ids8 = try await rootManager.characterRoot.exportControllable.export(itemIds: ids7, into: outputStream, counterUpdater: counterUpdater)
-        let ids9 = try await rootManager.weatherRoot.exportControllable.export(itemIds: ids8, into: outputStream, counterUpdater: counterUpdater)
+    public func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
+        let ids1 = try await rootManager.audioRoot.exportControllable.export(itemIds: itemIds, into: outputStream, exportModel: exportModel, counterUpdater: counterUpdater)
+        let ids2 = try await rootManager.diceRoot.exportControllable.export(itemIds: ids1, into: outputStream, exportModel: exportModel, counterUpdater: counterUpdater)
+        let ids3 = try await rootManager.mapRoot.exportControllable.export(itemIds: ids2, into: outputStream, exportModel: exportModel, counterUpdater: counterUpdater)
+        let ids4 = try await rootManager.pdfRoot.exportControllable.export(itemIds: ids3, into: outputStream, exportModel: exportModel, counterUpdater: counterUpdater)
+        let ids5 = try await rootManager.photoRoot.exportControllable.export(itemIds: ids4, into: outputStream, exportModel: exportModel, counterUpdater: counterUpdater)
+        let ids6 = try await rootManager.spaceRoot.exportControllable.export(itemIds: ids5, into: outputStream, exportModel: exportModel, counterUpdater: counterUpdater)
+        let ids7 = try await rootManager.tableRoot.exportControllable.export(itemIds: ids6, into: outputStream, exportModel: exportModel, counterUpdater: counterUpdater)
+        let ids8 = try await rootManager.characterRoot.exportControllable.export(itemIds: ids7, into: outputStream, exportModel: exportModel, counterUpdater: counterUpdater)
+        let ids9 = try await rootManager.weatherRoot.exportControllable.export(itemIds: ids8, into: outputStream, exportModel: exportModel, counterUpdater: counterUpdater)
         return ids9
     }
 }

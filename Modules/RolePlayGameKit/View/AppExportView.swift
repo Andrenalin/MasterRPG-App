@@ -9,8 +9,7 @@ struct AppExportView: View {
         
     var body: some View {
         ExportProgressPanelView(exportController: exportController) {
-            let exportIds = exportController.exportingAll()
-            return exportController.export(ids: exportIds)
+            exportController.exportingAll()
         }
         .presentationDetents([.height(160)])
     }

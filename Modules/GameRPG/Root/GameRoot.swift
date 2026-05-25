@@ -363,7 +363,7 @@ extension GameRoot {
     }
 
     @MainActor
-    func saveGame() -> (Task<Void, any Error>, URL) {
+    func saveGame() -> ItemModuleIds {
         adventureRoot.adventureGameControllable.saveGame()
     }
 }

@@ -7,10 +7,16 @@ public protocol ExampleUrlProvider {
 }
 
 public struct ImportProgressPanelView: View {
-    public init(urlProvider: (any ExampleUrlProvider)?, importController: any ImportControllable, isSaveGame: Bool = false) {
+    public init(importController: any ImportControllable) {
+        self.urlProvider = nil
+        self.importController = importController
+        self.isSaveGame = true
+    }
+
+    public init(urlProvider: any ExampleUrlProvider, importController: any ImportControllable) {
         self.urlProvider = urlProvider
         self.importController = importController
-        self.isSaveGame = isSaveGame
+        self.isSaveGame = false
     }
 
     let urlProvider: (any ExampleUrlProvider)?
@@ -28,7 +34,7 @@ public struct ImportProgressPanelView: View {
 
     public var body: some View {
         NavigationStack {
-            let importModel = importController.importModel
+            let importModel = importController.makeImportConfiguration().importModel
             VStack {
                 progressView
 
@@ -96,7 +102,7 @@ public struct ImportProgressPanelView: View {
 
 private extension ImportProgressPanelView {
     @ViewBuilder var progressView: some View {
-        let importModel = importController.importModel
+        let importModel = importController.makeImportConfiguration().importModel
 
         if importModel.isImportRunning && importModel.totalImportingItems > 0 {
             ProgressView(
@@ -163,7 +169,7 @@ private extension ImportProgressPanelView {
     
     var statusText: some View {
         VStack {
-            let importModel = importController.importModel
+            let importModel = importController.makeImportConfiguration().importModel
             
             switch outcome {
             case .notStarted:
@@ -182,7 +188,7 @@ private extension ImportProgressPanelView {
 }
 
 #Preview {
-    ImportProgressPanelView(urlProvider: FakeExampleUrlProvider(), importController: FakeImportController.fake, isSaveGame: false)
+    ImportProgressPanelView(urlProvider: FakeExampleUrlProvider(), importController: FakeImportController.fake)
 }
 
 struct FakeExampleUrlProvider: ExampleUrlProvider {

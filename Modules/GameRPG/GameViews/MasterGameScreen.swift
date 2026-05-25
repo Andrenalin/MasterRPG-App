@@ -35,8 +35,10 @@ struct MasterGameScreen: View {
         .environment(\.valueActions, root.characterRoot.valueActions)
         .overlay(alignment: .center) {
             if gameScreenModel.showExport {
-                ExportProgressFile(exportController: root.adventureRoot.exportControllable, showExport: $gameScreenModel.showExport) {
+                ExportProgressPanelView(exportController: root.adventureRoot.exportControllable, isSaveGame: true) {
                     root.saveGame()
+                } finishedAction: {
+                    gameScreenModel.showExport = false
                 }
             }
         }
