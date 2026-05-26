@@ -134,7 +134,7 @@ private extension SheetEntryView {
             switch inlineSheet.sheetType {
             case .dice:
                 // Use inlineSheet.source for both viewController lookup and rowViewer
-                viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
+                viewController(for: inlineSheet.destination.typeId == .value ? inlineSheet.destination : inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
             case .pdf:
                 // Use inlineSheet.source for both viewController lookup and rowViewer
                 viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)

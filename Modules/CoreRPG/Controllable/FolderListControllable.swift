@@ -92,10 +92,10 @@ public extension FolderListControllable {
                 listModel.listSelection = Set(arrayLiteral: addedItem.id)
             }
             listModel.addedModelId = nil
-        } else if let newSelected = listModel.item(itemId: previousSelectedId) {
+        } else if let newSelected = listModel.item(itemId: previousSelectedId ?? listModel.navigationModel.selectedItemId) {
             listModel.listSelection = Set(arrayLiteral: newSelected.id)
             listModel.selected = newSelected.id
-            
+
             listModel.scrollId = newSelected.id
         }
     }

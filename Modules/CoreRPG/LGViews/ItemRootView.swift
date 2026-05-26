@@ -45,7 +45,7 @@ public struct ItemSplitDetailRouteRootView<Route: NavigationDestination>: View {
     public var body: some View {
         let _ = Self._printChanges()
         ManagedNavigationStack(name: "Split-\(root.configurable.module.token)") {
-            if listModel.selectedItemId != nil {
+            if listModel.navigationModel.selectedItemId != nil {
                 route
             } else {
                 SplitContentUnavailableView(module: root.configurable.module)
