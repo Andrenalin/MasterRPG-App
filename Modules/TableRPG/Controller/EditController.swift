@@ -3,7 +3,9 @@
 import CoreRPG
 import DiceRPG
 import Foundation
+#if !os(tvOS)
 import GeneratorRPG
+#endif
 import Observation
 import SwiftUI
 import UniformTypeIdentifiers

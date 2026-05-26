@@ -241,12 +241,12 @@ private extension ImportControllable {
                     switch resolution {
                     case .old: break
                     case .new:
-                        await itemController.replace(model: importedItem, isInsert: true, forceSave: true)
-                        await editCtrl.repairFolder(itemId: id)
+                        itemController.replace(model: importedItem, isInsert: true, forceSave: true)
+                        editCtrl.repairFolder(itemId: id)
                     case .merge:
                         if let merged = mergedItem {
-                            await itemController.replace(model: merged, isInsert: true, forceSave: true)
-                            await editCtrl.repairFolder(itemId: id)
+                            itemController.replace(model: merged, isInsert: true, forceSave: true)
+                            editCtrl.repairFolder(itemId: id)
                         }
                     }
                 }

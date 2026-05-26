@@ -1,7 +1,10 @@
 // @copyright André Trettin
 
 import CoreRPG
+#if !os(tvOS)
 import GeneratorRPG
+#endif
+
 import SwiftUI
 
 #if !os(tvOS)
