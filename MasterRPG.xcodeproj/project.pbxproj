@@ -1504,7 +1504,6 @@
 		8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSection.swift; sourceTree = "<group>"; };
 		8E5104E82BD2413900F10E87 /* SharingInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingInput.swift; sourceTree = "<group>"; };
 		8E5104EC2BD2440300F10E87 /* ItemProviderImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemProviderImporter.swift; sourceTree = "<group>"; };
-		8E5CD1A62FC08C6400BA2067 /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
 		8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		8E6761E52A04B58F001AAE0E /* LinkWindowCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkWindowCommands.swift; sourceTree = "<group>"; };
 		8E6A8A9C2F6E538E00149E06 /* WindowVisionList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowVisionList.swift; sourceTree = "<group>"; };
@@ -1552,6 +1551,8 @@
 		8EC4E48E28DDAAF300D0279F /* MasterRPG.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = MasterRPG.entitlements; sourceTree = "<group>"; };
 		8EC4E48F28DDAAF300D0279F /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8ED3AB992E2B45AE00FF3AE8 /* RolePlayGameKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RolePlayGameKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8EEB00E32FC5411B004B78D8 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		8EEB00E42FC5411B004B78D8 /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
 		8EED76CA2B941F7000721CA8 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		8EEF8E052E3639E200393DAD /* PdfRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PdfRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EF512872E5E03C200B4CE44 /* WeatherRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WeatherRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1753,6 +1754,7 @@
 		599DCAD12E8E30C00056E46C /* GeneratorRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GeneratorRPG; sourceTree = "<group>"; };
 		59CE1E9D2E84F011009C6CB5 /* GameRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GameRPG; sourceTree = "<group>"; };
 		8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E0DCFC22F8722C90045FE8D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = DiceRollerWidget; sourceTree = "<group>"; };
+		8E19D4D32FC5418100B23172 /* .agents */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = .agents; sourceTree = "<group>"; };
 		8E3620AE2E1A80FF00E5C99A /* CoreRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CoreRPG; sourceTree = "<group>"; };
 		8E3620DC2E1A9EAF00E5C99A /* PhotoRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PhotoRPG; sourceTree = "<group>"; };
 		8E4B274E2CD79E7D009AB4D1 /* RPGResources */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResources; sourceTree = "<group>"; };
@@ -2251,7 +2253,9 @@
 		8EC4E46028DDA29600D0279F = {
 			isa = PBXGroup;
 			children = (
-				8E5CD1A62FC08C6400BA2067 /* CLAUDE.md */,
+				8E19D4D32FC5418100B23172 /* .agents */,
+				8EEB00E32FC5411B004B78D8 /* AGENTS.md */,
+				8EEB00E42FC5411B004B78D8 /* CLAUDE.md */,
 				8E8EEC3E2CD8EC3A0010A25B /* Modules */,
 				8EC4E48A28DDAAF300D0279F /* Resources */,
 				8EC4E47C28DDAAF300D0279F /* Sources */,
