@@ -40,6 +40,7 @@ final class GameModel: Sendable {
 
     #if os(visionOS)
     var gameTableModel: GameTableModel?
+    var shareState = GameShareStateModel()
     #endif
     
     func add(playerId: UUID, playerModel: PlayerGameModel, sharingModel: SharingControlModel) -> Bool {
@@ -259,6 +260,9 @@ extension GameRoot {
         gameModel.gameConfig.id = masterGameModel.id
         gameModel.gameConfig.master = masterGameModel
         gameModel.startGameTime = Date.now
+        #if os(visionOS)
+        gameModel.shareState.isMaster = true
+        #endif
         
         networkStore.resetName(name: gameMasterName)
         networkProxyStore.resetName(name: gameMasterName)
@@ -311,6 +315,9 @@ extension GameRoot {
         }
 
         adventureRoot.adventureGameControllable.resetGame()
+        #if os(visionOS)
+        gameModel.shareState.isMaster = (mode == .demo)
+        #endif
         let player = PlayerController(root: self, asGameMaster: mode == .demo)
         gameModel.playerController = player
 
@@ -356,6 +363,9 @@ extension GameRoot {
         await gameModel.playerController?.stop()
         gameModel.playerController = nil
         adventureRoot.adventureGameControllable.resetGame()
+        #if os(visionOS)
+        gameModel.shareState = GameShareStateModel()
+        #endif
 
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = false

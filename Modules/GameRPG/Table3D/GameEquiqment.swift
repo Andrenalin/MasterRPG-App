@@ -12,6 +12,7 @@ import DeveloperToolsSupport
 import SwiftUI
 import UIKit
 import Combine
+import os.log
 
 extension EquipmentIdentifier {
     static var tableID: Self { .init(0) }
@@ -570,84 +571,71 @@ struct Die: EntityEquipment {
 // MARK: - SharePlay Seat Assignment
 
 extension GameTableModel {
-    /// Assigns seats to SharePlay participants when the 3D table is shown
-    /// This ensures each player gets a unique seat around the table in a shared context
+    /// Assigns seats to SharePlay participants. Master always gets seat 0; players fill seats 1+.
     @MainActor
-    func assignSeatsForSharePlay(groupSession: GroupSession<RPGActivity>?) {
-        guard let groupSession = groupSession else {
-            print("📍 No active GroupSession - claiming any seat for single player")
+    func assignSeatsForSharePlay(groupSession: GroupSession<RPGActivity>?, isMaster: Bool) {
+        guard let groupSession else {
+            Logger.sharePlay.debug("No active GroupSession — claiming any seat for single player")
             tabletopGame.claimAnySeat()
             return
         }
-        
-        print("📍 SharePlay active - assigning seats for \(groupSession.activeParticipants.count) participants")
-        
-        // Get all active participants including local participant
-        let allParticipants = Array(groupSession.activeParticipants)
+
+        Logger.sharePlay.debug("SharePlay seat assignment for \(groupSession.activeParticipants.count, privacy: .public) participants (isMaster: \(isMaster, privacy: .public))")
+
+        if isMaster {
+            tabletopGame.claimSeat(matching: TableSeatIdentifier(0))
+            Logger.sharePlay.debug("Assigned seat 0 (master)")
+            return
+        }
+
+        // Players sort by ID for consistent assignment; seat 0 is reserved for master
         let localParticipant = groupSession.localParticipant
-        
-        // Sort participants by ID to ensure consistent seat assignment across all devices
-        let sortedParticipants = allParticipants.sorted { $0.id.uuidString < $1.id.uuidString }
-        
-        // Find local participant's index to determine their seat
-        guard let localIndex = sortedParticipants.firstIndex(where: { $0.id == localParticipant.id }) else {
-            print("⚠️ Could not find local participant in active participants")
+        let sortedPlayers = Array(groupSession.activeParticipants)
+            .sorted { $0.id.uuidString < $1.id.uuidString }
+
+        guard let localIndex = sortedPlayers.firstIndex(where: { $0.id == localParticipant.id }) else {
+            Logger.sharePlay.debug("Could not find local participant — claiming any seat")
             tabletopGame.claimAnySeat()
             return
         }
-        
-        // Map participant index to seat index
-        // We have 3 seats available (PlayerSeat.seatPoses has 3 positions)
-        let seatIndex = localIndex % 3
-        let seatIdentifier = TableSeatIdentifier(seatIndex)
-        
-        print("📍 Assigning seat \(seatIndex) to local participant (participant \(localIndex + 1) of \(sortedParticipants.count))")
-        
-        // Claim the assigned seat
-        tabletopGame.claimSeat(matching: seatIdentifier)
-        
-        // Log seat assignments for debugging
-        print("📍 Seat assignments:")
-        for (index, participant) in sortedParticipants.enumerated() {
-            let assignedSeat = index % 3
-            let isLocal = participant.id == localParticipant.id
-            print("   - Participant \(index + 1): Seat \(assignedSeat) \(isLocal ? "(YOU)" : "")")
-        }
+
+        // Seat 0 is master; player seats start at 1 and wrap within available slots
+        let playerSeatCount = PlayerSeat.seatPoses.count - 1
+        let seatIndex = (localIndex % playerSeatCount) + 1
+        Logger.sharePlay.debug("Assigned seat \(seatIndex, privacy: .public) to player (index \(localIndex, privacy: .public))")
+        tabletopGame.claimSeat(matching: TableSeatIdentifier(seatIndex))
     }
-    
-    /// Updates seat assignments when participants join or leave
+
     @MainActor
-    func updateSeatsForParticipantChange(groupSession: GroupSession<RPGActivity>?) {
-        guard let groupSession = groupSession else { return }
-        
-        print("📍 Participants changed - reassigning seats")
-        assignSeatsForSharePlay(groupSession: groupSession)
+    func updateSeatsForParticipantChange(groupSession: GroupSession<RPGActivity>?, isMaster: Bool) {
+        guard groupSession != nil else { return }
+        Logger.sharePlay.debug("Participants changed — reassigning seats")
+        assignSeatsForSharePlay(groupSession: groupSession, isMaster: isMaster)
     }
 }
 
 // MARK: - SharePlay Coordination Extension
 
 extension RPGSharePlayController {
-    /// Sets up seat assignment monitoring for the tabletop game
     @MainActor
     func setupSeatAssignment(gameTableModel: GameTableModel) {
-        guard let groupSession = groupSession else {
-            print("📍 Setting up single-player seating")
-            gameTableModel.assignSeatsForSharePlay(groupSession: nil)
+        let isMaster = gameModel?.gameConfig.isMaster ?? false
+        guard let groupSession else {
+            Logger.sharePlay.debug("Setting up single-player seating")
+            gameTableModel.assignSeatsForSharePlay(groupSession: nil, isMaster: isMaster)
             return
         }
-        
-        print("📍 Setting up SharePlay seat assignment")
-        
-        // Assign initial seats
-        gameTableModel.assignSeatsForSharePlay(groupSession: groupSession)
-        
-        // Monitor participant changes and reassign seats
+
+        Logger.sharePlay.debug("Setting up SharePlay seat assignment (isMaster: \(isMaster, privacy: .public))")
+        gameTableModel.assignSeatsForSharePlay(groupSession: groupSession, isMaster: isMaster)
+
         groupSession.$activeParticipants
-            .sink { activeParticipants in
-                print("📍 Active participants changed: \(activeParticipants.count) participants")
-                Task { @MainActor in
-                    gameTableModel.updateSeatsForParticipantChange(groupSession: groupSession)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                MainActor.assumeIsolated {
+                    let isMaster = self.gameModel?.gameConfig.isMaster ?? false
+                    gameTableModel.updateSeatsForParticipantChange(groupSession: self.groupSession, isMaster: isMaster)
                 }
             }
             .store(in: &subscriptions)

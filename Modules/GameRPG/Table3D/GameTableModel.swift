@@ -8,6 +8,7 @@ import CoreRPG
 import MapRPG
 import PhotoRPG
 import UIKit
+import os.log
 
 @Observable
 final class GameTableModel {
@@ -52,14 +53,14 @@ final class GameTableModel {
     /// Called when the 3D table view appears to set up seating
     @MainActor
     func setupSeating(sharePlayController: RPGSharePlayController) {
+        let isMaster = sharePlayController.gameModel?.gameConfig.isMaster ?? false
+        observer.isMaster = isMaster
         if sharePlayController.isActive, let groupSession = sharePlayController.groupSession {
-            print("📍 Setting up seating with SharePlay")
-            assignSeatsForSharePlay(groupSession: groupSession)
-            
-            // Also register with the share play controller for participant changes
+            Logger.sharePlay.debug("Setting up seating with SharePlay")
+            assignSeatsForSharePlay(groupSession: groupSession, isMaster: isMaster)
             sharePlayController.setupSeatAssignment(gameTableModel: self)
         } else {
-            print("📍 Setting up seating for single-player")
+            Logger.sharePlay.debug("Setting up seating for single-player")
             tabletopGame.claimAnySeat()
         }
     }

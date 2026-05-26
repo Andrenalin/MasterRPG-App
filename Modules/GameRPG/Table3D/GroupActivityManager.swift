@@ -7,17 +7,10 @@ import SwiftUI
 
 class GroupActivityManager: Observable {
     var tabletopGame: TabletopGame
-    var sessionTask = Task<Void, Never> {}
-    
+
     @MainActor
     init(tabletopGame: TabletopGame, sharePlayController: RPGSharePlayController) {
         self.tabletopGame = tabletopGame
-        sessionTask = Task {
-            for await session in RPGActivity.sessions() {
-                tabletopGame.coordinateWithSession(session)
-            }
-        }
-        
         sharePlayController.setup(tabletopGame: tabletopGame)
     }
 

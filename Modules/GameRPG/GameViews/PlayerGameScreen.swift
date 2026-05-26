@@ -127,8 +127,8 @@ private struct ImmersiveSpaceHandler: ViewModifier {
     @Environment(ScenesManager.self) private var scenesManager
 
     func body(content: Content) -> some View {
-        content.task(id: root.networkStore.sharePlayStore.switchToImmersive) {
-            if root.networkStore.sharePlayStore.switchToImmersive {
+        content.task(id: root.gameModel.shareState.groupImmersionActive) {
+            if root.gameModel.shareState.groupImmersionActive {
                 await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: root.spaceRoot.gameControllable.currentId, entryId: nil))
             } else {
                 await scenesManager.dismissSpaceViewer()

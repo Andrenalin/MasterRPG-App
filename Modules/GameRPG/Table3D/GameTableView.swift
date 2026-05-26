@@ -37,8 +37,15 @@ public struct GameTableView: View {
             let initGame = await GameTableModel(mapRoot: root.mapRoot, photoRoot: root.photoRoot)
             self.root.gameModel.gameTableModel = initGame
             self.game = initGame
+            root.gameModel.shareState.mode = .tabletop
+            root.networkStore.sharePlayStore.applyShareState()
             self.activityManager = .init(tabletopGame: initGame.tabletopGame, sharePlayController: root.networkStore.sharePlayStore)
             initGame.setupSeating(sharePlayController: root.networkStore.sharePlayStore)
+        }
+        .onDisappear {
+            root.gameModel.shareState.mode = .window
+            root.networkStore.sharePlayStore.applyShareState()
+            root.gameModel.gameTableModel = nil
         }
     }
 }

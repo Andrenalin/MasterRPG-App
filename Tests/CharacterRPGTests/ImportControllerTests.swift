@@ -49,7 +49,7 @@ struct ImportControllerTests {
         stream.open()
         defer { stream.close() }
 
-        _ = try await exportController.export(itemIds: ids, into: stream) { _, _ in }
+        _ = try await exportController.export(itemIds: ids, into: stream)
 
         let data = stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data
         try #require(data != nil)
@@ -69,7 +69,7 @@ struct ImportControllerTests {
         importStream.open()
         defer { importStream.close() }
 
-        try await sut.importStream(from: importStream, forceSave: false, counterUpdater: {})
+        try await sut.importStream(from: importStream, forceSave: false)
 
         #expect(await root.itemController.itemDataModel.items.contains(itemId))
         #expect(await root.itemController.itemDataModel.items.contains(folderId))
@@ -105,7 +105,7 @@ struct ImportControllerTests {
         let stream = OutputStream.toMemory()
         stream.open()
         defer { stream.close() }
-        _ = try await exportController.export(itemIds: ids, into: stream) { _, _ in }
+        _ = try await exportController.export(itemIds: ids, into: stream)
         let data = try #require(stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data)
 
         await edit.delete(itemId: character1Id)
@@ -122,7 +122,7 @@ struct ImportControllerTests {
         let importStream = InputStream(data: data)
         importStream.open()
         defer { importStream.close() }
-        try await sut.importStream(from: importStream, forceSave: false, counterUpdater: {})
+        try await sut.importStream(from: importStream, forceSave: false)
 
         #expect(await root.itemController.itemDataModel.items.contains(character1Id))
         #expect(await root.itemController.itemDataModel.items.contains(folder2Id))
@@ -157,7 +157,7 @@ struct ImportControllerTests {
         #expect(ids1.partialIds[.value]?.contains(folder2Id) == true)
         let stream1 = OutputStream.toMemory()
         stream1.open()
-        _ = try await exportController.export(itemIds: ids1, into: stream1) { _, _ in }
+        _ = try await exportController.export(itemIds: ids1, into: stream1)
         let data1 = try #require(stream1.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data)
         stream1.close()
 
@@ -165,7 +165,7 @@ struct ImportControllerTests {
         let ids2 = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([character2Id]), module: .value))
         let stream2 = OutputStream.toMemory()
         stream2.open()
-        _ = try await exportController.export(itemIds: ids2, into: stream2) { _, _ in }
+        _ = try await exportController.export(itemIds: ids2, into: stream2)
         let data2 = try #require(stream2.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data)
         stream2.close()
 
@@ -181,7 +181,7 @@ struct ImportControllerTests {
         // First import: establishes folder1/folder2/character1
         let importStream1 = InputStream(data: data1)
         importStream1.open()
-        try await sut.importStream(from: importStream1, forceSave: false, counterUpdater: {})
+        try await sut.importStream(from: importStream1, forceSave: false)
         importStream1.close()
         #expect(await root.itemController.itemDataModel.items.contains(character1Id))
         #expect(await root.itemController.itemDataModel.items.contains(folder2Id))
@@ -191,7 +191,7 @@ struct ImportControllerTests {
         let importStream2 = InputStream(data: data2)
         importStream2.open()
         defer { importStream2.close() }
-        try await sut.importStream(from: importStream2, forceSave: false, counterUpdater: {})
+        try await sut.importStream(from: importStream2, forceSave: false)
 
         #expect(await root.itemController.itemDataModel.items.contains(character1Id))
         #expect(await root.itemController.itemDataModel.items.contains(character2Id))
@@ -223,7 +223,7 @@ struct ImportControllerTests {
         #expect(ids1.partialIds[.value]?.contains(folder1Id) == true)
         let stream1 = OutputStream.toMemory()
         stream1.open()
-        _ = try await exportController.export(itemIds: ids1, into: stream1) { _, _ in }
+        _ = try await exportController.export(itemIds: ids1, into: stream1)
         let data1 = try #require(stream1.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data)
         stream1.close()
 
@@ -231,7 +231,7 @@ struct ImportControllerTests {
         let ids2 = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([character2Id]), module: .value))
         let stream2 = OutputStream.toMemory()
         stream2.open()
-        _ = try await exportController.export(itemIds: ids2, into: stream2) { _, _ in }
+        _ = try await exportController.export(itemIds: ids2, into: stream2)
         let data2 = try #require(stream2.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data)
         stream2.close()
 
@@ -245,7 +245,7 @@ struct ImportControllerTests {
         // First import: establishes folder1/character1
         let importStream1 = InputStream(data: data1)
         importStream1.open()
-        try await sut.importStream(from: importStream1, forceSave: false, counterUpdater: {})
+        try await sut.importStream(from: importStream1, forceSave: false)
         importStream1.close()
         #expect(await root.itemController.itemDataModel.items.contains(character1Id))
         #expect(await root.itemController.itemDataModel.items.contains(folder1Id))
@@ -255,7 +255,7 @@ struct ImportControllerTests {
         let importStream2 = InputStream(data: data2)
         importStream2.open()
         defer { importStream2.close() }
-        try await sut.importStream(from: importStream2, forceSave: false, counterUpdater: {})
+        try await sut.importStream(from: importStream2, forceSave: false)
 
         #expect(await root.itemController.itemDataModel.items.contains(character1Id))
         #expect(await root.itemController.itemDataModel.items.contains(character2Id))
@@ -280,7 +280,7 @@ struct ImportControllerTests {
         let standaloneIds = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([character1Id]), module: .value))
         let standaloneStream = OutputStream.toMemory()
         standaloneStream.open()
-        _ = try await exportController.export(itemIds: standaloneIds, into: standaloneStream) { _, _ in }
+        _ = try await exportController.export(itemIds: standaloneIds, into: standaloneStream)
         let standaloneData = try #require(standaloneStream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data)
         standaloneStream.close()
 
@@ -298,10 +298,9 @@ struct ImportControllerTests {
         let importStream = InputStream(data: standaloneData)
         importStream.open()
         defer { importStream.close() }
-        try await sut.importStream(from: importStream, forceSave: false, counterUpdater: {})
+        try await sut.importStream(from: importStream, forceSave: false)
 
         let characterAfter = await root.itemController.item(for: character1Id)
         #expect(characterAfter?.parentId == folder2Id)
     }
-
 }

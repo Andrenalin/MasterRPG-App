@@ -22,6 +22,7 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 
 ## Tech Stack
 - **Language**: Swift 6.3 and `SWIFT_STRICT_CONCURRENCY = complete` for all targets
+- **Build Setting**: Swift 6.0, SWIFT_STRICT_CONCURRENCY = complete, no default actor isolation (for skill swift conurrency)
 - **SDK**: iOS26, iPadOS26, tvOS26, visionOS26, macOS26
 - **UI**: SwiftUI
 - **Pattern**: Model View Controller

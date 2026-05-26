@@ -30,67 +30,70 @@ final class RPGSharePlayController {
     var isActive: Bool = false
     var canActivateSharePlay: Bool = false
     var stateText: String = "Not Active"
-    
+
     var gameModel: GameModel?
     var packageSender: SharePlaySingleQueuePackageSender?
     var packageReceiver = SharePlayPackageReceiver()
-    
-    var switchToImmersive: Bool = false
-    
+
+    #if os(visionOS)
+    private var systemCoordinator: SystemCoordinator?
+    #endif
+
     private let groupStateObserver = GroupStateObserver()
     private var cancellables: Set<AnyCancellable> = []
-    
+
     private var messenger: GroupSessionMessenger?
     var subscriptions = Set<AnyCancellable>()
     private var tasks = Set<Task<Void, Never>>()
     private var journal: GroupSessionJournal?
-    
+
     weak var delegate: SharePlayControllerDelegate?
     weak var playBack: AVPlaybackCoordinator?
     weak var audioCoordinator: AudioListenerCoordinator?
-    
+
 #if os(visionOS)
     weak var tabletopGame: TabletopGame?
 #endif
-    
+
     init() {
         Logger.sharePlay.debug("SharePlay: init")
     }
-    
+
     deinit {
-//#if os(visionOS)
-//        tabletopGame?.detachNetworkCoordinator()
-//#endif
+        // Swift 6: deinit is nonisolated and cannot access @MainActor-isolated `tasks`.
+        // Cleanup is handled by reset(), which must be called before releasing this controller.
         Logger.sharePlay.debug("SharePlay: deinit")
     }
-    
+
     func setup(gameModel: GameModel) {
         Logger.sharePlay.debug("SharePlay: setup")
         self.gameModel = gameModel
         packageSender = SharePlaySingleQueuePackageSender { [weak self] package in
             await self?.sendPackage(package)
         }
-        
+
         groupStateObserver.$isEligibleForGroupSession
-            .sink { [weak self] in
-                self?.canActivateSharePlay = $0
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                MainActor.assumeIsolated {
+                    self?.canActivateSharePlay = value
+                }
             }.store(in: &cancellables)
     }
-    
+
     func setup(audioCoordinator: AudioListenerCoordinator?) {
         self.audioCoordinator = audioCoordinator
         self.playBack = audioCoordinator?.playbackCoordinator
         guard let groupSession else { return }
         playBack?.coordinateWithSession(groupSession)
     }
-    
+
     #if os(visionOS)
     func setup(tabletopGame: TabletopGame, gameTableModel: GameTableModel? = nil) {
         self.tabletopGame = tabletopGame
         guard let groupSession else { return }
         tabletopGame.coordinateWithSession(groupSession)
-        
-        // Set up seat assignment if game table model is provided
+
         if let gameTableModel = gameTableModel {
             setupSeatAssignment(gameTableModel: gameTableModel)
         }
@@ -104,13 +107,14 @@ extension RPGSharePlayController {
         guard let data = gameNetworkModel.encodeData() else { return }
         guard messenger != nil else { return }
 
-        if let data = gameNetworkModel.data.data, let journal, fileJournal  {
+        if let data = gameNetworkModel.data.data, let journal, fileJournal {
             Logger.sharePlay.debug("Journal: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
-            Task(priority: .userInitiated) {
-                if let oldAttachment = gameModel?.attachments[gameNetworkModel.data.type] {
+            let journalTask = Task(priority: .userInitiated) { [weak self] in
+                guard let self else { return }
+                if let oldAttachment = self.gameModel?.attachments[gameNetworkModel.data.type] {
                     do {
                         try await journal.remove(attachment: oldAttachment)
-                    } catch let error {
+                    } catch {
                         Logger.sharePlay.error("Cannot remove old attachment from Journal with module \(gameNetworkModel.data.type.token, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
                     }
                 }
@@ -118,17 +122,20 @@ extension RPGSharePlayController {
                 model.data = NetworkCodableDataType(id: gameNetworkModel.data.id, type: gameNetworkModel.data.type, version: gameNetworkModel.data.version, data: nil)
                 do {
                     let result = try await journal.add(data, metadata: model)
-                    gameModel?.attachments[gameNetworkModel.data.type] = result
+                    self.gameModel?.attachments[gameNetworkModel.data.type] = result
                     Logger.sharePlay.debug("Journal: \(result.id, privacy: .public)")
-                } catch let error {
+                } catch {
                     Logger.sharePlay.error("Cannot add attachment for module \(gameNetworkModel.data.type.token, privacy: .public) and id: \(gameNetworkModel.data.id, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
                 }
             }
+            tasks.insert(journalTask)
             return
         }
-        Task {
-            await packageSender?.send(data: data)
+        let sendTask = Task { [weak self] in
+            guard let self, let sender = self.packageSender else { return }
+            await sender.send(data: data)
         }
+        tasks.insert(sendTask)
     }
 
     private func sendPackage(_ package: PackageMessage) async {
@@ -148,6 +155,11 @@ extension RPGSharePlayController {
             groupSession?.leave()
             groupSession = nil
         }
+        #if os(visionOS)
+        systemCoordinator = nil
+        gameModel?.shareState.isSharePlayActive = false
+        gameModel?.shareState.groupImmersionActive = false
+        #endif
     }
 
     func startSharing(with name: String?, image: AKImage?) {
@@ -166,7 +178,7 @@ extension RPGSharePlayController {
             Logger.sharePlay.debug("GroupSession active state: \(self.printState(), privacy: .public)")
             groupSession.activity = activity
         } else {
-            Task { @MainActor in
+            Task {
                 do {
                     _ = try await activity.activate()
                     Logger.sharePlay.debug("Activate state: \(self.printState(), privacy: .public)")
@@ -179,47 +191,18 @@ extension RPGSharePlayController {
 
     func joinGame() {
         Logger.sharePlay.debug("Join state: \(self.printState(), privacy: .public)")
-        Task {
+        let joinTask = Task { [weak self] in
             for await session in RPGActivity.sessions() {
+                guard let self else { return }
                 Logger.sharePlay.debug("Session \(session.description, privacy: .public) state: \(self.printState(), privacy: .public)")
 
                 #if os(visionOS)
-                if let coordinator = await session.systemCoordinator {
-                    var configuration = SystemCoordinator.Configuration()
-                    configuration.spatialTemplatePreference = .surround.contentExtent(100)
-                    configuration.supportsGroupImmersiveSpace = true
-                    coordinator.configuration = configuration
-
-                    let vpTask = Task { @MainActor in
-                        tabletopGame?.coordinateWithSession(session)
-                        for await immersionStyle in coordinator.groupImmersionStyle {
-                            if immersionStyle != nil {
-                                switchToImmersive = true
-                            } else {
-                                switchToImmersive = false
-                            }
-                        }
-                    }
-
-//                    Task.detached { @MainActor in
-//                        for await state in coordinator.localParticipantStates {
-//                            if state.isSpatial {
-//                                // Synchronize additional data for the shared context.
-//                                gameModel.isSpatial = true
-//                            } else {
-//                                // Don't synchronize additional data.
-//                                gameModel.isSpatial = false
-//                            }
-//                        }
-//                    }
-                    tasks.insert(vpTask)
-                }
-
+                await self.configureSystemCoordinator(for: session)
                 #endif
-
                 self.configureGroupSession(session)
             }
         }
+        tasks.insert(joinTask)
     }
 
     func configureGroupSession(_ groupSession: GroupSession<RPGActivity>) {
@@ -232,60 +215,72 @@ extension RPGSharePlayController {
         self.journal = journal
 
         isActive = true
+        #if os(visionOS)
+        gameModel?.shareState.isSharePlayActive = true
+        #endif
         groupSession.$state
-            .sink { state in
-                Logger.sharePlay.debug("Session state: \(self.printState(), privacy: .public)")
-                self.stateText = self.printState()
-                if case .invalidated = state {
-                    self.groupSession = nil
-                    self.reset()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                guard let self else { return }
+                MainActor.assumeIsolated {
+                    let stateDescription = self.printState()
+                    Logger.sharePlay.debug("Session state: \(stateDescription, privacy: .public)")
+                    self.stateText = stateDescription
+                    if case .invalidated = state {
+                        self.groupSession = nil
+                        self.reset()
+                    }
                 }
             }
             .store(in: &subscriptions)
 
         groupSession.$activeParticipants
-            .sink { activeParticipants in
-                let newParticipants = activeParticipants.subtracting(groupSession.activeParticipants)
-                let removedParticipants = groupSession.activeParticipants.subtracting(activeParticipants)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] activeParticipants in
+                guard let self else { return }
+                MainActor.assumeIsolated {
+                    let newParticipants = activeParticipants.subtracting(groupSession.activeParticipants)
+                    let removedParticipants = groupSession.activeParticipants.subtracting(activeParticipants)
 
-                Logger.sharePlay.debug("Session Participants active: \(activeParticipants.debugDescription, privacy: .public) and new: \(newParticipants.debugDescription, privacy: .public) and removed: \(removedParticipants.debugDescription, privacy: .public)")
+                    Logger.sharePlay.debug("Session Participants active: \(activeParticipants.debugDescription, privacy: .public) and new: \(newParticipants.debugDescription, privacy: .public) and removed: \(removedParticipants.debugDescription, privacy: .public)")
 
-                removedParticipants.forEach {
-                    self.delegate?.sharePlayLostPlayer(id: $0.id)
+                    removedParticipants.forEach {
+                        self.delegate?.sharePlayLostPlayer(id: $0.id)
+                    }
                 }
             }
             .store(in: &subscriptions)
 
-        let task = Task {
+        let task = Task { [weak self] in
             for await (message, context) in messenger.messages(of: PackageMessage.self) {
+                guard let self else { return }
                 Logger.sharePlay.debug("Received Update Message \(message.uuid, privacy: .public): \(message.count, privacy: .public) - \(message.total, privacy: .public) from \(context.source.id, privacy: .public)")
-                if let data = packageReceiver.received(package: message)?.data,
+                if let data = self.packageReceiver.received(package: message)?.data,
                     let gameModel = GameNetworkModel.decodeData(of: data) {
-                    delegate?.handleUpdate(gameModel, id: context.source.id)
+                    self.delegate?.handleUpdate(gameModel, id: context.source.id)
                 }
             }
         }
         tasks.insert(task)
-        let journalTask = Task {
+        let journalTask = Task { [weak self] in
             for await attachment in journal.attachments {
-                await handle(attachment)
+                guard let self else { return }
+                await self.handle(attachment)
             }
         }
         tasks.insert(journalTask)
-        
+
         groupSession.join()
         playBack?.coordinateWithSession(groupSession)
         #if os(visionOS)
         tabletopGame?.coordinateWithSession(groupSession)
-        
-        // Set up seat assignments when session is configured
+
         if tabletopGame != nil {
-            Task { @MainActor in
-                // Try to get the game table model from the game model
+            Task {
                 if let gameTableModel = self.gameModel?.gameTableModel {
                     self.setupSeatAssignment(gameTableModel: gameTableModel)
                 } else {
-                    print("📍 GameTableModel not available yet - seats will be assigned when table is shown")
+                    Logger.sharePlay.debug("GameTableModel not available at session configure time — seats assigned later")
                 }
             }
         }
@@ -320,3 +315,32 @@ private extension RPGSharePlayController {
         return "\(groupSession.state)"
     }
 }
+
+#if os(visionOS)
+extension RPGSharePlayController {
+    private func configureSystemCoordinator(for session: GroupSession<RPGActivity>) async {
+        guard let coordinator = await session.systemCoordinator else { return }
+        systemCoordinator = coordinator
+        var configuration = SystemCoordinator.Configuration()
+        configuration.spatialTemplatePreference = gameModel?.shareState.spatialTemplatePreference ?? .surround.contentExtent(100)
+        configuration.supportsGroupImmersiveSpace = true
+        coordinator.configuration = configuration
+
+        let immersionTask = Task { [weak self] in
+            for await immersionStyle in coordinator.groupImmersionStyle {
+                guard let self else { return }
+                self.gameModel?.shareState.groupImmersionActive = immersionStyle != nil
+            }
+        }
+        tasks.insert(immersionTask)
+    }
+
+    func applyShareState() {
+        guard let coordinator = systemCoordinator,
+              let preference = gameModel?.shareState.spatialTemplatePreference else { return }
+        var configuration = coordinator.configuration
+        configuration.spatialTemplatePreference = preference
+        coordinator.configuration = configuration
+    }
+}
+#endif
