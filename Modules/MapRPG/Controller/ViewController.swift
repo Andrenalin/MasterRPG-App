@@ -3,8 +3,11 @@
 import CharacterRPG
 import CoreRPG
 import DiceRPG
-import SwiftUI
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import PhotoRPG
+import SwiftUI
 
 public struct ViewController {
     public let sharingViewType: SharingViewType = .share
@@ -20,6 +23,40 @@ extension ViewController: ViewControllable {
         AnyView(InlineRowViewer(source: source, destination: destination).equatable())
     }
 }
+
+// MARK: - Batch Extraction
+
+#if !os(tvOS)
+extension ViewController {
+    public var supportsBatchExtraction: Bool { true }
+
+    @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
+        guard let mapController = itemController as? ItemController else { return nil }
+        let formatEntries: @MainActor @Sendable (UUID) -> String = { id in
+            let model = mapController.itemOrEmpty(for: id)
+            let visibleEntries = model.entries.filter { !$0.isHexGrid }
+            var lines: [String] = []
+            if !model.name.isEmpty {
+                lines.append("Map: \(model.name)")
+                lines.append("")
+            }
+            for entry in visibleEntries {
+                lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
+            }
+            return lines.joined(separator: "\n")
+        }
+        return AnyView(
+            BatchTextSummaryExtractionView(
+                module: .map,
+                ids: ids,
+                itemController: itemController,
+                editController: editController,
+                formatEntries: formatEntries
+            )
+        )
+    }
+}
+#endif
 
 // MARK: External Views
 

@@ -2,6 +2,9 @@
 
 import CoreRPG
 import DiceRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import SwiftUI
 
 public struct ViewController: Sendable {
@@ -35,6 +38,39 @@ public extension ViewController {
         LinkRootView(type: type, itemSelectionModel: itemSelectionModel)
     }
 }
+
+// MARK: - Batch Extraction
+
+#if !os(tvOS)
+extension ViewController {
+    public var supportsBatchExtraction: Bool { true }
+
+    @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
+        guard let tableController = itemController as? ItemController else { return nil }
+        let formatEntries: @MainActor @Sendable (UUID) -> String = { id in
+            let model = tableController.itemOrEmpty(for: id)
+            var lines: [String] = []
+            if !model.name.isEmpty {
+                lines.append("Table: \(model.name)")
+                lines.append("")
+            }
+            for entry in model.entries {
+                lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
+            }
+            return lines.joined(separator: "\n")
+        }
+        return AnyView(
+            BatchTextSummaryExtractionView(
+                module: .table,
+                ids: ids,
+                itemController: itemController,
+                editController: editController,
+                formatEntries: formatEntries
+            )
+        )
+    }
+}
+#endif
 
 // MARK: - Viewers
 

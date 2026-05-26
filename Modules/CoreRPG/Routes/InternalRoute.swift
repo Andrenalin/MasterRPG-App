@@ -6,6 +6,7 @@ enum InternalRoute: Equatable, Codable {
     case export(ids: [UUID])
     case groupEditor(ids: [UUID])
     case removeAlert
+    case batchExtraction(ids: [UUID])
 }
 
 extension InternalRoute: NavigationDestination {
@@ -31,6 +32,12 @@ struct InternalRouteDestinationView: View {
                 .presentationDetents([.medium])
         case .removeAlert:
             EffectedLinkActionPanelView(root: root)
+        case .batchExtraction(let ids):
+            root.viewControllable.batchExtractionView(
+                itemController: root.itemControllable,
+                editController: root.editControllable,
+                ids: ids
+            ) ?? AnyView(EmptyView())
         }
     }
 }

@@ -1,8 +1,11 @@
 // @copyright André Trettin
 
 import CoreRPG
-import SwiftUI
 import DiceRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
+import SwiftUI
 
 public struct ViewController: Sendable {
     public let thumbnailRowViewType: ThumbnailRowViewType = .custom
@@ -13,6 +16,39 @@ extension ViewController: ViewControllable {
         AnyView(ThumbnailPhotoRow(itemId: itemId).equatable())
     }
 }
+
+// MARK: - Batch Extraction
+
+#if !os(tvOS)
+extension ViewController {
+    public var supportsBatchExtraction: Bool { true }
+
+    @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
+        guard let adventureController = itemController as? ItemController else { return nil }
+        let formatEntries: @MainActor @Sendable (UUID) -> String = { id in
+            let model = adventureController.itemOrEmpty(for: id)
+            var lines: [String] = []
+            if !model.name.isEmpty {
+                lines.append("Adventure: \(model.name)")
+                lines.append("")
+            }
+            for entry in model.entries {
+                lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
+            }
+            return lines.joined(separator: "\n")
+        }
+        return AnyView(
+            BatchTextSummaryExtractionView(
+                module: .adventure,
+                ids: ids,
+                itemController: itemController,
+                editController: editController,
+                formatEntries: formatEntries
+            )
+        )
+    }
+}
+#endif
 
 // MARK: External Views
 

@@ -35,6 +35,11 @@ struct ListRootContextMenu: View {
         Divider()
         exportItemView
         groupEditView
+        #if !os(tvOS)
+        if root.viewControllable.supportsBatchExtraction {
+            batchExtractionView
+        }
+        #endif
         Divider()
         deleteItemView
     }
@@ -137,6 +142,21 @@ private extension ListRootContextMenu {
         .keyboardShortcut("g", modifiers: [.command, .option])
         #endif
     }
+
+    #if !os(tvOS)
+    var batchExtractionView: some View {
+        Button {
+            let ids = controller.selection(currentSelected: currentSelected)
+            navigator.navigate(to: InternalRoute.batchExtraction(ids: ids), method: .sheet)
+        } label: {
+            Label {
+                Text("Extract Information for \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "sparkles")
+            }
+        }
+    }
+    #endif
     
     var moveItemView: some View {
         Menu {
