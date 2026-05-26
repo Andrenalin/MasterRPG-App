@@ -47,35 +47,16 @@ struct WindowVisionList: Scene {
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
         
-        WindowGroup(id: "SpaceVolume", for: UUID.self) { $id in
-            if let id {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: id, defaultSize: defaultSize)
-                }
-            }
-        }
-        .windowStyle(.volumetric)
-        .defaultSize(defaultSize, in: .meters)
-
         ImmersiveSpace(id: SceneId.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
                     .sceneTracker(for: SceneId.spaceViewer)
 //                    .groupActivityAssociation(selection != nil ? .primary(SceneId.spaceViewer.rawValue) : nil)
             }
+            .environmentSetUp(appModel)
         }
-        .defaultWindowPlacementAll( .above(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue))
-        //.windowStyle(.volumetric)
+        .defaultWindowPlacementAll(.above(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue))
         .defaultSize(defaultSize, in: .meters)
-        .immersionStyle(selection: $immersionState, in: .mixed)
-
-        ImmersiveSpace(id: "Space3d", for: UUID.self) { $id in
-            if let id {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: id, defaultSize: defaultSize)
-                }
-            }
-        }
         .immersionStyle(selection: $immersionState, in: .mixed)
 
         ImmersiveSpace(id: DiceSpace.immersiveSpaceId) {

@@ -377,28 +377,47 @@ import OSLog
 
     /// Opens the spaceViewer immersive space with the given item selection.
     @MainActor
+    public func toggleSpaceViewer(selection: ItemSelection?) async {
+        guard let dismissImmersiveSpace = dismissImmersiveSpace,
+              let openImmersiveSpace = openImmersiveSpace else { return }
+
+        switch immersiveSpaceState {
+        case .open:
+            sceneStates[SceneId.spaceViewer] = .closing
+            immersiveSpaceState = .inTransition
+            await dismissImmersiveSpace()
+        case .closed:
+            sceneStates[SceneId.spaceViewer] = .opening
+            immersiveSpaceState = .inTransition
+            switch await openImmersiveSpace(id: SceneId.spaceViewer.rawValue, value: selection ?? ItemSelection(itemId: UUID(), entryId: nil)) {
+            case .opened:
+                break
+            case .userCancelled, .error:
+                Logger.scenesManager.error("Failed to open immersive space. Did you you setup the immersive space correctly with SceneId.immersiveSpace?")
+                immersiveSpaceState = .closed
+                sceneStates[SceneId.spaceViewer] = .closed
+            @unknown default:
+                immersiveSpaceState = .closed
+                sceneStates[SceneId.spaceViewer] = .closed
+            }
+        case .inTransition:
+            break
+        }
+    }
+    
+    /// Opens the spaceViewer immersive space with the given item selection.
+    @MainActor
     public func openSpaceViewer(selection: ItemSelection) async {
-        guard let openImmersiveSpace = openImmersiveSpace else { return }
         let state = sceneStates[SceneId.spaceViewer]
         guard state == nil || state == .closed || state == .closing else { return }
-        sceneStates[SceneId.spaceViewer] = .opening
-        switch await openImmersiveSpace(id: SceneId.spaceViewer.rawValue, value: selection) {
-        case .opened:
-            break
-        case .userCancelled, .error:
-            sceneStates[SceneId.spaceViewer] = .closed
-        @unknown default:
-            sceneStates[SceneId.spaceViewer] = .closed
-        }
+        await toggleSpaceViewer(selection: selection)
     }
 
     /// Dismisses the spaceViewer immersive space if it is open or opening.
     @MainActor
     public func dismissSpaceViewer() async {
-        guard let dismissImmersiveSpace = dismissImmersiveSpace else { return }
         guard let state = sceneStates[SceneId.spaceViewer], state == .opened || state == .opening else { return }
-        sceneStates[SceneId.spaceViewer] = .closing
-        await dismissImmersiveSpace()
+        await toggleSpaceViewer(selection: nil)
     }
 #endif
 }

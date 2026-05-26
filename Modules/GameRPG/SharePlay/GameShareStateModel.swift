@@ -2,7 +2,6 @@
 
 #if os(visionOS)
 import Foundation
-@preconcurrency import GroupActivities
 
 @MainActor @Observable
 final class GameShareStateModel {
@@ -17,12 +16,5 @@ final class GameShareStateModel {
     var groupImmersionActive: Bool = false
     var isMaster: Bool = false
 
-    var spatialTemplatePreference: SystemCoordinator.SpatialTemplatePreference {
-        switch mode {
-        case .window:    return .sideBySide
-        case .tabletop:  return .surround.contentExtent(100)
-        case .immersive: return .none
-        }
-    }
 }
 #endif

@@ -2,23 +2,19 @@
 
 #if os(visionOS)
 import SwiftUI
-import GroupActivities
 
-struct GameTableToolbar: ToolbarContent {
+struct GameTableToolbar: View {
     let game: GameTableModel
-    
-    var body: some ToolbarContent {
-        ToolbarItemGroup(placement: .bottomOrnament) {
+
+    var body: some View {
+        HStack(spacing: 12) {
             Button("Reset", systemImage: "arrow.counterclockwise") {
                 game.resetGame()
             }
-            Spacer()
-            Button("SharePlay", systemImage: "shareplay") {
-               Task {
-                    try! await RPGActivity().activate()
-               }
-            }
+            .labelStyle(.iconOnly)
         }
+        .padding(12)
+        .glassBackgroundEffect()
     }
 }
 

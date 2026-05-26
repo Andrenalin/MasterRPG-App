@@ -40,7 +40,7 @@ struct SpaceQuickLook: View {
     func loader() {
 #if os(visionOS)
         Task {
-            await scenesManager.toggleImmersiveSpace()
+            await scenesManager.toggleSpaceViewer(selection: item)
         }
 #endif
     }

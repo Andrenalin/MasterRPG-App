@@ -259,7 +259,7 @@ private extension SpaceViewer {
                 Attachment(id: "NameBarView") {
                     Button {
                         Task {
-                            await scenesManager.toggleImmersiveSpace()
+                            await scenesManager.dismissSpaceViewer()
                         }
                     } label: {
                         Label {

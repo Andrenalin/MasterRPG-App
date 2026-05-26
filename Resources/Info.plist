@@ -50,6 +50,8 @@
 		<string>_gamemasterproxyserver._tcp</string>
 		<string>_gamemasterproxyclient._tcp</string>
 	</array>
+	<key>NSHandsTrackingUsageDescription</key>
+	<string>MasterRPG uses hand tracking to let you resize the 3D game table by pinching with both hands.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MasterRPG needs microphone access to enable voice commands and speech recognition features.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

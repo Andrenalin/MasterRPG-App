@@ -321,10 +321,7 @@ extension RPGSharePlayController {
     private func configureSystemCoordinator(for session: GroupSession<RPGActivity>) async {
         guard let coordinator = await session.systemCoordinator else { return }
         systemCoordinator = coordinator
-        var configuration = SystemCoordinator.Configuration()
-        configuration.spatialTemplatePreference = gameModel?.shareState.spatialTemplatePreference ?? .surround.contentExtent(100)
-        configuration.supportsGroupImmersiveSpace = true
-        coordinator.configuration = configuration
+        applyShareState()
 
         let immersionTask = Task { [weak self] in
             for await immersionStyle in coordinator.groupImmersionStyle {
@@ -336,10 +333,15 @@ extension RPGSharePlayController {
     }
 
     func applyShareState() {
-        guard let coordinator = systemCoordinator,
-              let preference = gameModel?.shareState.spatialTemplatePreference else { return }
-        var configuration = coordinator.configuration
-        configuration.spatialTemplatePreference = preference
+        guard let coordinator = systemCoordinator else { return }
+        var configuration = SystemCoordinator.Configuration()
+        configuration.supportsGroupImmersiveSpace = true
+        switch gameModel?.shareState.mode ?? .window {
+        case .tabletop:
+            configuration.spatialTemplatePreference = .surround.contentExtent(100)
+        case .window, .immersive:
+            configuration.spatialTemplatePreference = .sideBySide
+        }
         coordinator.configuration = configuration
     }
 }

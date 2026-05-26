@@ -46,4 +46,11 @@ extension TableVisualState.Pose2D {
     }
 }
 
+extension simd_float4x4 {
+    /// World-space translation extracted from the 4th column.
+    var translation: SIMD3<Float> {
+        SIMD3(columns.3.x, columns.3.y, columns.3.z)
+    }
+}
+
 #endif

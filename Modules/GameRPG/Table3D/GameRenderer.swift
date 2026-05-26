@@ -90,6 +90,14 @@ class GameRenderer: TabletopGame.RenderDelegate {
         }
     }
 
+    /// Applies a uniform scale to the table scene and the portal window.
+    /// The portal world itself is not scaled (it is a coordinate space, not geometry).
+    func applyScale(_ scale: Float) {
+        let s = SIMD3<Float>(repeating: scale)
+        root.scale   = s
+        portal.scale = s
+    }
+
     @MainActor
     func cuteBotEntity(for cuteBotColor: PlayerPawn.CuteBotColor) -> Entity {
         switch cuteBotColor {

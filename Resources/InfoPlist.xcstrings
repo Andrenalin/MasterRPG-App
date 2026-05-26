@@ -169,7 +169,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "MasterRPG uses handtracking for rolling the dice during the game."
+            "value" : "MasterRPG uses hand tracking to let you resize the 3D game table by pinching with both hands."
           }
         }
       }
