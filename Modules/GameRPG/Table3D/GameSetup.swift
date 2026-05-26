@@ -26,8 +26,11 @@ class GameSetup {
     var setup: TableSetup
     var board: Board
     var pawns: [PlayerPawn] = []
-    var monsterPawns: [MonsterPawn] = [] // Track monster pawns dynamically
+    var monsterPawns: [MonsterPawn] = []
     var seats: [PlayerSeat] = []
+    /// Container for dynamically-added monster entities. Parented to root so they
+    /// appear in the scene without going through TabletopKit's frozen TableSetup.
+    let monsterContainer: Entity
 
     // This is an incrementing counter to generate unique IDs for each piece of equipment.
     struct IdentifierGenerator {
@@ -69,6 +72,9 @@ class GameSetup {
      */
     init(root: Entity) {
         self.root = root
+        monsterContainer = Entity()
+        monsterContainer.name = "MonsterContainer"
+        root.addChild(monsterContainer)
         setup = TableSetup(tabletop: Table())
 
         for (index, pose) in PlayerSeat.seatPoses.enumerated() {
@@ -238,15 +244,14 @@ class GameSetup {
             )
             
             let monsterPawn = MonsterPawn(
-                id: EquipmentIdentifier(idGenerator.newId()),
                 pinId: pin.id,
                 position: position,
                 color: pin.color,
                 size: pin.size
             )
-            
+
             monsterPawns.append(monsterPawn)
-            setup.add(equipment: monsterPawn)
+            monsterContainer.addChild(monsterPawn.entity)
             
             print("✨ Created new monster '\(pin.name)' at (\(position.x), \(position.z))")
         }
@@ -292,11 +297,10 @@ class GameSetup {
         return SIMD3<Float>(rotatedX, yPosition, rotatedZ)
     }
     
-    /// Clears all monster pawns (hides all and clears the array)
-    /// Use this when changing maps or completely resetting the game
+    /// Clears all monster pawns from the scene and the tracking array.
     func clearAllMonsters() {
         for monsterPawn in monsterPawns {
-            monsterPawn.entity.isEnabled = false
+            monsterPawn.entity.removeFromParent()
         }
         monsterPawns.removeAll()
         print("🧹 Cleared all monster pawns")

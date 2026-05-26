@@ -40,12 +40,6 @@ struct GameInteraction: TabletopInteraction.Delegate {
             interaction.setConfiguration(.init(allowedDestinations: .restricted([])))
         }
         
-        // Monster pawns are restricted to GM control (set in MonsterPawn.initialState)
-        // The seatControl property handles this automatically
-        if game.tabletopGame.equipment(of: MonsterPawn.self, matching: interaction.value.startingEquipmentID) != nil {
-            // Monsters can only be moved by GM, which is enforced by seatControl
-            print("🐉 Monster pawn interaction started")
-        }
     }
     
     func onGesturePhaseEnded(interaction: TabletopInteraction) {
@@ -96,11 +90,6 @@ struct GameInteraction: TabletopInteraction.Delegate {
             interaction.addAction(.moveEquipment(matching: pawn.id, childOf: dst.equipmentID, pose: .init()))
         }
         
-        if let monsterPawn = game.tabletopGame.equipment(of: MonsterPawn.self, matching: interaction.value.startingEquipmentID) {
-            // Move the monster pawn to its new position (GM only)
-            interaction.addAction(.moveEquipment(matching: monsterPawn.id, childOf: dst.equipmentID, pose: .init()))
-            print("🐉 Monster pawn moved by GM")
-        }
     }
 }
 
