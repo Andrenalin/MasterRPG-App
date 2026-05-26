@@ -27,7 +27,7 @@ struct PdfSummaryAnalyzer: Sendable {
         self.instructions = instructions ?? Self.defaultInstructions
     }
 
-    func analyzeWithProgress(from pdfDocument: PDFDocument, resultModel: PdfSummaryAnalyzyerResultModel) async throws -> PdfSummaryAnalysis {
+    func analyzeWithProgress(from pdfDocument: PDFDocument, resultModel: PdfSummaryAnalyzyerResultModel, outputLanguage: String = "English") async throws -> PdfSummaryAnalysis {
         // Check model availability
         guard SystemLanguageModel.default.availability == .available else {
             throw PdfSummaryAnalysisError.modelUnavailable
@@ -71,11 +71,12 @@ struct PdfSummaryAnalyzer: Sendable {
 
             do {
                 // Now analyze the accumulated text with streaming
-                let session = LanguageModelSession(instructions: instructions)
+                let activeInstructions = instructions + "\nIMPORTANT: All output must be written in \(outputLanguage), regardless of the input language."
+                let session = LanguageModelSession(instructions: activeInstructions)
                 session.prewarm()
 
                 let stream = session.streamResponse(
-                    to: buildPrompt(with: pageText, pageCount: pdfDocument.pageCount),
+                    to: buildPrompt(with: pageText, pageCount: pdfDocument.pageCount, outputLanguage: outputLanguage),
                     generating: PdfSummaryAnalysis.self
                 )
 
@@ -132,16 +133,17 @@ struct PdfSummaryAnalyzer: Sendable {
 
     // MARK: - Private Methods
 
-    private func buildPrompt(with text: String, pageCount: Int) -> String {
+    private func buildPrompt(with text: String, pageCount: Int, outputLanguage: String) -> String {
         """
         Analyze and summarize this RPG PDF document.
+        Output language: \(outputLanguage)
 
         Total pages in document: \(pageCount)
         Content (first \(maxPages) pages):
 
         \(text)
 
-        Provide structured summary analysis including:
+        Provide in \(outputLanguage) a structured summary analysis including:
         - The document title
         - A clear summary
         - Relevant RPG tags (genre, setting, system, etc.)

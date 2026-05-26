@@ -28,6 +28,7 @@ struct DetailListView: View {
                     AdventureAddEntryButton(root: root, model: model)
 #if !os(tvOS)
                     AdventureAIAssistantButton(root: root, model: model)
+                    AdventureExtractToolBarButton(model: model)
 #endif
                 }
             }

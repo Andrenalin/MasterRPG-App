@@ -1,11 +1,17 @@
 // @copyright André Trettin
 
 import CoreRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import SwiftUI
 
 enum TableDetailRoute: Equatable, Hashable, Codable {
     case folder(UUID)
     case folderInline(UUID)
+#if !os(tvOS)
+    case tableExtraction(UUID)
+#endif
 }
 
 extension TableDetailRoute: RawRepresentable {
@@ -13,6 +19,9 @@ extension TableDetailRoute: RawRepresentable {
         switch self {
         case .folder(let id): "folder/\(id.uuidString)"
         case .folderInline(let id): "folderInline/\(id.uuidString)"
+#if !os(tvOS)
+        case .tableExtraction(let id): "tableExtraction/\(id.uuidString)"
+#endif
         }
     }
 
@@ -22,6 +31,9 @@ extension TableDetailRoute: RawRepresentable {
         switch token {
         case "folder": self = .folder(uuid)
         case "folderInline": self = .folderInline(uuid)
+#if !os(tvOS)
+        case "tableExtraction": self = .tableExtraction(uuid)
+#endif
         default: return nil
         }
     }
@@ -41,11 +53,14 @@ extension TableDetailRoute: ItemDetailRoute {
     public func reset(detail: UUID) -> Self {
         TableDetailRoute.folder(detail)
     }
-    
+
     public func detail() -> UUID? {
         switch self {
             case .folder(let id): return id
             case .folderInline(let id): return id
+#if !os(tvOS)
+            case .tableExtraction(let id): return id
+#endif
         }
     }
 }
@@ -54,7 +69,7 @@ struct TableDetailRouteDestinationView: View {
     let route: TableDetailRoute
 
     @Environment(TableRootModel.self) private var root
-    
+
     var body: some View {
         switch route {
         case .folder(let itemId):
@@ -62,6 +77,50 @@ struct TableDetailRouteDestinationView: View {
 
         case .folderInline(let itemId):
             DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+
+#if !os(tvOS)
+        case .tableExtraction(let itemId):
+            TableExtractionDestination(itemId: itemId)
+#endif
         }
     }
 }
+
+#if !os(tvOS)
+private struct TableExtractionDestination: View {
+    let itemId: UUID
+
+    @Environment(TableRootModel.self) private var root
+
+    var body: some View {
+        let model = root.itemController.itemOrEmpty(for: itemId)
+        if model.entries.isEmpty {
+            ContentUnavailableView {
+                Label {
+                    Text("No Entries", bundle: .module)
+                } icon: {
+                    Image(systemName: "tablecells.badge.ellipsis")
+                }
+            } description: {
+                Text("This table has no entries to analyze.", bundle: .module)
+            }
+        } else {
+            TextSummaryExtractionView(module: .table, entriesText: formatEntries(model)) { content, selection in
+                root.editController.applyExtractedContent(content, to: itemId, selection: selection)
+            }
+        }
+    }
+
+    private func formatEntries(_ model: TableModel) -> String {
+        var lines: [String] = []
+        if !model.name.isEmpty {
+            lines.append("Table: \(model.name)")
+            lines.append("")
+        }
+        for entry in model.entries {
+            lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
+        }
+        return lines.joined(separator: "\n")
+    }
+}
+#endif

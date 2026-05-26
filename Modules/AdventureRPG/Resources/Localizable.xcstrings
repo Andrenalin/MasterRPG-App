@@ -106,6 +106,9 @@
         }
       }
     },
+    "Extract Information" : {
+
+    },
     "Link" : {
       "localizations" : {
         "de" : {
@@ -115,6 +118,9 @@
           }
         }
       }
+    },
+    "No Entries" : {
+
     },
     "Open %@" : {
       "comment" : "A label that appears when the user taps the \"Drop\" button in the \"Drop\" view, instructing them to open the selected adventure.",
@@ -172,6 +178,9 @@
           }
         }
       }
+    },
+    "This adventure has no entries to analyze." : {
+
     },
     "Which Adventure?" : {
       "comment" : "Title of the request value dialog for the \"Adventure\" parameter in the \"Open Adventure\" intent.",

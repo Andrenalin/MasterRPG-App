@@ -8,6 +8,7 @@ import SwiftUI
 public struct PdfSummaryAnalysisView: View {
 
     @State private var model = PdfSummaryAnalysisModel()
+    @State private var selectedLanguage: OutputLanguage = OutputLanguage.forCurrentLocale()
     let pdfDocument: PDFDocument
     let onAnalysisCompleted: (PdfSummaryAnalysis) -> Void
 
@@ -22,9 +23,10 @@ public struct PdfSummaryAnalysisView: View {
                 if model.isAnalyzing {
                     analyzingView
                 } else {
+                    languagePicker
                     analyzeButton
                 }
-                
+
                 if let error = model.lastError {
                     errorView(error)
                 }
@@ -38,6 +40,22 @@ public struct PdfSummaryAnalysisView: View {
     }
 
     // MARK: - Subviews
+
+    private var languagePicker: some View {
+        HStack {
+            Text("Output Language", bundle: .module)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Picker("", selection: $selectedLanguage) {
+                ForEach(OutputLanguage.supported) { language in
+                    Text(language.displayName).tag(language)
+                }
+            }
+            .labelsHidden()
+        }
+        .padding(.horizontal, 4)
+    }
 
     private var analyzeButton: some View {
         Button {
@@ -57,7 +75,7 @@ public struct PdfSummaryAnalysisView: View {
     private func analyze() {
         guard !model.isAnalyzing else { return }
         Task {
-            if let content = await model.analyzeWithProgress(from: pdfDocument) {
+            if let content = await model.analyzeWithProgress(from: pdfDocument, outputLanguage: selectedLanguage.englishName) {
                 onAnalysisCompleted(content)
             }
         }

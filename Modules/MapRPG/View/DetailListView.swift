@@ -27,6 +27,9 @@ struct DetailListView: View {
                     MapEditorButton(model: model)
                     EditTileButton(model: model)
                     AddEntryButton(root: root, model: model)
+#if !os(tvOS)
+                    MapExtractToolBarButton(model: model)
+#endif
                 }
             }
         }

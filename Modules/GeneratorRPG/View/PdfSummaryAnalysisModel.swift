@@ -22,7 +22,7 @@ final class PdfSummaryAnalysisModel {
     /// Analyzes PDF with streaming progress updates
     /// - Parameter pdfDocument: The PDF to analyze
     /// - Returns: Final summary analysis, or nil if analysis fails
-    func analyzeWithProgress(from pdfDocument: PDFDocument) async -> PdfSummaryAnalysis? {
+    func analyzeWithProgress(from pdfDocument: PDFDocument, outputLanguage: String = "English") async -> PdfSummaryAnalysis? {
         isAnalyzing = true
         resultModel.analysisProgress = nil
         resultModel.pageProgress = nil
@@ -33,7 +33,7 @@ final class PdfSummaryAnalysisModel {
         }
 
         do {
-            return try await analyzer.analyzeWithProgress(from: pdfDocument, resultModel: resultModel)
+            return try await analyzer.analyzeWithProgress(from: pdfDocument, resultModel: resultModel, outputLanguage: outputLanguage)
         } catch {
             lastError = error.localizedDescription
             return nil

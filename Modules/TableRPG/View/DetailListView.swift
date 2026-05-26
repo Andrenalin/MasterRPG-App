@@ -29,6 +29,9 @@ struct DetailListView: View {
                     QuickEditorButton(root: root, model: model)
                     AddEntryButton(root: root, model: model)
                 }
+#if !os(tvOS)
+                TableExtractToolBarButton(model: model)
+#endif
             }
         }
 #if os(iOS)

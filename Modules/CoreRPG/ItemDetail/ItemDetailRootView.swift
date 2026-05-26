@@ -465,19 +465,6 @@ private struct ItemEditorBackgroundView<Editor: View>: View {
     var body: some View {
         editor
             .id(model.id)
-            .overlay(alignment: .top) {
-                if !model.specialCategory {
-                    GlassEffectContainerAll {
-                        ItemFileImporterView(
-                            root: root,
-                            model: model,
-                            fileTypes: fileTypes,
-                            isInitial: false
-                        )
-                    }
-                    .padding()
-                }
-            }
             .overlay(alignment: .bottom) {
                 if !model.description.isEmpty {
                     GlassEffectContainerAll {
@@ -495,6 +482,20 @@ private struct ItemEditorBackgroundView<Editor: View>: View {
 #if !os(visionOS)
                         .glassEffectAll(.regular)
 #endif
+                    }
+                    .padding()
+                }
+            }
+            .overlay(alignment: .top) {
+                if !model.specialCategory {
+                    GlassEffectContainerAll {
+                        ItemFileImporterView(
+                            root: root,
+                            model: model,
+                            fileTypes: fileTypes,
+                            isInitial: false
+                        )
+                        .zIndex(10)
                     }
                     .padding()
                 }

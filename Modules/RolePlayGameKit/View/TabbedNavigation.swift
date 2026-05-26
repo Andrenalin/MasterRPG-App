@@ -3,6 +3,7 @@
 import AudioRPG
 import CoreRPG
 import SwiftUI
+import AdventureRPG
 
 struct TabbedNavigation: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
@@ -19,8 +20,8 @@ struct TabbedNavigation: View {
                     ManagedNavigationStack(name: tab.title) { navigator in
                         tab
                     }
-                    .environment(appModel.itemRootController(for: tab.module))
-                    .tint(tab.module.tint)
+                    .tint(color(for: tab))
+                    .environment(itemRootController(for: tab))
                 }
             }
         }
@@ -55,6 +56,14 @@ struct TabbedNavigation: View {
             appModel.selectedModule = route
             return .after(0.8)
         }
+    }
+    
+    func color(for tab: RootRoute) -> Color {
+        (tab == .editors ? selectedModule : tab.module).tint
+    }
+    
+    func itemRootController(for tab: RootRoute) -> ItemRootController {
+        appModel.itemRootController(for: tab == .editors ? selectedModule : tab.module) ?? appModel.adventureRoot.rootController
     }
     
     var selectedModule: NetworkModules {
