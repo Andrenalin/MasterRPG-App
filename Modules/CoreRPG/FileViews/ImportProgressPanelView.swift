@@ -41,6 +41,8 @@ public struct ImportProgressPanelView: View {
                     VStack {
                         progressView
                         statusText
+                        
+                        informationDownloadText
                     }
                     .padding()
                 }

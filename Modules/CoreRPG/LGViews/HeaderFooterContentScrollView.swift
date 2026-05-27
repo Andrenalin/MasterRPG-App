@@ -29,7 +29,7 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
     @ViewBuilder var background: Background
     
     var body: some View {
-        //let _ = Self._printChanges()
+        //let _ = Self.printViewChangesOnlyInDebug()
         
         content
             .frame(maxWidth: .infinity)

@@ -10,7 +10,7 @@ struct DetailRootView: View {
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         DetailListView(root: root, model: model)
             .detailInspectorModifier(root: root.rootController)
             .task(id: model.id) {

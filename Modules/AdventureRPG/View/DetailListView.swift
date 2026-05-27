@@ -8,7 +8,7 @@ struct DetailListView: View {
     let model: AdventureModel
 
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         DetailFolderListView(root: root, model: model)
             .toolbar {
                 toolbarContent

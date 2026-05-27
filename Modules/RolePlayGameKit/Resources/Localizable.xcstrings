@@ -178,6 +178,7 @@
       }
     },
     "Download free game bundles" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -562,6 +563,7 @@
 
     },
     "These are free packages ready to use. They will add tables with rules, photos, characters and adventures for a certain rule system." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -578,6 +580,7 @@
 
     },
     "Use the Free Support [Page](https://github.com/Andrenalin/MasterRPG)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

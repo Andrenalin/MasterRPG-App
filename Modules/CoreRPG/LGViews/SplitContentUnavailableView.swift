@@ -10,7 +10,7 @@ public struct SplitContentUnavailableView: View {
     let module: NetworkModules
     
     public var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         ContentUnavailableView {
             Label {
                 Text("No \(module.localizedTitle) selected", bundle: .module)

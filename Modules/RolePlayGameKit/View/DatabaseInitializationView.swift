@@ -11,7 +11,7 @@ struct DatabaseInitializationView: View {
     @State private var iCloudAccount: CloudKitAccountStatus = .notChecked
 
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         VStack(spacing: 20) {
             Text("Initializing Database")
                 .font(.largeTitle)
@@ -101,9 +101,4 @@ struct DatabaseInitializationView: View {
             print("Error during root model setup: \(error)")
         }
     }
-}
-
-#Preview {
-    InitialRootView()
-        .frame(width: 400, height: 400)
 }

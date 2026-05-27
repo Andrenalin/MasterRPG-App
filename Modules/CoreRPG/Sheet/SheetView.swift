@@ -20,7 +20,7 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     @State private var dropTargetEntryId: String?
     
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         
         if sheetModel.showHeader || isEditor {
             GameShareView(root: root, itemId: sheetModel.source.itemId) {

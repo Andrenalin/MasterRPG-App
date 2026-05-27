@@ -8,7 +8,7 @@ struct DetailListView: View {
     let model: SpaceModel
 
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         DetailFolderListView(root: root, model: model)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)

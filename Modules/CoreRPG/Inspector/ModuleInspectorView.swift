@@ -10,7 +10,7 @@ public struct ModuleInspectorView: View {
     let rootController: ItemRootController
         
     public var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         if let itemId = rootController.navigationModel.selectedItemId, let item = rootController.itemControllable.itemSync(for: itemId) {
             if item.specialCategory {
                 LinkItemRootView(root: rootController, type: .inspector, itemSelectionModel: rootController.itemSelectionModel)

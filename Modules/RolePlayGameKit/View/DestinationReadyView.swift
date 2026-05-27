@@ -13,7 +13,8 @@ struct DestinationReadyView: View {
     @State private var showValidateAlert = false
 
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         appModel.appNavigationModel.modeRouteType
             .onChange(of: appModel.settingsModel.useCloudKit) {
                 if appModel.databaseModel.resetDatabase(useCloudKit: appModel.settingsModel.useCloudKit) {
@@ -84,7 +85,7 @@ public struct DataBaseAppStoreAvailable<Content: View>: View {
     let contentView: (AppModel) -> Content
 
     public var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         if appModel.appNavigationModel.initialRouteType == .ready {
             contentView(appModel)
         } else {

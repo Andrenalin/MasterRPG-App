@@ -10,7 +10,7 @@ struct DetailListView: View {
     @Environment(\.navigator) private var navigator
 
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         DetailFolderListView(root: root, model: model)
 #if !os(tvOS)
             .toolbar {

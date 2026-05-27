@@ -15,7 +15,7 @@ struct SplitNavigation: View {
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var appModel = appModel
 
         allTabs
@@ -159,7 +159,7 @@ private struct SplitWithDetailView: View {
     @State private var fallbackNavigationModel = ModuleNavigationModel()
 
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         let controller = appModel.itemRootController(for: tab.module)
         @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
         let canShow = appNavigationModel.canShowInspector(appSizeModel: appWindowSizeModel)

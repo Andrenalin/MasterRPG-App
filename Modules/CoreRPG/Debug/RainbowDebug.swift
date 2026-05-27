@@ -17,12 +17,20 @@ public extension View {
         #endif
     }
 
-    func printViewChanges<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
-        #if VIEW_DEBUG
-            Self._printChanges()
-            return content()
+    @ViewBuilder func printViewChanges<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
+        #if DEBUG
+            let _ = Self._printChanges()
+            content()
         #else
             content()
         #endif
     }
+    
+    static func printViewChangesOnlyInDebug() {
+        #if DEBUG
+            let _ = Self._printChanges()
+            //let _ = Self._logChanges()
+        #endif
+    }
+
 }

@@ -10,7 +10,7 @@ struct AppInspectorView: View {
     @Environment(AppModel.self) private var appModel
     
     var body: some View {
-        let _ = Self._printChanges()
+        let _ = Self.printViewChangesOnlyInDebug()
         ModuleInspectorView(rootController: rootController)
     }
     
