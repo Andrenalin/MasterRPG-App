@@ -21,7 +21,13 @@ public protocol FolderListControllable: Sendable {
 
 extension FolderListControllable {
     public var searchControllable: any SearchControllable {
-        DefaultFolderSearchController(itemControllable: itemControllable)
+        // When a parent item is selected (inspector mode), scope the search to that item
+        // and its entry tree. Falls back to the flat list-mode controller otherwise.
+        // CharacterRPG overrides this entirely with its own InspectorSearchController.
+        if let parentId = listModel.parentItemId {
+            return DefaultInspectorSearchController(itemControllable: itemControllable, parentId: parentId)
+        }
+        return DefaultFolderSearchController(itemControllable: itemControllable)
     }
 
     public func copyModel(parentModel: (any ItemDataAccessable)?) -> FolderListModel {
@@ -134,12 +140,15 @@ extension FolderListControllable {
             listModel.searchTask = Task { @MainActor in
                 let results = await controller.searchItems(searchText: searchText)
                 guard !Task.isCancelled else { return }
+                // Capture before displayedItems is replaced — after the swap the old "0-2-UUID"
+                // string IDs no longer match any "search-…" row, so selectedItemId returns nil.
+                let previousSelectedId = listModel.selectedItemId
                 let items = buildSearchDisplayItems(from: results, expandsEntries: expandsEntries)
                 listModel.displayedItems <=> items
                 listModel.displayedParentItems <=> []
                 // Re-anchor the selection to the item's new search-mode ID
-                if let selectedItemId = listModel.selectedItemId,
-                   let matchedItem = items.first(where: { $0.model.id == selectedItemId && $0.entryId == nil }) {
+                if let id = previousSelectedId,
+                   let matchedItem = items.first(where: { $0.model.id == id && $0.entryId == nil }) {
                     listModel.selected <=> matchedItem.id
                     listModel.listSelection <=> Set(arrayLiteral: matchedItem.id)
                 }
@@ -175,21 +184,47 @@ extension FolderListControllable {
         }
     }
 
-    /// List mode: flat results sorted by relevance, folders excluded, selected item first.
+    /// List mode: flat results sorted by relevance, selected item first.
+    ///
+    /// **Normal list** (`expandsEntries == false`):
+    ///   - Folders (`specialCategory`) and hidden items (`displayState != 0`) are excluded.
+    ///   - An item row is only shown when the item itself matches directly (`entryId == nil`).
+    ///   - Entry-only matches are collected but do not create an item row.
+    ///
+    /// **Expanded / inspector mode** (`expandsEntries == true`):
+    ///   - All items are accepted, including sub-value groups
+    ///     (`specialCategory == true`, `displayState == 1`).
+    ///   - Any match — direct or entry-level — creates an item row so matching entries can
+    ///     be displayed beneath it.
     private func buildListModeSearch(from results: [SearchResult], expandsEntries: Bool, selectedItemId: UUID?) -> [ListItemModel] {
         var itemOrder: [UUID] = []
         var seen: Set<UUID> = []
         var entryResults: [UUID: [SearchResult]] = [:]
 
         for result in results {
-            // Skip folders in list mode
-            if let model = itemControllable.itemSync(for: result.itemId), model.specialCategory { continue }
-            if !seen.contains(result.itemId) {
-                seen.insert(result.itemId)
-                itemOrder.append(result.itemId)
+            guard let model = itemControllable.itemSync(for: result.itemId) else { continue }
+
+            // In flat list mode skip folders and hidden/archived items.
+            // In expanded (inspector) mode accept all items — groups are specialCategory and
+            // have displayState == 1 (hidden from main list) but must appear in the inspector.
+            if !expandsEntries {
+                guard !model.specialCategory, model.displayState == 0 else { continue }
             }
+
             if result.entryId != nil {
                 entryResults[result.itemId, default: []].append(result)
+                // In list mode entry-only matches do NOT create an item row.
+                // In expanded mode the item row is needed to display the matching entries.
+                if expandsEntries, !seen.contains(result.itemId) {
+                    seen.insert(result.itemId)
+                    itemOrder.append(result.itemId)
+                }
+            } else {
+                // Direct item match (name / description) — always show the item row
+                if !seen.contains(result.itemId) {
+                    seen.insert(result.itemId)
+                    itemOrder.append(result.itemId)
+                }
             }
         }
 

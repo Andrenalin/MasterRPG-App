@@ -20,7 +20,8 @@ public extension SearchControllable {
         for itemId in itemIds {
             guard !Task.isCancelled else { break }
 
-            guard let item = await itemControllable.item(for: itemId) else { continue }
+            guard let item = await itemControllable.item(for: itemId),
+                  item.displayState == 0 else { continue }
 
             // Check if item matches search
             let itemMatches = item.filter(filter: searchText, includeEntries: false)
@@ -45,32 +46,6 @@ public extension SearchControllable {
                 ))
             }
 
-            if !item.specialCategory {
-                // Search through entries
-                for entry in item.entries {
-                    guard !Task.isCancelled else { break }
-
-                    if entry.filter(with: searchText) {
-                        let relevance = calculateRelevance(
-                            searchText: searchText,
-                            itemName: item.name,
-                            entryName: entry.name,
-                            content: entry.content,
-                            isItemMatch: false
-                        )
-                        foundResults.append(SearchResult(
-                            itemId: item.id,
-                            itemName: item.name,
-                            module: itemControllable.config.module,
-                            category: item.category,
-                            entryId: entry.id,
-                            entryName: entry.name,
-                            matchedContent: entry.content.isEmpty ? nil : entry.content,
-                            relevanceScore: relevance
-                        ))
-                    }
-                }
-            }
         }
 
         // Sort by relevance score (highest first)
@@ -330,14 +305,105 @@ public extension SearchControllable {
 
 // MARK: - Default Folder Search Controller
 
-/// Default search controller for folder lists.
-/// Uses the module's ItemControllable with the standard searchItems(searchText:) implementation,
-/// which searches item names, descriptions, and all entry content.
+/// Default list-mode search for folder lists.
+/// Searches item name and description only — no entry content, no hidden items.
+/// Identical behaviour to CharacterRPG `listSearch` for regular characters.
 public struct DefaultFolderSearchController: SearchControllable {
     public let itemControllable: any ItemControllable
 
     public init(itemControllable: any ItemControllable) {
         self.itemControllable = itemControllable
+    }
+}
+
+// MARK: - Default Inspector Search Controller
+
+/// Generic inspector search used by `LinkItemListView` for all modules except CharacterRPG
+/// (which provides its own `InspectorSearchController`).
+///
+/// Search scope for a given `parentId` item:
+/// - **Regular items**: item name/description + all first-level entries (name + content).
+/// - **Folder / collection** (`specialCategory`): same as above, then recursively follows
+///   each `entry.childId` link into child items and searches them the same way.
+///
+/// This mirrors the folder/collection requirement of CharacterRPG without the
+/// `groupId`-hidden-sub-value logic that is specific to that module.
+public struct DefaultInspectorSearchController: SearchControllable, Sendable {
+    public let itemControllable: any ItemControllable
+    public let parentId: UUID
+
+    public init(itemControllable: any ItemControllable, parentId: UUID) {
+        self.itemControllable = itemControllable
+        self.parentId = parentId
+    }
+
+    public func searchItems(searchText: String) async -> [SearchResult] {
+        guard !searchText.isEmpty else { return [] }
+        guard let root = await itemControllable.item(for: parentId) else { return [] }
+        var foundResults: [SearchResult] = []
+        await inspectorResult(item: root, searchText: searchText, foundResults: &foundResults)
+        return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
+    }
+
+    /// Searches `item` name/description and all its entries.
+    /// For `specialCategory` items, recurses into child items via `entry.childId`.
+    private func inspectorResult(item: any ItemDataAccessable, searchText: String, foundResults: inout [SearchResult]) async {
+        guard !Task.isCancelled else { return }
+
+        // Item-level match (name / description)
+        if item.filter(filter: searchText, includeEntries: false) {
+            foundResults.append(SearchResult(
+                itemId: item.id,
+                itemName: item.name,
+                module: itemControllable.config.module,
+                category: item.category,
+                entryId: nil,
+                entryName: nil,
+                matchedContent: item.description.isEmpty ? nil : item.description,
+                relevanceScore: calculateRelevance(
+                    searchText: searchText,
+                    itemName: item.name,
+                    entryName: nil,
+                    content: item.description,
+                    isItemMatch: true
+                )
+            ))
+        }
+
+        // Entry-level search — always included (both regular items and folders)
+        for entry in item.entries {
+            guard !Task.isCancelled else { break }
+
+            // Check name and content explicitly; entry.filter(with:) defaults to name-only
+            // but module types may override it to include more fields.
+            let entryMatches = entry.name.localizedCaseInsensitiveContains(searchText)
+                            || entry.content.localizedCaseInsensitiveContains(searchText)
+
+            if entryMatches {
+                foundResults.append(SearchResult(
+                    itemId: item.id,
+                    itemName: item.name,
+                    module: itemControllable.config.module,
+                    category: item.category,
+                    entryId: entry.id,
+                    entryName: entry.name,
+                    matchedContent: entry.content.isEmpty ? nil : entry.content,
+                    relevanceScore: calculateRelevance(
+                        searchText: searchText,
+                        itemName: item.name,
+                        entryName: entry.name,
+                        content: entry.content,
+                        isItemMatch: false
+                    )
+                ))
+            }
+
+            // For folder / collection items follow childId into child items
+            if item.specialCategory,
+               let childItem = await itemControllable.item(for: entry.childId) {
+                await inspectorResult(item: childItem, searchText: searchText, foundResults: &foundResults)
+            }
+        }
     }
 }
 

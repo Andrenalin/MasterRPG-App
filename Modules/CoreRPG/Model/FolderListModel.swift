@@ -26,6 +26,7 @@ public final class FolderListModel {
 
     // MARK: - Items
     @ObservationIgnored var parentModel: (any ItemDataAccessable)?
+    public var parentItemId: UUID? { parentModel?.id }
 
     @ObservationIgnored var updatedOnce: Bool = false
     @ObservationIgnored var originalItems: [ListItemModel] = []
