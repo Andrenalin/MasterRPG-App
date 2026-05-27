@@ -137,6 +137,12 @@ extension FolderListControllable {
                 let items = buildSearchDisplayItems(from: results, expandsEntries: expandsEntries)
                 listModel.displayedItems <=> items
                 listModel.displayedParentItems <=> []
+                // Re-anchor the selection to the item's new search-mode ID
+                if let selectedItemId = listModel.selectedItemId,
+                   let matchedItem = items.first(where: { $0.model.id == selectedItemId && $0.entryId == nil }) {
+                    listModel.selected <=> matchedItem.id
+                    listModel.listSelection <=> Set(arrayLiteral: matchedItem.id)
+                }
             }
             return
         }
@@ -157,13 +163,27 @@ extension FolderListControllable {
         }
     }
 
+    // MARK: - Search display item builders
+
+    /// Dispatches to the mode-appropriate builder.
     private func buildSearchDisplayItems(from results: [SearchResult], expandsEntries: Bool) -> [ListItemModel] {
-        // De-duplicate items while preserving top-relevance order
+        let selectedItemId = listModel.selectedItemId
+        if listDisplayModel.listMode == .list {
+            return buildListModeSearch(from: results, expandsEntries: expandsEntries, selectedItemId: selectedItemId)
+        } else {
+            return buildFolderModeSearch(from: results, expandsEntries: expandsEntries, selectedItemId: selectedItemId)
+        }
+    }
+
+    /// List mode: flat results sorted by relevance, folders excluded, selected item first.
+    private func buildListModeSearch(from results: [SearchResult], expandsEntries: Bool, selectedItemId: UUID?) -> [ListItemModel] {
         var itemOrder: [UUID] = []
         var seen: Set<UUID> = []
         var entryResults: [UUID: [SearchResult]] = [:]
 
         for result in results {
+            // Skip folders in list mode
+            if let model = itemControllable.itemSync(for: result.itemId), model.specialCategory { continue }
             if !seen.contains(result.itemId) {
                 seen.insert(result.itemId)
                 itemOrder.append(result.itemId)
@@ -173,36 +193,195 @@ extension FolderListControllable {
             }
         }
 
-        var items: [ListItemModel] = []
-
-        for (index, itemId) in itemOrder.enumerated() {
-            guard let model = itemControllable.itemSync(for: itemId) else { continue }
-            let entries = entryResults[itemId] ?? []
-            let hasEntries = expandsEntries && !entries.isEmpty
-            let itemRow = ListItemModel(
-                id: "search-0-\(index)-\(model.id)",
-                model: model,
-                isOpen: hasEntries,
-                entryId: nil,
-                level: 0
-            )
-            items.append(itemRow)
-
-            if expandsEntries {
-                for (entryIndex, entryResult) in entries.enumerated() {
-                    guard let entryId = entryResult.entryId else { continue }
-                    let entryRow = ListItemModel(
-                        id: "search-1-\(entryIndex)-\(entryId)",
-                        model: model,
-                        isOpen: false,
-                        entryId: entryId,
-                        level: 1
-                    )
-                    items.append(entryRow)
+        // Ensure selected item is visible and first
+        if let id = selectedItemId {
+            if seen.contains(id) {
+                if itemOrder.first != id {
+                    itemOrder.removeAll { $0 == id }
+                    itemOrder.insert(id, at: 0)
                 }
+            } else if let model = itemControllable.itemSync(for: id), !model.specialCategory {
+                itemOrder.insert(id, at: 0)
             }
         }
 
+        return makeSearchItems(from: itemOrder, entryResults: entryResults, expandsEntries: expandsEntries, baseLevel: 0)
+    }
+
+    /// Folder mode: preserves tree structure, shows ancestor folders for matches, max 10 levels deep.
+    private func buildFolderModeSearch(from results: [SearchResult], expandsEntries: Bool, selectedItemId: UUID?) -> [ListItemModel] {
+        let matchingItemIds = Set(results.map(\.itemId))
+        var entryResults: [UUID: [SearchResult]] = [:]
+        for result in results where result.entryId != nil {
+            entryResults[result.itemId, default: []].append(result)
+        }
+
+        var output: [ListItemModel] = []
+
+        for (index, originalItem) in listModel.originalItems.enumerated() {
+            addFolderSearchItem(
+                item: originalItem,
+                childIndex: index,
+                level: 0,
+                matchingItemIds: matchingItemIds,
+                entryResults: entryResults,
+                expandsEntries: expandsEntries,
+                output: &output,
+                maxLevel: 10
+            )
+        }
+
+        // Ensure selected item is visible and first
+        if let id = selectedItemId {
+            prependSelectedItem(id, entryResults: entryResults, expandsEntries: expandsEntries, output: &output)
+        }
+
+        return output
+    }
+
+    /// Recursively visits a tree node, appending it (and its matching children) to `output`.
+    private func addFolderSearchItem(
+        item: ListItemModel,
+        childIndex: Int,
+        level: Int,
+        matchingItemIds: Set<UUID>,
+        entryResults: [UUID: [SearchResult]],
+        expandsEntries: Bool,
+        output: inout [ListItemModel],
+        maxLevel: Int
+    ) {
+        guard level < maxLevel, item.model.displayState == 0 else { return }
+
+        if item.model.specialCategory {
+            // Folder / collection: show only when it or a descendant matches
+            let childModels = item.model.entries.compactMap { itemControllable.itemSync(for: $0.childId) }
+            let isMatch = matchingItemIds.contains(item.model.id)
+            guard isMatch || hasDeepMatch(children: childModels, matchingItemIds: matchingItemIds, depth: level + 1, maxLevel: maxLevel) else { return }
+
+            output.append(ListItemModel(
+                id: "search-\(level)-\(output.count)-\(item.model.id)",
+                model: item.model,
+                isOpen: true,
+                entryId: nil,
+                level: level
+            ))
+
+            for (ci, childModel) in childModels.enumerated() {
+                guard childModel.displayState == 0 else { continue }
+                let childItem = ListItemModel(id: "tmp-\(ci)", model: childModel, entryId: nil, level: level + 1)
+                addFolderSearchItem(
+                    item: childItem,
+                    childIndex: ci,
+                    level: level + 1,
+                    matchingItemIds: matchingItemIds,
+                    entryResults: entryResults,
+                    expandsEntries: expandsEntries,
+                    output: &output,
+                    maxLevel: maxLevel
+                )
+            }
+
+        } else if matchingItemIds.contains(item.model.id) {
+            // Regular item: only show when it matches
+            let entries = expandsEntries ? (entryResults[item.model.id] ?? []) : []
+            output.append(ListItemModel(
+                id: "search-\(level)-\(output.count)-\(item.model.id)",
+                model: item.model,
+                isOpen: !entries.isEmpty,
+                entryId: nil,
+                level: level
+            ))
+            for (ei, er) in entries.enumerated() {
+                guard let entryId = er.entryId else { continue }
+                output.append(ListItemModel(
+                    id: "search-\(level + 1)-\(ei)-\(entryId)",
+                    model: item.model,
+                    isOpen: false,
+                    entryId: entryId,
+                    level: level + 1
+                ))
+            }
+        }
+    }
+
+    /// Returns true when any descendant of `children` is in `matchingItemIds`, up to `maxLevel`.
+    private func hasDeepMatch(children: [any ItemDataAccessable], matchingItemIds: Set<UUID>, depth: Int, maxLevel: Int) -> Bool {
+        guard depth < maxLevel else { return false }
+        for child in children {
+            if matchingItemIds.contains(child.id) { return true }
+            if child.specialCategory {
+                let grandchildren = child.entries.compactMap { itemControllable.itemSync(for: $0.childId) }
+                if hasDeepMatch(children: grandchildren, matchingItemIds: matchingItemIds, depth: depth + 1, maxLevel: maxLevel) { return true }
+            }
+        }
+        return false
+    }
+
+    /// Moves the selected item (plus its entry children) to position 0.
+    /// If not in `output`, synthesises a level-0 row for it.
+    private func prependSelectedItem(_ selectedItemId: UUID, entryResults: [UUID: [SearchResult]], expandsEntries: Bool, output: inout [ListItemModel]) {
+        if output.first?.model.id == selectedItemId { return }
+
+        var extractedRows: [ListItemModel] = []
+
+        if let startIdx = output.firstIndex(where: { $0.model.id == selectedItemId && $0.entryId == nil }) {
+            // Pull the item row and any immediately following entry rows out
+            var endIdx = startIdx + 1
+            while endIdx < output.count, output[endIdx].model.id == selectedItemId, output[endIdx].entryId != nil {
+                endIdx += 1
+            }
+            extractedRows = Array(output[startIdx..<endIdx])
+            output.removeSubrange(startIdx..<endIdx)
+        } else if let model = itemControllable.itemSync(for: selectedItemId) {
+            // Selected item not in results — synthesise at level 0
+            let entries = expandsEntries ? (entryResults[selectedItemId] ?? []) : []
+            extractedRows.append(ListItemModel(
+                id: "search-selected-\(model.id)",
+                model: model,
+                isOpen: !entries.isEmpty,
+                entryId: nil,
+                level: 0
+            ))
+            for (ei, er) in entries.enumerated() {
+                guard let entryId = er.entryId else { continue }
+                extractedRows.append(ListItemModel(
+                    id: "search-selected-entry-\(ei)-\(entryId)",
+                    model: model,
+                    isOpen: false,
+                    entryId: entryId,
+                    level: 1
+                ))
+            }
+        }
+
+        guard !extractedRows.isEmpty else { return }
+        output.insert(contentsOf: extractedRows, at: 0)
+    }
+
+    /// Converts a flat ordered ID list into `[ListItemModel]`, appending entry rows when `expandsEntries`.
+    private func makeSearchItems(from itemOrder: [UUID], entryResults: [UUID: [SearchResult]], expandsEntries: Bool, baseLevel: Int) -> [ListItemModel] {
+        var items: [ListItemModel] = []
+        for (index, itemId) in itemOrder.enumerated() {
+            guard let model = itemControllable.itemSync(for: itemId) else { continue }
+            let entries = expandsEntries ? (entryResults[itemId] ?? []) : []
+            items.append(ListItemModel(
+                id: "search-\(baseLevel)-\(index)-\(model.id)",
+                model: model,
+                isOpen: !entries.isEmpty,
+                entryId: nil,
+                level: baseLevel
+            ))
+            for (ei, er) in entries.enumerated() {
+                guard let entryId = er.entryId else { continue }
+                items.append(ListItemModel(
+                    id: "search-\(baseLevel + 1)-\(ei)-\(entryId)",
+                    model: model,
+                    isOpen: false,
+                    entryId: entryId,
+                    level: baseLevel + 1
+                ))
+            }
+        }
         return items
     }
     
