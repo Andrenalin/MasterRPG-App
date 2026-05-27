@@ -50,6 +50,8 @@ struct ListRootContextMenu: View {
         }
         #endif
         Divider()
+        spaceActionView
+        Divider()
         deleteItemView
     }
 }
@@ -67,6 +69,22 @@ private extension ListRootContextMenu {
         listController?.listDisplayModel ?? ListDisplayModel()
     }
     
+    var spaceActionView: some View {
+        Button {
+            root.navigationModel.triggerSpaceAction = true
+        } label: {
+            let isCustom = root.viewControllable.hasCustomSpaceAction
+            Label {
+                Text(isCustom ? "Play/Roll \(title)" : "View \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: isCustom ? "play.fill" : "eye")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut(.return, modifiers: [])
+        #endif
+    }
+
     var editItemView: some View {
         Button {
             root.navigationModel.openHeaderEditor = true

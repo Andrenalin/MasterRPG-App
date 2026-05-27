@@ -10,6 +10,7 @@ public struct ViewController {
 }
 
 extension ViewController: ViewControllable {
+    public var hasCustomSpaceAction: Bool { true }
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
         AnyView(ThumbnailDiceRow(itemId: itemId).equatable())
     }

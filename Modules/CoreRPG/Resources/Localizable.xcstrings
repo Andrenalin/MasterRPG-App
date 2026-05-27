@@ -1911,6 +1911,9 @@
         }
       }
     },
+    "Play/Roll %@" : {
+
+    },
     "Playlist" : {
       "localizations" : {
         "de" : {
@@ -2725,6 +2728,9 @@
           }
         }
       }
+    },
+    "View %@" : {
+
     },
     "Weather" : {
       "localizations" : {

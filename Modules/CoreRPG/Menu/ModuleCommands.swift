@@ -30,6 +30,7 @@ public struct ModuleCommands: Commands {
         }
         CommandGroup(before: .textEditing) {
             if selectedModule == root.configurable.module {
+                SpaceActionButton(root: root)
                 EditItemButton(root: root)
                 DuplicateItemButton(root: root)
                 ExportItemButton(root: root)
@@ -103,6 +104,38 @@ struct EditItemButton: View {
         }
         .keyboardShortcut("e", modifiers: .command)
         .disabled(root.currentSelectedItemId == nil)
+    }
+
+    private var item: (any ItemDataAccessable)? {
+        guard let selectedItemId = root.currentSelectedItemId else { return nil }
+        return root.itemControllable.itemOrEmpty(for: selectedItemId)
+    }
+}
+
+struct SpaceActionButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        Button {
+            root.navigationModel.triggerSpaceAction = true
+        } label: {
+            Label {
+                labelText
+            } icon: {
+                Image(systemName: root.viewControllable.hasCustomSpaceAction ? "play.fill" : "eye")
+            }
+        }
+        .keyboardShortcut(.return, modifiers: [])
+        .disabled(root.currentSelectedItemId == nil)
+    }
+
+    private var labelText: Text {
+        let name = item?.name ?? ""
+        if root.viewControllable.hasCustomSpaceAction {
+            
+            return Text("\(root.configurable.module == .audio ? "Play" : "Roll") \(name)", bundle: .module)
+        }
+        return Text("View \(name)", bundle: .module)
     }
 
     private var item: (any ItemDataAccessable)? {

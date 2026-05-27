@@ -12,6 +12,11 @@ struct DetailRootView: View {
         DetailListView(root: root, model: model)
             .detailInspectorModifier(root: root.rootController)
             .folderNavigationResetTask(navigationModel: root.navigationModel, itemId: model.id)
+            .onChange(of: root.navigationModel.triggerSpaceAction) {
+                guard root.navigationModel.triggerSpaceAction else { return }
+                root.navigationModel.triggerSpaceAction = false
+                root.gameController.rollDice(itemId: model.id)
+            }
     }
 }
 

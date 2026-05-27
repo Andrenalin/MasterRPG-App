@@ -22,4 +22,5 @@ import SwiftUI
     public var openHeaderEditor: Bool = false
     public var triggerExport: Bool = false
     public var triggerGroupEditor: Bool = false
+    public var triggerSpaceAction: Bool = false
 }

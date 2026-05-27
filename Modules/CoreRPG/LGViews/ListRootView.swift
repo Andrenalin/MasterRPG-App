@@ -61,6 +61,13 @@ struct ListRootView: View {
                         root.navigationModel.triggerGroupEditor = false
                         navigator.navigate(to: InternalRoute.groupEditor(ids: [itemId]), method: .sheet)
                     }
+                    .onChange(of: root.navigationModel.triggerSpaceAction) {
+                        guard root.navigationModel.triggerSpaceAction else { return }
+                        root.navigationModel.triggerSpaceAction = false
+                        guard !root.viewControllable.hasCustomSpaceAction,
+                              root.openFileWindowModel.enabled else { return }
+                        withAnimation { root.openFileWindowModel.showItem.toggle() }
+                    }
             }
             .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable)
             .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)

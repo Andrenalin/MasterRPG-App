@@ -41,6 +41,9 @@ public protocol ViewControllable: Sendable {
     var sharingViewType: SharingViewType { get }
     var thumbnailRowViewType: ThumbnailRowViewType { get }
     var supportsBatchExtraction: Bool { get }
+    /// True when the module handles the space-key action itself (e.g. play, roll).
+    /// When false the default behaviour — opening the file viewer — is used instead.
+    var hasCustomSpaceAction: Bool { get }
 
     @MainActor func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView
     @MainActor func sharingView(for itemId: UUID) -> AnyView
@@ -62,6 +65,7 @@ public extension ViewControllable {
     @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
 
     var supportsBatchExtraction: Bool { false }
+    var hasCustomSpaceAction: Bool { false }
     @MainActor func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? { nil }
 
     @MainActor func linkListView(rootController: ItemRootController, type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> LinkItemRootView {
