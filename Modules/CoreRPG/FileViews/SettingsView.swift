@@ -30,19 +30,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
 #endif
                         
             importContentView
-            
-            SectionGroupEditorView {
-                Button {
-                    store.validate()
-                } label: {
-                    Label("Validate Links", systemImage: "checkmark.shield")
-                }
-            } header: {
-                Text("Validate Data", bundle: .module)
-            } footer: {
-                Text("Validate the links", bundle: .module)
-            }
-            
+                        
             StorageOptionEditor()
             
             SectionGroupEditorView {

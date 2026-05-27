@@ -70,13 +70,16 @@ extension SwiftUI.Scene {
     
     /// Applies restoration behavior with platform-specific checks
     /// On platforms that don't support `.restorationBehavior`, this is a no-op
+    /// Mac always restore / visionOS not
     public func restorationBehaviorAll(_ behavior: SceneRestorationBehaviorAll) -> some SwiftUI.Scene {
-#if !os(iOS) && !os(tvOS)
+#if os(macOS)
+        self.restorationBehavior(.automatic)
+#elseif os(visionOS)
         switch behavior {
         case .automatic:
-            return self.restorationBehavior(.automatic)
+            self.restorationBehavior(.automatic)
         case .disabled:
-            return self.restorationBehavior(.disabled)
+            self.restorationBehavior(.disabled)
         }
 #else
         return self

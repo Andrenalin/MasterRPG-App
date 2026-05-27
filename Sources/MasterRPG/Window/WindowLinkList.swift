@@ -50,8 +50,9 @@ struct WindowLinkList: Scene {
                 ManagedNavigationStack(name: module.linkWindowId) {
                     content
                 }
+                .sceneTracker(for: SceneId.sceneId(for: module))
+                .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
             }
-            .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
             .environment(model.scenesManager)
         }
         .windowResizability(.contentSize)
@@ -74,11 +75,9 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
             .resetAppColorScheme()
             .frame(minWidth: 350, minHeight: 400)
             .handlesExternalEvents(preferring: [], allowing: [])
-            .sceneTracker(for: SceneId.sceneId(for: module))
+            .tint(module.tint)
             .environmentSetUp(model)
-            .environment(\.networkActions, model.gameRoot.networkActions)
-            .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)
-            .environment(\.sharingFeatureActions, model.gameRoot.sharingFeatureActions)
+            .environmentActionSetUp(model)
 #if os(macOS)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
 #endif

@@ -54,14 +54,6 @@ public struct SettingsView: View {
             }
 
             SectionGroupEditorView {
-                Text("Use the Free Support [Page](https://github.com/Andrenalin/MasterRPG)", bundle: .module)
-            } header: {
-                Text("Download free game bundles", bundle: .module)
-            } footer: {
-                Text("These are free packages ready to use. They will add tables with rules, photos, characters and adventures for a certain rule system.", bundle: .module)
-            }
-
-            SectionGroupEditorView {
                 Text(store.rpgSpotlightIndexer?.model.message ?? "Not yet finished")
                 
                 if let model = store.coreDataInitModel {

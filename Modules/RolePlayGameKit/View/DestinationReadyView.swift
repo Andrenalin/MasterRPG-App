@@ -37,7 +37,7 @@ struct DestinationReadyView: View {
                     Text("Validate")
                 }
                 Button(role: .cancel) {
-                    appModel.settingsModel.needsValidateDatabase = false
+                    // nothing to do
                 } label: {
                     Text("Not Now")
                 }

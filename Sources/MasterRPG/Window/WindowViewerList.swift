@@ -57,77 +57,6 @@ struct WindowViewerList: Scene {
             windowGroup(model: appModel, module: .weather) { selection in
                 appModel.weatherRoot.viewController.viewer(root: appModel.weatherRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
-
-            WindowGroup("Generator Adventure", id: SceneId.generateAdventure.rawValue, for: WindowItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.adventureRoot.viewController.generatorView(root: appModel.adventureRoot, selection: selection ?? WindowItemSelection(itemId: UUID()))
-                }
-                .sceneTracker(for: SceneId.generateAdventure)
-                .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .adventure))
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
-    #if !os(iOS)
-            .restorationBehavior(.disabled)
-    #endif
-
-            WindowGroup("Map Edit Viewer", id: SceneId.mapEditor.rawValue) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.mapRoot.viewController.mapEditWindow(root: appModel.mapRoot)
-                }
-                .sceneTracker(for: SceneId.mapEditor)
-                .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .map))
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
-    #if !os(iOS)
-            .restorationBehavior(.disabled)
-    #endif
-
-            BaseWindow("Logs", id: SceneId.logs.rawValue) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.gameRoot.viewController.logWindow()
-                }
-                .setAppSizeMode()
-                .sceneTracker(for: SceneId.logs)
-                .environmentSetUp(appModel)
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(.above(SceneId.game.rawValue))
-    #if !os(iOS)
-            .restorationBehavior(.disabled)
-    #endif
-            
-            BaseWindow("Search", id: SceneId.search.rawValue) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    NavigationSplitView {
-                        GameFactory.rootSearchView(root: appModel.gameRoot, navigator: appModel.navigator(for: .search))
-                    } detail: {
-                        GameFactory.detailSearchView(root: appModel.gameRoot, navigator: appModel.navigator(for: .search))
-                    }
-                    .frame(minWidth: 1000, minHeight: 600)
-                }
-#if os(macOS)
-                .onNavigationRoute(WindowRouter(appModel: appModel, role: .search))
-                .onNavigationOpenURL(RootURLHandler(appModel: appModel, role: .search))
-                .navigationRoot(appModel.searchNavigator)
-                .sceneTracker(for: SceneId.search)
-#endif
-                .setAppSizeMode()
-                .environmentSetUp(appModel)
-                .environmentActionSetUp(appModel)
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))
-#if !os(iOS)
-        .restorationBehavior(.disabled)
-#endif
-#if os(macOS) || os(visionOS)
-            .defaultLaunchBehavior(.suppressed)
-#endif
-#if os(macOS)
-            .keyboardShortcut("S", modifiers: [.command, .shift, .option])
-#endif
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }
@@ -145,18 +74,14 @@ struct WindowViewerList: Scene {
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(model.windowPlacement(for: module))
-#if !os(iOS)
-        .restorationBehavior(.disabled)
-#endif
+        .restorationBehaviorAll(.disabled)
     }
     
-    private var closeButton: Bool {
-        #if os(macOS)
-        return false
-        #else
-        return true
-        #endif
-    }
+#if os(macOS)
+    private let closeButton = false
+#else
+    private let closeButton = true
+#endif
 }
 
 struct WindowViewerSetUpViewModifier: ViewModifier {
@@ -172,9 +97,7 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
             .handlesExternalEvents(preferring: [], allowing: [])
             .tint(module.tint)
             .environmentSetUp(model)
-            .environment(\.networkActions, model.gameRoot.networkActions)
-            .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)
-            .environment(\.sharingFeatureActions, model.gameRoot.sharingFeatureActions)
+            .environmentActionSetUp(model)
 #if os(macOS)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
 #endif

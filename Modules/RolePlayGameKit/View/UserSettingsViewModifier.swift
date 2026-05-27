@@ -23,3 +23,4 @@ public struct UserSettingsViewModifier: ViewModifier {
 #endif
     }
 }
+

@@ -2,7 +2,6 @@
 
 #if os(visionOS)
 import CoreRPG
-import DiceRPG
 import GameRPG
 import RolePlayGameKit
 import PhotoRPG
@@ -18,63 +17,42 @@ struct WindowVisionList: Scene {
     var body: some Scene {
         let defaultSize = Size3D(width: 1.5, height: 1, depth: 0.4)
 
+        WindowGroup(id: SceneId.gameTable.rawValue) {
+            GameTableView(root: appModel.gameRoot)
+                .volumeBaseplateVisibility(.hidden)
+                .groupActivityAssociation(.primary(SceneId.gameTable.rawValue))
+                .sceneTracker(for: SceneId.gameTable)
+                .environment(appModel.scenesManager)
+        }
+        .windowStyle(.volumetric)
+        .defaultSize(width: 1.5, height: 0.5, depth: 2.5, in: .meters)
+        .restorationBehaviorAll(.disabled)
+        
         WindowGroup(id: SceneId.imageSpaceViewer.rawValue) {
-            appModel.photoRoot.viewController.imageSpaceView()
-                .environmentSetUp(appModel)
-                .frame(minWidth: 600, maxWidth: 2000, minHeight: 600, maxHeight: 2000)
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                appModel.photoRoot.viewController.imageSpaceView()
+                    .sceneTracker(for: SceneId.imageSpaceViewer)
+                    .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .photo))
+            }
+            .environment(appModel.scenesManager)
+            .frame(minWidth: 600, maxWidth: 2000, minHeight: 600, maxHeight: 2000)
         }
         .windowResizability(.contentSize)
         .windowStyle(.plain)
-
-        WindowGroup(id: SceneId.gameTable.rawValue) {
-            GameTableView(root: appModel.gameRoot).volumeBaseplateVisibility(.hidden)
-                .groupActivityAssociation(.primary(SceneId.gameTable.rawValue))
-        }
-        .windowStyle(.volumetric)
-        .defaultSize(width: 2, height: 1.5, depth: 2, in: .meters)
         .restorationBehaviorAll(.disabled)
 
-        Window("Settings", id: SceneId.settings.rawValue) {
-            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                NavigationStack {
-                    SettingsView(store: appModel)
-                }
-                .setAppSizeMode()
-                .environmentSetUp(appModel)
-                .frame(minWidth: 800, minHeight: 600)
-            }
-        }
-        .windowResizability(.contentSize)
-        .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
-        
         ImmersiveSpace(id: SceneId.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
                     .sceneTracker(for: SceneId.spaceViewer)
 //                    .groupActivityAssociation(selection != nil ? .primary(SceneId.spaceViewer.rawValue) : nil)
+                    .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .space))
             }
-            .environmentSetUp(appModel)
+            .environment(appModel.scenesManager)
         }
         .defaultWindowPlacementAll(.above(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue))
         .defaultSize(defaultSize, in: .meters)
         .immersionStyle(selection: $immersionState, in: .mixed)
-
-        ImmersiveSpace(id: DiceSpace.immersiveSpaceId) {
-            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                DiceSpace(root: appModel.diceRoot)
-            }
-        }
-        .immersionStyle(selection: $immersionState, in: .mixed)
-
-        // Defines an immersive space to present a destination in which to watch the video.
-        ImmersiveSpace(id: "PhotoWorld", for: PhotoWorldSelection.self) { $photoSelection in
-            if let photoSelection {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    ImmersivePhotoView(root: appModel.photoRoot, photoSelection: photoSelection)
-                }
-            }
-        }
-        .immersionStyle(selection: .constant(.progressive), in: .progressive)
     }
 }
 #endif

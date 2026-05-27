@@ -113,6 +113,7 @@ import OSLog
         openWindow: OpenWindowAction,
         dismissWindow: DismissWindowAction
     ) {
+        guard self.openWindow == nil else { return }
         self.openWindow = openWindow
         self.dismissWindow = dismissWindow
     }

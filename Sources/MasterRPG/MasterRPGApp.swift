@@ -61,70 +61,27 @@ struct MasterRPGApp: App {
         AppDependencyManager.shared.add(dependency: generatorRootModel)
     }
 
-    @Environment(\.openWindow) var openWindow
-    @Environment(\.dismissWindow) var dismissWindow
-#if os(visionOS)
-    @Environment(\.openImmersiveSpace) var openImmersiveSpace
-    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
-#endif
-    
-//#if !os(macOS)
-//    @Environment(IosSceneDelegate.self) private var sceneDelegate
-//#endif
-
-
     private let appModel: AppModel = AppModel.shared
     
     // MARK: - User Activity Handling
     
-    /// Handles incoming NSUserActivity from Spotlight, Siri, Handoff, etc.
-    /// This handler works across all windows and platforms (iOS, iPadOS, macOS, visionOS)
-    private func handleUserActivity(_ userActivity: NSUserActivity) {
-        let module = UserActivity.module(from: userActivity)
-        guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
-        let childId = UserActivity.childId(from: userActivity)
-
-        Logger.bootStrap.info("Handling user activity for module: \(module.rawValue), itemId: \(itemId)")
-
-        appModel.routeToModule(module, itemId: itemId, entryId: childId)
-    }
-    
     var body: some Scene {
         BaseWindow("Game", id: SceneId.game.rawValue) {
-            InitialRootView()
+            appModel.appNavigationModel.initialRouteType
                 .onNavigationRoute(WindowRouter(appModel: appModel, role: .game))
                 .onNavigationOpenURL(RootURLHandler(appModel: appModel, role: .game))
                 .navigationRoot(appModel.gameNavigator)
                 .sceneTracker(for: SceneId.game)
-                .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
-                    handleUserActivity(userActivity)
-                }
 #if os(macOS)
                 .frame(minWidth: 800, minHeight: 600)
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
                 .toolbar(removing: .title)
 #endif
-                .modifier(UserSettingsViewModifier(appModel: appModel))
                 .environmentSetUp(appModel)
-#if os(visionOS)
-//                .groupActivityAssociation(.primary(SceneId.game.rawValue))
-                .onAppear {
-                    appModel.scenesManager.setActions(
-                        openWindow: openWindow,
-                        dismissWindow: dismissWindow,
-                        openImmersiveSpace: openImmersiveSpace,
-                        dismissImmersiveSpace: dismissImmersiveSpace
-                    )
-//                    appModel.appNavigationModel.reset(sceneDelegate: sceneDelegate)
-                }
-#else
-                .onAppear {
-                    appModel.scenesManager.setActions(
-                        openWindow: openWindow,
-                        dismissWindow: dismissWindow
-                    )
-                }
-#endif
+                .appSettingsSetUp(appModel)
+            //                .groupActivityAssociation(.primary(SceneId.game.rawValue))
+
+
         }
         .commands {
             MenuMainCommand(appModel: appModel)
@@ -138,21 +95,18 @@ struct MasterRPGApp: App {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 AppModeRouteType.editor
                     .frame(minWidth: 1000, minHeight: 600)
-                    .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
-                        handleUserActivity(userActivity)
-                    }
             }
             .onNavigationRoute(WindowRouter(appModel: appModel, role: .editor))
             .onNavigationOpenURL(RootURLHandler(appModel: appModel, role: .editor))
             .navigationRoot(appModel.editorNavigator)
-            .setAppSizeMode()
             .sceneTracker(for: SceneId.editor)
             .environmentSetUp(appModel)
+            .appSettingsSetUp(appModel)
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(.leading(SceneId.game.rawValue))
         .restorationBehaviorAll(.disabled)
-#if os(macOS) || os(visionOS)
+#if os(visionOS)
         .defaultLaunchBehavior(.suppressed)
 #endif
 #if os(macOS)

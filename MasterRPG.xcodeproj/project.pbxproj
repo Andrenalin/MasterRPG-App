@@ -125,6 +125,9 @@
 		8E47A00B2CF20CAE0041F283 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		8E47A00C2CF20CAE0041F283 /* RPGResources.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E49FA022B8F684700527E6D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8EC4E48B28DDAAF300D0279F /* Assets.xcassets */; };
+		8E4B6E062FC678330066FA9F /* WindowUtilityList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4B6E052FC678330066FA9F /* WindowUtilityList.swift */; };
+		8E4B6E072FC678330066FA9F /* WindowUtilityList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4B6E052FC678330066FA9F /* WindowUtilityList.swift */; };
+		8E4B6E082FC678330066FA9F /* WindowUtilityList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4B6E052FC678330066FA9F /* WindowUtilityList.swift */; };
 		8E5104E32BD21DE400F10E87 /* ModuleChooser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E5104E02BD20D9E00F10E87 /* ModuleChooser.swift */; };
 		8E5104E52BD23F5000F10E87 /* SharingHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E5104E42BD23F5000F10E87 /* SharingHeader.swift */; };
 		8E5104E72BD23FBD00F10E87 /* PhotoSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */; };
@@ -1499,6 +1502,7 @@
 		8E49F9D92B8F654D00527E6D /* MasterRPG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MasterRPG.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E4B218D2CD78EF3009AB4D1 /* CoreRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CoreRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RPGResources.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E4B6E052FC678330066FA9F /* WindowUtilityList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowUtilityList.swift; sourceTree = "<group>"; };
 		8E5104E02BD20D9E00F10E87 /* ModuleChooser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModuleChooser.swift; sourceTree = "<group>"; };
 		8E5104E42BD23F5000F10E87 /* SharingHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingHeader.swift; sourceTree = "<group>"; };
 		8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSection.swift; sourceTree = "<group>"; };
@@ -2188,6 +2192,7 @@
 		5978B4152F7E614400818159 /* Window */ = {
 			isa = PBXGroup;
 			children = (
+				8E4B6E052FC678330066FA9F /* WindowUtilityList.swift */,
 				8E83E4CE2E841B5000A1095C /* WindowLinkList.swift */,
 				8E83E4D22E841B5500A1095C /* WindowViewerList.swift */,
 			);
@@ -3911,6 +3916,7 @@
 				8E83E4D02E841B5000A1095C /* WindowLinkList.swift in Sources */,
 				59D30AEB2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
 				8E83E4D42E841B5500A1095C /* WindowViewerList.swift in Sources */,
+				8E4B6E062FC678330066FA9F /* WindowUtilityList.swift in Sources */,
 				8E83E4E02E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */,
 				8E190D9C2B8F6C150084B0F4 /* WindowMacList.swift in Sources */,
@@ -3947,6 +3953,7 @@
 				8E83E4DF2E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E6BC9CE2AFB0B2300E5E098 /* MasterTVApp.swift in Sources */,
 				8E6BC9E12AFB0BCF00E5E098 /* iOSAppDelegate.swift in Sources */,
+				8E4B6E072FC678330066FA9F /* WindowUtilityList.swift in Sources */,
 				59E299072F75313D00700934 /* RealityKitInit.swift in Sources */,
 				59D30AEC2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
 				8E83E4DB2E841B7200A1095C /* MenuBarView.swift in Sources */,
@@ -4094,6 +4101,7 @@
 				5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
 				8E926E8B2B453D450025B659 /* WindowMacList.swift in Sources */,
 				59D30AED2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
+				8E4B6E082FC678330066FA9F /* WindowUtilityList.swift in Sources */,
 				8E83E4E12E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E83E4D12E841B5000A1095C /* WindowLinkList.swift in Sources */,
 				8E83E4D52E841B5500A1095C /* WindowViewerList.swift in Sources */,
