@@ -7,20 +7,38 @@ import SwiftUI
 struct DetailEditorView: View {
     let root: MapRootModel
     let model: MapModel
-    
+
+    @State private var sheetRootModel: SheetRootModel?
+
     var body: some View {
         DetailSelectionEditorView(root: root, model: model)
-        
+            .task(id: model.id) {
+                sheetRootModel = SheetRootModel(
+                    linkControllable: root.rootController.linkControllable,
+                    sheetControllable: root.rootController.sheetControllable,
+                    itemId: model.id,
+                    isEditor: true,
+                    editorModel: root.editController.sheetEditorModel
+                )
+            }
+
         DisplayConfigEditor(model: model)
-        
-        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, editorModel: root.editController.sheetEditorModel, model: model, module: root.config.module, headerTitle: String(localized: "Rooms", bundle: .module).localizedString, linkTypes: LinkMapModuleTransferable.self)
+
+        if let sheetRootModel {
+            SheetRootEditorView(
+                root: root.rootController,
+                sheetRootModel: sheetRootModel,
+                headerTitle: String(localized: "Rooms", bundle: .module).localizedString,
+                linkTypes: LinkMapModuleTransferable.self
+            )
+        }
     }
 }
 
 struct DetailSelectionEditorView: View {
     let root: MapRootModel
     let model: MapModel
-    
+
     var body: some View {
         root.photoRoot.viewController.dropSelectionView(model: root.editController.mapEditModel.selectionPhoto)
             .onChange(of: root.editController.mapEditModel.selectionPhoto.itemId) {

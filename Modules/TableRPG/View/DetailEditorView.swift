@@ -8,18 +8,28 @@ struct DetailEditorView: View {
     let root: TableRootModel
     let model: TableModel
 
+    @State private var sheetRootModel: SheetRootModel?
+
     var body: some View {
         DetailSelectionEditorView(root: root, model: model)
-        
-        SheetRootEditorView(
-            root: root.rootController,
-            linkControllable: root.linkControllable,
-            editorModel: root.editController.sheetEditorModel,
-            model: model,
-            module: root.config.module,
-            headerTitle: String(localized: "Entries", bundle: .module).localizedString,
-            linkTypes: LinkTableModuleTransferable.self
-        )
+            .task(id: model.id) {
+                sheetRootModel = SheetRootModel(
+                    linkControllable: root.rootController.linkControllable,
+                    sheetControllable: root.rootController.sheetControllable,
+                    itemId: model.id,
+                    isEditor: true,
+                    editorModel: root.editController.sheetEditorModel
+                )
+            }
+
+        if let sheetRootModel {
+            SheetRootEditorView(
+                root: root.rootController,
+                sheetRootModel: sheetRootModel,
+                headerTitle: String(localized: "Entries", bundle: .module).localizedString,
+                linkTypes: LinkTableModuleTransferable.self
+            )
+        }
     }
 }
 

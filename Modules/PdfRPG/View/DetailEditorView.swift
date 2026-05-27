@@ -7,6 +7,8 @@ struct DetailEditorView: View {
     let root: PdfRootModel
     let model: PdfModel
 
+    @State private var sheetRootModel: SheetRootModel?
+
     var body: some View {
         HStack {
             FileImporterView(
@@ -20,15 +22,23 @@ struct DetailEditorView: View {
         }
         .opacity(model.specialCategory ? 0 : 1)
         .padding()
+        .task(id: model.id) {
+            sheetRootModel = SheetRootModel(
+                linkControllable: root.rootController.linkControllable,
+                sheetControllable: root.rootController.sheetControllable,
+                itemId: model.id,
+                isEditor: true,
+                editorModel: root.editController.sheetEditorModel
+            )
+        }
 
-        SheetRootEditorView(
-            root: root.rootController,
-            linkControllable: root.linkControllable,
-            editorModel: root.editController.sheetEditorModel,
-            model: model,
-            module: root.config.module,
-            headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString,
-            linkTypes: LinkPdfModuleTransferable.self
-        )
+        if let sheetRootModel {
+            SheetRootEditorView(
+                root: root.rootController,
+                sheetRootModel: sheetRootModel,
+                headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString,
+                linkTypes: LinkPdfModuleTransferable.self
+            )
+        }
     }
 }

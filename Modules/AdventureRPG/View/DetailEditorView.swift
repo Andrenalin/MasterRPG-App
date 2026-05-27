@@ -1,26 +1,36 @@
 // @copyright André Trettin
 
 import CoreRPG
-import SwiftUI
 import DiceRPG
 import PhotoRPG
+import SwiftUI
 
 struct DetailEditorView: View {
     let root: AdventureRootModel
     let model: AdventureModel
 
+    @State private var sheetRootModel: SheetRootModel?
+
     var body: some View {
         DetailSelectionEditorView(root: root, model: model)
+            .task(id: model.id) {
+                sheetRootModel = SheetRootModel(
+                    linkControllable: root.rootController.linkControllable,
+                    sheetControllable: root.rootController.sheetControllable,
+                    itemId: model.id,
+                    isEditor: true,
+                    editorModel: root.editController.sheetEditorModel
+                )
+            }
 
-        SheetRootEditorView(
-            root: root.rootController,
-            linkControllable: root.linkControllable,
-            editorModel: root.editController.sheetEditorModel,
-            model: model,
-            module: root.config.module,
-            headerTitle: String(localized: "Sections", bundle: .module).localizedString,
-            linkTypes: LinkAdventureModuleTransferable.self
-        )
+        if let sheetRootModel {
+            SheetRootEditorView(
+                root: root.rootController,
+                sheetRootModel: sheetRootModel,
+                headerTitle: String(localized: "Sections", bundle: .module).localizedString,
+                linkTypes: LinkAdventureModuleTransferable.self
+            )
+        }
     }
 }
 

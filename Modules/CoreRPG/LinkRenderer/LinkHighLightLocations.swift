@@ -8,15 +8,20 @@ final class LinkHighLightLocations {
     var locations: [LinkHighLightLocation] = []
 
     @ObservationIgnored private var updatedLocations: [LinkHighLightLocation] = []
-    
+
     func update(isStart: Bool) {
         if isStart {
             updatedLocations = []
         } else {
-            locations <=> updatedLocations
+            // Fix #1: Only write (and fire @Observable notifications) when the
+            // highlight layout actually changed. Without this guard every text
+            // render cycle wrote locations — even when the values were identical —
+            // causing DetailEditorView to re-render in a tight loop.
+            guard updatedLocations != locations else { return }
+            locations = updatedLocations
         }
     }
-    
+
     func reset(link: LinkReplaceModel, runId: Int, location: CGRect) {
         if let index = updatedLocations.firstIndex(where: { $0.link == link }) {
             var linkLocation = updatedLocations[index]
@@ -96,9 +101,8 @@ struct HighlightedTextComponent {
     let text: Text
     let string: String
     let range: Range<String.Index>
-    
+
     func debugDescription() -> String {
         string
     }
 }
-
