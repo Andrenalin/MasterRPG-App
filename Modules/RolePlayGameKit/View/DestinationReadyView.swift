@@ -124,6 +124,16 @@ public struct DataBaseAppStoreAvailable<Content: View>: View {
     let appModel: AppModel
     let contentView: (AppModel) -> Content
 
+    @Environment(ScenesManager.self) private var scenesManager
+
+    // Set to true once we confirm the Game window is not open and this
+    // Editor window must own database initialisation itself.
+    // Required on macOS: window restoration can bring back only the Editor
+    // window, leaving DatabaseInitializationView (which lives in the Game
+    // window's route) never shown — so initialRouteType would stay
+    // .initializing forever.
+    @State private var shouldInitDatabase = false
+
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         // Fix #6: extract the single property we actually read so @Observable
@@ -135,6 +145,10 @@ public struct DataBaseAppStoreAvailable<Content: View>: View {
         Group {
             if isReady {
                 contentView(appModel)
+            } else if shouldInitDatabase {
+                // Editor window is taking responsibility for database init
+                // because Game window is not open.
+                DatabaseInitializationView()
             } else {
                 Text("Waiting for database initialization…")
                     .font(.largeTitle)
@@ -142,5 +156,28 @@ public struct DataBaseAppStoreAvailable<Content: View>: View {
             }
         }
         .animation(.easeInOut, value: isReady)
+        .task {
+            await checkIfEditorShouldHandleDatabaseInit()
+        }
+    }
+
+    // Checks once — asynchronously after the first layout pass — whether the
+    // Game window has registered itself with the ScenesManager. If it has not,
+    // the Editor window takes over database initialisation.
+    //
+    // Why the sleep? SceneTrackerModifier's `onChange(of: scenePhase,
+    // initial: true)` fires synchronously during the first update pass, before
+    // any `.task` closure runs. The 150 ms sleep is purely a safety margin for
+    // edge cases where macOS restores both windows at the same instant and the
+    // Game window's tracker hasn't fired yet. It is imperceptible to the user.
+    private func checkIfEditorShouldHandleDatabaseInit() async {
+        guard appModel.appNavigationModel.initialRouteType != .ready else { return }
+        try? await Task.sleep(for: .milliseconds(150))
+        // Re-check: Game window might have finished init during the sleep.
+        guard appModel.appNavigationModel.initialRouteType != .ready else { return }
+        let gameState = scenesManager.getSceneState(for: .game)
+        if gameState != .opened && gameState != .opening {
+            shouldInitDatabase = true
+        }
     }
 }
