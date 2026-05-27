@@ -12,10 +12,9 @@ struct MasterTVApp: App {
 
     var body: some Scene {
         WindowGroup("Game", id: SceneId.game.rawValue) {
-            InitialRootView()
-                .modifier(UserSettingsViewModifier(appModel: appModel))
-                .setAppSizeMode()
+            appModel.appNavigationModel.initialRouteType
                 .environmentSetUp(appModel)
+                .appSettingsSetUp(appModel)
         }
     }
 }

@@ -65,9 +65,11 @@ struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
 
 struct AppSettingSetUpViewModifier: ViewModifier {
     let appModel: AppModel
-    
+
+    #if !os(tvOS)
     @Environment(\.openWindow) var openWindow
     @Environment(\.dismissWindow) var dismissWindow
+    #endif
 #if os(visionOS)
     @Environment(\.openImmersiveSpace) var openImmersiveSpace
     @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
@@ -85,7 +87,7 @@ struct AppSettingSetUpViewModifier: ViewModifier {
                         dismissImmersiveSpace: dismissImmersiveSpace
                     )
                 }
-#else
+#elseif !os(tvOS)
                 .onAppear {
                     appModel.scenesManager.setActions(
                         openWindow: openWindow,
