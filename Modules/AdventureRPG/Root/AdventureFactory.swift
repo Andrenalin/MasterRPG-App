@@ -44,11 +44,11 @@ public enum AdventureFactory {
             weatherRoot: weatherRoot
         )
     }
-    
+
     @MainActor public static func rootView() -> some View {
         AdventureRootView()
     }
-    
+
     @MainActor @ViewBuilder public static func detailView(root: AdventureRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
             ManagedNavigationStack(name: "Split-Adventure") {

@@ -124,8 +124,6 @@ public struct DataBaseAppStoreAvailable<Content: View>: View {
     let appModel: AppModel
     let contentView: (AppModel) -> Content
 
-    @Environment(ScenesManager.self) private var scenesManager
-
     // Set to true once we confirm the Game window is not open and this
     // Editor window must own database initialisation itself.
     // Required on macOS: window restoration can bring back only the Editor
@@ -175,7 +173,10 @@ public struct DataBaseAppStoreAvailable<Content: View>: View {
         try? await Task.sleep(for: .milliseconds(150))
         // Re-check: Game window might have finished init during the sleep.
         guard appModel.appNavigationModel.initialRouteType != .ready else { return }
-        let gameState = scenesManager.getSceneState(for: .game)
+        // appModel.scenesManager is @ObservationIgnored + let — accessing it
+        // here (inside the task, outside the tracking window) registers zero
+        // tracking dependencies on DataBaseAppStoreAvailable.
+        let gameState = appModel.scenesManager.getSceneState(for: .game)
         if gameState != .opened && gameState != .opening {
             shouldInitDatabase = true
         }

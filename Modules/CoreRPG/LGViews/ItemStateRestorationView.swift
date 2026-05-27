@@ -48,7 +48,7 @@ public struct ItemStateRestorationView<Route: ItemDetailRoute & Equatable, Root:
             }
             .onAppear {
                 Task {
-                    try? await Task.sleep(for: .milliseconds(100))
+                    try? await Task.sleep(for: .seconds(2))
                     if let itemIdString = selectedItemId, let itemId = UUID(uuidString: itemIdString) {
                         if root.navigationModel.selectedItemId != itemId {
                             root.navigationModel.selectedItemId = itemId
