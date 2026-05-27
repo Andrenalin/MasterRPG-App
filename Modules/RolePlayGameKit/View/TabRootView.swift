@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
 import SwiftUI
 
@@ -12,7 +11,6 @@ struct TabRootView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         layout
-            .appExitNotifications(handler: appModel.adventureRoot.save)
             .onAppear {
                 appModel.isCompactGameWindow = appSizeModel.mode == .compact
             }

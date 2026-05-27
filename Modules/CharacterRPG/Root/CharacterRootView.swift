@@ -8,6 +8,8 @@ struct CharacterRootView: View {
     @Environment(\.navigator) private var navigator
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         ItemRootView(root: root.rootController)
             .overlay {
                 ItemStateRestorationView<CharacterRoute, CharacterRootModel>(root: root, keyPrefix: "Character")

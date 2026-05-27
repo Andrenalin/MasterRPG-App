@@ -8,6 +8,8 @@ struct DetailListView: View {
     let model: ValueModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         DetailFolderListView(root: root, model: model)
             .toolbar {
                 toolbarContent

@@ -104,6 +104,7 @@ public final class AppModel: Sendable {
         self.gameNavigator = Navigator(
             configuration: NavigationConfiguration(
                 restorationKey: "game.1.0.14",
+                logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true
@@ -112,6 +113,7 @@ public final class AppModel: Sendable {
         self.editorNavigator = Navigator(
             configuration: NavigationConfiguration(
                 restorationKey: "editor.1.0.14",
+                logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true
@@ -120,6 +122,7 @@ public final class AppModel: Sendable {
         self.searchNavigator = Navigator(
             configuration: NavigationConfiguration(
                 restorationKey: "search.1.0.14",
+                logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true
@@ -128,6 +131,7 @@ public final class AppModel: Sendable {
         self.settingsNavigator = Navigator(
             configuration: NavigationConfiguration(
                 restorationKey: "settings.1.0.13",
+                logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true
@@ -208,6 +212,10 @@ public final class AppModel: Sendable {
             weatherRoot: weatherRoot
         )
 #endif        
+    }
+    
+    static func navigatorLogger(event: NavigationEvent) -> Void {
+        Logger.bootStrap.info("\(event.description, privacy: .public)")
     }
 }
  

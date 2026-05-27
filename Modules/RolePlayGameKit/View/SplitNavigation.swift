@@ -160,6 +160,7 @@ private struct SplitWithDetailView: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
+        
         let controller = appModel.itemRootController(for: tab.module)
         @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
         let canShow = appNavigationModel.canShowInspector(appSizeModel: appWindowSizeModel)

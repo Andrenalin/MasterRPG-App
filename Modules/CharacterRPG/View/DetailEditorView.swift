@@ -10,6 +10,8 @@ struct DetailEditorView: View {
     let model: ValueModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         DetailSelectionEditorView(root: root, model: model)
 
         SheetRootEditorView(
@@ -32,6 +34,8 @@ struct DetailSelectionEditorView: View {
     let model: ValueModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         DiceDropSection(root: root, model: model)
         PhotoDropSection(root: root, model: model)
     }
@@ -42,6 +46,8 @@ private struct DiceDropSection: View {
     let model: ValueModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         root.diceRoot.viewController.dropChooseView(model: root.editController.valueEditModel.selectionDice)
             .onChange(of: root.editController.valueEditModel.selectionDice.selection) {
                 withAnimation(.easeInOut) {
@@ -59,6 +65,8 @@ private struct PhotoDropSection: View {
     let model: ValueModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         root.photoRoot.viewController.carouselPhotos(root: root.photoRoot, photoSelection: root.editController.valueEditModel.selectionPhoto)
             .onChange(of: root.editController.valueEditModel.selectionPhoto.selection) {
                 withAnimation(.easeInOut) {

@@ -156,6 +156,9 @@
         }
       }
     },
+    "Database error" : {
+
+    },
     "Delete" : {
 
     },
@@ -191,7 +194,7 @@
     "Editor" : {
 
     },
-    "Explaination Data" : {
+    "Example Data" : {
 
     },
     "Explanation data packages to see how the app works. It explain with real data how to use and add data." : {
@@ -390,7 +393,7 @@
     "Not Now" : {
 
     },
-    "Ok" : {
+    "OK" : {
 
     },
     "Pdf" : {
@@ -556,7 +559,7 @@
         }
       }
     },
-    "The explaination data is saved. You will find the data in the other sections." : {
+    "The example data has been installed. You will find the data in the other sections." : {
 
     },
     "The iCloud account is not available. Please check your iCloud settings. If you continue, data cannot be synced between devices." : {
@@ -573,7 +576,7 @@
         }
       }
     },
-    "This is the first lunch and there is no data in the database. Do you want to initialize the database with explaination data? No download is required the example data is prebundled." : {
+    "This is the first launch and there is no data in the database. Do you want to initialize the database with example data? No download is required — the example data is pre-bundled." : {
 
     },
     "This will permanently delete the database. This action cannot be undone." : {
@@ -599,7 +602,7 @@
     "Validate Folders" : {
 
     },
-    "Wait for Database initialization..." : {
+    "Waiting for database initialization…" : {
 
     },
     "Weather" : {

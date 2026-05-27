@@ -7,7 +7,6 @@ public enum AppNavigationRouteType: Int, Codable {
     case tabbed
     case split
     case visionSplit
-    case tabbedExtSplit
     case tabbedSplit
 }
 
@@ -17,15 +16,9 @@ extension AppNavigationRouteType: NavigationDestination {
         case .tabbed:
             TabbedNavigation()
         case .split:
-#if os(tvOS)
-            TabbedNavigation()
-#else
             SplitNavigation()
-#endif
-        case .tabbedExtSplit:
-            TabbedSplitExtNavigation()
         case .visionSplit:
-            SplitEditorNavigation()
+            TabbedSplitExtNavigation()
         case .tabbedSplit:
             TabbedSplitNavigation()
         }

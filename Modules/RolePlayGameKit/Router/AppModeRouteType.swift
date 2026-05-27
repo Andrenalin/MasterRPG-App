@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import AdventureRPG
 import CoreRPG
 import GameRPG
 import SwiftUI
@@ -21,7 +22,7 @@ struct AppGameTypeDestinationView: View {
             case .game:
                 GameFactory.rootGameView(root: appModel.gameRoot)
             case .gameVisionSetup:
-                AppNavigationRouteType.tabbedExtSplit
+                TabRootView(appModel: appModel)
             case .gameSetup:
                 GameFactory.rootSetupView(root: appModel.gameRoot)
             case .editor:
@@ -30,5 +31,6 @@ struct AppGameTypeDestinationView: View {
         }
         .tint(.blue)
         .environmentActionSetUp(appModel)
+        .appExitNotifications(handler: appModel.adventureRoot.save)
     }
 }

@@ -62,6 +62,8 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
     @Namespace private var editSheetNamespace
     
     public var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         ItemDetailContentView(
             root: root,
             model: selectedModel,
@@ -175,6 +177,7 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
     let editSheetNamespace: Namespace.ID
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         HeaderContentScrollView(
             model: headerModel,
             backgroundColor: root.configurable.module.color,
@@ -390,6 +393,8 @@ private struct ItemEditorForegroundView<Editor: View>: View {
     let shouldShowContent: Bool
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         Group {
             if model.specialCategory {
                 specialCategoryContent
