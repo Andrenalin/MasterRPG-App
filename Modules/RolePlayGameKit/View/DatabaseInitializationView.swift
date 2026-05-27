@@ -82,10 +82,6 @@ struct DatabaseInitializationView: View {
     }
 
     private func setupRootModels() async {
-        // Fix #5: removed the 250 ms Task.sleep workaround.
-        // context being non-nil already guarantees the Core Data stack is ready;
-        // the sleep was hiding an initialisation race that should be fixed at
-        // the source (context is only set non-nil once the stack is usable).
         guard let context = appModel.databaseModel.context else { return }
         appModel.setupRootModels(
             context: context,
@@ -93,25 +89,5 @@ struct DatabaseInitializationView: View {
             spotlightIndexer: appModel.databaseModel.spotlightIndexer,
             coreDataInitModel: appModel.databaseModel.coreDataInitModel
         )
-//        
-//        do {
-//            guard let context = appModel.databaseModel.context else { return }
-//
-//            // Small delay to ensure context is fully ready
-//            try await Task.sleep(for: .milliseconds(250))
-//
-//            appModel.setupRootModels(
-//                context: context,
-//                batchContext: appModel.databaseModel.batchContext,
-//                spotlightIndexer: appModel.databaseModel.spotlightIndexer,
-//                coreDataInitModel: appModel.databaseModel.coreDataInitModel
-//            )
-//        } catch is CancellationError {
-//            // Task was cancelled, context changed - this is normal
-//            return
-//        } catch {
-//            // Log unexpected errors but don't crash
-//            print("Error during root model setup: \(error)")
-//        }
     }
 }

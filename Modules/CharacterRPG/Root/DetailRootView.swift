@@ -15,8 +15,9 @@ struct DetailRootView: View {
         DetailListView(root: root, model: model)
             .detailInspectorModifier(root: root.rootController)
             .task(id: model.id) {
-                if appSizeModel.mode == .regular {
-                    root.navigationModel.folderItems = []
+                guard appSizeModel.mode == .regular else { return }
+                root.navigationModel.folderItems <=> []
+                if !root.navigationModel.folderModels.isEmpty {
                     root.navigationModel.folderModels = [:]
                 }
             }
