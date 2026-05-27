@@ -7,20 +7,12 @@ struct DetailRootView: View {
     let root: CharacterRootModel
     let model: ValueModel
 
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
+
         DetailListView(root: root, model: model)
             .detailInspectorModifier(root: root.rootController)
-            .task(id: model.id) {
-                guard appSizeModel.mode == .regular else { return }
-                root.navigationModel.folderItems <=> []
-                if !root.navigationModel.folderModels.isEmpty {
-                    root.navigationModel.folderModels = [:]
-                }
-            }
+            .folderNavigationResetTask(navigationModel: root.navigationModel, itemId: model.id)
     }
 }
 

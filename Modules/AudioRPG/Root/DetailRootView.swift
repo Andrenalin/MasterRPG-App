@@ -7,17 +7,10 @@ struct DetailRootView: View {
     let root: AudioRootModel
     let model: AudioModel
 
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-
     var body: some View {
         DetailListView(root: root, model: model)
             .detailInspectorModifier(root: root.rootController)
-            .applyIf(appSizeModel.mode == .regular) {
-                $0.task(id: model.id) {
-                    root.navigationModel.folderItems = []
-                    root.navigationModel.folderModels = [:]
-                }
-            }
+            .folderNavigationResetTask(navigationModel: root.navigationModel, itemId: model.id)
     }
 }
 

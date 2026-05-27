@@ -7,18 +7,11 @@ struct DetailRootView: View {
     let root: AdventureRootModel
     let model: AdventureModel
 
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         DetailListView(root: root, model: model)
             .detailInspectorModifier(root: root.rootController)
-            .task(id: model.id) {
-                if appSizeModel.mode == .regular {
-                    root.navigationModel.folderItems = []
-                    root.navigationModel.folderModels = [:]
-                }
-            }
+            .folderNavigationResetTask(navigationModel: root.navigationModel, itemId: model.id)
     }
 }
 
