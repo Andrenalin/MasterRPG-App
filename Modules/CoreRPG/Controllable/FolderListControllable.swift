@@ -11,7 +11,8 @@ public protocol FolderListControllable: Sendable {
     var listDisplayModel: ListDisplayModel { get }
     var searchModel: SearchModel { get }
     var cacheListItemModel: CacheItemListModel { get }
-        
+    var searchControllable: any SearchControllable { get }
+
     func copy(parentModel: (any ItemDataAccessable)?) -> Self
     func copy(listModel: FolderListModel) -> Self
     func detailDestination(for itemId: UUID) -> any NavigationDestination
@@ -19,6 +20,10 @@ public protocol FolderListControllable: Sendable {
 }
 
 extension FolderListControllable {
+    public var searchControllable: any SearchControllable {
+        DefaultFolderSearchController(itemControllable: itemControllable)
+    }
+
     public func copyModel(parentModel: (any ItemDataAccessable)?) -> FolderListModel {
         FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel)
     }
@@ -116,19 +121,89 @@ extension FolderListControllable {
     }
     
     func resetFilter() {
+        // Cancel any in-flight async search
+        listModel.searchTask?.cancel()
+        listModel.searchTask = nil
+
+        let searchText = searchModel.searchText
+
+        if !searchText.isEmpty {
+            // Async path: delegate to searchControllable for full entry-level search
+            let controller = searchControllable
+            let expandsEntries = listModel.searchExpandsEntries
+            listModel.searchTask = Task { @MainActor in
+                let results = await controller.searchItems(searchText: searchText)
+                guard !Task.isCancelled else { return }
+                let items = buildSearchDisplayItems(from: results, expandsEntries: expandsEntries)
+                listModel.displayedItems <=> items
+                listModel.displayedParentItems <=> []
+            }
+            return
+        }
+
+        // Synchronous tree-filter path (no search text)
         let newlyfilteredOnes: [ListItemModel] = listModel.originalItems.enumerated().flatMap { (index, item) in
             filterSub(item: item, index: index, level: 0, isParent: false)
         }
         if listModel.displayedItems != newlyfilteredOnes {
             listModel.displayedItems <=> newlyfilteredOnes
         }
-        
+
         let newlyParentFilteredOnes: [ListItemModel] = listModel.parentOriginalItems.enumerated().flatMap { (index, item) in
             filterSub(item: item, index: index, level: 0, isParent: true)
         }
         if listModel.displayedParentItems != newlyParentFilteredOnes {
             listModel.displayedParentItems <=> newlyParentFilteredOnes
         }
+    }
+
+    private func buildSearchDisplayItems(from results: [SearchResult], expandsEntries: Bool) -> [ListItemModel] {
+        // De-duplicate items while preserving top-relevance order
+        var itemOrder: [UUID] = []
+        var seen: Set<UUID> = []
+        var entryResults: [UUID: [SearchResult]] = [:]
+
+        for result in results {
+            if !seen.contains(result.itemId) {
+                seen.insert(result.itemId)
+                itemOrder.append(result.itemId)
+            }
+            if result.entryId != nil {
+                entryResults[result.itemId, default: []].append(result)
+            }
+        }
+
+        var items: [ListItemModel] = []
+
+        for (index, itemId) in itemOrder.enumerated() {
+            guard let model = itemControllable.itemSync(for: itemId) else { continue }
+            let entries = entryResults[itemId] ?? []
+            let hasEntries = expandsEntries && !entries.isEmpty
+            let itemRow = ListItemModel(
+                id: "search-0-\(index)-\(model.id)",
+                model: model,
+                isOpen: hasEntries,
+                entryId: nil,
+                level: 0
+            )
+            items.append(itemRow)
+
+            if expandsEntries {
+                for (entryIndex, entryResult) in entries.enumerated() {
+                    guard let entryId = entryResult.entryId else { continue }
+                    let entryRow = ListItemModel(
+                        id: "search-1-\(entryIndex)-\(entryId)",
+                        model: model,
+                        isOpen: false,
+                        entryId: entryId,
+                        level: 1
+                    )
+                    items.append(entryRow)
+                }
+            }
+        }
+
+        return items
     }
     
     func filterSub(item: ListItemModel, index: Int, level: Int, isParent: Bool) -> [ListItemModel] {

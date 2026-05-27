@@ -328,6 +328,19 @@ public extension SearchControllable {
     }
 }
 
+// MARK: - Default Folder Search Controller
+
+/// Default search controller for folder lists.
+/// Uses the module's ItemControllable with the standard searchItems(searchText:) implementation,
+/// which searches item names, descriptions, and all entry content.
+public struct DefaultFolderSearchController: SearchControllable {
+    public let itemControllable: any ItemControllable
+
+    public init(itemControllable: any ItemControllable) {
+        self.itemControllable = itemControllable
+    }
+}
+
 // MARK: - Supporting Types
 
 /// Information about a link with its module

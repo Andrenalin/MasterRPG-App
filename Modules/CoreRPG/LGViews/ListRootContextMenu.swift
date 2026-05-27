@@ -33,14 +33,9 @@ struct ListRootContextMenu: View {
         if parent?.specialCategory ?? false {
             removeItemView(oneUp: false)
         }
-        if listController?.canOpenFolder(itemId: currentSelected) ?? false {
-            Divider()
-            openFolderView
-        }
-        if listController?.hasParentFolder(itemId: currentSelected) ?? false {
-            if !(listController?.canOpenFolder(itemId: currentSelected) ?? false) { Divider() }
-            closeParentFolderView
-        }
+        Divider()
+        openFolderView
+        closeParentFolderView
         Divider()
         exportItemView
         groupEditView
@@ -113,6 +108,7 @@ private extension ListRootContextMenu {
         #if !os(tvOS)
         .keyboardShortcut(.rightArrow, modifiers: .command)
         #endif
+        .disabled(!(listController?.canOpenFolder(itemId: currentSelected) ?? false))
     }
 
     var closeParentFolderView: some View {
@@ -128,6 +124,7 @@ private extension ListRootContextMenu {
         #if !os(tvOS)
         .keyboardShortcut(.leftArrow, modifiers: .command)
         #endif
+        .disabled(!(listController?.hasParentFolder(itemId: currentSelected) ?? false))
     }
 
     var duplicateItemView: some View {

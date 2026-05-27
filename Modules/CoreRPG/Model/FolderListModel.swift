@@ -31,6 +31,10 @@ public final class FolderListModel {
     @ObservationIgnored var originalItems: [ListItemModel] = []
     @ObservationIgnored var parentOriginalItems: [ListItemModel] = []
 
+    // Search
+    @ObservationIgnored var searchTask: Task<Void, Never>? = nil
+    public var searchExpandsEntries: Bool = false
+
     public var displayedItems: [ListItemModel] = []
     public var displayedParentItems: [ListItemModel] = []
 

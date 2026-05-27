@@ -7,7 +7,6 @@ struct AudioPlayPauseButton: View, Equatable {
     let itemId: UUID
     
     @Environment(AudioRootModel.self) private var root
-    @Environment(ListDisplayModel.self) private var listDisplayModel
     
     var body: some View {
         Button {

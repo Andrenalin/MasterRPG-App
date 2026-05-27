@@ -57,6 +57,7 @@ public struct LinkItemListView: View {
                     }
                     .onAppear {
                         let savedScroll = root.folderLinkControllable.listModel.scrollId
+                        root.folderLinkControllable.listModel.searchExpandsEntries = true
                         root.folderLinkControllable.resetItemOnce()
                         root.folderLinkControllable.resetFilter()
                         root.folderLinkControllable.listModel.scrollId = savedScroll
@@ -312,7 +313,12 @@ private extension LinkItemListView {
     }
 
     func showFolderIndicator(item: ListItemModel) -> Bool {
-        item.model.specialCategory || (selectionModel.allowEntrySelection && !item.model.entries.isEmpty && item.entryId == nil) || !root.itemControllable.subChildren(itemId: item.model.id, entryId: item.entryId).isEmpty
+        // specialCategory items are folders that can always be toggled.
+        // Non-special items show an indicator when entry selection is allowed and they have entries.
+        // Entry rows (entryId != nil) only show a toggle when they are already open (sub-children loaded).
+        item.model.specialCategory ||
+        (selectionModel.allowEntrySelection && !item.model.entries.isEmpty && item.entryId == nil) ||
+        (item.entryId != nil && item.isOpen)
     }
 
     func closeEntrySection(for item: ListItemModel) -> some View {
