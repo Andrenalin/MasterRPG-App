@@ -20,6 +20,7 @@ struct ListRootContextMenu: View {
     @Environment(\.navigator) private var navigator
     
     var body: some View {
+        editItemView
         duplicateItemView
         if !listDisplayModel.isListMode {
             Divider()
@@ -31,6 +32,14 @@ struct ListRootContextMenu: View {
         }
         if parent?.specialCategory ?? false {
             removeItemView(oneUp: false)
+        }
+        if listController?.canOpenFolder(itemId: currentSelected) ?? false {
+            Divider()
+            openFolderView
+        }
+        if listController?.hasParentFolder(itemId: currentSelected) ?? false {
+            if !(listController?.canOpenFolder(itemId: currentSelected) ?? false) { Divider() }
+            closeParentFolderView
         }
         Divider()
         exportItemView
@@ -58,6 +67,51 @@ private extension ListRootContextMenu {
         listController?.listDisplayModel ?? ListDisplayModel()
     }
     
+    var editItemView: some View {
+        Button {
+            root.navigationModel.openHeaderEditor = true
+        } label: {
+            Label {
+                Text("Edit \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "pencil")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut("e", modifiers: .command)
+        #endif
+    }
+
+    var openFolderView: some View {
+        Button {
+            withAnimation { listController?.openFolder(itemId: currentSelected ?? UUID()) }
+        } label: {
+            Label {
+                Text("Open \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "chevron.down")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut(.rightArrow, modifiers: .command)
+        #endif
+    }
+
+    var closeParentFolderView: some View {
+        Button {
+            withAnimation { listController?.closeParentFolder(of: currentSelected ?? UUID()) }
+        } label: {
+            Label {
+                Text("Close Parent Folder", bundle: .module)
+            } icon: {
+                Image(systemName: "chevron.up")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut(.leftArrow, modifiers: .command)
+        #endif
+    }
+
     var duplicateItemView: some View {
         Button {
             Task {
@@ -71,7 +125,7 @@ private extension ListRootContextMenu {
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut("d", modifiers: .command)
+        .keyboardShortcut("D", modifiers: [.command, .shift])
         #endif
     }
 
@@ -139,7 +193,7 @@ private extension ListRootContextMenu {
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut("g", modifiers: [.command, .option])
+        .keyboardShortcut("g", modifiers: [.command, .shift])
         #endif
     }
 

@@ -154,6 +154,59 @@ extension FolderListControllable {
         parentItem.isOpen.toggle()
         resetFilter()
     }
+
+    /// Closes the nearest open parent folder of the currently selected item
+    /// and selects that parent folder afterwards.
+    func closeParentFolder() {
+        guard let itemId = listModel.selectedItemId else { return }
+        closeParentFolder(of: itemId)
+    }
+
+    /// Opens the selected item if it is a closed folder.
+    func openSelectedFolder() {
+        guard let itemId = listModel.selectedItemId else { return }
+        openFolder(itemId: itemId)
+    }
+
+    /// Closes the nearest open parent folder of `itemId` and selects that parent folder.
+    func closeParentFolder(of itemId: UUID) {
+        guard let index = displayItems.firstIndex(where: { $0.model.id == itemId }) else { return }
+        let selectedLevel = displayItems[index].level
+        for i in stride(from: index - 1, through: 0, by: -1) {
+            let candidate = displayItems[i]
+            if candidate.level < selectedLevel && candidate.model.specialCategory && candidate.isOpen {
+                toggleFolder(item: candidate)
+                listModel.selected = candidate.id
+                listModel.listSelection = Set(arrayLiteral: candidate.id)
+                listModel.scrollId = candidate.id
+                listModel.navigationModel.selectedItemId = candidate.model.id
+                return
+            }
+        }
+    }
+
+    /// Opens `itemId` if it is a closed folder.
+    func openFolder(itemId: UUID) {
+        guard let item = displayItems.first(where: { $0.model.id == itemId }),
+              item.model.specialCategory && !item.isOpen else { return }
+        toggleFolder(item: item)
+    }
+
+    /// Returns true if `itemId` is a closed folder that can be opened.
+    func canOpenFolder(itemId: UUID?) -> Bool {
+        guard let itemId,
+              let item = displayItems.first(where: { $0.model.id == itemId }) else { return false }
+        return item.model.specialCategory && !item.isOpen
+    }
+
+    /// Returns true if `itemId` has an open parent folder in the visible tree.
+    func hasParentFolder(itemId: UUID?) -> Bool {
+        guard let itemId,
+              let index = displayItems.firstIndex(where: { $0.model.id == itemId }),
+              index > 0 else { return false }
+        let selectedLevel = displayItems[index].level
+        return displayItems[0..<index].contains { $0.level < selectedLevel && $0.model.specialCategory && $0.isOpen }
+    }
 }
 
 private extension FolderListControllable {

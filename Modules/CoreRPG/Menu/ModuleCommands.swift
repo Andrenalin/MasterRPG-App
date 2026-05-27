@@ -30,7 +30,10 @@ public struct ModuleCommands: Commands {
         }
         CommandGroup(before: .textEditing) {
             if selectedModule == root.configurable.module {
+                EditItemButton(root: root)
                 DuplicateItemButton(root: root)
+                ExportItemButton(root: root)
+                GroupEditorButton(root: root)
                 Divider()
             }
         }
@@ -43,6 +46,9 @@ public struct ModuleCommands: Commands {
         CommandGroup(before: .sidebar) {
             if selectedModule == root.configurable.module {
                 MenuDisplayModeToggle(listDisplayModel: root.listDisplayModel, showSelectionButton: true)
+                Divider()
+                OpenFolderButton(root: root)
+                CloseFolderButton(root: root)
                 Divider()
             }
         }
@@ -82,6 +88,111 @@ struct AddItemButton: View {
     }
 }
 
+struct EditItemButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        Button {
+            root.navigationModel.openHeaderEditor = true
+        } label: {
+            Label {
+                Text("Edit \(item?.name ?? "")", bundle: .module)
+            } icon: {
+                Image(systemName: "pencil")
+            }
+        }
+        .keyboardShortcut("e", modifiers: .command)
+        .disabled(root.currentSelectedItemId == nil)
+    }
+
+    private var item: (any ItemDataAccessable)? {
+        guard let selectedItemId = root.currentSelectedItemId else { return nil }
+        return root.itemControllable.itemOrEmpty(for: selectedItemId)
+    }
+}
+
+struct ExportItemButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        Button {
+            root.navigationModel.triggerExport = true
+        } label: {
+            Label {
+                Text("Export \(item?.name ?? "")", bundle: .module)
+            } icon: {
+                Image(systemName: "square.and.arrow.up")
+            }
+        }
+        .keyboardShortcut("e", modifiers: [.command, .shift])
+        .disabled(root.currentSelectedItemId == nil)
+    }
+
+    private var item: (any ItemDataAccessable)? {
+        guard let selectedItemId = root.currentSelectedItemId else { return nil }
+        return root.itemControllable.itemOrEmpty(for: selectedItemId)
+    }
+}
+
+struct GroupEditorButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        Button {
+            root.navigationModel.triggerGroupEditor = true
+        } label: {
+            Label {
+                Text("Group Editor for \(item?.name ?? "")", bundle: .module)
+            } icon: {
+                Image(systemName: "long.text.page.and.pencil")
+            }
+        }
+        .keyboardShortcut("g", modifiers: [.command, .shift])
+        .disabled(root.currentSelectedItemId == nil)
+    }
+
+    private var item: (any ItemDataAccessable)? {
+        guard let selectedItemId = root.currentSelectedItemId else { return nil }
+        return root.itemControllable.itemOrEmpty(for: selectedItemId)
+    }
+}
+
+struct OpenFolderButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        Button {
+            withAnimation { root.folderListControllable.openSelectedFolder() }
+        } label: {
+            Label {
+                Text("Open Folder", bundle: .module)
+            } icon: {
+                Image(systemName: "chevron.down")
+            }
+        }
+        .keyboardShortcut(.rightArrow, modifiers: .command)
+        .disabled(!root.folderListControllable.canOpenFolder(itemId: root.currentSelectedItemId))
+    }
+}
+
+struct CloseFolderButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        Button {
+            withAnimation { root.folderListControllable.closeParentFolder() }
+        } label: {
+            Label {
+                Text("Close Parent Folder", bundle: .module)
+            } icon: {
+                Image(systemName: "chevron.up")
+            }
+        }
+        .keyboardShortcut(.leftArrow, modifiers: .command)
+        .disabled(!root.folderListControllable.hasParentFolder(itemId: root.currentSelectedItemId))
+    }
+}
+
 struct DuplicateItemButton: View {
     let root: any ItemRootControllable
 
@@ -93,7 +204,11 @@ struct DuplicateItemButton: View {
                 }
             }
         } label: {
-            Text("Duplicate \(item?.name ?? "")", bundle: .module)
+            Label {
+                Text("Duplicate \(item?.name ?? "")", bundle: .module)
+            } icon: {
+                Image(systemName: "doc.on.doc")
+            }
         }
         .keyboardShortcut("D", modifiers: [.command, .shift])
         .disabled(root.currentSelectedItemId == nil)

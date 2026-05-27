@@ -34,8 +34,13 @@ struct ListRootView: View {
                 guard let itemId = listModel.selectedItemId, let index = displayItems.firstIndex(where: { $0.model.id == itemId }) else { return }
                 deleteItems(offsets: IndexSet(integer: index))
             }
-            .onMoveCommand { direction in
-                //selectItem(direction)
+            .onKeyPress(.leftArrow, phases: .down) { _ in
+                withAnimation { listController.closeParentFolder() }
+                return .handled
+            }
+            .onKeyPress(.rightArrow, phases: .down) { _ in
+                withAnimation { listController.openSelectedFolder() }
+                return .handled
             }
 #endif
         
@@ -43,6 +48,19 @@ struct ListRootView: View {
                 if displayItems.isEmpty && !listController.searchModel.searchText.isEmpty && !listController.searchModel.searchText.starts(with: "@") {
                     ContentUnavailableView.search
                 }
+            }
+            .applyIf(parentModel == nil) {
+                $0
+                    .onChange(of: root.navigationModel.triggerExport) {
+                        guard root.navigationModel.triggerExport, let itemId = root.currentSelectedItemId else { return }
+                        root.navigationModel.triggerExport = false
+                        navigator.navigate(to: InternalRoute.export(ids: [itemId]), method: .sheet)
+                    }
+                    .onChange(of: root.navigationModel.triggerGroupEditor) {
+                        guard root.navigationModel.triggerGroupEditor, let itemId = root.currentSelectedItemId else { return }
+                        root.navigationModel.triggerGroupEditor = false
+                        navigator.navigate(to: InternalRoute.groupEditor(ids: [itemId]), method: .sheet)
+                    }
             }
             .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable)
             .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
@@ -226,6 +244,7 @@ private extension ListRootView {
             .buttonStyle(.plain)
         }
     }
+
 }
 
 //#Preview("Split", traits: .mockData) {

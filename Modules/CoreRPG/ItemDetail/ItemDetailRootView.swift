@@ -87,6 +87,11 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
         .onChange(of: selectedModel.url) { oldValue, _ in
             handleModelUrlChange(oldValue: oldValue)
         }
+        .onChange(of: root.navigationModel.openHeaderEditor) {
+            guard root.navigationModel.openHeaderEditor else { return }
+            root.navigationModel.openHeaderEditor = false
+            openEditingSheet()
+        }
         .sheet(item: $editingItem) { item in
             ManagedPresentationView {
                 editingSheet(model: item.model)

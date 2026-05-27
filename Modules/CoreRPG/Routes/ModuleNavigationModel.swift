@@ -17,4 +17,9 @@ import SwiftUI
     // Inspector
     public var selectedInspectorItemId: UUID?
     public var showInspector: Bool = false
+
+    // Trigger flags — set to true to fire the corresponding action for the current item
+    public var openHeaderEditor: Bool = false
+    public var triggerExport: Bool = false
+    public var triggerGroupEditor: Bool = false
 }
