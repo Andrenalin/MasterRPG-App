@@ -10,6 +10,7 @@ import SwiftUI
 public struct ViewController: Sendable {
     public let sharingViewType: SharingViewType = .share
     public let thumbnailRowViewType: ThumbnailRowViewType = .custom
+    public let supportsBatchExtraction: Bool = true
 }
 
 extension ViewController: ViewControllable {
@@ -43,29 +44,14 @@ public extension ViewController {
 
 #if !os(tvOS)
 extension ViewController {
-    public var supportsBatchExtraction: Bool { true }
-
     @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
-        guard let tableController = itemController as? ItemController else { return nil }
-        let formatEntries: @MainActor @Sendable (UUID) -> String = { id in
-            let model = tableController.itemOrEmpty(for: id)
-            var lines: [String] = []
-            if !model.name.isEmpty {
-                lines.append("Table: \(model.name)")
-                lines.append("")
-            }
-            for entry in model.entries {
-                lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
-            }
-            return lines.joined(separator: "\n")
-        }
+        guard itemController is ItemController else { return nil }
         return AnyView(
             BatchTextSummaryExtractionView(
                 module: .table,
                 ids: ids,
                 itemController: itemController,
-                editController: editController,
-                formatEntries: formatEntries
+                editController: editController
             )
         )
     }

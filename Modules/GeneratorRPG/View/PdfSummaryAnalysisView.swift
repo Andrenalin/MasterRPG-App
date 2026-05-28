@@ -33,10 +33,6 @@ public struct PdfSummaryAnalysisView: View {
             }
             .padding()
         }
-        .task {
-            try? await Task.sleep(for: .seconds(1))
-            analyze()
-        }
     }
 
     // MARK: - Subviews
@@ -70,6 +66,7 @@ public struct PdfSummaryAnalysisView: View {
         .frame(maxWidth: .infinity)
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
+        .keyboardShortcut(.defaultAction)
     }
 
     private func analyze() {

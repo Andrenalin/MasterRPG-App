@@ -102,7 +102,7 @@ struct EditItemButton: View {
                 Image(systemName: "pencil")
             }
         }
-        .keyboardShortcut("e", modifiers: .command)
+        .keyboardShortcut("e", modifiers: [.command, .shift])
         .disabled(root.currentSelectedItemId == nil)
     }
 
@@ -125,7 +125,7 @@ struct SpaceActionButton: View {
                 Image(systemName: root.viewControllable.hasCustomSpaceAction ? "play.fill" : "eye")
             }
         }
-        .keyboardShortcut(.return, modifiers: [])
+        .keyboardShortcut(.return, modifiers: [.command, .shift])
         .disabled(root.currentSelectedItemId == nil)
     }
 
@@ -157,7 +157,7 @@ struct ExportItemButton: View {
                 Image(systemName: "square.and.arrow.up")
             }
         }
-        .keyboardShortcut("e", modifiers: [.command, .shift])
+        .keyboardShortcut("e", modifiers: [.command, .control])
         .disabled(root.currentSelectedItemId == nil)
     }
 
@@ -203,7 +203,7 @@ struct OpenFolderButton: View {
                 Image(systemName: "chevron.down")
             }
         }
-        .keyboardShortcut(.rightArrow, modifiers: .command)
+        .keyboardShortcut(.rightArrow, modifiers: [.command, .shift])
         .disabled(!root.folderListControllable.canOpenFolder(itemId: root.currentSelectedItemId))
     }
 }
@@ -221,7 +221,7 @@ struct CloseFolderButton: View {
                 Image(systemName: "chevron.up")
             }
         }
-        .keyboardShortcut(.leftArrow, modifiers: .command)
+        .keyboardShortcut(.leftArrow, modifiers: [.command, .shift])
         .disabled(!root.folderListControllable.hasParentFolder(itemId: root.currentSelectedItemId))
     }
 }

@@ -91,7 +91,7 @@ private extension ListRootContextMenu {
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut("e", modifiers: .command)
+        .keyboardShortcut("e", modifiers: [.command, .shift])
         #endif
     }
 
@@ -106,7 +106,7 @@ private extension ListRootContextMenu {
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut(.rightArrow, modifiers: .command)
+        .keyboardShortcut(.rightArrow, modifiers: [.command, .shift])
         #endif
         .disabled(!(listController?.canOpenFolder(itemId: currentSelected) ?? false))
     }
@@ -122,7 +122,7 @@ private extension ListRootContextMenu {
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut(.leftArrow, modifiers: .command)
+        .keyboardShortcut(.leftArrow, modifiers: [.command, .shift])
         #endif
         .disabled(!(listController?.hasParentFolder(itemId: currentSelected) ?? false))
     }
@@ -177,7 +177,7 @@ private extension ListRootContextMenu {
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut("e", modifiers: [.command, .shift])
+        .keyboardShortcut("e", modifiers: [.command, .control])
         #endif
     }
 
@@ -312,9 +312,6 @@ private extension ListRootContextMenu {
                 Image(systemName: "rectangle.stack.badge.minus")
             }
         }
-        #if !os(tvOS)
-        .keyboardShortcut("r", modifiers: [.command, .shift])
-        #endif
     }
 
 }

@@ -31,27 +31,13 @@ extension ViewController {
     public var supportsBatchExtraction: Bool { true }
 
     @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
-        guard let mapController = itemController as? ItemController else { return nil }
-        let formatEntries: @MainActor @Sendable (UUID) -> String = { id in
-            let model = mapController.itemOrEmpty(for: id)
-            let visibleEntries = model.entries.filter { !$0.isHexGrid }
-            var lines: [String] = []
-            if !model.name.isEmpty {
-                lines.append("Map: \(model.name)")
-                lines.append("")
-            }
-            for entry in visibleEntries {
-                lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
-            }
-            return lines.joined(separator: "\n")
-        }
+        guard itemController is ItemController else { return nil }
         return AnyView(
             BatchTextSummaryExtractionView(
                 module: .map,
                 ids: ids,
                 itemController: itemController,
-                editController: editController,
-                formatEntries: formatEntries
+                editController: editController
             )
         )
     }

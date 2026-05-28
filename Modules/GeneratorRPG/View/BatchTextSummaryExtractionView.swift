@@ -20,7 +20,6 @@ public struct BatchTextSummaryExtractionView: View {
     let ids: [UUID]
     let itemController: any ItemControllable
     let editController: any EditControllable
-    let formatEntries: @MainActor @Sendable (UUID) -> String
 
     @State private var selectedLanguage: OutputLanguage = .forCurrentLocale()
     @State private var statuses: [UUID: BatchItemStatus] = [:]
@@ -33,14 +32,12 @@ public struct BatchTextSummaryExtractionView: View {
         module: NetworkModules,
         ids: [UUID],
         itemController: any ItemControllable,
-        editController: any EditControllable,
-        formatEntries: @escaping @MainActor @Sendable (UUID) -> String
+        editController: any EditControllable
     ) {
         self.module = module
         self.ids = ids
         self.itemController = itemController
         self.editController = editController
-        self.formatEntries = formatEntries
     }
 
     public var body: some View {
@@ -203,7 +200,7 @@ public struct BatchTextSummaryExtractionView: View {
     private func performBatch() async {
         let analyzer = TableSummaryAnalyzer()
         for id in ids {
-            let entriesText = formatEntries(id)
+            let entriesText = await itemController.compactText(for: id)
             guard !entriesText.isEmpty else {
                 statuses[id] = .completed
                 continue

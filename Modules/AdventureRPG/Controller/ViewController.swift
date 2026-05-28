@@ -24,26 +24,13 @@ extension ViewController {
     public var supportsBatchExtraction: Bool { true }
 
     @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
-        guard let adventureController = itemController as? ItemController else { return nil }
-        let formatEntries: @MainActor @Sendable (UUID) -> String = { id in
-            let model = adventureController.itemOrEmpty(for: id)
-            var lines: [String] = []
-            if !model.name.isEmpty {
-                lines.append("Adventure: \(model.name)")
-                lines.append("")
-            }
-            for entry in model.entries {
-                lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
-            }
-            return lines.joined(separator: "\n")
-        }
+        guard itemController is ItemController else { return nil }
         return AnyView(
             BatchTextSummaryExtractionView(
                 module: .adventure,
                 ids: ids,
                 itemController: itemController,
-                editController: editController,
-                formatEntries: formatEntries
+                editController: editController
             )
         )
     }
