@@ -20,9 +20,9 @@ public struct MenuDisplayModeToggle<Add: View>: View {
             MenuSelectionButtonView(listDisplayModel: listDisplayModel)
             Divider()
         }
-        
+
         addViews
-        
+
         CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
         MediumDisplayModeToggle(listDisplayModel: listDisplayModel)
         RegularDisplayModeToggle(listDisplayModel: listDisplayModel)

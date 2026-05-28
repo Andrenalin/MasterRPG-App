@@ -59,17 +59,11 @@ public final class ListDisplayModel {
 
     public var isListMode: Bool {
         get { listMode == .list }
-        set {
-            guard newValue, listMode != .list else { return }
-            listMode = .list
-        }
+        set { listMode = newValue ? .list : .folder }
     }
     public var isFolderMode: Bool {
         get { listMode == .folder }
-        set {
-            guard newValue, listMode != .folder else { return }
-            listMode = .folder
-        }
+        set { listMode = newValue ? .folder : .list }
     }
     
     var imageHeight: CGFloat {

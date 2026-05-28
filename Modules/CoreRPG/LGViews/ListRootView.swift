@@ -9,7 +9,7 @@ struct ListRootView: View {
     let parentModel: (any ItemDataAccessable)?
     
     @Environment(\.navigator) private var navigator
-    
+
     var body: some View {
         listView
             .animation(.smooth, value: displayItems.count)
@@ -83,6 +83,9 @@ struct ListRootView: View {
             }
             .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable)
             .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
+            .applyIf(parentModel == nil) {
+                $0.focusedSceneValue(\.listDisplayModel, listController.listDisplayModel)
+            }
 #if !os(tvOS)
             .applyIf(!fileTypes.isEmpty) {
                 $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))

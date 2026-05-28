@@ -32,11 +32,13 @@ struct ListModelUpdatesViewModifier: ViewModifier {
             .onChange(of: listControllable.listDisplayModel.listMode, initial: true) {
                 withAnimation { listControllable.resetFilter() }
             }
-            .onChange(of: listControllable.listDisplayModel.isSelectionMode) {
-                withAnimation { listModel.update(selectionMode: listControllable.listDisplayModel.isSelectionMode) }
+            .onChange(of: listControllable.listDisplayModel.isSelectionMode, initial: true) {
+                withAnimation {
+                    listModel.update(selectionMode: listControllable.listDisplayModel.isSelectionMode)
 #if os(iOS) || os(visionOS)
-                withAnimation { editMode = listControllable.listDisplayModel.isSelectionMode ? .active : .inactive }
+                    editMode = listControllable.listDisplayModel.isSelectionMode ? .active : .inactive
 #endif
+                }
             }
             .task {
                 await updateStreamChanges()
@@ -54,12 +56,7 @@ private extension ListModelUpdatesViewModifier {
             }
         }
 
-        for await itemIds in stream {
-            var updatedItems: [any ItemDataAccessable] = []
-            for item in itemIds {
-                guard let item = await itemControllable.item(for: item), item.displayState != 2 else { continue }
-                updatedItems.append(item)
-            }
+        for await _ in stream {
             listControllable.update()
         }
     }

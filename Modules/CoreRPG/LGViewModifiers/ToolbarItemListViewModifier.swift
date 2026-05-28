@@ -4,7 +4,7 @@ import SwiftUI
 
 extension View {
     public func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any FolderListControllable, parentModel: (any ItemDataAccessable)?, modal: Bool = false, dismissHandler: (() -> Void)? = nil) -> some View {
-        modifier(ToolbarItemListViewModifier(root: root, listController: listControllable, parentModel: parentModel, modal: modal, dimissHandler: dismissHandler))
+        modifier(ToolbarItemListViewModifier(root: root, listController: listControllable, parentModel: parentModel, modal: modal, dismissHandler: dismissHandler))
     }
 }
 
@@ -13,7 +13,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
     let listController: any FolderListControllable
     let parentModel: (any ItemDataAccessable)?
     let modal: Bool
-    let dimissHandler: (() -> Void)?
+    let dismissHandler: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     
@@ -116,7 +116,6 @@ private extension ToolbarItemListViewModifier {
                     .disabled(parentModel?.category == root.itemControllable.collectionCategory)
                 addItemButton(for: .collection)
             }
-            .opacity(modal == false ? 1 : 0)
         }
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
@@ -129,7 +128,7 @@ private extension ToolbarItemListViewModifier {
                 FolderModeToggle(listDisplayModel: listDisplayModel)
             }
 
-            if parentModel == nil && modal == false {
+            if modal == false {
                 ControlGroup {
                     toggleFolder()
                 }
@@ -149,9 +148,6 @@ private extension ToolbarItemListViewModifier {
                 Image(systemName: "list.bullet.indent")
             }
         }
-#if !os(tvOS)
-        .keyboardShortcut(.leftArrow, modifiers: [.command, .shift])
-#endif
     }
 
     func addItemButton(for type: EditControllerAddType) -> some View {
@@ -181,7 +177,7 @@ private extension ToolbarItemListViewModifier {
     
     var dismissButton: some View {
         Button {
-            dimissHandler?()
+            dismissHandler?()
             dismiss()
         } label: {
             Image(systemName: "checkmark")

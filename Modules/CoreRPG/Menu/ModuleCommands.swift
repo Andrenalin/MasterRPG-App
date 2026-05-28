@@ -17,6 +17,7 @@ public struct ModuleCommands: Commands {
     let key: AKKeyEquivalent
 
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
+    @FocusedValue(\.listDisplayModel) private var listDisplayModel: ListDisplayModel?
 
     public var body: some Commands {
         CommandGroup(after: .windowArrangement) {
@@ -27,6 +28,8 @@ public struct ModuleCommands: Commands {
         }
         CommandGroup(after: .newItem) {
             AddItemButton(root: root, routeActions: routeActions, key: key)
+            AddFolderButton(root: root, routeActions: routeActions, key: key)
+            AddCollectionButton(root: root, routeActions: routeActions, key: key)
         }
         CommandGroup(before: .textEditing) {
             if selectedModule == root.configurable.module {
@@ -53,8 +56,8 @@ public struct ModuleCommands: Commands {
             }
         }
         CommandGroup(before: .sidebar) {
-            if selectedModule == root.configurable.module {
-                MenuDisplayModeToggle(listDisplayModel: root.listDisplayModel, showSelectionButton: true)
+            if selectedModule == root.configurable.module, let listDisplayModel {
+                MenuDisplayModeToggle(listDisplayModel: listDisplayModel, showSelectionButton: true)
                 Divider()
                 OpenFolderButton(root: root)
                 CloseFolderButton(root: root)
@@ -94,6 +97,52 @@ struct AddItemButton: View {
             Label { Text("New \(root.configurable.module.title)", bundle: .module) } icon: { Image(systemName: "plus") }
         }
         .keyboardShortcut(key, modifiers: [.command, .control])
+    }
+}
+
+struct AddFolderButton: View {
+    let root: any ItemRootControllable
+    let routeActions: RouteActions
+    let key: AKKeyEquivalent
+
+    var body: some View {
+        Button {
+            Task {
+                guard let item = await root.editControllable.addNew(type: .folder) else { return }
+                routeActions.routePage(root.configurable.module, item.id, nil)
+            }
+        } label: {
+            Label {
+                Text(EditControllerAddType.folder.title)
+            } icon: {
+                Image(systemName: EditControllerAddType.folder.icon(collection: root.itemControllable.collectionCategory.icon))
+            }
+        }
+        .keyboardShortcut(key, modifiers: [.command, .control, .shift])
+        .disabled(root.listDisplayModel.isListMode)
+    }
+}
+
+struct AddCollectionButton: View {
+    let root: any ItemRootControllable
+    let routeActions: RouteActions
+    let key: AKKeyEquivalent
+
+    var body: some View {
+        Button {
+            Task {
+                guard let item = await root.editControllable.addNew(type: .collection) else { return }
+                routeActions.routePage(root.configurable.module, item.id, nil)
+            }
+        } label: {
+            Label {
+                Text(EditControllerAddType.collection.title)
+            } icon: {
+                Image(systemName: EditControllerAddType.collection.icon(collection: root.itemControllable.collectionCategory.icon))
+            }
+        }
+        .keyboardShortcut(key, modifiers: [.command, .control, .option])
+        .disabled(root.listDisplayModel.isListMode)
     }
 }
 
