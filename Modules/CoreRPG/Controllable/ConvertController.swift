@@ -93,8 +93,10 @@ public struct ConvertController: Sendable {
         // If we found/created folders, add the item to the deepest one — skip if already there
         if let folderModel = currentFolderModel, item.parentId != folderModel.id {
             editController.addItem(itemId: item.id, parentId: folderModel.id)
+            editController.checkChildrenExists(itemId: folderModel.id)
         }
     }
+    
 
     @MainActor public func createFilepathFoldersAndCollections(reportModel: ValidateRepairModel) async {
         var tagCounter: [String: [UUID]] = [:]

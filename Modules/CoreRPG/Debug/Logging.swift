@@ -22,6 +22,7 @@ public extension Logger {
     static let bookmarkStore = Logger(subsystem: subsystem, category: "BookmarkController")
     static let cacheController = Logger(subsystem: subsystem, category: "CacheController")
     static let codable = Logger(subsystem: subsystem, category: "Codable")
+    static let editController = Logger(subsystem: subsystem, category: "EditController")
     static let exportController = Logger(subsystem: subsystem, category: "ExportController")
     static let fileStore = Logger(subsystem: subsystem, category: "FileStore")
     static let gameController = Logger(subsystem: subsystem, category: "GameController")

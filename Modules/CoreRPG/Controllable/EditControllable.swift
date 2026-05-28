@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
-import Observation
 import SwiftUI
+import os.log
 
 public protocol EditControllable: Sendable {
     associatedtype Model: ItemDataAccessable & ItemDiffComparable & ItemLinkRegistable & ModelType
@@ -148,6 +148,19 @@ public extension EditControllable {
         }
         guard item.entries.isEmpty else { return }
     }
+    
+    @MainActor func checkChildrenExists(itemId: UUID) {
+        guard let model = editModel(for: itemId), model.specialCategory else { return }
+        let checkEntries = model.entries.compactMap { entry -> Model.Entry? in
+            guard let item = itemControllable.itemSync(for: entry.childId), item.displayState != 2 else { return nil }
+            return entry
+        }
+        if checkEntries != model.entries {
+            Logger.editController.warning("\(model.name, privacy: .public) has dead folder entries \(model.entries.count - checkEntries.count, privacy: .public), removing them")
+            model.entries = checkEntries
+            save(updated: model, message: String(localized: "removed dead folder entries", bundle: .module).localizedString)
+        }
+    }
 }
 
 // MARK: - Group Items / Carousell Items
@@ -211,20 +224,25 @@ public extension EditControllable {
                 }
             }
         }
-        
+
+        var shouldCheckForMove: Bool = false
         if parentItem.category == .folder || parentItem.category == .item {
             item.parentId <=> parentItem.id
             if parentItem.category == .item {
                 item.displayState <=> 1
             }
             save(updated: item, message: String(localized: "Added parent", bundle: .module).localizedString)
-            movedFile(itemId: itemId)
+            shouldCheckForMove = true
         }
 
         if parentItem.category != .item {
             parentItem.entries <=> entries
         }
         save(updated: parentItem, message: String(localized: "Added item", bundle: .module).localizedString)
+        
+        if shouldCheckForMove {
+            movedFile(itemId: itemId)
+        }
     }
 
     @MainActor func remove(itemId: UUID, parentId: UUID, oneUp: Bool) {
@@ -262,7 +280,7 @@ public extension EditControllable {
     @MainActor func cleanFolder(itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.entries.removeAll {
-            let child = itemControllable.itemOrEmpty(for: $0.childId)
+            guard let child = itemControllable.itemSync(for: $0.childId) else { return true }
             if child.parentId != itemId {
                 return true
             }

@@ -102,7 +102,7 @@ private extension ListRootView {
             await root.editControllable.resetFile(url: url, itemId: model.id)
             let cc = ConvertController(itemController: root.itemControllable, editController: root.editControllable)
             await cc.moveAndCreateFolders(itemId: model.id)
-            try? await Task.sleep(for: .seconds(0.2))
+            try? await Task.sleep(for: .seconds(0.5))
             if parentModel != nil {
                 root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
                 // Reset parent list filter when adding to folder/collection
@@ -114,6 +114,7 @@ private extension ListRootView {
                 listController.resetFilter()
                 listController.listModel.set(selectedItemId: updatedModel.id)
                 listController.listModel.scrollId = listController.listModel.selected
+                root.navigationModel.openHeaderEditor = true
             }
         }
     }
