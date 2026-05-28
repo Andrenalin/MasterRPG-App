@@ -20,6 +20,7 @@ struct ListRootContextMenu: View {
     @Environment(\.navigator) private var navigator
     
     var body: some View {
+        let parent = self.parent
         editItemView
         duplicateItemView
         if !listDisplayModel.isListMode {
@@ -27,12 +28,7 @@ struct ListRootContextMenu: View {
             addItemView
             moveItemView
         }
-        if controller.hasDifferentFolders(for: parent) {
-            removeItemView(oneUp: true)
-        }
-        if parent?.specialCategory ?? false {
-            removeItemView(oneUp: false)
-        }
+        removeActions(parent: parent)
         Divider()
         openFolderView
         closeParentFolderView
@@ -60,6 +56,15 @@ private extension ListRootContextMenu {
         parentItem ?? controller.parentItem(currentSelected: currentSelected)
     }
 
+    @ViewBuilder func removeActions(parent: (any ItemDataAccessable)?) -> some View {
+        if controller.hasDifferentFolders(for: parent) {
+            removeItemView(oneUp: true)
+        }
+        if parent?.specialCategory ?? false {
+            removeItemView(oneUp: false)
+        }
+    }
+
     var listDisplayModel: ListDisplayModel {
         listController?.listDisplayModel ?? ListDisplayModel()
     }
@@ -76,7 +81,7 @@ private extension ListRootContextMenu {
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut(.return, modifiers: [])
+        .keyboardShortcut(.return, modifiers: [.command, .shift])
         #endif
     }
 
@@ -181,21 +186,6 @@ private extension ListRootContextMenu {
         #endif
     }
 
-    var generateLinkView: some View {
-        Button {
-            withAnimation { controller.generateLink(currentSelected: currentSelected) }
-        } label: {
-            Label {
-                Text("Link for \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "link")
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut("l", modifiers: [.command, .shift])
-        #endif
-    }
-
     var groupEditView: some View {
         Button {
             let route = controller.groupEditor(currentSelected: currentSelected)
@@ -224,6 +214,7 @@ private extension ListRootContextMenu {
                 Image(systemName: "sparkles")
             }
         }
+        .accessibilityHint(Text("Analyzes selected items with AI", bundle: .module))
     }
     #endif
     

@@ -23,4 +23,6 @@ import SwiftUI
     public var triggerExport: Bool = false
     public var triggerGroupEditor: Bool = false
     public var triggerSpaceAction: Bool = false
+    public var triggerBatchExtraction: Bool = false
+    public var triggerDelete: Bool = false
 }

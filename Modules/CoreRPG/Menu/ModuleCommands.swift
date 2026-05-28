@@ -35,6 +35,14 @@ public struct ModuleCommands: Commands {
                 DuplicateItemButton(root: root)
                 ExportItemButton(root: root)
                 GroupEditorButton(root: root)
+                if root.viewControllable.supportsBatchExtraction {
+                    BatchExtractionButton(root: root)
+                }
+                Divider()
+                AddItemIntoButton(root: root)
+                MoveItemIntoButton(root: root)
+                Divider()
+                DeleteItemButton(root: root)
                 Divider()
             }
         }
@@ -132,7 +140,6 @@ struct SpaceActionButton: View {
     private var labelText: Text {
         let name = item?.name ?? ""
         if root.viewControllable.hasCustomSpaceAction {
-            
             return Text("\(root.configurable.module == .audio ? "Play" : "Roll") \(name)", bundle: .module)
         }
         return Text("View \(name)", bundle: .module)
@@ -247,7 +254,131 @@ struct DuplicateItemButton: View {
         .disabled(root.currentSelectedItemId == nil)
     }
 
-    var item: (any ItemDataAccessable)? {
+    private var item: (any ItemDataAccessable)? {
+        guard let selectedItemId = root.currentSelectedItemId else { return nil }
+        return root.itemControllable.itemOrEmpty(for: selectedItemId)
+    }
+}
+
+struct BatchExtractionButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        Button {
+            root.navigationModel.triggerBatchExtraction = true
+        } label: {
+            Label {
+                Text("Extract Information for \(item?.name ?? "")", bundle: .module)
+            } icon: {
+                Image(systemName: "sparkles")
+            }
+        }
+        .accessibilityHint(Text("Analyzes selected items with AI", bundle: .module))
+        .disabled(root.currentSelectedItemId == nil)
+    }
+
+    private var item: (any ItemDataAccessable)? {
+        guard let selectedItemId = root.currentSelectedItemId else { return nil }
+        return root.itemControllable.itemOrEmpty(for: selectedItemId)
+    }
+}
+
+struct AddItemIntoButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        let collections = self.collections
+        Menu {
+            ForEach(collections) { folder in
+                Button {
+                    menuController.addItem(currentSelected: root.currentSelectedItemId, to: folder)
+                    root.folderListControllable.resetFilter()
+                } label: {
+                    Label { Text(folder.name) } icon: { Image(systemName: root.itemControllable.collectionCategory.icon) }
+                }
+            }
+        } label: {
+            Label {
+                Text("Add \(item?.name ?? "") into", bundle: .module)
+            } icon: {
+                Image(systemName: root.itemControllable.collectionCategory.icon)
+            }
+        }
+        .keyboardShortcut("a", modifiers: [.command, .shift])
+        .disabled(collections.isEmpty)
+    }
+
+    private var menuController: ContextMenuMultiController {
+        ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: root.folderListControllable.listModel)
+    }
+
+    private var collections: [FolderRepresentable] {
+        menuController.collectionItems(currentSelected: root.currentSelectedItemId)
+    }
+
+    private var item: (any ItemDataAccessable)? {
+        guard let selectedItemId = root.currentSelectedItemId else { return nil }
+        return root.itemControllable.itemOrEmpty(for: selectedItemId)
+    }
+}
+
+struct MoveItemIntoButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        let folders = self.folders
+        Menu {
+            ForEach(folders) { folder in
+                Button {
+                    menuController.moveItem(currentSelected: root.currentSelectedItemId, to: folder)
+                    root.folderListControllable.resetFilter()
+                } label: {
+                    Label { Text(folder.name) } icon: { Image(systemName: "folder") }
+                }
+            }
+        } label: {
+            Label {
+                Text("Move \(item?.name ?? "") into", bundle: .module)
+            } icon: {
+                Image(systemName: "folder")
+            }
+        }
+        .keyboardShortcut("m", modifiers: [.command, .shift])
+        .disabled(folders.isEmpty)
+    }
+
+    private var menuController: ContextMenuMultiController {
+        ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: root.folderListControllable.listModel)
+    }
+
+    private var folders: [FolderRepresentable] {
+        menuController.folderItems(currentSelected: root.currentSelectedItemId)
+    }
+
+    private var item: (any ItemDataAccessable)? {
+        guard let selectedItemId = root.currentSelectedItemId else { return nil }
+        return root.itemControllable.itemOrEmpty(for: selectedItemId)
+    }
+}
+
+struct DeleteItemButton: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        Button(role: .destructive) {
+            root.navigationModel.triggerDelete = true
+        } label: {
+            Label {
+                Text("Delete \(item?.name ?? "")", bundle: .module)
+            } icon: {
+                Image(systemName: "trash")
+            }
+        }
+        .keyboardShortcut(.delete, modifiers: .command)
+        .disabled(root.currentSelectedItemId == nil)
+    }
+
+    private var item: (any ItemDataAccessable)? {
         guard let selectedItemId = root.currentSelectedItemId else { return nil }
         return root.itemControllable.itemOrEmpty(for: selectedItemId)
     }

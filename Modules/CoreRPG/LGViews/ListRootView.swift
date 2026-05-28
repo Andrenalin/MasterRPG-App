@@ -61,6 +61,18 @@ struct ListRootView: View {
                         root.navigationModel.triggerGroupEditor = false
                         navigator.navigate(to: InternalRoute.groupEditor(ids: [itemId]), method: .sheet)
                     }
+                    .onChange(of: root.navigationModel.triggerBatchExtraction) {
+                        guard root.navigationModel.triggerBatchExtraction, let itemId = root.currentSelectedItemId else { return }
+                        root.navigationModel.triggerBatchExtraction = false
+                        navigator.navigate(to: InternalRoute.batchExtraction(ids: [itemId]), method: .sheet)
+                    }
+                    .onChange(of: root.navigationModel.triggerDelete) {
+                        guard root.navigationModel.triggerDelete else { return }
+                        root.navigationModel.triggerDelete = false
+                        guard let itemId = listModel.selectedItemId,
+                              let index = displayItems.firstIndex(where: { $0.model.id == itemId }) else { return }
+                        deleteItems(offsets: IndexSet(integer: index))
+                    }
                     .onChange(of: root.navigationModel.triggerSpaceAction) {
                         guard root.navigationModel.triggerSpaceAction else { return }
                         root.navigationModel.triggerSpaceAction = false
