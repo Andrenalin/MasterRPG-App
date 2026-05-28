@@ -127,34 +127,34 @@ extension FolderListControllable {
     }
     
     func resetFilter() {
-        // Cancel any in-flight async search
-        listModel.searchTask?.cancel()
-        listModel.searchTask = nil
-
-        let searchText = searchModel.searchText
-
-        if !searchText.isEmpty {
-            // Async path: delegate to searchControllable for full entry-level search
-            let controller = searchControllable
-            let expandsEntries = listModel.searchExpandsEntries
-            listModel.searchTask = Task { @MainActor in
-                let results = await controller.searchItems(searchText: searchText)
-                guard !Task.isCancelled else { return }
-                // Capture before displayedItems is replaced — after the swap the old "0-2-UUID"
-                // string IDs no longer match any "search-…" row, so selectedItemId returns nil.
-                let previousSelectedId = listModel.selectedItemId
-                let items = buildSearchDisplayItems(from: results, expandsEntries: expandsEntries)
-                listModel.displayedItems <=> items
-                listModel.displayedParentItems <=> []
-                // Re-anchor the selection to the item's new search-mode ID
-                if let id = previousSelectedId,
-                   let matchedItem = items.first(where: { $0.model.id == id && $0.entryId == nil }) {
-                    listModel.selected <=> matchedItem.id
-                    listModel.listSelection <=> Set(arrayLiteral: matchedItem.id)
-                }
-            }
-            return
-        }
+//        // Cancel any in-flight async search
+//        listModel.searchTask?.cancel()
+//        listModel.searchTask = nil
+//
+//        let searchText = searchModel.searchText
+//
+//        if !searchText.isEmpty {
+//            // Async path: delegate to searchControllable for full entry-level search
+//            let controller = searchControllable
+//            let expandsEntries = listModel.searchExpandsEntries
+//            listModel.searchTask = Task { @MainActor in
+//                let results = await controller.searchItems(searchText: searchText)
+//                guard !Task.isCancelled else { return }
+//                // Capture before displayedItems is replaced — after the swap the old "0-2-UUID"
+//                // string IDs no longer match any "search-…" row, so selectedItemId returns nil.
+//                let previousSelectedId = listModel.selectedItemId
+//                let items = buildSearchDisplayItems(from: results, expandsEntries: expandsEntries)
+//                listModel.displayedItems <=> items
+//                listModel.displayedParentItems <=> []
+//                // Re-anchor the selection to the item's new search-mode ID
+//                if let id = previousSelectedId,
+//                   let matchedItem = items.first(where: { $0.model.id == id && $0.entryId == nil }) {
+//                    listModel.selected <=> matchedItem.id
+//                    listModel.listSelection <=> Set(arrayLiteral: matchedItem.id)
+//                }
+//            }
+//            return
+//        }
 
         // Synchronous tree-filter path (no search text)
         let newlyfilteredOnes: [ListItemModel] = listModel.originalItems.enumerated().flatMap { (index, item) in
