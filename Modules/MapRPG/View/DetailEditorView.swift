@@ -12,14 +12,18 @@ struct DetailEditorView: View {
 
     var body: some View {
         DetailSelectionEditorView(root: root, model: model)
-            .task(id: model.id) {
-                sheetRootModel = SheetRootModel(
-                    linkControllable: root.rootController.linkControllable,
-                    sheetControllable: root.rootController.sheetControllable,
-                    itemId: model.id,
-                    isEditor: true,
-                    editorModel: root.editController.sheetEditorModel
-                )
+            .onChange(of: model.id, initial: true) {
+                if sheetRootModel == nil {
+                    sheetRootModel = SheetRootModel(
+                        linkControllable: root.rootController.linkControllable,
+                        sheetControllable: root.rootController.sheetControllable,
+                        itemId: model.id,
+                        isEditor: true,
+                        editorModel: root.editController.sheetEditorModel
+                    )
+                } else {
+                    sheetRootModel?.reset(itemId: model.id)
+                }
             }
 
         DisplayConfigEditor(model: model)

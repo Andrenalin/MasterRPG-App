@@ -22,14 +22,18 @@ struct DetailEditorView: View {
         }
         .opacity(model.specialCategory ? 0 : 1)
         .padding()
-        .task(id: model.id) {
-            sheetRootModel = SheetRootModel(
-                linkControllable: root.rootController.linkControllable,
-                sheetControllable: root.rootController.sheetControllable,
-                itemId: model.id,
-                isEditor: true,
-                editorModel: root.editController.sheetEditorModel
-            )
+        .onChange(of: model.id, initial: true) {
+            if sheetRootModel == nil {
+                sheetRootModel = SheetRootModel(
+                    linkControllable: root.rootController.linkControllable,
+                    sheetControllable: root.rootController.sheetControllable,
+                    itemId: model.id,
+                    isEditor: true,
+                    editorModel: root.editController.sheetEditorModel
+                )
+            } else {
+                sheetRootModel?.reset(itemId: model.id)
+            }
         }
 
         if let sheetRootModel {

@@ -73,8 +73,8 @@ public struct ConvertController: Sendable {
             guard folderName != "/" else { continue }
             // Find folder at this level with the same name and parent
             var folderId = itemController.itemDataModel.items.first {
-                let item = itemController.itemOrEmpty(for: $0)
-                return item.category == .folder && item.name == folderName && item.parentId == currentParentId
+                let folderItem = itemController.itemOrEmpty(for: $0)
+                return folderItem.category == .folder && folderItem.name == folderName && folderItem.parentId == currentParentId
             }
             
             if folderId == nil, let newModel = await editController.addNew(type: .folder) {

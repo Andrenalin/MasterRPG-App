@@ -64,14 +64,25 @@ public final class SheetRootModel: Sendable {
     @ObservationIgnored let linkControllable: any LinkControllable
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
     
-    func reset(itemId: UUID) {
+    /// Reset this model for a new item without replacing the instance.
+    /// Callers in other modules (e.g. DetailEditorView in each RPG module) use this
+    /// to avoid a @State assignment, which would otherwise re-run DetailEditorView.body
+    /// and recreate SheetRootEditorView with a new sheetRootModel reference — causing
+    /// SheetRootEditorView to see "@self changed" whenever the async task completed
+    /// (which the user perceived as an update "while scrolling").
+    public func reset(itemId: UUID) {
         guard sheetModel.source.itemId != itemId else { return }
-        print("Here reset change")
-        let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
-        self.sheetModel = sheetModel
-        self.editorModel.setEdit(source: sheetModel.source)
-        // Initialize lastIsShown to match isShown so first search clear works correctly
-        initializeLastIsShownState(sheetModel: sheetModel)
+        // Load the sheet model for the new item first so any search filter
+        // that runs afterward operates on the correct data.
+        let newSheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
+        self.sheetModel = newSheetModel
+        self.editorModel.setEdit(source: newSheetModel.source)
+        // Clear stale per-item caches so new views build fresh link text models.
+        linkTextModel = [:]
+        // Clear search state without restoring saved visibility (hasActiveSearch=false
+        // means didSet will not attempt a restore when searchText is set to "").
+        hasActiveSearch = false
+        searchText = ""
     }
     
     func rootController(for module: NetworkModules) -> ItemRootController? {

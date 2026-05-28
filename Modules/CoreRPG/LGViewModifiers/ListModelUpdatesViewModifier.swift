@@ -81,12 +81,13 @@ private extension ListModelUpdatesViewModifier {
             listModel.listSelection <=> Set(arrayLiteral: id)
             if let itemId = listModel.selectedItemId {
                 if listModel.parentModel != nil {
-                    listModel.subFolderRoute = itemId
-                    if listModel.navigationModel.folderItems.last != itemId {
-                        let oldFolderItem = listModel.navigationModel.folderItems
-                        listModel.navigationModel.folderItems.append(itemId)
-                        print("**** \(oldFolderItem) vs. \(listModel.navigationModel.folderItems)")
-                    }
+                    // Deactivated the sub folders for now - will come back after the search / filter refactoring
+//                    listModel.subFolderRoute = itemId
+//                    if listModel.navigationModel.folderItems.last != itemId {
+//                        let oldFolderItem = listModel.navigationModel.folderItems
+//                        listModel.navigationModel.folderItems.append(itemId)
+//                        print("**** \(oldFolderItem) vs. \(listModel.navigationModel.folderItems)")
+//                    }
                 } else {
                     listModel.itemRoute = itemId
                     listModel.navigationModel.selectedItemId = itemId

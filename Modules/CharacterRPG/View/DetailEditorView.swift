@@ -16,23 +16,39 @@ struct DetailEditorView: View {
     // dependencies of this view. Previously those reads caused DetailEditorView
     // to observe \LinkHighLightLocations.locations and \ItemDataModel.itemData,
     // which looped every time text rendered.
+    //
+    // Fix #3: SheetRootModel is reused across item switches via reset(itemId:).
+    // Previously, every item switch created a NEW SheetRootModel instance and
+    // assigned it to @State sheetRootModel. That @State change re-ran
+    // DetailEditorView.body (creating a new SheetRootEditorView struct with a
+    // different sheetRootModel reference), which printed "@self changed" in
+    // SheetRootEditorView. The user perceived this as "updates while scrolling"
+    // because the async task completed while scrolling after an item switch.
+    // Now only the first item creates the model; subsequent items call reset().
     @State private var sheetRootModel: SheetRootModel?
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
         DetailSelectionEditorView(root: root, model: model)
-            .task(id: model.id) {
-                // Existing per-item setup kept here.
+            // task is swallowing the updates later, this causes a 2 double creation on start / that is acceptable
+            .onChange(of: model.id, initial: true) {
                 root.editorLinkModel.characterSelectionModel.onlyChildrenFrom <=> model.id
-                // SheetRootModel is rebuilt whenever the selected item changes.
-                sheetRootModel = SheetRootModel(
-                    linkControllable: root.linkControllable,
-                    sheetControllable: root.sheetControllable,
-                    itemId: model.id,
-                    isEditor: true,
-                    editorModel: root.editController.sheetEditorModel
-                )
+                if sheetRootModel == nil {
+                    // First appearance: create the model once (one-time @State assignment).
+                    sheetRootModel = SheetRootModel(
+                        linkControllable: root.linkControllable,
+                        sheetControllable: root.sheetControllable,
+                        itemId: model.id,
+                        isEditor: true,
+                        editorModel: root.editController.sheetEditorModel
+                    )
+                } else {
+                    // Subsequent item switches: update the model in-place.
+                    // No @State change → DetailEditorView.body does NOT re-run
+                    // → SheetRootEditorView.body does NOT re-run.
+                    sheetRootModel?.reset(itemId: model.id)
+                }
             }
 
         if let sheetRootModel {

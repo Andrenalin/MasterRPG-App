@@ -116,6 +116,7 @@ struct MasterRPGApp: App {
 #if !os(tvOS)
         WindowViewerList(appModel: appModel)
         WindowLinkList(appModel: appModel)
+        WindowUtilityList(appModel: appModel)
 #endif
         
 #if os(macOS)
