@@ -103,13 +103,17 @@ private extension ListRootView {
             let cc = ConvertController(itemController: root.itemControllable, editController: root.editControllable)
             await cc.moveAndCreateFolders(itemId: model.id)
             try? await Task.sleep(for: .seconds(0.2))
+            if parentModel != nil {
+                root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
+                // Reset parent list filter when adding to folder/collection
+                root.folderListControllable.resetFilter()
+            }
+            guard let updatedModel = root.itemControllable.itemSync(for: model.id) else { return }
             withAnimation {
-                if parentModel != nil {
-                    root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
-                    // Reset parent list filter when adding to folder/collection
-                    root.folderListControllable.resetFilter()
-                }
-                listController.add(model: model)
+                listController.add(model: updatedModel)
+                listController.resetFilter()
+                listController.listModel.set(selectedItemId: updatedModel.id)
+                listController.listModel.scrollId = listController.listModel.selected
             }
         }
     }
