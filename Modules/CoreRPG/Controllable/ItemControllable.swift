@@ -48,6 +48,7 @@ public extension ItemControllable {
         try? await dataControllable?.replace(id: model.id, with: model)
         insertIntoItems(model: model)
         setModel(with: model)
+        await save()
         return model.id
     }
 

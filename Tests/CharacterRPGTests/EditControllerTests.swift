@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import DiceRPG
@@ -229,6 +228,54 @@ struct EditControllerTests {
         #expect(copiedChild.groupId != parentId)
     }
 
+    // MARK: - addItem (folder membership + parentId)
+
+    @Test func addItemSetsParentIdAndFolderContainsAllChildren() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        // Empty folder — no children yet
+        let folderId = await root.itemController.addNew(type: .folder)
+        let emptyFolder = await root.itemController.itemOrEmpty(for: folderId)
+        #expect(emptyFolder.entries.isEmpty)
+
+        // Add item1 → folder must list it and parentId must be set
+        let item1Id = await root.itemController.addNew(type: .item)
+        await sut.addItem(itemId: item1Id, parentId: folderId)
+
+        let item1 = await root.itemController.itemOrEmpty(for: item1Id)
+        #expect(item1.parentId == folderId)
+
+        let folderAfterItem1 = await root.itemController.itemOrEmpty(for: folderId)
+        #expect(folderAfterItem1.entries.contains(where: { $0.childId == item1Id }))
+
+        // Create item2 but do NOT add it yet
+        let item2Id = await root.itemController.addNew(type: .item)
+
+        // Add item3 before item2 to verify out-of-order insertion still works
+        let item3Id = await root.itemController.addNew(type: .item)
+        await sut.addItem(itemId: item3Id, parentId: folderId)
+
+        // Now add the previously skipped item2
+        await sut.addItem(itemId: item2Id, parentId: folderId)
+
+        // All three must have parentId pointing to the folder
+        let finalItem1 = await root.itemController.itemOrEmpty(for: item1Id)
+        let finalItem2 = await root.itemController.itemOrEmpty(for: item2Id)
+        let finalItem3 = await root.itemController.itemOrEmpty(for: item3Id)
+
+        #expect(finalItem1.parentId == folderId)
+        #expect(finalItem2.parentId == folderId)
+        #expect(finalItem3.parentId == folderId)
+
+        // Folder entries must contain all three items
+        let finalFolder = await root.itemController.itemOrEmpty(for: folderId)
+        #expect(finalFolder.entries.count == 3)
+        #expect(finalFolder.entries.contains(where: { $0.childId == item1Id }))
+        #expect(finalFolder.entries.contains(where: { $0.childId == item2Id }))
+        #expect(finalFolder.entries.contains(where: { $0.childId == item3Id }))
+    }
+
     // MARK: - delete / restore round-trip
 
     @Test func deleteAndRestorePlainItem() async throws {
@@ -249,4 +296,3 @@ struct EditControllerTests {
         #expect(restored.groupId == nil)
     }
 }
-#endif
