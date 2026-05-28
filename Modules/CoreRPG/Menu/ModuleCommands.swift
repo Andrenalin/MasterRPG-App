@@ -30,7 +30,7 @@ public struct ModuleCommands: Commands {
         }
         CommandGroup(before: .textEditing) {
             if selectedModule == root.configurable.module {
-                SpaceActionButton(root: root)
+                SpaceActionButton(root: root, scenesManager: scenesManager)
                 EditItemButton(root: root)
                 DuplicateItemButton(root: root)
                 ExportItemButton(root: root)
@@ -122,10 +122,15 @@ struct EditItemButton: View {
 
 struct SpaceActionButton: View {
     let root: any ItemRootControllable
+    let scenesManager: ScenesManager
 
     var body: some View {
         Button {
-            root.navigationModel.triggerSpaceAction = true
+            if root.viewControllable.hasCustomSpaceAction {
+                root.navigationModel.triggerSpaceAction = true
+            } else {
+                viewItem()
+            }
         } label: {
             Label {
                 labelText
@@ -135,6 +140,18 @@ struct SpaceActionButton: View {
         }
         .keyboardShortcut(.return, modifiers: [.command, .shift])
         .disabled(root.currentSelectedItemId == nil)
+    }
+
+    private func viewItem() {
+        let fileModel = root.openFileWindowModel
+        guard fileModel.enabled else { return }
+#if os(macOS) || os(visionOS)
+        if let windowId = fileModel.windowId {
+            scenesManager.openWindow(SceneId(rawValue: windowId), selection: WindowItemSelection(itemId: fileModel.itemId, entryId: fileModel.entryId))
+            return
+        }
+#endif
+        withAnimation { fileModel.showItem.toggle() }
     }
 
     private var labelText: Text {
