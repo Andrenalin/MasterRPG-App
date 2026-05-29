@@ -186,8 +186,6 @@ private extension LinkItemListView {
         }
     }
 
-
-    
     @ViewBuilder
     private func itemRowContent(item: ListItemModel) -> some View {
         if let entryId = item.entryId {
@@ -202,13 +200,10 @@ private extension LinkItemListView {
             LinkEntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
             specialCategoryFolderIndicator(item: item)
         }
-        .contentShape(.rect)
         .contextMenu {
             contextMenu(for: item)
         }
-#if !os(tvOS)
-        .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name.withoutLink())
-#endif
+        .draggableWithOverlay(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name.withoutLink())
     }
     
     private func standardItemRow(item: ListItemModel) -> some View {
@@ -271,11 +266,10 @@ private extension LinkItemListView {
                 ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, listDisplayModel: root.folderLinkControllable.listDisplayModel)
             }
         }
+        .draggableWithOverlay(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name.withoutLink())
         .overlay(alignment: .trailing) {
             specialCategoryFolderIndicator(item: item)
         }
-        .contentShape(.rect)
-        .draggable(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name.withoutLink())
     }
 
     func openDetail(for item: ListItemModel) {

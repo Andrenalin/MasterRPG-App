@@ -19,14 +19,10 @@ struct DragOverlayViewModifier: ViewModifier {
             .contentShape(.rect)
 #if os(macOS)
             .textSelection(.disabled)
-            .overlay {
-                // Color.primary.opacity(0.001) gives AppKit a non-text surface to initiate drag from,
-                // which text-only rows lack even with textSelection disabled.
-                Color.primary.opacity(0.001)
-                    .draggable(for: module, itemId: itemId, entryId: entryId, name: name)
-            }
-#else
-            .draggable(for: module, itemId: itemId, entryId: entryId, name: name)
+            // Nearly invisible background gives AppKit a non-text pixel surface to initiate drag.
+            // An overlay would block tap targets; a background sits below all interactive content.
+            .background(Color.primary.opacity(0.001))
 #endif
+            .draggable(for: module, itemId: itemId, entryId: entryId, name: name)
     }
 }
