@@ -4,16 +4,50 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 extension View {
+    func draggable<Preview: View>(for module: NetworkModules, itemId: UUID, entryId: UUID?, name: String, isMove: Bool = false, @ViewBuilder preview: @escaping () -> Preview) -> some View {
+        modifier(LinkDragViewModifierPreview(itemId: itemId, entryId: entryId, module: module, name: name, isMove: isMove, preview: preview))
+    }
+
+    // Convenience overload for call sites that don't need a custom drag preview
     public func draggable(for module: NetworkModules, itemId: UUID, entryId: UUID?, name: String, isMove: Bool = false) -> some View {
         modifier(LinkDragViewModifier(itemId: itemId, entryId: entryId, module: module, name: name, isMove: isMove))
     }
-    
+
     public func dropDestination(for module: NetworkModules, isEnabled: Bool = true, handler: @escaping (_ name: String, _ itenId: UUID, _ entryId: UUID?) -> Void) -> some View {
         modifier(LinkDropDestinationViewModifier(module: module, isEnabled: isEnabled, handler: handler))
     }
     
     public func dropDestination(for module: NetworkModules, handler: @escaping (_ name: String, _ itenId: UUID, _ entryId: UUID?) -> Void, isTargeted: @escaping (Bool) -> Void) -> some View {
         modifier(LinkDropDestinationTargetedViewModifier(module: module, handler: handler, isTargeted: isTargeted))
+    }
+}
+
+struct LinkDragViewModifierPreview<Preview: View>: ViewModifier {
+    let itemId: UUID
+    let entryId: UUID?
+    let module: NetworkModules
+    let name: String
+    let isMove: Bool
+    let preview: () -> Preview
+
+    func body(content: Content) -> some View {
+#if os(tvOS)
+        content
+#else
+        switch module {
+        case .adventure: content.draggable(LinkAdventureData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .audio: content.draggable(LinkAudioData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .value: content.draggable(LinkCharacterData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .dice: content.draggable(LinkDiceData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .map: content.draggable(LinkMapData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .pdf: content.draggable(LinkPdfData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .photo: content.draggable(LinkPhotoData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .space: content.draggable(LinkSpaceData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .table: content.draggable(LinkTableData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .weather: content.draggable(LinkWeatherData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        default: content.draggable(LinkEntryData(itemId: itemId, entryId: entryId, name: name, module: module, isMove: isMove)) { preview() }
+        }
+#endif
     }
 }
 

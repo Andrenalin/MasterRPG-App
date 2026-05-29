@@ -247,9 +247,9 @@ private extension ListRootView {
                     .imageScale(.small)
                     .padding(.trailing)
                     .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
-                    .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .contentShape(.rect)
         }
     }
 
