@@ -164,15 +164,8 @@ private extension ToolbarItemListViewModifier {
         }
     }
 
-    func addItem(for type: EditControllerAddType) async {        
-        guard let newModel = await root.editControllable.addNew(type: type) else { return }
-        withAnimation {
-            if parentModel != nil {
-                root.editControllable.addItem(itemId: newModel.id, parentId: listModel.selectedParentId)
-            } else {
-                listController.add(model: newModel)
-            }
-        }
+    func addItem(for type: EditControllerAddType) async {
+        listController.add(type: type, url: nil, root: root)
     }
     
     var dismissButton: some View {

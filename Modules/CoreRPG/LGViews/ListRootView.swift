@@ -112,28 +112,7 @@ private extension ListRootView {
     }
     
     func updateFile(url: URL) {
-        Task {
-            guard let model = await root.editControllable.addNew(type: .item) else { return }
-            await root.editControllable.resetFile(url: url, itemId: model.id)
-            let cc = ConvertController(itemController: root.itemControllable, editController: root.editControllable)
-            await cc.moveAndCreateFolders(itemId: model.id)
-            try? await Task.sleep(for: .seconds(1.0))
-            await root.itemControllable.save()
-            if parentModel != nil {
-                root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
-                // Reset parent list filter when adding to folder/collection
-                root.folderListControllable.resetFilter()
-            }
-            guard let updatedModel = root.itemControllable.itemSync(for: model.id) else { return }
-            withAnimation {
-                listController.add(model: updatedModel)
-                listController.resetFilter()
-                listController.listModel.set(selectedItemId: updatedModel.id)
-                listController.listModel.scrollId = listController.listModel.selected
-            }
-            try? await Task.sleep(for: .seconds(0.25))
-            root.navigationModel.openHeaderEditor = true
-        }
+        listController.add(type: .item, url: url, root: root)
     }
     
     @ViewBuilder

@@ -113,7 +113,32 @@ public extension FolderListControllable {
 }
 
 extension FolderListControllable {
-    func add(model: any ItemDataAccessable) {
+    func add(type: EditControllerAddType, url: URL?, root: any ItemRootControllable) {
+        Task {
+            guard let model = await root.editControllable.addNew(type: type) else { return }
+            if let url {
+                await root.editControllable.resetFile(url: url, itemId: model.id)
+                let cc = ConvertController(itemController: root.itemControllable, editController: root.editControllable)
+                await cc.moveAndCreateFolders(itemId: model.id)
+            }
+            try? await Task.sleep(for: .seconds(1.0))
+            await root.itemControllable.save()
+            if listModel.parentModel != nil {
+                root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
+                // Reset parent list filter when adding to folder/collection
+                root.folderListControllable.resetFilter()
+            }
+            guard let updatedModel = root.itemControllable.itemSync(for: model.id) else { return }
+            add(model: updatedModel)
+            resetFilter()
+            listModel.set(selectedItemId: updatedModel.id)
+            listModel.scrollId = listModel.selected
+            try? await Task.sleep(for: .seconds(0.25))
+            root.navigationModel.openHeaderEditor = true
+        }
+    }
+    
+    private func add(model: any ItemDataAccessable) {
         listModel.addedModelId = model.id
     }
     
