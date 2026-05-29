@@ -60,12 +60,11 @@ public final class MapRootModel {
         _searchController = searchController
         _sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
 
         _rootController = ItemRootController(
             config: config,
             listDisplayModel: listDisplayModel,
-            searchModel: searchModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
             openFileWindowModel: openFileWindowModel,
@@ -103,7 +102,7 @@ public final class MapRootModel {
     public let config: ModuleConfiguration
     
     public let listDisplayModel: ListDisplayModel
-    public let searchModel: SearchModel
+    let searchModel: SearchModel
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel

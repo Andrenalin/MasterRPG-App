@@ -47,12 +47,11 @@ public final class AudioRootModel {
 
         _sheetController = SheetController(itemController: itemController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
 
         _rootController = ItemRootController(
             config: config,
             listDisplayModel: listDisplayModel,
-            searchModel: searchModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
             openFileWindowModel: openFileWindowModel,
@@ -86,7 +85,7 @@ public final class AudioRootModel {
     public let config: ModuleConfiguration
     
     public let listDisplayModel: ListDisplayModel
-    public let searchModel: SearchModel
+    let searchModel: SearchModel
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel

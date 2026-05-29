@@ -10,7 +10,7 @@ public struct SearchListController {
     }
     
     let searchController: any SearchControllable
-    public var searchModel: SearchModel
+    public let searchModel: SearchModel
 }
 
 extension SearchListController: SearchRootControllable {

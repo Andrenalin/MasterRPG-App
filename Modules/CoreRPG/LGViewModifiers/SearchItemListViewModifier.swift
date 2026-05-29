@@ -51,11 +51,16 @@ struct SearchItemListViewModifier: ViewModifier {
     }
     
     func updateSearch() {
+        listControllable.searchRootControllable.searchModel.results = []
         withAnimation {
             listControllable.resetFilter()
             listControllable.cacheListItemModel.reset(search: listControllable.searchModel.searchText)
             listControllable.searchModel.updateTagSuggestions()
             listControllable.searchModel.searchFieldText <=> listControllable.searchModel.searchText
+        }
+        Task {
+            await listControllable.searchRootControllable.performSearch()
+            withAnimation { listControllable.resetFilter() }
         }
     }
     

@@ -7,11 +7,10 @@ import SwiftData
 public protocol ItemRootControllable: Sendable {
     var configurable: ModuleConfigurable { get }
     var listDisplayModel: ListDisplayModel { get }
-    var searchModel: SearchModel { get }
     var navigationModel: ModuleNavigationModel { get }
     var inspectorEditorLinkModel: EditorLinkModel? { get }
     var openFileWindowModel: OpenFileWindowModel { get }
-    
+
     var currentSelectedItemId: UUID? { get }
     var itemSelectionModel: ItemSelectionModel { get }
     var removeEntryListModel: RemoveEntryListModel { get }
@@ -28,8 +27,12 @@ public protocol ItemRootControllable: Sendable {
     var searchControllable: any SearchControllable { get }
     var sheetControllable: any SheetControllable { get }
     var viewControllable: any ViewControllable { get }
-    
+
     var rootController: ItemRootController { get }
+}
+
+public extension ItemRootControllable {
+    var searchModel: SearchModel { folderListControllable.searchModel }
 }
 
 @MainActor @Observable
@@ -37,7 +40,6 @@ public final class ItemRootController: ItemRootControllable {
     public init(
         config: ModuleConfigurable,
         listDisplayModel: ListDisplayModel,
-        searchModel: SearchModel,
         navigationModel: ModuleNavigationModel,
         inspectorEditorLinkModel: EditorLinkModel?,
         openFileWindowModel: OpenFileWindowModel,
@@ -57,7 +59,6 @@ public final class ItemRootController: ItemRootControllable {
     ) {
         self.configurable = config
         self.listDisplayModel = listDisplayModel
-        self.searchModel = searchModel
         self.navigationModel = navigationModel
         self.inspectorEditorLinkModel = inspectorEditorLinkModel
         self.openFileWindowModel = openFileWindowModel
@@ -76,14 +77,13 @@ public final class ItemRootController: ItemRootControllable {
         self.sheetControllable = sheetControllable
         self.viewControllable = viewControllable
     }
-    
+
     public let configurable: ModuleConfigurable
     public let listDisplayModel: ListDisplayModel
-    public let searchModel: SearchModel
     public let navigationModel: ModuleNavigationModel
     public let inspectorEditorLinkModel: EditorLinkModel?
     public let openFileWindowModel: OpenFileWindowModel
-    
+
     public var itemSelectionModel: ItemSelectionModel
     public var currentSelectedItemId: UUID? {
         folderListControllable.listModel.selectedItemId
@@ -101,8 +101,8 @@ public final class ItemRootController: ItemRootControllable {
     public let searchControllable: any SearchControllable
     public let sheetControllable: any SheetControllable
     public let viewControllable: any ViewControllable
-    
+
     public let removeEntryListModel: RemoveEntryListModel
-    
+
     public var rootController: ItemRootController { self }
 }

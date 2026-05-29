@@ -43,8 +43,8 @@ public struct LinkItemListView: View {
                         searchModel: root.folderLinkControllable.searchModel,
                         prompt: Self.filterPrompt
                     ) {
-                        root.folderLinkControllable.resetFilter()
                         root.folderLinkControllable.cacheListItemModel.reset(search: root.folderLinkControllable.searchModel.searchText)
+                        Task { await root.folderLinkControllable.performSearch() }
                     }
                 }
 

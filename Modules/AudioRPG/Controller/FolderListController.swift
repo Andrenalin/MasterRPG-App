@@ -9,7 +9,6 @@ import SwiftUI
 struct FolderListController: FolderListControllable {
     let listModel: FolderListModel
     let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel
     let itemControllable: any ItemControllable
     let searchRootControllable: any SearchRootControllable
     let cacheListItemModel = CacheItemListModel()
@@ -23,15 +22,19 @@ struct FolderListController: FolderListControllable {
     }
     
     func copy(parentModel: (any ItemDataAccessable)?) -> FolderListController {
-        FolderListController(listModel: FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel), listDisplayModel: listDisplayModel.newListDisplayModel,
-            searchModel: searchModel.newSearchModel,
+        let newSearchModel = searchRootControllable.searchModel.newSearchModel
+        return FolderListController(
+            listModel: FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel),
+            listDisplayModel: listDisplayModel.newListDisplayModel,
             itemControllable: itemControllable,
             searchRootControllable: searchRootControllable)
     }
     
     func copy(listModel: FolderListModel) -> FolderListController {
-        FolderListController(listModel: listModel, listDisplayModel: listDisplayModel.newListDisplayModel,
-            searchModel: searchModel.newSearchModel,
+        let newSearchModel = searchRootControllable.searchModel.newSearchModel
+        return FolderListController(
+            listModel: listModel,
+            listDisplayModel: listDisplayModel.newListDisplayModel,
             itemControllable: itemControllable,
             searchRootControllable: searchRootControllable)
     }

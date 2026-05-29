@@ -101,7 +101,7 @@ public final class AdventureRootModel {
     public let config: ModuleConfiguration
     
     public let listDisplayModel: ListDisplayModel
-    public let searchModel: SearchModel
+    let searchModel: SearchModel
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
@@ -176,7 +176,7 @@ public final class AdventureRootModel {
     var linkRegisterController: LinkRegisterController { _linkRegisterController! }
     
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
-        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), searchModel: searchModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
+        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
     }()
     @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
         rootController.folderLinkControllable
@@ -189,7 +189,6 @@ public final class AdventureRootModel {
         ItemRootController(
             config: config,
             listDisplayModel: listDisplayModel,
-            searchModel: searchModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
             openFileWindowModel: openFileWindowModel,
