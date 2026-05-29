@@ -179,7 +179,7 @@ public final class AdventureRootModel {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
     }()
     @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
-        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel))
+        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel))
     }()
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()

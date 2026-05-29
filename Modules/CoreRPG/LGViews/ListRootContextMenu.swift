@@ -241,9 +241,6 @@ private extension ListRootContextMenu {
                 Image(systemName: "folder")
             }
         }
-        #if !os(tvOS)
-        .keyboardShortcut("m", modifiers: [.command, .shift])
-        #endif
     }
 
     var addItemView: some View {

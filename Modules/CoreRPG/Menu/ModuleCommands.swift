@@ -409,7 +409,6 @@ struct MoveItemIntoButton: View {
                 Image(systemName: "folder")
             }
         }
-        .keyboardShortcut("m", modifiers: [.command, .shift])
         .disabled(folders.isEmpty)
     }
 
