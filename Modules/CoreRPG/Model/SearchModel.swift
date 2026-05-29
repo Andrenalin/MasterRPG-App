@@ -29,6 +29,7 @@ public final class SearchModel: Sendable {
     var isSearching = false
     var results: [SearchResult] = []
     var selection: SearchResult?
+    public var filterId: UUID?
 
     @ObservationIgnored private var _searchTask: Task<Void, Never>?
 

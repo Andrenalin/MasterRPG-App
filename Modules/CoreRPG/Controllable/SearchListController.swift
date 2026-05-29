@@ -33,8 +33,8 @@ public struct SearchLinkController {
 }
 
 extension SearchLinkController: SearchRootControllable {
-    
+
     public func results(text: String) async -> [SearchResult] {
-        await searchController.inspectorSearchResults(searchText: text, parentId: nil)
+        await searchController.inspectorSearchResults(searchText: text, parentId: searchModel.filterId)
     }
 }

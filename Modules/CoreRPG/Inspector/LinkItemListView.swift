@@ -112,15 +112,15 @@ private extension LinkItemListView {
     /// a parent-filtered view or the full list
     func configureParentFiltering() async {
         if let parentModel {
-            // This view needs parent filtering
+            // Scope inspector search to this item
+            root.folderLinkControllable.searchModel.filterId = parentModel.id
             let mode: ListDisplayModel.ListMode = parentModel.category == .folder ? .folder : .list
             if root.folderLinkControllable.listDisplayModel.listMode != mode {
                 root.folderLinkControllable.listDisplayModel.listMode = mode
             }
             root.folderLinkControllable.resetParentModel(model: parentModel)
         } else {
-            // This view doesn't need parent filtering - clear any existing parent model
-            // This is crucial when switching between tabs where one has parent filtering and another doesn't
+            root.folderLinkControllable.searchModel.filterId = nil
             if root.folderLinkControllable.listModel.parentModel != nil {
                 root.folderLinkControllable.listModel.parentModel = nil
                 root.folderLinkControllable.listModel.parentOriginalItems = []

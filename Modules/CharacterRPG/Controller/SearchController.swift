@@ -176,26 +176,29 @@ extension SearchController {
 
 extension SearchController {
     /// Inspector search used by `SearchLinkController`.
-    /// - `parentId == nil`: walks all root characters (`groupId == nil`, `displayState == 0`)
-    ///   and their full value trees.
-    /// - `parentId != nil`: scoped to a single character/group.
+    ///
+    /// - `parentId != nil`: scoped to the given character. All results carry that character's
+    ///   `itemId` so the UI navigates back to the character, not into a sub-value group.
+    /// - `parentId == nil`: walks all root characters (`groupId == nil`, `displayState == 0`).
     func inspectorSearchResults(searchText: String, parentId: UUID?) async -> [SearchResult] {
         guard !searchText.isEmpty else { return [] }
         var foundResults: [SearchResult] = []
         if let parentId {
-            guard let item = await itemController.item(for: parentId) else { return [] }
-            await inspectorResult(item: item, searchText: searchText, foundResults: &foundResults)
+            guard let character = await itemController.item(for: parentId) else { return [] }
+            await characterInspectorResult(character: character, searchText: searchText, foundResults: &foundResults)
+            return foundResults // not sorting!
         } else {
             let itemIds = await itemControllable.itemDataModel.items
             for itemId in itemIds {
                 guard !Task.isCancelled else { break }
-                guard let item = await itemController.item(for: itemId),
-                      item.groupId == nil,
-                      item.displayState == 0 else { continue }
-                await inspectorResult(item: item, searchText: searchText, foundResults: &foundResults)
+                guard let character = await itemController.item(for: itemId),
+                      character.groupId == nil,
+                      character.displayState == 0 else { continue }
+                await characterInspectorResult(character: character, searchText: searchText, foundResults: &foundResults)
             }
+            return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
+
         }
-        return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
     }
 
     /// Inspector search scoped to a single character (legacy helper).
@@ -203,41 +206,40 @@ extension SearchController {
         await inspectorSearchResults(searchText: searchText, parentId: characterId)
     }
 
-    /// Inspector traversal: searches name/description **and** all entries regardless of
-    /// `specialCategory`, then follows every `ValueEntryModel.valueId` link recursively.
-    ///
-    /// Unlike `result()`, this never skips a value's entries based on its category —
-    /// character groups (which are often `specialCategory`) must be fully traversed so their
-    /// entries are returned as search hits in the inspector list.
-    private func inspectorResult(item: ValueModel, searchText: String, foundResults: inout [SearchResult]) async {
-        // Item-level match (name / description)
-        if item.filter(filter: searchText, includeEntries: false) {
+    /// Searches `character` name/description and all entries at every level of the value tree.
+    /// All results use `character.id` as `itemId` so navigation always returns to the character.
+    private func characterInspectorResult(character: ValueModel, searchText: String, foundResults: inout [SearchResult]) async {
+        if character.filter(filter: searchText, includeEntries: false) {
             foundResults.append(SearchResult(
-                itemId: item.id,
-                itemName: item.name,
+                itemId: character.id,
+                itemName: character.name,
                 module: itemControllable.config.module,
-                category: item.category,
+                category: character.category,
                 entryId: nil,
                 entryName: nil,
-                matchedContent: item.description.isEmpty ? nil : item.description,
+                matchedContent: character.description.isEmpty ? nil : character.description,
                 relevanceScore: calculateRelevance(
                     searchText: searchText,
-                    itemName: item.name,
+                    itemName: character.name,
                     entryName: nil,
-                    content: item.description,
+                    content: character.description,
                     isItemMatch: true
                 )
             ))
         }
+        await searchValueEntries(of: character, characterId: character.id, characterName: character.name, searchText: searchText, foundResults: &foundResults)
+    }
 
-        // Entry-level matches — always searched, including inside specialCategory groups
+    /// Walks all entries of `item`, appending hits with `characterId`/`characterName` as the result
+    /// anchor. Recurses into sub-value groups via `entry.valueId`.
+    private func searchValueEntries(of item: ValueModel, characterId: UUID, characterName: String, searchText: String, foundResults: inout [SearchResult]) async {
         for entry in item.entries {
             guard !Task.isCancelled else { break }
 
             if entry.filter(with: searchText) {
                 foundResults.append(SearchResult(
-                    itemId: item.id,
-                    itemName: item.name,
+                    itemId: characterId,
+                    itemName: characterName,
                     module: itemControllable.config.module,
                     category: item.category,
                     entryId: entry.id,
@@ -245,7 +247,7 @@ extension SearchController {
                     matchedContent: entry.content.isEmpty ? nil : entry.content,
                     relevanceScore: calculateRelevance(
                         searchText: searchText,
-                        itemName: item.name,
+                        itemName: characterName,
                         entryName: entry.name,
                         content: entry.content,
                         isItemMatch: false
@@ -253,10 +255,9 @@ extension SearchController {
                 ))
             }
 
-            // Recurse into linked sub-values (groups / nested stat blocks)
             if let subValueId = entry.valueId {
                 guard let subValue = await itemController.item(for: subValueId) else { continue }
-                await inspectorResult(item: subValue, searchText: searchText, foundResults: &foundResults)
+                await searchValueEntries(of: subValue, characterId: characterId, characterName: characterName, searchText: searchText, foundResults: &foundResults)
             }
         }
     }
