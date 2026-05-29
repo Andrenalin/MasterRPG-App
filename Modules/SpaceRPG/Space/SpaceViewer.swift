@@ -206,22 +206,21 @@ private extension SpaceViewer {
                         inputObject.generateCollisionShapes(recursive: false, static: true)
                     }
                 }
-
-                // Normalize scale to fit in view
-                let rootSize = firstMesh.size()
-                let maxSize = max(rootSize.z, max(rootSize.x, rootSize.y))
-
-                // Avoid division by zero
-                if maxSize > 0.001 {
-                    let minScaleF = (1 / maxSize)
-                    loadedEntity.scale *= minScaleF
-                }
             }
 
-#if os(visionOS)
-            loadedEntity.position = SIMD3(x: 0, y: 1, z: -2)
-#else
-            loadedEntity.position = SIMD3(x: 0, y: 0, z: 0)
+            // Normalize scale using full visual bounds so intermediate transforms and
+            // multi-mesh hierarchies are measured correctly (mesh-local bounds alone miss this).
+            let visualBounds = loadedEntity.visualBounds(relativeTo: loadedEntity)
+            let maxExtent = max(visualBounds.extents.x, max(visualBounds.extents.y, visualBounds.extents.z))
+            if maxExtent > 0.001 && maxExtent.isFinite {
+                let targetSize: Float = valueFor(iOS: 1.0, macOS: 1.0, tvOS: 1.0, visionOS: 0.5)
+                loadedEntity.scale *= targetSize / maxExtent
+            }
+
+            // visionOS: origin is the centre of the volumetric window — keep the entity there.
+            // z: -2 would place it 2 m outside the volume bounds and make it invisible.
+            loadedEntity.position = .zero
+#if !os(visionOS)
             if var cameraContent = content as? RealityViewCameraContent {
                 cameraContent.camera = .virtual
             }
