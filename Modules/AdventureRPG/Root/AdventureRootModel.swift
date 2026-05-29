@@ -112,7 +112,7 @@ public final class AdventureRootModel {
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
         EditorLinkModel(
             rootManager: rootManager!,
-            folderListController: folderListController.copy(parentModel: nil),
+            folderListController: folderLinkController,
             adventureSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -132,7 +132,7 @@ public final class AdventureRootModel {
     @MainActor @ObservationIgnored lazy var playerLinkModel: EditorLinkModel = {
         EditorLinkModel(
             rootManager: rootManager!,
-            folderListController: folderListController.copy(parentModel: nil),
+            folderListController: folderLinkController,
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -178,9 +178,9 @@ public final class AdventureRootModel {
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
     }()
-    @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
-        rootController.folderLinkControllable
-    }
+    @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
+        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel))
+    }()
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()
@@ -202,6 +202,7 @@ public final class AdventureRootModel {
             itemControllable: itemControllable,
             linkControllable: linkControllable,
             folderListControllable: folderListController,
+            folderLinkControllable: folderLinkControllable,
             searchControllable: searchController,
             sheetControllable: sheetController,
             viewControllable: viewController

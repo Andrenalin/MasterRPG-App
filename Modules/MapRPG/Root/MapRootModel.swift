@@ -62,6 +62,8 @@ public final class MapRootModel {
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
 
+        _folderLinkController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel.newListDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel))
+
         _rootController = ItemRootController(
             config: config,
             listDisplayModel: listDisplayModel,
@@ -78,6 +80,7 @@ public final class MapRootModel {
             itemControllable: itemControllable,
             linkControllable: linkControllable,
             folderListControllable: folderListController,
+            folderLinkControllable: folderLinkControllable,
             searchControllable: searchController,
             sheetControllable: sheetController,
             viewControllable: viewController
@@ -113,7 +116,7 @@ public final class MapRootModel {
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
         EditorLinkModel(
             rootManager: RootManager(adventureRoot: self, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, generatorRoot: self, mapRoot: self, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: self, tableRoot: tableRoot, weatherRoot: self),
-            folderListController: folderListController.copy(parentModel: nil),
+            folderListController: folderLinkController,
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -155,9 +158,8 @@ public final class MapRootModel {
 
     @ObservationIgnored private(set) var _folderListController: FolderListController?
     var folderListController: FolderListControllable { _folderListController! }
-        @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
-        rootController.folderLinkControllable
-    }
+    @ObservationIgnored private(set) var _folderLinkController: FolderListController?
+    var folderLinkController: FolderListControllable { _folderLinkController! }
 
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()

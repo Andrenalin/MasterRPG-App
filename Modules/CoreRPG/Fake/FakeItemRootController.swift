@@ -24,6 +24,7 @@ public extension ItemRootController {
             itemControllable: FakeItemController.fake,
             linkControllable: linkFake,
             folderListControllable: FakeFolderListController.fake,
+            folderLinkControllable: FakeFolderListController.fake,
             searchControllable: FakeSearchController.fake,
             sheetControllable: FakeSheetController.fake,
             viewControllable: FakeViewController()

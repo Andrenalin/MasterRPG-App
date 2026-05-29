@@ -49,6 +49,8 @@ public final class AudioRootModel {
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
 
+        _folderLinkController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel.newListDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel))
+
         _rootController = ItemRootController(
             config: config,
             listDisplayModel: listDisplayModel,
@@ -65,6 +67,7 @@ public final class AudioRootModel {
             itemControllable: itemControllable,
             linkControllable: linkControllable,
             folderListControllable: folderListController,
+            folderLinkControllable: folderLinkControllable,
             searchControllable: searchController,
             sheetControllable: sheetController,
             viewControllable: viewController
@@ -125,9 +128,8 @@ public final class AudioRootModel {
     @ObservationIgnored private(set) var _folderListController: FolderListController?
     var folderListController: FolderListControllable { _folderListController! }
 
-    @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
-        rootController.folderLinkControllable
-    }
+    @ObservationIgnored private(set) var _folderLinkController: FolderListController?
+    var folderLinkController: FolderListControllable { _folderLinkController! }
 
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
@@ -139,7 +141,7 @@ public final class AudioRootModel {
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
         EditorLinkModel(
             rootManager: RootManager(anyRoot: self),
-            folderListController: folderListController.copy(parentModel: nil),
+            folderListController: folderLinkController,
             firstRow: [],
             selection: .none
         )

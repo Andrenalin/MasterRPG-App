@@ -53,6 +53,7 @@ public final class ItemRootController: ItemRootControllable {
         itemControllable: any ItemControllable,
         linkControllable: any LinkControllable,
         folderListControllable: any FolderListControllable,
+        folderLinkControllable: any FolderListControllable,
         searchControllable: any SearchControllable,
         sheetControllable: any SheetControllable,
         viewControllable: any ViewControllable
@@ -72,7 +73,7 @@ public final class ItemRootController: ItemRootControllable {
         self.itemControllable = itemControllable
         self.linkControllable = linkControllable
         self.folderListControllable = folderListControllable
-        self.folderLinkControllable = folderListControllable.copy(parentModel: nil)
+        self.folderLinkControllable = folderLinkControllable
         self.searchControllable = searchControllable
         self.sheetControllable = sheetControllable
         self.viewControllable = viewControllable

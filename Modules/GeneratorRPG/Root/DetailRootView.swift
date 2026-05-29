@@ -17,8 +17,8 @@ struct DetailListView: View {
     init(root: GeneratorRootModel, model: GeneratorModel) {
         self.root = root
         self.model = model
-        let listController = root.folderListController.copy(parentModel: model) as! FolderListController
-        self._detailFolderListController = State(wrappedValue: listController)
+        let listController = root.folderListControllable
+        self._detailFolderListController = State(wrappedValue: listController as! FolderListController)
     }
     
     let root: GeneratorRootModel

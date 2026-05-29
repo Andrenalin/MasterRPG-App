@@ -5,10 +5,6 @@ import SwiftUI
 @MainActor
 struct FakeFolderListController: FolderListControllable {
     
-    func copy(parentModel: (any ItemDataAccessable)?) -> FakeFolderListController {
-        FakeFolderListController()
-    }
-    
     func copy(listModel: FolderListModel) -> FakeFolderListController {
         FakeFolderListController()
     }
