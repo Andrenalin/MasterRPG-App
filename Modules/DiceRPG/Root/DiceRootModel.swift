@@ -32,10 +32,11 @@ public final class DiceRootModel {
         _importController = ImportController(itemController: itemController, editController: editController)
         _gameController = GameController(itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
-        _searchController = SearchController(itemController: itemController)
+        let searchController = SearchController(itemController: itemController)
+        _searchController = searchController
         _sheetController = SheetController(itemController: itemController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), searchModel: searchModel, itemControllable: itemController)
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController, searchControllable: searchController)
 
         _rootController = ItemRootController(
             config: config,
@@ -107,7 +108,7 @@ public final class DiceRootModel {
 
     @ObservationIgnored private(set) var _folderListController: FolderListController?
     var folderListController: FolderListControllable { _folderListController! }
-        @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
+    @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
         rootController.folderLinkControllable
     }
 

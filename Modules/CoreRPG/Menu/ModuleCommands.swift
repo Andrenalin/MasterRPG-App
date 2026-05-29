@@ -253,7 +253,7 @@ struct GroupEditorButton: View {
                 Image(systemName: "long.text.page.and.pencil")
             }
         }
-        .keyboardShortcut("g", modifiers: [.command, .shift])
+        .keyboardShortcut("g", modifiers: [.command, .control])
         .disabled(root.currentSelectedItemId == nil)
     }
 

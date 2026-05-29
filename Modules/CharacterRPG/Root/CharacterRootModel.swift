@@ -41,10 +41,11 @@ public final class CharacterRootModel {
         _gameController = GameController(rootManager: rootManager, root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, exportController: exportController)
         let linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         _linkController = linkController
-        _searchController = SearchController(itemController: itemController)
+        let searchController = SearchController(itemController: itemController)
+        _searchController = searchController
         _sheetController = SheetController(itemController: itemController, linkController: linkController, linkRegisterController: linkRegisterController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), searchModel: searchModel, itemControllable: itemController, itemController: itemController)
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController, searchControllable: searchController)
 
         _rootController = ItemRootController(
             config: config,

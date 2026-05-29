@@ -1741,6 +1741,7 @@
 			membershipExceptions = (
 				WeatherRPGTests/ExportControllerTests.swift,
 				WeatherRPGTests/ImportControllerTests.swift,
+				WeatherRPGTests/LinkControllerTests.swift,
 				WeatherRPGTests/SheetControllerTests.swift,
 				WeatherRPGTests/WeatherModelTests.swift,
 			);

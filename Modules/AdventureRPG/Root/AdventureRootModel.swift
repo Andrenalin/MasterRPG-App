@@ -176,7 +176,7 @@ public final class AdventureRootModel {
     var linkRegisterController: LinkRegisterController { _linkRegisterController! }
     
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
-        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), searchModel: searchModel, itemControllable: itemController)
+        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), searchModel: searchModel, itemControllable: itemController, searchControllable: searchController)
     }()
     @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
         rootController.folderLinkControllable

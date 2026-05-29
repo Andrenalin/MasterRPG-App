@@ -51,8 +51,6 @@ public extension LinkRegisterController {
         let keyId = link.itemId
         let used = !(model.items[keyId]?.isEmpty ?? true)
         return used
-//        guard !used, link.entryId != nil else { return used }
-//        return !(model.items[link.itemId]?.isEmpty ?? true)
     }
     
     /// Clears in-memory links whose destination matches `item`. Call before deletion to avoid stale references.
@@ -66,9 +64,9 @@ public extension LinkRegisterController {
     @MainActor func used(for link: ItemRowModel) -> [EffectedItemModel] {
         let keyId = link.itemId
         let links = model.items[keyId, default: []]
-        return links.map {
+        return links.compactMap {
             guard let rootController = root?.itemRootController(for: $0.source.typeId), let item = rootController.itemControllable.itemSync(for: $0.source.itemId) else {
-                return EffectedItemModel(id: $0.destination.itemId, name: "Module \($0.source.typeId) registered but item is gone", module: $0.source.typeId)
+                return nil
             }
             var entryName: String? = nil
             if let entryId = $0.source.entryId {

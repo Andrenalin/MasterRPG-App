@@ -42,10 +42,12 @@ public final class AudioRootModel {
         _gameController = gameController
 
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, audioController: audioController, gameController: gameController)
-        _searchController = SearchController(itemController: itemController)
+        let searchController = SearchController(itemController: itemController)
+        _searchController = searchController
+
         _sheetController = SheetController(itemController: itemController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), searchModel: searchModel, itemControllable: itemController)
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController, searchControllable: searchController)
 
         _rootController = ItemRootController(
             config: config,

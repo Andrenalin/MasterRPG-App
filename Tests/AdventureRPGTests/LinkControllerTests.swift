@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import DiceRPG
 import Foundation
@@ -88,4 +87,3 @@ struct LinkControllerTests {
 //        await #expect(root.itemController.itemOrEmpty(for: itemId)[entry3.id].content == "\(entry1.content)TableValue")
     }
 }
-#endif

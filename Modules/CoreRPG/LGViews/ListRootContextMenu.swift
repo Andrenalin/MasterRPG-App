@@ -198,7 +198,7 @@ private extension ListRootContextMenu {
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut("g", modifiers: [.command, .shift])
+        .keyboardShortcut("g", modifiers: [.command, .control])
         #endif
     }
 
