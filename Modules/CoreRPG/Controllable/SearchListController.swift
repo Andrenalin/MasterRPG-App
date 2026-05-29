@@ -16,7 +16,7 @@ public struct SearchListController {
 extension SearchListController: SearchRootControllable {
     
     public func results(text: String) async -> [SearchResult] {
-        await searchController.globalSearchResults(searchText: text)
+        await searchController.listSearchResults(searchText: text)
     }
 }
 
@@ -35,6 +35,6 @@ public struct SearchLinkController {
 extension SearchLinkController: SearchRootControllable {
     
     public func results(text: String) async -> [SearchResult] {
-        await searchController.globalSearchResults(searchText: text)
+        await searchController.inspectorSearchResults(searchText: text, parentId: nil)
     }
 }
