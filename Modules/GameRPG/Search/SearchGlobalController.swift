@@ -14,7 +14,7 @@ import WeatherRPG
 import SpaceRPG
 
 @MainActor
-struct SearchController {
+struct SearchGlobalController {
     init(root: GameRoot, searchText: String = "") {
         self.root = root
         self.model = SearchModel(searchText: searchText)
@@ -68,6 +68,6 @@ struct SearchController {
     }
 
     private func searchItems(in moduleRoot: ItemRootController) async -> [SearchResult] {
-        await moduleRoot.searchControllable.searchItems(searchText: model.searchText)
+        await moduleRoot.searchControllable.globalSearchResults(searchText: model.searchText)
     }
 }

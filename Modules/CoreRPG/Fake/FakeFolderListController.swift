@@ -4,6 +4,7 @@ import SwiftUI
 
 @MainActor
 struct FakeFolderListController: FolderListControllable {
+    
     func copy(parentModel: (any ItemDataAccessable)?) -> FakeFolderListController {
         FakeFolderListController()
     }
@@ -24,8 +25,9 @@ struct FakeFolderListController: FolderListControllable {
     let listModel: FolderListModel = FolderListModel(navigationModel: ModuleNavigationModel())
     let listDisplayModel: ListDisplayModel = ListDisplayModel()
     let searchModel: SearchModel = .preview()
-    
-    var cacheListItemModel = CacheItemListModel()
-    
+    let searchRootControllable: any SearchRootControllable = FakeSearchController.fake
+    let cacheListItemModel = CacheItemListModel()
+
+
     static let fake = FakeFolderListController()
 }

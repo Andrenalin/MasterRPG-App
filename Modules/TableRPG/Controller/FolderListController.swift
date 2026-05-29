@@ -9,7 +9,7 @@ struct FolderListController: FolderListControllable {
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
     let itemControllable: any ItemControllable
-    let searchControllable: any SearchControllable
+    let searchRootControllable: any SearchRootControllable
     let cacheListItemModel = CacheItemListModel()
     
     func detailDestination(for itemId: UUID) -> any NavigationDestination {
@@ -21,10 +21,16 @@ struct FolderListController: FolderListControllable {
     }
 
     func copy(parentModel: (any ItemDataAccessable)?) -> FolderListController {
-        FolderListController(listModel: FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel, itemControllable: itemControllable, searchControllable: searchControllable)
+        FolderListController(listModel: FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel), listDisplayModel: listDisplayModel.newListDisplayModel,
+            searchModel: searchModel.newSearchModel,
+            itemControllable: itemControllable,
+            searchRootControllable: searchRootControllable)
     }
     
     func copy(listModel: FolderListModel) -> FolderListController {
-        FolderListController(listModel: listModel, listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel, itemControllable: itemControllable, searchControllable: searchControllable)
+        FolderListController(listModel: listModel, listDisplayModel: listDisplayModel.newListDisplayModel,
+            searchModel: searchModel.newSearchModel,
+            itemControllable: itemControllable,
+            searchRootControllable: searchRootControllable)
     }
 }

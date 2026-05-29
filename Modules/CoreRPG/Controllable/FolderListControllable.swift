@@ -11,25 +11,16 @@ public protocol FolderListControllable: Sendable {
     var listDisplayModel: ListDisplayModel { get }
     var searchModel: SearchModel { get }
     var cacheListItemModel: CacheItemListModel { get }
-    var searchControllable: any SearchControllable { get }
+    var searchRootControllable: any SearchRootControllable { get }
 
     func copy(parentModel: (any ItemDataAccessable)?) -> Self
     func copy(listModel: FolderListModel) -> Self
+    
     func detailDestination(for itemId: UUID) -> any NavigationDestination
     func viewerDestination(for itemId: UUID) -> any NavigationDestination
 }
 
 extension FolderListControllable {
-    public var searchControllable: any SearchControllable {
-        // When a parent item is selected (inspector mode), scope the search to that item
-        // and its entry tree. Falls back to the flat list-mode controller otherwise.
-        // CharacterRPG overrides this entirely with its own InspectorSearchController.
-        if let parentId = listModel.parentItemId {
-            return DefaultInspectorSearchController(itemControllable: itemControllable, parentId: parentId)
-        }
-        return DefaultFolderSearchController(itemControllable: itemControllable)
-    }
-
     public func copyModel(parentModel: (any ItemDataAccessable)?) -> FolderListModel {
         FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel)
     }
@@ -163,7 +154,7 @@ extension FolderListControllable {
 //            let controller = searchControllable
 //            let expandsEntries = listModel.searchExpandsEntries
 //            listModel.searchTask = Task { @MainActor in
-//                let results = await controller.searchItems(searchText: searchText)
+//                let results = await controller.globalSearchResults(searchText: searchText)
 //                guard !Task.isCancelled else { return }
 //                // Capture before displayedItems is replaced — after the swap the old "0-2-UUID"
 //                // string IDs no longer match any "search-…" row, so selectedItemId returns nil.

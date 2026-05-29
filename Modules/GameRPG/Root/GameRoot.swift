@@ -145,8 +145,8 @@ public final class GameRoot: @unchecked Sendable {
         _logGameController.unsafelyUnwrapped
     }
     
-    @MainActor lazy var searchController: SearchController = {
-        SearchController(root: self)
+    @MainActor lazy var searchController: SearchGlobalController = {
+        SearchGlobalController(root: self)
     }()
 
     @MainActor public lazy var networkActions: NetworkActions = NetworkActions { @MainActor [weak self] idType in

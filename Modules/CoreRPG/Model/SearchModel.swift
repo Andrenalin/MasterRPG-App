@@ -25,6 +25,30 @@ public final class SearchModel: Sendable {
     
     public var searchTags: [SearchTags] = []
     
+    // new search properties
+    var isSearching = false
+    var results: [SearchResult] = []
+    var selection: SearchResult?
+
+    @ObservationIgnored private var _searchTask: Task<Void, Never>?
+
+    func cancelSearch() {
+        _searchTask?.cancel()
+        _searchTask = nil
+    }
+
+    func setSearchTask(_ task: Task<Void, Never>) {
+        _searchTask = task
+    }
+
+    func awaitCurrentSearch() async {
+        await _searchTask?.value
+    }
+
+    deinit {
+        _searchTask?.cancel()
+    }
+    
     func updateTagSuggestions() {
         guard searchFieldText.starts(with: "@") else {
             searchTags = []

@@ -6,26 +6,26 @@ import Observation
 public protocol SearchControllable: Sendable  {
     var itemControllable: any ItemControllable { get }
 
-    func searchItems(searchText: String) async -> [SearchResult]
+    func globalSearchResults(searchText: String) async -> [SearchResult]
     func calculateRelevance(searchText: String, itemName: String, entryName: String?, content: String?, isItemMatch: Bool) -> Int
 }
 
 public extension SearchControllable {
-    func searchItems(searchText: String) async -> [SearchResult] {
+    func globalSearchResults(searchText: String) async -> [SearchResult] {
         guard searchText.isEmpty == false else { return [] }
         
         let itemIds = await itemControllable.itemDataModel.items
         var foundResults: [SearchResult] = []
-
+        
         for itemId in itemIds {
             guard !Task.isCancelled else { break }
-
+            
             guard let item = await itemControllable.item(for: itemId),
                   item.displayState == 0 else { continue }
-
+            
             // Check if item matches search
             let itemMatches = item.filter(filter: searchText, includeEntries: false)
-
+            
             if itemMatches {
                 let relevance = calculateRelevance(
                     searchText: searchText,
@@ -45,16 +45,16 @@ public extension SearchControllable {
                     relevanceScore: relevance
                 ))
             }
-
+            
         }
-
+        
         // Sort by relevance score (highest first)
         return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
     }
     
     func calculateRelevance(searchText: String, itemName: String, entryName: String?, content: String?, isItemMatch: Bool) -> Int {
         var score = 0
-
+        
         // Item name exact match (highest priority)
         if itemName.compare(searchText, options: .caseInsensitive) == .orderedSame {
             score += 100
@@ -64,7 +64,7 @@ public extension SearchControllable {
         } else if itemName.localizedStandardContains(searchText) {
             score += 25
         }
-
+        
         // Entry name match (medium priority)
         if let entryName {
             if entryName.compare(searchText, options: .caseInsensitive) == .orderedSame {
@@ -76,20 +76,24 @@ public extension SearchControllable {
                 score += 20
             }
         }
-
+        
         // Content match (lower priority)
         if let content, content.localizedStandardContains(searchText) {
             score += 10
         }
-
+        
         // Boost item matches over entry matches
         if isItemMatch && entryName == nil {
             score += 15
         }
-
+        
         return score
     }
+}
 
+// All the code below is not checked (most likely broken, not working) or unused code
+
+public extension SearchControllable {
     func searchInSheet(
         itemId: UUID,
         searchText: String,
@@ -337,7 +341,7 @@ public struct DefaultInspectorSearchController: SearchControllable, Sendable {
         self.parentId = parentId
     }
 
-    public func searchItems(searchText: String) async -> [SearchResult] {
+    public func globalSearchResults(searchText: String) async -> [SearchResult] {
         guard !searchText.isEmpty else { return [] }
         guard let root = await itemControllable.item(for: parentId) else { return [] }
         var foundResults: [SearchResult] = []

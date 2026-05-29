@@ -17,7 +17,7 @@ struct SearchControllerTests {
         let root = try await MockRoot.importTestData()
         let sut = root.searchController
 
-        let results = await sut.searchItems(searchText: "")
+        let results = await sut.globalSearchResults(searchText: "")
         #expect(results.isEmpty)
     }
 
@@ -29,7 +29,7 @@ struct SearchControllerTests {
         let itemId = await root.itemController.addNew(type: .item)
         root.editController.reset(name: "Aldric the Bold", itemId: itemId)
 
-        let results = await sut.searchItems(searchText: "Aldric")
+        let results = await sut.globalSearchResults(searchText: "Aldric")
         #expect(results.contains { $0.itemId == itemId })
     }
 
@@ -42,7 +42,7 @@ struct SearchControllerTests {
         root.editController.reset(name: "Hidden Knight", itemId: itemId)
         root.editController.reset(displayState: 1, itemId: itemId)
 
-        let results = await sut.searchItems(searchText: "Hidden")
+        let results = await sut.globalSearchResults(searchText: "Hidden")
         #expect(results.contains { $0.itemId == itemId } == false)
     }
 
@@ -55,7 +55,7 @@ struct SearchControllerTests {
         root.editController.reset(name: "Deleted Ranger", itemId: itemId)
         root.editController.reset(displayState: 2, itemId: itemId)
 
-        let results = await sut.searchItems(searchText: "Deleted")
+        let results = await sut.globalSearchResults(searchText: "Deleted")
         #expect(results.contains { $0.itemId == itemId } == false)
     }
 
@@ -77,7 +77,7 @@ struct SearchControllerTests {
         root.editController.reset(name: "SubValueStrength", itemId: childId)
 
         // groupId != nil must exclude it from list search even when displayState == 0
-        let results = await sut.searchItems(searchText: "SubValueStrength")
+        let results = await sut.globalSearchResults(searchText: "SubValueStrength")
         #expect(results.contains { $0.itemId == childId } == false)
     }
 
@@ -89,7 +89,7 @@ struct SearchControllerTests {
         let itemId = await root.itemController.addNew(type: .item)
         root.editController.reset(name: "Goblin Scout", itemId: itemId)
 
-        let results = await sut.searchItems(searchText: "Dragon")
+        let results = await sut.globalSearchResults(searchText: "Dragon")
         #expect(results.contains { $0.itemId == itemId } == false)
     }
 
@@ -102,7 +102,7 @@ struct SearchControllerTests {
         root.editController.reset(name: "Village Elder", itemId: itemId)
         root.editController.reset(description: "Keeper of ancient lore", itemId: itemId)
 
-        let results = await sut.searchItems(searchText: "ancient lore")
+        let results = await sut.globalSearchResults(searchText: "ancient lore")
         #expect(results.contains { $0.itemId == itemId })
     }
 
@@ -125,7 +125,7 @@ struct SearchControllerTests {
         let containsId = await root.itemController.addNew(type: .item)
         root.editController.reset(name: "The Rogue Assassin", itemId: containsId)
 
-        let results = await sut.searchItems(searchText: "Rogue")
+        let results = await sut.globalSearchResults(searchText: "Rogue")
         let matchIds = results.map(\.itemId)
 
         let exactIndex = try #require(matchIds.firstIndex(of: exactId))
@@ -150,7 +150,7 @@ struct SearchControllerTests {
         root.editController.reset(name: "Wandering Merchant", itemId: descMatchId)
         root.editController.reset(description: "Expert forest tracker and guide", itemId: descMatchId)
 
-        let results = await sut.searchItems(searchText: "forest")
+        let results = await sut.globalSearchResults(searchText: "forest")
         let matchIds = results.map(\.itemId)
 
         let nameIndex = try #require(matchIds.firstIndex(of: nameMatchId))

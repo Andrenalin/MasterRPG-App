@@ -14,7 +14,6 @@ public struct ItemRootView: View {
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         ItemRootListView(root: root)
-            .environment(root.folderListControllable.cacheListItemModel)
             .environment(root)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
@@ -58,21 +57,5 @@ public struct ItemSplitDetailRouteRootView<Route: NavigationDestination>: View {
     
     var listModel: FolderListModel {
         root.folderListControllable.listModel
-    }
-}
-
-
-
-struct SplitContentDetailRootView: View {
-    let root: ItemRootController
-    let itemId: UUID?
-    
-    var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-        if let itemId {
-            root.folderListControllable.detailDestination(for: itemId).asAnyView()
-        } else {
-            SplitContentUnavailableView(module: root.configurable.module)
-        }
     }
 }

@@ -15,7 +15,7 @@ import SpaceRPG
 
 struct SearchListView: View {
     let root: GameRoot
-    let searchController: SearchController
+    let searchController: SearchGlobalController
     
     @Environment(\.locale) private var locale: Locale
     
@@ -145,5 +145,5 @@ private extension SearchListView {
 // MARK: - Preview
 
 #Preview {
-    SearchListView(root: GameRoot.preview, searchController: SearchController(root: GameRoot.preview, searchText: "T"))
+    SearchListView(root: GameRoot.preview, searchController: SearchGlobalController(root: GameRoot.preview, searchText: "T"))
 }
