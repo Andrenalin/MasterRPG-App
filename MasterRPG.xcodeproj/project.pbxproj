@@ -1609,6 +1609,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AudioRPGTests/AudioModelTests.swift,
+				AudioRPGTests/ConvertControllerRepairTests.swift,
 				AudioRPGTests/ExportControllerTests.swift,
 				AudioRPGTests/ImportControllerTests.swift,
 				AudioRPGTests/LinkControllerTests.swift,
