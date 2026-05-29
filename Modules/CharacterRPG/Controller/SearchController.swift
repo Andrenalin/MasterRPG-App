@@ -129,25 +129,78 @@ extension SearchController {
 // MARK: - List search (from ListRootView / FolderListController)
 
 extension SearchController {
-    // not done
+    /// List-view search: root characters and folders only (`groupId == nil`, `displayState == 0`).
+    /// Regular characters are matched by name/description. Folders are matched by name/description
+    /// and their direct children entries, mirroring `globalSearchResults`.
     func listSearchResults(searchText: String) async -> [SearchResult] {
-        []
+        guard !searchText.isEmpty else { return [] }
+
+        let itemIds = await itemControllable.itemDataModel.items
+        var foundResults: [SearchResult] = []
+
+        for itemId in itemIds {
+            guard !Task.isCancelled else { break }
+            guard let item = await itemController.item(for: itemId),
+                  item.groupId == nil,
+                  item.displayState == 0 else { continue }
+
+            if item.specialCategory {
+                await result(item: item, searchText: searchText, foundResults: &foundResults)
+            } else {
+                guard item.name.localizedCaseInsensitiveContains(searchText) ||
+                        item.description.localizedCaseInsensitiveContains(searchText) else { continue }
+                foundResults.append(SearchResult(
+                    itemId: item.id,
+                    itemName: item.name,
+                    module: itemControllable.config.module,
+                    category: item.category,
+                    entryId: nil,
+                    entryName: nil,
+                    matchedContent: item.description.isEmpty ? nil : item.description,
+                    relevanceScore: calculateRelevance(
+                        searchText: searchText,
+                        itemName: item.name,
+                        entryName: nil,
+                        content: item.description,
+                        isItemMatch: true
+                    )
+                ))
+            }
+        }
+
+        return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
     }
 }
 
 // MARK: - Inspector search (from LinkListItemView / FolderListController)
 
 extension SearchController {
-    /// Inspector search scoped to a single character.
-    /// Delegates to `inspectorResult` which walks the full value tree — including groups that
-    /// may be `specialCategory == true` — and searches every entry at every level.
-    func inspectorSearchResults(searchText: String, characterId: UUID) async -> [SearchResult] {
-        // not tested might be not working nor broken
+    /// Inspector search used by `SearchLinkController`.
+    /// - `parentId == nil`: walks all root characters (`groupId == nil`, `displayState == 0`)
+    ///   and their full value trees.
+    /// - `parentId != nil`: scoped to a single character/group.
+    func inspectorSearchResults(searchText: String, parentId: UUID?) async -> [SearchResult] {
         guard !searchText.isEmpty else { return [] }
-        guard let character = await itemController.item(for: characterId) else { return [] }
         var foundResults: [SearchResult] = []
-        await inspectorResult(item: character, searchText: searchText, foundResults: &foundResults)
+        if let parentId {
+            guard let item = await itemController.item(for: parentId) else { return [] }
+            await inspectorResult(item: item, searchText: searchText, foundResults: &foundResults)
+        } else {
+            let itemIds = await itemControllable.itemDataModel.items
+            for itemId in itemIds {
+                guard !Task.isCancelled else { break }
+                guard let item = await itemController.item(for: itemId),
+                      item.groupId == nil,
+                      item.displayState == 0 else { continue }
+                await inspectorResult(item: item, searchText: searchText, foundResults: &foundResults)
+            }
+        }
         return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
+    }
+
+    /// Inspector search scoped to a single character (legacy helper).
+    func inspectorSearchResults(searchText: String, characterId: UUID) async -> [SearchResult] {
+        await inspectorSearchResults(searchText: searchText, parentId: characterId)
     }
 
     /// Inspector traversal: searches name/description **and** all entries regardless of
