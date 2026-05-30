@@ -232,17 +232,31 @@ private extension SpaceViewer {
             // Most USDZ files have their pivot at the base/feet; without this the orbit
             // camera targets the feet and zooming in shows only the bottom of the model.
             let visualCenter = loadedEntity.visualBounds(relativeTo: nil).center
-            loadedEntity.position = -visualCenter
 
 #if os(visionOS)
-            // ImmersiveSpace: add eye-level, 2 m in-front offset on top of the centering.
             if isImmersiveSpace {
-                loadedEntity.position += SIMD3(x: 0, y: 1, z: -2)
+                // Hard-coded world coords fail when the user has moved since the ARKit
+                // session started — the entity ends up far away and invisible.
+                // Apple pattern (HeadTracking sample): anchor to head with trackingMode=.once
+                // which world-locks the entity at the current head position.
+                let headAnchor = AnchorEntity(.head)
+                headAnchor.anchoring.trackingMode = .once
+                // Combine centering offset with 2 m in front of the head anchor.
+                loadedEntity.position = SIMD3(-visualCenter.x, -visualCenter.y, -visualCenter.z - 2.0)
+                headAnchor.addChild(loadedEntity)
+                content.add(headAnchor)
+                self.rootEntity = headAnchor
+            } else {
+                loadedEntity.position = -visualCenter
+                content.add(newRootEntity)
+                self.rootEntity = newRootEntity
             }
-#endif
+#else
+            loadedEntity.position = -visualCenter
             content.add(newRootEntity)
-
             self.rootEntity = newRootEntity
+#endif
+
             self.loadedItemId = id
 
         } catch let error as DecodingError {
@@ -264,9 +278,12 @@ private extension SpaceViewer {
                 guard let nameBarView = attachments.entity(for: "NameBarView") else {
                     return
                 }
-                nameBarView.setPosition([0, 2, 2], relativeTo: rootEntity)
+                // Position name bar above the root entity in world space.
+                // Do NOT call rootEntity.addChild(nameBarView) — rootEntity lives in a
+                // different RealityView scene and cross-scene addChild corrupts both scenes.
+                let worldPos = rootEntity.position(relativeTo: nil)
+                nameBarView.position = worldPos + SIMD3(x: 0, y: 0.7, z: 0)
                 nameEntity = nameBarView
-                rootEntity.addChild(nameBarView)
                 content.add(nameBarView)
             } attachments: {
                 Attachment(id: "NameBarView") {
