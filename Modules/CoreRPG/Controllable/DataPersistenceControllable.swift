@@ -11,4 +11,11 @@ public protocol DataPersistenceControllable: Sendable {
     func replaceSync(id: UUID, with viewModel: any ModelType) throws
     func replace(id: UUID, with viewModel: any ModelType) async throws
     func save() async throws
+    /// Flush pending operations into the context without calling `context.save()`.
+    /// Called by `AdventureRootModel.save()` for each module root before the single consolidated save.
+    func flushPendingOperations() async throws
+}
+
+public extension DataPersistenceControllable {
+    func flushPendingOperations() async throws {}
 }

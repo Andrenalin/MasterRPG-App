@@ -118,41 +118,37 @@ public extension CoreDataController {
         await model.addPendingOperation(operation)
     }
 
-    func save() async throws {
-        // First, process any pending operations
+    /// Drains the pending-operations queue into the context without calling `context.save()`.
+    /// Use from `AdventureRootModel.save()` for all module roots so a single `context.save()`
+    /// covers every module's changes. Direct callers (`addNew`, `delete`, `batchReplace`) use
+    /// `save()` instead, which flushes and saves immediately.
+    func flushPendingOperations() async throws {
         let pendingOperations = await model.clearPendingOperations()
+        guard !pendingOperations.isEmpty else { return }
 
-        if !pendingOperations.isEmpty {
-            // Group operations by ID to handle duplicates (keep last)
-            var operationsByID: [UUID: PendingOperation] = [:]
-            for operation in pendingOperations {
-                operationsByID[operation.id] = operation
-            }
+        var operationsByID: [UUID: PendingOperation] = [:]
+        for operation in pendingOperations {
+            operationsByID[operation.id] = operation
+        }
+        let uniqueOperations = Array(operationsByID.values)
+        let existingUUIDs = try await batchExists(uuids: uniqueOperations.map { $0.id })
 
-            let uniqueOperations = Array(operationsByID.values)
-            let uuids = uniqueOperations.map { $0.id }
-
-            // Check which objects exist
-            let existingUUIDs = try await batchExists(uuids: uuids)
-
-            // Process all operations in one context.perform block
-            await context.perform {
-                for operation in uniqueOperations {
-                    if existingUUIDs.contains(operation.id) {
-                        // Update existing
-                        if let existing = self.fetchCoreData(uuid: operation.id) {
-                            operation.updater(operation.model, existing)
-                        }
-                    } else {
-                        // Create new
-                        let new = DataType(context: self.context)
-                        operation.updater(operation.model, new)
+        await context.perform {
+            for operation in uniqueOperations {
+                if existingUUIDs.contains(operation.id) {
+                    if let existing = self.fetchCoreData(uuid: operation.id) {
+                        operation.updater(operation.model, existing)
                     }
+                } else {
+                    let new = DataType(context: self.context)
+                    operation.updater(operation.model, new)
                 }
             }
         }
+    }
 
-        // Then save
+    func save() async throws {
+        try await flushPendingOperations()
         await context.perform {
             saveCoreData()
         }

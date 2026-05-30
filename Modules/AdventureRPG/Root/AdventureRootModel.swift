@@ -267,23 +267,28 @@ extension AdventureRootModel: StoreManiplable {
         await tableRoot.itemControllable.resetData()
         await characterRoot.itemControllable.resetData()
         await weatherRoot.itemControllable.resetData()
+        await linkRegisterController.resetData()
+        await searchModel.tagController.resetData()
     }
 
     @Sendable public func save() async {
-        await audioRoot.itemControllable.save()
-        await diceRoot.itemControllable.save()
+        // Flush all module pending operations into the shared context without saving yet.
+        await audioRoot.itemControllable.flushPendingOperations()
+        await diceRoot.itemControllable.flushPendingOperations()
         #if !os(tvOS)
-        await generatorRoot?.itemControllable.save()
+        await generatorRoot?.itemControllable.flushPendingOperations()
         #endif
-        await mapRoot.itemControllable.save()
-        await pdfRoot.itemControllable.save()
-        await photoRoot.itemControllable.save()
-        await spaceRoot.itemControllable.save()
-        await tableRoot.itemControllable.save()
-        await characterRoot.itemControllable.save()
-        await weatherRoot.itemControllable.save()
-        await itemController.save()
+        await mapRoot.itemControllable.flushPendingOperations()
+        await pdfRoot.itemControllable.flushPendingOperations()
+        await photoRoot.itemControllable.flushPendingOperations()
+        await spaceRoot.itemControllable.flushPendingOperations()
+        await tableRoot.itemControllable.flushPendingOperations()
+        await characterRoot.itemControllable.flushPendingOperations()
+        await weatherRoot.itemControllable.flushPendingOperations()
         await linkRegisterController.savePendingLinks()
+        await searchModel.tagController.savePendingTags()
+        // One context.save() covers all flushed changes from every module above.
+        await itemController.save()
     }
 
     public func validate() {

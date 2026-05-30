@@ -75,4 +75,8 @@ public extension CoreDataPersistable {
     func save() async throws {
         try await dataController.save()
     }
+
+    func flushPendingOperations() async throws {
+        try await dataController.flushPendingOperations()
+    }
 }

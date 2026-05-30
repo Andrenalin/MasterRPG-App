@@ -106,6 +106,23 @@ public extension LinkRegisterController {
 }
 
 public extension LinkRegisterController {
+    /// Clears all in-memory links and deletes every persisted `LinkReferenceDataModel` row. Call from `resetData()`.
+    @MainActor func resetData() async {
+        model.items = [:]
+        model.pendingAffectedSourceIds = []
+        guard let context = model.context else { return }
+        await context.perform {
+            do {
+                let deleteRequest: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
+                try context.execute(NSBatchDeleteRequest(fetchRequest: deleteRequest))
+            } catch {
+                Logger.coreDataController.error("link resetData error \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+}
+
+public extension LinkRegisterController {
     /// Persists all link changes accumulated since the last call. Performs a delete-and-replace per affected
     /// source item ID: one `NSBatchDeleteRequest` then one `NSBatchInsertRequest` using the current in-memory state.
     /// Call from the periodic `save()` on `AdventureRootModel`.

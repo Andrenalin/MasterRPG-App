@@ -165,6 +165,10 @@ public extension ItemControllable {
         try? await dataControllable?.save()
     }
 
+    func flushPendingOperations() async {
+        try? await dataControllable?.flushPendingOperations()
+    }
+
     func updates(_ models: [ModelType]) async {
         let sortedModels = models.compactMap { $0 as? Model }.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         let deletedIds = await itemDataModel.items.filter { id in !sortedModels.contains { $0.id == id } }

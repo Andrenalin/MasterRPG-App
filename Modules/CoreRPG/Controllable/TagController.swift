@@ -13,8 +13,9 @@ struct TagModel: Sendable, Codable {
 @MainActor @Observable
 final class TagInternalControllerModel: @unchecked Sendable {
     @ObservationIgnored var context: NSManagedObjectContext?
-    
+
     var tags: [NetworkModules: [String: TagModel]] = [:]
+    var pendingAffectedModules: Set<NetworkModules> = []
 }
 
 public struct TagController: Sendable {
@@ -52,11 +53,11 @@ public struct TagController: Sendable {
             var tagModel = storedTags[tag, default: TagModel(module: module, title: tag, count: 0)]
             tagModel.count += 1
             storedTags[tag] = tagModel
-            updateDatabase(tag: tag, count: tagModel.count, module: module)
         }
         model.tags[module] = storedTags
+        model.pendingAffectedModules.insert(module)
     }
-    
+
     @MainActor public func remove(tags: [String], module: NetworkModules) {
         var storedTags = model.tags[module, default: [:]]
         for tag in tags {
@@ -67,9 +68,9 @@ public struct TagController: Sendable {
             } else {
                 storedTags[tag] = nil
             }
-            updateDatabase(tag: tag, count: tagModel.count, module: module)
         }
         model.tags[module] = storedTags
+        model.pendingAffectedModules.insert(module)
     }
     
     private func update(tag: String, count: Int, module: NetworkModules) {
@@ -82,36 +83,60 @@ public struct TagController: Sendable {
     
     @MainActor public func reset(tag: String, count: Int, module: NetworkModules) {
         var tags = model.tags[module, default: [:]]
-        tags[tag] = TagModel(module: module, title: tag, count: count)
+        if count > 0 {
+            tags[tag] = TagModel(module: module, title: tag, count: count)
+        } else {
+            tags[tag] = nil
+        }
         model.tags[module] = tags
-        
-        updateDatabase(tag: tag, count: count, module: module)
+        model.pendingAffectedModules.insert(module)
     }
-    
-    @MainActor private func updateDatabase(tag: String, count: Int, module: NetworkModules) {
+
+    /// Clears all in-memory tags and deletes every persisted `TagDataModel` row. Call from `resetData()`.
+    @MainActor public func resetData() async {
+        model.tags = [:]
+        model.pendingAffectedModules = []
         guard let context = model.context else { return }
-        Task(priority: .userInitiated) {
-            await context.perform {
-                do {
-                    let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
-                    request.predicate = NSPredicate(format: "module == %@ AND title == %@", NSNumber(value: module.rawValue), tag as CVarArg)
-                    let tagModels = try context.fetch(request)
-                    if let tagModel = tagModels.first as? TagDataModel {
-                        if count > 0 {
-                            tagModel.count = Int32(count)
-                        } else {
-                            context.delete(tagModel)
-                        }
-                    } else {
-                        guard count > 0 else { return }
-                        let tagModel = TagDataModel(context: context)
-                        tagModel.module = Int16(module.rawValue)
-                        tagModel.title = tag
-                        tagModel.count = Int32(count)
-                    }
-                } catch {
-                    Logger.coreDataController.error("tagdata error \(error.localizedDescription, privacy: .public)")
+        await context.perform {
+            do {
+                let deleteRequest: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
+                try context.execute(NSBatchDeleteRequest(fetchRequest: deleteRequest))
+            } catch {
+                Logger.coreDataController.error("tag resetData error \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    /// Persists all tag changes accumulated since the last call. Performs a delete-and-replace per affected
+    /// module: one `NSBatchDeleteRequest` then one `NSBatchInsertRequest` using the current in-memory state.
+    /// Call from the periodic `save()` on `AdventureRootModel`.
+    @MainActor public func savePendingTags() async {
+        let affectedModules = model.pendingAffectedModules
+        guard !affectedModules.isEmpty, let context = model.context else { return }
+        model.pendingAffectedModules = []
+
+        let currentTags = affectedModules.flatMap { model.tags[$0, default: [:]].values }
+        let moduleRawValues = affectedModules.map { NSNumber(value: $0.rawValue) }
+
+        await context.perform {
+            do {
+                let deleteRequest: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
+                deleteRequest.predicate = NSPredicate(format: "module IN %@", moduleRawValues as NSArray)
+                try context.execute(NSBatchDeleteRequest(fetchRequest: deleteRequest))
+
+                var iter = currentTags.makeIterator()
+                let batchInsert = NSBatchInsertRequest(
+                    entity: TagDataModel.entity()
+                ) { (object: NSManagedObject) -> Bool in
+                    guard let tag = iter.next(), let dbModel = object as? TagDataModel else { return true }
+                    dbModel.module = Int16(tag.module.rawValue)
+                    dbModel.title = tag.title
+                    dbModel.count = Int32(tag.count)
+                    return false
                 }
+                try context.execute(batchInsert)
+            } catch {
+                Logger.coreDataController.error("tag save error \(error.localizedDescription, privacy: .public)")
             }
         }
     }
