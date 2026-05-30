@@ -15,6 +15,7 @@ public protocol CoreDataPersistable: Sendable {
     func delete(id: UUID) async throws
     func replace(id: UUID, with viewModel: Model, updater: @escaping @Sendable (Model, DataType) -> Void) async throws
     func save() async throws
+    func flushPendingOperations() async throws
     
     @Sendable func mapViewModel(_ model: DataType, token: String) -> Model
     @Sendable func mapModel(_ viewModel: Model, into model: DataType)

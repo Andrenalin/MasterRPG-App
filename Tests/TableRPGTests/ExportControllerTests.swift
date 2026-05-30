@@ -167,11 +167,9 @@ struct ExportControllerTests {
     @Test func exportingTableWithDiceIdExportsDice() async throws {
         let root = try await MockRoot.importTestData()
         let edit = await root.editController
-        
-        
         let sut = await root.exportController
-        let diceId = try #require(await root.diceRoot.exportControllable.exportingAll().ids[.dice]?.first)
 
+        let diceId = await root.diceRoot.itemControllable.addNew(type: .rules)
         let itemId = await root.itemController.addNew(type: .item)
         await edit.add(diceId: diceId, itemId: itemId)
 

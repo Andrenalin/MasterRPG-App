@@ -44,7 +44,7 @@ public extension WeatherRootModel {
 #if DEBUG
     @MainActor
     static func testRoot(photoRoot: PhotoRootModel) -> WeatherRootModel {
-        let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
+        let root = WeatherRootModel(tagController: .preview, photoRoot: photoRoot)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root, generatorRoot: root, mapRoot: root, pdfRoot: root, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root, weatherRoot: root)

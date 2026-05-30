@@ -137,6 +137,9 @@ extension LinkController: LinkControllable {
             for entry in item.entries {
                 guard let valueId = entry.valueId else { continue }
                 let child = itemController.itemOrEmpty(for: valueId)
+                // Groups express their parent relationship via groupId, never parentId.
+                // Skipping them here keeps parentId nil and avoids folder-maintenance churn on import.
+                guard child.groupId == nil else { continue }
                 if let parentId = child.parentId {
                     if parentId != item.id {
                         Logger.linkController.info("Value: \(child.name, privacy: .public) has a different parentId. It has \(itemController.itemOrEmpty(for: parentId).name) and now \(item.name) claim to be the parent")
@@ -144,6 +147,7 @@ extension LinkController: LinkControllable {
                 } else {
                     let updateChild = child.copy()
                     updateChild.parentId = item.id
+                    updateChild.displayState = 1
                     itemController.replace(model: updateChild, isInsert: false)
                 }
             }

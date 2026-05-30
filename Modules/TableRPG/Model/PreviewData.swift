@@ -53,7 +53,7 @@ public extension TableRootModel {
 #if DEBUG
     @MainActor
     static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
-        let root = TableRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview)
+        let root = TableRootModel(tagController: .preview, diceRoot: diceRoot, pdfRoot: pdfRoot)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root, spaceRoot: root, tableRoot: root, weatherRoot: root)

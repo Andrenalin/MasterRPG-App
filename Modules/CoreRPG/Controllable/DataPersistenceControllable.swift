@@ -15,7 +15,3 @@ public protocol DataPersistenceControllable: Sendable {
     /// Called by `AdventureRootModel.save()` for each module root before the single consolidated save.
     func flushPendingOperations() async throws
 }
-
-public extension DataPersistenceControllable {
-    func flushPendingOperations() async throws {}
-}

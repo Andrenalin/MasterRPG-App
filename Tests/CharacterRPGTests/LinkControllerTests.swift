@@ -57,17 +57,23 @@ struct LinkControllerTests {
         #expect(result == "Adalbert Unheil")
     }
     
-    // MARK: - validateParentId
+    // MARK: - validateParentId / GroupId
 
-    /// Folder: 3 items, each with 3 groups.
-    /// Before validateParentId: items have parentId set; groups have groupId but nil parentId; every item entry has valueId.
-    /// After validateParentId: groups have parentId set to their parent item's id.
-    @Test func validateParentIdSetsParentIdOnGroupChildren() async throws {
-        let root = try await MockRoot.importTestData()
-        let sut = await root.linkController
+    // MARK: Helpers
+
+    private struct GroupTestStructure {
+        let folderId: UUID
+        /// Items in creation order: [Charlie, Alpha, Bravo]
+        let itemIds: [UUID]
+        /// Items in alphabetical folder order: [Alpha, Bravo, Charlie]
+        let alphabeticalIds: [UUID]
+        /// Maps each item id to its 3 group item ids
+        let groupsByItem: [UUID: [UUID]]
+    }
+
+    /// Builds: folder → [Charlie, Alpha, Bravo] (added non-alphabetically), each item → 3 group children.
+    private func buildGroupStructure(root: CharacterRootModel) async throws -> GroupTestStructure {
         let editController = await root.editController
-
-        // Build: folder → [Charlie, Alpha, Bravo] added in non-alphabetical order
         let folderId = await root.itemController.addNew(type: .folder)
         let charlieId = await root.itemController.addNew(type: .item)
         await editController.reset(name: "Charlie", itemId: charlieId)
@@ -75,14 +81,12 @@ struct LinkControllerTests {
         await editController.reset(name: "Alpha", itemId: alphaId)
         let bravoId = await root.itemController.addNew(type: .item)
         await editController.reset(name: "Bravo", itemId: bravoId)
-        // itemIds stays in creation order; folder entries will be sorted
         let itemIds = [charlieId, alphaId, bravoId]
 
         for itemId in itemIds {
             await editController.addItem(itemId: itemId, parentId: folderId)
         }
 
-        // addNewGroup returns the entry id; entry.valueId is the group item id
         var groupsByItem: [UUID: [UUID]] = [:]
         for itemId in itemIds {
             var groupItemIds: [UUID] = []
@@ -96,28 +100,65 @@ struct LinkControllerTests {
             groupsByItem[itemId] = groupItemIds
         }
 
-        // Folder has exactly 3 entries, sorted alphabetically regardless of insertion order
-        let folder = await root.itemController.itemOrEmpty(for: folderId)
+        return GroupTestStructure(
+            folderId: folderId,
+            itemIds: itemIds,
+            alphabeticalIds: [alphaId, bravoId, charlieId],
+            groupsByItem: groupsByItem
+        )
+    }
+
+    /// Asserts the fully correct expected state: folder ordered alphabetically, items have
+    /// folderId as parentId, groups have nil parentId, their item as groupId, and displayState == 1.
+    private func verifyStructureIntact(_ s: GroupTestStructure, root: CharacterRootModel) async throws {
+        let folder = await root.itemController.itemOrEmpty(for: s.folderId)
+        #expect(folder.parentId == nil)
+        #expect(folder.groupId == nil)
+        #expect(folder.entries.map(\.childId) == s.alphabeticalIds)
+
+        for itemId in s.itemIds {
+            let item = await root.itemController.itemOrEmpty(for: itemId)
+            #expect(item.parentId == s.folderId)
+            #expect(item.groupId == nil)
+            let groupItemIds = try #require(s.groupsByItem[itemId])
+            for groupItemId in groupItemIds {
+                let group = await root.itemController.itemOrEmpty(for: groupItemId)
+                #expect(group.parentId == nil)
+                #expect(group.groupId == itemId)
+                #expect(group.displayState == 1)
+            }
+        }
+    }
+
+    // MARK: Tests
+
+    /// Folder: 3 items, each with 3 groups.
+    /// Items have parentId set; groups have groupId but nil parentId; every item entry has valueId.
+    /// Groups have parentId always set to nil and groupId is set to the belonging items.
+    /// validateParentId is a no-op when the structure is already correct.
+    @Test func validateParentIdSetsParentIdOnGroupChildren() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.linkController
+        let s = try await buildGroupStructure(root: root)
+
+        // Folder: sorted alphabetically regardless of insertion order
+        let folder = await root.itemController.itemOrEmpty(for: s.folderId)
         try #require(folder.entries.count == 3)
-        let alphabeticalIds = [alphaId, bravoId, charlieId]
-        for (index, itemId) in alphabeticalIds.enumerated() {
+        for (index, itemId) in s.alphabeticalIds.enumerated() {
             #expect(folder.entries[index].childId == itemId)
         }
 
-        // Items: parentId points to the folder
-        for itemId in itemIds {
+        // Items: parentId points to the folder; 3 entries, all with valueId set
+        for itemId in s.itemIds {
             let item = await root.itemController.itemOrEmpty(for: itemId)
-            #expect(item.parentId == folderId)
-        }
-
-        // Items: 3 entries, every entry has valueId set (the group child)
-        // Groups: parentId == nil before validateParentId, groupId == parent item id
-        for itemId in itemIds {
-            let item = await root.itemController.itemOrEmpty(for: itemId)
+            #expect(item.parentId == s.folderId)
             #expect(item.entries.count == 3)
             #expect(item.entries.allSatisfy { $0.valueId != nil })
+        }
 
-            let groupItemIds = try #require(groupsByItem[itemId])
+        // Groups: parentId == nil, groupId == parent item id
+        for itemId in s.itemIds {
+            let groupItemIds = try #require(s.groupsByItem[itemId])
             for groupItemId in groupItemIds {
                 let group = await root.itemController.itemOrEmpty(for: groupItemId)
                 #expect(group.parentId == nil)
@@ -125,75 +166,92 @@ struct LinkControllerTests {
             }
         }
 
-        // validateParentId must set parentId on every group child that had nil parentId
         await sut.validateParentId()
-
-        for itemId in itemIds {
-            let groupItemIds = try #require(groupsByItem[itemId])
-            for groupItemId in groupItemIds {
-                let group = await root.itemController.itemOrEmpty(for: groupItemId)
-                // Items live in the folder → groups inherit the folder as parentId
-                #expect(group.parentId == folderId)
-                #expect(group.groupId == itemId)
-            }
-        }
+        try await verifyStructureIntact(s, root: root)
     }
 
-    /// When the item that owns the group is itself inside a folder, the group must
-    /// inherit the folder as its parentId — not the item's own id.
-    @Test func validateParentIdSetsParentIdToFolderWhenItemIsInFolder() async throws {
+    /// A group whose groupId was cleared and parentId points to a stale id:
+    /// validateParentId only logs the conflict — it does not overwrite or repair the data.
+    @Test func validateParentIdDoesNotRepairGroupMissingGroupId() async throws {
         let root = try await MockRoot.importTestData()
         let sut = await root.linkController
-        let editController = await root.editController
+        let s = try await buildGroupStructure(root: root)
 
-        let folderId = await root.itemController.addNew(type: .folder)
-        let itemId = await root.itemController.addNew(type: .item)
-        await editController.addItem(itemId: itemId, parentId: folderId)
+        // Simulate broken state on the first group of the first item:
+        // groupId cleared, parentId pointing to the folder (wrong – not the item)
+        let targetItemId = s.itemIds[0]
+        let targetGroupId = try #require(s.groupsByItem[targetItemId]?.first)
+        let brokenGroup = await root.itemController.itemOrEmpty(for: targetGroupId)
+        brokenGroup.groupId = nil
+        brokenGroup.parentId = s.folderId
+        await root.itemController.replace(model: brokenGroup, isInsert: false)
 
-        let entryId = await editController.addNewGroup(itemId: itemId)
-        let item = await root.itemController.itemOrEmpty(for: itemId)
-        let entry = try #require(item.entries.first(where: { $0.id == entryId }))
-        let groupItemId = try #require(entry.valueId)
-
-        // Pre-conditions: item is in folder; group has groupId set but no parentId yet
-        #expect(item.parentId == folderId)
-        let groupBefore = await root.itemController.itemOrEmpty(for: groupItemId)
-        #expect(groupBefore.groupId == itemId)
-        #expect(groupBefore.parentId == nil)
+        let groupBefore = await root.itemController.itemOrEmpty(for: targetGroupId)
+        #expect(groupBefore.groupId == nil)
+        #expect(groupBefore.parentId == s.folderId)
 
         await sut.validateParentId()
 
-        // Group must get parentId = folderId, not itemId, because the item lives in the folder
-        let groupAfter = await root.itemController.itemOrEmpty(for: groupItemId)
-        #expect(groupAfter.parentId == folderId)
-        #expect(groupAfter.groupId == itemId)
+        // validateParentId logs the parentId conflict but makes no change
+        let groupAfter = await root.itemController.itemOrEmpty(for: targetGroupId)
+        #expect(groupAfter.groupId == nil)
+        #expect(groupAfter.parentId == s.folderId)
     }
 
-    /// When a group child already has a parentId pointing to a different item,
-    /// validateParentId must leave the data unchanged (it only logs the conflict).
-    @Test func validateParentIdDoesNotOverwriteExistingParentId() async throws {
+    /// A group that has both groupId and parentId set:
+    /// validateParentId skips it entirely (guard on groupId fires), leaving both fields unchanged.
+    @Test func validateParentIdSkipsGroupWithBothGroupIdAndParentId() async throws {
         let root = try await MockRoot.importTestData()
         let sut = await root.linkController
-        let editController = await root.editController
+        let s = try await buildGroupStructure(root: root)
 
-        let itemId = await root.itemController.addNew(type: .item)
-        let otherId = await root.itemController.addNew(type: .item)
-
-        let entryId = await editController.addNewGroup(itemId: itemId)
-        let item = await root.itemController.itemOrEmpty(for: itemId)
-        let entry = try #require(item.entries.first(where: { $0.id == entryId }))
-        let groupItemId = try #require(entry.valueId)
-
-        // Manually point the group's parentId to a different item
-        let group = await root.itemController.itemOrEmpty(for: groupItemId)
-        group.parentId = otherId
+        // Give the first group a spurious parentId while groupId remains set
+        let targetItemId = s.itemIds[0]
+        let targetGroupId = try #require(s.groupsByItem[targetItemId]?.first)
+        let group = await root.itemController.itemOrEmpty(for: targetGroupId)
+        group.parentId = s.folderId
         await root.itemController.replace(model: group, isInsert: false)
 
+        let groupBefore = await root.itemController.itemOrEmpty(for: targetGroupId)
+        #expect(groupBefore.groupId == targetItemId)
+        #expect(groupBefore.parentId == s.folderId)
+
         await sut.validateParentId()
 
-        // parentId must remain unchanged (conflict is only logged, not corrected)
-        let groupAfter = await root.itemController.itemOrEmpty(for: groupItemId)
-        #expect(groupAfter.parentId == otherId)
+        // guard child.groupId == nil fires → group is skipped → both fields unchanged
+        let groupAfter = await root.itemController.itemOrEmpty(for: targetGroupId)
+        #expect(groupAfter.groupId == targetItemId)
+        #expect(groupAfter.parentId == s.folderId)
+    }
+
+    /// A group with neither groupId nor parentId set and displayState == 0 (visible):
+    /// validateParentId must set parentId to the owning item and reset displayState to 1 (hidden).
+    @Test func validateParentIdHidesAndRepairsGroupWithNoRelationships() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.linkController
+        let s = try await buildGroupStructure(root: root)
+
+        // Simulate fully detached, visible group: both relationships cleared, displayState forced to 0
+        let targetItemId = s.itemIds[0]
+        let targetGroupId = try #require(s.groupsByItem[targetItemId]?.first)
+        let brokenGroup = await root.itemController.itemOrEmpty(for: targetGroupId)
+        brokenGroup.groupId = nil
+        brokenGroup.parentId = nil
+        brokenGroup.displayState = 0
+        await root.itemController.replace(model: brokenGroup, isInsert: false)
+
+        let groupBefore = await root.itemController.itemOrEmpty(for: targetGroupId)
+        #expect(groupBefore.groupId == nil)
+        #expect(groupBefore.parentId == nil)
+        #expect(groupBefore.displayState == 0)
+
+        await sut.validateParentId()
+
+        // validateParentId sets parentId to the owning item and hides the group
+        let groupAfter = await root.itemController.itemOrEmpty(for: targetGroupId)
+        #expect(groupAfter.parentId == targetItemId)
+        #expect(groupAfter.groupId == nil)
+        #expect(groupAfter.displayState == 1)
     }
 
     @MainActor
