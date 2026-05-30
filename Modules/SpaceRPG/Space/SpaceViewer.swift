@@ -10,6 +10,7 @@ struct SpaceViewer: View {
     let root: SpaceRootModel
     let id: UUID
     let isModal: Bool
+    var isImmersiveSpace: Bool = false
 
     var animatableData: AnimatablePair<Float, Float> {
         get {
@@ -210,20 +211,41 @@ private extension SpaceViewer {
 
             // Normalize scale using full visual bounds so intermediate transforms and
             // multi-mesh hierarchies are measured correctly (mesh-local bounds alone miss this).
-            let visualBounds = loadedEntity.visualBounds(relativeTo: loadedEntity)
-            let maxExtent = max(visualBounds.extents.x, max(visualBounds.extents.y, visualBounds.extents.z))
+            // ImmersiveSpace gets 1 m (human scale at 2 m viewing distance);
+            // 2D editor window gets 0.5 m to stay within the window's render area.
+#if os(visionOS)
+            let targetSize: Float = isImmersiveSpace ? 1.0 : 0.5
+#else
+            let targetSize: Float = 1.0
+#endif
+            let entityBounds = loadedEntity.visualBounds(relativeTo: loadedEntity)
+            let maxExtent = max(entityBounds.extents.x, max(entityBounds.extents.y, entityBounds.extents.z))
             if maxExtent > 0.001 && maxExtent.isFinite {
-                let targetSize: Float = valueFor(iOS: 1.0, macOS: 1.0, tvOS: 1.0, visionOS: 0.5)
                 loadedEntity.scale *= targetSize / maxExtent
             }
 
-            // visionOS: origin is the centre of the volumetric window — keep the entity there.
-            // z: -2 would place it 2 m outside the volume bounds and make it invisible.
+#if os(visionOS)
+            // ImmersiveSpace: origin is the user's feet — place at eye level, 2 m in front.
+            // 2D editor window: origin is the RealityView centre — keep entity there.
+            loadedEntity.position = isImmersiveSpace ? SIMD3(x: 0, y: 1, z: -2) : .zero
+#else
             loadedEntity.position = .zero
-#if !os(visionOS)
             if var cameraContent = content as? RealityViewCameraContent {
                 cameraContent.camera = .virtual
             }
+            // Place a perspective camera so the normalised object fills ~80 % of the view height.
+            // Without an explicit camera entity the virtual camera has no defined position
+            // and most models appear very small.
+            let cameraEntity = Entity()
+            var perspectiveCamera = PerspectiveCameraComponent()
+            perspectiveCamera.near = 0.01
+            perspectiveCamera.far = 1000
+            perspectiveCamera.fieldOfViewInDegrees = 60
+            cameraEntity.components.set(perspectiveCamera)
+            // distance = (targetSize / 2) / tan(30°) / fillFraction
+            let halfFOVRad: Float = 30 * .pi / 180
+            cameraEntity.position = [0, 0, (targetSize * 0.5) / tan(halfFOVRad) / 0.8]
+            content.add(cameraEntity)
 #endif
 
             // Only add to scene if all setup succeeded

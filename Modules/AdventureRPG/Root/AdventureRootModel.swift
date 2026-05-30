@@ -283,6 +283,7 @@ extension AdventureRootModel: StoreManiplable {
         await characterRoot.itemControllable.save()
         await weatherRoot.itemControllable.save()
         await itemController.save()
+        await linkRegisterController.savePendingLinks()
     }
 
     public func validate() {

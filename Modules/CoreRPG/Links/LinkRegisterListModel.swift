@@ -56,6 +56,10 @@ public final class LinkRegisterListModel: Sendable {
 
     /// Dictionary keyed by destination item UUID; each value is the list of `LinkRegisterModel`s pointing to that destination.
     public var items: [UUID: [LinkRegisterModel]] = [:]
+
+    // Source item IDs whose links changed since the last savePendingLinks() call.
+    // savePendingLinks() does a delete-and-replace for these source IDs from the current in-memory state.
+    var pendingAffectedSourceIds: Set<UUID> = []
 //    public var entries: [UUID: [LinkRegisterModel]] = [:]
 //    public var links: [UUID: (UUID, Bool)] = [:]
     
