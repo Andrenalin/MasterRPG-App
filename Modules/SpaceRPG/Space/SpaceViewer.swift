@@ -53,7 +53,7 @@ struct SpaceViewer: View {
         }
         .applyIf(isModal) {
             $0.toolbar {
-#if !os(visionOS)
+#if os(visionOS)
                 ToolbarItem(placement: .automatic) {
                     Toggle(isOn: $canDrag) {
                         Label {
@@ -62,11 +62,7 @@ struct SpaceViewer: View {
                             Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
                         }
                     }
-#if os(macOS)
-                .foregroundStyle(root.config.module.tint)
-#else
-                .tint(root.config.module.tint)
-#endif
+                    .tint(root.config.module.tint)
                 }
 
                 ToolbarSpacer()
@@ -103,6 +99,13 @@ private extension SpaceViewer {
     func contentView(geometry: GeometryProxy) -> some View {
         RealityView { content in
             await loadEntity(into: content)
+#if !os(visionOS)
+            // content here is RealityViewContent (concrete), which exposes cameraTarget.
+            // loadEntity receives only RealityViewContentProtocol so it can't set this.
+            if let entity = objectEntity {
+                content.cameraTarget = entity
+            }
+#endif
         } update: { content in
             // Only update if entity is loaded and valid
             guard let objectEntity, loadedItemId == id else { return }
@@ -135,16 +138,22 @@ private extension SpaceViewer {
 
 #endif
 
+#if os(visionOS)
             objectEntity.transform.rotation = .init(angle: pitch, axis: .left) *
                 .init(angle: yaw, axis: .upward)
 
             if let nameEntity {
                 nameEntity.setPosition([0, 2, 0], relativeTo: objectEntity)
             }
+#endif
         }
+#if os(visionOS)
         .installGestures(canDrag)
-#if !os(visionOS)
         .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: canDrag)
+#else
+        // installGestures is visionOS-only: its DragGesture/MagnifyGesture targeted to
+        // entities steal from .orbit — orbit handles both rotation and zoom natively.
+        .realityViewCameraControls(.orbit)
 #endif
     }
 
@@ -179,77 +188,60 @@ private extension SpaceViewer {
                 return
             }
 
-#if os(visionOS)
+            // Use loadedEntity directly as root on all platforms.
+            // The old 100 m container box caused the virtual camera to auto-zoom out to
+            // frame the entire container, making the actual model appear tiny inside it.
             let newRootEntity = loadedEntity
             self.objectEntity = loadedEntity
-#else
-            // Create container entity for non-visionOS platforms
-            let container = ModelEntity(mesh: .generateBox(size: valueFor(iOS: 100, macOS: 100, tvOS: 100, visionOS: 10)))
-            container.addChild(loadedEntity)
-            let newRootEntity = container
-            self.objectEntity = loadedEntity
-#endif
 
-            // Configure entity for interaction
+            // Configure interaction on the first mesh entity on all platforms.
+            // This keeps hit-testing sized to the actual model, not an oversized proxy.
             if let firstMesh = loadedEntity.firstModelEntity {
-                let inputObject = valueFor(iOS: newRootEntity, macOS: newRootEntity, tvOS: newRootEntity, visionOS: firstMesh)
-                inputObject.components.set(InputTargetComponent())
+                firstMesh.components.set(InputTargetComponent())
 
                 var gestureComponent = GestureComponent()
                 gestureComponent.pivotOnDrag = false
-                inputObject.components.set(gestureComponent)
-                inputObject.components.set(HoverEffectComponent(.shader(.default)))
-                inputObject.components.set(GroundingShadowComponent(castsShadow: true))
+                firstMesh.components.set(gestureComponent)
+                firstMesh.components.set(HoverEffectComponent(.shader(.default)))
+                firstMesh.components.set(GroundingShadowComponent(castsShadow: true))
 
                 // Generate collision shapes asynchronously to avoid blocking Metal
                 Task.detached(priority: .utility) {
                     await MainActor.run {
-                        inputObject.generateCollisionShapes(recursive: false, static: true)
+                        firstMesh.generateCollisionShapes(recursive: false, static: true)
                     }
                 }
             }
 
-            // Normalize scale using full visual bounds so intermediate transforms and
-            // multi-mesh hierarchies are measured correctly (mesh-local bounds alone miss this).
-            // ImmersiveSpace gets 1 m (human scale at 2 m viewing distance);
-            // 2D editor window gets 0.5 m to stay within the window's render area.
+            // Normalize scale using world-space base extents (Apple VolumetricWindow pattern).
+            // visualBounds(relativeTo: nil) = world space, then divide by current scale to
+            // get the "natural" extents at scale=1 — this correctly undoes any embedded
+            // USDZ unit transforms that relativeTo:entity misses.
 #if os(visionOS)
             let targetSize: Float = isImmersiveSpace ? 1.0 : 0.5
 #else
-            let targetSize: Float = 1.0
+            let targetSize: Float = 0.5
 #endif
-            let entityBounds = loadedEntity.visualBounds(relativeTo: loadedEntity)
-            let maxExtent = max(entityBounds.extents.x, max(entityBounds.extents.y, entityBounds.extents.z))
-            if maxExtent > 0.001 && maxExtent.isFinite {
-                loadedEntity.scale *= targetSize / maxExtent
+            let baseExtents = loadedEntity.visualBounds(relativeTo: nil).extents / loadedEntity.scale
+            let maxBase = max(baseExtents.x, max(baseExtents.y, baseExtents.z))
+            if maxBase > 0.0001 && maxBase.isFinite {
+                loadedEntity.scale = SIMD3<Float>(repeating: targetSize / maxBase)
             }
+
+            // Shift the entity so its visual centre sits at the world origin.
+            // Most USDZ files have their pivot at the base/feet; without this the orbit
+            // camera targets the feet and zooming in shows only the bottom of the model.
+            let visualCenter = loadedEntity.visualBounds(relativeTo: nil).center
+            loadedEntity.position = -visualCenter
 
 #if os(visionOS)
-            // ImmersiveSpace: origin is the user's feet — place at eye level, 2 m in front.
-            // 2D editor window: origin is the RealityView centre — keep entity there.
-            loadedEntity.position = isImmersiveSpace ? SIMD3(x: 0, y: 1, z: -2) : .zero
-#else
-            loadedEntity.position = .zero
-            if var cameraContent = content as? RealityViewCameraContent {
-                cameraContent.camera = .virtual
+            // ImmersiveSpace: add eye-level, 2 m in-front offset on top of the centering.
+            if isImmersiveSpace {
+                loadedEntity.position += SIMD3(x: 0, y: 1, z: -2)
             }
-            // Place a perspective camera so the normalised object fills ~80 % of the view height.
-            // Without an explicit camera entity the virtual camera has no defined position
-            // and most models appear very small.
-            let cameraEntity = Entity()
-            var perspectiveCamera = PerspectiveCameraComponent()
-            perspectiveCamera.near = 0.01
-            perspectiveCamera.far = 1000
-            perspectiveCamera.fieldOfViewInDegrees = 60
-            cameraEntity.components.set(perspectiveCamera)
-            // distance = (targetSize / 2) / tan(30°) / fillFraction
-            let halfFOVRad: Float = 30 * .pi / 180
-            cameraEntity.position = [0, 0, (targetSize * 0.5) / tan(halfFOVRad) / 0.8]
-            content.add(cameraEntity)
 #endif
-
-            // Only add to scene if all setup succeeded
             content.add(newRootEntity)
+
             self.rootEntity = newRootEntity
             self.loadedItemId = id
 

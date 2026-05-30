@@ -1610,6 +1610,7 @@
 			membershipExceptions = (
 				AudioRPGTests/AudioModelTests.swift,
 				AudioRPGTests/ConvertControllerRepairTests.swift,
+				AudioRPGTests/EditControllerTests.swift,
 				AudioRPGTests/ExportControllerTests.swift,
 				AudioRPGTests/ImportControllerTests.swift,
 				AudioRPGTests/LinkControllerTests.swift,

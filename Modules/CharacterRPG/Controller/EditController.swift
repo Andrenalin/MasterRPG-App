@@ -158,7 +158,50 @@ extension EditController {
 
 extension EditController {
     @MainActor public func duplicate(item: any ItemDataAccessable) async {
-        _ = await duplicate(itemId: item.id, withCopy: true)
+        let originalParentId = itemController.itemSync(for: item.id)?.parentId
+        let copyId = await duplicate(itemId: item.id, withCopy: true)
+
+        // For folders: rebuild entries with independent child copies (duplicate() produces stale entry IDs)
+        if item.isFolder, let copyFolder = editModel(for: copyId),
+           let originalFolder = editModel(for: item.id) {
+            var newEntries: [Model.Entry] = []
+            for entry in originalFolder.entries {
+                let childCopyId = await duplicate(itemId: entry.childId, withCopy: false)
+                if let childCopy = editModel(for: childCopyId) {
+                    childCopy.parentId = copyId
+                    save(updated: childCopy, message: String(localized: "Duplicate child", bundle: .module).localizedString)
+                }
+                newEntries.append(Model.Entry.newChild(id: childCopyId))
+            }
+            copyFolder.entries = newEntries
+            save(updated: copyFolder, message: String(localized: "Duplicate folder", bundle: .module).localizedString)
+        }
+
+        // For collections: ValueModel.duplicate() creates new entry IDs (childId = id), losing the
+        // member references. Replace the broken entries in one shot with correct newChild entries.
+        if !item.isFolder, item.category == itemControllable.collectionCategory,
+           let originalCollection = editModel(for: item.id),
+           let copyCollection = editModel(for: copyId) {
+            copyCollection.entries = originalCollection.entries.map { Model.Entry.newChild(id: $0.childId) }
+            save(updated: copyCollection, message: String(localized: "Fix collection entries", bundle: .module).localizedString)
+        }
+
+        // Re-register the duplicate in the same parent folder
+        if let parentId = originalParentId {
+            addItem(itemId: copyId, parentId: parentId)
+        }
+
+        // Add the duplicate as a new reference in every collection that contains the original.
+        // Skip when duplicating a collection itself (collections cannot be members of other collections).
+        if !item.isFolder, item.category != itemControllable.collectionCategory {
+            let originalId = item.id
+            for containerId in itemControllable.itemDataModel.items {
+                guard let container = itemControllable.itemSync(for: containerId),
+                      container.category == itemControllable.collectionCategory,
+                      container.entries.contains(where: { $0.childId == originalId }) else { continue }
+                addGroup(itemId: containerId, childId: copyId)
+            }
+        }
     }
     
     func duplicate(itemId: UUID, withCopy: Bool) async -> UUID {

@@ -14,7 +14,7 @@ public struct ConvertController: Sendable {
     @MainActor public func repairHiddenAndFolders(reportModel: ValidateRepairModel, importedIds: Set<UUID> = []) async {
         for itemId in itemController.itemDataModel.items {
             guard importedIds.isEmpty || importedIds.contains(itemId) else { continue }
-            guard let item = itemController.itemSync(for: itemId) else { continue }
+            guard let item = itemController.itemSync(for: itemId), item.displayState != 2 else { continue }
 
             // Increment progress and yield so @Observable notifies SwiftUI before continuing.
             // Without the yield every update queues up and SwiftUI renders them all at once at the end.
@@ -66,6 +66,12 @@ public struct ConvertController: Sendable {
     }
     
     @MainActor public func extractFolderAndCreate(url: URL, item: any ItemDataAccessable) async {
+        
+        if let parentId = item.parentId, await itemController.item(for: parentId) != nil {
+            // there is folder already
+            return
+        }
+        
         var currentParentId: UUID? = nil
         var currentFolderModel: (any ItemDataAccessable)? = nil
         let folderComponents = url.pathComponents.dropLast() // drop root '/' and the file name

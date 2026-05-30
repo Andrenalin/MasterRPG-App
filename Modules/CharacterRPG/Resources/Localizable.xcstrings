@@ -185,6 +185,12 @@
         }
       }
     },
+    "Duplicate child" : {
+
+    },
+    "Duplicate folder" : {
+
+    },
     "Entries replaced" : {
       "localizations" : {
         "de" : {
@@ -194,6 +200,9 @@
           }
         }
       }
+    },
+    "Fix collection entries" : {
+
     },
     "Group" : {
       "localizations" : {

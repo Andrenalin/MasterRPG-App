@@ -373,16 +373,55 @@ public extension EditControllable {
     }
     
     @MainActor func duplicate(item: any ItemDataAccessable) async {
-        guard let model = itemControllable.itemSync(for: item.id) else { return }
+        guard let model = editModel(for: item.id) else { return }
+        let originalParentId = model.parentId
         let duplicate = model.duplicate()
-        // character dupplicate
         itemControllable.replace(model: duplicate, isInsert: true)
-        if let fileUrl = model.fileUrl, let fileUrlDataController, let data = try? await fileUrlDataController.loadData(for: fileUrl) {
+
+        if let fileUrl = model.fileUrl, let fileUrlDataController,
+           let data = try? await fileUrlDataController.loadData(for: fileUrl) {
             var path = fileUrl.rawUrl.deletingLastPathComponent().path(percentEncoded: false)
-            if path == "./" {
-                path = ""
-            }
+            if path == "./" { path = "" }
             try? await resetFile(data: data, itemId: duplicate.id, path: path)
+        }
+
+        // For folders: create independent copies of each child and update the new folder's entries
+        if model.isFolder {
+            var newEntries: [Model.Entry] = []
+            for entry in model.entries {
+                if let childModel = editModel(for: entry.childId) {
+                    var dupChild = childModel.duplicate()
+                    dupChild.parentId = duplicate.id
+                    itemControllable.replace(model: dupChild, isInsert: true)
+                    newEntries.append(Model.Entry.newChild(id: dupChild.id))
+                    if let childFileUrl = childModel.fileUrl, let fileUrlDataController,
+                       let data = try? await fileUrlDataController.loadData(for: childFileUrl) {
+                        var path = childFileUrl.rawUrl.deletingLastPathComponent().path(percentEncoded: false)
+                        if path == "./" { path = "" }
+                        try? await resetFile(data: data, itemId: dupChild.id, path: path)
+                    }
+                }
+            }
+            if let folderModel = editModel(for: duplicate.id) {
+                folderModel.entries = newEntries
+                save(updated: folderModel, message: String(localized: "Duplicate folder", bundle: .module).localizedString)
+            }
+        }
+
+        // Re-register the duplicate in the same parent folder
+        if let parentId = originalParentId {
+            addItem(itemId: duplicate.id, parentId: parentId)
+        }
+
+        // Add the duplicate as a new reference in every collection that contains the original
+        if !model.isFolder {
+            let originalId = item.id
+            for containerId in itemControllable.itemDataModel.items {
+                guard let container = itemControllable.itemSync(for: containerId),
+                      container.category == itemControllable.collectionCategory,
+                      container.entries.contains(where: { $0.childId == originalId }) else { continue }
+                addGroup(itemId: containerId, childId: duplicate.id)
+            }
         }
     }
     
@@ -476,7 +515,7 @@ public extension EditControllable {
     
     func movedFile(itemId: UUID) {
         Task {
-            guard let fileUrlDataController, let item = await editModel(for: itemId), let oldFileUrl = item.fileUrl else { return }
+            guard let fileUrlDataController, let item = await editModel(for: itemId), let oldFileUrl = item.fileUrl, item.displayState != 2 else { return }
             let path = await folderPath(itemId: itemId)
             let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, to: path)
             if let newFileUrl {

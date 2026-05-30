@@ -13,6 +13,21 @@ import Testing
 
 struct EditControllerTests {
 
+    @MainActor
+    private func captureIds(_ root: CharacterRootModel) -> Set<UUID> {
+        Set(root.itemController.itemDataModel.items)
+    }
+
+    private func requireSingleNewId(before: Set<UUID>, root: CharacterRootModel) async throws -> UUID {
+        let added = await captureIds(root).subtracting(before)
+        return try #require(added.first, "Expected exactly one new item but found \(added.count)")
+    }
+
+    @MainActor
+    private func firstId(in ids: Set<UUID>, of root: CharacterRootModel, where predicate: (ValueModel) -> Bool) -> UUID? {
+        ids.first { predicate(root.itemController.itemOrEmpty(for: $0)) }
+    }
+
     // MARK: - addNewGroup
 
     @Test func addNewGroup() async throws {
@@ -294,5 +309,226 @@ struct EditControllerTests {
         #expect(restored.displayState == 0)
         #expect(restored.parentId == nil)
         #expect(restored.groupId == nil)
+    }
+
+    // MARK: - duplicate(item:) — shared behaviour with AudioRPG
+
+    @Test("Duplicating a normal item copies all properties except id; name gets Copy suffix; parentId cleared")
+    func duplicatingNormalItemCopiesAllPropertiesExceptId() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        await sut.reset(name: "Character A", itemId: itemId)
+        await sut.reset(description: "A brave hero", itemId: itemId)
+        await sut.reset(tags: ["warrior", "brave"], itemId: itemId)
+        let original = await root.itemController.itemOrEmpty(for: itemId)
+
+        let before = await captureIds(root)
+        await sut.duplicate(item: original)
+        let dupId = try await requireSingleNewId(before: before, root: root)
+        let dup = await root.itemController.itemOrEmpty(for: dupId)
+
+        #expect(dup.id != original.id)
+        #expect(dup.name.hasSuffix("Copy"))
+        #expect(dup.description == original.description)
+        #expect(dup.tags == original.tags)
+        #expect(dup.category == original.category)
+        #expect(dup.displayState == original.displayState)
+        #expect(dup.parentId == nil)
+        #expect(dup.groupId == nil)
+    }
+
+    @Test("Duplicating a collection copies all properties; entries keep references to the same child items")
+    func duplicatingCollectionCopiesAllPropertiesAndKeepsEntryReferences() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let collectionId = await root.itemController.addNew(type: .collection)
+        await sut.reset(name: "My Collection", itemId: collectionId)
+        await sut.reset(tags: ["heroes"], itemId: collectionId)
+        let memberId = await root.itemController.addNew(type: .item)
+        await sut.reset(name: "Character A", itemId: memberId)
+        await sut.addGroup(itemId: collectionId, childId: memberId)
+
+        let original = await root.itemController.itemOrEmpty(for: collectionId)
+        try #require(original.entries.count == 1)
+
+        let before = await captureIds(root)
+        await sut.duplicate(item: original)
+        let dupId = try await requireSingleNewId(before: before, root: root)
+        let dup = await root.itemController.itemOrEmpty(for: dupId)
+
+        #expect(dup.id != collectionId)
+        #expect(dup.name.hasSuffix("Copy"))
+        #expect(dup.category == original.category)
+        #expect(dup.tags == original.tags)
+        #expect(dup.entries.count == original.entries.count)
+        // Entries are references — both collections point to the same member
+        #expect(dup.entries.map(\.childId) == original.entries.map(\.childId))
+    }
+
+    @Test("Duplicating a folder creates a new folder with independently duplicated children — new child IDs, correct parentId")
+    func duplicatingFolderDuplicatesChildrenIntoNewFolder() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        await sut.reset(name: "Folder A", itemId: folderId)
+        let child1Id = await root.itemController.addNew(type: .item)
+        await sut.reset(name: "Character 1", itemId: child1Id)
+        await sut.addItem(itemId: child1Id, parentId: folderId)
+        let child2Id = await root.itemController.addNew(type: .item)
+        await sut.reset(name: "Character 2", itemId: child2Id)
+        await sut.addItem(itemId: child2Id, parentId: folderId)
+
+        let original = await root.itemController.itemOrEmpty(for: folderId)
+        try #require(original.entries.count == 2)
+
+        let before = await captureIds(root)
+        await sut.duplicate(item: original)
+        let newIds = await captureIds(root).subtracting(before)
+
+        let dupFolderId = try #require(await firstId(in: newIds, of: root) { $0.category == .folder })
+        let dupFolder = await root.itemController.itemOrEmpty(for: dupFolderId)
+        #expect(dupFolder.id != folderId)
+        #expect(dupFolder.name.hasSuffix("Copy"))
+        #expect(dupFolder.category == .folder)
+        #expect(dupFolder.parentId == original.parentId)
+        #expect(dupFolder.entries.count == 2)
+
+        // New folder must reference new children, not the originals
+        let dupChildIds = Set(dupFolder.entries.map(\.childId))
+        #expect(!dupChildIds.contains(child1Id))
+        #expect(!dupChildIds.contains(child2Id))
+        for childId in dupChildIds {
+            let child = await root.itemController.itemOrEmpty(for: childId)
+            #expect(child.parentId == dupFolderId)
+        }
+    }
+
+    @Test("Duplicating an item inside a folder: duplicate keeps the same parentId and is added to the parent folder")
+    func duplicatingItemInFolderPreservesParentAndIsAddedToFolder() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        await sut.reset(name: "Folder A", itemId: folderId)
+        let itemId = await root.itemController.addNew(type: .item)
+        await sut.reset(name: "Character A", itemId: itemId)
+        await sut.addItem(itemId: itemId, parentId: folderId)
+
+        let item = await root.itemController.itemOrEmpty(for: itemId)
+        #expect(item.parentId == folderId)
+
+        let before = await captureIds(root)
+        await sut.duplicate(item: item)
+        let dupId = try await requireSingleNewId(before: before, root: root)
+        let dup = await root.itemController.itemOrEmpty(for: dupId)
+
+        #expect(dup.parentId == folderId)
+        let folder = await root.itemController.itemOrEmpty(for: folderId)
+        #expect(folder.entries.contains(where: { $0.childId == dupId }))
+    }
+
+    @Test("Duplicating a collection member adds the new item as a child reference in that collection")
+    func duplicatingCollectionMemberAddsNewReferenceToCollection() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let collectionId = await root.itemController.addNew(type: .collection)
+        await sut.reset(name: "My Collection", itemId: collectionId)
+        let itemId = await root.itemController.addNew(type: .item)
+        await sut.reset(name: "Character A", itemId: itemId)
+        await sut.addGroup(itemId: collectionId, childId: itemId)
+
+        let collection = await root.itemController.itemOrEmpty(for: collectionId)
+        try #require(collection.entries.count == 1)
+
+        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let before = await captureIds(root)
+        await sut.duplicate(item: item)
+        let dupId = try await requireSingleNewId(before: before, root: root)
+
+        let updatedCollection = await root.itemController.itemOrEmpty(for: collectionId)
+        #expect(updatedCollection.entries.count == 2)
+        #expect(updatedCollection.entries.contains(where: { $0.childId == dupId }))
+    }
+
+    // MARK: - duplicate(item:) — CharacterRPG-specific: group sub-items
+
+    @Test("Duplicating an item with group sub-items copies the groups; new groups have groupId pointing to the duplicate")
+    func duplicatingItemWithGroupsCopiesGroupsWithNewGroupId() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let entry1Id = await sut.addNewGroup(itemId: itemId)
+        let entry2Id = await sut.addNewGroup(itemId: itemId)
+
+        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let entry1 = try #require(item.entries.first(where: { $0.id == entry1Id }))
+        let originalGroup1Id = try #require(entry1.valueId)
+        let entry2 = try #require(item.entries.first(where: { $0.id == entry2Id }))
+        let originalGroup2Id = try #require(entry2.valueId)
+
+        let before = await captureIds(root)
+        await sut.duplicate(item: item)
+        let newIds = await captureIds(root).subtracting(before)
+
+        // The main duplicate has groupId == nil; group copies have groupId set
+        let dupItemId = try #require(await firstId(in: newIds, of: root) { $0.groupId == nil })
+        let dupItem = await root.itemController.itemOrEmpty(for: dupItemId)
+        #expect(dupItem.id != itemId)
+        #expect(dupItem.name.hasSuffix("Copy"))
+        #expect(dupItem.entries.count == 2)
+
+        for entry in dupItem.entries {
+            let newGroupId = try #require(entry.valueId)
+            // Each group is a new item, not the original
+            #expect(newGroupId != originalGroup1Id)
+            #expect(newGroupId != originalGroup2Id)
+            let newGroup = await root.itemController.itemOrEmpty(for: newGroupId)
+            // New group's groupId points to the duplicate, not the original
+            #expect(newGroup.groupId == dupItemId)
+            #expect(newGroup.groupId != itemId)
+            #expect(newGroup.displayState == 1)
+        }
+    }
+
+    @Test("Duplicating an item with groups inside a folder: groups are copied and item is added to the same folder")
+    func duplicatingItemWithGroupsInFolderCopiesGroupsAndAddsToFolder() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = await root.editController
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        await sut.reset(name: "Folder A", itemId: folderId)
+        let itemId = await root.itemController.addNew(type: .item)
+        await sut.reset(name: "Character A", itemId: itemId)
+        await sut.addItem(itemId: itemId, parentId: folderId)
+        let entryId = await sut.addNewGroup(itemId: itemId)
+
+        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let groupEntry = try #require(item.entries.first(where: { $0.id == entryId }))
+        let originalGroupId = try #require(groupEntry.valueId)
+
+        let before = await captureIds(root)
+        await sut.duplicate(item: item)
+        let newIds = await captureIds(root).subtracting(before)
+
+        let dupItemId = try #require(await firstId(in: newIds, of: root) { $0.groupId == nil })
+        let dupItem = await root.itemController.itemOrEmpty(for: dupItemId)
+
+        // Duplicate is in the same folder
+        #expect(dupItem.parentId == folderId)
+        let folder = await root.itemController.itemOrEmpty(for: folderId)
+        #expect(folder.entries.contains(where: { $0.childId == dupItemId }))
+
+        // Group is a new copy with groupId pointing to the duplicate
+        let dupEntry = try #require(dupItem.entries.first)
+        let newGroupId = try #require(dupEntry.valueId)
+        #expect(newGroupId != originalGroupId)
+        let newGroup = await root.itemController.itemOrEmpty(for: newGroupId)
+        #expect(newGroup.groupId == dupItemId)
     }
 }

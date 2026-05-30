@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import DiceRPG
 import Foundation
@@ -60,4 +59,3 @@ struct EditControllerTests {
         }
     }
 }
-#endif
