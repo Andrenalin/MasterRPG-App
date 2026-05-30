@@ -65,7 +65,7 @@ struct SpaceViewer: View {
                     .tint(root.config.module.tint)
                 }
 
-                ToolbarSpacer()
+//                ToolbarSpacer()
 #endif
             }
         }

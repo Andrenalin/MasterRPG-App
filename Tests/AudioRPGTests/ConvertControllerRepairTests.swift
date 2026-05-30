@@ -44,13 +44,13 @@ struct ConvertControllerExtractFolderTests {
         #expect(root.itemController.itemOrEmpty(for: itemId).parentId == dsId)
     }
 
-    @Test("url B/Something.txt with parentId pointing to an unrelated folder creates B and moves item there")
-    func itemInUnrelatedFolderIsMovedToNewFolderMatchingUrl() async throws {
+    @Test("url B/Something.txt when item already has a valid parentId — extractFolderAndCreate is a no-op")
+    func itemWithExistingValidParentIsNotMoved() async throws {
         let root = AudioRootModel.testRoot()
         await root.itemController.resetData()
         let cc = ConvertController(itemController: root.itemController, editController: root.editController)
 
-        // Pre-create an unrelated folder "Other" and place the item there
+        // Item is already in a valid parent folder
         let otherId = await root.itemController.addNew(type: .folder)
         root.editController.reset(name: "Other", itemId: otherId)
         let itemId = await root.itemController.addNew(type: .item)
@@ -62,11 +62,14 @@ struct ConvertControllerExtractFolderTests {
         let item = root.itemController.itemOrEmpty(for: itemId)
         await cc.extractFolderAndCreate(url: url, item: item)
 
-        // Folder B must be created at root, item moved into it
-        let bId = try requireFolder(named: "B", parentId: nil, in: root)
-        let bFolder = root.itemController.itemOrEmpty(for: bId)
-        #expect(bFolder.entries.contains(where: { $0.childId == itemId }))
-        #expect(root.itemController.itemOrEmpty(for: itemId).parentId == bId)
+        // extractFolderAndCreate exits early when item already has a valid parent — item stays in "Other"
+        #expect(root.itemController.itemOrEmpty(for: itemId).parentId == otherId)
+        // Folder B is not created either
+        let folderB = root.itemController.itemDataModel.items.first {
+            let m = root.itemController.itemOrEmpty(for: $0)
+            return m.category == .folder && m.name == "B" && m.parentId == nil
+        }
+        #expect(folderB == nil)
     }
 
     @Test("url Maps/DS/Something.txt when item is already in DS — item is not moved again")
