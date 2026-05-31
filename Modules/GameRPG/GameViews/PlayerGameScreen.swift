@@ -18,7 +18,11 @@ struct PlayerGameScreen: View {
     @State private var diceShowOptionModel = DiceDisplayModel()
 
     var body: some View {
-        GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running", contentType: .player)
+        let _ = Self.printViewChangesOnlyInDebug()
+
+        ZStack {
+            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running", contentType: .player)
+        }
         .overlay(alignment: .topLeading) {
             PlayerOverlayMenu(root: root, playerController: playerController)
                 .environment(diceShowOptionModel)
@@ -181,6 +185,7 @@ private struct PlayerOverlayMenu: View {
             OverlayToolBar(root: root, playerController: playerController, isMaster: false)
         }
         .padding([.top, .leading], valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
+        .id("playerOverlayLayout")
     }
 }
 

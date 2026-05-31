@@ -107,20 +107,22 @@ struct GameRootViewer: View {
         .id(currentViewId)
     }
     
+    private static let defaultViewId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+
     private var currentViewId: UUID {
         switch playerController.gameModel.gameUpdateType {
             case .pdf:
-                return root.pdfRoot.gameControllable.gameModel.currentItemId ?? UUID()
+                return root.pdfRoot.gameControllable.gameModel.currentItemId ?? Self.defaultViewId
             case .photo:
-                return root.photoRoot.gameControllable.gameModel.currentItemId ?? UUID()
+                return root.photoRoot.gameControllable.gameModel.currentItemId ?? Self.defaultViewId
             case .space:
-                return root.spaceRoot.gameControllable.gameModel.currentItemId ?? UUID()
+                return root.spaceRoot.gameControllable.gameModel.currentItemId ?? Self.defaultViewId
             case .table:
-                return root.tableRoot.gameControllable.gameModel.currentItemId ?? UUID()
+                return root.tableRoot.gameControllable.gameModel.currentItemId ?? Self.defaultViewId
             case .weather:
-                return root.weatherRoot.gameControllable.gameModel.currentItemId ?? UUID()
+                return root.weatherRoot.gameControllable.gameModel.currentItemId ?? Self.defaultViewId
             default:
-                return UUID() // Generates a new ID for default content
+                return Self.defaultViewId
         }
     }
 }

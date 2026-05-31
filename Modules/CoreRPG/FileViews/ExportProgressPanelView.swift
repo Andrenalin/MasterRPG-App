@@ -50,6 +50,7 @@ public struct ExportProgressPanelView: View {
                     Button {
                         exportTask?.cancel()
                         navigator.dismiss()
+                        finishAction()
                     } label: {
                         Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark") }
                     }

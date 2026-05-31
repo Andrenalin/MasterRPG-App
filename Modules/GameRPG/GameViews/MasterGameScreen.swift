@@ -22,7 +22,9 @@ struct MasterGameScreen: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object", contentType: .master)
+        ZStack {
+            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object", contentType: .master)
+        }
         .overlay(alignment: .topLeading) {
             MasterOverlayMenu(root: root, adventureId: adventureId, playerController: playerController)
                 .environment(diceShowOptionModel)
@@ -199,6 +201,7 @@ private struct MasterOverlayMenu: View {
             OverlayToolBar(root: root, playerController: playerController, isMaster: true)
         }
         .padding([.top, .leading], valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
+        .id("masterOverlayLayout")
     }
 }
 
