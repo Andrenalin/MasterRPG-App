@@ -58,15 +58,25 @@ extension GameConfigModel {
     static let playerId: UUID = UUID()
     static let playerId2: UUID = UUID()
     
-    static let player = GameConfigModel(id: playerId, state: .started, master: MasterGameModel(id: masterId, type: .master, name: "Master", adventureId: UUID(uuidString: "9E5F5A2D-EC03-4CF2-91F2-A64E820658CD")!, adventureTitle: "Adventure Testing", characterId: UUID()), players: [PlayerGameModel(id: playerId, type: .player, name: "Player", characterId: UUID(uuidString: "21EF7536-956B-4746-A731-FF15D7FE5850")!)], controls: [])
+    static let player = GameConfigModel(
+        id: playerId, state: .started,
+        master: MasterGameModel(id: masterId, type: .master, name: "Master", adventureId: UUID(uuidString: "9E5F5A2D-EC03-4CF2-91F2-A64E820658CD")!, adventureTitle: "Adventure Testing", characterId: UUID()))
 
     static let master = GameConfigModel(
         id: masterId, state: .started,
-        master: MasterGameModel(id: masterId, type: .master, name: "Master", adventureId: UUID(uuidString: "9E5F5A2D-EC03-4CF2-91F2-A64E820658CD")!, adventureTitle: "Adventure Testing", characterId: UUID()),
+        master: MasterGameModel(id: masterId, type: .master, name: "Master", adventureId: UUID(uuidString: "9E5F5A2D-EC03-4CF2-91F2-A64E820658CD")!, adventureTitle: "Adventure Testing", characterId: UUID()))
+}
+
+extension GameRosterModel {
+    static let player = GameRosterModel(
+        players: [PlayerGameModel(id: GameConfigModel.playerId, type: .player, name: "Player", characterId: UUID(uuidString: "21EF7536-956B-4746-A731-FF15D7FE5850")!)])
+
+    static let master = GameRosterModel(
         players: [
-            PlayerGameModel(id: playerId, type: .player, name: "Player", characterId: UUID(uuidString: "21EF7536-956B-4746-A731-FF15D7FE5850")!),
-            PlayerGameModel(id: playerId2, type: .player, name: "Player2", characterId: UUID())
-        ], controls: [.previewPlayer1, .previewPlayer2])
+            PlayerGameModel(id: GameConfigModel.playerId, type: .player, name: "Player", characterId: UUID(uuidString: "21EF7536-956B-4746-A731-FF15D7FE5850")!),
+            PlayerGameModel(id: GameConfigModel.playerId2, type: .player, name: "Player2", characterId: UUID())
+        ],
+        controls: [.previewPlayer1, .previewPlayer2])
 }
 
 extension SharingControlModel {

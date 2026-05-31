@@ -27,7 +27,7 @@ private struct OnlyPlayerGameView: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
-        if root.gameModel.gameConfig.type != .observer {
+        if root.gameModel.gameType != .observer {
             root.characterRoot.viewController.gameView(root: root.characterRoot, select: root.gameModel.selectedCharacter)
                 .gameOverlayTabBarView(value: NetworkModules.game)
                 .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
@@ -46,7 +46,7 @@ private struct TabPlayerGameView: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
-        if root.gameModel.gameConfig.type != .observer {
+        if root.gameModel.gameType != .observer {
             NavigationStack {
                 if let characterId = root.gameModel.selectedCharacter {
                     root.characterRoot.viewController.gameView(root: root.characterRoot, select: characterId)

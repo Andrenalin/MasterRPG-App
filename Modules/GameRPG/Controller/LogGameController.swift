@@ -24,14 +24,14 @@ struct LogGameController: Sendable {
     
     @MainActor
     var players: [PlayerScreenModel] {
-        gameModel.gameConfig.players.map {
+        gameModel.gameRoster.players.map {
             PlayerScreenModel(id: $0.id, name: $0.name, data: gameModel.playerScreens[$0.id])
         }.sorted { $0.name < $1.name }
     }
-    
+
     @MainActor
     var maxPlayers: Int {
-        gameModel.gameConfig.players.count
+        gameModel.gameRoster.players.count
     }
     
     @MainActor
@@ -62,7 +62,7 @@ struct LogGameController: Sendable {
     @MainActor
     func playerNames(for players: [UUID]) -> String {
         players.map { player -> String in
-            guard let data = gameModel.gameConfig.players.first(where: { $0.id == player }) else { return "Unknown Player" }
+            guard let data = gameModel.gameRoster.players.first(where: { $0.id == player }) else { return "Unknown Player" }
             return data.name
         }.joined(separator: ", ")
     }

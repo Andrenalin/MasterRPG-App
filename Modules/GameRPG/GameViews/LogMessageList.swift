@@ -11,7 +11,7 @@ struct LogMessageList: View {
     var body: some View {
         @Bindable var gameModel = logController.gameModel
         VStack {
-            SendControlView(controls: $gameModel.gameConfig.controls)
+            SendControlView(controls: $gameModel.gameRoster.controls)
                 .padding()
             
             List {
@@ -54,7 +54,7 @@ struct LogMessageList: View {
         @Bindable var gameModel = logController.gameModel
         
         DisclosureGroupTV {
-            Toggle(isOn: $gameModel.gameConfig.features.diceMaster) {
+            Toggle(isOn: $gameModel.gameRoster.features.diceMaster) {
                 Label {
                     Text("Share master dice with other players", bundle: .module)
                 } icon: {
@@ -62,7 +62,7 @@ struct LogMessageList: View {
                 }
             }
             
-            Toggle(isOn: $gameModel.gameConfig.features.dicePlayers) {
+            Toggle(isOn: $gameModel.gameRoster.features.dicePlayers) {
                 Label {
                     Text("Share player dice with other players", bundle: .module)
                 } icon: {
@@ -70,21 +70,21 @@ struct LogMessageList: View {
                 }
             }
             
-            Toggle(isOn: $gameModel.gameConfig.features.audioSharing) {
+            Toggle(isOn: $gameModel.gameRoster.features.audioSharing) {
                 Label {
                     Text(NetworkModules.audio.localizedTitle)
                 } icon: {
                     Image(systemName: NetworkModules.audio.icon)
                 }
             }
-            Toggle(isOn: $gameModel.gameConfig.features.photoSharing) {
+            Toggle(isOn: $gameModel.gameRoster.features.photoSharing) {
                 Label {
                     Text(NetworkModules.photo.localizedTitle)
                 } icon: {
                     Image(systemName: NetworkModules.photo.icon)
                 }
             }
-            Toggle(isOn: $gameModel.gameConfig.features.spaceSharing) {
+            Toggle(isOn: $gameModel.gameRoster.features.spaceSharing) {
                 Label {
                     Text(NetworkModules.space.localizedTitle)
                 } icon: {

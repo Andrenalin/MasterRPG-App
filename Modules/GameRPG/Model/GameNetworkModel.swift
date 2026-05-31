@@ -10,13 +10,19 @@ struct GameNetworkModel: Codable {
     var type: RPGMessageType
     var subType: RPGMessageActionType
     var gameConfig: GameConfigModel
+    var gameRoster: GameRosterModel = .empty
     var data: NetworkCodableDataType
 }
 
 extension GameNetworkModel: CustomDebugStringConvertible {
     var debugDescription: String {
-        "counter \(counter) type: \(type) - \(subType), game: \(gameConfig.name) data: \(data.id) \(data.type.token)"
+        "counter \(counter) type: \(type) - \(subType), game: \(gameConfig.name(in: gameRoster)) data: \(data.id) \(data.type.token)"
     }
+}
+
+extension GameNetworkModel {
+    var senderType: GameType { gameConfig.type(in: gameRoster) }
+    var senderName: String { gameConfig.name(in: gameRoster) }
 }
 
 extension GameNetworkModel: MessageMapper {

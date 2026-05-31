@@ -60,13 +60,7 @@ struct PlayerMasterControllerTestEnvironment {
         masterRoot.networkProxyStore = networkProxy
 
         let masterId = UUID()
-        let masterGameConfig = GameConfigModel(
-            id: masterId,
-            state: .started,
-            master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin"),
-            players: [],
-            controls: []
-        )
+        let masterGameConfig = GameConfigModel(id: masterId, state: .started, master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin"))
         await masterRoot.gameModel.reset(gameConfig: masterGameConfig)
         let master = await MasterController(root: masterRoot, asProxy: false)
 
@@ -77,14 +71,9 @@ struct PlayerMasterControllerTestEnvironment {
         playerRoot.networkStore = network
 
         let playerId = UUID()
-        let playerGameConfig = GameConfigModel(
-            id: playerId,
-            state: .started,
-            master: .empty,
-            players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")],
-            controls: []
-        )
-        await playerRoot.gameModel.reset(gameConfig: playerGameConfig)
+        let playerGameConfig = GameConfigModel(id: playerId, state: .started, master: .empty)
+        let playerRoster = GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")])
+        await playerRoot.gameModel.reset(gameConfig: playerGameConfig, gameRoster: playerRoster)
         let player = await PlayerController(root: playerRoot, asGameMaster: false)
 
         return PlayerMasterControllerTestEnvironment(

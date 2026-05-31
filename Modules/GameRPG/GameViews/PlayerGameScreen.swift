@@ -173,7 +173,7 @@ private struct PlayerOverlayMenu: View {
     let playerController: PlayerController
 
     var body: some View {
-        OverlayGameLayout(root: root, hideDice: root.gameModel.gameConfig.type == .observer) {
+        OverlayGameLayout(root: root, hideDice: root.gameModel.gameType == .observer) {
 #if os(visionOS)
             EmptyView()
 #else

@@ -232,14 +232,14 @@ private extension OverlayGameMenu {
     @ViewBuilder
     var toolIconMacViewPlayer: some View {
         @Bindable var gameScreenModel = gameScreenModel
-        if root.gameModel.gameConfig.type != .observer {
+        if root.gameModel.gameType != .observer {
             GameToolBarButtonView(valueType: .value, showType: $gameScreenModel.showGameType)
                 .padding(.leading, marginWidth)
             GameToolBarButtonView(valueType: .dice, showType: $gameScreenModel.showGameType)
         }
         
         GameToolBarButtonView(valueType: .pdf, showType: $gameScreenModel.showGameType)
-            .padding(.leading, root.gameModel.gameConfig.type == .observer ? marginWidth : 0)
+            .padding(.leading, root.gameModel.gameType == .observer ? marginWidth : 0)
         
         GameToolBarButtonView(valueType: .audio, showType: $gameScreenModel.showGameType)
         GameToolBarButtonView(valueType: .photo, showType: $gameScreenModel.showGameType)
@@ -247,7 +247,7 @@ private extension OverlayGameMenu {
         GameToolBarButtonView(valueType: .table, showType: $gameScreenModel.showGameType)
         
         Group {
-            if root.gameModel.gameConfig.type != .observer {
+            if root.gameModel.gameType != .observer {
                 GameMainTabButtonView(isMaster: false, displayMode: $gameScreenModel.gameMainTabDisplayMode)
             }
         }

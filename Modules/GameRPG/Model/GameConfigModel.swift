@@ -9,37 +9,36 @@ enum GameState: Equatable, Codable, Sendable {
     case started
 }
 
+// Structural config: identity and master info. Changes only at game start/stop.
 struct GameConfigModel: Equatable, Identifiable, Codable, Sendable {
     var id: UUID
     var state: GameState
     var master: MasterGameModel
-    var players: [PlayerGameModel]
-    var controls: [SharingControlModel]
-    var features: GameFeatureModel = GameFeatureModel()
-    
-    var type: GameType {
-        if master.id == id {
-            return master.type
-        } else {
-            return players.first(where: { $0.id == id })?.type ?? .notSet
-        }
-    }
-    
-    var name: String {
-        if master.id == id {
-            return master.name
-        } else {
-            return players.first(where: { $0.id == id })?.name ?? ""
-        }
-    }
-    
-    var isMaster: Bool {
-        master.id == id
+
+    var isMaster: Bool { master.id == id }
+
+    func type(in roster: GameRosterModel) -> GameType {
+        if isMaster { return master.type }
+        return roster.players.first(where: { $0.id == id })?.type ?? .notSet
     }
 
-    var player: PlayerGameModel {
-        players.first(where: { $0.id == id }) ?? .empty
+    func name(in roster: GameRosterModel) -> String {
+        if isMaster { return master.name }
+        return roster.players.first(where: { $0.id == id })?.name ?? ""
     }
-        
-    static let empty = GameConfigModel(id: UUID(), state: .stopped, master: .empty, players: [], controls: [])
+
+    func player(in roster: GameRosterModel) -> PlayerGameModel {
+        roster.players.first(where: { $0.id == id }) ?? .empty
+    }
+
+    static let empty = GameConfigModel(id: UUID(), state: .stopped, master: .empty)
+}
+
+// Dynamic roster: players, sharing controls, and features. Changes on every join/leave.
+struct GameRosterModel: Equatable, Codable, Sendable {
+    var players: [PlayerGameModel] = []
+    var controls: [SharingControlModel] = []
+    var features: GameFeatureModel = GameFeatureModel()
+
+    static let empty = GameRosterModel()
 }

@@ -32,7 +32,7 @@ struct GameRootView: View {
     private var gameView: some View {
         Group {
             if let playerController = root.gameModel.playerController {
-                if root.gameModel.gameConfig.type == .master {
+                if root.gameModel.gameConfig.isMaster {
                     if let adventureId = root.gameModel.gameConfig.master.adventureId {
                         MasterGameScreen(root: root, playerController: playerController, adventureId: adventureId)
                     }

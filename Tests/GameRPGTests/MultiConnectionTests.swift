@@ -23,18 +23,22 @@ struct MultiConnectionTestEnvironment {
     let master: MasterController
     let masterRoot: GameRoot
     let masterConfig: GameConfigModel
+    let masterRoster: GameRosterModel
 
     let player1: PlayerController
     let player1Root: GameRoot
     let player1Config: GameConfigModel
+    let player1Roster: GameRosterModel
 
     let player2: PlayerController
     let player2Root: GameRoot
     let player2Config: GameConfigModel
+    let player2Roster: GameRosterModel
 
     let player3: PlayerController
     let player3Root: GameRoot
     let player3Config: GameConfigModel
+    let player3Roster: GameRosterModel
 
     let masterDelegateSpy: MasterNetworkStoreDelegateMock
     let playerDelegateSpy: PlayerNetworkStoreDelegateMock
@@ -78,11 +82,10 @@ struct MultiConnectionTestEnvironment {
         let masterConfig = GameConfigModel(
             id: masterId,
             state: .started,
-            master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin"),
-            players: [],
-            controls: []
+            master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin")
         )
-        await masterRoot.gameModel.reset(gameConfig: masterConfig)
+        let masterRoster = GameRosterModel()
+        await masterRoot.gameModel.reset(gameConfig: masterConfig, gameRoster: masterRoster)
         let master = await MasterController(root: masterRoot, asProxy: false)
 
         // MARK: - Player 1 Setup
@@ -93,14 +96,9 @@ struct MultiConnectionTestEnvironment {
         player1Root.networkStore = networkController
 
         let player1Id = UUID()
-        let player1Config = GameConfigModel(
-            id: player1Id,
-            state: .started,
-            master: .empty,
-            players: [PlayerGameModel(id: player1Id, type: .player, name: "Player - 1")],
-            controls: []
-        )
-        await player1Root.gameModel.reset(gameConfig: player1Config)
+        let player1Config = GameConfigModel(id: player1Id, state: .started, master: .empty)
+        let player1Roster = GameRosterModel(players: [PlayerGameModel(id: player1Id, type: .player, name: "Player - 1")])
+        await player1Root.gameModel.reset(gameConfig: player1Config, gameRoster: player1Roster)
         let player1 = await PlayerController(root: player1Root, asGameMaster: false)
 
         // MARK: - Player 2 Setup
@@ -111,14 +109,9 @@ struct MultiConnectionTestEnvironment {
         player2Root.networkStore = networkController
 
         let player2Id = UUID()
-        let player2Config = GameConfigModel(
-            id: player2Id,
-            state: .started,
-            master: .empty,
-            players: [PlayerGameModel(id: player2Id, type: .player, name: "Player - 2")],
-            controls: []
-        )
-        await player2Root.gameModel.reset(gameConfig: player2Config)
+        let player2Config = GameConfigModel(id: player2Id, state: .started, master: .empty)
+        let player2Roster = GameRosterModel(players: [PlayerGameModel(id: player2Id, type: .player, name: "Player - 2")])
+        await player2Root.gameModel.reset(gameConfig: player2Config, gameRoster: player2Roster)
         let player2 = await PlayerController(root: player2Root, asGameMaster: false)
 
         // MARK: - Player 3 Setup
@@ -129,29 +122,28 @@ struct MultiConnectionTestEnvironment {
         player3Root.networkStore = networkController
 
         let player3Id = UUID()
-        let player3Config = GameConfigModel(
-            id: player3Id,
-            state: .started,
-            master: .empty,
-            players: [PlayerGameModel(id: player3Id, type: .player, name: "Player - 3")],
-            controls: []
-        )
-        await player3Root.gameModel.reset(gameConfig: player3Config)
+        let player3Config = GameConfigModel(id: player3Id, state: .started, master: .empty)
+        let player3Roster = GameRosterModel(players: [PlayerGameModel(id: player3Id, type: .player, name: "Player - 3")])
+        await player3Root.gameModel.reset(gameConfig: player3Config, gameRoster: player3Roster)
         let player3 = await PlayerController(root: player3Root, asGameMaster: false)
 
         return MultiConnectionTestEnvironment(
             master: master,
             masterRoot: masterRoot,
             masterConfig: masterConfig,
+            masterRoster: masterRoster,
             player1: player1,
             player1Root: player1Root,
             player1Config: player1Config,
+            player1Roster: player1Roster,
             player2: player2,
             player2Root: player2Root,
             player2Config: player2Config,
+            player2Roster: player2Roster,
             player3: player3,
             player3Root: player3Root,
             player3Config: player3Config,
+            player3Roster: player3Roster,
             masterDelegateSpy: masterDelegateSpy,
             playerDelegateSpy: playerDelegateSpy,
             masterNetworkSpy: masterNetworkSpy,
@@ -218,7 +210,7 @@ struct MultiConnectionAudioTests {
         #expect(player1Response?.subType == .show)
         await #expect(env.player1Root.audioRoot.gameController.currentId != audioId)
         await #expect(env.player1Root.gameModel.gameConfig.master == env.masterConfig.master)
-        await #expect(env.player1Root.gameModel.gameConfig.players == env.player1Config.players)
+        await #expect(env.player1Root.gameModel.gameRoster.players == env.player1Roster.players)
     }
 
     @Test("All three players independently acknowledge audio show")
@@ -288,8 +280,8 @@ struct MultiConnectionAudioTests {
         #expect(audioData1?.data.id == audioId)
         #expect(audioData1?.data.type == .audio)
         #expect(audioData1?.data.version == version)
-        await #expect(env.masterRoot.gameModel.gameConfig.controls == [
-            SharingControlModel(id: env.player1Config.id, name: env.player1Config.name, show: true)
+        await #expect(env.masterRoot.gameModel.gameRoster.controls == [
+            SharingControlModel(id: env.player1Config.id, name: env.player1Roster.players[0].name, show: true)
         ])
 
         // Act - Master receives third player acknowledgment
@@ -298,9 +290,9 @@ struct MultiConnectionAudioTests {
         // Assert - Master updates controls
         let audioData3 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         #expect(audioData3?.data.id == audioId)
-        await #expect(env.masterRoot.gameModel.gameConfig.controls == [
-            SharingControlModel(id: env.player1Config.id, name: env.player1Config.name, show: true),
-            SharingControlModel(id: env.player3Config.id, name: env.player3Config.name, show: true)
+        await #expect(env.masterRoot.gameModel.gameRoster.controls == [
+            SharingControlModel(id: env.player1Config.id, name: env.player1Roster.players[0].name, show: true),
+            SharingControlModel(id: env.player3Config.id, name: env.player3Roster.players[0].name, show: true)
         ])
     }
 

@@ -43,14 +43,9 @@ struct PlayerControllerTestEnvironment {
 
         root.networkStore = networkController
         let playerId = UUID()
-        let gameConfig = GameConfigModel(
-            id: playerId,
-            state: .started,
-            master: .empty,
-            players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")],
-            controls: []
-        )
-        await root.gameModel.reset(gameConfig: gameConfig)
+        let gameConfig = GameConfigModel(id: playerId, state: .started, master: .empty)
+        let gameRoster = GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")])
+        await root.gameModel.reset(gameConfig: gameConfig, gameRoster: gameRoster)
 
         let playerController = await PlayerController(root: root, asGameMaster: false)
 

@@ -64,7 +64,7 @@ final class MasterPlayerControllerTests {
         rootSut.networkProxyStore = networkProxyMock
 
         let masterId = UUID()
-        gameConfigModelSut = GameConfigModel(id: masterId, state: .started, master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin"), players: [], controls: [])
+        gameConfigModelSut = GameConfigModel(id: masterId, state: .started, master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin"))
         await rootSut.gameModel.reset(gameConfig: gameConfigModelSut)
         sut = await MasterController(root: rootSut, asProxy: false)
 
@@ -74,8 +74,8 @@ final class MasterPlayerControllerTests {
 
         rootPlayer.networkStore = networkMock
         let playerId = UUID()
-        gameConfigModelPlayer = GameConfigModel(id: playerId, state: .started, master: .empty, players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")], controls: [])
-        await rootPlayer.gameModel.reset(gameConfig: gameConfigModelPlayer)
+        gameConfigModelPlayer = GameConfigModel(id: playerId, state: .started, master: .empty)
+        await rootPlayer.gameModel.reset(gameConfig: gameConfigModelPlayer, gameRoster: GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")]))
         sutPlayer = await PlayerController(root: rootPlayer, asGameMaster: false)
     }
     

@@ -20,21 +20,22 @@ import WeatherRPG
 @MainActor @Observable
 final class GameModel: Sendable {
     var gameConfig: GameConfigModel = .empty
-    
+    var gameRoster: GameRosterModel = .empty
+
     var startGameTime = Date()
-    
+
     var selectedCharacter: UUID?
     var selectedGameMaster: UUID?
     public var selectedAdventure: UUID?
-    
+
     var playerGameStarted: Bool = false
-    
+
     var logData: [Int: LogGameModel] = [:]
     var logs: [Int] = []
     var playerScreens: [UUID: Data] = [:]
     var attachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
     var metaDataAttachments: [NetworkModules: UUID] = [:]
-    
+
     var masterController: MasterController?
     var playerController: PlayerController?
 
@@ -42,44 +43,45 @@ final class GameModel: Sendable {
     var gameTableModel: GameTableModel?
     var shareState = GameShareStateModel()
     #endif
-    
+
     func add(playerId: UUID, playerModel: PlayerGameModel, sharingModel: SharingControlModel) -> Bool {
-        if let index = gameConfig.players.firstIndex(where: { $0.id == playerId }) {
-            gameConfig.players[index] = playerModel
+        if let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) {
+            gameRoster.players[index] = playerModel
             var model = sharingModel
-            model.show = gameConfig.controls[index].show
-            gameConfig.controls[index] = model
+            model.show = gameRoster.controls[index].show
+            gameRoster.controls[index] = model
             return false
         } else {
-            gameConfig.players.append(playerModel)
-            gameConfig.controls.append(sharingModel)
+            gameRoster.players.append(playerModel)
+            gameRoster.controls.append(sharingModel)
             return true
         }
     }
-    
+
     func add(playerId: UUID, sharingModel: SharingControlModel) {
-        if let index = gameConfig.players.firstIndex(where: { $0.id == playerId }) {
-            gameConfig.controls[index] = sharingModel
+        if let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) {
+            gameRoster.controls[index] = sharingModel
         } else {
-            gameConfig.controls.append(sharingModel)
+            gameRoster.controls.append(sharingModel)
         }
     }
-    
+
     func remove(playerId: UUID) -> Bool {
-        guard let index = gameConfig.players.firstIndex(where: { $0.id == playerId }) else { return false }
-        gameConfig.players.remove(at: index)
-        gameConfig.controls.remove(at: index)
+        guard let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) else { return false }
+        gameRoster.players.remove(at: index)
+        gameRoster.controls.remove(at: index)
         return true
     }
-    
-    func reset(gameConfig: GameConfigModel) {
+
+    func reset(gameConfig: GameConfigModel, gameRoster: GameRosterModel = .empty) {
         self.gameConfig = gameConfig
+        self.gameRoster = gameRoster
     }
-    
+
     func reset(controls: [SharingControlModel]) {
-        gameConfig.controls = controls
+        gameRoster.controls = controls
     }
-    
+
     func reset(master: MasterGameModel) {
         gameConfig.master = master
     }
@@ -89,12 +91,16 @@ final class GameModel: Sendable {
         if !updatedPlayers.contains(where: { $0.id == playerId }) {
             updatedPlayers.append(player)
         }
-        gameConfig.players = updatedPlayers
+        gameRoster.players = updatedPlayers
     }
 
     func reset(features: GameFeatureModel) {
-        gameConfig.features = features
+        gameRoster.features = features
     }
+
+    var gameType: GameType { gameConfig.type(in: gameRoster) }
+    var gameName: String { gameConfig.name(in: gameRoster) }
+    var gamePlayer: PlayerGameModel { gameConfig.player(in: gameRoster) }
 }
 
 public final class GameRoot: @unchecked Sendable {
@@ -177,10 +183,10 @@ public final class GameRoot: @unchecked Sendable {
     }
 
     @MainActor public lazy var sharingControlActions: SharingControlActions = SharingControlActions { [weak self] in
-        self?.gameModel.gameConfig.controls ?? []
+        self?.gameModel.gameRoster.controls ?? []
     } update: { [weak self] newControls in
-        if self?.gameModel.gameConfig.controls != newControls {
-            self?.gameModel.gameConfig.controls = newControls
+        if self?.gameModel.gameRoster.controls != newControls {
+            self?.gameModel.gameRoster.controls = newControls
         }
         Task {
             await self?.gameModel.masterController?.resetPlayers()
@@ -188,7 +194,7 @@ public final class GameRoot: @unchecked Sendable {
     }
 
     @MainActor public lazy var sharingFeatureActions: SharingFeatureActions = SharingFeatureActions { [weak self] in
-        self?.gameModel.gameConfig.features ?? GameFeatureModel()
+        self?.gameModel.gameRoster.features ?? GameFeatureModel()
     }
     
     @MainActor
@@ -257,8 +263,10 @@ extension GameRoot {
         }
         
         let masterGameModel = MasterGameModel(id: UUID(), type: .master, name: gameMasterName, adventureId: id, adventureTitle: adventureRoot.networkTitle(for: id))
-        gameModel.gameConfig.id = masterGameModel.id
-        gameModel.gameConfig.master = masterGameModel
+        var newConfig = gameModel.gameConfig
+        newConfig.id = masterGameModel.id
+        newConfig.master = masterGameModel
+        gameModel.gameConfig = newConfig
         gameModel.startGameTime = Date.now
         #if os(visionOS)
         gameModel.shareState.isMaster = true
@@ -305,9 +313,11 @@ extension GameRoot {
             gameModel.selectedCharacter = nil
         }
         let playerGameModel = PlayerGameModel(id: UUID(), type: mode, name: name(for: mode), characterId: gameModel.selectedCharacter)
-        gameModel.gameConfig.players = [playerGameModel]
-        gameModel.gameConfig.id = playerGameModel.id
-        gameModel.gameConfig.state = .prepare
+        gameModel.gameRoster = GameRosterModel(players: [playerGameModel])
+        var newConfig = gameModel.gameConfig
+        newConfig.id = playerGameModel.id
+        newConfig.state = .prepare
+        gameModel.gameConfig = newConfig
         networkStore.resetName(name: name(for: mode))
         if mode == .player {
             networkProxyStore.resetName(name: characterName)
@@ -342,9 +352,11 @@ extension GameRoot {
     func joinGame(for type: GameType) {
         gameModel.startGameTime = Date.now
         gameModel.playerGameStarted = true
-        gameModel.gameConfig.players[0].type = type
-        gameModel.gameConfig.players[0].name = name(for: type)
-        gameModel.gameConfig.state = .started
+        var newConfig = gameModel.gameConfig
+        newConfig.state = .started
+        gameModel.gameConfig = newConfig
+        gameModel.gameRoster.players[0].type = type
+        gameModel.gameRoster.players[0].name = name(for: type)
         adventureRoot.startGame()
         if type != .observer {
             characterRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)
