@@ -53,10 +53,9 @@ public extension SearchControllable {
             
         }
         
-        // Sort by relevance score (highest first)
-        return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
+        return foundResults.sortedByRelevance()
     }
-    
+
     func calculateRelevance(searchText: String, itemName: String, entryName: String?, content: String?, isItemMatch: Bool) -> Int {
         var score = 0
         
@@ -136,8 +135,7 @@ public extension SearchControllable {
             
         }
         
-        // Sort by relevance score (highest first)
-        return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
+        return foundResults.sortedByRelevance()
     }
 }
 
@@ -163,7 +161,7 @@ public extension SearchControllable {
             await inspectorResult(item: item, searchText: searchText, foundResults: &foundResults)
         }
         
-        return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
+        return foundResults.sortedByRelevance()
     }
 
     /// Searches `item` name/description and all its entries.
@@ -224,6 +222,22 @@ public extension SearchControllable {
                let childItem = await itemControllable.item(for: entry.childId) {
                 await inspectorResult(item: childItem, searchText: searchText, foundResults: &foundResults)
             }
+        }
+    }
+}
+
+// MARK: - SearchResult sorting
+
+extension Array where Element == SearchResult {
+    // Primary: relevance descending. Tiebreaker: item name alphabetical.
+    // Without the tiebreaker, equal-scored results fall back to Core Data iteration order
+    // (arbitrary), making list-mode search appear unsorted even when scores are computed.
+    func sortedByRelevance() -> [SearchResult] {
+        sorted { a, b in
+            if a.relevanceScore != b.relevanceScore {
+                return a.relevanceScore > b.relevanceScore
+            }
+            return a.itemName.localizedCompare(b.itemName) == .orderedAscending
         }
     }
 }
