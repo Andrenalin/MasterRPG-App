@@ -128,7 +128,7 @@ private extension QuickEntryEditorView {
     private var entryListView: some View {
         List {
             ForEach(model.entries, id: \.id) { entry in
-                EntryEditRow(root: root, editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel, listDisplayModel: root.listDisplayModel, searchModel: root.searchModel)
+                EntryEditRow(root: root, editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel, listDisplayModel: root.folderListControllable.listDisplayModel, searchModel: root.searchModel)
             }
         }
 #if !os(tvOS)

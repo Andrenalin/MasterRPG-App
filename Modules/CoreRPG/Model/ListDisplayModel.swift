@@ -55,7 +55,14 @@ public final class ListDisplayModel {
         
         public var id: Self { self }
     }    
-    public var listMode: ListMode
+    public var listMode: ListMode {
+        willSet {
+            print("will change to \(listMode) -> \(newValue)")
+        }
+        didSet {
+            print("did change \(oldValue) -> \(listMode)")
+        }
+    }
 
     public var isListMode: Bool {
         get { listMode == .list }

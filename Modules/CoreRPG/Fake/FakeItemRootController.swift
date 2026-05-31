@@ -10,7 +10,6 @@ public extension ItemRootController {
         
         let root = ItemRootController(
             config: FakeModuleConfiguration(),
-            listDisplayModel: ListDisplayModel(),
             navigationModel: ModuleNavigationModel(),
             inspectorEditorLinkModel: nil,
             openFileWindowModel: OpenFileWindowModel(),

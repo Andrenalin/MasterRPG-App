@@ -42,7 +42,6 @@ public final class DiceRootModel {
 
         _rootController = ItemRootController(
             config: config,
-            listDisplayModel: listDisplayModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
             openFileWindowModel: openFileWindowModel,

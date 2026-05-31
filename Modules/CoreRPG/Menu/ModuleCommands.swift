@@ -119,7 +119,7 @@ struct AddFolderButton: View {
             }
         }
         .keyboardShortcut(key, modifiers: [.command, .control, .shift])
-        .disabled(root.listDisplayModel.isListMode)
+        .disabled(root.folderListControllable.listDisplayModel.isListMode)
     }
 }
 
@@ -142,7 +142,7 @@ struct AddCollectionButton: View {
             }
         }
         .keyboardShortcut(key, modifiers: [.command, .control, .option])
-        .disabled(root.listDisplayModel.isListMode)
+        .disabled(root.folderListControllable.listDisplayModel.isListMode)
     }
 }
 

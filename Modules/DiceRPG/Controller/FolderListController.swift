@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 @MainActor
@@ -21,7 +20,6 @@ struct FolderListController: FolderListControllable {
     }
     
     func copy(listModel: FolderListModel) -> FolderListController {
-        let newSearchModel = searchRootControllable.searchModel.newSearchModel
         return FolderListController(
             listModel: listModel,
             listDisplayModel: listDisplayModel.newListDisplayModel,

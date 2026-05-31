@@ -21,7 +21,7 @@ struct SyncListDisplayViewModifier: ViewModifier {
             .onChange(of: listControllable.listDisplayModel.displayMode) {
                 displayMode.wrappedValue <=> listControllable.listDisplayModel.displayMode
             }
-            .onChange(of: listMode.wrappedValue, initial: true) {
+            .onChange(of: listMode.wrappedValue) {
                 listControllable.listDisplayModel.listMode <=> listMode.wrappedValue
             }
             .onChange(of: listControllable.listDisplayModel.listMode) {

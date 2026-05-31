@@ -6,7 +6,6 @@ import SwiftData
 @MainActor
 public protocol ItemRootControllable: Sendable {
     var configurable: ModuleConfigurable { get }
-    var listDisplayModel: ListDisplayModel { get }
     var navigationModel: ModuleNavigationModel { get }
     var inspectorEditorLinkModel: EditorLinkModel? { get }
     var openFileWindowModel: OpenFileWindowModel { get }
@@ -39,7 +38,6 @@ public extension ItemRootControllable {
 public final class ItemRootController: ItemRootControllable {
     public init(
         config: ModuleConfigurable,
-        listDisplayModel: ListDisplayModel,
         navigationModel: ModuleNavigationModel,
         inspectorEditorLinkModel: EditorLinkModel?,
         openFileWindowModel: OpenFileWindowModel,
@@ -59,7 +57,6 @@ public final class ItemRootController: ItemRootControllable {
         viewControllable: any ViewControllable
     ) {
         self.configurable = config
-        self.listDisplayModel = listDisplayModel
         self.navigationModel = navigationModel
         self.inspectorEditorLinkModel = inspectorEditorLinkModel
         self.openFileWindowModel = openFileWindowModel
@@ -80,7 +77,6 @@ public final class ItemRootController: ItemRootControllable {
     }
 
     public let configurable: ModuleConfigurable
-    public let listDisplayModel: ListDisplayModel
     public let navigationModel: ModuleNavigationModel
     public let inspectorEditorLinkModel: EditorLinkModel?
     public let openFileWindowModel: OpenFileWindowModel

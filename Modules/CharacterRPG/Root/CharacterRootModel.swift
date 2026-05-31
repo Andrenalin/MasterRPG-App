@@ -51,7 +51,6 @@ public final class CharacterRootModel {
 
         _rootController = ItemRootController(
             config: config,
-            listDisplayModel: listDisplayModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
             openFileWindowModel: openFileWindowModel,

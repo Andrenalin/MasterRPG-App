@@ -188,7 +188,6 @@ public final class AdventureRootModel {
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             config: config,
-            listDisplayModel: listDisplayModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
             openFileWindowModel: openFileWindowModel,

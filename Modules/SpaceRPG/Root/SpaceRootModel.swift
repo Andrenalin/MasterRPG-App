@@ -41,7 +41,6 @@ public final class SpaceRootModel {
 
         _rootController = ItemRootController(
             config: config,
-            listDisplayModel: listDisplayModel,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
             openFileWindowModel: openFileWindowModel,
