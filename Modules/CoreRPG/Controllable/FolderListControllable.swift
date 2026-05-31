@@ -67,10 +67,11 @@ extension FolderListControllable {
 
 public extension FolderListControllable {
     private func originalItems() {
-        let currentItems: [any ItemDataAccessable] = itemControllable.itemDataModel.items.compactMap {
-            itemControllable.itemSync(for: $0)
-        }
-        
+        // List and folder mode both display top-level items alphabetically.
+        let currentItems: [any ItemDataAccessable] = itemControllable.itemDataModel.items
+            .compactMap { itemControllable.itemSync(for: $0) }
+            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+
         if currentItems.map(\.id) != listModel.originalItems.map(\.model.id) {
             let updatedItems = currentItems.enumerated().map { (index, model) in
                 map(model: model, entryId: nil, index: index, level: 0)
@@ -80,9 +81,13 @@ public extension FolderListControllable {
 
         if let parentModel = listModel.parentModel {
             let parentChildrenItems = itemControllable.children(itemId: parentModel.id)
+            // Folders: alphabetical. Collections (playlist, album, etc.): preserve entry order.
+            let orderedChildren: [any ItemDataAccessable] = parentModel.category == .folder
+                ? parentChildrenItems.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+                : parentChildrenItems
 
-            if parentChildrenItems.map(\.id) != listModel.parentOriginalItems.map(\.model.id) {
-                let updatedItems = parentChildrenItems.enumerated().map { (index, model) in
+            if orderedChildren.map(\.id) != listModel.parentOriginalItems.map(\.model.id) {
+                let updatedItems = orderedChildren.enumerated().map { (index, model) in
                     map(model: model, entryId: nil, index: index, level: 0)
                 }
                 listModel.parentOriginalItems <=> updatedItems
@@ -553,27 +558,41 @@ private extension FolderListControllable {
         item.model.description.localizedStandardContains(searchModel.searchText) ? item : nil
     }
     
-    func map(model: any ItemDataAccessable, entryId: UUID?, index: Int, level: Int) -> ListItemModel {
+    func map(model: any ItemDataAccessable, entryId: UUID?, index: Int, level: Int, parentId: UUID? = nil) -> ListItemModel {
         let folderOpened = model.specialCategory ? listModel.isFolderOpen(itemId: model.id, entryId: entryId) : false
-        return ListItemModel(id: "\(level)-\(index)-\(model.id)", model: model, isOpen: folderOpened, entryId: entryId, level: level)
+        let source = ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module)
+        // Context-qualified key: same itemId under different parents (collection/folder, Character groups)
+        // gets its own cache slot so level and open state remain independent per appearance.
+        let key = parentId.map { "\($0.uuidString)-\(source.stableListId)" } ?? source.stableListId
+        return listModel.cachedItem(key: key) {
+            ListItemModel(key: key, source: source, model: model, isOpen: folderOpened, level: level)
+        }
     }
-    
+
     func mapSub(model: any ItemDataAccessable, entryId: UUID?, index: Int, level: Int) -> [ListItemModel] {
         if let entryId {
-            if let model = itemControllable.subChildren(itemId: model.id, entryId: entryId).first {
-                return mapSub(model: model, entryId: nil, index: 0, level: level + 1)
+            if let subModel = itemControllable.subChildren(itemId: model.id, entryId: entryId).first {
+                return mapSub(model: subModel, entryId: nil, index: 0, level: level + 1)
             }
             return []
         }
         guard model.specialCategory else {
-            return model.entries.enumerated().map { (subIndex, subModel) in
+            return model.entries.enumerated().map { (_, subModel) in
                 let folderOpened = listModel.isFolderOpen(itemId: model.id, entryId: subModel.id)
-                return ListItemModel(id: "\(level)-\(subIndex)-\(subModel.id)", model: model, isOpen: folderOpened, entryId: subModel.id, level: level + 1)
+                let source = ItemRowModel(itemId: model.id, entryId: subModel.id, typeId: itemControllable.config.module)
+                let key = source.stableListId
+                return listModel.cachedItem(key: key) {
+                    ListItemModel(key: key, source: source, model: model, isOpen: folderOpened, level: level + 1)
+                }
             }
         }
-        let subModels = model.entries.compactMap { itemControllable.itemSync(for: $0.childId ) }
-        return subModels.enumerated().map { (subIndex, subModel) in
-            map(model: subModel, entryId: entryId, index: subIndex, level: level + 1)
+        let subModels = model.entries.compactMap { itemControllable.itemSync(for: $0.childId) }
+        // Folders: alphabetical within the folder. Collections: preserve the user-defined entry order.
+        let orderedModels: [any ItemDataAccessable] = model.category == .folder
+            ? subModels.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            : subModels
+        return orderedModels.enumerated().map { (subIndex, subModel) in
+            map(model: subModel, entryId: entryId, index: subIndex, level: level + 1, parentId: model.id)
         }
     }
 }

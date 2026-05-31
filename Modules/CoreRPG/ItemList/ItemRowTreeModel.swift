@@ -100,4 +100,14 @@ public struct ItemRowModel: Equatable, Hashable, Codable, Sendable {
     public let typeId: NetworkModules
 
     static let empty = ItemRowModel(itemId: UUID(), entryId: nil, typeId: .none)
+
+    // Stable string key derived from content — used as the list-item cache key so the same
+    // ListItemModel instance is reused across rebuilds and mode switches.
+    // Format: "item-<itemId>[-entry-<entryId>]"
+    public var stableListId: String {
+        if let entryId {
+            return "item-\(itemId.uuidString)-entry-\(entryId.uuidString)"
+        }
+        return "item-\(itemId.uuidString)"
+    }
 }

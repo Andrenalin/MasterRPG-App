@@ -39,35 +39,55 @@ public final class FolderListModel {
     public var displayedItems: [ListItemModel] = []
     public var displayedParentItems: [ListItemModel] = []
 
+    // MARK: - List item cache
+    // Maps a stable semantic key (from ItemRowModel.stableListId or a context-qualified variant)
+    // to the ListItemModel that was first created for that position.
+    // Returning the same instance across rebuilds keeps ListItemModel.listId stable, which in
+    // turn keeps SwiftUI identity stable — no unnecessary destroy/recreate animations.
+    // The Character/groups edge case (same item appears multiple times) uses a context-qualified
+    // key (e.g. "folder-<parentId>-<itemId>") so each appearance gets its own entry.
+    @ObservationIgnored private var listItemCache: [String: ListItemModel] = [:]
+
+    // Pre-built display arrays for each structural mode.
+    // Switching between list and folder view is then O(1) — just swap displayedItems.
+    // Search sets isHidden on the existing ListItemModel objects instead of rebuilding arrays.
+    @ObservationIgnored var cachedListModeItems: [ListItemModel] = []
+    @ObservationIgnored var cachedFolderModeItems: [ListItemModel] = []
+
+    // Returns the cached instance for `key`, or calls `create` once and caches the result.
+    func cachedItem(key: String, create: () -> ListItemModel) -> ListItemModel {
+        if let existing = listItemCache[key] { return existing }
+        let item = create()
+        listItemCache[key] = item
+        return item
+    }
+
+    // Clears the cache. Call when the item data model is fully replaced (e.g. account switch).
+    func clearListItemCache() {
+        listItemCache.removeAll()
+        cachedListModeItems.removeAll()
+        cachedFolderModeItems.removeAll()
+    }
+
     var addedModelId: UUID?
     
     // MARK: - List navigation
     public var selectedParentId: UUID?
     public var lastFolderId: UUID?
-    private var subItemModels: [UUID: [UUID: ListSubItemModel]] = [:]
+    @ObservationIgnored private var folderOpenStates: [String: Bool] = [:]
     var level: Int = 0
-        
+
     public func isFolderOpen(itemId: UUID, entryId: UUID?) -> Bool {
-        if let models = subItemModels[itemId], let model = models[entryId ?? itemId] {
-            return model.isOpen
-        }
-        return false
+        folderOpenStates[folderKey(itemId: itemId, entryId: entryId)] ?? false
     }
-    
+
     func toggleFolder(itemId: UUID, entryId: UUID?) {
-        let model = subItemModel(for: itemId, entryId: entryId, isOpen: false, level: level)
-        model.isOpen.toggle()
+        let key = folderKey(itemId: itemId, entryId: entryId)
+        folderOpenStates[key] = !(folderOpenStates[key] ?? false)
     }
-    
-    func subItemModel(for itemId: UUID, entryId: UUID?, isOpen: Bool, level: Int) -> ListSubItemModel {
-        if let models = subItemModels[itemId], let model = models[entryId ?? itemId] {
-           return model
-        }
-        let model = ListSubItemModel(id: itemId, entryId: entryId, isOpen: isOpen, level: level)
-        var models = subItemModels[itemId, default: [:]]
-        models[entryId ?? itemId] = model
-        subItemModels[itemId] = models
-        return model
+
+    private func folderKey(itemId: UUID, entryId: UUID?) -> String {
+        "\(itemId.uuidString)-\(entryId?.uuidString ?? "self")"
     }
         
     // MARK: - Selection
@@ -208,34 +228,51 @@ public extension FolderListModel {
 }
 
 @Observable
-final class ListSubItemModel {
-    init(id: UUID, entryId: UUID?, isOpen: Bool = false, level: Int = 0) {
-        self.id = id
-        self.entryId = entryId
-        self.isOpen = isOpen
-        self.level = 0
-    }
-    
-    let id: UUID
-    let entryId: UUID?
-    var isOpen: Bool
-    let level: Int
-}
-
-
-@Observable
 public final class ListItemModel: Identifiable {
+    // Preferred init: `key` is the cache key, which also becomes the stable SwiftUI id.
+    // Key format: ItemRowModel.stableListId for root items, or "<parentId>-<stableListId>"
+    // for items nested under a folder/collection. This ensures items that appear under multiple
+    // parents (collection mode, Character groups) each get a distinct, stable identity.
+    public init(key: String, source: ItemRowModel, model: any ItemDataAccessable, isOpen: Bool = false, level: Int = 0) {
+        self.listId = UUID()
+        self.source = source
+        self.id = key
+        self.model = model
+        self.isOpen = isOpen
+        self.lastIsOpen = isOpen
+        self.entryId = source.entryId
+        self.level = level
+    }
+
+    // Legacy init: keeps existing call sites compiling during the cache wiring migration.
+    // Once all map() / mapSub() / search-builder call sites use cachedItem(), this can be removed.
     public init(id: String, model: any ItemDataAccessable, isOpen: Bool = false, entryId: UUID? = nil, level: Int = 0) {
+        self.listId = UUID()
+        self.source = ItemRowModel(itemId: model.id, entryId: entryId, typeId: .none)
         self.id = id
         self.model = model
         self.isOpen = isOpen
+        self.lastIsOpen = isOpen
         self.entryId = entryId
         self.level = level
     }
 
+    // Stable UUID — assigned once at init. The cache ensures the same instance (and UUID)
+    // is returned across rebuilds. Used for reverse-lookup if needed.
+    public let listId: UUID
+
+    // Semantic identity: itemId + entryId + typeId.
+    // The cache in FolderListModel keys on a context-qualified variant of this.
+    public let source: ItemRowModel
+
+    // SwiftUI Identifiable id. Equals the cache key, so it is stable across rebuilds
+    // as long as the cached instance is returned by FolderListModel.cachedItem(key:create:).
     public let id: String
+
     let model: any ItemDataAccessable
     var isOpen: Bool
+    var lastIsOpen: Bool
+    var isHidden: Bool = false
     let entryId: UUID?
     public let level: Int
 }
@@ -243,9 +280,11 @@ public final class ListItemModel: Identifiable {
 extension ListItemModel: Equatable {
     public static func == (lhs: ListItemModel, rhs: ListItemModel) -> Bool {
         lhs.id == rhs.id
+        && lhs.listId == rhs.listId
         && lhs.model.id == rhs.model.id
         && lhs.isOpen == rhs.isOpen
         && lhs.entryId == rhs.entryId
         && lhs.level == rhs.level
+        && lhs.isHidden == rhs.isHidden
     }
 }
