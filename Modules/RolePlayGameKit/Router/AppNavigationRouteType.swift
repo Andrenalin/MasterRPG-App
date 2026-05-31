@@ -18,11 +18,13 @@ extension AppNavigationRouteType: NavigationDestination {
         case .split:
 #if os(tvOS)
             EmptyView()
+#elseif os(visionOS)
+            SplitEditorNavigation()
 #else
             SplitNavigation()
 #endif
         case .visionSplit:
-            TabbedSplitExtNavigation()
+            SplitVisionNavigation()
         case .tabbedSplit:
             TabbedSplitNavigation()
         }

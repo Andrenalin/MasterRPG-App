@@ -3,8 +3,8 @@
 import CoreRPG
 import SwiftUI
 
-struct TabbedSplitExtNavigation: View {
-    @SceneStorage("GameRoute") private var storedTab: RootRoute = .game
+struct SplitEditorNavigation: View {
+    @SceneStorage("EditorRoute") private var storedTab: RootRoute = .pdfs
     
     @Environment(AppModel.self) private var appModel
     @Environment(ScenesManager.self) private var scenesManager
@@ -15,8 +15,8 @@ struct TabbedSplitExtNavigation: View {
     var body: some View {
         @Bindable var appModel = appModel
         
-        TabView(selection: $appModel.selectedModule) {
-            ForEach(RootRoute.visionTabs) { tab in
+        TabView(selection: $appModel.selectedEditorModule) {
+            ForEach(RootRoute.visionEditorTabs) { tab in
                 Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
                     tabView(tab: tab)
                 }
@@ -24,7 +24,7 @@ struct TabbedSplitExtNavigation: View {
         }
         .syncOptionalState(
             source: $storedTab,
-            destination: $appModel.selectedModule
+            destination: $appModel.selectedEditorModule
         ) { newValue in
             if appModel.menuSelectedModule != newValue.module {
                 appModel.menuSelectedModule = newValue.module
@@ -32,13 +32,13 @@ struct TabbedSplitExtNavigation: View {
         }
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive { (route: RootRoute, navigator) in
-            guard RootRoute.visionTabs.contains(route) else {
+            guard RootRoute.visionEditorTabs.contains(route) else {
                 return .immediately
             }
-            if appModel.selectedModule == route {
+            if appModel.selectedEditorModule == route {
                 return .immediately
             }
-            appModel.selectedModule = route
+            appModel.selectedEditorModule = route
             return .after(0.8)
         }
 #if os(visionOS)
@@ -51,12 +51,12 @@ struct TabbedSplitExtNavigation: View {
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
             Button {
-                scenesManager.openWindow(SceneId.editor)
+                scenesManager.openWindow(SceneId.game)
             } label: {
                 Label {
-                    Text("Editor", bundle: .module)
+                    Text("Game", bundle: .module)
                 } icon: {
-                    Image(systemName: NetworkModules.editor.icon)
+                    Image(systemName: NetworkModules.game.icon)
                 }
             }
             .padding([.top, .leading], 12)
@@ -66,7 +66,7 @@ struct TabbedSplitExtNavigation: View {
     }
     
     var selectedModule: NetworkModules {
-        (appModel.selectedExtendedModule?.module ?? appModel.selectedModule?.module) ?? .game
+        (appModel.selectedEditorModule ?? AppModel.defaultEditorModule).module
     }
     
     @ViewBuilder func tabView(tab: RootRoute) -> some View {
@@ -88,7 +88,7 @@ struct TabbedSplitExtNavigation: View {
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             contentView(tab: tab)
         } detail: {
-            SplitDetailView(isExtendedRoutes: false)
+            SplitDetailView(isExtendedRoutes: true)
                 .environment(appModel.itemRootController(for: tab.module))
         }
     }
