@@ -81,6 +81,16 @@ public final class FolderListModel {
         folderOpenStates[folderKey(itemId: itemId, entryId: entryId)] ?? false
     }
 
+    // Returns the persisted open state if the user has ever toggled this item, otherwise
+    // records `defaultOpen` and returns it. Search result builders call this so that
+    // auto-opened folders can be toggled closed (and stay closed across resetFilter calls).
+    func openState(itemId: UUID, entryId: UUID?, defaultOpen: Bool) -> Bool {
+        let key = folderKey(itemId: itemId, entryId: entryId)
+        if let existing = folderOpenStates[key] { return existing }
+        folderOpenStates[key] = defaultOpen
+        return defaultOpen
+    }
+
     func toggleFolder(itemId: UUID, entryId: UUID?) {
         let key = folderKey(itemId: itemId, entryId: entryId)
         folderOpenStates[key] = !(folderOpenStates[key] ?? false)

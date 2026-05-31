@@ -272,7 +272,10 @@ extension FolderListControllable {
 
         var output: [ListItemModel] = []
 
-        for (index, originalItem) in listModel.originalItems.enumerated() {
+        // Only start from root-level items (parentId == nil), mirroring what filter() does in
+        // the synchronous path. Items with a parentId are children of folders and will appear
+        // through the recursive addFolderSearchItem calls — not at the top level.
+        for (index, originalItem) in listModel.originalItems.enumerated() where originalItem.model.parentId == nil {
             addFolderSearchItem(
                 item: originalItem,
                 childIndex: index,
@@ -312,48 +315,54 @@ extension FolderListControllable {
             let isMatch = matchingItemIds.contains(item.model.id)
             guard isMatch || hasDeepMatch(children: childModels, matchingItemIds: matchingItemIds, depth: level + 1, maxLevel: maxLevel) else { return }
 
+            let isOpen = listModel.openState(itemId: item.model.id, entryId: nil, defaultOpen: true)
             output.append(ListItemModel(
                 id: "search-\(level)-\(output.count)-\(item.model.id)",
                 model: item.model,
-                isOpen: true,
+                isOpen: isOpen,
                 entryId: nil,
                 level: level
             ))
 
-            for (ci, childModel) in childModels.enumerated() {
-                guard childModel.displayState == 0 else { continue }
-                let childItem = ListItemModel(id: "tmp-\(ci)", model: childModel, entryId: nil, level: level + 1)
-                addFolderSearchItem(
-                    item: childItem,
-                    childIndex: ci,
-                    level: level + 1,
-                    matchingItemIds: matchingItemIds,
-                    entryResults: entryResults,
-                    expandsEntries: expandsEntries,
-                    output: &output,
-                    maxLevel: maxLevel
-                )
+            if isOpen {
+                for (ci, childModel) in childModels.enumerated() {
+                    guard childModel.displayState == 0 else { continue }
+                    let childItem = ListItemModel(id: "tmp-\(ci)", model: childModel, entryId: nil, level: level + 1)
+                    addFolderSearchItem(
+                        item: childItem,
+                        childIndex: ci,
+                        level: level + 1,
+                        matchingItemIds: matchingItemIds,
+                        entryResults: entryResults,
+                        expandsEntries: expandsEntries,
+                        output: &output,
+                        maxLevel: maxLevel
+                    )
+                }
             }
 
         } else if matchingItemIds.contains(item.model.id) {
             // Regular item: only show when it matches
             let entries = expandsEntries ? (entryResults[item.model.id] ?? []) : []
+            let isOpen = listModel.openState(itemId: item.model.id, entryId: nil, defaultOpen: !entries.isEmpty)
             output.append(ListItemModel(
                 id: "search-\(level)-\(output.count)-\(item.model.id)",
                 model: item.model,
-                isOpen: !entries.isEmpty,
+                isOpen: isOpen,
                 entryId: nil,
                 level: level
             ))
-            for (ei, er) in entries.enumerated() {
-                guard let entryId = er.entryId else { continue }
-                output.append(ListItemModel(
-                    id: "search-\(level + 1)-\(ei)-\(entryId)",
-                    model: item.model,
-                    isOpen: false,
-                    entryId: entryId,
-                    level: level + 1
-                ))
+            if isOpen {
+                for (ei, er) in entries.enumerated() {
+                    guard let entryId = er.entryId else { continue }
+                    output.append(ListItemModel(
+                        id: "search-\(level + 1)-\(ei)-\(entryId)",
+                        model: item.model,
+                        isOpen: false,
+                        entryId: entryId,
+                        level: level + 1
+                    ))
+                }
             }
         }
     }
@@ -389,22 +398,25 @@ extension FolderListControllable {
         } else if let model = itemControllable.itemSync(for: selectedItemId) {
             // Selected item not in results — synthesise at level 0
             let entries = expandsEntries ? (entryResults[selectedItemId] ?? []) : []
+            let isOpen = listModel.openState(itemId: model.id, entryId: nil, defaultOpen: !entries.isEmpty)
             extractedRows.append(ListItemModel(
                 id: "search-selected-\(model.id)",
                 model: model,
-                isOpen: !entries.isEmpty,
+                isOpen: isOpen,
                 entryId: nil,
                 level: 0
             ))
-            for (ei, er) in entries.enumerated() {
-                guard let entryId = er.entryId else { continue }
-                extractedRows.append(ListItemModel(
-                    id: "search-selected-entry-\(ei)-\(entryId)",
-                    model: model,
-                    isOpen: false,
-                    entryId: entryId,
-                    level: 1
-                ))
+            if isOpen {
+                for (ei, er) in entries.enumerated() {
+                    guard let entryId = er.entryId else { continue }
+                    extractedRows.append(ListItemModel(
+                        id: "search-selected-entry-\(ei)-\(entryId)",
+                        model: model,
+                        isOpen: false,
+                        entryId: entryId,
+                        level: 1
+                    ))
+                }
             }
         }
 
@@ -418,22 +430,25 @@ extension FolderListControllable {
         for (index, itemId) in itemOrder.enumerated() {
             guard let model = itemControllable.itemSync(for: itemId) else { continue }
             let entries = expandsEntries ? (entryResults[itemId] ?? []) : []
+            let isOpen = listModel.openState(itemId: model.id, entryId: nil, defaultOpen: !entries.isEmpty)
             items.append(ListItemModel(
                 id: "search-\(baseLevel)-\(index)-\(model.id)",
                 model: model,
-                isOpen: !entries.isEmpty,
+                isOpen: isOpen,
                 entryId: nil,
                 level: baseLevel
             ))
-            for (ei, er) in entries.enumerated() {
-                guard let entryId = er.entryId else { continue }
-                items.append(ListItemModel(
-                    id: "search-\(baseLevel + 1)-\(ei)-\(entryId)",
-                    model: model,
-                    isOpen: false,
-                    entryId: entryId,
-                    level: baseLevel + 1
-                ))
+            if isOpen {
+                for (ei, er) in entries.enumerated() {
+                    guard let entryId = er.entryId else { continue }
+                    items.append(ListItemModel(
+                        id: "search-\(baseLevel + 1)-\(ei)-\(entryId)",
+                        model: model,
+                        isOpen: false,
+                        entryId: entryId,
+                        level: baseLevel + 1
+                    ))
+                }
             }
         }
         return items
