@@ -20,19 +20,21 @@ struct MasterGameScreen: View {
     @State private var diceShowOptionModel = DiceDisplayModel()
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+
         GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object", contentType: .master)
         .overlay(alignment: .topLeading) {
             MasterOverlayMenu(root: root, adventureId: adventureId, playerController: playerController)
                 .environment(diceShowOptionModel)
                 .environment(gameScreenModel)
         }
-        .environment(\.mapActions, root.mapRoot.mapActions)
-        .environment(\.valueActions, root.characterRoot.valueActions)
         .sheet(isPresented: $gameScreenModel.showExport) {
             if gameScreenModel.showExport {
                 ExportProgressPanelView(exportController: root.adventureRoot.exportControllable, isSaveGame: true) {
                     root.saveGame()
-                } 
+                } finishedAction: {
+                    gameScreenModel.showExport = false
+                }
             }
         }
         .alert(Text("Save Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
@@ -183,9 +185,8 @@ private struct MasterOverlayMenu: View {
     let adventureId: UUID
     let playerController: PlayerController
 
-    @Environment(ScenesManager.self) private var scenesManager
-
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         OverlayGameLayout(root: root, hideDice: false) {
 #if os(visionOS)
             EmptyView()

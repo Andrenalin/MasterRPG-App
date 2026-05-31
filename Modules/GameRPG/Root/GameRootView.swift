@@ -2,6 +2,8 @@
 
 import CoreRPG
 import SwiftUI
+import MapRPG
+import CharacterRPG
 
 struct GameRootView: View {
     let root: GameRoot
@@ -9,6 +11,8 @@ struct GameRootView: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         gameView
             .onChange(of: root.gameModel.gameConfig.state, initial: true) { _, newState in
                 let isRunning = newState == .started
@@ -37,9 +41,7 @@ struct GameRootView: View {
                 }
             }
         }
-        .environment(\.networkActions, root.networkActions)
-        .environment(\.sharingControlActions, root.sharingControlActions)
-        .environment(\.sharingFeatureActions, root.sharingFeatureActions)
+        .modifier(GameActionEnvironmentSetUpViewModifier(root: root))
 
 #if os(iOS)
         .statusBarHidden(true)
@@ -50,6 +52,20 @@ struct GameRootView: View {
 #endif
     }
 }
+
+struct GameActionEnvironmentSetUpViewModifier: ViewModifier {
+    let root: GameRoot
+
+    func body(content: Content) -> some View {
+        content
+            .environment(\.mapActions, root.mapRoot.mapActions)
+            .environment(\.valueActions, root.characterRoot.valueActions)
+            .environment(\.networkActions, root.networkActions)
+            .environment(\.sharingControlActions, root.sharingControlActions)
+            .environment(\.sharingFeatureActions, root.sharingFeatureActions)
+    }
+}
+
 
 #Preview(traits: .mockData) {
     GameRootView(root: .preview)

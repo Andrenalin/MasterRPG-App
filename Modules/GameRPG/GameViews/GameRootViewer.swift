@@ -23,6 +23,8 @@ struct GameRootViewer: View {
     @Environment(ScenesManager.self) private var scenesManager
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         Group {
             if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
                 mapView(for: mapId)

@@ -15,6 +15,7 @@ struct OverlayGameMenu: View {
     @Environment(AppSettingsModel.self) private var appSettingsModel
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
 #if os(visionOS)
         visionProMenu
 #elseif os(macOS)

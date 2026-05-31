@@ -14,6 +14,8 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: valueFor(iOS: 4, macOS: 4, tvOS: 12, visionOS: 4)) {
 #if !os(visionOS)

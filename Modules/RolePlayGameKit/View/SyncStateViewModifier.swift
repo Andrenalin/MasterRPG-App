@@ -55,7 +55,12 @@ struct SyncStateViewModifier<T: Equatable>: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: source.wrappedValue, initial: true) {
+            .onAppear {
+                guard source.wrappedValue != destination.wrappedValue else { return }
+                destination.wrappedValue <=> source.wrappedValue
+                onSync?(source.wrappedValue)
+            }
+            .onChange(of: source.wrappedValue) {
                 guard source.wrappedValue != destination.wrappedValue else { return }
                 destination.wrappedValue <=> source.wrappedValue
                 onSync?(source.wrappedValue)
@@ -76,7 +81,12 @@ struct SyncOptionalStateViewModifier<T: Equatable>: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: source.wrappedValue, initial: true) {
+            .onAppear {
+                guard destination.wrappedValue != source.wrappedValue else { return }
+                destination.wrappedValue = source.wrappedValue
+                onSync?(source.wrappedValue)
+            }
+            .onChange(of: source.wrappedValue) {
                 guard destination.wrappedValue != source.wrappedValue else { return }
                 destination.wrappedValue = source.wrappedValue
                 onSync?(source.wrappedValue)

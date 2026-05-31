@@ -19,5 +19,6 @@ struct SheetRootView<LinkType: LinkDataTransferable>: View {
         let _ = Self.printViewChangesOnlyInDebug()
 
         SheetView(root: root, rootModel: rootModel, sheetModel: rootModel.sheetModel, isEditor: isEditor, linkTypes: linkTypes)
+            .id(rootModel.sheetModel.id)
     }
 }

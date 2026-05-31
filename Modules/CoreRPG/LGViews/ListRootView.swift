@@ -11,6 +11,8 @@ struct ListRootView: View {
     @Environment(\.navigator) private var navigator
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         listView
             .animation(.smooth, value: displayItems.count)
             .frame(minWidth: 250, idealWidth: 350)

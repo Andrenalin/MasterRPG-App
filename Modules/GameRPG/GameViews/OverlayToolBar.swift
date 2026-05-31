@@ -10,13 +10,11 @@ struct OverlayToolBar: View {
     let isMaster: Bool
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         switch playerController.gameModel.gameUpdateType {
         case .map:
             root.mapRoot.viewController.gameToolBarView(root: root.mapRoot, isMaster: isMaster)
-        case .photo:
-            //root.photoRoot.viewController.gameToolBarView()
-            EmptyView()
-        case .space, .table, .weather:
+        case .photo, .space, .table, .weather:
             EmptyView()
         default:
             EmptyView()

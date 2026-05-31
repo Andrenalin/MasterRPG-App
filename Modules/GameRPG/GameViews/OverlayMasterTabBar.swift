@@ -28,6 +28,8 @@ private struct OnlyGameView: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
             .gameOverlayTabBarView(value: NetworkModules.game)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
