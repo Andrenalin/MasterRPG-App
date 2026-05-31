@@ -259,6 +259,15 @@ extension FolderListControllable {
             }
         }
 
+        // Pre-expand group entries whose sub-values contain matched entries (e.g. Character groups).
+        // Must happen before makeSearchItems so mapSub reads the correct openState.
+        if expandsEntries {
+            for (itemId, itemEntryResults) in entryResults {
+                let matchedEntryIds = Set(itemEntryResults.compactMap(\.entryId))
+                preExpandGroupEntries(itemId: itemId, matchedEntryIds: matchedEntryIds)
+            }
+        }
+
         return makeSearchItems(from: itemOrder, entryResults: entryResults, expandsEntries: expandsEntries, baseLevel: 0)
     }
 
@@ -397,8 +406,8 @@ extension FolderListControllable {
             output.removeSubrange(startIdx..<endIdx)
         } else if let model = itemControllable.itemSync(for: selectedItemId) {
             // Selected item not in results — synthesise at level 0
-            let entries = expandsEntries ? (entryResults[selectedItemId] ?? []) : []
-            let isOpen = listModel.openState(itemId: model.id, entryId: nil, defaultOpen: !entries.isEmpty)
+            let hasEntryMatches = expandsEntries && !(entryResults[selectedItemId] ?? []).isEmpty
+            let isOpen = listModel.openState(itemId: model.id, entryId: nil, defaultOpen: hasEntryMatches)
             extractedRows.append(ListItemModel(
                 id: "search-selected-\(model.id)",
                 model: model,
@@ -406,17 +415,8 @@ extension FolderListControllable {
                 entryId: nil,
                 level: 0
             ))
-            if isOpen {
-                for (ei, er) in entries.enumerated() {
-                    guard let entryId = er.entryId else { continue }
-                    extractedRows.append(ListItemModel(
-                        id: "search-selected-entry-\(ei)-\(entryId)",
-                        model: model,
-                        isOpen: false,
-                        entryId: entryId,
-                        level: 1
-                    ))
-                }
+            if isOpen && expandsEntries {
+                expandSearchSubItems(of: model, entryId: nil, index: 0, level: 0, into: &extractedRows)
             }
         }
 
@@ -424,13 +424,19 @@ extension FolderListControllable {
         output.insert(contentsOf: extractedRows, at: 0)
     }
 
-    /// Converts a flat ordered ID list into `[ListItemModel]`, appending entry rows when `expandsEntries`.
+    /// Converts a flat ordered ID list into `[ListItemModel]`.
+    ///
+    /// - List mode (`expandsEntries == false`): item row only, no entry sub-rows.
+    /// - Inspector mode (`expandsEntries == true`): uses `expandSearchSubItems` (the same
+    ///   mapSub path as non-search mode) so the full group structure is preserved.
+    ///   This is essential for Character groups: sub-value entries use the sub-value as their
+    ///   model, so `model[entryId]` resolves correctly in `LinkEntryRowView`.
     private func makeSearchItems(from itemOrder: [UUID], entryResults: [UUID: [SearchResult]], expandsEntries: Bool, baseLevel: Int) -> [ListItemModel] {
         var items: [ListItemModel] = []
         for (index, itemId) in itemOrder.enumerated() {
             guard let model = itemControllable.itemSync(for: itemId) else { continue }
-            let entries = expandsEntries ? (entryResults[itemId] ?? []) : []
-            let isOpen = listModel.openState(itemId: model.id, entryId: nil, defaultOpen: !entries.isEmpty)
+            let hasEntryMatches = expandsEntries && !(entryResults[itemId] ?? []).isEmpty
+            let isOpen = listModel.openState(itemId: model.id, entryId: nil, defaultOpen: hasEntryMatches)
             items.append(ListItemModel(
                 id: "search-\(baseLevel)-\(index)-\(model.id)",
                 model: model,
@@ -438,20 +444,41 @@ extension FolderListControllable {
                 entryId: nil,
                 level: baseLevel
             ))
-            if isOpen {
-                for (ei, er) in entries.enumerated() {
-                    guard let entryId = er.entryId else { continue }
-                    items.append(ListItemModel(
-                        id: "search-\(baseLevel + 1)-\(ei)-\(entryId)",
-                        model: model,
-                        isOpen: false,
-                        entryId: entryId,
-                        level: baseLevel + 1
-                    ))
-                }
+            if isOpen && expandsEntries {
+                // Use mapSub to rebuild the full entry/group hierarchy — same path as non-search
+                // mode. Flat entryResults would produce wrong models for sub-value entries.
+                expandSearchSubItems(of: model, entryId: nil, index: index, level: baseLevel, into: &items)
             }
         }
         return items
+    }
+
+    /// Mirrors filterSub/mapSub without the filter() name-match guard so all entries are
+    /// shown in inspector search mode regardless of whether they match the search text.
+    /// Recursion terminates naturally when subChildren returns empty (no deeper levels).
+    private func expandSearchSubItems(of model: any ItemDataAccessable, entryId: UUID?, index: Int, level: Int, into items: inout [ListItemModel]) {
+        let subItems = mapSub(model: model, entryId: entryId, index: index, level: level)
+        for (i, subItem) in subItems.enumerated() {
+            items.append(subItem)
+            if subItem.isOpen {
+                expandSearchSubItems(of: subItem.model, entryId: subItem.entryId, index: i, level: subItem.level, into: &items)
+            }
+        }
+    }
+
+    /// For inspector search: auto-opens group entries (e.g. Character's entries with valueId)
+    /// whose sub-value contains at least one matched entry. Called before makeSearchItems so
+    /// mapSub reads the updated openState and returns those entries in the open state.
+    private func preExpandGroupEntries(itemId: UUID, matchedEntryIds: Set<UUID>) {
+        guard let model = itemControllable.itemSync(for: itemId) else { return }
+        for entry in model.entries {
+            let subModels = itemControllable.subChildren(itemId: itemId, entryId: entry.id)
+            guard !subModels.isEmpty else { continue }
+            let subEntryIds = Set(subModels.flatMap { $0.entries.map(\.id) })
+            if subEntryIds.contains(where: { matchedEntryIds.contains($0) }) {
+                _ = listModel.openState(itemId: itemId, entryId: entry.id, defaultOpen: true)
+            }
+        }
     }
     
     func filterSub(item: ListItemModel, index: Int, level: Int, isParent: Bool) -> [ListItemModel] {
