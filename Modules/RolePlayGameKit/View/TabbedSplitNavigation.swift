@@ -71,7 +71,7 @@ struct TabSidebar: View {
         List(selection: $appModel.selectedModule) {
             allTabs
         }
-        .onChange(of: storedTab, initial: true) {
+        .onAppear {
             guard storedTab != appModel.selectedModule else { return }
             appModel.selectedModule = storedTab
         }

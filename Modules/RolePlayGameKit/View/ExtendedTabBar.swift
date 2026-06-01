@@ -43,8 +43,8 @@ struct ExtendedTabBar: View {
             }
         }
         .navigationAutoReceive(ExtendedTabRoute.self)
-        .onChange(of: currentModule, initial: true) {
-            appModel.selectedExtendedModule = currentModule
+        .onAppear {
+            appModel.selectedExtendedModule <=> currentModule
             guard let currentModule else { return }
             tabSelectedModule = currentModule.module
         }

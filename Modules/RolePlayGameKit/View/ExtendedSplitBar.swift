@@ -20,20 +20,20 @@ struct ExtendedSplitBar: View {
     var body: some View {
         allCustomTabs
             .navigationAutoReceive(ExtendedTabRoute.self)
-            .onChange(of: currentModule, initial: true) {
-                appModel.selectedExtendedModule <=> currentModule
-                guard let currentModule else { return }
-                tabSelectedModule = currentModule.module
-            }
+            .focusedSceneValue(\.selectedModule, $tabSelectedModule)
             .onChange(of: appModel.selectedExtendedModule) {
                 guard appModel.selectedExtendedModule != currentModule else { return }
                 currentModule <=> appModel.selectedExtendedModule
             }
             .onChange(of: appModel.selectedModule, initial: true) {
                 guard let selectedModule = appModel.selectedModule, selectedModule == .editors, currentModule == nil else { return }
-                currentModule = .maps
+                appModel.selectedExtendedModule <=> .maps
             }
-            .focusedSceneValue(\.selectedModule, $tabSelectedModule)
+            .onAppear {
+                appModel.selectedExtendedModule <=> currentModule
+                guard let currentModule else { return }
+                tabSelectedModule <=> currentModule.module
+            }
     }
 }
 

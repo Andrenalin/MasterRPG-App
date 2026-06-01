@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 struct SplitEditorNavigation: View {
-    @SceneStorage("EditorRoute") private var storedTab: RootRoute = .pdfs
+    @State private var storedTab: RootRoute = .pdfs
     
     @Environment(AppModel.self) private var appModel
     @Environment(ScenesManager.self) private var scenesManager
