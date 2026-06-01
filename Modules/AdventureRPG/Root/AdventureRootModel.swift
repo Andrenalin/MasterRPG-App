@@ -176,10 +176,12 @@ public final class AdventureRootModel {
     var linkRegisterController: LinkRegisterController { _linkRegisterController! }
     
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
-        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel))
+        let ldm = ListDisplayModel(displayMode: .compact)
+        return FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ldm, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: ldm))
     }()
     @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
-        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ListDisplayModel(displayMode: .compact), itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel))
+        let ldm = ListDisplayModel(displayMode: .compact)
+        return FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ldm, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: ldm))
     }()
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()

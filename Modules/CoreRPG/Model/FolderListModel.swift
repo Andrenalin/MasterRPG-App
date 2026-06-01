@@ -30,45 +30,16 @@ public final class FolderListModel {
 
     @ObservationIgnored var updatedOnce: Bool = false
 
-    // Search
-    @ObservationIgnored var searchTask: Task<Void, Never>? = nil
-    public var searchExpandsEntries: Bool = false
-
     // MARK: - Display list
     public var list: [FolderListItemModel] = []
     public var cacheListModels: [UUID: FolderListItemModel] = [:]
-
-    var addedModelId: UUID?
     
     // MARK: - List navigation
     public var selectedParentId: UUID?
     public var lastFolderId: UUID?
-    @ObservationIgnored private var folderOpenStates: [String: Bool] = [:]
     var level: Int = 0
+    var addedModelId: UUID?
 
-    public func isFolderOpen(itemId: UUID, entryId: UUID?) -> Bool {
-        folderOpenStates[folderKey(itemId: itemId, entryId: entryId)] ?? false
-    }
-
-    // Returns the persisted open state if the user has ever toggled this item, otherwise
-    // records `defaultOpen` and returns it. Search result builders call this so that
-    // auto-opened folders can be toggled closed (and stay closed across resetFilter calls).
-    func openState(itemId: UUID, entryId: UUID?, defaultOpen: Bool) -> Bool {
-        let key = folderKey(itemId: itemId, entryId: entryId)
-        if let existing = folderOpenStates[key] { return existing }
-        folderOpenStates[key] = defaultOpen
-        return defaultOpen
-    }
-
-    func toggleFolder(itemId: UUID, entryId: UUID?) {
-        let key = folderKey(itemId: itemId, entryId: entryId)
-        folderOpenStates[key] = !(folderOpenStates[key] ?? false)
-    }
-
-    private func folderKey(itemId: UUID, entryId: UUID?) -> String {
-        "\(itemId.uuidString)-\(entryId?.uuidString ?? "self")"
-    }
-        
     // MARK: - Selection
     private var isSelectionMode: Bool
     public var selection: [UUID]
@@ -101,7 +72,7 @@ extension FolderListModel {
 
     func deleteItems(offsets: IndexSet) {
         for index in offsets {
-            if list[index].source.itemId == selected {
+            if list[index].id == selected {
                 resetListSelection()
                 update(selection: Set())
             }
@@ -145,11 +116,14 @@ public extension FolderListModel {
     }
 
     func set(selectedItemId: UUID) {
-        selected = selectedItemId
+        // Resolve to FolderListItemModel.id (may be entryId for folder children)
+        selected = list.first(where: { $0.source.itemId == selectedItemId })?.id ?? selectedItemId
     }
 
     var selectedItemId: UUID? {
-        selected
+        guard let selected else { return nil }
+        // For folder children id == entryId; return the actual item UUID for navigation
+        return list.first(where: { $0.id == selected })?.source.itemId ?? selected
     }
 
     var selectionItemIds: [UUID] {
@@ -172,69 +146,6 @@ public extension FolderListModel {
     }
 }
 
-@Observable
-public final class ListItemModel: Identifiable {
-    // Preferred init: `key` is the cache key, which also becomes the stable SwiftUI id.
-    // Key format: ItemRowModel.stableListId for root items, or "<parentId>-<stableListId>"
-    // for items nested under a folder/collection. This ensures items that appear under multiple
-    // parents (collection mode, Character groups) each get a distinct, stable identity.
-    public init(key: String, source: ItemRowModel, model: any ItemDataAccessable, isOpen: Bool = false, level: Int = 0) {
-        self.listId = UUID()
-        self.source = source
-        self.id = key
-        self.model = model
-        self.isOpen = isOpen
-        self.lastIsOpen = isOpen
-        self.entryId = source.entryId
-        self.level = level
-    }
-
-    // Legacy init: keeps existing call sites compiling during the cache wiring migration.
-    // Once all map() / mapSub() / search-builder call sites use cachedItem(), this can be removed.
-    public init(id: String, model: any ItemDataAccessable, isOpen: Bool = false, entryId: UUID? = nil, level: Int = 0) {
-        self.listId = UUID()
-        self.source = ItemRowModel(itemId: model.id, entryId: entryId, typeId: .none)
-        self.id = id
-        self.model = model
-        self.isOpen = isOpen
-        self.lastIsOpen = isOpen
-        self.entryId = entryId
-        self.level = level
-    }
-
-    // Stable UUID — assigned once at init. The cache ensures the same instance (and UUID)
-    // is returned across rebuilds. Used for reverse-lookup if needed.
-    public let listId: UUID
-
-    // Semantic identity: itemId + entryId + typeId.
-    // The cache in FolderListModel keys on a context-qualified variant of this.
-    public let source: ItemRowModel
-
-    // SwiftUI Identifiable id. Equals the cache key, so it is stable across rebuilds
-    // as long as the cached instance is returned by FolderListModel.cachedItem(key:create:).
-    public let id: String
-
-    let model: any ItemDataAccessable
-    var isOpen: Bool
-    var lastIsOpen: Bool
-    var isHidden: Bool = false
-    let entryId: UUID?
-    public let level: Int
-}
-
-extension ListItemModel: Equatable {
-    public static func == (lhs: ListItemModel, rhs: ListItemModel) -> Bool {
-        lhs.id == rhs.id
-        && lhs.listId == rhs.listId
-        && lhs.model.id == rhs.model.id
-        && lhs.isOpen == rhs.isOpen
-        && lhs.entryId == rhs.entryId
-        && lhs.level == rhs.level
-        && lhs.isHidden == rhs.isHidden
-    }
-}
-
-
 @MainActor @Observable
 public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hashable {
     public init(id: UUID, source: ItemRowModel, destination: ItemRowModel?, level: Int, isShown: Bool, lastIsShown: Bool = false, isHidden: Bool = false, isFolded: Bool = false) {
@@ -252,7 +163,7 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     public let id: UUID
     public let source: ItemRowModel // for reference it could be link to another module
     public let destination: ItemRowModel // is the same as source if not link
-    public let level: Int
+    public var level: Int
 
     // display state
     public var isOpen: Bool
@@ -261,6 +172,7 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     public var isFolded: Bool = false
     
     // children
+    public var parentId: UUID?
     public var children: [FolderListItemModel] = []
     
     public func hash(into hasher: inout Hasher) {

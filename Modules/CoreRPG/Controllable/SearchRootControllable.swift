@@ -21,10 +21,12 @@ extension SearchRootControllable {
             searchModel.isSearching = true
             defer { searchModel.isSearching = false }
 
-            // Small delay to debounce rapid typing
-            try? await Task.sleep(for: .milliseconds(300))
-
-            guard !Task.isCancelled else { return }
+            // Debounce only while the user is actively typing; skip the delay for
+            // empty text so the initial list appears immediately on appear.
+            if !searchModel.searchText.isEmpty {
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+            }
 
             searchModel.results = await results(text: searchModel.searchText)
         }

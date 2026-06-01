@@ -30,6 +30,9 @@ struct ListModelUpdatesViewModifier: ViewModifier {
                 withAnimation { updateSelected() }
             }
             .onChange(of: listControllable.listDisplayModel.listMode, initial: true) {
+                // Rebuild immediately from current results so the mode switch is visible at once,
+                // then re-search so mode-specific filtering (list vs folder tree) takes effect.
+                withAnimation { listControllable.resetFilter() }
                 Task { await listControllable.performSearch() }
             }
             .onChange(of: listControllable.listDisplayModel.isSelectionMode, initial: true) {

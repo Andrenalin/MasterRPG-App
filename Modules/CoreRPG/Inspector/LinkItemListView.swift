@@ -54,7 +54,6 @@ public struct LinkItemListView: View {
                     }
                     .onAppear {
                         let savedScroll = root.folderLinkControllable.listModel.scrollId
-                        root.folderLinkControllable.listModel.searchExpandsEntries = true
                         root.folderLinkControllable.resetItemOnce()
                         root.folderLinkControllable.resetFilter()
                         root.folderLinkControllable.listModel.scrollId = savedScroll

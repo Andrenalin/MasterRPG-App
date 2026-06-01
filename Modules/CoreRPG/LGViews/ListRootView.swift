@@ -30,7 +30,7 @@ struct ListRootView: View {
 #endif
 #if os(macOS)
             .onDeleteCommand {
-                guard let itemId = listModel.selectedItemId, let index = listModel.list.firstIndex(where: { $0.id == itemId }) else { return }
+                guard let sel = listModel.selected, let index = listModel.list.firstIndex(where: { $0.id == sel }) else { return }
                 deleteItems(offsets: IndexSet(integer: index))
             }
             .onKeyPress(.leftArrow, phases: .down) { _ in
@@ -77,8 +77,8 @@ struct ListRootView: View {
                     .onChange(of: root.navigationModel.triggerDelete) {
                         guard root.navigationModel.triggerDelete else { return }
                         root.navigationModel.triggerDelete = false
-                        guard let itemId = listModel.selectedItemId,
-                              let index = listModel.list.firstIndex(where: { $0.id == itemId }) else { return }
+                        guard let sel = listModel.selected,
+                              let index = listModel.list.firstIndex(where: { $0.id == sel }) else { return }
                         deleteItems(offsets: IndexSet(integer: index))
                     }
                     .onChange(of: root.navigationModel.triggerSpaceAction) {

@@ -29,4 +29,9 @@ public struct SearchResult: Identifiable, Equatable, Hashable {
         }
         return itemId.uuidString
     }
+
+    // Folder-mode tree structure: direct children of this result node.
+    // Populated by listSearchResults / inspectorSearchResults in folder mode
+    // and mapped to FolderListItemModel.children by buildFolder().
+    public var children: [SearchResult] = []
 }
