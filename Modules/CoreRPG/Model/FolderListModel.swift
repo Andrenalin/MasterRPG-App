@@ -298,3 +298,18 @@ extension ListItemModel: Equatable {
         && lhs.isHidden == rhs.isHidden
     }
 }
+
+
+//@MainActor @Observable
+//public final class FolderListItemModel: Identifiable {
+//    public let id: UUID
+//    
+//    public let source: ItemRowModel // for reference it could be link to another module
+//    public let level: Int
+//
+//    let model: any ItemDataAccessable
+//    var isOpen: Bool
+//    var lastIsOpen: Bool
+//    var isHidden: Bool = false
+//    let entryId: UUID?
+//}

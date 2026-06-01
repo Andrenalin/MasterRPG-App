@@ -11,6 +11,7 @@ import PhotoRPG
 struct LinkController: Sendable {
     let rootManager: RootManager
     let itemController: ItemController
+    let editController: EditController
     let gameController: GameController
     
     public var itemControllable: any ItemControllable { itemController }
@@ -76,6 +77,7 @@ extension LinkController: LinkControllable {
             validateLinks(on: inspectedId)
         }
         validateParentId()
+        editController.repairCharacterContrains()
     }
     
     @MainActor public func validateLinks(on itemId: UUID) {

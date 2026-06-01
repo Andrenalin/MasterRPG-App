@@ -3,6 +3,7 @@
 import CoreRPG
 import Foundation
 import Observation
+import os.log
 import RegexBuilder
 import SwiftUI
 import DiceRPG
@@ -467,3 +468,159 @@ extension EditController {
     }
 }
 
+// MARK: - Final Repair
+
+extension EditController {
+    @MainActor func repairCharacterContrains() {
+        let itemIds = itemControllable.itemDataModel.items
+
+        // Build: groupItemId → [ownerIds that reference it via entry.valueId]
+        // editModel returns ValueModel, giving typed access to ValueEntryModel.valueId
+        var valueIdOwners: [UUID: [UUID]] = [:]
+        for itemId in itemIds {
+            guard let item = editModel(for: itemId), item.displayState != 2 else { continue }
+            for entry in item.entries {
+                guard let valueId = entry.valueId else { continue }
+                valueIdOwners[valueId, default: []].append(itemId)
+            }
+        }
+
+        for itemId in itemIds {
+            guard let item = itemControllable.itemSync(for: itemId) as? ValueModel,
+                  item.displayState != 2 else { continue }
+
+            if item.isFolder && item.groupId == nil {
+                repairFolderConstraints(itemId: itemId)
+            } else if item.category == itemControllable.collectionCategory && item.displayState == 0 && item.groupId == nil {
+                repairCollectionConstraints(itemId: itemId)
+            } else if item.displayState == 1 {
+                repairGroupItemConstraints(itemId: itemId, valueIdOwners: valueIdOwners)
+            } else if item.displayState == 0 && item.groupId == nil && !item.specialCategory {
+                repairCharacterItemConstraints(itemId: itemId)
+            }
+        }
+    }
+
+    @MainActor private func repairFolderConstraints(itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        let before = item.entries.map(\.childId)
+
+        let removedNames = before.compactMap { childId -> String? in
+            guard let child = itemControllable.itemSync(for: childId) else { return nil }
+            let badParent = child.parentId != itemId
+            let isNestedFolder = child.isFolder
+            let isHidden = child.displayState != 0
+            guard badParent || isNestedFolder || isHidden else { return nil }
+            return child.name
+        }
+
+        item.entries = item.entries.filter { entry in
+            guard let child = itemControllable.itemSync(for: entry.childId),
+                  child.displayState == 0,
+                  child.parentId == itemId,
+                  !child.isFolder
+            else { return false }
+            return true
+        }
+        item.entries.sort {
+            let n1 = itemControllable.nameSync(itemId: $0.childId)
+            let n2 = itemControllable.nameSync(itemId: $1.childId)
+            return n1.localizedCompare(n2) == .orderedAscending
+        }
+        guard item.entries.map(\.childId) != before else { return }
+
+        let afterNames = item.entries.map { itemControllable.nameSync(itemId: $0.childId) }
+        if !removedNames.isEmpty {
+            Logger.editController.warning("[Repair] Folder '\(item.name, privacy: .public)': removed invalid children \(removedNames, privacy: .public)")
+        }
+        Logger.editController.info("[Repair] Folder '\(item.name, privacy: .public)': entries now \(afterNames, privacy: .public)")
+
+        save(updated: item, message: String(localized: "Repair folder", bundle: .module).localizedString)
+    }
+
+    @MainActor private func repairCollectionConstraints(itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        let before = item.entries.count
+
+        let removedNames: [String] = item.entries.compactMap { entry in
+            guard let child = itemControllable.itemSync(for: entry.childId) as? ValueModel else {
+                return "<missing \(entry.childId)>"
+            }
+            let invalid = child.displayState != 0 || child.groupId != nil || child.specialCategory
+            return invalid ? child.name : nil
+        }
+
+        item.entries = item.entries.filter { entry in
+            guard let child = itemControllable.itemSync(for: entry.childId) as? ValueModel,
+                  child.displayState == 0,
+                  child.groupId == nil,
+                  !child.specialCategory
+            else { return false }
+            return true
+        }
+        guard item.entries.count != before else { return }
+
+        Logger.editController.warning("[Repair] Collection '\(item.name, privacy: .public)': removed \(before - item.entries.count) invalid children \(removedNames, privacy: .public)")
+
+        save(updated: item, message: String(localized: "Repair collection", bundle: .module).localizedString)
+    }
+
+    @MainActor private func repairCharacterItemConstraints(itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        var changed = false
+
+        // Repair 1: orphaned parentId — item not present in the folder's entries
+        if let parentId = item.parentId {
+            let isInFolder = itemControllable.itemSync(for: parentId).map { parent in
+                parent.displayState != 2 && parent.isFolder && parent.entries.contains { $0.childId == itemId }
+            } ?? false
+            if !isInFolder {
+                let parentName = itemControllable.nameSync(itemId: parentId)
+                Logger.editController.warning("[Repair] Character '\(item.name, privacy: .public)': cleared orphaned parentId (folder '\(parentName, privacy: .public)' has no matching entry)")
+                item.parentId = nil
+                changed = true
+            }
+        }
+
+        // Repair 2: entry.valueId must only point to GroupItems (displayState == 1)
+        var entriesChanged = false
+        let cleanedEntries: [ValueEntryModel] = item.entries.map { entry in
+            guard let valueId = entry.valueId else { return entry }
+            guard itemControllable.itemSync(for: valueId)?.displayState == 1 else {
+                let targetName = itemControllable.nameSync(itemId: valueId)
+                Logger.editController.warning("[Repair] Character '\(item.name, privacy: .public)': entry '\(entry.name, privacy: .public)' had non-GroupItem valueId pointing to '\(targetName, privacy: .public)' — cleared")
+                entriesChanged = true
+                return ValueEntryModel(
+                    id: entry.id, name: entry.name, type: entry.type,
+                    isGenerator: entry.isGenerator, value: entry.value,
+                    diceId: entry.diceId, valueId: nil, displayState: entry.displayState
+                )
+            }
+            return entry
+        }
+        if entriesChanged {
+            item.entries = cleanedEntries
+            changed = true
+        }
+
+        if changed {
+            save(updated: item, message: String(localized: "Repair character item", bundle: .module).localizedString)
+        }
+    }
+
+    @MainActor private func repairGroupItemConstraints(itemId: UUID, valueIdOwners: [UUID: [UUID]]) {
+        guard let owners = valueIdOwners[itemId], owners.count > 1,
+              let groupId = (itemControllable.itemSync(for: itemId) as? ValueModel)?.groupId
+        else { return }
+        let groupItemName = itemControllable.nameSync(itemId: itemId)
+        let authName = itemControllable.nameSync(itemId: groupId)
+        for ownerId in owners where ownerId != groupId {
+            guard let owner = editModel(for: ownerId) else { continue }
+            let before = owner.entries.count
+            owner.entries.removeAll { $0.valueId == itemId }
+            guard owner.entries.count != before else { continue }
+            Logger.editController.warning("[Repair] GroupItem '\(groupItemName, privacy: .public)': removed duplicate reference from '\(owner.name, privacy: .public)' (authoritative owner: '\(authName, privacy: .public)')")
+            save(updated: owner, message: String(localized: "Repair group item", bundle: .module).localizedString)
+        }
+    }
+}

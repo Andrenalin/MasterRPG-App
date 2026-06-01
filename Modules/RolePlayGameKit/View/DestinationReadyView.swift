@@ -32,11 +32,15 @@ struct DestinationReadyView: View {
             .task {
                 if appModel.settingsModel.firstLaunch {
                     activeAlert = .firstLaunch
+                    appModel.settingsModel.needsValidateDatabase = false
                     return
                 }
                 if appModel.settingsModel.needsValidateDatabase {
                     activeAlert = .validateDatabase
                 }
+                try? await Task.sleep(for: .seconds(5))
+                guard !Task.isCancelled else { return }
+                await appModel.cleanDatabase()
             }
             // Fix #4 (continued): single alert modifier driven by the enum.
             // The `presenting:` overload passes the current case into both the

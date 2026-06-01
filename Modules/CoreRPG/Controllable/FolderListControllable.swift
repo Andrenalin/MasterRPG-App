@@ -154,7 +154,11 @@ extension FolderListControllable {
         listModel.deleteItems(offsets: offsets)
         return removed
     }
-    
+}
+
+// MARK: Search & Filter
+
+extension FolderListControllable {
     func resetFilter() {
         let searchText = searchModel.searchText
         let results = searchModel.results

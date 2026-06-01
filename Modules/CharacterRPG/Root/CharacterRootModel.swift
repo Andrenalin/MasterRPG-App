@@ -35,11 +35,12 @@ public final class CharacterRootModel {
         _dataController = dataController
         let itemController = ItemController(config: config, tableRoot: tableRoot, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        let editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        _editController = editController
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController, editController: editController)
         _gameController = GameController(rootManager: rootManager, root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, exportController: exportController)
-        let linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
+        let linkController = LinkController(rootManager: rootManager, itemController: itemController, editController: editController, gameController: gameController)
         _linkController = linkController
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
@@ -206,7 +207,7 @@ extension CharacterRootModel {
     public func checkFolders(reportModel: ValidateRepairModel) async {
         reportModel.update(section: "Validating Character Data")
         for id in itemController.itemDataModel.items {
-            guard let model = await itemController.item(for: id), model.specialCategory == false else { continue }
+            guard let model = await itemController.item(for: id), model.displayState != 2 && model.specialCategory == false else { continue }
             var entries: [ValueEntryModel] = []
             for entry in model.entries {
                 guard let valueId = entry.valueId, let value = await itemController.item(for: valueId) else {

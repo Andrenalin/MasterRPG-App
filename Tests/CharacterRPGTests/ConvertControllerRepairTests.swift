@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import DiceRPG
@@ -381,4 +380,295 @@ struct ConvertControllerRepairTests {
         #expect(folderAfter.entries.contains(where: { $0.childId == childId }))
     }
 }
-#endif
+
+// MARK: - repairCharacterContrains
+
+extension ConvertControllerRepairTests {
+
+    // MARK: Character item – orphaned parentId
+
+    @Test("character item with parentId not in folder entries gets parentId cleared")
+    func characterItem_orphanedParentId_isCleared() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let itemId   = await root.itemController.addNew(type: .item)
+
+        // Set parentId without adding to the folder's entry list
+        let item = await root.itemController.itemOrEmpty(for: itemId)
+        item.parentId = folderId
+        await root.itemController.replace(model: item, isInsert: false)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – orphaned parentId cleared
+        let after = await root.itemController.itemOrEmpty(for: itemId)
+        #expect(after.parentId == nil)
+    }
+
+    @Test("character item correctly listed in folder keeps parentId")
+    func characterItem_validParentId_isPreserved() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let itemId   = await root.itemController.addNew(type: .item)
+        await root.editController.addItem(itemId: itemId, parentId: folderId)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – valid parentId preserved
+        let after = await root.itemController.itemOrEmpty(for: itemId)
+        #expect(after.parentId == folderId)
+    }
+
+    // MARK: Character item – entry.valueId must point to GroupItems
+
+    @Test("entry whose valueId points to a plain character item gets valueId cleared")
+    func characterItem_nonGroupValueId_isClearedFromEntry() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let ownerId  = await root.itemController.addNew(type: .item)
+        let targetId = await root.itemController.addNew(type: .item) // displayState=0, not a GroupItem
+
+        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        owner.entries.append(ValueEntryModel(id: UUID(), name: "BadRef", type: .text, value: "", valueId: targetId))
+        await root.itemController.replace(model: owner, isInsert: false)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – no entry may still reference targetId as valueId
+        let after = await root.itemController.itemOrEmpty(for: ownerId)
+        #expect(after.entries.allSatisfy { $0.valueId != targetId })
+    }
+
+    @Test("entry whose valueId points to a valid GroupItem is preserved")
+    func characterItem_validGroupItemValueId_isPreserved() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let ownerId = await root.itemController.addNew(type: .item)
+        let entryId = await root.editController.addNewGroup(itemId: ownerId)
+
+        let owner     = await root.itemController.itemOrEmpty(for: ownerId)
+        let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
+        let groupItemId = try #require(groupEntry.valueId)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – GroupItem reference untouched
+        let afterOwner = await root.itemController.itemOrEmpty(for: ownerId)
+        let preserved  = afterOwner.entries.first(where: { $0.id == entryId })
+        #expect(preserved?.valueId == groupItemId)
+    }
+
+    // MARK: Folder constraints
+
+    @Test("folder entry whose child has wrong parentId is removed")
+    func folder_childWithWrongParentId_entryRemoved() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let charId   = await root.itemController.addNew(type: .item)
+
+        // Add entry to folder but do NOT set charId.parentId = folderId
+        let folder = await root.itemController.itemOrEmpty(for: folderId)
+        folder.entries = [ValueEntryModel.newChild(id: charId)]
+        await root.itemController.replace(model: folder, isInsert: false)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – entry removed (child.parentId != folderId)
+        let afterFolder = await root.itemController.itemOrEmpty(for: folderId)
+        #expect(afterFolder.entries.isEmpty)
+    }
+
+    @Test("folder entry with valid child and matching parentId is preserved")
+    func folder_validChild_entryPreserved() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let charId   = await root.itemController.addNew(type: .item)
+        await root.editController.addItem(itemId: charId, parentId: folderId)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – entry preserved
+        let afterFolder = await root.itemController.itemOrEmpty(for: folderId)
+        #expect(afterFolder.entries.contains(where: { $0.childId == charId }))
+    }
+
+    @Test("folder entries are sorted alphabetically by child name")
+    func folder_entriesSortedAlphabetically() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let folderId  = await root.itemController.addNew(type: .folder)
+        let charlieId = await root.itemController.addNew(type: .item)
+        let alphaId   = await root.itemController.addNew(type: .item)
+        let bravoId   = await root.itemController.addNew(type: .item)
+
+        await root.editController.reset(name: "Charlie", itemId: charlieId)
+        await root.editController.reset(name: "Alpha",   itemId: alphaId)
+        await root.editController.reset(name: "Bravo",   itemId: bravoId)
+
+        // Set parentId on each child without going through addItem (which already sorts)
+        for id in [charlieId, alphaId, bravoId] {
+            let child = await root.itemController.itemOrEmpty(for: id)
+            child.parentId = folderId
+            await root.itemController.replace(model: child, isInsert: false)
+        }
+
+        // Manually place folder entries in wrong order: Charlie, Alpha, Bravo
+        let folder = await root.itemController.itemOrEmpty(for: folderId)
+        folder.entries = [
+            ValueEntryModel.newChild(id: charlieId),
+            ValueEntryModel.newChild(id: alphaId),
+            ValueEntryModel.newChild(id: bravoId),
+        ]
+        await root.itemController.replace(model: folder, isInsert: false)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – entries in alphabetical order: Alpha, Bravo, Charlie
+        let afterFolder = await root.itemController.itemOrEmpty(for: folderId)
+        #expect(afterFolder.entries.map(\.childId) == [alphaId, bravoId, charlieId])
+    }
+
+    // MARK: Collection constraints
+
+    @Test("collection entry pointing to a GroupItem (displayState=1) is removed")
+    func collection_groupItemChild_entryRemoved() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let collectionId = await root.itemController.addNew(type: .collection)
+        let ownerId      = await root.itemController.addNew(type: .item)
+        let entryId      = await root.editController.addNewGroup(itemId: ownerId)
+
+        let owner      = await root.itemController.itemOrEmpty(for: ownerId)
+        let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
+        let groupItemId = try #require(groupEntry.valueId)
+
+        // Add the hidden GroupItem as a collection child (invalid)
+        let collection = await root.itemController.itemOrEmpty(for: collectionId)
+        collection.entries = [ValueEntryModel.newChild(id: groupItemId)]
+        await root.itemController.replace(model: collection, isInsert: false)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – GroupItem entry removed from collection
+        let afterCollection = await root.itemController.itemOrEmpty(for: collectionId)
+        #expect(afterCollection.entries.isEmpty)
+    }
+
+    @Test("collection entry pointing to a valid character item is preserved")
+    func collection_validCharacterItem_entryPreserved() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let collectionId = await root.itemController.addNew(type: .collection)
+        let charId       = await root.itemController.addNew(type: .item)
+
+        let collection = await root.itemController.itemOrEmpty(for: collectionId)
+        collection.entries = [ValueEntryModel.newChild(id: charId)]
+        await root.itemController.replace(model: collection, isInsert: false)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – valid entry preserved
+        let afterCollection = await root.itemController.itemOrEmpty(for: collectionId)
+        #expect(afterCollection.entries.count == 1)
+        #expect(afterCollection.entries[0].childId == charId)
+    }
+
+    // MARK: GroupItem constraints – no dual ownership
+
+    @Test("GroupItem referenced by two owners: duplicate reference removed from non-authoritative owner")
+    func groupItem_doubleOwnership_duplicateReferenceRemoved() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let owner1Id = await root.itemController.addNew(type: .item)
+        let owner2Id = await root.itemController.addNew(type: .item)
+
+        // Create GroupItem under owner1
+        let entryId   = await root.editController.addNewGroup(itemId: owner1Id)
+        let owner1    = await root.itemController.itemOrEmpty(for: owner1Id)
+        let groupEntry = try #require(owner1.entries.first(where: { $0.id == entryId }))
+        let groupItemId = try #require(groupEntry.valueId)
+
+        // Illegitimately reference the same GroupItem from owner2
+        let owner2 = await root.itemController.itemOrEmpty(for: owner2Id)
+        owner2.entries.append(ValueEntryModel(id: UUID(), name: "DuplicateRef", type: .text, value: "", valueId: groupItemId))
+        await root.itemController.replace(model: owner2, isInsert: false)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – owner1 still references the GroupItem; owner2 does not
+        let afterOwner1 = await root.itemController.itemOrEmpty(for: owner1Id)
+        let afterOwner2 = await root.itemController.itemOrEmpty(for: owner2Id)
+        #expect(afterOwner1.entries.contains { $0.valueId == groupItemId })
+        #expect(afterOwner2.entries.allSatisfy { $0.valueId != groupItemId })
+    }
+
+    @Test("GroupItem with a single owner is preserved unchanged")
+    func groupItem_singleOwnership_preserved() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let ownerId = await root.itemController.addNew(type: .item)
+        let entryId = await root.editController.addNewGroup(itemId: ownerId)
+
+        let owner      = await root.itemController.itemOrEmpty(for: ownerId)
+        let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
+        let groupItemId = try #require(groupEntry.valueId)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – single-owner reference untouched
+        let afterOwner = await root.itemController.itemOrEmpty(for: ownerId)
+        #expect(afterOwner.entries.contains { $0.valueId == groupItemId })
+    }
+
+    // MARK: Deleted items (displayState=2) are ignored
+
+    @Test("deleted item with broken parentId is not modified by repair")
+    func deletedItem_constraintsIgnored() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let phantomParent = UUID()
+
+        // Mark as deleted with a broken parentId that would normally be cleared
+        let item = await root.itemController.itemOrEmpty(for: itemId)
+        item.displayState = 2
+        item.parentId = phantomParent
+        await root.itemController.replace(model: item, isInsert: false)
+
+        // When
+        await root.editController.repairCharacterContrains()
+
+        // Then – deleted item is untouched (displayState==2 skips all checks)
+        let after = await root.itemController.itemOrEmpty(for: itemId)
+        #expect(after.displayState == 2)
+        #expect(after.parentId == phantomParent)
+    }
+}
+
