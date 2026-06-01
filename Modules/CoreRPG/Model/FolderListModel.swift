@@ -29,52 +29,14 @@ public final class FolderListModel {
     public var parentItemId: UUID? { parentModel?.id }
 
     @ObservationIgnored var updatedOnce: Bool = false
-    @ObservationIgnored var originalItems: [ListItemModel] = []
-    @ObservationIgnored var parentOriginalItems: [ListItemModel] = []
 
     // Search
     @ObservationIgnored var searchTask: Task<Void, Never>? = nil
     public var searchExpandsEntries: Bool = false
 
-    // this is the display list for the UI (new)
+    // MARK: - Display list
     public var list: [FolderListItemModel] = []
     public var cacheListModels: [UUID: FolderListItemModel] = [:]
-    
-    
-    
-    
-    public var displayedItems: [ListItemModel] = []
-    public var displayedParentItems: [ListItemModel] = []
-
-    // MARK: - List item cache
-    // Maps a stable semantic key (from ItemRowModel.stableListId or a context-qualified variant)
-    // to the ListItemModel that was first created for that position.
-    // Returning the same instance across rebuilds keeps ListItemModel.listId stable, which in
-    // turn keeps SwiftUI identity stable — no unnecessary destroy/recreate animations.
-    // The Character/groups edge case (same item appears multiple times) uses a context-qualified
-    // key (e.g. "folder-<parentId>-<itemId>") so each appearance gets its own entry.
-    @ObservationIgnored private var listItemCache: [String: ListItemModel] = [:]
-
-    // Pre-built display arrays for each structural mode.
-    // Switching between list and folder view is then O(1) — just swap displayedItems.
-    // Search sets isHidden on the existing ListItemModel objects instead of rebuilding arrays.
-    @ObservationIgnored var cachedListModeItems: [ListItemModel] = []
-    @ObservationIgnored var cachedFolderModeItems: [ListItemModel] = []
-
-    // Returns the cached instance for `key`, or calls `create` once and caches the result.
-    func cachedItem(key: String, create: () -> ListItemModel) -> ListItemModel {
-        if let existing = listItemCache[key] { return existing }
-        let item = create()
-        listItemCache[key] = item
-        return item
-    }
-
-    // Clears the cache. Call when the item data model is fully replaced (e.g. account switch).
-    func clearListItemCache() {
-        listItemCache.removeAll()
-        cachedListModeItems.removeAll()
-        cachedFolderModeItems.removeAll()
-    }
 
     var addedModelId: UUID?
     
@@ -129,52 +91,30 @@ public final class FolderListModel {
 extension FolderListModel {
     func deleteItems(ids: [UUID]) -> [ItemRowModel] {
         let removed = ids.compactMap { id -> ItemRowModel? in
-            guard let index = displayedItems.firstIndex(where: { $0.model.id == id }) else { return nil }
-            let model = displayedItems[index].model
+            guard let index = list.firstIndex(where: { $0.source.itemId == id }) else { return nil }
+            let itemId = list[index].source.itemId
             deleteItems(offsets: IndexSet(integer: index))
-            return ItemRowModel(itemId: model.id, typeId: .none)
+            return ItemRowModel(itemId: itemId, typeId: .none)
         }
         return removed
     }
 
     func deleteItems(offsets: IndexSet) {
         for index in offsets {
-            if displayedItems[index].model.id == selected {
+            if list[index].source.itemId == selected {
                 resetListSelection()
                 update(selection: Set())
             }
         }
-        displayedItems.remove(atOffsets: offsets)
+        for index in offsets.reversed() {
+            cacheListModels.removeValue(forKey: list[index].id)
+        }
+        list.remove(atOffsets: offsets)
     }
 
-    func restoreItems(models: [ItemRowModel]) {
-        let itemsToRestore = models.compactMap { model in
-            originalItems.first(where: { $0.model.id == model.itemId })
-        }
-
-        for itemToRestore in itemsToRestore {
-            if !displayedItems.contains(where: { $0.model.id == itemToRestore.model.id }) {
-                // Find the correct position based on originalItems order
-                if let originalIndex = originalItems.firstIndex(where: { $0.model.id == itemToRestore.model.id }) {
-                    // Find where to insert in displayedItems to maintain order
-                    var insertIndex = 0
-                    for displayedItem in displayedItems {
-                        if let displayedOriginalIndex = originalItems.firstIndex(where: { $0.model.id == displayedItem.model.id }),
-                           displayedOriginalIndex < originalIndex {
-                            insertIndex += 1
-                        } else {
-                            break
-                        }
-                    }
-                    displayedItems.insert(itemToRestore, at: insertIndex)
-                }
-            }
-        }
-    }
-    
-    func item(itemId: UUID?) -> ListItemModel? {
+    func item(itemId: UUID?) -> FolderListItemModel? {
         guard let itemId else { return nil }
-        return displayedItems.first(where: { $0.model.id == itemId })
+        return list.first(where: { $0.source.itemId == itemId })
     }
 }
 
@@ -210,11 +150,6 @@ public extension FolderListModel {
 
     var selectedItemId: UUID? {
         selected
-    }
-
-    var selectedModel: (any ItemDataAccessable)? {
-        displayedParentItems.first(where: { $0.model.id == selected })?.model ??
-        displayedItems.first(where: { $0.model.id == selected })?.model
     }
 
     var selectionItemIds: [UUID] {

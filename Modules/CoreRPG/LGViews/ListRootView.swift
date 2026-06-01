@@ -93,10 +93,6 @@ struct ListRootView: View {
 }
 
 private extension ListRootView {
-//    var displayItems: [ListItemModel] {
-//        parentModel == nil ? listController.listModel.displayedItems : listController.listModel.displayedParentItems
-//    }
-    
     var listModel: FolderListModel {
         listController.listModel
     }

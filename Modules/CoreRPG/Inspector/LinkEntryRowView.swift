@@ -5,21 +5,21 @@ import SwiftUI
 
 struct LinkEntryRowView: View {
     let root: any ItemRootControllable
-    let item: ListItemModel
+    let item: FolderListItemModel
     let listDisplayModel: ListDisplayModel
 
     var editController: (any EntryDataEditable)? {
         root.editControllable as? (any EntryDataEditable)
     }
+
     var body: some View {
-        if let editController {
-            EntryEditRow(root: root, editController: editController, itemId: item.model.id, entry: item.model[entryId], cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: listDisplayModel, searchModel: root.folderLinkControllable.searchModel)
-        } else {
-            Text("\(item.model[entryId].name): \(item.model[entryId].content)")
+        if let entryId = item.source.entryId,
+           let itemModel = root.itemControllable.itemSync(for: item.source.itemId) {
+            if let editController {
+                EntryEditRow(root: root, editController: editController, itemId: item.source.itemId, entry: itemModel[entryId], cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: listDisplayModel, searchModel: root.folderLinkControllable.searchModel)
+            } else {
+                Text("\(itemModel[entryId].name): \(itemModel[entryId].content)")
+            }
         }
-    }
-    
-    var entryId: UUID {
-        item.entryId ?? UUID()
     }
 }

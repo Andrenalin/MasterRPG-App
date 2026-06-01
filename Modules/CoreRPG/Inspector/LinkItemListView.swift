@@ -16,7 +16,7 @@ public struct LinkItemListView: View {
     let type: LinkRootType
     let selectionModel: ItemSelectionModel
     let parentModel: (any ItemDataAccessable)?
-    
+
     @State private var parentModelId: UUID?
     @State private var scrollPosition: UUID?
 
@@ -27,7 +27,6 @@ public struct LinkItemListView: View {
     @State private var showDetails: Bool = false
     @State private var showDetailsView: (any NavigationDestination)? = nil
 
-    // Plain text avoids NSTextAttachment re-resolution via UIKit TextField prompt path on every layout pass
     private static let filterPrompt = Text("Filter", bundle: .module)
 
     public var body: some View {
@@ -51,8 +50,6 @@ public struct LinkItemListView: View {
                 contentView
                     .tint(root.configurable.module.tint)
                     .task(id: parentModelId) {
-                        // This task runs whenever parentModelId changes (including initial load)
-                        // It ensures parent filtering is properly configured for this specific view
                         await configureParentFiltering()
                     }
                     .onAppear {
@@ -61,10 +58,7 @@ public struct LinkItemListView: View {
                         root.folderLinkControllable.resetItemOnce()
                         root.folderLinkControllable.resetFilter()
                         root.folderLinkControllable.listModel.scrollId = savedScroll
-                        
                         if let savedPosition = root.folderLinkControllable.listModel.scrollId {
-                            // Use withAnimation instead of Task.sleep for more reliable timing
-                            // SwiftUI will coordinate this with the view's appearance
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 scrollPosition = savedPosition
                             }
@@ -103,20 +97,15 @@ private extension LinkItemListView {
         root.folderLinkControllable.listModel
     }
 
-    var displayItems: [ListItemModel] {
-        parentModel == nil ? listModel.displayedItems : listModel.displayedParentItems
+    var displayItems: [FolderListItemModel] {
+        listModel.list
     }
-    
-    /// Configures parent filtering for this view
-    /// This ensures the correct items are displayed based on whether we're showing
-    /// a parent-filtered view or the full list
+
     func configureParentFiltering() async {
         if let parentModel {
-            // Scope inspector search to this item
             root.folderLinkControllable.searchModel.filterId = parentModel.id
             let mode: ListDisplayModel.ListMode = parentModel.category == .folder ? .folder : .list
             if root.folderLinkControllable.listDisplayModel.listMode != mode {
-                print("!!!! Here !! \(mode)")
                 root.folderLinkControllable.listDisplayModel.listMode = mode
             }
             root.folderLinkControllable.resetParentModel(model: parentModel)
@@ -124,7 +113,6 @@ private extension LinkItemListView {
             root.folderLinkControllable.searchModel.filterId = nil
             if root.folderLinkControllable.listModel.parentModel != nil {
                 root.folderLinkControllable.listModel.parentModel = nil
-                root.folderLinkControllable.listModel.parentOriginalItems = []
                 root.folderLinkControllable.resetFilter()
             }
         }
@@ -135,7 +123,7 @@ private extension LinkItemListView {
         let items = displayItems
         let searchText = root.folderLinkControllable.searchModel.searchText
         let isEmpty = items.isEmpty && !searchText.isEmpty
-        
+
         listView(items: items)
             .frame(minWidth: 150, idealWidth: 250)
             .overlay {
@@ -150,7 +138,7 @@ private extension LinkItemListView {
 #endif
     }
 
-    func listView(items: [ListItemModel]) -> some View {
+    func listView(items: [FolderListItemModel]) -> some View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: []) {
                 ForEach(items) { item in
@@ -158,9 +146,15 @@ private extension LinkItemListView {
                         HStack(spacing: 0) {
                             itemRowContent(item: item)
                                 .selectListItem(isActive: isSelectionActive(item: item)) {
-                                    selectionModel.toggleSelection(itemId: item.model.id, entryId: item.entryId, isCollection: item.model.specialCategory)
+                                    selectionModel.toggleSelection(
+                                        itemId: item.source.itemId,
+                                        entryId: item.source.entryId,
+                                        isCollection: itemModel(item)?.specialCategory ?? false
+                                    )
                                 } isSelected: {
-                                    selectionModel.selection.contains(where: { $0.itemId == item.model.id && $0.entryId == item.entryId })
+                                    selectionModel.selection.contains(where: {
+                                        $0.itemId == item.source.itemId && $0.entryId == item.source.entryId
+                                    })
                                 }
                         }
                         .padding(.leading, CGFloat(item.level * 4 + 8))
@@ -169,8 +163,8 @@ private extension LinkItemListView {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(backgroundForLevel(item.level))
                         .contentShape(.rect)
-                        
-                        if item.isOpen || item.entryId != nil {
+
+                        if item.isOpen || item.source.entryId != nil {
                             Divider()
                                 .padding(.leading, 8)
                         }
@@ -187,16 +181,20 @@ private extension LinkItemListView {
         }
     }
 
+    func itemModel(_ item: FolderListItemModel) -> (any ItemDataAccessable)? {
+        root.itemControllable.itemSync(for: item.source.itemId)
+    }
+
     @ViewBuilder
-    private func itemRowContent(item: ListItemModel) -> some View {
-        if let entryId = item.entryId {
+    private func itemRowContent(item: FolderListItemModel) -> some View {
+        if let entryId = item.source.entryId {
             entryRow(item: item, entryId: entryId)
         } else {
             standardItemRow(item: item)
         }
     }
-    
-    private func entryRow(item: ListItemModel, entryId: UUID) -> some View {
+
+    private func entryRow(item: FolderListItemModel, entryId: UUID) -> some View {
         HStack {
             LinkEntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
             specialCategoryFolderIndicator(item: item)
@@ -204,10 +202,10 @@ private extension LinkItemListView {
         .contextMenu {
             contextMenu(for: item)
         }
-        .draggableWithOverlay(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name.withoutLink())
+        .draggableWithOverlay(for: root.configurable.module, itemId: item.source.itemId, entryId: entryId, name: itemModel(item)?[entryId].name.withoutLink() ?? "")
     }
-    
-    private func standardItemRow(item: ListItemModel) -> some View {
+
+    private func standardItemRow(item: FolderListItemModel) -> some View {
         itemRow(item: item)
             .onTapGesture(count: 2) {
                 openDetail(for: item)
@@ -217,24 +215,23 @@ private extension LinkItemListView {
                 contextMenu(for: item)
             }
     }
-    
+
     @ViewBuilder
-    private func contextMenu(for item: ListItemModel) -> some View {
+    private func contextMenu(for item: FolderListItemModel) -> some View {
         Button {
             openDetail(for: item)
         } label: {
             Label { Text("Open Details", bundle: .module) } icon: { Image(systemName: "arrow.up.right.square") }
         }
-        
+
         displayModeControls
         listModeControls
-        
-        // Only show close entry section for entries
-        if item.entryId != nil {
+
+        if item.source.entryId != nil {
             closeEntrySection(for: item)
         }
     }
-    
+
     @ViewBuilder
     private var displayModeControls: some View {
         ControlGroup {
@@ -243,10 +240,9 @@ private extension LinkItemListView {
             RegularDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
         }
     }
-    
+
     @ViewBuilder
     private var listModeControls: some View {
-        // Only show list mode controls if parent filtering is not active
         if parentModel == nil {
             ControlGroup {
                 ListModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
@@ -255,43 +251,51 @@ private extension LinkItemListView {
         }
     }
 
-    func isSelectionActive(item: ListItemModel) -> Bool {
-        (type == .selection || type == .selectionInline) && selectionModel.canSelect(isCollection: item.model.specialCategory, entryId: item.entryId)
+    func isSelectionActive(item: FolderListItemModel) -> Bool {
+        (type == .selection || type == .selectionInline) &&
+        selectionModel.canSelect(isCollection: itemModel(item)?.specialCategory ?? false, entryId: item.source.entryId)
     }
 
-    func itemRow(item: ListItemModel) -> some View {
-        ItemRowView(root: root, model: item.model, cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: root.folderLinkControllable.listDisplayModel, searchModel: root.folderLinkControllable.searchModel, isSelected: false) {
+    func itemRow(item: FolderListItemModel) -> some View {
+        ItemRowView(
+            root: root,
+            model: itemModel(item) ?? root.itemControllable.itemOrEmpty(for: item.source.itemId),
+            cacheItemListModel: root.folderLinkControllable.cacheListItemModel,
+            listDisplayModel: root.folderLinkControllable.listDisplayModel,
+            searchModel: root.folderLinkControllable.searchModel,
+            isSelected: false
+        ) {
             if root.viewControllable.thumbnailRowViewType == .custom {
-                root.viewControllable.thumbnailRowView(for: item.model.id)
+                root.viewControllable.thumbnailRowView(for: item.source.itemId)
             } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
-                ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, listDisplayModel: root.folderLinkControllable.listDisplayModel)
+                ThumbnailRowPhotoView(cacheController: cacheController, model: itemModel(item) ?? root.itemControllable.itemOrEmpty(for: item.source.itemId), listDisplayModel: root.folderLinkControllable.listDisplayModel)
             }
         }
-        .draggableWithOverlay(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name.withoutLink())
+        .draggableWithOverlay(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.source.itemId, entryId: nil, name: itemModel(item)?.name.withoutLink() ?? "")
         .overlay(alignment: .trailing) {
             specialCategoryFolderIndicator(item: item)
         }
     }
 
-    func openDetail(for item: ListItemModel) {
+    func openDetail(for item: FolderListItemModel) {
 #if os(macOS)
-        guard !item.model.specialCategory else { return }
-        scenesManager.openWindow(SceneId.viewerId(for: root.configurable.module), selection: WindowItemSelection(itemId: item.model.id))
+        guard itemModel(item)?.specialCategory != true else { return }
+        scenesManager.openWindow(SceneId.viewerId(for: root.configurable.module), selection: WindowItemSelection(itemId: item.source.itemId))
 #else
-        if item.model.specialCategory {
-            showDetailsView = root.folderLinkControllable.detailDestination(for: item.model.id)
+        if itemModel(item)?.specialCategory == true {
+            showDetailsView = root.folderLinkControllable.detailDestination(for: item.source.itemId)
         } else {
-            showDetailsView = root.folderLinkControllable.viewerDestination(for: item.model.id)
+            showDetailsView = root.folderLinkControllable.viewerDestination(for: item.source.itemId)
         }
         showDetails.toggle()
 #endif
     }
 
     @ViewBuilder
-    func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
+    func specialCategoryFolderIndicator(item: FolderListItemModel) -> some View {
         if showFolderIndicator(item: item) {
             Button {
-                withAnimation { root.folderLinkControllable.toggleFolder(item: item) }
+                Task { await root.folderLinkControllable.toggleFolder(item: item) }
             } label: {
                 Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                     .imageScale(.small)
@@ -307,16 +311,14 @@ private extension LinkItemListView {
         }
     }
 
-    func showFolderIndicator(item: ListItemModel) -> Bool {
-        // specialCategory items are folders that can always be toggled.
-        // Non-special items show an indicator when entry selection is allowed and they have entries.
-        // Entry rows (entryId != nil) only show a toggle when they are already open (sub-children loaded).
-        item.model.specialCategory ||
-        (selectionModel.allowEntrySelection && !item.model.entries.isEmpty && item.entryId == nil) ||
-        (item.entryId != nil && item.isOpen)
+    func showFolderIndicator(item: FolderListItemModel) -> Bool {
+        let model = itemModel(item)
+        return model?.specialCategory == true ||
+        (selectionModel.allowEntrySelection && !(model?.entries.isEmpty ?? true) && item.source.entryId == nil) ||
+        (item.source.entryId != nil && item.isOpen)
     }
 
-    func closeEntrySection(for item: ListItemModel) -> some View {
+    func closeEntrySection(for item: FolderListItemModel) -> some View {
         Button {
             withAnimation { root.folderLinkControllable.toggleParentFolder(item: item) }
         } label: {
@@ -327,13 +329,10 @@ private extension LinkItemListView {
             }
         }
     }
-    
-    /// Returns a subtle background color that alternates based on hierarchy level
-    /// to help users visually distinguish between different nesting levels
+
     @ViewBuilder
     func backgroundForLevel(_ level: Int) -> some View {
         if level > 0 {
-            // Alternate between slightly darker shades for each level
             if level % 2 == 1 {
                 Color.secondary.opacity(0.2)
             } else {

@@ -92,7 +92,7 @@ private extension EffectedLinkActionPanelView {
                 root.editControllable.restore(itemId: model.itemId)
             }
         }
-        root.folderListControllable.listModel.restoreItems(models: models)
+        Task { await root.folderListControllable.performSearch() }
     }
 
     var removeEntryList: RemoveEntryListModel {

@@ -36,7 +36,6 @@ extension FolderListControllable {
     public func resetItemOnce() {
         guard listModel.updatedOnce == false else { return }
         listModel.updatedOnce = true
-        originalItems()
         resetFilter()
     }
 
@@ -48,57 +47,19 @@ extension FolderListControllable {
         if listModel.parentModel?.id != model.id {
             listModel.updatedOnce = true
             listModel.parentModel = model
-            originalItems()
             resetFilter()
         }
     }
     
-    var displayItems: [ListItemModel] {
-        listModel.displayedItems
-    }
-
     public func selectedModel(for selectedId: UUID?) -> (any ItemDataAccessable)? {
-        guard let selectedId else {
-            return listModel.selectedModel
-        }
-        return itemControllable.itemSync(for: selectedId)
+        itemControllable.itemSync(for: selectedId ?? listModel.selected ?? UUID())
     }
 }
 
 public extension FolderListControllable {
-    private func originalItems() {
-        // List and folder mode both display top-level items alphabetically.
-        let currentItems: [any ItemDataAccessable] = itemControllable.itemDataModel.items
-            .compactMap { itemControllable.itemSync(for: $0) }
-            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-
-        if currentItems.map(\.id) != listModel.originalItems.map(\.model.id) {
-            let updatedItems = currentItems.enumerated().map { (index, model) in
-                map(model: model, entryId: nil, index: index, level: 0)
-            }
-            listModel.originalItems <=> updatedItems
-        }
-
-        if let parentModel = listModel.parentModel {
-            let parentChildrenItems = itemControllable.children(itemId: parentModel.id)
-            // Folders: alphabetical. Collections (playlist, album, etc.): preserve entry order.
-            let orderedChildren: [any ItemDataAccessable] = parentModel.category == .folder
-                ? parentChildrenItems.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-                : parentChildrenItems
-
-            if orderedChildren.map(\.id) != listModel.parentOriginalItems.map(\.model.id) {
-                let updatedItems = orderedChildren.enumerated().map { (index, model) in
-                    map(model: model, entryId: nil, index: index, level: 0)
-                }
-                listModel.parentOriginalItems <=> updatedItems
-            }
-        }
-    }
-
     func update() {
         let previousSelectedId = listModel.selectedItemId
 
-        originalItems()
         resetFilter()
 
         if let addedModelId = listModel.addedModelId,
@@ -149,8 +110,8 @@ extension FolderListControllable {
     
     @MainActor func delete(offsets: IndexSet) -> [ItemRowModel] {
         let removed = offsets.map {
-            let model = displayItems[$0].model
-            return ItemRowModel(itemId: model.id, typeId: itemControllable.config.module)
+            let source = listModel.list[$0].source
+            return ItemRowModel(itemId: source.itemId, typeId: itemControllable.config.module)
         }
         listModel.deleteItems(offsets: offsets)
         return removed
@@ -218,351 +179,11 @@ extension FolderListControllable {
 }
 
 extension FolderListControllable {
-    func resetFilterOld() {
-        let results = searchModel.results
-
-        if !results.isEmpty {
-            let expandsEntries = listModel.searchExpandsEntries
-            let previousSelectedId = listModel.selectedItemId
-            let items = buildSearchDisplayItems(from: results, expandsEntries: expandsEntries)
-            if listModel.displayedItems != items {
-                listModel.displayedItems <=> items
-            }
-            listModel.displayedParentItems <=> []
-            if let id = previousSelectedId,
-               let matchedItem = items.first(where: { $0.model.id == id && $0.entryId == nil }) {
-                listModel.selected <=> matchedItem.model.id
-                listModel.listSelection <=> Set(arrayLiteral: matchedItem.model.id)
-            }
-            return
-        }
-
-        // Synchronous tree-filter path (name/description only — immediate feedback)
-        let newlyfilteredOnes: [ListItemModel] = listModel.originalItems.enumerated().flatMap { (index, item) in
-            filterSub(item: item, index: index, level: 0, isParent: false)
-        }
-        if listModel.displayedItems != newlyfilteredOnes {
-            listModel.displayedItems <=> newlyfilteredOnes
-        }
-
-        let newlyParentFilteredOnes: [ListItemModel] = listModel.parentOriginalItems.enumerated().flatMap { (index, item) in
-            filterSub(item: item, index: index, level: 0, isParent: true)
-        }
-        if listModel.displayedParentItems != newlyParentFilteredOnes {
-            listModel.displayedParentItems <=> newlyParentFilteredOnes
-        }
-    }
-
-    // MARK: - Search display item builders
-
-    /// Dispatches to the mode-appropriate builder.
-    private func buildSearchDisplayItems(from results: [SearchResult], expandsEntries: Bool) -> [ListItemModel] {
-        let selectedItemId = listModel.selectedItemId
-        if listDisplayModel.listMode == .list {
-            return buildListModeSearch(from: results, expandsEntries: expandsEntries, selectedItemId: selectedItemId)
-        } else {
-            return buildFolderModeSearch(from: results, expandsEntries: expandsEntries, selectedItemId: selectedItemId)
-        }
-    }
-
-    /// List mode: flat results sorted by relevance, selected item first.
-    ///
-    /// **Normal list** (`expandsEntries == false`):
-    ///   - Folders (`specialCategory`) and hidden items (`displayState != 0`) are excluded.
-    ///   - An item row is only shown when the item itself matches directly (`entryId == nil`).
-    ///   - Entry-only matches are collected but do not create an item row.
-    ///
-    /// **Expanded / inspector mode** (`expandsEntries == true`):
-    ///   - All items are accepted, including sub-value groups
-    ///     (`specialCategory == true`, `displayState == 1`).
-    ///   - Any match — direct or entry-level — creates an item row so matching entries can
-    ///     be displayed beneath it.
-    private func buildListModeSearch(from results: [SearchResult], expandsEntries: Bool, selectedItemId: UUID?) -> [ListItemModel] {
-        var itemOrder: [UUID] = []
-        var seen: Set<UUID> = []
-        var entryResults: [UUID: [SearchResult]] = [:]
-
-        for result in results {
-            guard let model = itemControllable.itemSync(for: result.itemId) else { continue }
-
-            // In flat list mode skip folders and hidden/archived items.
-            // In expanded (inspector) mode accept all items — groups are specialCategory and
-            // have displayState == 1 (hidden from main list) but must appear in the inspector.
-            if !expandsEntries {
-                guard !model.specialCategory, model.displayState == 0 else { continue }
-            }
-
-            if result.entryId != nil {
-                entryResults[result.itemId, default: []].append(result)
-                // In list mode entry-only matches do NOT create an item row.
-                // In expanded mode the item row is needed to display the matching entries.
-                if expandsEntries, !seen.contains(result.itemId) {
-                    seen.insert(result.itemId)
-                    itemOrder.append(result.itemId)
-                }
-            } else {
-                // Direct item match (name / description) — always show the item row
-                if !seen.contains(result.itemId) {
-                    seen.insert(result.itemId)
-                    itemOrder.append(result.itemId)
-                }
-            }
-        }
-
-        // Ensure selected item is visible and first
-        if let id = selectedItemId {
-            if seen.contains(id) {
-                if itemOrder.first != id {
-                    itemOrder.removeAll { $0 == id }
-                    itemOrder.insert(id, at: 0)
-                }
-            } else if let model = itemControllable.itemSync(for: id), !model.specialCategory {
-                itemOrder.insert(id, at: 0)
-            }
-        }
-
-        // Pre-expand group entries whose sub-values contain matched entries (e.g. Character groups).
-        // Must happen before makeSearchItems so mapSub reads the correct openState.
-        if expandsEntries {
-            for (itemId, itemEntryResults) in entryResults {
-                let matchedEntryIds = Set(itemEntryResults.compactMap(\.entryId))
-                preExpandGroupEntries(itemId: itemId, matchedEntryIds: matchedEntryIds)
-            }
-        }
-
-        return makeSearchItems(from: itemOrder, entryResults: entryResults, expandsEntries: expandsEntries, baseLevel: 0)
-    }
-
-    /// Folder mode: preserves tree structure, shows ancestor folders for matches, max 10 levels deep.
-    private func buildFolderModeSearch(from results: [SearchResult], expandsEntries: Bool, selectedItemId: UUID?) -> [ListItemModel] {
-        let matchingItemIds = Set(results.map(\.itemId))
-        var entryResults: [UUID: [SearchResult]] = [:]
-        for result in results where result.entryId != nil {
-            entryResults[result.itemId, default: []].append(result)
-        }
-
-        var output: [ListItemModel] = []
-
-        // Only start from root-level items (parentId == nil), mirroring what filter() does in
-        // the synchronous path. Items with a parentId are children of folders and will appear
-        // through the recursive addFolderSearchItem calls — not at the top level.
-        for (index, originalItem) in listModel.originalItems.enumerated() where originalItem.model.parentId == nil {
-            addFolderSearchItem(
-                item: originalItem,
-                childIndex: index,
-                level: 0,
-                matchingItemIds: matchingItemIds,
-                entryResults: entryResults,
-                expandsEntries: expandsEntries,
-                output: &output,
-                maxLevel: 10
-            )
-        }
-
-        // Ensure selected item is visible and first
-        if let id = selectedItemId {
-            prependSelectedItem(id, entryResults: entryResults, expandsEntries: expandsEntries, output: &output)
-        }
-
-        return output
-    }
-
-    /// Recursively visits a tree node, appending it (and its matching children) to `output`.
-    private func addFolderSearchItem(
-        item: ListItemModel,
-        childIndex: Int,
-        level: Int,
-        matchingItemIds: Set<UUID>,
-        entryResults: [UUID: [SearchResult]],
-        expandsEntries: Bool,
-        output: inout [ListItemModel],
-        maxLevel: Int
-    ) {
-        guard level < maxLevel, item.model.displayState == 0 else { return }
-
-        if item.model.specialCategory {
-            // Folder / collection: show only when it or a descendant matches
-            let childModels = item.model.entries.compactMap { itemControllable.itemSync(for: $0.childId) }
-            let isMatch = matchingItemIds.contains(item.model.id)
-            guard isMatch || hasDeepMatch(children: childModels, matchingItemIds: matchingItemIds, depth: level + 1, maxLevel: maxLevel) else { return }
-
-            let isOpen = listModel.openState(itemId: item.model.id, entryId: nil, defaultOpen: true)
-            output.append(ListItemModel(
-                id: "search-\(level)-\(output.count)-\(item.model.id)",
-                model: item.model,
-                isOpen: isOpen,
-                entryId: nil,
-                level: level
-            ))
-
-            if isOpen {
-                for (ci, childModel) in childModels.enumerated() {
-                    guard childModel.displayState == 0 else { continue }
-                    let childItem = ListItemModel(id: "tmp-\(ci)", model: childModel, entryId: nil, level: level + 1)
-                    addFolderSearchItem(
-                        item: childItem,
-                        childIndex: ci,
-                        level: level + 1,
-                        matchingItemIds: matchingItemIds,
-                        entryResults: entryResults,
-                        expandsEntries: expandsEntries,
-                        output: &output,
-                        maxLevel: maxLevel
-                    )
-                }
-            }
-
-        } else if matchingItemIds.contains(item.model.id) {
-            // Regular item: only show when it matches
-            let entries = expandsEntries ? (entryResults[item.model.id] ?? []) : []
-            let isOpen = listModel.openState(itemId: item.model.id, entryId: nil, defaultOpen: !entries.isEmpty)
-            output.append(ListItemModel(
-                id: "search-\(level)-\(output.count)-\(item.model.id)",
-                model: item.model,
-                isOpen: isOpen,
-                entryId: nil,
-                level: level
-            ))
-            if isOpen {
-                for (ei, er) in entries.enumerated() {
-                    guard let entryId = er.entryId else { continue }
-                    output.append(ListItemModel(
-                        id: "search-\(level + 1)-\(ei)-\(entryId)",
-                        model: item.model,
-                        isOpen: false,
-                        entryId: entryId,
-                        level: level + 1
-                    ))
-                }
-            }
-        }
-    }
-
-    /// Returns true when any descendant of `children` is in `matchingItemIds`, up to `maxLevel`.
-    private func hasDeepMatch(children: [any ItemDataAccessable], matchingItemIds: Set<UUID>, depth: Int, maxLevel: Int) -> Bool {
-        guard depth < maxLevel else { return false }
-        for child in children {
-            if matchingItemIds.contains(child.id) { return true }
-            if child.specialCategory {
-                let grandchildren = child.entries.compactMap { itemControllable.itemSync(for: $0.childId) }
-                if hasDeepMatch(children: grandchildren, matchingItemIds: matchingItemIds, depth: depth + 1, maxLevel: maxLevel) { return true }
-            }
-        }
-        return false
-    }
-
-    /// Moves the selected item (plus its entry children) to position 0.
-    /// If not in `output`, synthesises a level-0 row for it.
-    private func prependSelectedItem(_ selectedItemId: UUID, entryResults: [UUID: [SearchResult]], expandsEntries: Bool, output: inout [ListItemModel]) {
-        if output.first?.model.id == selectedItemId { return }
-
-        var extractedRows: [ListItemModel] = []
-
-        if let startIdx = output.firstIndex(where: { $0.model.id == selectedItemId && $0.entryId == nil }) {
-            // Pull the item row and any immediately following entry rows out
-            var endIdx = startIdx + 1
-            while endIdx < output.count, output[endIdx].model.id == selectedItemId, output[endIdx].entryId != nil {
-                endIdx += 1
-            }
-            extractedRows = Array(output[startIdx..<endIdx])
-            output.removeSubrange(startIdx..<endIdx)
-        } else if let model = itemControllable.itemSync(for: selectedItemId) {
-            // Selected item not in results — synthesise at level 0
-            let hasEntryMatches = expandsEntries && !(entryResults[selectedItemId] ?? []).isEmpty
-            let isOpen = listModel.openState(itemId: model.id, entryId: nil, defaultOpen: hasEntryMatches)
-            extractedRows.append(ListItemModel(
-                id: "search-selected-\(model.id)",
-                model: model,
-                isOpen: isOpen,
-                entryId: nil,
-                level: 0
-            ))
-            if isOpen && expandsEntries {
-                expandSearchSubItems(of: model, entryId: nil, index: 0, level: 0, into: &extractedRows)
-            }
-        }
-
-        guard !extractedRows.isEmpty else { return }
-        output.insert(contentsOf: extractedRows, at: 0)
-    }
-
-    /// Converts a flat ordered ID list into `[ListItemModel]`.
-    ///
-    /// - List mode (`expandsEntries == false`): item row only, no entry sub-rows.
-    /// - Inspector mode (`expandsEntries == true`): uses `expandSearchSubItems` (the same
-    ///   mapSub path as non-search mode) so the full group structure is preserved.
-    ///   This is essential for Character groups: sub-value entries use the sub-value as their
-    ///   model, so `model[entryId]` resolves correctly in `LinkEntryRowView`.
-    private func makeSearchItems(from itemOrder: [UUID], entryResults: [UUID: [SearchResult]], expandsEntries: Bool, baseLevel: Int) -> [ListItemModel] {
-        var items: [ListItemModel] = []
-        for (index, itemId) in itemOrder.enumerated() {
-            guard let model = itemControllable.itemSync(for: itemId) else { continue }
-            let hasEntryMatches = expandsEntries && !(entryResults[itemId] ?? []).isEmpty
-            let isOpen = listModel.openState(itemId: model.id, entryId: nil, defaultOpen: hasEntryMatches)
-            items.append(ListItemModel(
-                id: "search-\(baseLevel)-\(index)-\(model.id)",
-                model: model,
-                isOpen: isOpen,
-                entryId: nil,
-                level: baseLevel
-            ))
-            if isOpen && expandsEntries {
-                // Use mapSub to rebuild the full entry/group hierarchy — same path as non-search
-                // mode. Flat entryResults would produce wrong models for sub-value entries.
-                expandSearchSubItems(of: model, entryId: nil, index: index, level: baseLevel, into: &items)
-            }
-        }
-        return items
-    }
-
-    /// Mirrors filterSub/mapSub without the filter() name-match guard so all entries are
-    /// shown in inspector search mode regardless of whether they match the search text.
-    /// Recursion terminates naturally when subChildren returns empty (no deeper levels).
-    private func expandSearchSubItems(of model: any ItemDataAccessable, entryId: UUID?, index: Int, level: Int, into items: inout [ListItemModel]) {
-        let subItems = mapSub(model: model, entryId: entryId, index: index, level: level)
-        for (i, subItem) in subItems.enumerated() {
-            items.append(subItem)
-            if subItem.isOpen {
-                expandSearchSubItems(of: subItem.model, entryId: subItem.entryId, index: i, level: subItem.level, into: &items)
-            }
-        }
-    }
-
-    /// For inspector search: auto-opens group entries (e.g. Character's entries with valueId)
-    /// whose sub-value contains at least one matched entry. Called before makeSearchItems so
-    /// mapSub reads the updated openState and returns those entries in the open state.
-    private func preExpandGroupEntries(itemId: UUID, matchedEntryIds: Set<UUID>) {
-        guard let model = itemControllable.itemSync(for: itemId) else { return }
-        for entry in model.entries {
-            let subModels = itemControllable.subChildren(itemId: itemId, entryId: entry.id)
-            guard !subModels.isEmpty else { continue }
-            let subEntryIds = Set(subModels.flatMap { $0.entries.map(\.id) })
-            if subEntryIds.contains(where: { matchedEntryIds.contains($0) }) {
-                _ = listModel.openState(itemId: itemId, entryId: entry.id, defaultOpen: true)
-            }
-        }
-    }
-    
-    func filterSub(item: ListItemModel, index: Int, level: Int, isParent: Bool) -> [ListItemModel] {
-        guard let itemModel = filter(item: item, level: item.level, isParent: isParent) else { return [] }
-        if itemModel.isOpen {
-            let newItems = mapSub(model: itemModel.model, entryId: item.entryId, index: index, level: itemModel.level)
-            return [itemModel] + newItems.enumerated().flatMap { (index, item) in
-                filterSub(item: item, index: index, level: item.level, isParent: isParent)
-            }
-        }
-        return [itemModel]
-    }
-    
-    func toggleFolder(item: ListItemModel) {
-        listModel.toggleFolder(itemId: item.model.id, entryId: item.entryId)
-        item.isOpen.toggle()
-        resetFilter()
-    }
-    
-    func toggleParentFolder(item: ListItemModel) {
-        listModel.toggleFolder(itemId: item.model.id, entryId: nil)
-        guard let parentItem = listModel.displayedItems.first(where: { $0.model.id == item.model.id && $0.entryId == nil && $0.level == item.level - 1 }) else { return }
+    func toggleParentFolder(item: FolderListItemModel) {
+        listModel.toggleFolder(itemId: item.source.itemId, entryId: nil)
+        guard let parentItem = listModel.list.first(where: {
+            $0.source.itemId == item.source.itemId && $0.source.entryId == nil && $0.level == item.level - 1
+        }) else { return }
         parentItem.isOpen.toggle()
         resetFilter()
     }
@@ -582,121 +203,48 @@ extension FolderListControllable {
 
     /// Closes the nearest open parent folder of `itemId` and selects that parent folder.
     func closeParentFolder(of itemId: UUID) {
-        guard let index = displayItems.firstIndex(where: { $0.model.id == itemId }) else { return }
-        let selectedLevel = displayItems[index].level
+        guard let index = listModel.list.firstIndex(where: { $0.source.itemId == itemId }) else { return }
+        let selectedLevel = listModel.list[index].level
         for i in stride(from: index - 1, through: 0, by: -1) {
-            let candidate = displayItems[i]
-            if candidate.level < selectedLevel && candidate.model.specialCategory && candidate.isOpen {
-                toggleFolder(item: candidate)
-                listModel.selected = candidate.model.id
-                listModel.listSelection = Set(arrayLiteral: candidate.model.id)
-                listModel.scrollId = candidate.model.id
-                listModel.navigationModel.selectedItemId = candidate.model.id
-                return
-            }
+            let candidate = listModel.list[i]
+            guard candidate.level < selectedLevel,
+                  let model = itemControllable.itemSync(for: candidate.source.itemId),
+                  model.specialCategory && candidate.isOpen else { continue }
+            Task { await toggleFolder(item: candidate) }
+            listModel.selected = candidate.source.itemId
+            listModel.listSelection = Set(arrayLiteral: candidate.source.itemId)
+            listModel.scrollId = candidate.source.itemId
+            listModel.navigationModel.selectedItemId = candidate.source.itemId
+            return
         }
     }
 
     /// Opens `itemId` if it is a closed folder.
     func openFolder(itemId: UUID) {
-        guard let item = displayItems.first(where: { $0.model.id == itemId }),
-              item.model.specialCategory && !item.isOpen else { return }
-        toggleFolder(item: item)
+        guard let item = listModel.list.first(where: { $0.source.itemId == itemId }),
+              let model = itemControllable.itemSync(for: item.source.itemId),
+              model.specialCategory && !item.isOpen else { return }
+        Task { await toggleFolder(item: item) }
     }
 
     /// Returns true if `itemId` is a closed folder that can be opened.
     func canOpenFolder(itemId: UUID?) -> Bool {
         guard let itemId,
-              let item = displayItems.first(where: { $0.model.id == itemId }) else { return false }
-        return item.model.specialCategory && !item.isOpen
+              let item = listModel.list.first(where: { $0.source.itemId == itemId }),
+              let model = itemControllable.itemSync(for: item.source.itemId) else { return false }
+        return model.specialCategory && !item.isOpen
     }
 
     /// Returns true if `itemId` has an open parent folder in the visible tree.
     func hasParentFolder(itemId: UUID?) -> Bool {
         guard let itemId,
-              let index = displayItems.firstIndex(where: { $0.model.id == itemId }),
+              let index = listModel.list.firstIndex(where: { $0.source.itemId == itemId }),
               index > 0 else { return false }
-        let selectedLevel = displayItems[index].level
-        return displayItems[0..<index].contains { $0.level < selectedLevel && $0.model.specialCategory && $0.isOpen }
-    }
-}
-
-private extension FolderListControllable {
-    func filter(item: ListItemModel, level: Int, isParent: Bool) -> ListItemModel? {
-        guard item.model.displayState != 2 else { return nil }
-        if isParent == false {
-            guard item.model.displayState == 0 else { return nil }
-            if listDisplayModel.listMode == .list {
-                if item.model.specialCategory {
-                    return nil
-                }
-                if item.entryId == nil && item.level > 0 {
-                    return nil
-                }
-            } else {
-                if let parentId = listModel.parentModel?.id {
-                    if item.model.parentId != parentId {
-                        return nil
-                    }
-                } else if item.level == 0 {
-                    if item.model.parentId != nil {
-                        return nil
-                    }
-                }
-            }
-        }
-        if !searchModel.selectedTokens.isEmpty {
-            let selectedTags = searchModel.selectedTokens.map { $0.tag }
-            if !item.model.tags.contains(selectedTags) {
-                return nil
-            }
-        }
-        guard !searchModel.searchText.isEmpty else { return item }
-        
-        // Always include the currently selected item, even if it doesn't match the search
-        if item.model.id == listModel.selectedItemId {
-            return item
-        }
-        
-        return item.model.name.localizedStandardContains(searchModel.searchText) ||
-        item.model.description.localizedStandardContains(searchModel.searchText) ? item : nil
-    }
-    
-    func map(model: any ItemDataAccessable, entryId: UUID?, index: Int, level: Int, parentId: UUID? = nil) -> ListItemModel {
-        let folderOpened = model.specialCategory ? listModel.isFolderOpen(itemId: model.id, entryId: entryId) : false
-        let source = ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module)
-        // Context-qualified key: same itemId under different parents (collection/folder, Character groups)
-        // gets its own cache slot so level and open state remain independent per appearance.
-        let key = parentId.map { "\($0.uuidString)-\(source.stableListId)" } ?? source.stableListId
-        return listModel.cachedItem(key: key) {
-            ListItemModel(key: key, source: source, model: model, isOpen: folderOpened, level: level)
-        }
-    }
-
-    func mapSub(model: any ItemDataAccessable, entryId: UUID?, index: Int, level: Int) -> [ListItemModel] {
-        if let entryId {
-            if let subModel = itemControllable.subChildren(itemId: model.id, entryId: entryId).first {
-                return mapSub(model: subModel, entryId: nil, index: 0, level: level + 1)
-            }
-            return []
-        }
-        guard model.specialCategory else {
-            return model.entries.enumerated().map { (_, subModel) in
-                let folderOpened = listModel.isFolderOpen(itemId: model.id, entryId: subModel.id)
-                let source = ItemRowModel(itemId: model.id, entryId: subModel.id, typeId: itemControllable.config.module)
-                let key = source.stableListId
-                return listModel.cachedItem(key: key) {
-                    ListItemModel(key: key, source: source, model: model, isOpen: folderOpened, level: level + 1)
-                }
-            }
-        }
-        let subModels = model.entries.compactMap { itemControllable.itemSync(for: $0.childId) }
-        // Folders: alphabetical within the folder. Collections: preserve the user-defined entry order.
-        let orderedModels: [any ItemDataAccessable] = model.category == .folder
-            ? subModels.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-            : subModels
-        return orderedModels.enumerated().map { (subIndex, subModel) in
-            map(model: subModel, entryId: entryId, index: subIndex, level: level + 1, parentId: model.id)
+        let selectedLevel = listModel.list[index].level
+        return listModel.list[0..<index].contains { item in
+            guard let model = itemControllable.itemSync(for: item.source.itemId) else { return false }
+            return item.level < selectedLevel && model.specialCategory && item.isOpen
         }
     }
 }
+

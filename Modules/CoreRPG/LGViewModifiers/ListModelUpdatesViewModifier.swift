@@ -65,10 +65,6 @@ private extension ListModelUpdatesViewModifier {
         listControllable.listModel
     }
 
-    var displayItems: [ListItemModel] {
-        listControllable.displayItems
-    }
-
     func updateListSelection() {
         listModel.update(selection: listModel.listSelection)
     }
