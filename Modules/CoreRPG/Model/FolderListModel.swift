@@ -314,8 +314,8 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
         self.source = source
         self.destination = destination ?? source
         self.level = level
-        self.isShown = isShown
-        self.lastIsShown = lastIsShown
+        self.isOpen = isShown
+        self.lastIsOpen = lastIsShown
         self.isHidden = isHidden
         self.isFolded = isFolded
     }
@@ -327,8 +327,8 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     public let level: Int
 
     // display state
-    public var isShown: Bool
-    public var lastIsShown: Bool = false
+    public var isOpen: Bool
+    public var lastIsOpen: Bool = false
     public var isHidden: Bool = false
     public var isFolded: Bool = false
     
@@ -347,8 +347,8 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
         lhs.source == rhs.source &&
         lhs.destination == rhs.destination &&
         lhs.level == rhs.level &&
-        lhs.isShown == rhs.isShown &&
-        lhs.lastIsShown == rhs.lastIsShown &&
+        lhs.isOpen == rhs.isOpen &&
+        lhs.lastIsOpen == rhs.lastIsOpen &&
         lhs.isHidden == rhs.isHidden &&
         lhs.isFolded == rhs.isFolded &&
         lhs.children == rhs.children

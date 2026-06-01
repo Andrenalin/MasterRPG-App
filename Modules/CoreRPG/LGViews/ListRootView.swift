@@ -192,7 +192,7 @@ private extension ListRootView {
             .padding(.leading, CGFloat(item.level * 16))
             .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
             .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
-            .listRowSeparatorAll(item.isShown ? .visible : .hidden, edges: .bottom)
+            .listRowSeparatorAll(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
         .onDelete(perform: deleteItems)
         .onMove(perform: moveItems)
@@ -241,10 +241,10 @@ private extension ListRootView {
             Button {
                 Task { await listController.toggleFolder(item: item) }
             } label: {
-                Image(systemName: item.isShown ? "chevron.down" : "chevron.right")
+                Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                     .imageScale(.small)
                     .padding(.trailing)
-                    .foregroundStyle(item.isShown ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain)
             .contentShape(.rect)

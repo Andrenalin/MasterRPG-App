@@ -160,11 +160,11 @@ extension FolderListControllable {
 
 extension FolderListControllable {
     func toggleFolder(item: FolderListItemModel) async {
-        if item.isShown {
-            item.isShown = false
+        if item.isOpen {
+            item.isOpen = false
         } else {
             // might be reload data
-            item.isShown = true
+            item.isOpen = true
             if item.children.isEmpty {
                 await performSearch()
             }
