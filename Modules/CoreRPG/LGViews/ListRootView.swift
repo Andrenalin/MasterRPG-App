@@ -14,7 +14,7 @@ struct ListRootView: View {
         let _ = Self.printViewChangesOnlyInDebug()
         
         listView
-            .animation(.smooth, value: displayItems.count)
+            .animation(.smooth, value: listModel.list.count)
             .frame(minWidth: 250, idealWidth: 350)
 #if !os(tvOS)
             .applyIf(listController.listDisplayModel.isSelectionMode) { content in
@@ -24,13 +24,13 @@ struct ListRootView: View {
             }
 #endif
             .scrollIndicatorsFlash(onAppear: true)
-            .scrollIndicatorsFlash(trigger: displayItems.count)
+            .scrollIndicatorsFlash(trigger: listModel.list.count)
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
 #endif
 #if os(macOS)
             .onDeleteCommand {
-                guard let itemId = listModel.selectedItemId, let index = displayItems.firstIndex(where: { $0.model.id == itemId }) else { return }
+                guard let itemId = listModel.selectedItemId, let index = listModel.list.firstIndex(where: { $0.id == itemId }) else { return }
                 deleteItems(offsets: IndexSet(integer: index))
             }
             .onKeyPress(.leftArrow, phases: .down) { _ in
@@ -44,7 +44,7 @@ struct ListRootView: View {
 #endif
         
             .overlay {
-                if displayItems.isEmpty && !listController.searchModel.searchText.isEmpty && !listController.searchModel.searchText.starts(with: "@") {
+                if listModel.list.isEmpty && !listController.searchModel.searchText.isEmpty && !listController.searchModel.searchText.starts(with: "@") {
                     ContentUnavailableView.search
                 }
             }
@@ -57,7 +57,7 @@ struct ListRootView: View {
 #endif
             .applyIf(parentModel == nil) {
                 $0
-                    .navigationTitle("\(root.configurable.module.title) - \(displayItems.count)")
+                    .navigationTitle("\(root.configurable.module.title) - \(listModel.list.count)")
                     .focusedSceneValue(\.listDisplayModel, listController.listDisplayModel)
                     .onChange(of: root.navigationModel.triggerExport) {
                         guard root.navigationModel.triggerExport, let itemId = root.currentSelectedItemId else { return }
@@ -78,7 +78,7 @@ struct ListRootView: View {
                         guard root.navigationModel.triggerDelete else { return }
                         root.navigationModel.triggerDelete = false
                         guard let itemId = listModel.selectedItemId,
-                              let index = displayItems.firstIndex(where: { $0.model.id == itemId }) else { return }
+                              let index = listModel.list.firstIndex(where: { $0.id == itemId }) else { return }
                         deleteItems(offsets: IndexSet(integer: index))
                     }
                     .onChange(of: root.navigationModel.triggerSpaceAction) {
@@ -93,9 +93,9 @@ struct ListRootView: View {
 }
 
 private extension ListRootView {
-    var displayItems: [ListItemModel] {
-        parentModel == nil ? listController.listModel.displayedItems : listController.listModel.displayedParentItems
-    }
+//    var displayItems: [ListItemModel] {
+//        parentModel == nil ? listController.listModel.displayedItems : listController.listModel.displayedParentItems
+//    }
     
     var listModel: FolderListModel {
         listController.listModel

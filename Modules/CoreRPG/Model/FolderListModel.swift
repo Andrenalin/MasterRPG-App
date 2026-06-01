@@ -353,4 +353,8 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
         lhs.isFolded == rhs.isFolded &&
         lhs.children == rhs.children
     }
+    
+    func model(root: RootManager) -> (any ItemDataAccessable)? {
+        root.itemRootController(for: source.typeId)?.itemControllable.itemSync(for: source.itemId)
+    }
 }
