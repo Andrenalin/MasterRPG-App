@@ -38,7 +38,7 @@ struct SearchListView: View {
                 listView(model: $model)
             }
         }
-        .navigationTitle("Search Results")
+        .navigationTitle(Text("Search Results", bundle: .module))
 #if !os(tvOS)
         .searchable(text: $model.searchText, placement: .sidebar,
                     prompt: "Search items and entries")

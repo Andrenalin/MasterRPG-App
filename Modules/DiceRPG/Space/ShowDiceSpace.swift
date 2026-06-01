@@ -23,7 +23,7 @@ struct ShowDiceSpace: View {
         
         VStack {
             Toggle(isOn: $viewModel.showImmersiveContent) {
-                Label("Show Dice in Space", systemImage: "dice")
+                Label { Text("Show Dice in Space", bundle: .module) } icon: { Image(systemName: "dice") }
             }
             .onChange(of: viewModel.showImmersiveContent) {
                 Task {
@@ -38,7 +38,7 @@ struct ShowDiceSpace: View {
             }
 
             if areControlsShowing {
-                HStack { Text("Scale")
+                HStack { Text("Scale", bundle: .module)
                     Slider(value: $viewModel.contentScaleSliderValue)
                         .onChange(of: viewModel.contentScaleSliderValue) { _, _ in
                             viewModel.updateScale()
@@ -46,7 +46,7 @@ struct ShowDiceSpace: View {
                 }
 
                 Toggle(isOn: $viewModel.twoDice) {
-                    Label("Show 2nd D20", systemImage: "dice")
+                    Label { Text("Show 2nd D20", bundle: .module) } icon: { Image(systemName: "dice") }
                 }
                 .onChange(of: viewModel.twoDice) { _, _ in
                     Task {

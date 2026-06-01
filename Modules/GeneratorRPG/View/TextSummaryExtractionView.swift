@@ -100,7 +100,7 @@ public struct TextSummaryExtractionView: View {
     }
 
     private var navigationTitle: String {
-        "\(String(localized: module.localizedTitle)) Analysis"
+        "\(String(localized: module.localizedTitle)) \(String(localized: "Analysis", bundle: .module))"
     }
 
     private func applyAndClose() {

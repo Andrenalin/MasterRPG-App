@@ -152,7 +152,7 @@ private extension ListRootView {
     }
     
     @ViewBuilder func itemRows() -> some View {
-        if displayItems.isEmpty && parentModel != nil {
+        if listModel.list.isEmpty && parentModel != nil {
 
             VStack(spacing: 0) {
                 Text("Drop here", bundle: .module)
@@ -162,7 +162,7 @@ private extension ListRootView {
                     .padding()
                     .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
             
-                Text("Drag items from the list or the inspector on this drop field to add the item to the folder or collection. After the first item is added you can add more items by dropping it on the exisiting items in this detail list.")
+                Text("Drag items from the list or the inspector on this drop field to add the item to the folder or collection. After the first item is added you can add more items by dropping it on the exisiting items in this detail list.", bundle: .module)
                     .padding()
                     .lineLimit(5)
                     .font(.footnote)
@@ -170,19 +170,19 @@ private extension ListRootView {
             }
         }
         
-        ForEach(displayItems) { item in
+        ForEach(listModel.list) { item in
             HStack {
-                ItemRowView(root: root, model: item.model, cacheItemListModel: listController.cacheListItemModel, listDisplayModel: listController.listDisplayModel, searchModel: listController.searchModel, isSelected: false) {
+                ItemRowView(root: root, model: root.itemControllable.itemOrEmpty(for: item.source.itemId), cacheItemListModel: listController.cacheListItemModel, listDisplayModel: listController.listDisplayModel, searchModel: listController.searchModel, isSelected: false) {
                     if root.viewControllable.thumbnailRowViewType == .custom {
-                        root.viewControllable.thumbnailRowView(for: item.model.id)
+                        root.viewControllable.thumbnailRowView(for: item.source.itemId)
                     } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
-                        ThumbnailRowPhotoView(cacheController: cacheController, model: item.model, listDisplayModel: listController.listDisplayModel)
+                        ThumbnailRowPhotoView(cacheController: cacheController, model: root.itemControllable.itemOrEmpty(for: item.source.itemId), listDisplayModel: listController.listDisplayModel)
                     }
                 }
-                .draggable(for: root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
+                .draggable(for: root.configurable.module, itemId: item.source.itemId, entryId: nil, name: root.itemControllable.itemOrEmpty(for: item.source.itemId).name)
                 .applyIf(!listController.listDisplayModel.isSelectionMode) { content in
                     content.contextMenu {
-                        ListRootContextMenu(root: root, controller: menuController, parentItem: parentModel, currentSelected: item.model.id, listController: listController)
+                        ListRootContextMenu(root: root, controller: menuController, parentItem: parentModel, currentSelected: item.source.itemId, listController: listController)
                     }
                 }
                 
@@ -192,7 +192,7 @@ private extension ListRootView {
             .padding(.leading, CGFloat(item.level * 16))
             .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
             .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
-            .listRowSeparatorAll(item.isOpen ? .visible : .hidden, edges: .bottom)
+            .listRowSeparatorAll(item.isShown ? .visible : .hidden, edges: .bottom)
         }
         .onDelete(perform: deleteItems)
         .onMove(perform: moveItems)
@@ -236,21 +236,20 @@ private extension ListRootView {
     }
     
     @ViewBuilder
-    func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
-        if item.model.specialCategory {
+    func specialCategoryFolderIndicator(item: FolderListItemModel) -> some View {
+        if let model = root.itemControllable.itemSync(for: item.source.itemId), model.specialCategory {
             Button {
-                withAnimation { listController.toggleFolder(item: item) }
+                Task { await listController.toggleFolder(item: item) }
             } label: {
-                Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
+                Image(systemName: item.isShown ? "chevron.down" : "chevron.right")
                     .imageScale(.small)
                     .padding(.trailing)
-                    .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(item.isShown ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain)
             .contentShape(.rect)
         }
     }
-
 }
 
 //#Preview("Split", traits: .mockData) {

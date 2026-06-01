@@ -12,7 +12,7 @@ struct DatabaseInitializationView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         VStack(spacing: 20) {
-            Text("Initializing Database")
+            Text("Initializing Database", bundle: .module)
                 .font(.largeTitle)
 
             if appModel.databaseModel.hasError {
@@ -29,11 +29,9 @@ struct DatabaseInitializationView: View {
             await initializeDatabase()
         }
         .alert("iCloud Account Issues", isPresented: $showAccountAlert) {
-            Button("Continue Anyway") {
-                appModel.databaseModel.setup()
-            }
+            Button { appModel.databaseModel.setup() } label: { Text("Continue Anyway", bundle: .module) }
         } message: {
-            Text("The iCloud account is not available. Please check your iCloud settings. If you continue, data cannot be synced between devices.")
+            Text("The iCloud account is not available. Please check your iCloud settings. If you continue, data cannot be synced between devices.", bundle: .module)
         }
         .task(id: appModel.databaseModel.context) {
             await setupRootModels()
@@ -48,23 +46,21 @@ struct DatabaseInitializationView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.largeTitle)
                 .foregroundStyle(.red)
-                .accessibilityLabel("Database error")
+                .accessibilityLabel(Text("Database error", bundle: .module))
 
             Text(appModel.databaseModel.errorMessage)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
-            Button("Delete Database", systemImage: "trash", role: .destructive) {
-                showDeleteAlert = true
+            Button(role: .destructive) { showDeleteAlert = true } label: {
+                Label { Text("Delete Database", bundle: .module) } icon: { Image(systemName: "trash") }
             }
         }
         .alert("Delete Database?", isPresented: $showDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                appModel.databaseModel.deleteDatabase()
-            }
+            Button(role: .cancel) { } label: { Text("Cancel", bundle: .module) }
+            Button(role: .destructive) { appModel.databaseModel.deleteDatabase() } label: { Text("Delete", bundle: .module) }
         } message: {
-            Text("This will permanently delete the database. This action cannot be undone.")
+            Text("This will permanently delete the database. This action cannot be undone.", bundle: .module)
         }
     }
 

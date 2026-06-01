@@ -16,7 +16,7 @@ public struct SearchListController {
 extension SearchListController: SearchRootControllable {
     
     public func results(text: String) async -> [SearchResult] {
-        await searchController.listSearchResults(searchText: text)
+        await searchController.listSearchResults(searchText: text, parentId: searchModel.filterId)
     }
 }
 

@@ -14,7 +14,7 @@ struct AudioPlayerPlaybackControls: View {
                     audioController.skipToCurrentItem(offsetBy: -1)
                 }
             } label: {
-                Label("Previous Track", systemImage: "backward.fill")
+                Label { Text("Previous Track", bundle: .module) } icon: { Image(systemName: "backward.fill") }
                     .labelStyle(.iconOnly)
                     .font(.title3)
                     .frame(width: 32, height: 32)
@@ -46,7 +46,7 @@ struct AudioPlayerPlaybackControls: View {
                     audioController.skipToCurrentItem(offsetBy: 1)
                 }
             } label: {
-                Label("Next Track", systemImage: "forward.fill")
+                Label { Text("Next Track", bundle: .module) } icon: { Image(systemName: "forward.fill") }
                     .labelStyle(.iconOnly)
                     .font(.title3)
                     .frame(width: 32, height: 32)

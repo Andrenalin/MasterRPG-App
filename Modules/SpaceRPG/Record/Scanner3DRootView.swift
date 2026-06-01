@@ -55,10 +55,7 @@ struct Scanner3DRootView: View {
             "Failed:  " + (appModel.error != nil  ? "\(String(describing: appModel.error!))" : ""),
             isPresented: $showErrorAlert,
             actions: {
-                Button("OK") {
-                    Logger.scanner3D.log("Calling restart...")
-                    appModel.state = .restart
-                }
+                Button { appModel.state = .restart; Logger.scanner3D.log("Calling restart...") } label: { Text("OK", bundle: .module) }
             },
             message: {}
         )

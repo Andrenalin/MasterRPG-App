@@ -17,7 +17,7 @@ struct HelpPageView: View {
         ZStack {
             VStack(alignment: .leading) {
                 HStack {
-                    Text("Capture Help").foregroundStyle(.secondary)
+                    Text("Capture Help", bundle: .module).foregroundStyle(.secondary)
                     Spacer()
                     Button(action: {
                         withAnimation {
@@ -42,7 +42,7 @@ struct HelpPageView: View {
 
             }.padding()
         }
-        .navigationTitle("Scanning Info")
+        .navigationTitle(Text("Scanning Info", bundle: .module))
     }
 }
 

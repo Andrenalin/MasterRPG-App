@@ -24,7 +24,7 @@ extension FolderListControllable {
 
     @MainActor public func performSearch() async {
         searchRootControllable.searchModel.results = []
-        resetFilter()
+        //resetFilter()
         await searchRootControllable.performSearch()
         resetFilter()
     }
@@ -156,14 +156,67 @@ extension FolderListControllable {
     }
 }
 
+// MARK: Folder Logic
+
+extension FolderListControllable {
+    func toggleFolder(item: FolderListItemModel) async {
+        if item.isShown {
+            item.isShown = false
+        } else {
+            // might be reload data
+            item.isShown = true
+            if item.children.isEmpty {
+                await performSearch()
+            }
+        }
+    }
+}
+
 // MARK: Search & Filter
 
 extension FolderListControllable {
     func resetFilter() {
-        let searchText = searchModel.searchText
+        listModel.list = buildListItems()
+    }
+    
+    private func buildListItems() -> [FolderListItemModel] {
+        if listDisplayModel.listMode == .list {
+            return buildList()
+        } else {
+            return buildFolder()
+        }
+    }
+    
+    private func buildList() -> [FolderListItemModel] {
+        let results = searchModel.results
+        return results.map {
+            if let listModel = listModel.cacheListModels[$0.itemId] {
+                return listModel
+            }
+            let newModel = FolderListItemModel(id: $0.itemId, source: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), destination: nil, level: 0, isShown: true)
+            listModel.cacheListModels[$0.itemId] = newModel
+            return newModel
+        }
+    }
+    
+    private func buildFolder() -> [FolderListItemModel] {
+        let results = searchModel.results
+        return results.map {
+            if let listModel = listModel.cacheListModels[$0.itemId] {
+                return listModel
+            }
+            let newModel = FolderListItemModel(id: $0.itemId, source: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), destination: nil, level: 0, isShown: true)
+            listModel.cacheListModels[$0.itemId] = newModel
+            return newModel
+        }
+    }
+}
+
+extension FolderListControllable {
+    func resetFilterOld() {
         let results = searchModel.results
 
-        if !searchText.isEmpty && !results.isEmpty {
+        if !results.isEmpty {
             let expandsEntries = listModel.searchExpandsEntries
             let previousSelectedId = listModel.selectedItemId
             let items = buildSearchDisplayItems(from: results, expandsEntries: expandsEntries)

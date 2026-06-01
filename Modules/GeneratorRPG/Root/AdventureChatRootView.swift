@@ -83,7 +83,7 @@ private extension AdventureChatRootView {
         .alert(
             "Error",
             isPresented: $model.showError,
-            actions: { Button("OK") { model.dismissError() } },
+            actions: { Button { model.dismissError() } label: { Text("OK", bundle: .module) } },
             message: { Text(model.responseErrorContent) }
         )
         .task {
@@ -148,7 +148,7 @@ private extension AdventureChatRootView {
             ScrollView {
                 LazyVStack(spacing: 12) {
                     if isChatEffectivelyEmpty {
-                        Text("How can we help you today?")
+                        Text("How can we help you today?", bundle: .module)
                             .font(.title2)
                             .foregroundStyle(.secondary)
                             .padding(.bottom, 48)
@@ -163,7 +163,7 @@ private extension AdventureChatRootView {
                         HStack {
                             ProgressView()
                                 .scaleEffect(0.8)
-                            Text("Summarizing conversation...")
+                            Text("Summarizing conversation...", bundle: .module)
                                 .font(.caption)
                                 .foregroundStyle(.orange)
                             Spacer()
@@ -176,7 +176,7 @@ private extension AdventureChatRootView {
                         HStack {
                             ProgressView()
                                 .scaleEffect(0.8)
-                            Text("Optimizing conversation history...")
+                            Text("Optimizing conversation history...", bundle: .module)
                                 .font(.caption)
                                 .foregroundStyle(.blue)
                             Spacer()

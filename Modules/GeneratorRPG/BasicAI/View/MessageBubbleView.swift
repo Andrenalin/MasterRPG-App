@@ -26,13 +26,8 @@ struct MessageBubbleView: View {
     .accessibilityAddTraits(accessibilityTraits)
     .accessibilityActions {
       if !message.content.characters.isEmpty {
-        Button("Copy message") {
-          copyMessageToClipboard()
-        }
-
-        Button("Share message") {
-          shareMessage()
-        }
+        Button { copyMessageToClipboard() } label: { Text("Copy message", bundle: .module) }
+        Button { shareMessage() } label: { Text("Share message", bundle: .module) }
       }
     }
     .accessibilityFocused($isMessageFocused)
@@ -91,7 +86,7 @@ struct MessageBubbleView: View {
     .onAppear {
       animateTyping = true
     }
-    .accessibilityLabel("Assistant is typing")
+    .accessibilityLabel(Text("Assistant is typing", bundle: .module))
     .accessibilityAddTraits(.updatesFrequently)
     #if os(iOS) || os(macOS)
     .glassEffect(
@@ -125,13 +120,13 @@ struct MessageBubbleView: View {
       Image(systemName: "arrow.triangle.2.circlepath")
         .foregroundStyle(.orange)
         .accessibilityHidden(true)  // Decorative icon
-      Text("Context summarized")
+      Text("Context summarized", bundle: .module)
         .font(.caption2)
         .foregroundStyle(.orange)
     }
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("Context summary indicator")
-    .accessibilityValue("This message contains a summary of previous conversation context")
+    .accessibilityLabel(Text("Context summary indicator", bundle: .module))
+    .accessibilityValue(Text("This message contains a summary of previous conversation context", bundle: .module))
   }
 
   // MARK: - Accessibility Computed Properties

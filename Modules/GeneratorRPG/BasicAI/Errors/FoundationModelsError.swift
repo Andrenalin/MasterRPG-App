@@ -70,7 +70,7 @@ struct FoundationModelsErrorHandler: Sendable {
         } else if let customError = error as? FoundationModelsError {
             return customError.localizedDescription
         } else {
-            return String(localized: "Unexpected error: \(error.localizedDescription)")
+            return String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .module)
         }
     }
 }

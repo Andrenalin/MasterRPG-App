@@ -189,7 +189,7 @@ public extension LinkControllable {
     @MainActor
     func brokenTextLinkToggle(url: URL, itemId: UUID, entryId: UUID?, in text: String) -> String? {
         guard !validateLink(itemId: itemId, entryId: entryId) else { return nil }
-        return text.toggleLink(url: url.absoluteString, with: "🚨 \(String(localized: itemControllable.config.module.localizedTitle)) Link is broken")
+        return text.toggleLink(url: url.absoluteString, with: "🚨 \(String(localized: itemControllable.config.module.localizedTitle)) \(String(localized: "Link is broken", bundle: .module))")
     }
 
     @MainActor

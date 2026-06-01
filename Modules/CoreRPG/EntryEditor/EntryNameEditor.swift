@@ -33,7 +33,7 @@ struct EntryNameEditor: View {
                             .imageScale(.medium)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Clear name")
+                    .accessibilityLabel(Text("Clear name", bundle: .module))
                     .transition(.scale.combined(with: .opacity))
                 }
             }

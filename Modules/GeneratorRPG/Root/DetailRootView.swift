@@ -49,7 +49,7 @@ struct DetailListView: View {
             configuration: .init(),
             linkTypes: EmptyLinkTransferable.self
         ) {
-            Text("Add a reference character")
+            Text("Add a reference character", bundle: .module)
 
             detailEditorView(model: model)
         }
@@ -73,7 +73,7 @@ struct DetailListView: View {
                     .tag(genType)
             }
         } label: {
-            Text("Generation Type")
+            Text("Generation Type", bundle: .module)
         }
     }
 }

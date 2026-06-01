@@ -47,7 +47,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
 #if !os(visionOS)
         .glassEffectAll(.regular.interactive())
 #endif
-        .accessibilityLabel("Close editor")
+        .accessibilityLabel(Text("Close editor", bundle: .module))
     }
     
     // MARK: - Save Button
@@ -61,7 +61,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
 #if !os(visionOS)
         .glassEffectAll(.regular.interactive())
 #endif
-        .accessibilityLabel("Save entry")
+        .accessibilityLabel(Text("Save entry", bundle: .module))
     }
     
     func save() {
@@ -112,8 +112,8 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
                 isDropTargeted = isTargeted
             }
         }
-        .accessibilityLabel("Drop links area")
-        .accessibilityHint("Drag and drop links here to add them to this entry")
+        .accessibilityLabel(Text("Drop links area", bundle: .module))
+        .accessibilityHint(Text("Drag and drop links here to add them to this entry", bundle: .module))
 #endif
     }
     

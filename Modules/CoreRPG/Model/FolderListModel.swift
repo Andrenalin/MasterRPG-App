@@ -36,6 +36,13 @@ public final class FolderListModel {
     @ObservationIgnored var searchTask: Task<Void, Never>? = nil
     public var searchExpandsEntries: Bool = false
 
+    // this is the display list for the UI (new)
+    public var list: [FolderListItemModel] = []
+    public var cacheListModels: [UUID: FolderListItemModel] = [:]
+    
+    
+    
+    
     public var displayedItems: [ListItemModel] = []
     public var displayedParentItems: [ListItemModel] = []
 
@@ -300,16 +307,50 @@ extension ListItemModel: Equatable {
 }
 
 
-//@MainActor @Observable
-//public final class FolderListItemModel: Identifiable {
-//    public let id: UUID
-//    
-//    public let source: ItemRowModel // for reference it could be link to another module
-//    public let level: Int
-//
-//    let model: any ItemDataAccessable
-//    var isOpen: Bool
-//    var lastIsOpen: Bool
-//    var isHidden: Bool = false
-//    let entryId: UUID?
-//}
+@MainActor @Observable
+public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hashable {
+    public init(id: UUID, source: ItemRowModel, destination: ItemRowModel?, level: Int, isShown: Bool, lastIsShown: Bool = false, isHidden: Bool = false, isFolded: Bool = false) {
+        self.id = id
+        self.source = source
+        self.destination = destination ?? source
+        self.level = level
+        self.isShown = isShown
+        self.lastIsShown = lastIsShown
+        self.isHidden = isHidden
+        self.isFolded = isFolded
+    }
+    
+    // identifier
+    public let id: UUID
+    public let source: ItemRowModel // for reference it could be link to another module
+    public let destination: ItemRowModel // is the same as source if not link
+    public let level: Int
+
+    // display state
+    public var isShown: Bool
+    public var lastIsShown: Bool = false
+    public var isHidden: Bool = false
+    public var isFolded: Bool = false
+    
+    // children
+    public var children: [FolderListItemModel] = []
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(source)
+        hasher.combine(destination)
+        hasher.combine(level)
+    }
+
+    public static func == (lhs: FolderListItemModel, rhs: FolderListItemModel) -> Bool {
+        return lhs.id == rhs.id &&
+        lhs.source == rhs.source &&
+        lhs.destination == rhs.destination &&
+        lhs.level == rhs.level &&
+        lhs.isShown == rhs.isShown &&
+        lhs.lastIsShown == rhs.lastIsShown &&
+        lhs.isHidden == rhs.isHidden &&
+        lhs.isFolded == rhs.isFolded &&
+        lhs.children == rhs.children
+    }
+}

@@ -64,9 +64,9 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
                 }
             }
             .alert("Unable to start game", isPresented: $isActivationErrorViewPresented) {
-                Button("Ok", role: .cancel) { }
+                Button(role: .cancel) { } label: { Text("OK", bundle: .module) }
             } message: {
-                Text("Please try again later.")
+                Text("Please try again later.", bundle: .module)
             }
         }
     }

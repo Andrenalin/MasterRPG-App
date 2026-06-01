@@ -9,7 +9,7 @@ public protocol SearchControllable: Sendable  {
     func globalSearchResults(searchText: String) async -> [SearchResult]
     func calculateRelevance(searchText: String, itemName: String, entryName: String?, content: String?, isItemMatch: Bool) -> Int
     
-    func listSearchResults(searchText: String) async -> [SearchResult]
+    func listSearchResults(searchText: String, parentId: UUID?) async -> [SearchResult]
     func inspectorSearchResults(searchText: String, parentId: UUID?) async -> [SearchResult]
 }
 
@@ -98,23 +98,27 @@ public extension SearchControllable {
 // MARK: - List Search from ListRootView
 
 public extension SearchControllable {
-    func listSearchResults(searchText: String) async -> [SearchResult] {
-        guard searchText.isEmpty == false else { return [] }
-        
-        let itemIds = await itemControllable.itemDataModel.items
+    func listSearchResults(searchText: String, parentId: UUID?) async -> [SearchResult] {
+
         var foundResults: [SearchResult] = []
+        let itemIds: [UUID]
+        if let parentId {
+            itemIds = [parentId]
+        } else {
+            itemIds = await itemControllable.itemDataModel.items
+        }
         
         for itemId in itemIds {
             guard !Task.isCancelled else { break }
             
             guard let item = await itemControllable.item(for: itemId),
                   item.displayState == 0 else { continue }
-            
+
             // Check if item matches search
-            let itemMatches = item.filter(filter: searchText, includeEntries: false)
+            let itemMatches = searchText.isEmpty ? true : item.filter(filter: searchText, includeEntries: false)
             
             if itemMatches {
-                let relevance = calculateRelevance(
+                let relevance = searchText.isEmpty ? 100 : calculateRelevance(
                     searchText: searchText,
                     itemName: item.name,
                     entryName: nil,

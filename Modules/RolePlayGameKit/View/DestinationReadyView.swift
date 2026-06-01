@@ -69,26 +69,26 @@ struct DestinationReadyView: View {
                         // follow-up alert.
                         Task { @MainActor in activeAlert = .dataInstalled }
                     } label: {
-                        Text("Initialize")
+                        Text("Initialize", bundle: .module)
                     }
                     Button {
                         appModel.settingsModel.firstLaunch = false
                     } label: {
-                        Text("Not now")
+                        Text("Not now", bundle: .module)
                     }
 
                 case .dataInstalled:
-                    Button("OK") { }
+                    Button(role: .cancel) { } label: { Text("OK", bundle: .module) }
 
                 case .validateDatabase:
                     Button {
                         appModel.settingsModel.needsValidateDatabase = false
                         navigator.navigate(to: SettingsRoute.validate, method: .managedSheet)
                     } label: {
-                        Text("Validate")
+                        Text("Validate", bundle: .module)
                     }
                     Button(role: .cancel) { } label: {
-                        Text("Not Now")
+                        Text("Not Now", bundle: .module)
                     }
                 }
             } message: { kind in
@@ -96,11 +96,11 @@ struct DestinationReadyView: View {
                 // "Explaination" → "Example", and other typos throughout.
                 switch kind {
                 case .firstLaunch:
-                    Text("This is the first launch and there is no data in the database. Do you want to initialize the database with example data? No download is required — the example data is pre-bundled.")
+                    Text("This is the first launch and there is no data in the database. Do you want to initialize the database with example data? No download is required — the example data is pre-bundled.", bundle: .module)
                 case .dataInstalled:
-                    Text("The example data has been installed. You will find the data in the other sections.")
+                    Text("The example data has been installed. You will find the data in the other sections.", bundle: .module)
                 case .validateDatabase:
-                    Text("It is recommended to validate the database to ensure your data is consistent.")
+                    Text("It is recommended to validate the database to ensure your data is consistent.", bundle: .module)
                 }
             }
     }
@@ -109,10 +109,10 @@ struct DestinationReadyView: View {
     // LocalizedStringKey/String type-inference ambiguity at the call site.
     private var alertTitle: Text {
         switch activeAlert {
-        case .firstLaunch:      Text("First Launch")
-        case .dataInstalled:    Text("Example Data")
-        case .validateDatabase: Text("Validate Database")
-        case nil:               Text("")
+        case .firstLaunch:      Text("First Launch", bundle: .module)
+        case .dataInstalled:    Text("Example Data", bundle: .module)
+        case .validateDatabase: Text("Validate Database", bundle: .module)
+        case nil:               Text(verbatim: "")
         }
     }
 }
@@ -152,7 +152,7 @@ public struct DataBaseAppStoreAvailable<Content: View>: View {
                 // because Game window is not open.
                 DatabaseInitializationView()
             } else {
-                Text("Waiting for database initialization…")
+                Text("Waiting for database initialization…", bundle: .module)
                     .font(.largeTitle)
                     .padding()
             }

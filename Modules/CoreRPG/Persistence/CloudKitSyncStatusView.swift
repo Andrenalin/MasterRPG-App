@@ -22,10 +22,10 @@ public struct CloudKitSyncStatusView: View {
                 HStack(spacing: 12) {
                     ProgressView()
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Syncing with iCloud")
+                        Text("Syncing with iCloud", bundle: .module)
                             .font(.subheadline)
                             .fontWeight(.medium)
-                        Text("Restoring your data...")
+                        Text("Restoring your data...", bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -39,7 +39,7 @@ public struct CloudKitSyncStatusView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
-                        Text("Synced with iCloud")
+                        Text("Synced with iCloud", bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -55,7 +55,7 @@ public struct CloudKitSyncStatusView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Sync Issue")
+                        Text("Sync Issue", bundle: .module)
                             .font(.subheadline)
                             .fontWeight(.medium)
                         Text(error)

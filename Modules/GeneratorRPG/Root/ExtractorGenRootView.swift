@@ -65,7 +65,7 @@ struct ExtractorGenRootView: View {
 #endif
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text("Welcome to the AI Assisent.")
+                Text("Welcome to the AI Assisent.", bundle: .module)
             }
 
             ToolbarItem(placement: .confirmationAction) {

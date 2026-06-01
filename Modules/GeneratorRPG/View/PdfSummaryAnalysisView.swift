@@ -172,6 +172,6 @@ public struct PdfSummaryAnalysisView: View {
             print("Analyzed: \(content.title)")
         }
     } else {
-        Text("No sample PDF available")
+        Text("No sample PDF available", bundle: .module)
     }
 }

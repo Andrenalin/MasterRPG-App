@@ -63,7 +63,7 @@ struct OrnamentsView: View {
                     case .mono:
                         Text(model.spatial3DImageState == .generated ? "Show as 3D" : "Convert to 3D")
                     case .spatial3D:
-                        Text("Show as 2D")
+                        Text("Show as 2D", bundle: .module)
                     default:
                         Text("")
                     }

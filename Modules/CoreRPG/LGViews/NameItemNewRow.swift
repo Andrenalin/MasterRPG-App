@@ -42,7 +42,7 @@ struct NameItemNewRow: View {
 
     VStack {
         TextField(text: $searchText) {
-            Text("Search")
+            Text("Search", bundle: .module)
         }
         .onChange(of: searchText, initial: true) {
             searchModel.searchText = searchText

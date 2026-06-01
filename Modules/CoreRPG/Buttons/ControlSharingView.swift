@@ -121,7 +121,7 @@ public struct SendControlView: View {
                     .rowColorBackground(isSelected: false)
                 }
             }
-            Text("Selected Players get updates", bundle: .main)
+            Text("Selected Players get updates", bundle: .module)
         }
         .rowEditColor(backgroundColor: .black)
     }

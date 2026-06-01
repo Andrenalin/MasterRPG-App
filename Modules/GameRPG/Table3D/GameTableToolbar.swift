@@ -8,8 +8,8 @@ struct GameTableToolbar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Button("Reset", systemImage: "arrow.counterclockwise") {
-                game.resetGame()
+            Button(action: { game.resetGame() }) {
+                Label { Text("Reset", bundle: .module) } icon: { Image(systemName: "arrow.counterclockwise") }
             }
             .labelStyle(.iconOnly)
         }

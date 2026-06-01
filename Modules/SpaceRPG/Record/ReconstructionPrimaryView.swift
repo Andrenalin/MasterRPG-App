@@ -104,10 +104,10 @@ struct ReconstructionProgressView: View {
             "Failed:  " + (error != nil  ? "\(String(describing: error!))" : ""),
             isPresented: $gotError,
             actions: {
-                Button("OK") {
+                Button {
                     Logger.scanner3D.log("Calling restart...")
                     appModel.state = .restart
-                }
+                } label: { Text("OK", bundle: .module) }
             },
             message: {}
         )

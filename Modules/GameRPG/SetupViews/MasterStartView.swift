@@ -43,7 +43,7 @@ struct MasterStartView: View {
             Button {
                 navigator.navigate(to: ImportRoute.importGame, method: .managedSheet)
             } label: {
-                Label("Import Saved Game", systemImage: "square.and.arrow.down")
+                Label { Text("Import Saved Game", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
             }
         }
     }

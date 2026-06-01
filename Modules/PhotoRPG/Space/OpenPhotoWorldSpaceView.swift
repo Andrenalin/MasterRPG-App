@@ -21,7 +21,7 @@ struct OpenPhotoWorldSpace: View {
         
 #if os(visionOS)
         Toggle(isOn: $model.openPhotoSpace) {
-            Label("Show image in the world space", systemImage: "globe")
+            Label { Text("Show image in the world space", bundle: .module) } icon: { Image(systemName: "globe") }
         }
         .tint(Color.accentColor)
         .onChange(of: model.openPhotoSpace, initial: true) {

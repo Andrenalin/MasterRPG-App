@@ -212,7 +212,7 @@ private extension LinkItemListView {
             .onTapGesture(count: 2) {
                 openDetail(for: item)
             }
-            .accessibilityHint("Double-tap to open details")
+            .accessibilityHint(Text("Double-tap to open details", bundle: .module))
             .contextMenu {
                 contextMenu(for: item)
             }
@@ -223,7 +223,7 @@ private extension LinkItemListView {
         Button {
             openDetail(for: item)
         } label: {
-            Label("Open Details", systemImage: "arrow.up.right.square")
+            Label { Text("Open Details", bundle: .module) } icon: { Image(systemName: "arrow.up.right.square") }
         }
         
         displayModeControls

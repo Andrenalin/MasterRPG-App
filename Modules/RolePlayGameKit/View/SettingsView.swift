@@ -29,13 +29,13 @@ public struct SettingsView: View {
                 Button {
                     navigator.navigate(to: SettingsRoute.exportData, method: .managedSheet)
                 } label: {
-                    Label("Export", systemImage: "square.and.arrow.up")
+                    Label { Text("Export", bundle: .module) } icon: { Image(systemName: "square.and.arrow.up") }
                 }
 
                 Button {
                     navigator.navigate(to: SettingsRoute.importData, method: .managedSheet)
                 } label: {
-                    Label("Import", systemImage: "square.and.arrow.down")
+                    Label { Text("Import", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
                 }
 
             } header: {
@@ -47,7 +47,7 @@ public struct SettingsView: View {
                 Button {
                     navigator.navigate(to: SettingsRoute.validate, method: .managedSheet)
                 } label: {
-                    Label("Validate Folders", systemImage: "folder")
+                    Label { Text("Validate Folders", bundle: .module) } icon: { Image(systemName: "folder") }
                 }
             } header: {
                 Text("Data Checks", bundle: .module)

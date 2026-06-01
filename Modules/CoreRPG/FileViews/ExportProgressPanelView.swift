@@ -142,7 +142,7 @@ private extension ExportProgressPanelView {
             
             Toggle(isOn: $exportModel.exportWithoutFileData) {
                 Label {
-                    Text("Export only data not the files")
+                    Text("Export only data not the files", bundle: .module)
                 } icon: {
                     Image(systemName: "exclamationmark.triangle")
                 }

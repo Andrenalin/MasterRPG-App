@@ -127,7 +127,7 @@ struct InlineImporterView: View, Equatable {
                     isExpanded.toggle()
                 }
             } label: {
-                Label("Importer", systemImage: "photo.badge.plus")
+                Label { Text("Importer", bundle: .module) } icon: { Image(systemName: "photo.badge.plus") }
                     .labelStyle(.iconOnly)
                     .frame(width: 50, height: 50)
             }

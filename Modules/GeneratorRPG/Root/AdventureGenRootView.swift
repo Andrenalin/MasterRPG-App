@@ -28,7 +28,7 @@ struct AdventureGenRootView: View {
 #endif
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text("Welcome to the AI Assisent.")
+                Text("Welcome to the AI Assisent.", bundle: .module)
             }
 
             ToolbarItem(placement: .confirmationAction) {
@@ -158,7 +158,7 @@ struct CampaignGenView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading) {
                 if let title = campaign.name {
-                    Text("Campaign: \(title)")
+                    Text("Campaign: \(title)", bundle: .module)
                         .contentTransition(.opacity)
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -197,7 +197,7 @@ struct AdventureGenView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading) {
                 if let title = adventure.name {
-                    Text("Adventure: \(title)")
+                    Text("Adventure: \(title)", bundle: .module)
                         .contentTransition(.opacity)
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -236,7 +236,7 @@ struct ScenarioGenView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading) {
                 if let title = scenario.name {
-                    Text("Scenario: \(title)")
+                    Text("Scenario: \(title)", bundle: .module)
                         .contentTransition(.opacity)
                         .font(.largeTitle)
                         .fontWeight(.bold)

@@ -15,7 +15,7 @@ struct AudioPlayerScrubberView: View {
                 .foregroundStyle(.primary)
                 .monospacedDigit()
                 .frame(minWidth: 38)
-                .accessibilityLabel("Elapsed Time")
+                .accessibilityLabel(Text("Elapsed Time", bundle: .module))
 
 #if !os(tvOS)
             Slider(
@@ -26,7 +26,7 @@ struct AudioPlayerScrubberView: View {
                 in: sliderRange
             )
             .tint(.primary)
-            .accessibilityLabel("Playback Position")
+            .accessibilityLabel(Text("Playback Position", bundle: .module))
             .accessibilityValue(accessibilityTimeValue)
 #endif
 
@@ -35,7 +35,7 @@ struct AudioPlayerScrubberView: View {
                 .foregroundStyle(.primary)
                 .monospacedDigit()
                 .frame(minWidth: 38)
-                .accessibilityLabel("Total Duration")
+                .accessibilityLabel(Text("Total Duration", bundle: .module))
         }
     }
 
