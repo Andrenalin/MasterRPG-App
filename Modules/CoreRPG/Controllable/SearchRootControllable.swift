@@ -12,10 +12,10 @@ extension SearchRootControllable {
         // Cancel any ongoing search
         searchModel.cancelSearch()
 
-        guard !searchModel.searchText.isEmpty else {
-            searchModel.results = []
-            return
-        }
+//        guard !searchModel.searchText.isEmpty else {
+//            searchModel.results = []
+//            return
+//        }
 
         let searchTask = Task { @MainActor in
             searchModel.isSearching = true

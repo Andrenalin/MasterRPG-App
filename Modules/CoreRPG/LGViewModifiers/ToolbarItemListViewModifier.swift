@@ -138,7 +138,7 @@ private extension ToolbarItemListViewModifier {
 
     func toggleFolder() -> some View {
         Button {
-            if let selected = listModel.selected, let item = listController.displayItems.first(where: { $0.id == selected }) {
+            if let selected = listModel.selected, let item = listController.displayItems.first(where: { $0.model.id == selected }) {
                 listController.toggleFolder(item: item)
             }
         } label: {

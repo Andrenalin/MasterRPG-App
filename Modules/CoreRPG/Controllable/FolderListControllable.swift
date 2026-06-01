@@ -97,20 +97,21 @@ public extension FolderListControllable {
 
     func update() {
         let previousSelectedId = listModel.selectedItemId
-        
+
         originalItems()
         resetFilter()
-        
-        if let addedItem = listModel.item(itemId: listModel.addedModelId) {
+
+        if let addedModelId = listModel.addedModelId,
+           let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(50))
                 listModel.listSelection = Set(arrayLiteral: addedItem.id)
             }
             listModel.addedModelId = nil
-        } else if let newSelected = listModel.item(itemId: previousSelectedId ?? listModel.navigationModel.selectedItemId) {
+        } else if let itemId = previousSelectedId ?? listModel.navigationModel.selectedItemId,
+                  let newSelected = listModel.list.first(where: { $0.source.itemId == itemId }) {
             listModel.listSelection = Set(arrayLiteral: newSelected.id)
             listModel.selected = newSelected.id
-
             listModel.scrollId = newSelected.id
         }
     }
@@ -189,21 +190,25 @@ extension FolderListControllable {
     
     private func buildList() -> [FolderListItemModel] {
         let results = searchModel.results
+        // Search results are populated asynchronously. While they are pending (empty),
+        // preserve the current list so no flash-to-empty occurs mid-transition.
+        guard !results.isEmpty else { return listModel.list }
         return results.map {
-            if let listModel = listModel.cacheListModels[$0.itemId] {
-                return listModel
+            if let cached = listModel.cacheListModels[$0.itemId] {
+                return cached
             }
             let newModel = FolderListItemModel(id: $0.itemId, source: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), destination: nil, level: 0, isShown: true)
             listModel.cacheListModels[$0.itemId] = newModel
             return newModel
         }
     }
-    
+
     private func buildFolder() -> [FolderListItemModel] {
         let results = searchModel.results
+        guard !results.isEmpty else { return listModel.list }
         return results.map {
-            if let listModel = listModel.cacheListModels[$0.itemId] {
-                return listModel
+            if let cached = listModel.cacheListModels[$0.itemId] {
+                return cached
             }
             let newModel = FolderListItemModel(id: $0.itemId, source: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), destination: nil, level: 0, isShown: true)
             listModel.cacheListModels[$0.itemId] = newModel
@@ -226,8 +231,8 @@ extension FolderListControllable {
             listModel.displayedParentItems <=> []
             if let id = previousSelectedId,
                let matchedItem = items.first(where: { $0.model.id == id && $0.entryId == nil }) {
-                listModel.selected <=> matchedItem.id
-                listModel.listSelection <=> Set(arrayLiteral: matchedItem.id)
+                listModel.selected <=> matchedItem.model.id
+                listModel.listSelection <=> Set(arrayLiteral: matchedItem.model.id)
             }
             return
         }
@@ -583,9 +588,9 @@ extension FolderListControllable {
             let candidate = displayItems[i]
             if candidate.level < selectedLevel && candidate.model.specialCategory && candidate.isOpen {
                 toggleFolder(item: candidate)
-                listModel.selected = candidate.id
-                listModel.listSelection = Set(arrayLiteral: candidate.id)
-                listModel.scrollId = candidate.id
+                listModel.selected = candidate.model.id
+                listModel.listSelection = Set(arrayLiteral: candidate.model.id)
+                listModel.scrollId = candidate.model.id
                 listModel.navigationModel.selectedItemId = candidate.model.id
                 return
             }

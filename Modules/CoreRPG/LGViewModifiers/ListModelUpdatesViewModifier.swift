@@ -30,7 +30,7 @@ struct ListModelUpdatesViewModifier: ViewModifier {
                 withAnimation { updateSelected() }
             }
             .onChange(of: listControllable.listDisplayModel.listMode, initial: true) {
-                withAnimation { listControllable.resetFilter() }
+                Task { await listControllable.performSearch() }
             }
             .onChange(of: listControllable.listDisplayModel.isSelectionMode, initial: true) {
                 withAnimation {

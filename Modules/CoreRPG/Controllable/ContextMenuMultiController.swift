@@ -24,7 +24,7 @@ struct ContextMenuMultiController {
         return [currentSelected]
     }
     
-    func selectionId(currentSelected: UUID?) -> [String] {
+    func selectionId(currentSelected: UUID?) -> [UUID] {
         guard let currentSelected else { return listModel.selection }
         return listModel.ids(selectedItemIds: [currentSelected])
     }

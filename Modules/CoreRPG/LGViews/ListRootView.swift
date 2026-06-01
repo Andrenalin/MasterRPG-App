@@ -18,7 +18,7 @@ struct ListRootView: View {
             .frame(minWidth: 250, idealWidth: 350)
 #if !os(tvOS)
             .applyIf(listController.listDisplayModel.isSelectionMode) { content in
-                content.contextMenu(forSelectionType: ListItemModel.ID.self) { selectedItemIDs in
+                content.contextMenu(forSelectionType: FolderListItemModel.ID.self) { selectedItemIDs in
                     ListRootContextMenu(root: root, controller: menuController, parentItem: parentModel, listController: listController)
                 }
             }

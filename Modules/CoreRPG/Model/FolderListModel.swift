@@ -4,7 +4,7 @@ import SwiftUI
 
 @Observable
 public final class FolderListModel {
-    public init(isSelectionMode: Bool = false, selection: [String] = [], navigationModel: ModuleNavigationModel) {
+    public init(isSelectionMode: Bool = false, selection: [UUID] = [], navigationModel: ModuleNavigationModel) {
         self.isSelectionMode = isSelectionMode
         self.selection = selection
         self.listSelection = Set(selection)
@@ -109,13 +109,13 @@ public final class FolderListModel {
         
     // MARK: - Selection
     private var isSelectionMode: Bool
-    public var selection: [String]
-    public var selected: String?
-    public var listSelection: Set<String>
+    public var selection: [UUID]
+    public var selected: UUID?
+    public var listSelection: Set<UUID>
 
     // MARK: - Scroll
     
-    var scrollId: String?
+    var scrollId: UUID?
     
     // MARK: - ListModels
     @ObservationIgnored var subListModel: FolderListModel?
@@ -127,19 +127,19 @@ public final class FolderListModel {
 
 // MARK: - Items
 extension FolderListModel {
-    func deleteItems(ids: [String]) -> [ItemRowModel] {
+    func deleteItems(ids: [UUID]) -> [ItemRowModel] {
         let removed = ids.compactMap { id -> ItemRowModel? in
-            guard let index = displayedItems.firstIndex(where: { $0.id == id }) else { return nil }
+            guard let index = displayedItems.firstIndex(where: { $0.model.id == id }) else { return nil }
             let model = displayedItems[index].model
             deleteItems(offsets: IndexSet(integer: index))
             return ItemRowModel(itemId: model.id, typeId: .none)
         }
         return removed
     }
-    
+
     func deleteItems(offsets: IndexSet) {
         for index in offsets {
-            if displayedItems[index].id == selected {
+            if displayedItems[index].model.id == selected {
                 resetListSelection()
                 update(selection: Set())
             }
@@ -194,7 +194,7 @@ public extension FolderListModel {
         }
     }
 
-    func update(selection: Set<String>) {
+    func update(selection: Set<UUID>) {
         if isSelectionMode {
             self.selection <=> Array(selection)
         } else {
@@ -205,31 +205,24 @@ public extension FolderListModel {
     }
 
     func set(selectedItemId: UUID) {
-        selected = displayedParentItems.first(where: { $0.model.id == selectedItemId })?.id ?? displayedItems.first(where: { $0.model.id == selectedItemId })?.id
+        selected = selectedItemId
     }
 
     var selectedItemId: UUID? {
-        displayedParentItems.first(where: { $0.id == selected })?.model.id ??
-        displayedItems.first(where: { $0.id == selected })?.model.id
+        selected
     }
 
     var selectedModel: (any ItemDataAccessable)? {
-        displayedParentItems.first(where: { $0.id == selected })?.model ??
-        displayedItems.first(where: { $0.id == selected })?.model
+        displayedParentItems.first(where: { $0.model.id == selected })?.model ??
+        displayedItems.first(where: { $0.model.id == selected })?.model
     }
 
     var selectionItemIds: [UUID] {
-        selection.compactMap { selected in
-            displayedParentItems.first(where: { $0.id == selected })?.model.id ??
-            displayedItems.first(where: { $0.id == selected })?.model.id
-        }
+        selection
     }
-        
-    func ids(selectedItemIds: [UUID]) -> [String] {
-        selectedItemIds.compactMap { itemId -> String? in
-            displayedParentItems.first(where: { $0.model.id == itemId })?.id ??
-            displayedItems.first(where: { $0.model.id == itemId })?.id
-        }
+
+    func ids(selectedItemIds: [UUID]) -> [UUID] {
+        selectedItemIds
     }
 }
 

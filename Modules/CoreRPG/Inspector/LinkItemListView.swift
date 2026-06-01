@@ -18,7 +18,7 @@ public struct LinkItemListView: View {
     let parentModel: (any ItemDataAccessable)?
     
     @State private var parentModelId: UUID?
-    @State private var scrollPosition: String?
+    @State private var scrollPosition: UUID?
 
 #if os(macOS)
     @Environment(ScenesManager.self) private var scenesManager
