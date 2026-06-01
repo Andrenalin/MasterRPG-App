@@ -370,7 +370,6 @@ struct AddItemIntoButton: View {
                 Image(systemName: root.itemControllable.collectionCategory.icon)
             }
         }
-        .keyboardShortcut("a", modifiers: [.command, .shift])
         .disabled(collections.isEmpty)
     }
 

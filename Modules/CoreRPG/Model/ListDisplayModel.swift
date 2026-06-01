@@ -55,21 +55,12 @@ public final class ListDisplayModel {
         
         public var id: Self { self }
     }
-    var _listMode: ListMode
-    public var listMode: ListMode {
-        get {
-            _listMode
-        }
-        set {
-            _listMode = newValue
-        }
-    }
+    public var listMode: ListMode
 
     public var isListMode: Bool {
         get { listMode == .list }
         set {
             if listMode != .list && newValue {
-                print("*** Change from isListMode")
                 listMode = .list
             }
         }
@@ -78,7 +69,6 @@ public final class ListDisplayModel {
         get { listMode == .folder }
         set {
             if listMode != .folder && newValue {
-                print("*** Change from isFolderMode")
                 listMode = .folder
             }
         }

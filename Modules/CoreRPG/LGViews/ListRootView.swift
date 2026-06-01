@@ -23,9 +23,6 @@ struct ListRootView: View {
                 }
             }
 #endif
-            .applyIf(parentModel == nil) {
-                $0.navigationTitle("\(root.configurable.module.title) - \(displayItems.count)")
-            }
             .scrollIndicatorsFlash(onAppear: true)
             .scrollIndicatorsFlash(trigger: displayItems.count)
 #if !os(visionOS)
@@ -51,8 +48,17 @@ struct ListRootView: View {
                     ContentUnavailableView.search
                 }
             }
+            .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable)
+            .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
+#if !os(tvOS)
+            .applyIf(!fileTypes.isEmpty) {
+                $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
+            }
+#endif
             .applyIf(parentModel == nil) {
                 $0
+                    .navigationTitle("\(root.configurable.module.title) - \(displayItems.count)")
+                    .focusedSceneValue(\.listDisplayModel, listController.listDisplayModel)
                     .onChange(of: root.navigationModel.triggerExport) {
                         guard root.navigationModel.triggerExport, let itemId = root.currentSelectedItemId else { return }
                         root.navigationModel.triggerExport = false
@@ -83,16 +89,6 @@ struct ListRootView: View {
                         withAnimation { root.openFileWindowModel.showItem.toggle() }
                     }
             }
-            .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable)
-            .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
-            .applyIf(parentModel == nil) {
-                $0.focusedSceneValue(\.listDisplayModel, listController.listDisplayModel)
-            }
-#if !os(tvOS)
-            .applyIf(!fileTypes.isEmpty) {
-                $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
-            }
-#endif
     }
 }
 
