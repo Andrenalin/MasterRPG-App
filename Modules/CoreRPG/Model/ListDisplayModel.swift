@@ -7,7 +7,7 @@ public final class ListDisplayModel {
     public init(isSelectionMode: Bool = false, displayMode: ListDisplayModel.DisplayMode = .medium, listMode: ListDisplayModel.ListMode = .list, isPadStyle: Bool = false) {
         self.isSelectionMode = isSelectionMode
         self.displayMode = displayMode
-        self.listMode = listMode
+        self._listMode = listMode
         self.isPadStyle = isPadStyle
     }
     
@@ -54,23 +54,34 @@ public final class ListDisplayModel {
         }
         
         public var id: Self { self }
-    }    
+    }
+    var _listMode: ListMode
     public var listMode: ListMode {
-        willSet {
-            print("will change to \(listMode) -> \(newValue)")
+        get {
+            _listMode
         }
-        didSet {
-            print("did change \(oldValue) -> \(listMode)")
+        set {
+            _listMode = newValue
         }
     }
 
     public var isListMode: Bool {
         get { listMode == .list }
-        set { listMode = newValue ? .list : .folder }
+        set {
+            if listMode != .list && newValue {
+                print("*** Change from isListMode")
+                listMode = .list
+            }
+        }
     }
     public var isFolderMode: Bool {
         get { listMode == .folder }
-        set { listMode = newValue ? .folder : .list }
+        set {
+            if listMode != .folder && newValue {
+                print("*** Change from isFolderMode")
+                listMode = .folder
+            }
+        }
     }
     
     var imageHeight: CGFloat {

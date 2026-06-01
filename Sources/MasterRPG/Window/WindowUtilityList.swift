@@ -21,6 +21,7 @@ struct WindowUtilityList: Scene {
                         .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .adventure))
                 }
                 .environment(appModel.scenesManager)
+                .environment(appModel)
             }
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
@@ -33,6 +34,7 @@ struct WindowUtilityList: Scene {
                         .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .map))
                 }
                 .environment(appModel.scenesManager)
+                .environment(appModel)
             }
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
@@ -45,6 +47,7 @@ struct WindowUtilityList: Scene {
                         .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .game))
                 }
                 .environment(appModel.scenesManager)
+                .environment(appModel)
             }
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.above(SceneId.game.rawValue))
@@ -66,6 +69,7 @@ struct WindowUtilityList: Scene {
 #endif
                 .sceneTracker(for: SceneId.search)
                 .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .search))
+                .environment(appModel)
             }
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))

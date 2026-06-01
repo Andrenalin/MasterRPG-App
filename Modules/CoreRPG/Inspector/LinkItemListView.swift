@@ -116,6 +116,7 @@ private extension LinkItemListView {
             root.folderLinkControllable.searchModel.filterId = parentModel.id
             let mode: ListDisplayModel.ListMode = parentModel.category == .folder ? .folder : .list
             if root.folderLinkControllable.listDisplayModel.listMode != mode {
+                print("!!!! Here !! \(mode)")
                 root.folderLinkControllable.listDisplayModel.listMode = mode
             }
             root.folderLinkControllable.resetParentModel(model: parentModel)

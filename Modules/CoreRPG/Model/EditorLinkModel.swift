@@ -82,6 +82,7 @@ public final class EditorLinkModel {
     
     func updateListController() {
         folderListController.listDisplayModel.displayMode = moduleListController.listDisplayModel.displayMode
+        print("!!!! Here !! \(moduleListController.listDisplayModel.listMode)")
         folderListController.listDisplayModel.listMode = moduleListController.listDisplayModel.listMode
         folderListController.searchModel.searchText = moduleListController.searchModel.searchText
         folderListController.searchModel.selectedTokens = moduleListController.searchModel.selectedTokens
@@ -90,6 +91,7 @@ public final class EditorLinkModel {
     
     func update() {
         moduleListController.listDisplayModel.displayMode <=> folderListController.listDisplayModel.displayMode
+        print("!!!! Here !! \(folderListController.listDisplayModel.listMode)")
         moduleListController.listDisplayModel.listMode <=> folderListController.listDisplayModel.listMode
         moduleListController.searchModel.searchText <=> folderListController.searchModel.searchText
         moduleListController.searchModel.selectedTokens <=> folderListController.searchModel.selectedTokens

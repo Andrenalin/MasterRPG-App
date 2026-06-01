@@ -15,17 +15,23 @@ struct SyncListDisplayViewModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: displayMode.wrappedValue, initial: true) {
-                listControllable.listDisplayModel.displayMode <=> displayMode.wrappedValue
-            }
-            .onChange(of: listControllable.listDisplayModel.displayMode) {
+            .onChange(of: listControllable.listDisplayModel.displayMode) { //oldValue, newValue in
                 displayMode.wrappedValue <=> listControllable.listDisplayModel.displayMode
             }
-            .onChange(of: listMode.wrappedValue) {
-                listControllable.listDisplayModel.listMode <=> listMode.wrappedValue
+            .onChange(of: displayMode.wrappedValue, initial: true) { //oldValue, newValue in
+                listControllable.listDisplayModel.displayMode <=> displayMode.wrappedValue
             }
-            .onChange(of: listControllable.listDisplayModel.listMode) {
-                listMode.wrappedValue <=> listControllable.listDisplayModel.listMode
+            .onChange(of: listControllable.listDisplayModel.listMode) { oldValue, newValue in
+                if listMode.wrappedValue != newValue {
+                    print("!!! set to \(newValue) on save")
+                    listMode.wrappedValue = newValue
+                }
+            }
+            .onChange(of: listMode.wrappedValue, initial: true) { oldValue, newValue in
+                if listControllable.listDisplayModel.listMode != newValue {
+                    print("!!! set to \(newValue) on controller")
+                    listControllable.listDisplayModel.listMode = newValue
+                }
             }
     }
 }

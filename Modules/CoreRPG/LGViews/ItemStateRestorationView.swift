@@ -21,8 +21,9 @@ public struct ItemStateRestorationView<Route: ItemDetailRoute & Equatable, Root:
     @State private var route: Route?
 
     public var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+
         Color.clear
-            .syncListDisplay(listControllable: root.folderListControllable, displayMode: $displayMode, listMode: $listMode)
             .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $route)
                     .onChange(of: route) {
@@ -31,6 +32,7 @@ public struct ItemStateRestorationView<Route: ItemDetailRoute & Equatable, Root:
                         }
                     }
             }
+            .syncListDisplay(listControllable: root.folderListControllable, displayMode: $displayMode, listMode: $listMode)
             .onChange(of: root.navigationModel.selectedItemId) {
                 if let itemId = root.navigationModel.selectedItemId {
                     route <=> Route.detailRoute(itemId: itemId)
