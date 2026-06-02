@@ -262,7 +262,10 @@ private struct InspectorRowView: View {
 
     // MARK: Folder chevron
 
-    /// Fix 6: uses `item.canOpen` (set by search pipeline) instead of calling itemSync.
+    /// `canOpen` is set by the search pipeline (`inspectorResult`, `inspectorEmptyListResults`).
+    /// It is `true` whenever the item has entries (enabling entry expansion for
+    /// allowEntrySelection / onlyEntrySelection modes) or is a folder/collection.
+    /// No `itemSync` call needed here — the search owns this state.
     @ViewBuilder
     private var folderChevron: some View {
         if item.canOpen || item.isOpen {
@@ -280,28 +283,7 @@ private struct InspectorRowView: View {
             }
             .borderLessTVBottonStyle()
             .padding(.trailing, 4)
-        } else if shouldShowEntryChevron {
-            // Entry-level chevron (allowEntrySelection): still needs model to check entries
-            Button {
-                Task { await root.folderLinkControllable.toggleFolder(item: item) }
-            } label: {
-                Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
-                    .imageScale(.small)
-                    .foregroundStyle(.red)
-                    .contentShape(.circle)
-                    .frame(width: 32, height: 32)
-#if !os(visionOS)
-                    .glassEffect(.clear.interactive())
-#endif
-            }
-            .borderLessTVBottonStyle()
-            .padding(.trailing, 4)
         }
-    }
-
-    private var shouldShowEntryChevron: Bool {
-        guard selectionModel.allowEntrySelection, item.source.entryId == nil else { return false }
-        return !(root.itemControllable.itemSync(for: item.source.itemId)?.entries.isEmpty ?? true)
     }
 
     // MARK: Helpers

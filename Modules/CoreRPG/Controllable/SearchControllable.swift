@@ -215,14 +215,14 @@ public extension SearchControllable {
     // Returns true when item should be included for the given search text and display mode.
     // compact  → name only
     // medium   → name + description
-    // regular  → name + description + tags
-    private func itemMatchesFilter(_ item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode) -> Bool {
+    // regular  → name + description + tags (tags excluded for inspector via includeTags: false)
+    private func itemMatchesFilter(_ item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) -> Bool {
         guard !searchText.isEmpty else { return true }
         if item.name.localizedStandardContains(searchText) { return true }
         if displayMode != .compact {
             if item.description.localizedStandardContains(searchText) { return true }
         }
-        if displayMode == .regular {
+        if displayMode == .regular && includeTags {
             if item.tags.contains(where: { $0.localizedStandardContains(searchText) }) { return true }
         }
         return false
@@ -260,7 +260,10 @@ public extension SearchControllable {
     func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
         switch listMode {
         case .folder:
-            return await folderModeResults(searchText: searchText.isEmpty ? " " : searchText, focusId: focusId, displayMode: displayMode)
+            // Pass searchText directly — folderModeResults handles empty search correctly
+            // (itemMatchesFilter returns true for all items when searchText is empty).
+            // The old " " trick only matched items whose names contained a space.
+            return await folderModeResults(searchText: searchText, focusId: focusId, displayMode: displayMode)
         case .list:
             if searchText.isEmpty {
                 // Empty search: flat alphabetical list, no entry children, all items closed.
@@ -302,7 +305,7 @@ public extension SearchControllable {
                         guard let child = itemControllable.itemSync(for: entry.childId),
                               child.displayState == 0 else { continue }
                         var result = makeResult(item: child, searchText: "", displayMode: displayMode, parentEntryId: entry.id)
-                        result.canOpen = !child.entries.isEmpty && !child.specialCategory
+                        result.canOpen = !child.entries.isEmpty  // includes nested folders
                         results.append(result)
                     }
                     return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
@@ -339,7 +342,8 @@ public extension SearchControllable {
     private func inspectorResult(item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
         guard !Task.isCancelled else { return }
 
-        let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode)
+        // Inspector never searches tags (only name + description per displayMode + entry content).
+        let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode, includeTags: false)
 
         // Inspector always searches entry name + content regardless of displayMode.
         var entryChildren: [SearchResult] = []
@@ -381,9 +385,9 @@ public extension SearchControllable {
 
         var result = makeResult(item: item, searchText: searchText, displayMode: displayMode)
         result.children = entryChildren.sortedByRelevance()
-        // canOpen when item has more entries than those returned as matching children —
-        // allows the user to reveal all entries via the toggle chevron.
-        result.canOpen = entryChildren.isEmpty && !item.entries.isEmpty
+        // canOpen whenever item has entries — lets allowEntrySelection/onlyEntrySelection
+        // modes show the chevron and expand all entries on demand via toggleFolder.
+        result.canOpen = !item.entries.isEmpty
         foundResults.append(result)
     }
 
