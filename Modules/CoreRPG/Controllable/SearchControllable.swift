@@ -109,21 +109,24 @@ public extension SearchControllable {
 
     // List mode: flat results, folders/collections excluded.
     // Empty search → alphabetical; non-empty → relevance order.
+    // Runs the entire filter loop inside a single MainActor.run to avoid O(n) actor
+    // hops — one round-trip to main actor instead of one per item.
     private func listModeResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
-        let itemIds = await itemControllable.itemDataModel.items
-        var results: [SearchResult] = []
-        for itemId in itemIds {
-            guard !Task.isCancelled else { break }
-            guard let item = await itemControllable.item(for: itemId),
-                  item.displayState == 0,
-                  !item.specialCategory else { continue }
-            guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
-            results.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
+        return await MainActor.run { [searchText, displayMode] in
+            let itemIds = itemControllable.itemDataModel.items
+            var results: [SearchResult] = []
+            for itemId in itemIds {
+                guard let item = itemControllable.itemSync(for: itemId),
+                      item.displayState == 0,
+                      !item.specialCategory else { continue }
+                guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
+                results.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
+            }
+            if searchText.isEmpty {
+                return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+            }
+            return results.sortedByRelevance()
         }
-        if searchText.isEmpty {
-            return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-        }
-        return results.sortedByRelevance()
     }
 
     // Folder mode: hierarchical results rooted at focusId (or global root when nil).

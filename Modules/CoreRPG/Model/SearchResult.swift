@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct SearchResult: Identifiable, Equatable, Hashable {
+public struct SearchResult: Identifiable, Equatable, Hashable, Sendable {
     public init(itemId: UUID, itemName: String, module: NetworkModules, category: ItemListCategory, entryId: UUID? = nil, entryName: String? = nil, matchedContent: String? = nil, relevanceScore: Int) {
         self.itemId = itemId
         self.itemName = itemName

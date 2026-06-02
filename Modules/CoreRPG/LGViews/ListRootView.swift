@@ -268,10 +268,12 @@ private struct ListRowItemView: View {
     let leadingPadding: CGFloat
 
     var body: some View {
+        // Resolve the model once — avoids three separate dictionary lookups per render.
+        let model = root.itemControllable.itemOrEmpty(for: item.source.itemId)
         HStack {
             ItemRowView(
                 root: root,
-                model: root.itemControllable.itemOrEmpty(for: item.source.itemId),
+                model: model,
                 cacheItemListModel: listController.cacheListItemModel,
                 listDisplayModel: listController.listDisplayModel,
                 searchModel: listController.searchModel,
@@ -283,12 +285,12 @@ private struct ListRowItemView: View {
                           let cacheController = root.cacheControllable {
                     ThumbnailRowPhotoView(
                         cacheController: cacheController,
-                        model: root.itemControllable.itemOrEmpty(for: item.source.itemId),
+                        model: model,
                         listDisplayModel: listController.listDisplayModel
                     )
                 }
             }
-            .draggable(for: root.configurable.module, itemId: item.source.itemId, entryId: nil, name: root.itemControllable.itemOrEmpty(for: item.source.itemId).name)
+            .draggable(for: root.configurable.module, itemId: item.source.itemId, entryId: nil, name: model.name)
             // Always-present contextMenu: empty closure = no menu when in selection mode
             .contextMenu {
                 if !listController.listDisplayModel.isSelectionMode {
@@ -304,7 +306,7 @@ private struct ListRowItemView: View {
 
             SpecialCategoryFolderIndicator(
                 item: item,
-                isSpecialCategory: root.itemControllable.itemSync(for: item.source.itemId)?.specialCategory ?? false,
+                isSpecialCategory: model.specialCategory,
                 listController: listController
             )
         }

@@ -11,6 +11,9 @@ extension View {
 struct SearchItemListViewModifier: ViewModifier {
     let listControllable: any FolderListControllable
 
+    /// Owns the debounce-then-search task so each new keystroke cancels the previous.
+    @State private var searchTask: Task<Void, Never>?
+
     func body(content: Content) -> some View {
         @Bindable var searchModel = listControllable.searchModel
         content
@@ -51,16 +54,27 @@ struct SearchItemListViewModifier: ViewModifier {
     }
     
     func updateSearch() {
-        listControllable.searchRootControllable.searchModel.results = []
+        // Cancel any in-flight debounce or search from the previous keystroke
+        searchTask?.cancel()
+
         withAnimation {
             listControllable.resetFilter()
             listControllable.cacheListItemModel.reset(search: listControllable.searchModel.searchText)
             listControllable.searchModel.updateTagSuggestions()
             listControllable.searchModel.searchFieldText <=> listControllable.searchModel.searchText
         }
-        Task {
-            await listControllable.searchRootControllable.performSearch()
-            withAnimation { listControllable.resetFilter() }
+
+        // The debounce now lives here so each keystroke cancels the previous wait.
+        // performSearch() is a clean async function — structured cancellation propagates correctly.
+        searchTask = Task {
+            do {
+                if !listControllable.searchModel.searchText.isEmpty {
+                    try await Task.sleep(for: .milliseconds(300))
+                }
+            } catch {
+                return  // Cancelled by next keystroke — stop cleanly
+            }
+            await listControllable.performSearch()
         }
     }
     

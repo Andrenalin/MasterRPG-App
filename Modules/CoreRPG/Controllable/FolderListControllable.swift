@@ -22,19 +22,38 @@ public protocol FolderListControllable: Sendable {
 extension FolderListControllable {
     public var searchModel: SearchModel { searchRootControllable.searchModel }
     
+    /// Runs a search, updates `searchModel.results`, and rebuilds `listModel.list`.
+    /// Structured: if the enclosing `Task` is cancelled (e.g. view disappears or a
+    /// newer search fires), this function exits at the next cancellation check and
+    /// leaves the current list unchanged.
     @MainActor public func performSearch() async {
-        searchRootControllable.searchModel.results = []
-        await searchRootControllable.performSearch()
-        resetFilter()
+        searchModel.isSearching = true
+        defer { searchModel.isSearching = false }
+
+        let newResults = await searchRootControllable.results(text: searchModel.searchText)
+        guard !Task.isCancelled else { return }
+        searchModel.results = newResults
+        withAnimation { resetFilter() }
     }
-    
+
+    /// Fire-and-forget variant for call sites that cannot `await` (e.g. synchronous
+    /// protocol-extension callbacks like `resetParent`, `toggleFolder`).
+    /// Assigning to `currentTask` auto-cancels the previous search via `didSet`.
+    @MainActor func scheduleSearch() {
+        searchModel.currentTask = Task { await performSearch() }
+    }
+
     /// Runs a folder-scoped search for the detail list's parent and populates
     /// `listModel.detailListModel.list` with the matching children.
     @MainActor public func performDetailSearch() async {
         guard let detailListModel = listModel.detailListModel,
               let parentModel = detailListModel.parentModel else { return }
-        searchRootControllable.searchModel.detailResults = []
-        await searchRootControllable.performSearch(focusId: parentModel.id)
+        let newResults = await searchRootControllable.results(
+            text: searchModel.searchText,
+            focusId: parentModel.id
+        )
+        guard !Task.isCancelled else { return }
+        searchModel.detailResults = newResults
         detailListModel.list = buildDetailListItems()
     }
 }
@@ -95,9 +114,7 @@ public extension FolderListControllable {
         if let model {
             listDisplayModel.listMode <=> model.category == .folder ? .folder : .list
         }
-        Task {
-            await performSearch()
-        }
+        scheduleSearch()
     }
     
     /// Called when a folder/collection is selected as the detail page's parent.

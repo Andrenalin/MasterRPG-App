@@ -33,23 +33,14 @@ public final class SearchModel: Sendable {
     var selection: SearchResult?
     public var filterId: UUID?
 
-    @ObservationIgnored private var _searchTask: Task<Void, Never>?
-
-    func cancelSearch() {
-        _searchTask?.cancel()
-        _searchTask = nil
-    }
-
-    func setSearchTask(_ task: Task<Void, Never>) {
-        _searchTask = task
-    }
-
-    func awaitCurrentSearch() async {
-        await _searchTask?.value
+    /// Tracks the most-recently-scheduled background search task.
+    /// Assigning a new task automatically cancels the previous one via `didSet`.
+    @ObservationIgnored public var currentTask: Task<Void, Never>? {
+        didSet { oldValue?.cancel() }
     }
 
     deinit {
-        _searchTask?.cancel()
+        currentTask?.cancel()
     }
     
     func updateTagSuggestions() {

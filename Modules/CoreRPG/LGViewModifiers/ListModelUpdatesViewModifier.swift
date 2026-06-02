@@ -21,6 +21,9 @@ struct ListModelUpdatesViewModifier: ViewModifier {
     let itemControllable: any ItemControllable
     /// When set, the modifier is operating in detail-list context (folder/collection content).
     let parentModel: (any ItemDataAccessable)?
+
+    /// Stores the mode-change search task so that rapid mode switches cancel the previous.
+    @State private var searchTask: Task<Void, Never>?
     
     @Environment(\.navigator) private var navigator
     
@@ -40,10 +43,11 @@ struct ListModelUpdatesViewModifier: ViewModifier {
                 withAnimation { updateSelected() }
             }
             .onChange(of: listControllable.listDisplayModel.listMode, initial: true) {
-                // Rebuild immediately from current results so the mode switch is visible at once,
-                // then re-search so mode-specific filtering (list vs folder tree) takes effect.
+                // Rebuild immediately so the switch is visible at once, then cancel any
+                // previous mode-change search and start a fresh one.
                 withAnimation { listControllable.resetFilter() }
-                Task { await listControllable.performSearch() }
+                searchTask?.cancel()
+                searchTask = Task { await listControllable.performSearch() }
             }
             .onChange(of: listControllable.listDisplayModel.isSelectionMode, initial: true) {
                 withAnimation {
