@@ -210,8 +210,14 @@ extension FolderListControllable {
             item.children = result.children.map { mapResult($0, level: level + 1) }
         }
 
-        // Open state: search auto-opens matched folders; clears → restore user state
-        item.isOpen = isSearching ? !result.children.isEmpty : item.lastIsOpen
+        // Open state: search auto-opens matched folders; clears → restore user state.
+        // shouldOpen overrides both (e.g. focused character inspector: always start expanded).
+        if result.shouldOpen && !result.children.isEmpty {
+            item.isOpen = true
+            item.lastIsOpen = true   // persist so the state survives a search round-trip
+        } else {
+            item.isOpen = isSearching ? !result.children.isEmpty : item.lastIsOpen
+        }
 
         flat.append(item)
 

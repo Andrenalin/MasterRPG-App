@@ -321,6 +321,10 @@ extension SearchController {
 
         var result = characterResult(item: character, searchText: "", displayMode: .medium)
         result.children = entryChildren
+        // Signal appendToFlat to start this item expanded so entries are visible
+        // immediately — the user opened the inspector to see this character's sheet,
+        // not to see a closed chevron.
+        result.shouldOpen = !entryChildren.isEmpty
         return [result]
     }
 

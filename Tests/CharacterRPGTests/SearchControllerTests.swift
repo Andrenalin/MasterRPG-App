@@ -233,6 +233,9 @@ struct SearchControllerTests {
         let charResult = try #require(results.first(where: { $0.itemId == charId }),
                                       "Focused character must always be returned")
         #expect(charResult.children.count == 2, "All entries must appear as children on empty search")
+        // shouldOpen must be true so appendToFlat expands the row immediately — no chevron tap needed
+        #expect(charResult.shouldOpen == true,
+                "shouldOpen must be set so entries are visible on first appear without user interaction")
     }
 
     @Test("Focused inspector: empty search — group entry children appear as entry's children")

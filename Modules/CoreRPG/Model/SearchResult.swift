@@ -40,4 +40,9 @@ public struct SearchResult: Identifiable, Equatable, Hashable, Sendable {
     // Mapped to FolderListItemModel.canOpen so the UI can render the chevron and
     // toggleFolder / canOpenFolder can act without an extra itemSync call.
     public var canOpen: Bool = false
+
+    // True when this item should start expanded regardless of searchText or lastIsOpen.
+    // Used by focusedCharacterInspector to show all entries on first appear without
+    // requiring the user to manually tap the chevron.
+    public var shouldOpen: Bool = false
 }
