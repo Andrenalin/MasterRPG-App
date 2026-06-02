@@ -262,7 +262,11 @@ public extension SearchControllable {
         case .folder:
             return await folderModeResults(searchText: searchText.isEmpty ? " " : searchText, focusId: focusId, displayMode: displayMode)
         case .list:
-            guard !searchText.isEmpty else { return [] }
+            if searchText.isEmpty {
+                // Empty search: flat alphabetical list, no entry children, all items closed.
+                // Returning [] here caused the inspector to show nothing on first appear.
+                return await inspectorEmptyListResults(focusId: focusId, displayMode: displayMode)
+            }
             let itemIds: [UUID] = focusId != nil
                 ? [focusId!]
                 : await itemControllable.itemDataModel.items
@@ -271,16 +275,67 @@ public extension SearchControllable {
                 guard !Task.isCancelled else { break }
                 guard let item = await itemControllable.item(for: itemId),
                       item.displayState == 0 else { continue }
+                // When spanning all items (no scope), skip folders — their children are
+                // already in itemIds and recursion would cause duplicates.
+                if focusId == nil && item.specialCategory { continue }
                 await inspectorResult(item: item, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
             }
             return foundResults.sortedByRelevance()
         }
     }
 
-    /// Searches `item` at item-level (displayMode-aware) and all its entries (always name+content).
-    /// Matching entries become `SearchResult.children` of the item result rather than flat siblings.
-    /// The item is included in `foundResults` when it matches at item-level OR has matching entries.
-    /// For `specialCategory` items, child items are also searched recursively via `entry.childId`.
+    /// Empty-search fallback for the inspector: all visible items sorted alphabetically,
+    /// no entry children, all items closed unless they have entries (`canOpen`).
+    ///
+    /// - `focusId == nil`: flat list of all non-folder items; `canOpen = !entries.isEmpty`.
+    /// - `focusId` is a folder/collection: returns its child items directly (scoped view).
+    /// - `focusId` is a regular item: returns the item itself with `canOpen = !entries.isEmpty`.
+    private func inspectorEmptyListResults(focusId: UUID?, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
+        await MainActor.run { [focusId, displayMode] in
+            if let focusId {
+                guard let parent = itemControllable.itemSync(for: focusId),
+                      parent.displayState == 0 else { return [] }
+                if parent.specialCategory {
+                    // Folder/collection scope: return its children as a flat list
+                    var results: [SearchResult] = []
+                    for entry in parent.entries {
+                        guard let child = itemControllable.itemSync(for: entry.childId),
+                              child.displayState == 0 else { continue }
+                        var result = makeResult(item: child, searchText: "", displayMode: displayMode, parentEntryId: entry.id)
+                        result.canOpen = !child.entries.isEmpty && !child.specialCategory
+                        results.append(result)
+                    }
+                    return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+                } else {
+                    // Single-item scope: return the item with canOpen when it has entries
+                    var result = makeResult(item: parent, searchText: "", displayMode: displayMode)
+                    result.canOpen = !parent.entries.isEmpty
+                    return [result]
+                }
+            }
+            // All items: flat list, no folders, sorted A→Z, canOpen when item has entries
+            let itemIds = itemControllable.itemDataModel.items
+            var results: [SearchResult] = []
+            for itemId in itemIds {
+                guard let item = itemControllable.itemSync(for: itemId),
+                      item.displayState == 0,
+                      !item.specialCategory else { continue }
+                var result = makeResult(item: item, searchText: "", displayMode: displayMode)
+                result.canOpen = !item.entries.isEmpty
+                results.append(result)
+            }
+            return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+        }
+    }
+
+    /// Searches one item at item-level (displayMode-aware) and all its entries (always name+content).
+    /// Matching entries become `SearchResult.children`; the item is included when it matches at
+    /// item-level OR has matching entries.
+    ///
+    /// `specialCategory` items (folders/collections) recurse into child items but are NOT added
+    /// to `foundResults` themselves — their children appear as independent results.
+    /// `canOpen` is set when the item has entries that weren't returned as matching children,
+    /// so the UI can show a chevron to reveal them on demand.
     private func inspectorResult(item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
         guard !Task.isCancelled else { return }
 
@@ -313,18 +368,52 @@ public extension SearchControllable {
                 ))
             }
 
-            // For folder / collection items follow childId into child items
+            // Folders/collections: recurse into child items (only when focusId-scoped)
             if item.specialCategory,
                let childItem = await itemControllable.item(for: entry.childId) {
                 await inspectorResult(item: childItem, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
             }
         }
 
+        // Folders/collections are containers only — their children already appear above.
+        guard !item.specialCategory else { return }
         guard itemMatches || !entryChildren.isEmpty else { return }
 
         var result = makeResult(item: item, searchText: searchText, displayMode: displayMode)
         result.children = entryChildren.sortedByRelevance()
+        // canOpen when item has more entries than those returned as matching children —
+        // allows the user to reveal all entries via the toggle chevron.
+        result.canOpen = entryChildren.isEmpty && !item.entries.isEmpty
         foundResults.append(result)
+    }
+
+    /// Returns all entries of `itemId` as direct `SearchResult`s, optionally filtered by `searchText`.
+    /// Used by `SearchLinkController.results(text:focusId:)` when the user toggles a non-folder
+    /// item open in the inspector to see its entries.
+    func inspectorEntryResults(searchText: String, itemId: UUID, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
+        await MainActor.run { [searchText, itemId] in
+            guard let item = itemControllable.itemSync(for: itemId) else { return [] }
+            let entries = searchText.isEmpty
+                ? item.entries
+                : item.entries.filter {
+                    $0.name.localizedStandardContains(searchText) ||
+                    $0.content.localizedStandardContains(searchText)
+                }
+            return entries
+                .map { entry in
+                    SearchResult(
+                        itemId: item.id,
+                        itemName: item.name,
+                        module: itemControllable.config.module,
+                        category: item.category,
+                        entryId: entry.id,
+                        entryName: entry.name,
+                        matchedContent: entry.content.isEmpty ? nil : entry.content,
+                        relevanceScore: 0
+                    )
+                }
+                .sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
+        }
     }
 }
 

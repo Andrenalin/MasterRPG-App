@@ -68,8 +68,10 @@ public struct LinkItemListView: View {
                     .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode) {
                         root.folderLinkControllable.scheduleSearch()
                     }
+                    // listMode switches between flat (list) and hierarchical (folder) — the search
+                    // pipeline produces completely different structures, so a full re-search is needed.
                     .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
-                        root.folderLinkControllable.resetFilter()
+                        root.folderLinkControllable.scheduleSearch()
                     }
                     .listModelUpdatesModifier(listControllable: root.folderLinkControllable, itemControllable: root.itemControllable)
                     .applyIf(type != .inspector && type != .selectionInline) { content in

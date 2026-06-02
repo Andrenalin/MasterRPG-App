@@ -67,13 +67,28 @@ extension SearchLinkController: SearchRootControllable {
         )
     }
 
+    /// Called by `loadChildrenViaSearch` when the user toggles an item open.
+    /// - Folders/collections: use `.folder` mode to return child items.
+    /// - Regular items: use `inspectorEntryResults` to return entries as direct results.
+    ///   (`.folder` mode returned nothing for non-folder items, breaking the toggle.)
     public func results(text: String, focusId: UUID) async -> [SearchResult] {
-        await searchController.inspectorSearchResults(
-            searchText: text,
-            listMode: .folder,
-            displayMode: listDisplayModel.displayMode,
-            focusId: focusId
-        )
+        let isFolder = await MainActor.run {
+            searchController.itemControllable.itemSync(for: focusId)?.specialCategory == true
+        }
+        if isFolder {
+            return await searchController.inspectorSearchResults(
+                searchText: text,
+                listMode: .folder,
+                displayMode: listDisplayModel.displayMode,
+                focusId: focusId
+            )
+        } else {
+            return await searchController.inspectorEntryResults(
+                searchText: text,
+                itemId: focusId,
+                displayMode: listDisplayModel.displayMode
+            )
+        }
     }
 
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {
