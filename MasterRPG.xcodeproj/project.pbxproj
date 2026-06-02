@@ -1673,6 +1673,7 @@
 				PdfRPGTests/ExportControllerTests.swift,
 				PdfRPGTests/ImportControllerTests.swift,
 				PdfRPGTests/PdfModelTests.swift,
+				PdfRPGTests/SearchControllerTests.swift,
 				PdfRPGTests/SheetControllerTests.swift,
 			);
 			target = 8E8EE87A2CD8EB430010A25B /* PdfRPGTests */;
@@ -1727,6 +1728,7 @@
 				CharacterRPGTests/ConverterControllerTests.swift,
 				CharacterRPGTests/EditControllerTests.swift,
 				CharacterRPGTests/ExportControllerTests.swift,
+				CharacterRPGTests/FolderListControllerTests.swift,
 				CharacterRPGTests/ImportControllerTests.swift,
 				CharacterRPGTests/ItemControllerTests.swift,
 				CharacterRPGTests/LinkControllerTests.swift,

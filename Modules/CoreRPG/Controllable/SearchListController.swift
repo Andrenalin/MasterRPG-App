@@ -24,6 +24,14 @@ extension SearchListController: SearchRootControllable {
             focusId: listDisplayModel.listMode == .folder ? searchModel.filterId : nil
         )
     }
+
+    public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {
+        SearchListController(
+            searchController: searchController,
+            searchModel: searchModel.newSearchModel,
+            listDisplayModel: listDisplayModel
+        )
+    }
 }
 
 
@@ -47,6 +55,14 @@ extension SearchLinkController: SearchRootControllable {
             listMode: listDisplayModel.listMode,
             displayMode: listDisplayModel.displayMode,
             focusId: searchModel.filterId
+        )
+    }
+
+    public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {
+        SearchLinkController(
+            searchController: searchController,
+            searchModel: searchModel.newSearchModel,
+            listDisplayModel: listDisplayModel
         )
     }
 }

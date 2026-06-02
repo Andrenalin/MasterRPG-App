@@ -54,12 +54,14 @@ public struct LinkItemListView: View {
                     }
                     .onAppear {
                         let savedScroll = root.folderLinkControllable.listModel.scrollId
-                        root.folderLinkControllable.resetItemOnce()
-                        root.folderLinkControllable.resetFilter()
-                        root.folderLinkControllable.listModel.scrollId = savedScroll
-                        if let savedPosition = root.folderLinkControllable.listModel.scrollId {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                scrollPosition = savedPosition
+                        Task {
+                            await root.folderLinkControllable.resetItemOnce()
+                            root.folderLinkControllable.resetFilter()
+                            root.folderLinkControllable.listModel.scrollId = savedScroll
+                            if let savedPosition = root.folderLinkControllable.listModel.scrollId {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    scrollPosition = savedPosition
+                                }
                             }
                         }
                     }

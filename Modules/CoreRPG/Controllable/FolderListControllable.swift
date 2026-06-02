@@ -51,24 +51,44 @@ public extension FolderListControllable {
     }
     
     func copyModel(parentModel: (any ItemDataAccessable)?) -> FolderListModel {
-        FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel)
+        let newModel = FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel)
+        // Pre-populate the cache with any already-loaded children of the parent folder/collection
+        // so the detail list can render immediately while the background search runs.
+        if let parentModel {
+            for entry in parentModel.entries {
+                // Children are keyed by entry.id (folder membership identity)
+                if let cached = listModel.cacheListModels[entry.id] {
+                    newModel.cacheListModels[entry.id] = cached
+                }
+                // Also try childId for items cached in list mode (id == itemId)
+                let childId = entry.childId
+                if childId != entry.id, let cached = listModel.cacheListModels[childId] {
+                    newModel.cacheListModels[childId] = cached
+                }
+            }
+        }
+        return newModel
     }
 
-    func resetItemOnce() {
+    func resetItemOnce() async {
         guard listModel.updatedOnce == false else { return }
         listModel.updatedOnce = true
+        await performSearch()
         resetFilter()
     }
 
-    /// Resets the parent model and triggers filtering updates.
-    /// When a parent model is set, the list mode is controlled by LinkItemListView.configureParentFiltering()
-    /// based on the parent's category (folder → .folder mode, others → .list mode).
-    /// UI controls for list mode should be disabled when parentModel is set.
+    /// Called when a folder/collection is selected as the detail page's parent.
+    /// Sets filterId so the search is scoped to this item's children, switches to
+    /// folder mode (required for focusId to be forwarded to the search), and
+    /// triggers the search so children appear immediately.
     func resetParentModel(model: (any ItemDataAccessable)) {
         if listModel.parentModel?.id != model.id {
             listModel.updatedOnce = true
             listModel.parentModel = model
-            resetFilter()
+            // Scope the next search to this folder/collection's direct children
+            searchRootControllable.searchModel.filterId = model.id
+            listDisplayModel.listMode = .folder
+            Task { await performSearch() }
         }
     }
     
@@ -158,18 +178,72 @@ extension FolderListControllable {
         for result in results {
             let item = folderItem(from: result, level: level, parentId: parentId)
             if !result.children.isEmpty {
+                // Active search: populate children from matching results and auto-open.
                 item.children = result.children.map { folderItem(from: $0, level: level + 1, parentId: item.id) }
-                if isSearching {
-                    item.isOpen = true
-                } else {
-                    item.isOpen = item.lastIsOpen
+                item.isOpen = isSearching ? true : item.lastIsOpen
+            } else if !isSearching {
+                // Empty search (lazy mode): restore the user's open state and,
+                // if the folder is open, refresh its direct children from the item model.
+                item.isOpen = item.lastIsOpen
+                if item.isOpen {
+                    loadFolderChildren(for: item)
                 }
             }
             flat.append(item)
-            if item.isOpen && !result.children.isEmpty {
-                flattenResults(result.children, level: level + 1, parentId: item.id, into: &flat)
+            if item.isOpen {
+                if !result.children.isEmpty {
+                    flattenResults(result.children, level: level + 1, parentId: item.id, into: &flat)
+                } else if !item.children.isEmpty {
+                    flattenCachedChildren(item.children, into: &flat)
+                }
             }
         }
+    }
+
+    // Expands open nodes in the cached children tree (used for lazy-loaded folder content).
+    private func flattenCachedChildren(_ items: [FolderListItemModel], into flat: inout [FolderListItemModel]) {
+        for item in items {
+            flat.append(item)
+            if item.isOpen && !item.children.isEmpty {
+                flattenCachedChildren(item.children, into: &flat)
+            }
+        }
+    }
+
+    // Loads the direct children of a folder/collection from the item model into item.children.
+    // Called for lazy expansion during empty search so no re-search is needed.
+    private func loadFolderChildren(for item: FolderListItemModel) {
+        guard let folder = itemControllable.itemSync(for: item.source.itemId) else { return }
+        var children: [FolderListItemModel] = []
+        for entry in folder.entries {
+            guard let childModel = itemControllable.itemSync(for: entry.childId),
+                  childModel.displayState == 0 else { continue }
+            let id = entry.id
+            if let cached = listModel.cacheListModels[id] {
+                cached.level = item.level + 1
+                cached.parentId = item.id
+                children.append(cached)
+            } else {
+                let child = FolderListItemModel(
+                    id: id,
+                    source: ItemRowModel(itemId: childModel.id, entryId: entry.id, typeId: itemControllable.config.module),
+                    destination: nil,
+                    level: item.level + 1,
+                    isShown: !childModel.specialCategory
+                )
+                child.parentId = item.id
+                listModel.cacheListModels[id] = child
+                children.append(child)
+            }
+        }
+        if folder.category == .folder {
+            children.sort {
+                let a = itemControllable.itemSync(for: $0.source.itemId)?.name ?? ""
+                let b = itemControllable.itemSync(for: $1.source.itemId)?.name ?? ""
+                return a.localizedCompare(b) == .orderedAscending
+            }
+        }
+        item.children = children
     }
 
     // id: entry.id when the item is a child inside a folder/collection (so the same item
@@ -202,13 +276,19 @@ extension FolderListControllable {
     func toggleFolder(item: FolderListItemModel) async {
         if item.isOpen {
             item.isOpen = false
-            item.lastIsOpen = false  // User explicitly closed — remember closed state
+            item.lastIsOpen = false
             resetFilter()
         } else {
             item.isOpen = true
-            item.lastIsOpen = true   // User explicitly opened — remember open state
+            item.lastIsOpen = true
             if item.children.isEmpty {
-                await performSearch()
+                if searchModel.searchText.isEmpty {
+                    // Empty search: load children directly from the item model — no re-search needed.
+                    loadFolderChildren(for: item)
+                    resetFilter()
+                } else {
+                    await performSearch()
+                }
             } else {
                 resetFilter()
             }

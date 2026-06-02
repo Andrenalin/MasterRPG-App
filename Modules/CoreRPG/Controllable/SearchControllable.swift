@@ -127,7 +127,8 @@ public extension SearchControllable {
     }
 
     // Folder mode: hierarchical results rooted at focusId (or global root when nil).
-    // Empty search: folders sort children alphabetically; collections preserve entry order.
+    // Empty search → alphabetical (folders) / entry order (collections).
+    // Non-empty search → relevance order at every level.
     private func folderModeResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
         if let focusId {
             guard let folder = await itemControllable.item(for: focusId) else { return [] }
@@ -138,9 +139,13 @@ public extension SearchControllable {
                     results.append(node)
                 }
             }
-            // Sort top-level children alphabetically for folders; collections keep entry order
-            if searchText.isEmpty && folder.category == .folder {
-                results.sort { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+            if searchText.isEmpty {
+                if folder.category == .folder {
+                    results.sort { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+                }
+                // collections keep entry order
+            } else {
+                results = results.sortedByRelevance()
             }
             return results
         } else {
@@ -157,7 +162,7 @@ public extension SearchControllable {
             if searchText.isEmpty {
                 return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
             }
-            return results
+            return results.sortedByRelevance()
         }
     }
 
@@ -174,18 +179,24 @@ public extension SearchControllable {
         let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode)
 
         if item.specialCategory {
+            // Lazy loading: children are only fetched during an active search.
+            // For empty search the caller (FolderListControllable) expands open
+            // folders directly from the item model, so we return the node with
+            // no children and let the UI open/close on demand.
             var childNodes: [SearchResult] = []
-            for entry in item.entries {
-                guard !Task.isCancelled else { break }
-                if let child = await buildFolderTreeNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id) {
-                    childNodes.append(child)
+            if !searchText.isEmpty {
+                for entry in item.entries {
+                    guard !Task.isCancelled else { break }
+                    if let child = await buildFolderTreeNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id) {
+                        childNodes.append(child)
+                    }
+                }
+                // Relevance order during search; collections preserve entry order.
+                if item.category == .folder {
+                    childNodes = childNodes.sortedByRelevance()
                 }
             }
             guard itemMatches || !childNodes.isEmpty else { return nil }
-            // Folders sort children alphabetically when not searching; collections keep entry order
-            if searchText.isEmpty && item.category == .folder {
-                childNodes.sort { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-            }
             var result = makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
             result.children = childNodes
             return result
@@ -260,38 +271,37 @@ public extension SearchControllable {
         }
     }
 
-    /// Searches `item` name/description and all its entries.
-    /// For `specialCategory` items, recurses into child items via `entry.childId`.
+    /// Searches `item` at item-level (displayMode-aware) and all its entries (always name+content).
+    /// Matching entries become `SearchResult.children` of the item result rather than flat siblings.
+    /// The item is included in `foundResults` when it matches at item-level OR has matching entries.
+    /// For `specialCategory` items, child items are also searched recursively via `entry.childId`.
     private func inspectorResult(item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
         guard !Task.isCancelled else { return }
 
-        // Item-level match — respects displayMode
-        if itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) {
-            foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
-        }
+        let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode)
 
-        // Entry-level search — same displayMode rules as item matching:
-        // compact → name only, medium/regular → name + content
+        // Inspector always searches entry name + content regardless of displayMode.
+        var entryChildren: [SearchResult] = []
         for entry in item.entries {
             guard !Task.isCancelled else { break }
 
             let entryMatches = entry.name.localizedStandardContains(searchText)
-                || (displayMode != .compact && entry.content.localizedStandardContains(searchText))
+                            || entry.content.localizedStandardContains(searchText)
 
             if entryMatches {
-                foundResults.append(SearchResult(
+                entryChildren.append(SearchResult(
                     itemId: item.id,
                     itemName: item.name,
                     module: itemControllable.config.module,
                     category: item.category,
                     entryId: entry.id,
                     entryName: entry.name,
-                    matchedContent: displayMode != .compact && !entry.content.isEmpty ? entry.content : nil,
+                    matchedContent: entry.content.isEmpty ? nil : entry.content,
                     relevanceScore: calculateRelevance(
                         searchText: searchText,
                         itemName: item.name,
                         entryName: entry.name,
-                        content: displayMode != .compact ? entry.content : nil,
+                        content: entry.content,
                         isItemMatch: false
                     )
                 ))
@@ -303,12 +313,18 @@ public extension SearchControllable {
                 await inspectorResult(item: childItem, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
             }
         }
+
+        guard itemMatches || !entryChildren.isEmpty else { return }
+
+        var result = makeResult(item: item, searchText: searchText, displayMode: displayMode)
+        result.children = entryChildren.sortedByRelevance()
+        foundResults.append(result)
     }
 }
 
 // MARK: - SearchResult sorting
 
-extension Array where Element == SearchResult {
+public extension Array where Element == SearchResult {
     // Primary: relevance descending. Tiebreaker: item name alphabetical.
     // Without the tiebreaker, equal-scored results fall back to Core Data iteration order
     // (arbitrary), making list-mode search appear unsorted even when scores are computed.

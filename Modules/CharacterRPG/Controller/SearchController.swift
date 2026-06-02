@@ -154,8 +154,12 @@ extension SearchController {
                     results.append(node)
                 }
             }
-            if searchText.isEmpty && folder.category == .folder {
-                results.sort { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+            if searchText.isEmpty {
+                if folder.category == .folder {
+                    results.sort { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+                }
+            } else {
+                results = results.sortedByRelevance()
             }
             return results
         } else {
@@ -174,7 +178,7 @@ extension SearchController {
             if searchText.isEmpty {
                 return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
             }
-            return results
+            return results.sortedByRelevance()
         }
     }
 
@@ -189,16 +193,18 @@ extension SearchController {
 
         if item.specialCategory {
             var childNodes: [SearchResult] = []
-            for entry in item.entries {
-                guard !Task.isCancelled else { break }
-                if let child = await buildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id) {
-                    childNodes.append(child)
+            if !searchText.isEmpty {
+                for entry in item.entries {
+                    guard !Task.isCancelled else { break }
+                    if let child = await buildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id) {
+                        childNodes.append(child)
+                    }
+                }
+                if item.category == .folder {
+                    childNodes = childNodes.sortedByRelevance()
                 }
             }
             guard itemMatches || !childNodes.isEmpty else { return nil }
-            if searchText.isEmpty && item.category == .folder {
-                childNodes.sort { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-            }
             var node = characterResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
             node.children = childNodes
             return node
@@ -254,8 +260,77 @@ extension SearchController {
         case .folder:
             return await folderModeCharacterResults(searchText: searchText.isEmpty ? " " : searchText, focusId: focusId, displayMode: displayMode)
         case .list:
-            return await inspectorSearchResults(searchText: searchText, parentId: focusId, displayMode: displayMode)
+            if let focusId {
+                // Focused on a specific character: always return it with filtered entries.
+                // displayMode has no effect here — entries are always searched by name+content.
+                return await focusedCharacterInspector(characterId: focusId, searchText: searchText)
+            }
+            // No focus: use the CoreRPG-compatible inspector (entries as children, CharacterRPG filters).
+            return await inspectorSearchResults(searchText: searchText, parentId: nil, displayMode: displayMode)
         }
+    }
+
+    // MARK: - Focused character inspector
+
+    /// Always returns the character. If searchText is empty all entries are children.
+    /// If searchText is set, only entries that match (name, content, or sub-value name) are children.
+    /// For each included entry whose valueId points to a sub-value, the sub-value's own entries
+    /// are added as children of that entry result.
+    private func focusedCharacterInspector(characterId: UUID, searchText: String) async -> [SearchResult] {
+        guard let character = await itemController.item(for: characterId) else { return [] }
+
+        var entryChildren: [SearchResult] = []
+        for entry in character.entries {
+            guard !Task.isCancelled else { break }
+
+            if searchText.isEmpty {
+                // Include every entry; add sub-value's entries as this entry's children.
+                var entryResult = makeEntryResult(for: entry, characterId: characterId, characterName: character.name)
+                if let subValueId = entry.valueId,
+                   let subValue = await itemController.item(for: subValueId) {
+                    entryResult.children = subValue.entries.map {
+                        makeEntryResult(for: $0, characterId: characterId, characterName: character.name)
+                    }
+                }
+                entryChildren.append(entryResult)
+            } else {
+                // Filter: entry name, entry content, or sub-value item name must match.
+                let entryNameMatch    = entry.name.localizedStandardContains(searchText)
+                let entryContentMatch = entry.content.localizedStandardContains(searchText)
+                var subValueNameMatch = false
+                var subEntries: [SearchResult] = []
+
+                if let subValueId = entry.valueId,
+                   let subValue = await itemController.item(for: subValueId) {
+                    subValueNameMatch = subValue.name.localizedStandardContains(searchText)
+                    subEntries = subValue.entries.map {
+                        makeEntryResult(for: $0, characterId: characterId, characterName: character.name)
+                    }
+                }
+
+                guard entryNameMatch || entryContentMatch || subValueNameMatch else { continue }
+                var entryResult = makeEntryResult(for: entry, characterId: characterId, characterName: character.name)
+                entryResult.children = subEntries
+                entryChildren.append(entryResult)
+            }
+        }
+
+        var result = characterResult(item: character, searchText: "", displayMode: .medium)
+        result.children = entryChildren
+        return [result]
+    }
+
+    private func makeEntryResult(for entry: ValueEntryModel, characterId: UUID, characterName: String) -> SearchResult {
+        SearchResult(
+            itemId: characterId,
+            itemName: characterName,
+            module: itemControllable.config.module,
+            category: .value,
+            entryId: entry.id,
+            entryName: entry.name,
+            matchedContent: entry.content.isEmpty ? nil : entry.content,
+            relevanceScore: 100
+        )
     }
 
     /// Inspector search used by `SearchLinkController`.
@@ -288,39 +363,42 @@ extension SearchController {
         await inspectorSearchResults(searchText: searchText, parentId: characterId)
     }
 
-    /// Searches `character` name/description and all entries at every level of the value tree.
-    /// Item-level match respects `displayMode`; entry content is always searched in full.
+    /// Searches `character` at item-level (displayMode-aware) and all entries (always name+content).
+    /// Matching entries become children of the character result, not flat siblings.
     private func characterInspectorResult(character: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
-        if characterMatchesFilter(character, searchText: searchText, displayMode: displayMode) {
-            foundResults.append(characterResult(item: character, searchText: searchText, displayMode: displayMode))
-        }
-        await searchValueEntries(of: character, characterId: character.id, characterName: character.name, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
+        let characterMatches = characterMatchesFilter(character, searchText: searchText, displayMode: displayMode)
+        var entryChildren: [SearchResult] = []
+        await collectValueEntries(of: character, characterId: character.id, characterName: character.name, searchText: searchText, into: &entryChildren)
+        guard characterMatches || !entryChildren.isEmpty else { return }
+        var result = characterResult(item: character, searchText: searchText, displayMode: displayMode)
+        result.children = entryChildren.sortedByRelevance()
+        foundResults.append(result)
     }
 
-    /// Walks all entries of `item`, appending hits with `characterId`/`characterName` as the result
-    /// anchor. Recurses into sub-value groups via `entry.valueId`.
-    /// compact → name only; medium/regular → name + content
-    private func searchValueEntries(of item: ValueModel, characterId: UUID, characterName: String, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
+    /// Collects matching entries from `item` into `entryChildren`.
+    /// Inspector always searches entry name + content, regardless of displayMode.
+    /// Recurses into sub-value groups via `entry.valueId`.
+    private func collectValueEntries(of item: ValueModel, characterId: UUID, characterName: String, searchText: String, into entryChildren: inout [SearchResult]) async {
         for entry in item.entries {
             guard !Task.isCancelled else { break }
 
             let entryMatches = entry.name.localizedStandardContains(searchText)
-                || (displayMode != .compact && entry.content.localizedStandardContains(searchText))
+                            || entry.content.localizedStandardContains(searchText)
 
             if entryMatches {
-                foundResults.append(SearchResult(
+                entryChildren.append(SearchResult(
                     itemId: characterId,
                     itemName: characterName,
                     module: itemControllable.config.module,
                     category: item.category,
                     entryId: entry.id,
                     entryName: entry.name,
-                    matchedContent: displayMode != .compact && !entry.content.isEmpty ? entry.content : nil,
+                    matchedContent: entry.content.isEmpty ? nil : entry.content,
                     relevanceScore: calculateRelevance(
                         searchText: searchText,
                         itemName: characterName,
                         entryName: entry.name,
-                        content: displayMode != .compact ? entry.content : nil,
+                        content: entry.content,
                         isItemMatch: false
                     )
                 ))
@@ -328,7 +406,7 @@ extension SearchController {
 
             if let subValueId = entry.valueId {
                 guard let subValue = await itemController.item(for: subValueId) else { continue }
-                await searchValueEntries(of: subValue, characterId: characterId, characterName: characterName, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
+                await collectValueEntries(of: subValue, characterId: characterId, characterName: characterName, searchText: searchText, into: &entryChildren)
             }
         }
     }

@@ -24,6 +24,6 @@ struct FolderListController: FolderListControllable {
             listModel: listModel,
             listDisplayModel: listDisplayModel.newListDisplayModel,
             itemControllable: itemControllable,
-            searchRootControllable: searchRootControllable)
+            searchRootControllable: searchRootControllable.copy(listDisplayModel: listDisplayModel.newListDisplayModel))
     }
 }

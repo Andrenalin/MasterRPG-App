@@ -1,68 +1,316 @@
 // @copyright André Trettin
 
-@testable import CoreRPG
+import CoreRPG
 import Foundation
 import RPGResourcesDebug
 import Testing
 
 @testable import SpaceRPG
 
+/// Tests for `SearchListController` and `SearchLinkController` driving SpaceRPG search.
+/// SpaceRPG uses the CoreRPG default `SearchControllable` implementations with no overrides,
+/// so these tests pin the generic list/folder/inspector behaviour for non-Character modules.
+@MainActor
 struct FolderListControllerTests {
 
-    @Test @MainActor func addFoldersAndItems() async throws {
-        let root = try await MockRoot.importTestData()
-        let convertController = ConvertController(itemController: root.itemController, editController: root.editController)
+    // MARK: - Helpers
 
-        #expect(root.itemController.itemDataModel.items.count == 1)
-        let model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
-        model.fileUrl = FileUrl(fileId: model.id, url: URL(filePath: "/Rollenspiel/Example/3dmodel/3ditem.usdz"), location: .other, module: "Test", relativeUrl: nil)
-        model.category = .item // to allow the create Folders to work
-        await convertController.createFilepathFoldersAndCollections(reportModel: ValidateRepairModel())
-        try #require(root.itemController.itemDataModel.items.count == 4)
-        // structure test in converterController
-        
-        let sut = root.folderListController
-        
-        var items = sut.displayItems
-        try #require(items.count == 0)
-        
-        sut.resetItemOnce()
-        items = sut.displayItems
-        try #require(items.count == 1)
-        #expect(items[0].model.name == "3D Item")
-        
-        sut.listDisplayModel.listMode = .folder
-        sut.resetFilter()
+    private func makeRoot() async -> SpaceRootModel {
+        let root = SpaceRootModel.testRoot()
+        await root.itemController.resetData()
+        return root
+    }
 
-        items = sut.displayItems
-        try #require(items.count == 1)
-        #expect(items[0].model.name == "Rollenspiel")
-        
-        sut.toggleFolder(item: items[0])
-        items = sut.displayItems
-        try #require(items.count == 2)
-        #expect(items[0].model.name == "Rollenspiel")
-        #expect(items[1].model.name == "Example")
+    /// `SearchListController` + shared `ListDisplayModel`.
+    private func makeSUT(for root: SpaceRootModel,
+                         listMode: ListDisplayModel.ListMode = .list,
+                         displayMode: ListDisplayModel.DisplayMode = .medium)
+        -> (sut: SearchListController, ldm: ListDisplayModel)
+    {
+        let ldm = ListDisplayModel(displayMode: displayMode, listMode: listMode)
+        let sut = SearchListController(
+            searchController: root.searchControllable,
+            searchModel: SearchModel.preview(module: .space),
+            listDisplayModel: ldm
+        )
+        return (sut, ldm)
+    }
 
-        sut.toggleFolder(item: items[1])
-        items = sut.displayItems
-        try #require(items.count == 3)
-        #expect(items[0].model.name == "Rollenspiel")
-        #expect(items[1].model.name == "Example")
-        #expect(items[2].model.name == "3dmodel")
+    /// `SearchLinkController` + shared `ListDisplayModel` + its `SearchModel`.
+    private func makeLinkSUT(for root: SpaceRootModel,
+                              listMode: ListDisplayModel.ListMode = .list,
+                              focusId: UUID? = nil)
+        -> (sut: SearchLinkController, ldm: ListDisplayModel, sm: SearchModel)
+    {
+        let ldm = ListDisplayModel(displayMode: .medium, listMode: listMode)
+        let sm  = SearchModel.preview(module: .space)
+        sm.filterId = focusId
+        let sut = SearchLinkController(
+            searchController: root.searchControllable,
+            searchModel: sm,
+            listDisplayModel: ldm
+        )
+        return (sut, ldm, sm)
+    }
 
-        sut.toggleFolder(item: items[2])
-        items = sut.displayItems
-        try #require(items.count == 4)
-        #expect(items[0].model.name == "Rollenspiel")
-        #expect(items[1].model.name == "Example")
-        #expect(items[2].model.name == "3dmodel")
-        #expect(items[3].model.name == "3D Item")
-        
-        sut.listDisplayModel.listMode = .list
-        sut.resetFilter()
-        items = sut.displayItems
-        try #require(items.count == 1)
-        #expect(items[0].model.name == "3D Item")
+    // MARK: - SearchListController: empty search loads list
+
+    @Test("Empty list search returns all visible items sorted alphabetically")
+    func emptySearchLoadsItemsAlphabetically() async throws {
+        let root = await makeRoot()
+
+        let idC = await root.itemController.addNew(type: .item)
+        let idA = await root.itemController.addNew(type: .item)
+        let idB = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Cruiser",  itemId: idC)
+        root.editController.reset(name: "Asteroid", itemId: idA)
+        root.editController.reset(name: "Battleship", itemId: idB)
+
+        let (sut, _) = makeSUT(for: root)
+        let results = await sut.results(text: "")
+
+        let ids = results.map(\.itemId)
+        #expect(ids.contains(idA) && ids.contains(idB) && ids.contains(idC),
+                "All visible items must appear on empty search")
+        let names = results.map(\.itemName)
+        #expect(names == names.sorted { $0.localizedCompare($1) == .orderedAscending },
+                "Empty-search results must be alphabetically sorted")
+    }
+
+    @Test("Empty list search excludes folders and collections")
+    func emptySearchExcludesSpecialCategories() async throws {
+        let root = await makeRoot()
+
+        let itemId   = await root.itemController.addNew(type: .item)
+        let folderId = await root.itemController.addNew(type: .folder)
+        root.editController.reset(name: "Probe",  itemId: itemId)
+        root.editController.reset(name: "Hangar", itemId: folderId)
+
+        let (sut, _) = makeSUT(for: root)
+        let results = await sut.results(text: "")
+
+        let ids = results.map(\.itemId)
+        #expect(ids.contains(itemId), "Regular item must appear in list mode")
+        #expect(!ids.contains(folderId), "Folder must be excluded in list mode")
+    }
+
+    // MARK: - SearchListController: search text filters
+
+    @Test("Non-empty list search filters to matching items by relevance")
+    func searchTextFiltersAndSortsByRelevance() async throws {
+        let root = await makeRoot()
+
+        let exactId    = await root.itemController.addNew(type: .item)
+        let containsId = await root.itemController.addNew(type: .item)
+        let noMatchId  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon",           itemId: exactId)
+        root.editController.reset(name: "The Dragon Ship",  itemId: containsId)
+        root.editController.reset(name: "Nebula Cruiser",   itemId: noMatchId)
+
+        let (sut, _) = makeSUT(for: root)
+        let results = await sut.results(text: "Dragon")
+        let ids = results.map(\.itemId)
+
+        #expect(ids.contains(exactId),    "Exact match must appear")
+        #expect(ids.contains(containsId), "Contains match must appear")
+        #expect(!ids.contains(noMatchId), "Non-matching item must be excluded")
+
+        let exactIdx    = try #require(ids.firstIndex(of: exactId))
+        let containsIdx = try #require(ids.firstIndex(of: containsId))
+        #expect(exactIdx < containsIdx, "Exact name match must rank above contains match")
+    }
+
+    @Test("Compact mode matches name only; description match requires medium or above")
+    func displayModeControlsDescriptionMatching() async throws {
+        let root = await makeRoot()
+
+        let descOnlyId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Wanderer",              itemId: descOnlyId)
+        root.editController.reset(description: "Dragon-class scout vessel", itemId: descOnlyId)
+
+        // Compact: name only — description match must NOT appear
+        let (compactSUT, _) = makeSUT(for: root, displayMode: .compact)
+        let compactResults = await compactSUT.results(text: "Dragon")
+        #expect(!compactResults.map(\.itemId).contains(descOnlyId),
+                "Compact mode must not match by description")
+
+        // Medium: name + description — must appear
+        let (mediumSUT, _) = makeSUT(for: root, displayMode: .medium)
+        let mediumResults = await mediumSUT.results(text: "Dragon")
+        #expect(mediumResults.map(\.itemId).contains(descOnlyId),
+                "Medium mode must match by description")
+    }
+
+    // MARK: - SearchListController: folder mode
+
+    @Test("Switching to folder mode returns folder as parent with matching item as child")
+    func switchingToFolderModeReturnsHierarchicalResults() async throws {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let itemId   = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Dock", itemId: folderId)
+        root.editController.reset(name: "Dragon Wing", itemId: itemId)
+        root.editController.addItem(itemId: itemId, parentId: folderId)
+
+        let (sut, ldm) = makeSUT(for: root, listMode: .list)
+
+        // List mode: folder and item both appear flat, folder result has no children
+        let listResults = await sut.results(text: "Dragon")
+        if let folderFlat = listResults.first(where: { $0.itemId == folderId }) {
+            #expect(folderFlat.children.isEmpty, "List mode folder must carry no children")
+        }
+
+        // Switch to folder mode on the same SearchListController
+        ldm.listMode = .folder
+        let folderResults = await sut.results(text: "Dragon")
+
+        let folderResult = try #require(
+            folderResults.first(where: { $0.itemId == folderId }),
+            "Folder must appear in folder mode")
+        #expect(folderResult.children.map(\.itemId).contains(itemId),
+                "Item must be nested inside the folder in folder mode")
+    }
+
+    @Test("Folder mode empty search: items grouped under parent; children lazy (empty children list)")
+    func folderModeEmptySearchLazyLoadsChildren() async throws {
+        let root = await makeRoot()
+
+        let folderId  = await root.itemController.addNew(type: .folder)
+        let memberA   = await root.itemController.addNew(type: .item)
+        let standalone = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Fleet HQ",    itemId: folderId)
+        root.editController.reset(name: "Fighter",     itemId: memberA)
+        root.editController.reset(name: "Lone Probe",  itemId: standalone)
+        root.editController.addItem(itemId: memberA, parentId: folderId)
+
+        let (sut, _) = makeSUT(for: root, listMode: .folder)
+        let results = await sut.results(text: "")
+
+        let rootIds = results.map(\.itemId)
+        #expect(rootIds.contains(folderId),   "Folder must be a root node")
+        #expect(rootIds.contains(standalone), "Standalone item must be a root node")
+        #expect(!rootIds.contains(memberA),   "Folder member must not appear at root level")
+
+        // Empty search uses lazy loading — SearchResult.children is empty;
+        // FolderListControllable populates item.children on open via loadFolderChildren.
+        let folderResult = try #require(results.first(where: { $0.itemId == folderId }))
+        #expect(folderResult.children.isEmpty,
+                "Lazy loading: folder SearchResult.children is empty on empty search")
+    }
+
+    // MARK: - SearchLinkController: inspector search
+
+    @Test("Inspector empty search without focus returns nothing")
+    func inspectorEmptyNoFocusReturnsEmpty() async throws {
+        let root = await makeRoot()
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Probe", itemId: itemId)
+
+        let (sut, _, _) = makeLinkSUT(for: root)
+        #expect(await sut.results(text: "").isEmpty,
+                "Inspector without focus requires non-empty search text")
+    }
+
+    @Test("Inspector search returns matching items")
+    func inspectorSearchReturnsMatchingItems() async throws {
+        let root = await makeRoot()
+
+        let matchId   = await root.itemController.addNew(type: .item)
+        let noMatchId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Ship",  itemId: matchId)
+        root.editController.reset(name: "Space Station", itemId: noMatchId)
+
+        let (sut, _, _) = makeLinkSUT(for: root)
+        let results = await sut.results(text: "Dragon")
+
+        let ids = results.map(\.itemId)
+        #expect(ids.contains(matchId),    "Dragon Ship must appear")
+        #expect(!ids.contains(noMatchId), "Space Station must be excluded")
+    }
+
+    @Test("Inspector search: item with matching description appears in medium mode")
+    func inspectorSearchMatchesDescriptionInMediumMode() async throws {
+        let root = await makeRoot()
+
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Wanderer", itemId: itemId)
+        root.editController.reset(description: "Dragon-class scout", itemId: itemId)
+
+        let (sut, _, _) = makeLinkSUT(for: root)    // medium by default
+        let results = await sut.results(text: "Dragon")
+        #expect(results.map(\.itemId).contains(itemId),
+                "Inspector must match by description in medium mode")
+    }
+
+    @Test("Inspector search: entry name match produces entry as child of item result")
+    func inspectorEntryNameMatchIsChild() async throws {
+        let root = await makeRoot()
+
+        // SpaceEntryModel.name always returns "Space Model".
+        // Searching "Space" triggers an entry match, so the entry must appear as
+        // a child of the item result (not a flat sibling).
+        let itemId   = await root.itemController.addNew(type: .item)
+        let linkedId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Galaxy Base", itemId: itemId)
+        // Append an entry that links to another 3D object; its name = "Space Model"
+        let entryId = UUID()
+        root.itemController.itemOrEmpty(for: itemId)
+            .entries.append(SpaceEntryModel(id: entryId, spaceId: linkedId))
+
+        let (sut, _, _) = makeLinkSUT(for: root)
+        // "Space" matches entry.name "Space Model" → entry becomes a child of the item result
+        let results = await sut.results(text: "Space")
+
+        let itemResult = try #require(results.first(where: { $0.itemId == itemId }),
+                                      "Galaxy Base must appear because its entry name matches")
+        #expect(itemResult.children.contains(where: { $0.entryId == entryId }),
+                "Matching entry must be a child of the item result, not a flat sibling")
+        #expect(results.allSatisfy { $0.entryId == nil },
+                "No entry-level result must appear at the top level")
+    }
+
+    @Test("Inspector with focusId searches only the focused item")
+    func inspectorFocusedSearchesSingleItem() async throws {
+        let root = await makeRoot()
+
+        let focusId = await root.itemController.addNew(type: .item)
+        let otherId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Probe",   itemId: focusId)
+        root.editController.reset(name: "Dragon Station", itemId: otherId)
+
+        let (sut, _, _) = makeLinkSUT(for: root, focusId: focusId)
+        let results = await sut.results(text: "Dragon")
+
+        #expect(results.contains(where: { $0.itemId == focusId }),
+                "Focused item must appear")
+        #expect(!results.contains(where: { $0.itemId == otherId }),
+                "Items outside focus must not appear even if their name matches")
+    }
+
+    @Test("Inspector folder mode returns hierarchical structure")
+    func inspectorFolderModeReturnsHierarchy() async throws {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let itemId   = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Dock",  itemId: folderId)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+        root.editController.addItem(itemId: itemId, parentId: folderId)
+
+        let (sut, ldm, _) = makeLinkSUT(for: root, listMode: .list)
+
+        // List mode: flat
+        let listResults = await sut.results(text: "Dragon")
+        if let folderFlat = listResults.first(where: { $0.itemId == folderId }) {
+            #expect(folderFlat.children.isEmpty)
+        }
+
+        // Folder mode: nested
+        ldm.listMode = .folder
+        let folderResults = await sut.results(text: "Dragon")
+        let folderResult  = try #require(folderResults.first(where: { $0.itemId == folderId }))
+        #expect(folderResult.children.map(\.itemId).contains(itemId),
+                "Inspector folder mode must nest the matching item inside the folder")
     }
 }

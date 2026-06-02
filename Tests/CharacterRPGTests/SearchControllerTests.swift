@@ -158,4 +158,244 @@ struct SearchControllerTests {
 
         #expect(nameIndex < descIndex)
     }
+
+    // MARK: - Inspector search, focusId == nil (CoreRPG-compatible: entries as children)
+
+    @Test("Inspector nil focus: entry name match gives entry as child of character result")
+    func inspectorNilFocusEntryMatchGivesEntryAsChild() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Eldrin", itemId: charId)
+        let entryId = await root.editController.addNewGroup(itemId: charId)
+        root.editController.update(itemId: charId, entryId: entryId, name: "Dragon Strength", content: "Very high")
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "Dragon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+
+        let charResult = try #require(results.first(where: { $0.itemId == charId }),
+                                      "Character must appear because its entry name matches")
+        #expect(!charResult.children.isEmpty, "Matching entry must be a child of the character result")
+        #expect(charResult.children.contains(where: { $0.entryId == entryId }),
+                "The matching entry must appear in children")
+    }
+
+    @Test("Inspector nil focus: no match excludes character")
+    func inspectorNilFocusNoMatchExcludes() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Knight", itemId: charId)
+        let entryId = await root.editController.addNewGroup(itemId: charId)
+        root.editController.update(itemId: charId, entryId: entryId, name: "Sword skill", content: "Very skilled")
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "Dragon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+
+        #expect(!results.contains(where: { $0.itemId == charId }),
+                "Character with no matching name, description, or entries must be excluded")
+    }
+
+    // MARK: - Inspector search, focusId = character (focused character inspector)
+
+    @Test("Focused inspector: empty search returns character with all entries")
+    func focusedInspectorEmptySearchReturnsCharacterWithAllEntries() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Thorin", itemId: charId)
+        let entry1 = await root.editController.addNewGroup(itemId: charId)
+        let entry2 = await root.editController.addNewGroup(itemId: charId)
+        root.editController.update(itemId: charId, entryId: entry1, name: "Strength", content: "")
+        root.editController.update(itemId: charId, entryId: entry2, name: "Dexterity", content: "")
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: charId
+        )
+
+        let charResult = try #require(results.first(where: { $0.itemId == charId }),
+                                      "Focused character must always be returned")
+        #expect(charResult.children.count == 2, "All entries must appear as children on empty search")
+    }
+
+    @Test("Focused inspector: empty search — group entry children appear as entry's children")
+    func focusedInspectorEmptySearchGroupEntryHasSubEntriesAsChildren() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Thorin", itemId: charId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
+        // The group entry has a valueId → a sub-value item
+        let char = root.itemController.itemOrEmpty(for: charId)
+        let groupEntry = try #require(char.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+        // Add an entry to the sub-value
+        let subEntry1 = await root.editController.addNewGroup(itemId: subValueId)
+        root.editController.update(itemId: subValueId, entryId: subEntry1, name: "SubStrength", content: "")
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: charId
+        )
+
+        let charResult = try #require(results.first(where: { $0.itemId == charId }))
+        let entryResult = try #require(charResult.children.first(where: { $0.entryId == groupEntryId }),
+                                       "Group entry must appear as child of character")
+        #expect(!entryResult.children.isEmpty,
+                "Sub-value entries must appear as children of the group entry")
+        #expect(entryResult.children.contains(where: { $0.entryId == subEntry1 }),
+                "Sub-entry must be in entry's children")
+    }
+
+    @Test("Focused inspector: entry name match — only matching entry returned")
+    func focusedInspectorEntryNameMatch() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Eldrin — no dragon here", itemId: charId)
+        let matchEntry = await root.editController.addNewGroup(itemId: charId)
+        let noMatchEntry = await root.editController.addNewGroup(itemId: charId)
+        root.editController.update(itemId: charId, entryId: matchEntry, name: "Dragon Breath", content: "")
+        root.editController.update(itemId: charId, entryId: noMatchEntry, name: "Sword Skills", content: "")
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "Dragon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: charId
+        )
+
+        let charResult = try #require(results.first(where: { $0.itemId == charId }),
+                                      "Character must always be returned regardless of its own name")
+        #expect(charResult.children.contains(where: { $0.entryId == matchEntry }),
+                "Entry whose name matches must appear")
+        #expect(!charResult.children.contains(where: { $0.entryId == noMatchEntry }),
+                "Entry with no match must be excluded")
+    }
+
+    @Test("Focused inspector: entry content match")
+    func focusedInspectorEntryContentMatch() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let charId = await root.itemController.addNew(type: .item)
+        let entryId = await root.editController.addNewGroup(itemId: charId)
+        root.editController.update(itemId: charId, entryId: entryId, name: "Fire Resistance", content: "Immune to dragon fire")
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "dragon",
+            listMode: .list,
+            displayMode: .compact,   // displayMode has no effect in focused inspector
+            focusId: charId
+        )
+
+        let charResult = try #require(results.first(where: { $0.itemId == charId }))
+        #expect(charResult.children.contains(where: { $0.entryId == entryId }),
+                "Entry whose content matches must appear even in compact display mode")
+    }
+
+    @Test("Focused inspector: sub-value item name match includes its group entry")
+    func focusedInspectorSubValueNameMatch() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let charId = await root.itemController.addNew(type: .item)
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
+        // The group entry points to a sub-value item — name it "Dragon Ability"
+        let char = root.itemController.itemOrEmpty(for: charId)
+        let groupEntry = try #require(char.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+        root.editController.reset(name: "Dragon Ability", itemId: subValueId)
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "Dragon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: charId
+        )
+
+        let charResult = try #require(results.first(where: { $0.itemId == charId }))
+        #expect(charResult.children.contains(where: { $0.entryId == groupEntryId }),
+                "Group entry whose sub-value name matches must be included")
+    }
+
+    @Test("Focused inspector: no match excludes all entries but still returns character")
+    func focusedInspectorNoMatchReturnsEmptyChildren() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Knight", itemId: charId)
+        let entryId = await root.editController.addNewGroup(itemId: charId)
+        root.editController.update(itemId: charId, entryId: entryId, name: "Sword", content: "Sharp blade")
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "Dragon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: charId
+        )
+
+        let charResult = try #require(results.first(where: { $0.itemId == charId }),
+                                      "Focused character must always be returned")
+        #expect(charResult.children.isEmpty, "No entries match Dragon — children must be empty")
+    }
+
+    @Test("Focused inspector: matching entry with sub-value gets sub-value entries as its children")
+    func focusedInspectorMatchingEntryHasSubValueEntriesAsChildren() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let charId = await root.itemController.addNew(type: .item)
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
+        root.editController.update(itemId: charId, entryId: groupEntryId, name: "Dragon Powers", content: "")
+
+        // The group entry points to a sub-value; add entries to that sub-value
+        let char = root.itemController.itemOrEmpty(for: charId)
+        let groupEntry = try #require(char.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+        let subEntry = await root.editController.addNewGroup(itemId: subValueId)
+        root.editController.update(itemId: subValueId, entryId: subEntry, name: "Fire breath", content: "")
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "Dragon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: charId
+        )
+
+        let charResult = try #require(results.first(where: { $0.itemId == charId }))
+        let entryResult = try #require(charResult.children.first(where: { $0.entryId == groupEntryId }),
+                                       "Matching group entry must be a child")
+        #expect(!entryResult.children.isEmpty,
+                "Matching entry's sub-value entries must appear as the entry's children")
+        #expect(entryResult.children.contains(where: { $0.entryId == subEntry }))
+    }
 }
