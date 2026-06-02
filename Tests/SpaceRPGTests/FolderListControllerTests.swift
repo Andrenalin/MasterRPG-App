@@ -201,15 +201,16 @@ struct FolderListControllerTests {
 
     // MARK: - SearchLinkController: inspector search
 
-    @Test("Inspector empty search without focus returns nothing")
-    func inspectorEmptyNoFocusReturnsEmpty() async throws {
+    @Test("Inspector empty search without focus returns all visible items sorted alphabetically")
+    func inspectorEmptyNoFocusReturnsAllItems() async throws {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
         root.editController.reset(name: "Probe", itemId: itemId)
 
         let (sut, _, _) = makeLinkSUT(for: root)
-        #expect(await sut.results(text: "").isEmpty,
-                "Inspector without focus requires non-empty search text")
+        let results = await sut.results(text: "")
+        #expect(results.map(\.itemId).contains(itemId),
+                "Empty search must return all visible items — fixes first-appear blank list")
     }
 
     @Test("Inspector search returns matching items")

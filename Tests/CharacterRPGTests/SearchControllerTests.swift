@@ -399,3 +399,309 @@ struct SearchControllerTests {
         #expect(entryResult.children.contains(where: { $0.entryId == subEntry }))
     }
 }
+
+// MARK: - listSearchResults: list mode (CharacterRPG-specific behaviours)
+
+/// CharacterRPG diverges from CoreRPG in three ways for list mode:
+///  1. `groupId != nil` items (sub-values) are always excluded.
+///  2. `specialCategory` items (groups/folders) ARE included (CoreRPG excludes them).
+///  3. Relevance sort includes an alphabetical tiebreaker via `sortedByRelevance()`.
+@MainActor
+struct ListSearchResultsTests {
+
+    private func makeRoot() async throws -> CharacterRootModel {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        return root
+    }
+
+    // MARK: groupId filter
+
+    @Test("List mode excludes sub-value items (groupId != nil)")
+    func listModeExcludesSubValueItems() async throws {
+        let root = try await makeRoot()
+
+        let parentId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Warrior", itemId: parentId)
+
+        let groupEntryId = await root.editController.addNewGroup(itemId: parentId)
+        let parent = root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry = try #require(parent.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+        root.editController.reset(name: "Warrior Strength", itemId: subValueId)  // searchable name
+
+        let results = await root.searchController.listSearchResults(
+            searchText: "Warrior",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids = results.map(\.itemId)
+
+        #expect(ids.contains(parentId),    "Parent character must appear")
+        #expect(!ids.contains(subValueId), "Sub-value (groupId != nil) must be excluded from list mode")
+    }
+
+    @Test("List mode includes specialCategory items (CharacterRPG differs from CoreRPG here)")
+    func listModeIncludesSpecialCategoryItems() async throws {
+        let root = try await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        root.editController.reset(name: "Dragon Group", itemId: folderId)
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Regular Dragon", itemId: charId)
+
+        let results = await root.searchController.listSearchResults(
+            searchText: "Dragon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids = results.map(\.itemId)
+
+        #expect(ids.contains(folderId), "specialCategory folder must appear in CharacterRPG list mode")
+        #expect(ids.contains(charId),   "Regular character must also appear")
+    }
+
+    @Test("List mode empty search returns all root characters sorted A→Z, no sub-values")
+    func listModeEmptySearchSortsAlphabetically() async throws {
+        let root = try await makeRoot()
+
+        let idC = await root.itemController.addNew(type: .item)
+        let idA = await root.itemController.addNew(type: .item)
+        let idB = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Cassia", itemId: idC)
+        root.editController.reset(name: "Aldric", itemId: idA)
+        root.editController.reset(name: "Berin",  itemId: idB)
+
+        let results = await root.searchController.listSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let names = results.map(\.itemName)
+        let sorted = names.sorted { $0.localizedCompare($1) == .orderedAscending }
+
+        #expect(names == sorted, "Empty search must return characters sorted A→Z")
+    }
+
+    @Test("List mode non-empty search uses relevance order with alphabetical tiebreaker")
+    func listModeNonEmptySearchSortsByRelevance() async throws {
+        let root = try await makeRoot()
+
+        let exactId    = await root.itemController.addNew(type: .item)
+        let containsId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Rogue",             itemId: exactId)
+        root.editController.reset(name: "Rogue Shadowstep",  itemId: containsId)
+
+        let results = await root.searchController.listSearchResults(
+            searchText: "Rogue",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids = results.map(\.itemId)
+        let eIdx = try #require(ids.firstIndex(of: exactId))
+        let cIdx = try #require(ids.firstIndex(of: containsId))
+
+        #expect(eIdx < cIdx, "Exact name match must rank above contains match")
+    }
+
+    // MARK: folder mode
+
+    @Test("Folder mode excludes sub-value items (groupId != nil) from the tree")
+    func folderModeExcludesSubValueItems() async throws {
+        let root = try await makeRoot()
+
+        let parentId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Ranger", itemId: parentId)
+
+        let groupEntryId = await root.editController.addNewGroup(itemId: parentId)
+        let parent = root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry = try #require(parent.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+        root.editController.reset(name: "Ranger Dexterity", itemId: subValueId)
+
+        let results = await root.searchController.listSearchResults(
+            searchText: "Ranger",
+            listMode: .folder,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let allIds = results.flatMap { [$0.itemId] + $0.children.map(\.itemId) }
+
+        #expect(allIds.contains(parentId),    "Parent character must appear")
+        #expect(!allIds.contains(subValueId), "Sub-value (groupId != nil) must not appear in folder tree")
+    }
+
+    @Test("Folder mode empty search: all root characters, sorted A→Z, canOpen for folders")
+    func folderModeEmptySearchShowsRootCharacters() async throws {
+        let root = try await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let charId   = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Zultan",   itemId: folderId)
+        root.editController.reset(name: "Aerindel", itemId: charId)
+
+        let results = await root.searchController.listSearchResults(
+            searchText: "",
+            listMode: .folder,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids   = results.map(\.itemId)
+        let names = results.map(\.itemName)
+
+        #expect(ids.contains(folderId), "Folder must appear in empty folder search")
+        #expect(ids.contains(charId),   "Character must appear in empty folder search")
+        #expect(names == names.sorted { $0.localizedCompare($1) == .orderedAscending },
+                "Empty folder search must sort root items A→Z")
+        let folderResult = try #require(results.first(where: { $0.itemId == folderId }))
+        #expect(folderResult.canOpen == true, "Folder must have canOpen=true on empty search (lazy load)")
+    }
+}
+
+// MARK: - Inspector: empty search and folder mode fixes
+
+@MainActor
+struct InspectorSearchFixTests {
+
+    private func makeRoot() async throws -> CharacterRootModel {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        return root
+    }
+
+    @Test("Inspector non-focused empty search returns all visible characters (not empty)")
+    func inspectorEmptySearchReturnsAllCharacters() async throws {
+        let root = try await makeRoot()
+
+        let char1 = await root.itemController.addNew(type: .item)
+        let char2 = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Aldric", itemId: char1)
+        root.editController.reset(name: "Berin",  itemId: char2)
+
+        let results = await root.searchController.inspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids = results.map(\.itemId)
+
+        #expect(ids.contains(char1), "Aldric must appear on empty inspector search")
+        #expect(ids.contains(char2), "Berin must appear on empty inspector search")
+    }
+
+    @Test("Inspector non-focused empty search returns characters sorted A→Z")
+    func inspectorEmptySearchSortsAlphabetically() async throws {
+        let root = try await makeRoot()
+
+        let idC = await root.itemController.addNew(type: .item)
+        let idA = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Cedric", itemId: idC)
+        root.editController.reset(name: "Asha",   itemId: idA)
+
+        let results = await root.searchController.inspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let names = results.map(\.itemName)
+
+        #expect(names == names.sorted { $0.localizedCompare($1) == .orderedAscending },
+                "Empty inspector search must return characters sorted A→Z")
+    }
+
+    @Test("Inspector empty search: character with entries has canOpen=true")
+    func inspectorEmptySearchCanOpenReflectsEntries() async throws {
+        let root = try await makeRoot()
+
+        let charWithEntries    = await root.itemController.addNew(type: .item)
+        let charWithoutEntries = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "With Entries",    itemId: charWithEntries)
+        root.editController.reset(name: "Without Entries", itemId: charWithoutEntries)
+        _ = await root.editController.addNewGroup(itemId: charWithEntries)
+
+        let results = await root.searchController.inspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+
+        let withResult    = try #require(results.first(where: { $0.itemId == charWithEntries }))
+        let withoutResult = try #require(results.first(where: { $0.itemId == charWithoutEntries }))
+
+        #expect(withResult.canOpen    == true,  "Character with entries must have canOpen=true")
+        #expect(withoutResult.canOpen == false, "Character without entries must have canOpen=false")
+    }
+
+    @Test("Inspector sub-value (groupId != nil) excluded from empty search results")
+    func inspectorEmptySearchExcludesSubValues() async throws {
+        let root = try await makeRoot()
+
+        let parentId     = await root.itemController.addNew(type: .item)
+        let groupEntryId = await root.editController.addNewGroup(itemId: parentId)
+        let parent       = root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry   = try #require(parent.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId   = try #require(groupEntry.valueId)
+
+        let results = await root.searchController.inspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids = results.map(\.itemId)
+
+        #expect(!ids.contains(subValueId), "Sub-value (groupId != nil) must not appear in inspector empty results")
+    }
+
+    @Test("Inspector folder mode: empty search returns all characters without space-trick filtering")
+    func inspectorFolderModeEmptySearchShowsAllCharacters() async throws {
+        let root = try await makeRoot()
+
+        // Items with single-word names have no space — the old " " trick filtered them out
+        let singleWord = await root.itemController.addNew(type: .item)
+        let multiWord  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Rogue",         itemId: singleWord)
+        root.editController.reset(name: "Forest Ranger", itemId: multiWord)
+
+        let results = await root.searchController.inspectorSearchResults(
+            searchText: "",
+            listMode: .folder,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids = results.map(\.itemId)
+
+        #expect(ids.contains(singleWord), "Single-word name 'Rogue' must appear (no \" \" trick)")
+        #expect(ids.contains(multiWord),  "Multi-word name 'Forest Ranger' must appear")
+    }
+
+    @Test("Inspector folder mode: canOpen=true for all folders on empty search (lazy load)")
+    func inspectorFolderModeEmptySearchFolderHasCanOpenTrue() async throws {
+        let root = try await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let charId   = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Heroes Guild", itemId: folderId)
+        root.editController.addItem(itemId: charId, parentId: folderId)
+
+        let results = await root.searchController.inspectorSearchResults(
+            searchText: "",
+            listMode: .folder,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let folderResult = try #require(results.first(where: { $0.itemId == folderId }))
+
+        #expect(folderResult.canOpen == true,
+                "Folder must have canOpen=true on empty search so FolderListControllable can lazy-load")
+        #expect(folderResult.children.isEmpty,
+                "Folder children must not be pre-fetched on empty search")
+    }
+}

@@ -140,7 +140,7 @@ extension SearchController {
         if searchText.isEmpty {
             return foundResults.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
         }
-        return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
+        return foundResults.sortedByRelevance()
     }
 
     /// Folder tree: hierarchical results rooted at focusId or all root-level items.
@@ -259,7 +259,10 @@ extension SearchController {
     func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
         switch listMode {
         case .folder:
-            return await folderModeCharacterResults(searchText: searchText.isEmpty ? " " : searchText, focusId: focusId, displayMode: displayMode)
+            // Pass searchText directly — folderModeCharacterResults / buildCharacterFolderNode
+            // handle empty search correctly (characterMatchesFilter returns true for all items).
+            // The old " " trick only matched items whose names contained a space.
+            return await folderModeCharacterResults(searchText: searchText, focusId: focusId, displayMode: displayMode)
         case .list:
             if let focusId {
                 // Focused on a specific character: always return it with filtered entries.
@@ -339,13 +342,21 @@ extension SearchController {
     /// - `parentId != nil`: scoped to the given character. All results carry that character's
     ///   `itemId` so the UI navigates back to the character, not into a sub-value group.
     /// - `parentId == nil`: walks all root characters (`groupId == nil`, `displayState == 0`).
+    /// Inspector search used by `SearchLinkController`.
+    ///
+    /// Empty search is now handled properly (was `guard !searchText.isEmpty else { return [] }`
+    /// which caused the inspector to show nothing on first appear):
+    /// - `parentId != nil`, empty → delegates to `focusedCharacterInspector` (all entries shown)
+    /// - `parentId == nil`, empty → all root characters, A→Z, `canOpen = !entries.isEmpty`
     func inspectorSearchResults(searchText: String, parentId: UUID?, displayMode: ListDisplayModel.DisplayMode = .medium) async -> [SearchResult] {
-        guard !searchText.isEmpty else { return [] }
         var foundResults: [SearchResult] = []
         if let parentId {
+            if searchText.isEmpty {
+                return await focusedCharacterInspector(characterId: parentId, searchText: "")
+            }
             guard let character = await itemController.item(for: parentId) else { return [] }
             await characterInspectorResult(character: character, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
-            return foundResults // not sorting!
+            return foundResults
         } else {
             let itemIds = await itemControllable.itemDataModel.items
             for itemId in itemIds {
@@ -353,9 +364,18 @@ extension SearchController {
                 guard let character = await itemController.item(for: itemId),
                       character.groupId == nil,
                       character.displayState == 0 else { continue }
-                await characterInspectorResult(character: character, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
+                if searchText.isEmpty {
+                    var result = characterResult(item: character, searchText: "", displayMode: displayMode)
+                    result.canOpen = !character.entries.isEmpty
+                    foundResults.append(result)
+                } else {
+                    await characterInspectorResult(character: character, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
+                }
             }
-            return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
+            if searchText.isEmpty {
+                return foundResults.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+            }
+            return foundResults.sortedByRelevance()
         }
     }
 
