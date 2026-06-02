@@ -221,17 +221,26 @@ struct FolderListControllerTests {
 
     // MARK: - SearchLinkController (inspector search)
 
-    @Test("SearchLinkController: empty search without focus returns nothing")
-    func linkControllerEmptySearchNoFocusReturnsEmpty() async throws {
+    @Test("SearchLinkController: empty search without focus returns all visible characters sorted A→Z")
+    func linkControllerEmptySearchNoFocusReturnsAllCharacters() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Aragorn", itemId: charId)
+        let idB = await root.itemController.addNew(type: .item)
+        let idA = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Boromir", itemId: idB)
+        root.editController.reset(name: "Aragorn", itemId: idA)
 
-        let (sut, _, _) = makeLinkSUT(for: root)           // focusId == nil
+        let (sut, _, _) = makeLinkSUT(for: root)   // focusId == nil
         let results = await sut.results(text: "")
-        #expect(results.isEmpty, "Inspector without focus requires non-empty search text")
+        let ids     = results.map(\.itemId)
+        let names   = results.map(\.itemName)
+
+        // Previously this path returned [] (first-appear blank list bug — now fixed).
+        #expect(ids.contains(idA), "Aragorn must appear on empty inspector search")
+        #expect(ids.contains(idB), "Boromir must appear on empty inspector search")
+        #expect(names == names.sorted { $0.localizedCompare($1) == .orderedAscending },
+                "Empty inspector search must return characters sorted A→Z")
     }
 
     @Test("SearchLinkController: search returns matching characters")

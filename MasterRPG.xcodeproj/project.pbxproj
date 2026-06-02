@@ -1682,10 +1682,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				PhotoRPGTests/ExportControllerTests.swift,
+				PhotoRPGTests/FolderListControllerTests.swift,
 				PhotoRPGTests/GameControllerTests.swift,
 				PhotoRPGTests/ImportControllerTests.swift,
 				PhotoRPGTests/PhotoModelTests.swift,
-				PhotoRPGTests/SearchControllerTests.swift,
 				PhotoRPGTests/SheetControllerTests.swift,
 			);
 			target = 8E8EE89B2CD8EB620010A25B /* PhotoRPGTests */;
