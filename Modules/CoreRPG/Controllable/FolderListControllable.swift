@@ -109,25 +109,6 @@ public extension FolderListControllable {
         Task { await performDetailSearch() }
     }
 
-    /// Builds the flat list for `detailListModel` from `searchModel.detailResults`.
-    private func buildDetailListItems() -> [FolderListItemModel] {
-        let results = searchRootControllable.searchModel.detailResults
-        guard !results.isEmpty else { return listModel.detailListModel?.list ?? [] }
-        return results.map { result in
-            let id = result.entryId ?? result.itemId
-            if let cached = listModel.cacheListModels[id] { return cached }
-            let item = FolderListItemModel(
-                id: id,
-                source: ItemRowModel(itemId: result.itemId, entryId: result.entryId, typeId: result.module),
-                destination: nil,
-                level: 0,
-                isShown: !(itemControllable.itemSync(for: result.itemId)?.specialCategory ?? false)
-            )
-            listModel.cacheListModels[id] = item
-            return item
-        }
-    }
-    
     func selectedModel(for selectedId: UUID?) -> (any ItemDataAccessable)? {
         itemControllable.itemSync(for: selectedId ?? listModel.selected ?? UUID())
     }
@@ -174,66 +155,78 @@ extension FolderListControllable {
 // MARK: Search & Filter
 
 extension FolderListControllable {
+    /// Maps search results into `listModel.list`.
+    /// The search owns the structure (`SearchResult.children`);
+    /// this function only caches model identity and restores open state.
     func resetFilter() {
-        listModel.list = buildListItems()
-    }
-    
-    private func buildListItems() -> [FolderListItemModel] {
-        if listDisplayModel.listMode == .list {
-            return buildList()
-        } else {
-            return buildFolder()
-        }
-    }
-    
-    private func buildList() -> [FolderListItemModel] {
-        let results = searchModel.results
-        // Search results are populated asynchronously. While they are pending (empty),
-        // preserve the current list so no flash-to-empty occurs mid-transition.
-        guard !results.isEmpty else { return listModel.list }
-        return results.map {
-            if let cached = listModel.cacheListModels[$0.itemId] {
-                return cached
-            }
-            let newModel = FolderListItemModel(id: $0.itemId, source: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), destination: nil, level: 0, isShown: true)
-            listModel.cacheListModels[$0.itemId] = newModel
-            return newModel
-        }
+        listModel.list = buildList()
     }
 
-    private func buildFolder() -> [FolderListItemModel] {
+    private func buildList() -> [FolderListItemModel] {
         let results = searchModel.results
         guard !results.isEmpty else { return listModel.list }
+        let isSearching = !searchModel.searchText.isEmpty
         var flat: [FolderListItemModel] = []
-        flattenResults(results, level: 0, parentId: nil, into: &flat)
+        for result in results {
+            appendToFlat(result: result, level: 0, isSearching: isSearching, flat: &flat)
+        }
         return flat
     }
 
-    private func flattenResults(_ results: [SearchResult], level: Int, parentId: UUID?, into flat: inout [FolderListItemModel]) {
-        let isSearching = !searchModel.searchText.isEmpty
-        for result in results {
-            let item = folderItem(from: result, level: level, parentId: parentId)
+    /// Builds the detail list from `searchModel.detailResults`.
+    private func buildDetailListItems() -> [FolderListItemModel] {
+        let results = searchModel.detailResults
+        guard !results.isEmpty else { return listModel.detailListModel?.list ?? [] }
+        return results.map { mapResult($0, level: 0) }
+    }
+
+    /// Appends one search-result node (and, when open, its children) to the flat list.
+    ///
+    /// - When searching: auto-opens any item that has matched children.
+    /// - When search is cleared: restores `lastIsOpen` so the user's explicit
+    ///   open/close choices survive the round-trip through the search.
+    private func appendToFlat(result: SearchResult, level: Int, isSearching: Bool, flat: inout [FolderListItemModel]) {
+        let item = mapResult(result, level: level)
+
+        // Sync children from what the search returned (search owns the structure)
+        if !result.children.isEmpty {
+            item.children = result.children.map { mapResult($0, level: level + 1) }
+        }
+
+        // Open state: search auto-opens matched folders; clears → restore user state
+        item.isOpen = isSearching ? !result.children.isEmpty : item.lastIsOpen
+
+        flat.append(item)
+
+        if item.isOpen {
             if !result.children.isEmpty {
-                // Active search: populate children from matching results and auto-open.
-                item.children = result.children.map { folderItem(from: $0, level: level + 1, parentId: item.id) }
-                item.isOpen = isSearching ? true : item.lastIsOpen
-            } else if !isSearching {
-                // Empty search (lazy mode): restore the user's open state and,
-                // if the folder is open, refresh its direct children from the item model.
-                item.isOpen = item.lastIsOpen
-                if item.isOpen {
-                    loadFolderChildren(for: item)
+                // Search returned children — recurse
+                for childResult in result.children {
+                    appendToFlat(result: childResult, level: level + 1, isSearching: isSearching, flat: &flat)
                 }
-            }
-            flat.append(item)
-            if item.isOpen {
-                if !result.children.isEmpty {
-                    flattenResults(result.children, level: level + 1, parentId: item.id, into: &flat)
-                } else if !item.children.isEmpty {
-                    flattenCachedChildren(item.children, into: &flat)
-                }
+            } else if !item.children.isEmpty {
+                // Lazily-loaded children (from loadFolderChildren) — include them
+                flattenCachedChildren(item.children, into: &flat)
             }
         }
+    }
+
+    /// Returns the cached `FolderListItemModel` for `result`, or creates and caches a new one.
+    private func mapResult(_ result: SearchResult, level: Int) -> FolderListItemModel {
+        let id = result.entryId ?? result.itemId
+        if let cached = listModel.cacheListModels[id] {
+            cached.level = level
+            return cached
+        }
+        let item = FolderListItemModel(
+            id: id,
+            source: ItemRowModel(itemId: result.itemId, entryId: result.entryId, typeId: result.module),
+            destination: nil,
+            level: level,
+            isShown: false
+        )
+        listModel.cacheListModels[id] = item
+        return item
     }
 
     // Expands open nodes in the cached children tree (used for lazy-loaded folder content).
@@ -280,29 +273,6 @@ extension FolderListControllable {
             }
         }
         item.children = children
-    }
-
-    // id: entry.id when the item is a child inside a folder/collection (so the same item
-    // appearing in multiple collections gets independent SwiftUI identity and cache slots).
-    // For root-level items entryId is nil, so itemId is used.
-    private func folderItem(from result: SearchResult, level: Int, parentId: UUID?) -> FolderListItemModel {
-        let id = result.entryId ?? result.itemId
-        if let cached = listModel.cacheListModels[id] {
-            cached.level = level
-            cached.parentId = parentId
-            return cached
-        }
-        let isSpecial = itemControllable.itemSync(for: result.itemId)?.specialCategory ?? false
-        let item = FolderListItemModel(
-            id: id,
-            source: ItemRowModel(itemId: result.itemId, entryId: result.entryId, typeId: result.module),
-            destination: nil,
-            level: level,
-            isShown: !isSpecial
-        )
-        item.parentId = parentId
-        listModel.cacheListModels[id] = item
-        return item
     }
 }
 

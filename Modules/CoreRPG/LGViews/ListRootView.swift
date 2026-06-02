@@ -48,7 +48,7 @@ struct ListRootView: View {
                     ContentUnavailableView.search
                 }
             }
-            .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable)
+            .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable, parentModel: parentModel)
             .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
 #if !os(tvOS)
             .applyIf(!fileTypes.isEmpty) {
@@ -93,8 +93,14 @@ struct ListRootView: View {
 }
 
 private extension ListRootView {
+    /// When the view is showing a folder/collection's children (`parentModel != nil`),
+    /// route all list operations through `detailListModel` so the detail list is
+    /// displayed and mutated — not the root list.
     var listModel: FolderListModel {
-        listController.listModel
+        if parentModel != nil, let detail = listController.listModel.detailListModel {
+            return detail
+        }
+        return listController.listModel
     }
     
     var fileTypes: [UTType] {
@@ -200,8 +206,8 @@ private extension ListRootView {
         guard let parentModel else { return }
         withAnimation {
             root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
-            // Refresh the detail list from the updated parent model entries
-            listController.update()
+            // Refresh the detail list (scoped to this folder/collection)
+            Task { await listController.performDetailSearch() }
             // Also refresh the parent folder list
             root.folderListControllable.resetFilter()
         }

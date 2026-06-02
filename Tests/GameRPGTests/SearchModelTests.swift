@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import Testing
@@ -150,4 +149,3 @@ struct SearchModelTests {
         #expect(true)
     }
 }
-#endif

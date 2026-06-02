@@ -33,6 +33,8 @@ public final class FolderListModel {
     // MARK: - Display list
     public var list: [FolderListItemModel] = []
     public var cacheListModels: [UUID: FolderListItemModel] = [:]
+    var isFirstSearch = true
+    var wasSearching = false
     
     // MARK: - List navigation
     public var selectedParentId: UUID?
@@ -51,7 +53,7 @@ public final class FolderListModel {
     var scrollId: UUID?
     
     // MARK: - ListModels
-    @ObservationIgnored public var detailListModel: FolderListModel?
+    public var detailListModel: FolderListModel?
     
     // MARK: - Routing
     public var itemRoute: UUID?

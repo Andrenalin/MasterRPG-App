@@ -3,14 +3,24 @@
 import SwiftUI
 
 extension View {
-    func listModelUpdatesModifier(listControllable: any FolderListControllable, itemControllable: any ItemControllable) -> some View {
-        modifier(ListModelUpdatesViewModifier(listControllable: listControllable, itemControllable: itemControllable))
+    func listModelUpdatesModifier(
+        listControllable: any FolderListControllable,
+        itemControllable: any ItemControllable,
+        parentModel: (any ItemDataAccessable)? = nil
+    ) -> some View {
+        modifier(ListModelUpdatesViewModifier(
+            listControllable: listControllable,
+            itemControllable: itemControllable,
+            parentModel: parentModel
+        ))
     }
 }
 
 struct ListModelUpdatesViewModifier: ViewModifier {
     let listControllable: any FolderListControllable
     let itemControllable: any ItemControllable
+    /// When set, the modifier is operating in detail-list context (folder/collection content).
+    let parentModel: (any ItemDataAccessable)?
     
     @Environment(\.navigator) private var navigator
     
@@ -52,7 +62,8 @@ struct ListModelUpdatesViewModifier: ViewModifier {
 private extension ListModelUpdatesViewModifier {
     func updateStreamChanges() async {
         let stream = Observations {
-            if let parentModel = listModel.parentModel {
+            if let parentModel {
+                // Detail context: watch the folder/collection's own entries for add/remove changes.
                 parentModel.entries.map(\.childId)
             } else {
                 itemControllable.itemDataModel.items
@@ -60,12 +71,28 @@ private extension ListModelUpdatesViewModifier {
         }
 
         for await _ in stream {
-            listControllable.update()
+            if parentModel != nil {
+                // Detail context: refresh the scoped detail list, not the root list.
+                await listControllable.performDetailSearch()
+            } else {
+                listControllable.update()
+                // If the list is still empty after update (e.g. search results were cleared
+                // by a cancelled search or the view re-appeared without a listMode change),
+                // kick off a fresh search so items appear without requiring user interaction.
+                if listControllable.listModel.list.isEmpty {
+                    await listControllable.performSearch()
+                }
+            }
         }
     }
-    
+
+    /// In detail context the modifier operates on `detailListModel` so that
+    /// selection, scroll, and edit-mode changes apply to the folder's child list.
     var listModel: FolderListModel {
-        listControllable.listModel
+        if parentModel != nil, let detail = listControllable.listModel.detailListModel {
+            return detail
+        }
+        return listControllable.listModel
     }
 
     func updateListSelection() {
