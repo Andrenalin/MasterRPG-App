@@ -202,6 +202,9 @@ public extension SearchControllable {
             guard itemMatches || !childNodes.isEmpty else { return nil }
             var result = makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
             result.children = childNodes
+            // canOpen = true when no children were returned (lazy or no matches) —
+            // the item has content that can be revealed by a scoped search.
+            result.canOpen = childNodes.isEmpty
             return result
         } else {
             guard itemMatches else { return nil }

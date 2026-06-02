@@ -196,6 +196,10 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     // children
     public var parentId: UUID?
     public var children: [FolderListItemModel] = []
+    /// True when the item has expandable children that weren't returned in the last search result
+    /// (lazy folder/collection or inspector entry-group). Drives chevron display and fold actions
+    /// without requiring an extra itemSync lookup.
+    public var canOpen: Bool = false
     
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)

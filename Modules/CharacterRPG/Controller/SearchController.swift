@@ -207,6 +207,7 @@ extension SearchController {
             guard itemMatches || !childNodes.isEmpty else { return nil }
             var node = characterResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
             node.children = childNodes
+            node.canOpen = childNodes.isEmpty
             return node
         } else {
             guard itemMatches else { return nil }

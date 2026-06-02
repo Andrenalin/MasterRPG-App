@@ -306,7 +306,6 @@ private struct ListRowItemView: View {
 
             SpecialCategoryFolderIndicator(
                 item: item,
-                isSpecialCategory: model.specialCategory,
                 listController: listController
             )
         }
@@ -328,16 +327,16 @@ private struct ListRowItemView: View {
 }
 
 // MARK: - SpecialCategoryFolderIndicator
-// Extracted so SwiftUI can skip the itemSync lookup and button rendering
-// for rows whose folder-open state has not changed.
+// Extracted so SwiftUI can skip rendering for rows that are neither open nor expandable.
+// Uses `item.canOpen` (set from `SearchResult.canOpen`) — no itemSync call needed.
 
 private struct SpecialCategoryFolderIndicator: View {
     let item: FolderListItemModel
-    let isSpecialCategory: Bool
     let listController: any FolderListControllable
 
     var body: some View {
-        if isSpecialCategory {
+        // Show chevron when the item can be expanded (canOpen) or is already open.
+        if item.canOpen || item.isOpen {
             Button {
                 Task { await listController.toggleFolder(item: item) }
             } label: {

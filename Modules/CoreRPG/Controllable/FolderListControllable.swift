@@ -222,17 +222,19 @@ extension FolderListControllable {
                     appendToFlat(result: childResult, level: level + 1, isSearching: isSearching, flat: &flat)
                 }
             } else if !item.children.isEmpty {
-                // Lazily-loaded children (from loadFolderChildren) — include them
+                // Lazily-loaded children (from loadChildrenViaSearch) — include them
                 flattenCachedChildren(item.children, into: &flat)
             }
         }
     }
 
     /// Returns the cached `FolderListItemModel` for `result`, or creates and caches a new one.
+    /// Always syncs `canOpen` from the latest search result so the chevron reflects current state.
     private func mapResult(_ result: SearchResult, level: Int) -> FolderListItemModel {
         let id = result.entryId ?? result.itemId
         if let cached = listModel.cacheListModels[id] {
             cached.level = level
+            cached.canOpen = result.canOpen
             return cached
         }
         let item = FolderListItemModel(
@@ -242,6 +244,7 @@ extension FolderListControllable {
             level: level,
             isShown: false
         )
+        item.canOpen = result.canOpen
         listModel.cacheListModels[id] = item
         return item
     }
@@ -256,40 +259,24 @@ extension FolderListControllable {
         }
     }
 
-    // Loads the direct children of a folder/collection from the item model into item.children.
-    // Called for lazy expansion during empty search so no re-search is needed.
-    private func loadFolderChildren(for item: FolderListItemModel) {
-        guard let folder = itemControllable.itemSync(for: item.source.itemId) else { return }
-        var children: [FolderListItemModel] = []
-        for entry in folder.entries {
-            guard let childModel = itemControllable.itemSync(for: entry.childId),
-                  childModel.displayState == 0 else { continue }
-            let id = entry.id
-            if let cached = listModel.cacheListModels[id] {
-                cached.level = item.level + 1
-                cached.parentId = item.id
-                children.append(cached)
-            } else {
-                let child = FolderListItemModel(
-                    id: id,
-                    source: ItemRowModel(itemId: childModel.id, entryId: entry.id, typeId: itemControllable.config.module),
-                    destination: nil,
-                    level: item.level + 1,
-                    isShown: !childModel.specialCategory
-                )
-                child.parentId = item.id
-                listModel.cacheListModels[id] = child
-                children.append(child)
-            }
+    /// Loads children via a scoped search — used when toggling a folder open during empty search
+    /// and when a folder with `canOpen = true` is first expanded.
+    ///
+    /// Unlike the old synchronous `loadFolderChildren`, this uses the search pipeline so that:
+    /// - Sub-folders are included with `canOpen = true` (no deeper pre-loading)
+    /// - Sorting and filtering rules are applied consistently with the rest of the search
+    /// - The code path is identical to `performDetailSearch` (reusable, testable)
+    private func loadChildrenViaSearch(for item: FolderListItemModel) async {
+        let results = await searchRootControllable.results(
+            text: searchModel.searchText,
+            focusId: item.source.itemId
+        )
+        guard !Task.isCancelled else { return }
+        item.children = results.map { result in
+            let child = mapResult(result, level: item.level + 1)
+            child.parentId = item.id
+            return child
         }
-        if folder.category == .folder {
-            children.sort {
-                let a = itemControllable.itemSync(for: $0.source.itemId)?.name ?? ""
-                let b = itemControllable.itemSync(for: $1.source.itemId)?.name ?? ""
-                return a.localizedCompare(b) == .orderedAscending
-            }
-        }
-        item.children = children
     }
 }
 
@@ -305,11 +292,15 @@ extension FolderListControllable {
             item.isOpen = true
             item.lastIsOpen = true
             if item.children.isEmpty {
-                if searchModel.searchText.isEmpty {
-                    // Empty search: load children directly from the item model — no re-search needed.
-                    loadFolderChildren(for: item)
+                if item.canOpen {
+                    // Load children via scoped search (works for both empty and non-empty search).
+                    // This is the same pipeline as performDetailSearch — folder items are
+                    // returned with canOpen=true so they can be further expanded on demand.
+                    await loadChildrenViaSearch(for: item)
                     resetFilter()
                 } else {
+                    // No pre-loaded children and canOpen=false: trigger a full re-search
+                    // (e.g. search text changed and the item needs to re-evaluate matches).
                     await performSearch()
                 }
             } else {
@@ -352,17 +343,16 @@ extension FolderListControllable {
     /// Opens `itemId` if it is a closed folder.
     func openFolder(itemId: UUID) {
         guard let item = listModel.list.first(where: { $0.source.itemId == itemId }),
-              let model = itemControllable.itemSync(for: item.source.itemId), // replace this item.mode(root: RootManager) call
-              model.specialCategory && !item.isOpen else { return }
+              item.canOpen && !item.isOpen else { return }
         Task { await toggleFolder(item: item) }
     }
 
-    /// Returns true if `itemId` is a closed folder that can be opened.
+    /// Returns true if `itemId` is a closed item that can be expanded.
+    /// Uses `FolderListItemModel.canOpen` — no extra `itemSync` call needed.
     func canOpenFolder(itemId: UUID?) -> Bool {
         guard let itemId,
-              let item = listModel.list.first(where: { $0.source.itemId == itemId }),
-              let model = itemControllable.itemSync(for: item.source.itemId) else { return false }
-        return model.specialCategory && !item.isOpen
+              let item = listModel.list.first(where: { $0.source.itemId == itemId }) else { return false }
+        return item.canOpen && !item.isOpen
     }
 
     /// Returns true if `itemId` has an open parent folder in the visible tree.

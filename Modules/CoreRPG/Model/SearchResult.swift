@@ -34,4 +34,10 @@ public struct SearchResult: Identifiable, Equatable, Hashable, Sendable {
     // Populated by listSearchResults / inspectorSearchResults in folder mode
     // and mapped to FolderListItemModel.children by buildFolder().
     public var children: [SearchResult] = []
+
+    // True when this item has expandable children that were NOT included in this result
+    // (lazy-loaded folder/collection, or an inspector entry-group with sub-values).
+    // Mapped to FolderListItemModel.canOpen so the UI can render the chevron and
+    // toggleFolder / canOpenFolder can act without an extra itemSync call.
+    public var canOpen: Bool = false
 }
