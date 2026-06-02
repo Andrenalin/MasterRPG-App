@@ -9,7 +9,13 @@ public struct LinkItemListView: View {
         self.selectionModel = selectionModel
         self.parentModel = parentModel
         self._parentModelId = State(initialValue: parentModel?.id)
-        self._scrollPosition = State(initialValue: root.folderLinkControllable.listModel.scrollId)
+        // Scroll position comes from whichever model is active.
+        // detailListModel may not exist yet at init time, so fall back to main.
+        let initScrollId = parentModel != nil
+            ? (root.folderLinkControllable.listModel.detailListModel?.scrollId
+               ?? root.folderLinkControllable.listModel.scrollId)
+            : root.folderLinkControllable.listModel.scrollId
+        self._scrollPosition = State(initialValue: initScrollId)
     }
 
     let root: any ItemRootControllable
@@ -38,42 +44,66 @@ public struct LinkItemListView: View {
                         prompt: Self.filterPrompt
                     ) {
                         root.folderLinkControllable.cacheListItemModel.reset(search: root.folderLinkControllable.searchModel.searchText)
-                        // Fix 2: use scheduleSearch() — cancels any in-flight search via didSet
-                        root.folderLinkControllable.scheduleSearch()
+                        // When scoped to a parent, re-run the detail search; otherwise main search.
+                        if parentModel != nil {
+                            root.folderLinkControllable.scheduleDetailSearch()
+                        } else {
+                            root.folderLinkControllable.scheduleSearch()
+                        }
                     }
                 }
 
                 contentView
                     .tint(root.configurable.module.tint)
-                    // Fix 1: inline configureParentFiltering — it had no await, async was misleading
+                    // When parentModel changes: create/reset detailListModel (with deep-copied cache
+                    // for warm start) then run a scoped detail search via inspectorSearchResults.
+                    // When parentModel clears: tear down detailListModel and resume main search.
                     .task(id: parentModelId) {
-                        root.folderLinkControllable.resetParent(model: parentModel)
+                        if let parent = parentModel {
+                            root.folderLinkControllable.resetDetail(model: parent)
+                        } else {
+                            root.folderLinkControllable.listModel.detailListModel = nil
+                            root.folderLinkControllable.searchModel.filterId = nil
+                            root.folderLinkControllable.scheduleSearch()
+                        }
                     }
                     .onAppear {
-                        let savedScroll = root.folderLinkControllable.listModel.scrollId
+                        let savedScroll = listModel.scrollId
                         Task {
-                            // Fix 3: resetItemOnce() already calls performSearch() → resetFilter()
-                            // internally; remove the redundant explicit resetFilter() call.
-                            await root.folderLinkControllable.resetItemOnce()
-                            root.folderLinkControllable.listModel.scrollId = savedScroll
-                            if let savedPosition = root.folderLinkControllable.listModel.scrollId {
+                            // Only prime the main list once; detailListModel is handled by .task above.
+                            if parentModel == nil {
+                                await root.folderLinkControllable.resetItemOnce()
+                            }
+                            listModel.scrollId = savedScroll
+                            if let savedPosition = listModel.scrollId {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     scrollPosition = savedPosition
                                 }
                             }
                         }
                     }
-                    // Fix 4: displayMode affects which fields are searched — must re-search,
-                    // not just rebuild the list from stale results.
+                    // displayMode / listMode changes: scoped → detail search; unscoped → main search.
                     .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode) {
-                        root.folderLinkControllable.scheduleSearch()
+                        if parentModel != nil {
+                            root.folderLinkControllable.scheduleDetailSearch()
+                        } else {
+                            root.folderLinkControllable.scheduleSearch()
+                        }
                     }
-                    // listMode switches between flat (list) and hierarchical (folder) — the search
-                    // pipeline produces completely different structures, so a full re-search is needed.
                     .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
-                        root.folderLinkControllable.scheduleSearch()
+                        if parentModel != nil {
+                            root.folderLinkControllable.scheduleDetailSearch()
+                        } else {
+                            root.folderLinkControllable.scheduleSearch()
+                        }
                     }
-                    .listModelUpdatesModifier(listControllable: root.folderLinkControllable, itemControllable: root.itemControllable)
+                    // When parentModel != nil, pass it to the modifier so it observes entry
+                    // changes and calls performDetailSearch() automatically.
+                    .listModelUpdatesModifier(
+                        listControllable: root.folderLinkControllable,
+                        itemControllable: root.itemControllable,
+                        parentModel: parentModel
+                    )
                     .applyIf(type != .inspector && type != .selectionInline) { content in
                         content
                             .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true)
@@ -98,8 +128,14 @@ public struct LinkItemListView: View {
 // MARK: - Private helpers
 
 private extension LinkItemListView {
+    /// Routes to `detailListModel` when a parent scope is active, exactly as `ListRootView` does.
+    /// This keeps the scoped inspector state (entries, open/close, scroll) independent from
+    /// the unscoped inspector so switching back doesn't reset the main list.
     var listModel: FolderListModel {
-        root.folderLinkControllable.listModel
+        if parentModel != nil, let detail = root.folderLinkControllable.listModel.detailListModel {
+            return detail
+        }
+        return root.folderLinkControllable.listModel
     }
 
     @ViewBuilder
@@ -112,8 +148,6 @@ private extension LinkItemListView {
             .overlay {
                 if isEmpty { ContentUnavailableView.search }
             }
-            // Fix 8: items.map(\.id) allocates O(n) on every render; .count is O(1)
-            // and sufficient for add/remove animations.
             .animation(.smooth, value: items.count)
             .scrollIndicatorsFlash(onAppear: true)
 #if !os(visionOS)
@@ -124,7 +158,6 @@ private extension LinkItemListView {
     func listView(items: [FolderListItemModel]) -> some View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: []) {
-                // Fix 7: each row is its own struct so SwiftUI can skip unchanged rows.
                 ForEach(items) { item in
                     VStack(spacing: 0) {
                         InspectorRowView(
@@ -149,7 +182,7 @@ private extension LinkItemListView {
         }
         .scrollPosition(id: $scrollPosition, anchor: .top)
         .onChange(of: scrollPosition) { _, newValue in
-            root.folderLinkControllable.listModel.scrollId = newValue
+            listModel.scrollId = newValue
         }
     }
 }
@@ -173,7 +206,6 @@ private struct InspectorRowView: View {
 #endif
 
     var body: some View {
-        // Fix 5: resolve model once per row — no more 3× itemSync calls.
         let model = root.itemControllable.itemSync(for: item.source.itemId)
 
         HStack(spacing: 0) {
@@ -262,10 +294,6 @@ private struct InspectorRowView: View {
 
     // MARK: Folder chevron
 
-    /// `canOpen` is set by the search pipeline (`inspectorResult`, `inspectorEmptyListResults`).
-    /// It is `true` whenever the item has entries (enabling entry expansion for
-    /// allowEntrySelection / onlyEntrySelection modes) or is a folder/collection.
-    /// No `itemSync` call needed here — the search owns this state.
     @ViewBuilder
     private var folderChevron: some View {
         if item.canOpen || item.isOpen {

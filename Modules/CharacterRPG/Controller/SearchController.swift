@@ -329,7 +329,7 @@ extension SearchController {
     }
 
     private func makeEntryResult(for entry: ValueEntryModel, characterId: UUID, characterName: String) -> SearchResult {
-        SearchResult(
+        var result = SearchResult(
             itemId: characterId,
             itemName: characterName,
             module: itemControllable.config.module,
@@ -339,6 +339,14 @@ extension SearchController {
             matchedContent: entry.content.isEmpty ? nil : entry.content,
             relevanceScore: 100
         )
+        if let subValueId = entry.valueId {
+            // Group entry: has sub-entries in a linked sub-value item.
+            // canOpen shows the chevron; childFocusId directs loadChildrenViaSearch to the
+            // sub-value item instead of the parent character (which would load all entries).
+            result.canOpen = true
+            result.childFocusId = subValueId
+        }
+        return result
     }
 
     /// Inspector search used by `SearchLinkController`.

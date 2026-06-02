@@ -67,28 +67,18 @@ extension SearchLinkController: SearchRootControllable {
         )
     }
 
-    /// Called by `loadChildrenViaSearch` when the user toggles an item open.
-    /// - Folders/collections: use `.folder` mode to return child items.
-    /// - Regular items: use `inspectorEntryResults` to return entries as direct results.
-    ///   (`.folder` mode returned nothing for non-folder items, breaking the toggle.)
+    /// Called by `loadChildrenViaSearch` (toggle expand) and `performDetailSearch` (scoped inspector).
+    /// Delegates to `inspectorSearchResults` with the current `listMode` — CharacterRPG's override
+    /// routes `focusId != nil` to `focusedCharacterInspector` (character as root, entries as children,
+    /// `canOpen` set for group entries). Other modules use `inspectorScopedListResults` for
+    /// collections and `folderModeResults` for folder expansion.
     public func results(text: String, focusId: UUID) async -> [SearchResult] {
-        let isFolder = await MainActor.run {
-            searchController.itemControllable.itemSync(for: focusId)?.specialCategory == true
-        }
-        if isFolder {
-            return await searchController.inspectorSearchResults(
-                searchText: text,
-                listMode: .folder,
-                displayMode: listDisplayModel.displayMode,
-                focusId: focusId
-            )
-        } else {
-            return await searchController.inspectorEntryResults(
-                searchText: text,
-                itemId: focusId,
-                displayMode: listDisplayModel.displayMode
-            )
-        }
+        await searchController.inspectorSearchResults(
+            searchText: text,
+            listMode: listDisplayModel.listMode,
+            displayMode: listDisplayModel.displayMode,
+            focusId: focusId
+        )
     }
 
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {

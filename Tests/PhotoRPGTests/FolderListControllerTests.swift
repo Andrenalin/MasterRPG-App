@@ -686,5 +686,185 @@ struct FolderListControllerTests {
                 "canOpen=true: user can tap again to load children (empty search returns all children)")
         _ = childId  // child not yet visible — requires one more toggle to load via empty-search scoped query
     }
+
+    // MARK: - FolderListItemModel.id uniqueness invariant
+
+    // FolderListItemModel.id = result.entryId ?? result.itemId  (see mapResult in FolderListControllable)
+    //
+    // In list mode:   id = itemId  — folders excluded, every item appears once, itemIds are globally unique.
+    // In folder mode: root items/folders → id = itemId.
+    //                 Children of open folders/collections → id = entry.id (the parent's membership entry UUID),
+    //                 NOT itemId — so the same photo can appear in two collections with two different identities.
+    //
+    // If the search pipeline ever sets entryId=nil for a folder child, two items could collapse to the
+    // same FolderListItemModel.id, breaking SwiftUI ForEach identity and list selection.
+
+    @Test("List mode: every FolderListItemModel.id equals the item's UUID and all are unique")
+    func listModeItemIdsAreUniqueAndEqualToItemId() async {
+        let root = await makeRoot()
+
+        let id1 = await root.itemController.addNew(type: .item)
+        let id2 = await root.itemController.addNew(type: .item)
+        let id3 = await root.itemController.addNew(type: .item)
+        // Also add a folder — it must be EXCLUDED from list mode
+        let folderId = await root.itemController.addNew(type: .folder)
+        _ = folderId
+
+        await searchList(root)
+        let list = root.folderListController.listModel.list
+
+        let modelIds = list.map(\.id)
+        let itemIds  = list.map(\.source.itemId)
+
+        #expect(list.allSatisfy { $0.id == $0.source.itemId },
+                "List mode: every FolderListItemModel.id must equal its source.itemId (entryId is nil)")
+        #expect(modelIds.contains(id1) && modelIds.contains(id2) && modelIds.contains(id3),
+                "All three items must appear in list mode")
+        #expect(Set(modelIds).count == modelIds.count,
+                "All FolderListItemModel.id values must be unique in list mode")
+        #expect(Set(itemIds).count == itemIds.count,
+                "Sanity: all source.itemId values must be unique")
+    }
+
+    @Test("Folder mode root: closed folders and items have id = itemId")
+    func folderModeRootNodesHaveItemIdAsId() async {
+        let root = await makeRoot()
+
+        let itemId   = await root.itemController.addNew(type: .item)
+        let folderId = await root.itemController.addNew(type: .folder)
+
+        await searchFolder(root)   // empty search, lazy — no children pre-loaded
+        let list = root.folderListController.listModel.list
+
+        let itemNode   = try? list.first(where: { $0.source.itemId == itemId })
+        let folderNode = try? list.first(where: { $0.source.itemId == folderId })
+
+        #expect(itemNode?.id   == itemId,   "Root item: id must be itemId (no parentEntryId)")
+        #expect(folderNode?.id == folderId, "Closed root folder: id must be itemId")
+        #expect(Set(list.map(\.id)).count == list.count, "All root node ids must be unique")
+    }
+
+    @Test("Folder mode open folder: child's FolderListItemModel.id equals the folder's membership entryId, not itemId")
+    func openFolderChildIdEqualsMembershipEntryId() async {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId  = await root.itemController.addNew(type: .item)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+
+        // Retrieve the membership entry UUID before the search
+        let membershipEntryId = root.itemController.itemOrEmpty(for: folderId)
+            .entries.first(where: { $0.childId == childId })?.id
+
+        await searchFolder(root)
+        let folderNode = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        if let item = folderNode { await root.folderListController.toggleFolder(item: item) }
+
+        let childNode = root.folderListController.listModel.list.first(where: { $0.source.itemId == childId })
+
+        #expect(childNode != nil,                              "Child must be visible after folder is opened")
+        #expect(childNode?.id != childId,                     "Child id must NOT be the itemId — it is the membership entryId")
+        #expect(membershipEntryId != nil,                     "Membership entry must exist")
+        #expect(childNode?.id == membershipEntryId,           "Child id must equal the folder's membership entry UUID")
+        #expect(childNode?.source.itemId == childId,          "source.itemId still points to the item for navigation")
+        #expect(childNode?.source.entryId == membershipEntryId, "source.entryId carries the membership entry UUID")
+    }
+
+    /// Folder `addItem` has move semantics: adding item X to folder B removes it from folder A
+    /// (see `EditControllable.addItem` lines 204-206). Items can only belong to one folder.
+    /// Collections (non-folder `specialCategory`) support multiple parents, but PhotoRPG folders do not.
+    ///
+    /// This test therefore uses two DISTINCT items — one per folder — and verifies the invariant:
+    /// every folder child's `FolderListItemModel.id` equals its membership `entryId` (never `itemId`).
+    /// Because each `addItem` call creates a fresh `entryId` UUID, all IDs are guaranteed unique.
+    @Test("Folder children use membership entryId as FolderListItemModel.id — never itemId, always unique")
+    func folderChildrenUseEntryIdNotItemId() async throws {
+        let root = await makeRoot()
+
+        let folderA = await root.itemController.addNew(type: .folder)
+        let folderB = await root.itemController.addNew(type: .folder)
+        let photoA  = await root.itemController.addNew(type: .item)
+        let photoB  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Sunset",  itemId: photoA)
+        root.editController.reset(name: "Sunrise", itemId: photoB)
+
+        root.editController.addItem(itemId: photoA, parentId: folderA)
+        root.editController.addItem(itemId: photoB, parentId: folderB)
+
+        // Each addItem creates a fresh entry UUID as the membership identity
+        let entryInA = try #require(
+            root.itemController.itemOrEmpty(for: folderA).entries.first(where: { $0.childId == photoA })?.id,
+            "Folder A must have a membership entry for photoA"
+        )
+        let entryInB = try #require(
+            root.itemController.itemOrEmpty(for: folderB).entries.first(where: { $0.childId == photoB })?.id,
+            "Folder B must have a membership entry for photoB"
+        )
+
+        // entryId ≠ itemId — the membership UUID is always a fresh value, not the item's own UUID
+        #expect(entryInA != photoA, "Membership entryId must differ from the child's itemId")
+        #expect(entryInB != photoB, "Membership entryId must differ from the child's itemId")
+        // entryIds are distinct even across folders
+        #expect(entryInA != entryInB, "Each addItem call produces a distinct entryId UUID")
+
+        await searchFolder(root)
+        let nodeA = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderA })
+        let nodeB = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderB })
+        if let a = nodeA { await root.folderListController.toggleFolder(item: a) }
+        if let b = nodeB { await root.folderListController.toggleFolder(item: b) }
+
+        // FolderListItemModel.id = entryId for folder children (not itemId)
+        let childA = try #require(
+            root.folderListController.listModel.list.first(where: { $0.source.itemId == photoA }),
+            "photoA must be visible as a child of folder A"
+        )
+        let childB = try #require(
+            root.folderListController.listModel.list.first(where: { $0.source.itemId == photoB }),
+            "photoB must be visible as a child of folder B"
+        )
+
+        #expect(childA.id == entryInA,    "childA.id must equal its membership entryId (not its itemId)")
+        #expect(childB.id == entryInB,    "childB.id must equal its membership entryId (not its itemId)")
+        #expect(childA.id != childB.id,   "Different folder slots always have different FolderListItemModel.ids")
+        #expect(childA.source.itemId == photoA, "source.itemId points to the item for navigation")
+        #expect(childB.source.itemId == photoB, "source.itemId points to the item for navigation")
+
+        // Complete flat list has no duplicate ids
+        let allIds = root.folderListController.listModel.list.map(\.id)
+        #expect(Set(allIds).count == allIds.count,
+                "No duplicate FolderListItemModel.id in the flat list — SwiftUI ForEach identity is safe")
+    }
+
+    @Test("Flat list always has unique ids across list mode, folder mode, and open folders")
+    func flatListIdsAreAlwaysUnique() async {
+        let root = await makeRoot()
+
+        let standalone = await root.itemController.addNew(type: .item)
+        let folderA    = await root.itemController.addNew(type: .folder)
+        let folderB    = await root.itemController.addNew(type: .folder)
+        let childX     = await root.itemController.addNew(type: .item)
+        let childY     = await root.itemController.addNew(type: .item)
+        let shared     = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Alpha",  itemId: standalone)
+        root.editController.reset(name: "Folder", itemId: folderA)
+        root.editController.reset(name: "GalleryB", itemId: folderB)
+
+        root.editController.addItem(itemId: childX, parentId: folderA)
+        root.editController.addItem(itemId: childY, parentId: folderA)
+        root.editController.addItem(itemId: shared,  parentId: folderA)
+        root.editController.addItem(itemId: shared,  parentId: folderB)  // same item in folderB too
+
+        // Folder mode, open both folders
+        await searchFolder(root)
+        let nodeA = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderA })
+        let nodeB = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderB })
+        if let a = nodeA { await root.folderListController.toggleFolder(item: a) }
+        if let b = nodeB { await root.folderListController.toggleFolder(item: b) }
+
+        let allIds = root.folderListController.listModel.list.map(\.id)
+        // standalone=itemId, folder=itemId, children=membershipEntryId (unique per folder slot)
+        #expect(Set(allIds).count == allIds.count,
+                "No duplicate FolderListItemModel.id in the flat list — SwiftUI ForEach identity is safe")
+    }
 }
 #endif

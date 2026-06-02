@@ -99,13 +99,24 @@ public extension FolderListModel {
         resetListModel(parentModel: model)
     }
     
-    func resetDetailList(parentModel: any ItemDataAccessable) {
+    @MainActor func resetDetailList(parentModel: any ItemDataAccessable) {
         if detailListModel == nil {
             detailListModel = FolderListModel(parentModel: parentModel, navigationModel: navigationModel)
         } else {
             detailListModel?.resetListModel(parentModel: parentModel)
         }
-        detailListModel?.cacheListModels[parentModel.id] = cacheListModels[parentModel.id]
+        // Deep-copy relevant cached items so the detail model is independent from the main list.
+        // Copies the parent item itself (CharacterRPG: character is the focal parent) and any
+        // direct children (folder/collection case). Deep copies mean open/close state in the
+        // detail view does not bleed into the main list's cache.
+        let childItemIds = Set(parentModel.entries.map(\.childId))
+        for (key, cached) in cacheListModels {
+            let isParent = cached.source.itemId == parentModel.id
+            let isChild  = childItemIds.contains(cached.source.itemId)
+            if isParent || isChild {
+                detailListModel?.cacheListModels[key] = cached.deepCopy()
+            }
+        }
     }
 }
 
@@ -200,7 +211,33 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     /// (lazy folder/collection or inspector entry-group). Drives chevron display and fold actions
     /// without requiring an extra itemSync lookup.
     public var canOpen: Bool = false
-    
+
+    /// When set, `loadChildrenViaSearch` uses this UUID as the focusId instead of `source.itemId`.
+    /// Used for character inspector group entries: `source.itemId` = characterId (navigation),
+    /// `childFocusId` = entry.valueId (the sub-value item whose entries load on expand).
+    public var childFocusId: UUID? = nil
+
+    /// Creates an independent copy of this item and its entire children tree.
+    /// Used by `resetDetailLink` to seed a `detailListModel` with pre-loaded items from the
+    /// main list without sharing references — each model can evolve independently.
+    public func deepCopy() -> FolderListItemModel {
+        let copy = FolderListItemModel(
+            id: id,
+            source: source,
+            destination: destination,
+            level: level,
+            isShown: isOpen,
+            lastIsShown: lastIsOpen,
+            isHidden: isHidden,
+            isFolded: isFolded
+        )
+        copy.parentId     = parentId
+        copy.canOpen      = canOpen
+        copy.childFocusId = childFocusId
+        copy.children     = children.map { $0.deepCopy() }
+        return copy
+    }
+
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(source)

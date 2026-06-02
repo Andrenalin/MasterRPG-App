@@ -141,7 +141,6 @@ private extension ListRootView {
                         .frame(minHeight: 300, maxHeight: .infinity)
                     }
                 }
-                // Fixed: was two redundant applyIf(.bordered then .sidebar); .bordered had no effect
                 .applyIf(parentModel != nil) {
                     $0.listStyle(.bordered)
                 }

@@ -45,4 +45,9 @@ public struct SearchResult: Identifiable, Equatable, Hashable, Sendable {
     // Used by focusedCharacterInspector to show all entries on first appear without
     // requiring the user to manually tap the chevron.
     public var shouldOpen: Bool = false
+
+    // When set, loadChildrenViaSearch uses this UUID as the focusId instead of itemId.
+    // Used for group entries in the character inspector: itemId = characterId (for navigation)
+    // but childFocusId = entry.valueId (the sub-value item whose entries should be loaded).
+    public var childFocusId: UUID? = nil
 }
