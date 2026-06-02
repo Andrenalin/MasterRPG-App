@@ -6,9 +6,10 @@ import SwiftUI
 struct DetailListView: View {
     let root: MapRootModel
     let model: MapModel
+    let folderListController: any FolderListControllable
 
     var body: some View {
-        DetailFolderListView(root: root, model: model)
+        DetailFolderListView(root: root, model: model, folderListController: folderListController)
             .toolbar {
                 toolbarContent
             }

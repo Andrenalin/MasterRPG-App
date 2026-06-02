@@ -9,9 +9,8 @@ struct DetailRootView: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        DetailListView(root: root, model: model)
+        DetailListView(root: root, model: model, folderListController: root.folderListController)
             .detailInspectorModifier(root: root.rootController)
-            .folderNavigationResetTask(navigationModel: root.navigationModel, itemId: model.id)
             .onChange(of: root.navigationModel.triggerSpaceAction) {
                 guard root.navigationModel.triggerSpaceAction else { return }
                 root.navigationModel.triggerSpaceAction = false

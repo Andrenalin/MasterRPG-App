@@ -103,20 +103,7 @@ private extension LinkItemListView {
     }
 
     func configureParentFiltering() async {
-        if let parentModel {
-            root.folderLinkControllable.searchModel.filterId = parentModel.id
-            let mode: ListDisplayModel.ListMode = parentModel.category == .folder ? .folder : .list
-            if root.folderLinkControllable.listDisplayModel.listMode != mode {
-                root.folderLinkControllable.listDisplayModel.listMode = mode
-            }
-            root.folderLinkControllable.resetParentModel(model: parentModel)
-        } else {
-            root.folderLinkControllable.searchModel.filterId = nil
-            if root.folderLinkControllable.listModel.parentModel != nil {
-                root.folderLinkControllable.listModel.parentModel = nil
-                root.folderLinkControllable.resetFilter()
-            }
-        }
+        root.folderLinkControllable.resetParent(model: parentModel)
     }
 
     @ViewBuilder

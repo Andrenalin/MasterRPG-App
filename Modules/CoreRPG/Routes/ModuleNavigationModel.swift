@@ -13,7 +13,7 @@ import SwiftUI
     
     public var folderItems: [UUID] = []
     @ObservationIgnored public var folderModels: [UUID: FolderListModel] = [:]
-    
+
     // Inspector
     public var selectedInspectorItemId: UUID?
     public var showInspector: Bool = false

@@ -6,9 +6,10 @@ import SwiftUI
 struct DetailListView: View {
     let root: AudioRootModel
     let model: AudioModel
+    let folderListController: FolderListController
 
     var body: some View {
-        DetailFolderListView(root: root, model: model)
+        DetailFolderListView(root: root, model: model, folderListController: folderListController)
             .toolbar {
                 ToolbarItem(placement: .secondaryActionAll) {
                     if model.url != nil || model.specialCategory {

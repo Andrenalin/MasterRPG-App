@@ -8,9 +8,10 @@ struct DetailRootView: View {
     let model: AudioModel
 
     var body: some View {
-        DetailListView(root: root, model: model)
+        DetailListView(root: root, model: model, folderListController: root.folderListController)
             .detailInspectorModifier(root: root.rootController)
-            .folderNavigationResetTask(navigationModel: root.navigationModel, itemId: model.id)
+        // deactivated for now - maybe later not needed amymore
+//            .folderNavigationResetTask(navigationModel: root.navigationModel, itemId: model.id)
             .onChange(of: root.navigationModel.triggerSpaceAction) {
                 guard root.navigationModel.triggerSpaceAction else { return }
                 root.navigationModel.triggerSpaceAction = false

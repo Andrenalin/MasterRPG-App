@@ -58,10 +58,10 @@ struct WeatherDetailRouteDestinationView: View {
     var body: some View {
         switch route {
         case .folder(let itemId):
-            DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+            DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId), folderListController: root.folderListController)
 
         case .folderInline(let itemId):
-            DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId), animate: .constant(false))
+            DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId), folderListController: root.folderListController, animate: .constant(false))
         }
     }
 

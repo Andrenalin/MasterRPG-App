@@ -21,11 +21,21 @@ public protocol FolderListControllable: Sendable {
 
 extension FolderListControllable {
     public var searchModel: SearchModel { searchRootControllable.searchModel }
-
+    
     @MainActor public func performSearch() async {
         searchRootControllable.searchModel.results = []
         await searchRootControllable.performSearch()
         resetFilter()
+    }
+    
+    /// Runs a folder-scoped search for the detail list's parent and populates
+    /// `listModel.detailListModel.list` with the matching children.
+    @MainActor public func performDetailSearch() async {
+        guard let detailListModel = listModel.detailListModel,
+              let parentModel = detailListModel.parentModel else { return }
+        searchRootControllable.searchModel.detailResults = []
+        await searchRootControllable.performSearch(focusId: parentModel.id)
+        detailListModel.list = buildDetailListItems()
     }
 }
 
@@ -74,21 +84,47 @@ public extension FolderListControllable {
         guard listModel.updatedOnce == false else { return }
         listModel.updatedOnce = true
         await performSearch()
-        resetFilter()
     }
 
+    func resetParent(model: (any ItemDataAccessable)?) {
+        listModel.resetParent(model: model)
+        listModel.updatedOnce = true
+        // Scope the next search to this folder/collection's direct children
+        searchRootControllable.searchModel.filterId = model?.id
+        
+        if let model {
+            listDisplayModel.listMode <=> model.category == .folder ? .folder : .list
+        }
+        Task {
+            await performSearch()
+        }
+    }
+    
     /// Called when a folder/collection is selected as the detail page's parent.
-    /// Sets filterId so the search is scoped to this item's children, switches to
-    /// folder mode (required for focusId to be forwarded to the search), and
-    /// triggers the search so children appear immediately.
-    func resetParentModel(model: (any ItemDataAccessable)) {
-        if listModel.parentModel?.id != model.id {
-            listModel.updatedOnce = true
-            listModel.parentModel = model
-            // Scope the next search to this folder/collection's direct children
-            searchRootControllable.searchModel.filterId = model.id
-            listDisplayModel.listMode = .folder
-            Task { await performSearch() }
+    /// Creates (or resets) `listModel.detailListModel` scoped to `model`, then
+    /// fires a background search to populate it.
+    func resetDetail(model: (any ItemDataAccessable)) {
+        listModel.resetDetailList(parentModel: model)
+        listModel.detailListModel?.updatedOnce = true
+        Task { await performDetailSearch() }
+    }
+
+    /// Builds the flat list for `detailListModel` from `searchModel.detailResults`.
+    private func buildDetailListItems() -> [FolderListItemModel] {
+        let results = searchRootControllable.searchModel.detailResults
+        guard !results.isEmpty else { return listModel.detailListModel?.list ?? [] }
+        return results.map { result in
+            let id = result.entryId ?? result.itemId
+            if let cached = listModel.cacheListModels[id] { return cached }
+            let item = FolderListItemModel(
+                id: id,
+                source: ItemRowModel(itemId: result.itemId, entryId: result.entryId, typeId: result.module),
+                destination: nil,
+                level: 0,
+                isShown: !(itemControllable.itemSync(for: result.itemId)?.specialCategory ?? false)
+            )
+            listModel.cacheListModels[id] = item
+            return item
         }
     }
     

@@ -6,12 +6,13 @@ import SwiftUI
 struct DetailListView: View {
     let root: WeatherRootModel
     let model: WeatherModel
+    let folderListController: any FolderListControllable
 
     @State private var animate: Bool = false
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        DetailFolderListView(root: root, model: model, animate: $animate)
+        DetailFolderListView(root: root, model: model, folderListController: folderListController, animate: $animate)
             .toolbar {
                 toolbarContent
             }

@@ -6,12 +6,13 @@ import SwiftUI
 struct DetailListView: View {
     let root: PdfRootModel
     let model: PdfModel
+    let folderListController: any FolderListControllable
 
     @Environment(\.navigator) private var navigator
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        DetailFolderListView(root: root, model: model)
+        DetailFolderListView(root: root, model: model, folderListController: folderListController)
 #if !os(tvOS)
             .toolbar {
                 toolbarContent
@@ -39,7 +40,7 @@ struct DetailListView: View {
 #Preview(traits: .mockData) {
     @Previewable @Environment(PdfRootModel.self) var root
     ManagedNavigationStack {
-        DetailListView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId))
+        DetailListView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId), folderListController: root.folderListController)
             .preferredColorScheme(.dark)
     }
 }

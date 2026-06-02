@@ -6,11 +6,12 @@ import SwiftUI
 struct DetailListView: View {
     let root: CharacterRootModel
     let model: ValueModel
+    let folderListController: any FolderListControllable
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
-        DetailFolderListView(root: root, model: model)
+
+        DetailFolderListView(root: root, model: model, folderListController: folderListController)
             .toolbar {
                 toolbarContent
             }

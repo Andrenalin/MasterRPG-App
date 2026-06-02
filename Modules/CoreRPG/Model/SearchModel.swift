@@ -28,6 +28,8 @@ public final class SearchModel: Sendable {
     // new search properties
     var isSearching = false
     var results: [SearchResult] = []
+    var detailResults: [SearchResult] = []
+    
     var selection: SearchResult?
     public var filterId: UUID?
 

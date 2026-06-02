@@ -25,6 +25,15 @@ extension SearchListController: SearchRootControllable {
         )
     }
 
+    public func results(text: String, focusId: UUID) async -> [SearchResult] {
+        await searchController.listSearchResults(
+            searchText: text,
+            listMode: .folder,
+            displayMode: listDisplayModel.displayMode,
+            focusId: focusId
+        )
+    }
+
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {
         SearchListController(
             searchController: searchController,
@@ -55,6 +64,15 @@ extension SearchLinkController: SearchRootControllable {
             listMode: listDisplayModel.listMode,
             displayMode: listDisplayModel.displayMode,
             focusId: searchModel.filterId
+        )
+    }
+
+    public func results(text: String, focusId: UUID) async -> [SearchResult] {
+        await searchController.inspectorSearchResults(
+            searchText: text,
+            listMode: .folder,
+            displayMode: listDisplayModel.displayMode,
+            focusId: focusId
         )
     }
 

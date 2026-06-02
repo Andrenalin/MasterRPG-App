@@ -9,13 +9,10 @@ import SwiftUI
 @MainActor @Observable
 public final class AudioRootModel {
     @MainActor init(tagController: TagController) {
+        self.tagController = tagController
+        
         let config = ModuleConfiguration()
         self.config = config
-
-        let listDisplayModel = ListDisplayModel()
-        self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
-        self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
         self.navigationModel = ModuleNavigationModel()
@@ -26,12 +23,16 @@ public final class AudioRootModel {
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
+        
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
+        let listDisplayModel = ListDisplayModel()
+
         let dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         _dataController = dataController
 
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: tagController)
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController, editController: editController)
 
@@ -47,9 +48,14 @@ public final class AudioRootModel {
 
         _sheetController = SheetController(itemController: itemController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))
+        let folderListModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
+        
+        _folderListController = FolderListController(listModel: folderListModel, listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))
 
-        _folderLinkController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel.newListDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: listDisplayModel.newListDisplayModel))
+        let folderLinkModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
+        let linkDisplayModel = listDisplayModel.newListDisplayModel
+        
+        _folderLinkController = FolderListController(listModel: folderLinkModel, listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
 
         _rootController = ItemRootController(
             config: config,
@@ -85,9 +91,8 @@ public final class AudioRootModel {
     }()
 
     public let config: ModuleConfiguration
+    let tagController: TagController
     
-    public let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
@@ -125,10 +130,10 @@ public final class AudioRootModel {
     var sheetController: SheetController { _sheetController! }
 
     @ObservationIgnored private(set) var _folderListController: FolderListController?
-    var folderListController: FolderListControllable { _folderListController! }
+    var folderListController: FolderListController { _folderListController! }
 
     @ObservationIgnored private(set) var _folderLinkController: FolderListController?
-    var folderLinkController: FolderListControllable { _folderLinkController! }
+    var folderLinkController: FolderListController { _folderLinkController! }
 
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()

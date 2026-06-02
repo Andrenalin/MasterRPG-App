@@ -4,7 +4,10 @@ import Foundation
 
 public protocol SearchRootControllable: Sendable  {
     var searchModel: SearchModel { get }
+    /// Standard search — results stored on `searchModel.results`.
     func results(text: String) async -> [SearchResult]
+    /// Focused search scoped to `focusId` in folder mode — results stored on `searchModel.detailResults`.
+    func results(text: String, focusId: UUID) async -> [SearchResult]
     /// Returns a new independent copy bound to `listDisplayModel` with its own `SearchModel`.
     /// Used by `FolderListController.copy(listModel:)` so detail controllers do not share
     /// the same search state as the parent list controller.
@@ -35,6 +38,24 @@ extension SearchRootControllable {
             searchModel.results = await results(text: searchModel.searchText)
         }
 
+        searchModel.setSearchTask(searchTask)
+        await searchModel.awaitCurrentSearch()
+    }
+
+    /// Runs a folder-mode search scoped to `focusId` and stores results in `searchModel.detailResults`.
+    /// Called by `FolderListControllable.performDetailSearch()` to populate the detail list
+    /// when a folder/collection is opened in the detail view.
+    @MainActor func performSearch(focusId: UUID) async {
+        searchModel.cancelSearch()
+        let searchTask = Task { @MainActor in
+            searchModel.isSearching = true
+            defer { searchModel.isSearching = false }
+            if !searchModel.searchText.isEmpty {
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+            }
+            searchModel.detailResults = await results(text: searchModel.searchText, focusId: focusId)
+        }
         searchModel.setSearchTask(searchTask)
         await searchModel.awaitCurrentSearch()
     }

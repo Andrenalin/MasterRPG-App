@@ -51,7 +51,7 @@ public final class FolderListModel {
     var scrollId: UUID?
     
     // MARK: - ListModels
-    @ObservationIgnored var subListModel: FolderListModel?
+    @ObservationIgnored public var detailListModel: FolderListModel?
     
     // MARK: - Routing
     public var itemRoute: UUID?
@@ -59,6 +59,7 @@ public final class FolderListModel {
 }
 
 // MARK: - Items
+
 extension FolderListModel {
     func deleteItems(ids: [UUID]) -> [ItemRowModel] {
         let removed = ids.compactMap { id -> ItemRowModel? in
@@ -86,6 +87,23 @@ extension FolderListModel {
     func item(itemId: UUID?) -> FolderListItemModel? {
         guard let itemId else { return nil }
         return list.first(where: { $0.source.itemId == itemId })
+    }
+}
+
+// MARK: - Detail List
+
+public extension FolderListModel {
+    func resetParent(model: (any ItemDataAccessable)?) {
+        resetListModel(parentModel: model)
+    }
+    
+    func resetDetailList(parentModel: any ItemDataAccessable) {
+        if detailListModel == nil {
+            detailListModel = FolderListModel(parentModel: parentModel, navigationModel: navigationModel)
+        } else {
+            detailListModel?.resetListModel(parentModel: parentModel)
+        }
+        detailListModel?.cacheListModels[parentModel.id] = cacheListModels[parentModel.id]
     }
 }
 
@@ -138,11 +156,13 @@ public extension FolderListModel {
 // MARK: - Navigation
 
 public extension FolderListModel {
-    func resetListModel() {
+    func resetListModel(parentModel: (any ItemDataAccessable)?) {
+        self.parentModel = parentModel
+        selectedParentId = parentModel?.id
         subFolderRoute = nil
         resetListSelection()
         update(selection: Set())
-        subListModel = nil
+        detailListModel = nil
     }
 }
 

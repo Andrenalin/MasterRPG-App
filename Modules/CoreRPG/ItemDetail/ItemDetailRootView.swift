@@ -43,13 +43,14 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
         @ViewBuilder editor: () -> Editor
     ) {
         self.root = root
-        self.detailListController = detailListController
+        self.folderListController = detailListController
         self.selectedModel = selectedModel
         self.configuration = configuration
         self.editor = editor()
     }
 
     let root: any ItemRootControllable
+    let folderListController: FolderListControllable
     let selectedModel: any ItemDataAccessable
     let configuration: Configuration
     let editor: Editor
@@ -57,7 +58,6 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
     @Environment(\.colorScheme) private var colorScheme
     @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
-    @State private var detailListController: FolderListControllable
     @State private var headerModel = HeaderScrollModel()
     @Namespace private var editSheetNamespace
     
@@ -70,7 +70,7 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
             configuration: configuration,
             editor: editor,
             headerModel: headerModel,
-            detailListController: detailListController,
+            folderListController: folderListController,
             editingItem: $editingItem,
             editSheetNamespace: editSheetNamespace
         )
@@ -129,7 +129,7 @@ private extension ItemDetailRootView {
 
     func handleModelIdChange() {
         editingItem = nil
-        detailListController.resetParentModel(model: selectedModel)
+        folderListController.resetDetail(model: selectedModel)
         
         itemIdHasUrl = if selectedModel.url != nil {
             selectedModel.id
@@ -177,7 +177,7 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
     let configuration: ItemDetailRootView<Editor, LinkTypes>.Configuration
     let editor: Editor
     let headerModel: HeaderScrollModel
-    let detailListController: FolderListControllable
+    let folderListController: FolderListControllable
     @Binding var editingItem: EditingItem?
     let editSheetNamespace: Namespace.ID
     
@@ -192,8 +192,8 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
                 module: root.configurable.module,
                 model: model,
                 cacheItemListModel: root.editControllable.cacheItemListModel,
-                listDisplayModel: detailListController.listDisplayModel,
-                searchModel: detailListController.searchModel
+                listDisplayModel: folderListController.listDisplayModel,
+                searchModel: folderListController.searchModel
             )
         } content: {
             contentBody
@@ -237,7 +237,7 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
                     editor: editor,
                     model: model,
                     root: root,
-                    detailListController: detailListController,
+                    folderListController: folderListController,
                     fileTypes: fileTypes,
                     shouldShowContent: shouldShowContent
                 )
@@ -246,7 +246,7 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
                     editor: editor,
                     model: model,
                     root: root,
-                    detailListController: detailListController,
+                    folderListController: folderListController,
                     shouldShowContent: shouldShowContent
                 )
             }
@@ -394,7 +394,7 @@ private struct ItemEditorForegroundView<Editor: View>: View {
     let editor: Editor
     let model: any ItemDataAccessable
     let root: any ItemRootControllable
-    let detailListController: FolderListControllable
+    let folderListController: FolderListControllable
     let shouldShowContent: Bool
     
     var body: some View {
@@ -417,8 +417,8 @@ private struct ItemEditorForegroundView<Editor: View>: View {
         ItemDetailOverlayView(
             model: model,
             cacheItemListModel: root.editControllable.cacheItemListModel,
-            listDisplayModel: detailListController.listDisplayModel,
-            searchModel: detailListController.searchModel,
+            listDisplayModel: folderListController.listDisplayModel,
+            searchModel: folderListController.searchModel,
             fullHeader: false,
             onlyDescription: true
         )
@@ -426,10 +426,10 @@ private struct ItemEditorForegroundView<Editor: View>: View {
         
         ListRootView(
             root: root,
-            listController: detailListController,
+            listController: folderListController,
             parentModel: model
         )
-        .environment(detailListController.listDisplayModel)
+        .environment(folderListController.listDisplayModel)
     }
     
     private var formEditorContent: some View {
@@ -440,8 +440,8 @@ private struct ItemEditorForegroundView<Editor: View>: View {
                         ItemDetailOverlayView(
                             model: model,
                             cacheItemListModel: root.editControllable.cacheItemListModel,
-                            listDisplayModel: detailListController.listDisplayModel,
-                            searchModel: detailListController.searchModel,
+                            listDisplayModel: folderListController.listDisplayModel,
+                            searchModel: folderListController.searchModel,
                             fullHeader: false,
                             onlyDescription: true
                         )
@@ -468,7 +468,7 @@ private struct ItemEditorBackgroundView<Editor: View>: View {
     let editor: Editor
     let model: any ItemDataAccessable
     let root: any ItemRootControllable
-    let detailListController: FolderListControllable
+    let folderListController: FolderListControllable
     let fileTypes: [UTType]
     let shouldShowContent: Bool
     
@@ -481,8 +481,8 @@ private struct ItemEditorBackgroundView<Editor: View>: View {
                         ItemDetailOverlayView(
                             model: model,
                             cacheItemListModel: root.editControllable.cacheItemListModel,
-                            listDisplayModel: detailListController.listDisplayModel,
-                            searchModel: detailListController.searchModel,
+                            listDisplayModel: folderListController.listDisplayModel,
+                            searchModel: folderListController.searchModel,
                             fullHeader: false,
                             onlyDescription: true,
                             lines: 3

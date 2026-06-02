@@ -57,11 +57,31 @@ struct AudioDetailRouteDestinationView: View {
     
     var body: some View {
         switch route {
+            // folderModel better to pass this instead of controller
+            // this is planned after we have finshed the FolderListController / Search refactoring
         case .folder(let itemId):
-            DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
-
+            if let item = root.itemController.itemSync(for: itemId) {
+                DetailListView(root: root, model: item, folderListController: detailFolderListController(item: item))
+            }
         case .folderInline(let itemId):
-            DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+            if let item = root.itemController.itemSync(for: itemId) {
+                DetailFolderListView(root: root, model: item, folderListController: detailFolderListController(item: item))
+            }
         }
     }
+    
+    private func detailFolderListController(item: AudioModel) -> FolderListController {
+        root.folderListController.copy(listModel: currentListModel(item: item))
+    }
+    
+    private func currentListModel(item: AudioModel) -> FolderListModel {
+        if let existing = root.navigationModel.folderModels[item.id] {
+            return existing
+        }
+        
+        let newModel = root.folderListController.copyModel(parentModel: item)
+        root.navigationModel.folderModels[item.id] = newModel
+        return newModel
+    }
+
 }

@@ -288,6 +288,102 @@ struct FolderListControllerTests {
                 "Items outside focus must not appear even if their name matches")
     }
 
+    // MARK: - resetDetail and detail search
+
+    @Test("resetDetail creates a detailListModel scoped to the selected folder")
+    func resetDetailCreatesDetailListModel() async throws {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        root.editController.reset(name: "Hangar Bay", itemId: folderId)
+        let folder = root.itemController.itemOrEmpty(for: folderId)
+
+        #expect(root.folderListControllable.listModel.detailListModel == nil,
+                "Initially there must be no detailListModel")
+
+        root.folderListControllable.resetDetail(model: folder)
+
+        #expect(root.folderListControllable.listModel.detailListModel != nil,
+                "resetDetail must create a detailListModel")
+    }
+
+    @Test("performDetailSearch populates detailListModel.list with the folder's direct children")
+    func performDetailSearchPopulatesDetailList() async throws {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let child1   = await root.itemController.addNew(type: .item)
+        let child2   = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Hangar Bay", itemId: folderId)
+        root.editController.reset(name: "Fighter",    itemId: child1)
+        root.editController.reset(name: "Bomber",     itemId: child2)
+        root.editController.addItem(itemId: child1, parentId: folderId)
+        root.editController.addItem(itemId: child2, parentId: folderId)
+
+        let folder = root.itemController.itemOrEmpty(for: folderId)
+        root.folderListControllable.resetDetail(model: folder)
+        await root.folderListControllable.performDetailSearch()
+
+        let detailListModel = try #require(
+            root.folderListControllable.listModel.detailListModel,
+            "detailListModel must exist after resetDetail")
+
+        let detailIds = detailListModel.list.map(\.source.itemId)
+        #expect(detailIds.contains(child1), "Fighter must appear in detail list")
+        #expect(detailIds.contains(child2), "Bomber must appear in detail list")
+    }
+
+    @Test("performDetailSearch excludes items that are not children of the selected folder")
+    func performDetailSearchScopesToFolder() async throws {
+        let root = await makeRoot()
+
+        let folderId    = await root.itemController.addNew(type: .folder)
+        let childId     = await root.itemController.addNew(type: .item)
+        let unrelatedId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Fleet HQ", itemId: folderId)
+        root.editController.reset(name: "Fighter",   itemId: childId)
+        root.editController.reset(name: "Station",   itemId: unrelatedId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+
+        let folder = root.itemController.itemOrEmpty(for: folderId)
+        root.folderListControllable.resetDetail(model: folder)
+        await root.folderListControllable.performDetailSearch()
+
+        let detailListModel = try #require(root.folderListControllable.listModel.detailListModel)
+        let detailIds = detailListModel.list.map(\.source.itemId)
+
+        #expect(detailIds.contains(childId),      "Folder child must appear in detail list")
+        #expect(!detailIds.contains(unrelatedId), "Unrelated item must not appear in detail list")
+        #expect(!detailIds.contains(folderId),    "Folder itself must not appear in its own detail list")
+    }
+
+    @Test("detailListModel.list is sorted alphabetically (folder children, empty search)")
+    func performDetailSearchSortsChildrenAlphabetically() async throws {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let idC = await root.itemController.addNew(type: .item)
+        let idA = await root.itemController.addNew(type: .item)
+        let idB = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Charlie", itemId: idC)
+        root.editController.reset(name: "Alpha",   itemId: idA)
+        root.editController.reset(name: "Bravo",   itemId: idB)
+        root.editController.addItem(itemId: idC, parentId: folderId)
+        root.editController.addItem(itemId: idA, parentId: folderId)
+        root.editController.addItem(itemId: idB, parentId: folderId)
+
+        let folder = root.itemController.itemOrEmpty(for: folderId)
+        root.folderListControllable.resetDetail(model: folder)
+        await root.folderListControllable.performDetailSearch()
+
+        let detailListModel = try #require(root.folderListControllable.listModel.detailListModel)
+        let names = detailListModel.list.map(\.source.itemId).compactMap {
+            root.itemController.itemSync(for: $0)?.name
+        }
+        #expect(names == names.sorted { $0.localizedCompare($1) == .orderedAscending },
+                "Detail list children must be sorted alphabetically")
+    }
+
     @Test("Inspector folder mode returns hierarchical structure")
     func inspectorFolderModeReturnsHierarchy() async throws {
         let root = await makeRoot()

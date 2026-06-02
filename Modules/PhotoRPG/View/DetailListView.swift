@@ -6,10 +6,11 @@ import SwiftUI
 struct DetailListView: View {
     let root: PhotoRootModel
     let model: PhotoModel
+    let folderListController: any FolderListControllable
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        DetailFolderListView(root: root, model: model)
+        DetailFolderListView(root: root, model: model, folderListController: folderListController)
             .toolbar {
                 ToolbarItemGroup(placement: .secondaryActionAll) {
                     if model.url != nil && !model.specialCategory {

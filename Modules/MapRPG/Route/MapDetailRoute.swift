@@ -73,10 +73,10 @@ struct MapDetailRouteDestinationView: View {
     var body: some View {
         switch route {
         case .folder(let itemId):
-            DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+            DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId), folderListController: root.folderListController)
 
         case .folderInline(let itemId):
-            DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+            DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId), folderListController: root.folderListController)
 
 #if !os(tvOS)
         case .mapExtraction(let itemId):

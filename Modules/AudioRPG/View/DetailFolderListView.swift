@@ -6,6 +6,7 @@ import SwiftUI
 struct DetailFolderListView: View {
     let root: AudioRootModel
     let model: AudioModel
+    let folderListController: FolderListController
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
@@ -17,7 +18,7 @@ struct DetailFolderListView: View {
         
         ItemDetailRootView(
             root: root.rootController,
-            detailListController: detailListController,
+            detailListController: folderListController,
             selectedModel: model,
             configuration: .init(),
             linkTypes: EmptyLinkTransferable.self
@@ -37,40 +38,25 @@ struct DetailFolderListView: View {
         .overlay {
             overlayContent
         }
-        .applyIf(appSizeModel.mode == .compact) {
-            $0.navigate(to: $detailRoute)
-                .onChange(of: currentListModel.subFolderRoute) { _, newRoute in
-                    if let subItemId = newRoute {
-                        detailRoute = AudioDetailRoute.folder(subItemId)
-                    }
-                }
-                .onChange(of: detailRoute) { _, newRoute in
-                    if newRoute == nil {
-                        currentListModel.resetListModel()
-                    }
-                }
-        }
-        .onChange(of: root.navigationModel.folderItems) {
-            handleFolderItemsChange()
-        }
+// Deactivated for now - we rethink the subfolder approach
+//        .applyIf(appSizeModel.mode == .compact) {
+//            $0.navigate(to: $detailRoute)
+//                .onChange(of: folderListController.listModel.subFolderRoute) { _, newRoute in
+//                    if let subItemId = newRoute {
+//                        detailRoute = AudioDetailRoute.folder(subItemId)
+//                    }
+//                }
+//                .onChange(of: detailRoute) { _, newRoute in
+//                    if newRoute == nil {
+//                        folderListController.listModel.resetListModel()
+//                    }
+//                }
+//        }
+//        .onChange(of: root.navigationModel.folderItems) {
+//            handleFolderItemsChange()
+//        }
     }
     
-    
-    // MARK: - Computed Properties
-    
-    private var detailListController: FolderListControllable {
-        root.folderListController.copy(listModel: currentListModel)
-    }
-    
-    private var currentListModel: FolderListModel {
-        if let existing = root.navigationModel.folderModels[model.id] {
-            return existing
-        }
-        
-        let newModel = root.folderListController.copyModel(parentModel: model)
-        root.navigationModel.folderModels[model.id] = newModel
-        return newModel
-    }
     
     // MARK: - Overlays
     
@@ -84,38 +70,39 @@ struct DetailFolderListView: View {
                 root.openFileWindowModel.showItem = false
             }
         }
-        
-        if appSizeModel.mode == .regular,
-           showFolderOverlay,
-           let folderId = root.navigationModel.folderItems.last {
-            AudioDetailRoute.folderInline(folderId)
-                .padding(.top, 36)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button {
-                            closeFolderOverlay()
-                        } label: {
-                            Image(systemName: "xmark")
-                        }
-                    }
-                }
-                .transition(.move(edge: .bottom))
-        }
+
+// Deactivated for now we rethink the subfolder approach
+//        if appSizeModel.mode == .regular,
+//           showFolderOverlay,
+//           let folderId = root.navigationModel.folderItems.last {
+//            AudioDetailRoute.folderInline(folderId)
+//                .padding(.top, 36)
+//                .toolbar {
+//                    ToolbarItem(placement: .cancellationAction) {
+//                        Button {
+//                            closeFolderOverlay()
+//                        } label: {
+//                            Image(systemName: "xmark")
+//                        }
+//                    }
+//                }
+//                .transition(.move(edge: .bottom))
+//        }
     }
     
     // MARK: - Actions
     
-    private func handleFolderItemsChange() {
-        guard appSizeModel.mode == .regular else { return }
-        guard !showFolderOverlay, root.navigationModel.folderItems.last != nil else { return }
-        
-        withAnimation {
-            showFolderOverlay = true
-        }
-    }
-    
-    private func closeFolderOverlay() {
-        showFolderOverlay = false
-        currentListModel.resetListModel()
-    }
+//    private func handleFolderItemsChange() {
+//        guard appSizeModel.mode == .regular else { return }
+//        guard !showFolderOverlay, root.navigationModel.folderItems.last != nil else { return }
+//        
+//        withAnimation {
+//            showFolderOverlay = true
+//        }
+//    }
+//    
+//    private func closeFolderOverlay() {
+//        showFolderOverlay = false
+//        folderListController.listModel.resetListModel()
+//    }
 }
