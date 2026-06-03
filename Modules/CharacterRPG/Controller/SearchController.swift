@@ -65,13 +65,13 @@ extension SearchController {
             }
         }
         
-        return foundResults.sorted { $0.relevanceScore > $1.relevanceScore }
+        return foundResults.sortedByRelevance()
     }
     
     // displayMode: .regular in global search so all fields are covered.
     private func result(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
-        if characterMatchesFilter(item, searchText: searchText, displayMode: displayMode) {
-            foundResults.append(characterResult(item: item, searchText: searchText, displayMode: displayMode))
+        if itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) {
+            foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
         }
         
         if !item.specialCategory {
@@ -133,8 +133,8 @@ extension SearchController {
             if item.specialCategory {
                 await result(item: item, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
             } else {
-                guard characterMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
-                foundResults.append(characterResult(item: item, searchText: searchText, displayMode: displayMode))
+                guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
+                foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
             }
         }
         if searchText.isEmpty {
@@ -144,13 +144,13 @@ extension SearchController {
     }
 
     /// Folder tree: hierarchical results rooted at focusId or all root-level items.
-    private func folderModeCharacterResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
+    private func folderModeCharacterResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) async -> [SearchResult] {
         if let focusId {
             guard let folder = await itemController.item(for: focusId) else { return [] }
             var results: [SearchResult] = []
             for entry in folder.entries {
                 guard !Task.isCancelled else { break }
-                if let node = await buildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id) {
+                if let node = await buildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id, includeTags: includeTags) {
                     results.append(node)
                 }
             }
@@ -171,7 +171,7 @@ extension SearchController {
                       item.groupId == nil,
                       item.parentId == nil,
                       item.displayState == 0 else { continue }
-                if let node = await buildCharacterFolderNode(itemId: itemId, searchText: searchText, displayMode: displayMode) {
+                if let node = await buildCharacterFolderNode(itemId: itemId, searchText: searchText, displayMode: displayMode, includeTags: includeTags) {
                     results.append(node)
                 }
             }
@@ -183,20 +183,20 @@ extension SearchController {
     }
 
     /// Recursively builds one folder-tree node, filtering sub-values (`groupId != nil`).
-    private func buildCharacterFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil) async -> SearchResult? {
+    private func buildCharacterFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, includeTags: Bool = true) async -> SearchResult? {
         guard !Task.isCancelled,
               let item = await itemController.item(for: itemId),
               item.groupId == nil,
               item.displayState == 0 else { return nil }
 
-        let itemMatches = characterMatchesFilter(item, searchText: searchText, displayMode: displayMode)
+        let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode, includeTags: includeTags)
 
         if item.specialCategory {
             var childNodes: [SearchResult] = []
             if !searchText.isEmpty {
                 for entry in item.entries {
                     guard !Task.isCancelled else { break }
-                    if let child = await buildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id) {
+                    if let child = await buildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id, includeTags: includeTags) {
                         childNodes.append(child)
                     }
                 }
@@ -205,52 +205,16 @@ extension SearchController {
                 }
             }
             guard itemMatches || !childNodes.isEmpty else { return nil }
-            var node = characterResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
+            var node = makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
             node.children = childNodes
             node.canOpen = childNodes.isEmpty
             return node
         } else {
             guard itemMatches else { return nil }
-            return characterResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
+            return makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
         }
     }
 
-    private func characterMatchesFilter(_ item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode) -> Bool {
-        guard !searchText.isEmpty else { return true }
-        if item.name.localizedStandardContains(searchText) { return true }
-        if displayMode != .compact {
-            if item.description.localizedStandardContains(searchText) { return true }
-        }
-        if displayMode == .regular {
-            if item.tags.contains(where: { $0.localizedStandardContains(searchText) }) { return true }
-        }
-        return false
-    }
-
-    private func characterResult(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil) -> SearchResult {
-        let description: String? = displayMode != .compact ? (item.description.isEmpty ? nil : item.description) : nil
-        var score = searchText.isEmpty ? 100 : calculateRelevance(
-            searchText: searchText,
-            itemName: item.name,
-            entryName: nil,
-            content: description,
-            isItemMatch: true
-        )
-        if displayMode == .regular && !searchText.isEmpty,
-           item.tags.contains(where: { $0.localizedStandardContains(searchText) }) {
-            score += 8
-        }
-        return SearchResult(
-            itemId: item.id,
-            itemName: item.name,
-            module: itemControllable.config.module,
-            category: item.category,
-            entryId: parentEntryId,
-            entryName: nil,
-            matchedContent: description,
-            relevanceScore: score
-        )
-    }
 }
 
 // MARK: - Inspector search (from LinkListItemView / FolderListController)
@@ -259,10 +223,7 @@ extension SearchController {
     func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
         switch listMode {
         case .folder:
-            // Pass searchText directly — folderModeCharacterResults / buildCharacterFolderNode
-            // handle empty search correctly (characterMatchesFilter returns true for all items).
-            // The old " " trick only matched items whose names contained a space.
-            return await folderModeCharacterResults(searchText: searchText, focusId: focusId, displayMode: displayMode)
+            return await folderModeCharacterResults(searchText: searchText, focusId: focusId, displayMode: displayMode, includeTags: false)
         case .list:
             if let focusId {
                 // Sub-value items (groupId != nil) are group-entry sub-values, not root characters.
@@ -352,7 +313,7 @@ extension SearchController {
             }
         }
 
-        var result = characterResult(item: character, searchText: "", displayMode: .medium)
+        var result = makeResult(item: character, searchText: "", displayMode: .medium)
         result.children = entryChildren
         // Signal appendToFlat to start this item expanded so entries are visible
         // immediately — the user opened the inspector to see this character's sheet,
@@ -413,12 +374,12 @@ extension SearchController {
                       character.groupId == nil,
                       character.displayState == 0 else { continue }
                 if searchText.isEmpty {
-                    foundResults.append(characterResult(item: character, searchText: "", displayMode: displayMode))
+                    foundResults.append(makeResult(item: character, searchText: "", displayMode: displayMode))
                     // canOpen intentionally omitted (defaults false) — no entry expansion in common inspector
                 } else {
                     // Match at item level only — entries are not shown in the common inspector
-                    guard characterMatchesFilter(character, searchText: searchText, displayMode: displayMode) else { continue }
-                    foundResults.append(characterResult(item: character, searchText: searchText, displayMode: displayMode))
+                    guard itemMatchesFilter(character, searchText: searchText, displayMode: displayMode, includeTags: false) else { continue }
+                    foundResults.append(makeResult(item: character, searchText: searchText, displayMode: displayMode))
                 }
             }
             if searchText.isEmpty {
@@ -436,11 +397,11 @@ extension SearchController {
     /// Searches `character` at item-level (displayMode-aware) and all entries (always name+content).
     /// Matching entries become children of the character result, not flat siblings.
     private func characterInspectorResult(character: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
-        let characterMatches = characterMatchesFilter(character, searchText: searchText, displayMode: displayMode)
+        let characterMatches = itemMatchesFilter(character, searchText: searchText, displayMode: displayMode, includeTags: false)
         var entryChildren: [SearchResult] = []
         await collectValueEntries(of: character, characterId: character.id, characterName: character.name, searchText: searchText, into: &entryChildren)
         guard characterMatches || !entryChildren.isEmpty else { return }
-        var result = characterResult(item: character, searchText: searchText, displayMode: displayMode)
+        var result = makeResult(item: character, searchText: searchText, displayMode: displayMode)
         result.children = entryChildren.sortedByRelevance()
         foundResults.append(result)
     }

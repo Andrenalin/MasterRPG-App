@@ -117,7 +117,7 @@ struct FolderListControllerTests {
         #expect(item?.isOpen == false, "Folder must start closed on empty search")
 
         // Step 2: user manually opens the folder
-        if let item { await root.folderListController.toggleFolder(item: item) }
+        if let item { root.folderListController.toggleFolder(item: item) }
 
         let afterToggle = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterToggle?.isOpen == true, "Folder must be open after user toggle")
@@ -303,7 +303,7 @@ struct FolderListControllerTests {
         #expect(folderItem?.isOpen == false, "Prerequisite: folder must start closed")
 
         // Open via toggle (loads children via scoped search)
-        if let item = folderItem { await root.folderListController.toggleFolder(item: item) }
+        if let item = folderItem { root.folderListController.toggleFolder(item: item) }
 
         let afterOpen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterOpen?.isOpen == true, "Folder must be open after first toggle")
@@ -311,7 +311,7 @@ struct FolderListControllerTests {
                 "Child must be visible when folder is open")
 
         // Close via toggle — during empty search, resetFilter respects lastIsOpen
-        if let item = afterOpen { await root.folderListController.toggleFolder(item: item) }
+        if let item = afterOpen { root.folderListController.toggleFolder(item: item) }
 
         let afterClose = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterClose?.isOpen == false,     "Folder must be closed after second toggle")
@@ -337,7 +337,7 @@ struct FolderListControllerTests {
 
         // Toggle open: should load children via scoped search
         if let item = folderItem {
-            await root.folderListController.toggleFolder(item: item)
+            root.folderListController.toggleFolder(item: item)
         }
 
         let afterOpen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
@@ -357,16 +357,16 @@ struct FolderListControllerTests {
         // Open the folder once (loads children)
         await searchFolder(root)
         let firstOpen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = firstOpen { await root.folderListController.toggleFolder(item: item) }
+        if let item = firstOpen { root.folderListController.toggleFolder(item: item) }
 
         // Close it
         let toClose = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = toClose { await root.folderListController.toggleFolder(item: item) }
+        if let item = toClose { root.folderListController.toggleFolder(item: item) }
         #expect(toClose?.isOpen == false || root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })?.isOpen == false)
 
         // Re-open: children are already cached — must appear without a new search
         let toReopen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = toReopen { await root.folderListController.toggleFolder(item: item) }
+        if let item = toReopen { root.folderListController.toggleFolder(item: item) }
 
         #expect(root.folderListController.listModel.list.contains(where: { $0.source.itemId == childId }),
                 "Child must reappear from cache on second open — no new search needed")
@@ -389,7 +389,7 @@ struct FolderListControllerTests {
 
         // Open it
         let folderItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = folderItem { await root.folderListController.toggleFolder(item: item) }
+        if let item = folderItem { root.folderListController.toggleFolder(item: item) }
 
         #expect(root.folderListController.canOpenFolder(itemId: folderId) == false,
                 "canOpenFolder must be false once the folder is already open")
@@ -406,7 +406,7 @@ struct FolderListControllerTests {
         // Open the folder
         await searchFolder(root)
         let folderItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = folderItem { await root.folderListController.toggleFolder(item: item) }
+        if let item = folderItem { root.folderListController.toggleFolder(item: item) }
 
         #expect(root.folderListController.hasParentFolder(itemId: childId) == true,
                 "hasParentFolder must be true when child's parent is open")
@@ -424,8 +424,8 @@ struct FolderListControllerTests {
         await searchFolder(root, text: "")
         let folderItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         if let item = folderItem {
-            await root.folderListController.toggleFolder(item: item)  // open
-            await root.folderListController.toggleFolder(item: root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })!)  // close
+            root.folderListController.toggleFolder(item: item)  // open
+            root.folderListController.toggleFolder(item: root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })!)  // close
         }
 
         #expect(root.folderListController.hasParentFolder(itemId: childId) == false,
@@ -445,7 +445,7 @@ struct FolderListControllerTests {
         // Open the folder
         await searchFolder(root)
         let folderItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = folderItem { await root.folderListController.toggleFolder(item: item) }
+        if let item = folderItem { root.folderListController.toggleFolder(item: item) }
 
         // Find the child in the flat list — it has a parentId set
         let childItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == childId })
@@ -471,7 +471,7 @@ struct FolderListControllerTests {
 
         await searchFolder(root)
         let folderItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = folderItem { await root.folderListController.toggleFolder(item: item) }
+        if let item = folderItem { root.folderListController.toggleFolder(item: item) }
 
         // Close from child's perspective
         root.folderListController.closeParentFolder(of: childId)
@@ -499,7 +499,7 @@ struct FolderListControllerTests {
         #expect(firstResult?.canOpen == true, "canOpen must be true before opening")
 
         // Open the folder (loads children; canOpen becomes false on next search)
-        if let item = firstResult { await root.folderListController.toggleFolder(item: item) }
+        if let item = firstResult { root.folderListController.toggleFolder(item: item) }
 
         // Non-empty search: folder's children match, so it gets canOpen=false
         await searchFolder(root, text: childId.uuidString.prefix(4).description)
@@ -529,7 +529,7 @@ struct FolderListControllerTests {
         // Step 1: empty search — user opens folder (lastIsOpen = true)
         await searchFolder(root)
         let atStart = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let f = atStart { await root.folderListController.toggleFolder(item: f) }
+        if let f = atStart { root.folderListController.toggleFolder(item: f) }
 
         let afterOpen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterOpen?.lastIsOpen == true, "Prerequisite: lastIsOpen must be true after manual open")
@@ -596,7 +596,7 @@ struct FolderListControllerTests {
         // Step 1: empty search, user opens folder (lastIsOpen = true)
         await searchFolder(root)
         let atStart = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let f = atStart { await root.folderListController.toggleFolder(item: f) }
+        if let f = atStart { root.folderListController.toggleFolder(item: f) }
         #expect(root.folderListController.listModel.list
             .first(where: { $0.source.itemId == folderId })?.lastIsOpen == true)
 
@@ -632,7 +632,7 @@ struct FolderListControllerTests {
 
         // Step 2: user closes folder during search → wasExplicitlyClosed=true → folder STAYS closed
         // (appendToFlat: result.children non-empty, but wasExplicitlyClosed=true → isOpen=false)
-        if let item = autoOpen { await root.folderListController.toggleFolder(item: item) }
+        if let item = autoOpen { root.folderListController.toggleFolder(item: item) }
         let afterToggle = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterToggle?.isOpen == false,
                 "Folder must close immediately — wasExplicitlyClosed=true prevents auto-reopen by search")
@@ -668,7 +668,7 @@ struct FolderListControllerTests {
         // so ALL children are loaded regardless of the active search filter.
         // appendToFlat: isSearching=true, result.children=[], but item.children non-empty
         // AND lastIsOpen=true → item.isOpen = true (the fix).
-        if let item = closedInSearch { await root.folderListController.toggleFolder(item: item) }
+        if let item = closedInSearch { root.folderListController.toggleFolder(item: item) }
 
         let afterToggle = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterToggle?.isOpen == true,
@@ -887,7 +887,7 @@ struct FolderListControllerTests {
         #expect(autoOpen?.isOpen == true, "Folder auto-opens")
 
         // Step 2: user closes it
-        if let item = autoOpen { await root.folderListController.toggleFolder(item: item) }
+        if let item = autoOpen { root.folderListController.toggleFolder(item: item) }
         let afterClose = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterClose?.isOpen == false,             "Folder closed immediately")
         #expect(afterClose?.wasExplicitlyClosed == true, "wasExplicitlyClosed set")
@@ -914,7 +914,7 @@ struct FolderListControllerTests {
         #expect(autoOpen?.isOpen == true, "Folder auto-opens")
 
         // User closes it
-        if let item = autoOpen { await root.folderListController.toggleFolder(item: item) }
+        if let item = autoOpen { root.folderListController.toggleFolder(item: item) }
         let afterClose = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterClose?.isOpen == false,             "Closed")
         #expect(afterClose?.wasExplicitlyClosed == true, "wasExplicitlyClosed=true")
@@ -947,12 +947,12 @@ struct FolderListControllerTests {
         // Auto-open, then close
         await searchFolder(root, text: "Dragon")
         let folderItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = folderItem { await root.folderListController.toggleFolder(item: item) }
+        if let item = folderItem { root.folderListController.toggleFolder(item: item) }
         #expect(root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })?.wasExplicitlyClosed == true)
 
         // Re-open explicitly — clears wasExplicitlyClosed
         let closedItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = closedItem { await root.folderListController.toggleFolder(item: item) }
+        if let item = closedItem { root.folderListController.toggleFolder(item: item) }
         let afterReOpen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterReOpen?.isOpen == true,               "Folder is open after re-opening")
         #expect(afterReOpen?.wasExplicitlyClosed == false, "wasExplicitlyClosed cleared by open")
@@ -992,7 +992,7 @@ struct FolderListControllerTests {
         #expect(folderNode?.canOpen == true,  "Folder found by name match, canOpen=true")
         #expect(folderNode?.isOpen == false,  "Starts closed (no child matches 'Nature')")
 
-        if let f = folderNode { await root.folderListController.toggleFolder(item: f) }
+        if let f = folderNode { root.folderListController.toggleFolder(item: f) }
 
         let flat = root.folderListController.listModel.list
         #expect(flat.contains(where: { $0.source.itemId == child1 }), "Sunset Photo must appear")
@@ -1013,7 +1013,7 @@ struct FolderListControllerTests {
         // Search "Glacier", open folder
         await searchFolder(root, text: "Glacier")
         let node = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let n = node { await root.folderListController.toggleFolder(item: n) }
+        if let n = node { root.folderListController.toggleFolder(item: n) }
         #expect(root.folderListController.listModel.list.contains(where: { $0.source.itemId == childId }),
                 "Child must be visible after toggle with 'Glacier' search")
 
@@ -1097,7 +1097,7 @@ struct FolderListControllerTests {
 
         await searchFolder(root)
         let folderNode = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        if let item = folderNode { await root.folderListController.toggleFolder(item: item) }
+        if let item = folderNode { root.folderListController.toggleFolder(item: item) }
 
         let childNode = root.folderListController.listModel.list.first(where: { $0.source.itemId == childId })
 
@@ -1149,8 +1149,8 @@ struct FolderListControllerTests {
         await searchFolder(root)
         let nodeA = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderA })
         let nodeB = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderB })
-        if let a = nodeA { await root.folderListController.toggleFolder(item: a) }
-        if let b = nodeB { await root.folderListController.toggleFolder(item: b) }
+        if let a = nodeA { root.folderListController.toggleFolder(item: a) }
+        if let b = nodeB { root.folderListController.toggleFolder(item: b) }
 
         // FolderListItemModel.id = entryId for folder children (not itemId)
         let childA = try #require(
@@ -1197,8 +1197,8 @@ struct FolderListControllerTests {
         await searchFolder(root)
         let nodeA = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderA })
         let nodeB = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderB })
-        if let a = nodeA { await root.folderListController.toggleFolder(item: a) }
-        if let b = nodeB { await root.folderListController.toggleFolder(item: b) }
+        if let a = nodeA { root.folderListController.toggleFolder(item: a) }
+        if let b = nodeB { root.folderListController.toggleFolder(item: b) }
 
         let allIds = root.folderListController.listModel.list.map(\.id)
         // standalone=itemId, folder=itemId, children=membershipEntryId (unique per folder slot)
@@ -1232,7 +1232,7 @@ struct FolderListControllerTests {
 
         let folderNode = root.folderLinkController.listModel.list
             .first(where: { $0.source.itemId == folderId })
-        if let f = folderNode { await root.folderLinkController.toggleFolder(item: f) }
+        if let f = folderNode { root.folderLinkController.toggleFolder(item: f) }
 
         let childNode = try #require(
             root.folderLinkController.listModel.list.first(where: { $0.source.itemId == childId }),
@@ -1281,7 +1281,7 @@ struct FolderListControllerTests {
 
         let folderNode = root.folderLinkController.listModel.list
             .first(where: { $0.source.itemId == folderId })
-        if let f = folderNode { await root.folderLinkController.toggleFolder(item: f) }
+        if let f = folderNode { root.folderLinkController.toggleFolder(item: f) }
 
         let list = root.folderLinkController.listModel.list
         for itemId in [child1, child2] {
