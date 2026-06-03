@@ -11,7 +11,7 @@ struct AppExportView: View {
         ExportProgressPanelView(exportController: exportController, showOptions: true) {
             exportController.exportingAll()
         }
-        .presentationDetents([.height(160)])
+        //.presentationDetents([.height(160)])
     }
     
     var exportController: ExportControllable {

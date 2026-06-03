@@ -52,18 +52,18 @@ extension AudioController {
     }
     
     @MainActor
-    func togglePlay(id: UUID? = nil) {
+    func togglePlay(id: UUID? = nil, triggerPlay: Bool = true) {
         if let id, id != model.currentId {
             if model.isPlaying {
                 pause()
             }
             model.set(currentId: id)
             Task { @MainActor in
-                await preparePlay(id: id)
+                await preparePlay(id: id, triggerPlay: triggerPlay)
             }
             return
         }
-        toggle()
+        if triggerPlay { toggle() }
     }
     
     @MainActor
@@ -174,17 +174,18 @@ extension AudioController {
 
 extension AudioController {
     @MainActor
-    func preparePlay(id: UUID) async {
+    func preparePlay(id: UUID, triggerPlay: Bool = true) async {
         initAudioSessionEngine()
         if model.currentId != id {
             model.set(currentId: id)
         }
-        await replaceCurrentItem()
-        
-        // Coordinate playback across SharePlay participants
+        // Must set coordinator ID before replacing the item — the AVPlayerPlaybackCoordinator
+        // calls identifierFor(_:) during replaceCurrentItem, and needs the UUID already set.
+        // Without this order the coordinator gets a random UUID on first play (works second time
+        // only because sharedAudioId is already populated from the previous call).
         await model.coordinator?.coordinatePlayback(of: id)
-        
-        play()
+        await replaceCurrentItem()
+        if triggerPlay { play() }
     }
     
     func replaceCurrentItem() async {

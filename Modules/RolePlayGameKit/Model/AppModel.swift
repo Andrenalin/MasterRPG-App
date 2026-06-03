@@ -44,6 +44,7 @@ public final class AppModel: Sendable {
 #else
     public let databaseModel: DataBaseModel
 #endif
+    @ObservationIgnored var saveIsDeferred: Bool = false
 
     @ObservationIgnored let inAppModel = InAppModel()
     public let inAppController: InAppController
@@ -227,6 +228,7 @@ extension AppModel {
     }
     
     public func save() async {
+        guard saveIsDeferred == false else { return }
         await adventureRoot.save()
     }
     

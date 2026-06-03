@@ -5,9 +5,10 @@ import SwiftUI
 
 struct AudioPlayPauseButton: View, Equatable {
     let itemId: UUID
-    
+
     @Environment(AudioRootModel.self) private var root
-    
+    @Environment(\.networkActions) private var networkActions
+
     var body: some View {
         Button {
             handlePlayPause()
@@ -27,28 +28,25 @@ struct AudioPlayPauseButton: View, Equatable {
     // MARK: - Actions
     
     private func handlePlayPause() {
-        // If currently playing this item, just toggle pause
         if isCurrentlyPlaying {
             root.audioController.pause()
             return
         }
-        
-        // If a different item is playing, pause it first
+
+        // Broadcast play command to other players before changing local state
+        // so requestPlay computes shouldPlay=true from the current (not-yet-playing) state.
+        networkActions?.game(root.gameController.requestPlay(id: itemId), .playAudio, nil)
+
         if root.audioPlayerModel.isPlaying && root.audioPlayerModel.currentId != itemId {
             root.audioController.pause()
         }
-        
-        // Check if this item is in the playlist
+
         let isInPlaylist = root.audioPlayerModel.playList.contains(where: { $0.id == itemId })
-        
         if !isInPlaylist {
-            // Load and play this audio item
             root.audioController.loadAndPlay(id: itemId)
         } else if root.audioPlayerModel.currentId == itemId {
-            // Item is the current item but paused, just play it
             root.audioController.play()
         } else {
-            // Item is in playlist but not current, switch to it
             root.audioController.togglePlay(id: itemId)
         }
     }

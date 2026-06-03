@@ -312,7 +312,7 @@ private struct InspectorRowView: View {
         // Same three-way condition as SpecialCategoryFolderIndicator — see that struct for rationale.
         if item.canOpen || item.isOpen || item.wasExplicitlyClosed {
             Button {
-                Task { await root.folderLinkControllable.toggleFolder(item: item) }
+                root.folderLinkControllable.toggleFolder(item: item)
             } label: {
                 Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                     .imageScale(.small)

@@ -31,6 +31,6 @@ struct AppGameTypeDestinationView: View {
         }
         .tint(.blue)
         .environmentActionSetUp(appModel)
-        .appExitNotifications(handler: appModel.adventureRoot.save)
+        .appExitNotifications(handler: appModel.save)
     }
 }

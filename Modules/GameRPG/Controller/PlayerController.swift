@@ -312,7 +312,14 @@ extension PlayerController {
                 await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
             case .playAudio:
                 await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: model.gameRoster.controls.map { $0.id } + [model.gameConfig.master.id])
-                let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
+                let isSharePlayActive = await MainActor.run { root.networkStore.sharePlayStore.isActive }
+                if isSharePlayActive && !model.gameConfig.isMaster {
+                    // SharePlay: AVPlayerPlaybackCoordinator propagates play() from the initiator.
+                    // Only load the item here so the coordinator can sync this participant.
+                    await root.audioRoot.audioGameControllable.loadPlaylist(id: model.data.id)
+                } else {
+                    let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
+                }
             default:
                 break
             }

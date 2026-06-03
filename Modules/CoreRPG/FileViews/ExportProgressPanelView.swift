@@ -47,23 +47,24 @@ public struct ExportProgressPanelView: View {
 #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button {
+                    Button(role: .cancel) {
                         exportTask?.cancel()
                         navigator.dismiss()
                         finishAction()
                     } label: {
                         Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark") }
                     }
+                    .disabled(outcome != .notStarted && outcome != .running)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button {
+                    Button(role: .confirm) {
                         navigator.dismiss()
                         finishAction()
                     } label: {
                         Label { Text("Ok", bundle: .module) } icon: { Image(systemName: "checkmark") }
                     }
-                    .disabled(exportModel.isExportRunning)
+                    .disabled(outcome == .notStarted || outcome == .running)
                 }
             }
         }

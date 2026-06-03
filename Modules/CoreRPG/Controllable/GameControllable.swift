@@ -29,11 +29,28 @@ public final class ItemGameModel {
     public var currentItemId: UUID? {
         itemDataModel.gameItems.first
     }
-    
+
     public var currentPlayers: [UUID] = []
-    
+
+    // Per-item player-reporting state for the current game session.
+    // Stored here (not on domain models) to avoid shared state across game sessions
+    // and to prevent cross-test contamination when tests run in parallel.
+    public var playerReports: [UUID: [UUID]] = [:]
+
     public func setCurrent(players: [UUID]) {
         currentPlayers = players
+    }
+
+    public func playerReport(for itemId: UUID) -> [UUID] {
+        playerReports[itemId] ?? []
+    }
+
+    public func setPlayerReport(playerId: UUID, for itemId: UUID) {
+        if playerReports[itemId] == nil {
+            playerReports[itemId] = [playerId]
+        } else if !playerReports[itemId]!.contains(playerId) {
+            playerReports[itemId]!.append(playerId)
+        }
     }
     
     func append(itemId: UUID, item: ModelType, onlyItem: Bool = false) {
@@ -70,6 +87,7 @@ public final class ItemGameModel {
     func reset() {
         items = []
         itemData.removeAll()
+        playerReports.removeAll()
     }
 
     func focus(on focusIds: [UUID]) {
@@ -160,14 +178,7 @@ public extension GameControllable {
 
     @MainActor
     func report(itemId: UUID, for player: UUID) {
-        var item = gameModel.itemData[itemId] as? ItemGameReportable
-        if item == nil {
-            item = itemControllable.itemSync(for: itemId) as? ItemGameReportable
-        }
-        guard var item else { return }
-        if !item.players.contains(player) {
-            item.players.append(player)
-        }
+        gameModel.setPlayerReport(playerId: player, for: itemId)
     }
     
     func focus(on id: UUID?) async {
@@ -256,11 +267,7 @@ public extension GameControllable {
     
     @MainActor
     func allPlayersReported(for id: UUID) -> Bool {
-        var item = gameModel.itemData[id]
-        if item == nil {
-            item = itemControllable.itemSync(for: id)
-        }
-        guard let players = (item as? ItemGameReportable)?.players else { return false }
+        let players = gameModel.playerReport(for: id)
         return gameModel.currentPlayers.filter { !players.contains($0) }.isEmpty
     }
 }

@@ -166,8 +166,8 @@ final class MasterPlayerControllerTests {
 
         response = try await sut.handle(result!)
         #expect(nil == response)
-        await #expect(rootSut.audioRoot.itemController.itemOrEmpty(for: audioId).players.sorted() == [gameConfigModelPlayer.id, gameConfigModelSut.id].sorted())
-        await #expect(rootSut.audioRoot.itemController.itemOrEmpty(for: subAudioId).players.sorted() == [gameConfigModelPlayer.id, gameConfigModelSut.id].sorted())
+        await #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: audioId).sorted() == [gameConfigModelPlayer.id, gameConfigModelSut.id].sorted())
+        await #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: subAudioId).sorted() == [gameConfigModelPlayer.id, gameConfigModelSut.id].sorted())
 
         let playData = await rootSut.audioRoot.gameController.requestPlay(id: audioId)
         await sut.game(message: playData, actionType: .playAudio)

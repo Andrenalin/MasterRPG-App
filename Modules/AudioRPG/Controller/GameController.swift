@@ -8,6 +8,10 @@ import os.log
 
 public protocol AudioGameStoreable {
     func play(id: UUID?, shouldPlay: Bool) -> Task<Void, Error>
+    /// Loads the playlist for `id` and prepares the first item for coordinator sync
+    /// without triggering play locally. Used in SharePlay mode where
+    /// AVPlayerPlaybackCoordinator propagates play() from the initiating device.
+    @MainActor func loadPlaylist(id: UUID) async
 
     @MainActor func audioList(allPlayers: Bool, with masterId: UUID) -> NetworkCodableDataType
     @MainActor func applyAudio(id: UUID, for players: [UUID])
@@ -59,11 +63,8 @@ extension GameController: GameControllable {
     @MainActor func allPlayersReported(for id: UUID, deep: Int = 0) -> Bool {
         guard deep < 10 else { return false }
         let item = gameItem(for: id)
-        if let itemDB = itemController.itemSync(for: id, noGame: true), itemDB.players.count > item.players.count {
-            item.players = itemDB.players
-        }
-        
-        guard gameModel.currentPlayers.filter({ !item.players.contains($0) }).isEmpty else { return false }
+        let players = gameModel.playerReport(for: id)
+        guard gameModel.currentPlayers.filter({ !players.contains($0) }).isEmpty else { return false }
         for entry in item.entries {
             if !allPlayersReported(for: entry.audioId, deep: deep + 1) {
                 return false
@@ -71,11 +72,12 @@ extension GameController: GameControllable {
         }
         return true
     }
-    
+
     @MainActor func report(itemId: UUID, for player: UUID) {
         let item = gameItem(for: itemId)
-        if !item.players.contains(player) {
-            item.players.append(player)
+        let players = gameModel.playerReport(for: itemId)
+        if !players.contains(player) {
+            gameModel.setPlayerReport(playerId: player, for: itemId)
             for entry in item.entries {
                 report(itemId: entry.audioId, for: player)
             }
@@ -156,13 +158,22 @@ extension GameController: AudioGameStoreable {
     func play(id: UUID?, shouldPlay: Bool) -> Task<Void, Error> {
         Task { @MainActor in
             guard let id else { return }
+            guard shouldPlay else {
+                audioController.pause()
+                return
+            }
             let list = fetchPlaylist(id: id)
-            
-            // Coordinate with SharePlay BEFORE adding to playlist
-            await audioController.model.coordinator?.coordinatePlayback(of: id)
-            
-            await audioController.add(audio: fetchPlaylist(id: id), replace: true)
-            audioController.togglePlay(id: list.first?.id)
+            await audioController.add(audio: list, replace: true)
+            audioController.togglePlay(id: list.first?.id, triggerPlay: true)
+        }
+    }
+
+    @MainActor
+    func loadPlaylist(id: UUID) async {
+        let list = fetchPlaylist(id: id)
+        await audioController.add(audio: list, replace: true)
+        if let firstId = list.first?.id {
+            await audioController.preparePlay(id: firstId, triggerPlay: false)
         }
     }
     
@@ -173,7 +184,7 @@ extension GameController: AudioGameStoreable {
             var players: [UUID: [UUID]] = [:]
             itemController.itemDataModel.items.forEach {
                 applyAudio(id: $0, for: [masterId])
-                players[$0] = gameItem(for: $0).players
+                players[$0] = gameModel.playerReport(for: $0)
             }
             request = AudioListRequest(list: [], players: players)
         } else {
@@ -188,9 +199,8 @@ extension GameController: AudioGameStoreable {
     
     @MainActor
     func applyAudio(id: UUID, for players: [UUID]) {
-        let item = gameItem(for: id)
         players.forEach {
-            resetAudio(item: item, playerId: $0)
+            gameModel.setPlayerReport(playerId: $0, for: id)
         }
     }
 
@@ -210,13 +220,6 @@ extension GameController: AudioGameStoreable {
         }
     }
     
-    private func resetAudio(item: AudioModel, playerId: UUID) {
-        if !item.players.contains(playerId) {
-            item.players.append(playerId)
-        }
-    }
-    
-    
     func play(with data: NetworkCodableDataType) -> Task<Void, Error> {
         let request = AudioPlayRequest.decodeData(of: data.data)
         return play(id: request?.id, shouldPlay: request?.shouldPlay ?? false)
@@ -224,7 +227,10 @@ extension GameController: AudioGameStoreable {
 
     @MainActor
     func requestPlay(id: UUID) -> NetworkCodableDataType {
-        let requestData = AudioPlayRequest(id: id, shouldPlay: !(audioController.model.currentId == id && audioController.model.isPlaying))
+        // Use isPlayingPlaylist rather than comparing currentId == id:
+        // currentId is the active *track*, but id is the playlist root item,
+        // so a direct comparison almost always returns false even when playing.
+        let requestData = AudioPlayRequest(id: id, shouldPlay: !isPlayingPlaylist(id: id))
         return NetworkCodableDataType(id: id, type: .audio, version: 0, data: requestData.encodeData())
     }
 }

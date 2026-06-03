@@ -251,6 +251,9 @@ extension MasterController {
                 try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
                 await send(type: .reveal, subtype: .show, updated: model.data)
             case .playAudio:
+                // Master must also play so it participates; returning model.data echoes
+                // the command to all players (non-SharePlay path).
+                let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
                 return model.data
             case .audioList:
                 await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)

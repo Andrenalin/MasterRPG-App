@@ -11,17 +11,20 @@ public struct ImportProgressPanelView: View {
         self.urlProvider = nil
         self.importController = importController
         self.isSaveGame = true
+        self.saveDeferredHandler = nil
     }
 
-    public init(urlProvider: any ExampleUrlProvider, importController: any ImportControllable) {
+    public init(urlProvider: any ExampleUrlProvider, importController: any ImportControllable, saveDeferredHandler: ((Bool) -> Void)?) {
         self.urlProvider = urlProvider
         self.importController = importController
         self.isSaveGame = false
+        self.saveDeferredHandler = saveDeferredHandler
     }
 
     let urlProvider: (any ExampleUrlProvider)?
     let importController: any ImportControllable
     let isSaveGame: Bool
+    let saveDeferredHandler: ((Bool) -> Void)?
 
     @Environment(\.navigator) private var navigator
 
@@ -42,7 +45,9 @@ public struct ImportProgressPanelView: View {
                         progressView
                         statusText
                         
-                        informationDownloadText
+                        if outcome == .notStarted {
+                            informationDownloadText
+                        }
                     }
                     .padding()
                 }
@@ -53,6 +58,9 @@ public struct ImportProgressPanelView: View {
                 guard let loadUrl else { return }
                 do {
                     outcome = .running
+                    saveDeferredHandler?(true)
+                    defer { saveDeferredHandler?(false) }
+
                     importTask = importController.importUrl(from: loadUrl, importModel: importModel)
                     try await importTask?.value
                     outcome = .finished
@@ -83,6 +91,7 @@ public struct ImportProgressPanelView: View {
                     } label: {
                         Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark") }
                     }
+                    .disabled(outcome == .finished)
                 }
 
                 if !importModel.isReviewReady {
@@ -99,7 +108,7 @@ public struct ImportProgressPanelView: View {
         }
     }
 
-    private enum ImportOutcome {
+    private enum ImportOutcome: Equatable, Sendable {
         case notStarted
         case running
         case cancelled
@@ -221,7 +230,7 @@ private extension ImportProgressPanelView {
 }
 
 #Preview {
-    ImportProgressPanelView(urlProvider: FakeExampleUrlProvider(), importController: FakeImportController.fake)
+    ImportProgressPanelView(urlProvider: FakeExampleUrlProvider(), importController: FakeImportController.fake, saveDeferredHandler: nil)
 }
 
 struct FakeExampleUrlProvider: ExampleUrlProvider {

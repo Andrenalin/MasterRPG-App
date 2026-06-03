@@ -423,7 +423,7 @@ extension FolderListControllable {
     func openFolder(itemId: UUID) {
         guard let item = listModel.list.first(where: { $0.source.itemId == itemId }),
               (item.canOpen || item.wasExplicitlyClosed) && !item.isOpen else { return }
-        Task { await toggleFolder(item: item) }
+        toggleFolder(item: item)
     }
 
     /// Returns true if `itemId` is a closed item that can be expanded or was explicitly closed.

@@ -147,6 +147,9 @@ struct ValidateRepairView: View {
                 await controller.start()
             }
             Task {
+                controller.appModel.saveIsDeferred = true
+                defer { controller.appModel.saveIsDeferred = false }
+                
                 _ = await converterTask?.result
                 navigator.dismiss()
             }
