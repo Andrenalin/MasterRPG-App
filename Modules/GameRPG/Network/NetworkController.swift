@@ -93,6 +93,9 @@ extension NetworkController {
             await model.playerStore?.stop()
             sharePlayStore.groupSession?.leave()
         }
+        // Stop listening for new sessions — joinTask would otherwise auto-rejoin
+        // the next SharePlay call after the game has ended.
+        sharePlayStore.stopJoin()
         model.setLocalPlayers(to: false)
     }
 }
@@ -208,6 +211,22 @@ extension NetworkController: SharePlayControllerDelegate {
     func sharePlayLostPlayer(id: UUID) {
         Task { @concurrent in
             await model.masterDelegate?.lostPlayer(for: id)
+        }
+    }
+
+    func sharePlayLostConnection() {
+        Task { @concurrent in
+            await model.playerDelegate?.lostConnection()
+        }
+    }
+
+    func sharePlaySessionConfigured() {
+        Task { @concurrent in
+            // Only trigger ready() for players. Masters are identified by hasLocalPlayer
+            // (set by setupLocal()). Calling ready() on master would be harmless but
+            // would fire the 5-second sendCharacter sleep unnecessarily.
+            guard await !model.hasLocalPlayer else { return }
+            await model.playerDelegate?.ready()
         }
     }
 }

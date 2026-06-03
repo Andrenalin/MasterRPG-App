@@ -17,6 +17,13 @@ protocol SharePlayControllerDelegate: AnyObject {
     func handleUpdate(_ model: GameNetworkModel, id: UUID) -> Void
     func handleFileUpdate(_ model: GameNetworkModel) -> Void
     func sharePlayLostPlayer(id: UUID)
+    /// Called when the local SharePlay session is invalidated so the player
+    /// controller can reset `hasSendPlayer` and mark the master as lost.
+    func sharePlayLostConnection()
+    /// Called each time a session is fully configured and joined. On a player
+    /// device this triggers `ready()` → `sendCharacter()` so the player
+    /// re-announces itself to the master after an automatic re-join.
+    func sharePlaySessionConfigured()
 }
 
 @MainActor
@@ -34,6 +41,11 @@ final class RPGSharePlayController {
     var gameModel: GameModel?
     var packageSender: SharePlaySingleQueuePackageSender?
     var packageReceiver = SharePlayPackageReceiver()
+
+    // Kept alive through session resets so the player can re-join automatically
+    // when SharePlay becomes available again for a running game. Only cancelled
+    // by stopJoin() when the game itself ends.
+    private var joinTask: Task<Void, Never>?
 
     #if os(visionOS)
     private var systemCoordinator: SystemCoordinator?
@@ -191,7 +203,11 @@ extension RPGSharePlayController {
 
     func joinGame() {
         Logger.sharePlay.debug("Join state: \(self.printState(), privacy: .public)")
-        let joinTask = Task { [weak self] in
+        joinTask?.cancel()
+        // Store in joinTask (not tasks) so reset() does not cancel it.
+        // The for-await loop stays alive across session invalidations and picks
+        // up the next session automatically when the player re-joins the call.
+        joinTask = Task { [weak self] in
             for await session in RPGActivity.sessions() {
                 guard let self else { return }
                 Logger.sharePlay.debug("Session \(session.description, privacy: .public) state: \(self.printState(), privacy: .public)")
@@ -202,7 +218,12 @@ extension RPGSharePlayController {
                 self.configureGroupSession(session)
             }
         }
-        tasks.insert(joinTask)
+    }
+
+    func stopJoin() {
+        Logger.sharePlay.debug("SharePlay: stopJoin")
+        joinTask?.cancel()
+        joinTask = nil
     }
 
     func configureGroupSession(_ groupSession: GroupSession<RPGActivity>) {
@@ -229,27 +250,34 @@ extension RPGSharePlayController {
                     if case .invalidated = state {
                         self.groupSession = nil
                         self.reset()
+                        // Notify the player controller so it resets hasSendPlayer
+                        // and marks the master as lost — required for re-sync on rejoin.
+                        self.delegate?.sharePlayLostConnection()
                     }
                 }
             }
             .store(in: &subscriptions)
 
-        groupSession.$activeParticipants
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] activeParticipants in
-                guard let self else { return }
-                MainActor.assumeIsolated {
-                    let newParticipants = activeParticipants.subtracting(groupSession.activeParticipants)
-                    let removedParticipants = groupSession.activeParticipants.subtracting(activeParticipants)
-
-                    Logger.sharePlay.debug("Session Participants active: \(activeParticipants.debugDescription, privacy: .public) and new: \(newParticipants.debugDescription, privacy: .public) and removed: \(removedParticipants.debugDescription, privacy: .public)")
-
-                    removedParticipants.forEach {
-                        self.delegate?.sharePlayLostPlayer(id: $0.id)
-                    }
+        // Combine's .receive(on:) introduces an async hop that lets the @Published property
+        // update before the sink runs — so groupSession.activeParticipants equals activeParticipants
+        // by the time the closure fires, making the subtracting() always empty.
+        // Apple's recommended approach (WWDC visionOS SharePlay sample) is to use
+        // `for await .values` with an explicit previousParticipants local that is updated
+        // via defer, which is unambiguous regardless of scheduling.
+        let participantTask = Task { [weak self] in
+            guard let self else { return }
+            var previousParticipants = Set<Participant>()
+            for await activeParticipants in groupSession.$activeParticipants.values {
+                let removed = previousParticipants.subtracting(activeParticipants)
+                let added = activeParticipants.subtracting(previousParticipants)
+                defer { previousParticipants = activeParticipants }
+                Logger.sharePlay.debug("Session Participants active: \(activeParticipants.debugDescription, privacy: .public) added: \(added.debugDescription, privacy: .public) removed: \(removed.debugDescription, privacy: .public)")
+                for participant in removed {
+                    self.delegate?.sharePlayLostPlayer(id: participant.id)
                 }
             }
-            .store(in: &subscriptions)
+        }
+        tasks.insert(participantTask)
 
         let task = Task { [weak self] in
             for await (message, context) in messenger.messages(of: PackageMessage.self) {
@@ -272,6 +300,10 @@ extension RPGSharePlayController {
 
         groupSession.join()
         playBack?.coordinateWithSession(groupSession)
+        // Notify delegate so player re-sends character data and triggers a full
+        // game-state sync. Safe to call on first join too: on master the guard
+        // in NetworkController.sharePlaySessionConfigured() is a no-op.
+        delegate?.sharePlaySessionConfigured()
         #if os(visionOS)
         tabletopGame?.coordinateWithSession(groupSession)
 
@@ -291,10 +323,20 @@ extension RPGSharePlayController {
         for attachment in attachments {
             do {
                 var metadata = try await attachment.loadMetadata(of: GameNetworkModel.self)
+                // journal.attachments emits the FULL current set on every change.
+                // Skip attachments we already loaded by comparing attachment.id (the
+                // journal's own system UUID, not the game item UUID). This prevents
+                // GroupKit's NSCocoaErrorDomain 260 when it cleans up temp files for
+                // already-transferred attachments.
+                // Using attachment.id instead of game item UUID means remove+re-add
+                // (journal.add always produces a new attachment.id) correctly re-sends
+                // the same item to newly joined participants.
+                if gameModel?.attachments[metadata.data.type]?.id == attachment.id { continue }
                 Logger.sharePlay.debug("Attachments \(metadata.counter, privacy: .public)")
                 do {
                     let data = try await attachment.load(Data.self)
                     metadata.data = NetworkCodableDataType(id: metadata.data.id, type: metadata.data.type, version: metadata.data.version, data: data)
+                    gameModel?.attachments[metadata.data.type] = attachment
                     gameModel?.metaDataAttachments[metadata.data.type] = metadata.data.id
                     delegate?.handleFileUpdate(metadata)
                 } catch let error {
