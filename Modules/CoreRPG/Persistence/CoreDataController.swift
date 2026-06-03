@@ -188,20 +188,22 @@ public extension CoreDataController {
     
     /// Batch replace/insert operations with automatic chunking
     func batchReplace(
-        models: [Model], 
+        models: [Model],
         keyPath: KeyPath<Model, UUID>,
         updater: @escaping @Sendable (Model, DataType) -> Void,
         chunkSize: Int = 100
     ) async throws {
         guard !models.isEmpty else { return }
-        
-        // Process in chunks to avoid memory issues
+
+        // Single existence check for all models upfront — avoids one SQL query per chunk.
+        let allUUIDs = models.map { $0[keyPath: keyPath] }
+        let existingUUIDs = try await batchExists(uuids: allUUIDs)
+
         let chunks = models.chunked(into: chunkSize)
-        
         for chunk in chunks {
-            try await processBatchChunk(chunk: chunk, keyPath: keyPath, updater: updater)
+            try await processBatchChunk(chunk: chunk, keyPath: keyPath, existingUUIDs: existingUUIDs, updater: updater)
         }
-        
+
         // Save once after all chunks are processed
         try await save()
         Logger.coreDataController.info("Batch replaced \(models.count) objects in \(chunks.count) chunks")
@@ -237,28 +239,21 @@ private extension CoreDataController {
     func processBatchChunk(
         chunk: [Model],
         keyPath: KeyPath<Model, UUID>,
+        existingUUIDs: Set<UUID>,
         updater: @escaping @Sendable (Model, DataType) -> Void
     ) async throws {
-        let chunkUUIDs = chunk.map { $0[keyPath: keyPath] }
-        let existingUUIDs = try await batchExists(uuids: chunkUUIDs)
-
         await context.perform {
             for model in chunk {
                 let uuid = model[keyPath: keyPath]
-
                 if existingUUIDs.contains(uuid) {
-                    // Update existing
                     if let existing = fetchCoreData(uuid: uuid) {
                         updater(model, existing)
                     }
                 } else {
-                    // Create new
                     let new = DataType(context: context)
                     updater(model, new)
                 }
             }
-
-            // Don't save per chunk - let batchReplace save once at the end for better performance
         }
     }
 }
@@ -351,11 +346,10 @@ private extension CoreDataController {
     }
     
     func saveCoreData() {
+        guard context.hasPersistentChanges else { return }
         do {
-            if context.hasChanges {
-                Logger.coreDataController.debug("save changes")
-                try context.save()
-            }
+            Logger.coreDataController.debug("save changes")
+            try context.save()
         } catch {
             Logger.coreDataController.error("save error \(error.localizedDescription, privacy: .public)")
         }
@@ -374,4 +368,15 @@ private extension Array {
 
 extension Logger {
     static let coreDataController = Logger(subsystem: subsystem, category: "CoreDataController")
+}
+
+private extension NSManagedObjectContext {
+    /// True only when there are changes that will produce a persistent store write.
+    /// Avoids spurious context.save() calls (and the resulting CloudKit export transactions)
+    /// when only transient properties or in-memory faults changed.
+    var hasPersistentChanges: Bool {
+        !insertedObjects.isEmpty ||
+        !deletedObjects.isEmpty ||
+        updatedObjects.contains { !$0.changedValues().isEmpty }
+    }
 }

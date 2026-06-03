@@ -60,7 +60,7 @@ struct GameController: Sendable {
 extension GameController: GameControllable {
     var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
     var exportControllable: any ExportControllable { exportController as ExportControllable }
-    
+
     @MainActor func resetGameState() {
         photoGameModel.reset()
     }

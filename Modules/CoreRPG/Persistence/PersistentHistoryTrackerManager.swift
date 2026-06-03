@@ -27,20 +27,9 @@ public struct PersistentHistoryCleaner: @unchecked Sendable {
             return
         }
 
+        // Delete all history before the safe timestamp — no actor filter, so CloudKit
+        // mirroring transactions (author = NSCloudKitMirroringDelegate) are also cleaned.
         let deleteHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: timestamp)
-
-        if let fetchRequest = NSPersistentHistoryTransaction.fetchRequest {
-            var predicates: [NSPredicate] = []
-
-            appActors.forEach { appActor in
-                let perdicate = NSPredicate(format: "%K = %@", #keyPath(NSPersistentHistoryTransaction.author), appActor.rawValue)
-                predicates.append(perdicate)
-            }
-
-            let compoundPredicate = NSCompoundPredicate(type: .or, subpredicates: predicates)
-            fetchRequest.predicate = compoundPredicate
-            deleteHistoryRequest.fetchRequest = fetchRequest
-        }
 
         let allActors = appActors
         let cleanupTimestamp = timestamp

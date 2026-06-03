@@ -52,11 +52,12 @@ extension SearchListController: SearchRootControllable {
         return item.entries.compactMap { entry -> SearchResult? in
             guard let child = searchController.itemControllable.itemSync(for: entry.childId),
                   child.displayState == 0 else { return nil }
+            let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
             var result = SearchResult(
                 itemId: child.id, itemName: child.name,
                 module: searchController.itemControllable.config.module,
                 category: child.category,
-                entryId: entry.id, entryName: nil, matchedContent: nil, relevanceScore: 0
+                entryId: entryId, entryName: nil, matchedContent: nil, relevanceScore: 0
             )
             result.canOpen = child.specialCategory  // nested folders can themselves be expanded
             return result
@@ -110,9 +111,7 @@ extension SearchLinkController: SearchRootControllable {
     /// entries. That causes `loadChildrenViaSearch` to store the item as its own child → circular
     /// parent/child reference → infinite recursion in `flattenCachedChildren` → crash.
     public func results(text: String, focusId: UUID) async -> [SearchResult] {
-        let isFolder = await MainActor.run {
-            searchController.itemControllable.itemSync(for: focusId)?.specialCategory == true
-        }
+        let isFolder = searchController.itemControllable.itemSync(for: focusId)?.specialCategory == true
         if isFolder {
             return await searchController.inspectorSearchResults(
                 searchText: text,
@@ -152,11 +151,12 @@ extension SearchLinkController: SearchRootControllable {
             return item.entries.compactMap { entry -> SearchResult? in
                 guard let child = searchController.itemControllable.itemSync(for: entry.childId),
                       child.displayState == 0 else { return nil }
+                let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
                 var result = SearchResult(
                     itemId: child.id, itemName: child.name,
                     module: searchController.itemControllable.config.module,
                     category: child.category,
-                    entryId: entry.id, entryName: nil, matchedContent: nil, relevanceScore: 0
+                    entryId: entryId, entryName: nil, matchedContent: nil, relevanceScore: 0
                 )
                 result.canOpen = child.specialCategory
                 return result

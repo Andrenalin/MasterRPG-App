@@ -385,7 +385,7 @@ struct MultiConnectionAudioTests {
         allReported = await env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
         #expect(allReported == true)
 
-        await #expect(env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId).players.sorted() == [
+        await #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).sorted() == [
             env.player1Config.id,
             env.player2Config.id,
             env.player3Config.id,
@@ -527,20 +527,5 @@ struct MultiConnectionAudioTests {
         await #expect(env.player2Root.audioRoot.audioController.model.playList.count == 1)
         await #expect(env.player3Root.audioRoot.audioController.model.playList.count == 1)
 
-        // All players have complete player list
-        let expectedPlayers = [
-            env.player1Config.id,
-            env.player2Config.id,
-            env.player3Config.id,
-            env.masterConfig.id
-        ].sorted()
-
-        let player1Players = await env.player1Root.audioRoot.itemController.itemSync(for: audioId, noGame: true)!.players.sorted()
-        let player2Players = await env.player2Root.audioRoot.itemController.itemOrEmpty(for: audioId).players.sorted()
-        let player3Players = await env.player3Root.audioRoot.itemController.itemOrEmpty(for: audioId).players.sorted()
-
-        #expect(player1Players == expectedPlayers)
-        #expect(player2Players == expectedPlayers)
-        #expect(player3Players == expectedPlayers)
     }
 }

@@ -15,7 +15,7 @@ struct ListRootView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        UnavailableGlassOverlay(isUnavialable: listController.searchModel.searchReturnedNoResults
+        UnavailableGlassOverlay(isUnavailable: listController.searchModel.searchReturnedNoResults
                                 && !listController.searchModel.searchText.starts(with: "@")) {
             
             listView
@@ -181,38 +181,29 @@ private extension ListRootView {
 
 struct UnavailableGlassOverlay<Content: View>: View {
     let content: Content
-    let isUnavialable: Bool
-    
-    init(isUnavialable: Bool, @ViewBuilder content: () -> Content) {
-        self.isUnavialable = isUnavialable
+    let isUnavailable: Bool
+
+    init(isUnavailable: Bool, @ViewBuilder content: () -> Content) {
+        self.isUnavailable = isUnavailable
         self.content = content()
     }
-    
+
     var body: some View {
-//        ZStack {
-            // The underlying content
-            content
-                .disabled(isUnavialable)
-                .overlay {
-                    Color.primary.opacity(0.2)
-                        .opacity(isUnavialable ? 1 : 0)
-                    
-                    ContentUnavailableView.search
-                        .padding()
-                        .glassEffect(.regular.interactive())
-                        .padding()
-                        .opacity(isUnavialable ? 1 : 0)
-                }
-              
-//            if isUnavialable {
-//                Color.primary.opacity(0.2)
-//                
-//                ContentUnavailableView.search
-//                    .padding()
-//                    .glassEffect(.regular.interactive())
-//                    .padding()
-//            }
-//        }
+        content
+            .disabled(isUnavailable)
+            .overlay {
+                Color.primary.opacity(isUnavailable ? 0.2 : 0)
+
+                ContentUnavailableView.search
+                    .padding()
+#if os(visionOS)
+                    .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
+#else
+                    .glassEffect(.regular.interactive())
+#endif
+                    .padding()
+                    .opacity(isUnavailable ? 1 : 0)
+            }
     }
 }
 
@@ -272,7 +263,7 @@ private struct ItemRowsView: View {
         guard let parentModel else { return }
         withAnimation {
             root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
-            Task { await listController.performDetailSearch() }
+            listController.scheduleDetailSearch()
             root.folderListControllable.resetFilter()
         }
     }
@@ -366,7 +357,7 @@ private struct ListRowItemView: View {
         guard let parentModel else { return }
         withAnimation {
             root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
-            Task { await listController.performDetailSearch() }
+            listController.scheduleDetailSearch()
             root.folderListControllable.resetFilter()
         }
     }

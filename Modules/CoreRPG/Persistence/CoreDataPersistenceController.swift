@@ -41,6 +41,7 @@ public final class CoreDataInitModel: @unchecked Sendable {
     public internal(set) var spotlightIndexer: RpgSpotlightIndexerDelegate?
     var persistentHistoryTracker: PersistentHistoryTrackerManager?
     var persistentHistoryCleaner: PersistentHistoryCleaner?
+    var cleanupTask: Task<Void, Never>?
 
     // CloudKit sync state for UI
     public var cloudKitSyncState: CloudKitSyncState = .notStarted
@@ -182,25 +183,15 @@ public struct CoreDataPersistenceController {
             // Setup persistent history cleaner and run initial cleanup
             model.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
 
-            // Run cleanup on launch (after a delay to not block startup)
-            Task {
+            model.cleanupTask?.cancel()
+            model.cleanupTask = Task { [weak model] in
                 try? await Task.sleep(for: .seconds(5))
-                model.persistentHistoryCleaner?.clean()
-
-                // Schedule daily cleanup
-                await schedulePeriodicCleanup()
+                model?.persistentHistoryCleaner?.clean()
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(24 * 60 * 60))
+                    model?.persistentHistoryCleaner?.clean()
+                }
             }
-        }
-    }
-
-    @MainActor
-    private func schedulePeriodicCleanup() async {
-        while !Task.isCancelled {
-            // Wait 24 hours
-            try? await Task.sleep(for: .seconds(24 * 60 * 60))
-
-            // Run cleanup
-            model.persistentHistoryCleaner?.clean()
         }
     }
 }

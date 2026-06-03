@@ -73,13 +73,13 @@ struct GameControllerTests {
         let itemId = await root.itemController.itemDataModel.items[0]
         let playerId = UUID()
         await sut.report(itemId: itemId, for: playerId)
-        await #expect(root.itemController.itemOrEmpty(for: itemId).players == [playerId])
+        await #expect(sut.gameModel.playerReport(for: itemId) == [playerId])
 
         #expect(await sut.setCurrent(itemId: itemId))
         await sut.report(itemId: itemId, for: playerId)
-        await #expect(root.itemController.itemOrEmpty(for: itemId).players == [playerId])
+        await #expect(sut.gameModel.playerReport(for: itemId) == [playerId])
         await sut.report(itemId: itemId, for: playerId)
-        await #expect(root.itemController.itemOrEmpty(for: itemId).players.count == 1)
+        await #expect(sut.gameModel.playerReport(for: itemId).count == 1)
     }
     
     @Test func CreateGameData() async throws {

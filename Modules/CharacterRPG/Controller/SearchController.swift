@@ -111,7 +111,7 @@ extension SearchController {
 // MARK: - List search (from ListRootView / FolderListController)
 
 extension SearchController {
-    func listSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
+    @MainActor func listSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
         switch listMode {
         case .list:
             return await listModeCharacterResults(searchText: searchText, displayMode: displayMode)
@@ -220,7 +220,7 @@ extension SearchController {
 // MARK: - Inspector search (from LinkListItemView / FolderListController)
 
 extension SearchController {
-    func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
+    @MainActor func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
         switch listMode {
         case .folder:
             return await folderModeCharacterResults(searchText: searchText, focusId: focusId, displayMode: displayMode, includeTags: false)

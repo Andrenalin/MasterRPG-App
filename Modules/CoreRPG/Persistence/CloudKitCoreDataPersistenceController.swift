@@ -161,25 +161,16 @@ public struct CloudKitCoreDataPersistenceController {
                 localModel.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
                 
                 // Run cleanup on launch (after a delay to not block startup)
-                Task {
+                localModel.cleanupTask?.cancel()
+                localModel.cleanupTask = Task { [weak localModel] in
                     try? await Task.sleep(for: .seconds(5))
-                    localModel.persistentHistoryCleaner?.clean()
-                    
-                    // Schedule daily cleanup
-                    await schedulePeriodicCleanup()
+                    localModel?.persistentHistoryCleaner?.clean()
+                    while !Task.isCancelled {
+                        try? await Task.sleep(for: .seconds(24 * 60 * 60))
+                        localModel?.persistentHistoryCleaner?.clean()
+                    }
                 }
             }
-        }
-    }
-
-    @MainActor
-    private func schedulePeriodicCleanup() async {
-        while !Task.isCancelled {
-            // Wait 24 hours
-            try? await Task.sleep(for: .seconds(24 * 60 * 60))
-
-            // Run cleanup
-            model.persistentHistoryCleaner?.clean()
         }
     }
 
@@ -188,7 +179,7 @@ public struct CloudKitCoreDataPersistenceController {
         NotificationCenter.default.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
             object: container,
-            queue: nil
+            queue: .main
         ) { [weak model] notification in
             guard let model = model else { return }
 

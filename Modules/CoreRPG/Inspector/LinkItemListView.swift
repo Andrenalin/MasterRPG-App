@@ -53,7 +53,7 @@ public struct LinkItemListView: View {
                     }
                 }
 
-                UnavailableGlassOverlay(isUnavialable: root.folderLinkControllable.searchModel.searchReturnedNoResults) {
+                UnavailableGlassOverlay(isUnavailable: root.folderLinkControllable.searchModel.searchReturnedNoResults) {
                     contentView
                 }
                 .tint(root.configurable.module.tint)
@@ -143,15 +143,9 @@ private extension LinkItemListView {
     @ViewBuilder
     var contentView: some View {
         let items = listModel.list
-        // searchReturnedNoResults rather than items.isEmpty for the same reason as ListRootView:
-        // buildList preserves the old list when search returns nothing, so items.isEmpty is always false.
-        let isEmpty = root.folderLinkControllable.searchModel.searchReturnedNoResults
 
         listView(items: items)
             .frame(minWidth: 150, idealWidth: 250)
-            .overlay {
-                if isEmpty { ContentUnavailableView.search }
-            }
             .animation(.smooth, value: items.count)
             .scrollIndicatorsFlash(onAppear: true)
 #if !os(visionOS)

@@ -83,12 +83,13 @@ public extension FolderListControllable {
         
         if listModel.parentModel != nil {
             // Detail context: refresh the scoped detail list, not the root list.
+            // performDetailSearch only updates detailListModel.list; resetFilter rebuilds listModel.list too.
             await performDetailSearch()
+            resetFilter()
         } else {
             await performSearch()
+            // performSearch already calls resetFilter inside withAnimation — no repeat needed.
         }
-
-        resetFilter()
 
         if let addedModelId = listModel.addedModelId,
            let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
@@ -149,7 +150,7 @@ public extension FolderListControllable {
     func resetDetail(model: (any ItemDataAccessable)) {
         listModel.resetDetailList(parentModel: model)
         listModel.detailListModel?.updatedOnce = true
-        Task { await performDetailSearch() }
+        searchModel.currentTask = Task { await performDetailSearch() }
     }
 
     /// Fire-and-forget `performDetailSearch` — used by `LinkItemListView` when `parentModel != nil`.
@@ -213,8 +214,8 @@ extension FolderListControllable {
         // also rebuild it so toggle actions are immediately reflected in the detail view.
         // Without this, resetFilter only updates listModel.list (the main list) while the
         // view reads detailListModel.list — causing toggle to appear as a no-op.
-        if listModel.detailListModel != nil {
-            listModel.detailListModel?.list = buildDetailListItems()
+        if let detail = listModel.detailListModel {
+            detail.list = buildDetailListItems()
         }
     }
 
@@ -280,16 +281,15 @@ extension FolderListControllable {
         if result.shouldOpen && !result.children.isEmpty {
             item.isOpen = true
             item.lastIsOpen = true   // persist so the state survives a search round-trip
+        } else if isSearching {
+            // Search found children + user never explicitly closed → auto-open.
+            let autoOpen = !result.children.isEmpty && !item.wasExplicitlyClosed
+            // User manually opened during search (item.children loaded, lastIsOpen=true) → stay open.
+            let userOpenedDuringSearch = !item.children.isEmpty && item.lastIsOpen
+            item.isOpen = autoOpen || userOpenedDuringSearch
         } else {
-            // During search:
-            //   • Search found children + user never explicitly closed → auto-open.
-            //   • Search found children + user explicitly closed (wasExplicitlyClosed=true) → stay closed.
-            //   • User manually opened during search (item.children loaded, lastIsOpen=true) → stay open.
             // Not searching: restore lastIsOpen (user's last explicit choice).
-            item.isOpen = isSearching
-                ? ((!result.children.isEmpty && !item.wasExplicitlyClosed) ||
-                   (!item.children.isEmpty && item.lastIsOpen))
-                : item.lastIsOpen
+            item.isOpen = item.lastIsOpen
         }
 
         flat.append(item)

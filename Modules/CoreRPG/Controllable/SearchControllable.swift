@@ -58,10 +58,10 @@ public extension SearchControllable {
 // MARK: - List Search from ListRootView
 
 public extension SearchControllable {
-    func listSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
+    @MainActor func listSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
         switch listMode {
         case .list:
-            return await listModeResults(searchText: searchText, displayMode: displayMode)
+            return listModeResults(searchText: searchText, displayMode: displayMode)
         case .folder:
             return await folderModeResults(searchText: searchText, focusId: focusId, displayMode: displayMode)
         }
@@ -69,24 +69,20 @@ public extension SearchControllable {
 
     // List mode: flat results, folders/collections excluded.
     // Empty search → alphabetical; non-empty → relevance order.
-    // Runs the entire filter loop inside a single MainActor.run to avoid O(n) actor
-    // hops — one round-trip to main actor instead of one per item.
-    private func listModeResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
-        return await MainActor.run { [searchText, displayMode] in
-            let itemIds = itemControllable.itemDataModel.items
-            var results: [SearchResult] = []
-            for itemId in itemIds {
-                guard let item = itemControllable.itemSync(for: itemId),
-                      item.displayState == 0,
-                      !item.specialCategory else { continue }
-                guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
-                results.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
-            }
-            if searchText.isEmpty {
-                return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-            }
-            return results.sortedByRelevance()
+    @MainActor private func listModeResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) -> [SearchResult] {
+        let itemIds = itemControllable.itemDataModel.items
+        var results: [SearchResult] = []
+        for itemId in itemIds {
+            guard let item = itemControllable.itemSync(for: itemId),
+                  item.displayState == 0,
+                  !item.specialCategory else { continue }
+            guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
+            results.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
         }
+        if searchText.isEmpty {
+            return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+        }
+        return results.sortedByRelevance()
     }
 
     // Folder mode: hierarchical results rooted at focusId (or global root when nil).
@@ -101,7 +97,8 @@ public extension SearchControllable {
             var results: [SearchResult] = []
             for entry in folder.entries {
                 guard !Task.isCancelled else { break }
-                if let node = await buildFolderTreeNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id, searchEntries: searchEntries, includeTags: includeTags) {
+                let entryId = entry.id == entry.childId ? entry.id.childPath(of: folder.id) : entry.id
+                if let node = await buildFolderTreeNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, searchEntries: searchEntries, includeTags: includeTags) {
                     results.append(node)
                 }
             }
@@ -157,7 +154,8 @@ public extension SearchControllable {
             if !searchText.isEmpty {
                 for entry in item.entries {
                     guard !Task.isCancelled else { break }
-                    if let child = await buildFolderTreeNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id, searchEntries: searchEntries, includeTags: includeTags) {
+                    let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
+                    if let child = await buildFolderTreeNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, searchEntries: searchEntries, includeTags: includeTags) {
                         childNodes.append(child)
                     }
                 }
@@ -266,7 +264,7 @@ public extension SearchControllable {
     ///   `MainActor.run`, handles both empty and non-empty text, no async recursion needed.
     /// - Scoped (`focusId != nil`): `inspectorScopedListResults` — async because a folder/
     ///   collection parent must recurse into its child items.
-    func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
+    @MainActor func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
         switch listMode {
         case .folder:
             // Inspector folder mode behaves like list mode for entries — same content is
@@ -276,7 +274,7 @@ public extension SearchControllable {
             if let focusId {
                 return await inspectorScopedListResults(searchText: searchText, focusId: focusId, displayMode: displayMode)
             }
-            return await inspectorBatchListResults(searchText: searchText, displayMode: displayMode)
+            return inspectorBatchListResults(searchText: searchText, displayMode: displayMode)
         }
     }
 
@@ -293,10 +291,9 @@ public extension SearchControllable {
     ///     - ≥ 10 item matches → narrow: entry **name only**;
     ///       if total name hits across all items ≤ 5, also add content matches.
     ///
-    /// Tags excluded (`includeTags: false`). Runs in a single `MainActor.run` (O(1) hops).
-    private func inspectorBatchListResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
-        await MainActor.run { [searchText, displayMode] in
-            let itemIds = itemControllable.itemDataModel.items
+    /// Tags excluded (`includeTags: false`).
+    @MainActor private func inspectorBatchListResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) -> [SearchResult] {
+        let itemIds = itemControllable.itemDataModel.items
 
             // ── Empty search ─────────────────────────────────────────────────────────────
             if searchText.isEmpty {
@@ -413,7 +410,6 @@ public extension SearchControllable {
                 results.append(result)
             }
             return results.sortedByRelevance()
-        }
     }
 
 
@@ -426,30 +422,25 @@ public extension SearchControllable {
     ///   - Regular parent → the item itself with `canOpen = !entries.isEmpty`
     ///
     /// Non-empty text: delegates to `inspectorResult` which handles folder recursion.
-    private func inspectorScopedListResults(searchText: String, focusId: UUID, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
+    @MainActor private func inspectorScopedListResults(searchText: String, focusId: UUID, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
         guard let focusedItem = await itemControllable.item(for: focusId),
               focusedItem.displayState == 0 else { return [] }
 
         if searchText.isEmpty {
-            // Batch the empty-search scoped case on the main actor — no async needed once
-            // the parent item is loaded (itemSync works for the children too).
-            return await MainActor.run { [focusId, displayMode] in
-                guard let parent = itemControllable.itemSync(for: focusId) else { return [] }
-                if parent.specialCategory {
-                    var results: [SearchResult] = []
-                    for entry in parent.entries {
-                        guard let child = itemControllable.itemSync(for: entry.childId),
-                              child.displayState == 0 else { continue }
-                        var result = makeResult(item: child, searchText: "", displayMode: displayMode, parentEntryId: entry.id)
-                        result.canOpen = !child.entries.isEmpty
-                        results.append(result)
-                    }
-                    return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-                } else {
-                    var result = makeResult(item: parent, searchText: "", displayMode: displayMode)
-                    result.canOpen = !parent.entries.isEmpty
-                    return [result]
+            if focusedItem.specialCategory {
+                var results: [SearchResult] = []
+                for entry in focusedItem.entries {
+                    guard let child = itemControllable.itemSync(for: entry.childId),
+                          child.displayState == 0 else { continue }
+                    var result = makeResult(item: child, searchText: "", displayMode: displayMode, parentEntryId: entry.id)
+                    result.canOpen = !child.entries.isEmpty
+                    results.append(result)
                 }
+                return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+            } else {
+                var result = makeResult(item: focusedItem, searchText: "", displayMode: displayMode)
+                result.canOpen = !focusedItem.entries.isEmpty
+                return [result]
             }
         }
 
@@ -509,30 +500,28 @@ public extension SearchControllable {
     /// Returns all entries of `itemId` as direct `SearchResult`s, optionally filtered by
     /// `searchText`. Called by `SearchLinkController.results(text:focusId:)` when the user
     /// toggles a non-folder item open to reveal its entries.
-    func inspectorEntryResults(searchText: String, itemId: UUID, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
-        await MainActor.run { [searchText, itemId] in
-            guard let item = itemControllable.itemSync(for: itemId) else { return [] }
-            let entries = searchText.isEmpty
-                ? item.entries
-                : item.entries.filter {
-                    $0.name.localizedStandardContains(searchText) ||
-                    $0.content.localizedStandardContains(searchText)
-                }
-            return entries
-                .map { entry in
-                    SearchResult(
-                        itemId: item.id,
-                        itemName: item.name,
-                        module: itemControllable.config.module,
-                        category: item.category,
-                        entryId: entry.id,
-                        entryName: entry.name,
-                        matchedContent: entry.content.isEmpty ? nil : entry.content,
-                        relevanceScore: 0
-                    )
-                }
-                .sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
-        }
+    @MainActor func inspectorEntryResults(searchText: String, itemId: UUID, displayMode: ListDisplayModel.DisplayMode) -> [SearchResult] {
+        guard let item = itemControllable.itemSync(for: itemId) else { return [] }
+        let entries = searchText.isEmpty
+            ? item.entries
+            : item.entries.filter {
+                $0.name.localizedStandardContains(searchText) ||
+                $0.content.localizedStandardContains(searchText)
+            }
+        return entries
+            .map { entry in
+                SearchResult(
+                    itemId: item.id,
+                    itemName: item.name,
+                    module: itemControllable.config.module,
+                    category: item.category,
+                    entryId: entry.id,
+                    entryName: entry.name,
+                    matchedContent: entry.content.isEmpty ? nil : entry.content,
+                    relevanceScore: 0
+                )
+            }
+            .sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
     }
 }
 
@@ -573,6 +562,29 @@ public extension SearchControllable {
         }
         
         return score
+    }
+}
+
+// MARK: - Path identity for link-entry types
+
+extension UUID {
+    /// Returns a stable, path-unique UUID for "this UUID as a child of parentId".
+    ///
+    /// Needed for entry models where `entry.id == entry.childId` (AdventureEntryModel,
+    /// MapEntryModel, etc.). Without this, the same item appearing at root level (entryId=nil
+    /// → FolderListItemModel.id = itemId) and as a collection child (entryId = entry.id = itemId
+    /// → same id) produces duplicate SwiftUI identifiers.
+    ///
+    /// XOR of the two UUID byte arrays is deterministic and produces a value distinct
+    /// from both inputs (since parentId ≠ childId, the XOR is never zero).
+    func childPath(of parentId: UUID) -> UUID {
+        let p = parentId.uuid, s = uuid
+        return UUID(uuid: (
+            p.0  ^ s.0,  p.1  ^ s.1,  p.2  ^ s.2,  p.3  ^ s.3,
+            p.4  ^ s.4,  p.5  ^ s.5,  p.6  ^ s.6,  p.7  ^ s.7,
+            p.8  ^ s.8,  p.9  ^ s.9,  p.10 ^ s.10, p.11 ^ s.11,
+            p.12 ^ s.12, p.13 ^ s.13, p.14 ^ s.14, p.15 ^ s.15
+        ))
     }
 }
 
