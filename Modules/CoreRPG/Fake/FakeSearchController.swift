@@ -10,6 +10,7 @@ struct FakeSearchController: SearchControllable, SearchRootControllable {
 
     func results(text: String, focusId: UUID) async -> [SearchResult] { [] }
     func scopedResults(text: String, focusId: UUID) async -> [SearchResult] { [] }
+    func syncExpandResults(focusId: UUID) -> [SearchResult] { [] }
 
     func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable { self }
 

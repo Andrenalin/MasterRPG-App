@@ -140,7 +140,7 @@ private extension ToolbarItemListViewModifier {
         Button {
             if let selected = listModel.selected,
                let item = listModel.list.first(where: { $0.source.itemId == selected }) {
-                Task { await listController.toggleFolder(item: item) }
+                listController.toggleFolder(item: item)
             }
         } label: {
             Label {

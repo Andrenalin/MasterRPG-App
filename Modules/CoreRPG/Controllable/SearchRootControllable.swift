@@ -17,6 +17,16 @@ public protocol SearchRootControllable: Sendable  {
     /// collection children for `ListRootView` detail, etc.
     /// Semantically different from `results(text:, focusId:)` — may return the item itself as root.
     func scopedResults(text: String, focusId: UUID) async -> [SearchResult]
+    /// Synchronous child/entry expansion for `loadChildrenViaSearch`.
+    ///
+    /// Called when the user taps a chevron. Data is already in memory (the item was visible),
+    /// so this is a pure `itemSync` map — no async DB access. Replaces the old `async results`
+    /// call that unnecessarily suspended the main actor.
+    ///
+    /// - `specialCategory` → direct folder/collection children; nested folders get `canOpen=true`.
+    /// - Regular item → flat entry list (inspector expansion).
+    @MainActor func syncExpandResults(focusId: UUID) -> [SearchResult]
+
     /// Returns a new independent copy bound to `listDisplayModel` with its own `SearchModel`.
     /// Used by `FolderListController.copy(listModel:)` so detail controllers do not share
     /// the same search state as the parent list controller.

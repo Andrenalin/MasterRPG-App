@@ -45,6 +45,24 @@ extension SearchListController: SearchRootControllable {
         )
     }
 
+    /// Sync expansion: folder/collection children only (list search never expands item entries).
+    @MainActor public func syncExpandResults(focusId: UUID) -> [SearchResult] {
+        guard let item = searchController.itemControllable.itemSync(for: focusId),
+              item.specialCategory else { return [] }
+        return item.entries.compactMap { entry -> SearchResult? in
+            guard let child = searchController.itemControllable.itemSync(for: entry.childId),
+                  child.displayState == 0 else { return nil }
+            var result = SearchResult(
+                itemId: child.id, itemName: child.name,
+                module: searchController.itemControllable.config.module,
+                category: child.category,
+                entryId: entry.id, entryName: nil, matchedContent: nil, relevanceScore: 0
+            )
+            result.canOpen = child.specialCategory  // nested folders can themselves be expanded
+            return result
+        }
+    }
+
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {
         SearchListController(
             searchController: searchController,
@@ -124,6 +142,38 @@ extension SearchLinkController: SearchRootControllable {
             displayMode: listDisplayModel.displayMode,
             focusId: focusId
         )
+    }
+
+    /// Sync expansion: folder/collection children OR item entries (inspector).
+    /// Same logic as `results(text:, focusId:)` but purely synchronous via `itemSync`.
+    @MainActor public func syncExpandResults(focusId: UUID) -> [SearchResult] {
+        guard let item = searchController.itemControllable.itemSync(for: focusId) else { return [] }
+        if item.specialCategory {
+            return item.entries.compactMap { entry -> SearchResult? in
+                guard let child = searchController.itemControllable.itemSync(for: entry.childId),
+                      child.displayState == 0 else { return nil }
+                var result = SearchResult(
+                    itemId: child.id, itemName: child.name,
+                    module: searchController.itemControllable.config.module,
+                    category: child.category,
+                    entryId: entry.id, entryName: nil, matchedContent: nil, relevanceScore: 0
+                )
+                result.canOpen = child.specialCategory
+                return result
+            }
+        } else {
+            // Regular item: flat entry list (inspector entry expansion)
+            return item.entries.map { entry in
+                SearchResult(
+                    itemId: item.id, itemName: item.name,
+                    module: searchController.itemControllable.config.module,
+                    category: item.category,
+                    entryId: entry.id, entryName: entry.name,
+                    matchedContent: entry.content.isEmpty ? nil : entry.content,
+                    relevanceScore: 0
+                )
+            }.sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
+        }
     }
 
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {

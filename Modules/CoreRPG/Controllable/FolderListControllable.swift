@@ -348,20 +348,11 @@ extension FolderListControllable {
         }
     }
 
-    /// Loads children via a scoped search — used when toggling a folder open during empty search
-    /// and when a folder with `canOpen = true` is first expanded.
-    ///
-    /// Unlike the old synchronous `loadFolderChildren`, this uses the search pipeline so that:
-    /// - Sub-folders are included with `canOpen = true` (no deeper pre-loading)
-    /// - Sorting and filtering rules are applied consistently with the rest of the search
-    /// - The code path is identical to `performDetailSearch` (reusable, testable)
-    private func loadChildrenViaSearch(for item: FolderListItemModel) async {
+    /// Loads children synchronously via `syncExpandResults` — no async needed because the data
+    /// is already in memory (`itemSync` dictionary lookup). Called when the user taps a chevron.
+    private func loadChildrenViaSearch(for item: FolderListItemModel) {
         let focusId = item.childFocusId ?? item.source.itemId
-        // Always use empty text: the user explicitly toggled this item open and expects to see
-        // ALL children, not just those matching the current search filter. The filter applies
-        // to the parent's visibility in the search results; once opened, content is unfiltered.
-        let results = await searchRootControllable.results(text: "", focusId: focusId)
-        guard !Task.isCancelled else { return }
+        let results = searchRootControllable.syncExpandResults(focusId: focusId)
         // Route children to the same cache as their parent for detail/common isolation.
         let detail = listModel.detailListModel
         let cache: FolderListModel? = detail?.cacheListModels[item.id] != nil ? detail : nil
@@ -376,27 +367,24 @@ extension FolderListControllable {
 // MARK: Folder Logic
 
 extension FolderListControllable {
-    func toggleFolder(item: FolderListItemModel) async {
+    /// Fully synchronous — `loadChildrenViaSearch` uses `syncExpandResults` (pure `itemSync` map).
+    /// The old `async` + `await performSearch()` else-branch was dead code: reaching
+    /// `canOpen=false && children=[]` requires `wasExplicitlyClosed=true`, which in turn
+    /// requires a prior open that already populated `children`. See sync-concurrency analysis.
+    func toggleFolder(item: FolderListItemModel) {
         if item.isOpen {
             item.isOpen = false
             item.lastIsOpen = false
-            item.wasExplicitlyClosed = true   // suppress auto-reopen by search results
+            item.wasExplicitlyClosed = true
             resetFilter()
         } else {
             item.isOpen = true
             item.lastIsOpen = true
-            item.wasExplicitlyClosed = false  // clear so auto-open works again next search
-            if item.children.isEmpty {
-                if item.canOpen {
-                    await loadChildrenViaSearch(for: item)
-                    resetFilter()
-                } else {
-                    // No pre-loaded children and canOpen=false: trigger a full re-search.
-                    await performSearch()
-                }
-            } else {
-                resetFilter()
+            item.wasExplicitlyClosed = false
+            if item.children.isEmpty && item.canOpen {
+                loadChildrenViaSearch(for: item)
             }
+            resetFilter()
         }
     }
 
