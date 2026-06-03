@@ -33,6 +33,7 @@ extension FolderListControllable {
         let newResults = await searchRootControllable.results(text: searchModel.searchText)
         guard !Task.isCancelled else { return }
         searchModel.results = newResults
+        searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && newResults.isEmpty
         withAnimation { resetFilter() }
     }
 
@@ -43,17 +44,32 @@ extension FolderListControllable {
         searchModel.currentTask = Task { await performSearch() }
     }
 
-    /// Runs a folder-scoped search for the detail list's parent and populates
-    /// `listModel.detailListModel.list` with the matching children.
+    /// Runs a scoped search for the detail list's parent and populates
+    /// `listModel.detailListModel.list` with the results.
+    ///
+    /// Uses `results(text:)` with `filterId = parentModel.id` — the same pipeline as
+    /// `performSearch` / `scheduleSearch`. This routes through `inspectorSearchResults`
+    /// which correctly handles per-module overrides (e.g. CharacterRPG `focusedCharacterInspector`
+    /// returns the character as a root item with entries as children).
+    ///
+    /// `results(text:, focusId:)` is NOT used here because that path is reserved for
+    /// `loadChildrenViaSearch` where the expected return is flat entry/child results —
+    /// not an item-as-root structure.
     @MainActor public func performDetailSearch() async {
         guard let detailListModel = listModel.detailListModel,
               let parentModel = detailListModel.parentModel else { return }
-        let newResults = await searchRootControllable.results(
+        // scopedResults — semantically "show this item as the root of the detail view":
+        //   SearchListController: folder-mode listSearchResults(focusId:) → parent's children.
+        //   SearchLinkController: list-mode inspectorSearchResults(focusId:) → character-as-root
+        //     (via focusedCharacterInspector) or collection children (via inspectorScopedListResults).
+        // Does NOT use results(text:, focusId:) which is exclusively for loadChildrenViaSearch.
+        let newResults = await searchRootControllable.scopedResults(
             text: searchModel.searchText,
             focusId: parentModel.id
         )
         guard !Task.isCancelled else { return }
         searchModel.detailResults = newResults
+        searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && newResults.isEmpty
         detailListModel.list = buildDetailListItems()
     }
 }
@@ -183,6 +199,13 @@ extension FolderListControllable {
     /// this function only caches model identity and restores open state.
     func resetFilter() {
         listModel.list = buildList()
+        // When a detail model is active (scoped inspector / focused character inspector),
+        // also rebuild it so toggle actions are immediately reflected in the detail view.
+        // Without this, resetFilter only updates listModel.list (the main list) while the
+        // view reads detailListModel.list — causing toggle to appear as a no-op.
+        if listModel.detailListModel != nil {
+            listModel.detailListModel?.list = buildDetailListItems()
+        }
     }
 
     private func buildList() -> [FolderListItemModel] {
@@ -193,18 +216,36 @@ extension FolderListControllable {
         for result in results {
             appendToFlat(result: result, level: 0, isSearching: isSearching, flat: &flat)
         }
+        // Requirement: the currently selected item is always included in non-empty search results,
+        // even when it doesn't match the filter. This keeps the selection visible so the user
+        // doesn't lose context while searching.
+        // `listModel.selected` holds the FolderListItemModel.id of the selected row; the cache is
+        // keyed by that same id, so the lookup is O(1).
+        if isSearching,
+           let selected = listModel.selected,
+           !flat.contains(where: { $0.id == selected }),
+           let cached = listModel.cacheListModels[selected] {
+            cached.level = 0   // force root level — selected item appears as a standalone result
+            flat.append(cached)
+        }
         return flat
     }
 
-    /// Builds the detail list from `searchModel.detailResults` using `appendToFlat`
-    /// so `shouldOpen = true` results (e.g. `focusedCharacterInspector`) are auto-expanded.
+    /// Builds the detail list from `searchModel.detailResults` using `appendToFlat`.
+    ///
+    /// Passes `targetModel = detailListModel` so ALL items (character, entries, sub-entries)
+    /// are cached in `detailListModel.cacheListModels` — completely isolated from
+    /// `listModel.cacheListModels` (the common inspector cache). This prevents detail state
+    /// (open/close of character entries) from leaking back into the common inspector when the
+    /// user switches modules.
     private func buildDetailListItems() -> [FolderListItemModel] {
+        let detailModel = listModel.detailListModel
         let results = searchModel.detailResults
-        guard !results.isEmpty else { return listModel.detailListModel?.list ?? [] }
+        guard !results.isEmpty else { return detailModel?.list ?? [] }
         let isSearching = !searchModel.searchText.isEmpty
         var flat: [FolderListItemModel] = []
         for result in results {
-            appendToFlat(result: result, level: 0, isSearching: isSearching, flat: &flat)
+            appendToFlat(result: result, level: 0, isSearching: isSearching, flat: &flat, cache: detailModel)
         }
         return flat
     }
@@ -214,12 +255,14 @@ extension FolderListControllable {
     /// - When searching: auto-opens any item that has matched children.
     /// - When search is cleared: restores `lastIsOpen` so the user's explicit
     ///   open/close choices survive the round-trip through the search.
-    private func appendToFlat(result: SearchResult, level: Int, isSearching: Bool, flat: inout [FolderListItemModel]) {
-        let item = mapResult(result, level: level)
+    /// - `cache`: when non-nil, all items are read/written to this model's cache instead of
+    ///   `listModel.cacheListModels`. Used by `buildDetailListItems` for isolation.
+    private func appendToFlat(result: SearchResult, level: Int, isSearching: Bool, flat: inout [FolderListItemModel], cache: FolderListModel? = nil) {
+        let item = mapResult(result, level: level, cache: cache)
 
         // Sync children from what the search returned (search owns the structure)
         if !result.children.isEmpty {
-            item.children = result.children.map { mapResult($0, level: level + 1) }
+            item.children = result.children.map { mapResult($0, level: level + 1, cache: cache) }
         }
 
         // Open state: search auto-opens matched folders; clears → restore user state.
@@ -228,16 +271,24 @@ extension FolderListControllable {
             item.isOpen = true
             item.lastIsOpen = true   // persist so the state survives a search round-trip
         } else {
-            item.isOpen = isSearching ? !result.children.isEmpty : item.lastIsOpen
+            // During search:
+            //   • Search found children + user never explicitly closed → auto-open.
+            //   • Search found children + user explicitly closed (wasExplicitlyClosed=true) → stay closed.
+            //   • User manually opened during search (item.children loaded, lastIsOpen=true) → stay open.
+            // Not searching: restore lastIsOpen (user's last explicit choice).
+            item.isOpen = isSearching
+                ? ((!result.children.isEmpty && !item.wasExplicitlyClosed) ||
+                   (!item.children.isEmpty && item.lastIsOpen))
+                : item.lastIsOpen
         }
 
         flat.append(item)
 
         if item.isOpen {
             if !result.children.isEmpty {
-                // Search returned children — recurse
+                // Search returned children — recurse, keeping the same cache
                 for childResult in result.children {
-                    appendToFlat(result: childResult, level: level + 1, isSearching: isSearching, flat: &flat)
+                    appendToFlat(result: childResult, level: level + 1, isSearching: isSearching, flat: &flat, cache: cache)
                 }
             } else if !item.children.isEmpty {
                 // Lazily-loaded children (from loadChildrenViaSearch) — include them
@@ -248,12 +299,19 @@ extension FolderListControllable {
 
     /// Returns the cached `FolderListItemModel` for `result`, or creates and caches a new one.
     /// Always syncs `canOpen` from the latest search result so the chevron reflects current state.
-    private func mapResult(_ result: SearchResult, level: Int) -> FolderListItemModel {
+    ///
+    /// - `cache`: when non-nil, reads/writes from this model's `cacheListModels` instead of
+    ///   `listModel.cacheListModels`. This keeps detail items isolated from the common inspector.
+    private func mapResult(_ result: SearchResult, level: Int, cache: FolderListModel? = nil) -> FolderListItemModel {
+        let target = cache ?? listModel
         let id = result.entryId ?? result.itemId
-        if let cached = listModel.cacheListModels[id] {
+        if let cached = target.cacheListModels[id] {
             cached.level = level
             cached.canOpen = result.canOpen
             cached.childFocusId = result.childFocusId
+            if cached.model == nil {
+                cached.model = itemControllable.itemSync(for: result.itemId)
+            }
             return cached
         }
         let item = FolderListItemModel(
@@ -265,7 +323,8 @@ extension FolderListControllable {
         )
         item.canOpen = result.canOpen
         item.childFocusId = result.childFocusId
-        listModel.cacheListModels[id] = item
+        item.model = itemControllable.itemSync(for: result.itemId)
+        target.cacheListModels[id] = item
         return item
     }
 
@@ -287,16 +346,17 @@ extension FolderListControllable {
     /// - Sorting and filtering rules are applied consistently with the rest of the search
     /// - The code path is identical to `performDetailSearch` (reusable, testable)
     private func loadChildrenViaSearch(for item: FolderListItemModel) async {
-        // Use childFocusId when present (e.g. character group entries load the sub-value's entries,
-        // not the whole character's entries). Falls back to source.itemId for all other cases.
         let focusId = item.childFocusId ?? item.source.itemId
-        let results = await searchRootControllable.results(
-            text: searchModel.searchText,
-            focusId: focusId
-        )
+        // Always use empty text: the user explicitly toggled this item open and expects to see
+        // ALL children, not just those matching the current search filter. The filter applies
+        // to the parent's visibility in the search results; once opened, content is unfiltered.
+        let results = await searchRootControllable.results(text: "", focusId: focusId)
         guard !Task.isCancelled else { return }
+        // Route children to the same cache as their parent for detail/common isolation.
+        let detail = listModel.detailListModel
+        let cache: FolderListModel? = detail?.cacheListModels[item.id] != nil ? detail : nil
         item.children = results.map { result in
-            let child = mapResult(result, level: item.level + 1)
+            let child = mapResult(result, level: item.level + 1, cache: cache)
             child.parentId = item.id
             return child
         }
@@ -310,20 +370,18 @@ extension FolderListControllable {
         if item.isOpen {
             item.isOpen = false
             item.lastIsOpen = false
+            item.wasExplicitlyClosed = true   // suppress auto-reopen by search results
             resetFilter()
         } else {
             item.isOpen = true
             item.lastIsOpen = true
+            item.wasExplicitlyClosed = false  // clear so auto-open works again next search
             if item.children.isEmpty {
                 if item.canOpen {
-                    // Load children via scoped search (works for both empty and non-empty search).
-                    // This is the same pipeline as performDetailSearch — folder items are
-                    // returned with canOpen=true so they can be further expanded on demand.
                     await loadChildrenViaSearch(for: item)
                     resetFilter()
                 } else {
-                    // No pre-loaded children and canOpen=false: trigger a full re-search
-                    // (e.g. search text changed and the item needs to re-evaluate matches).
+                    // No pre-loaded children and canOpen=false: trigger a full re-search.
                     await performSearch()
                 }
             } else {
@@ -363,19 +421,18 @@ extension FolderListControllable {
         listModel.navigationModel.selectedItemId = parentItem.source.itemId
     }
 
-    /// Opens `itemId` if it is a closed folder.
+    /// Opens `itemId` if it is a closed folder that can be expanded or was explicitly closed.
     func openFolder(itemId: UUID) {
         guard let item = listModel.list.first(where: { $0.source.itemId == itemId }),
-              item.canOpen && !item.isOpen else { return }
+              (item.canOpen || item.wasExplicitlyClosed) && !item.isOpen else { return }
         Task { await toggleFolder(item: item) }
     }
 
-    /// Returns true if `itemId` is a closed item that can be expanded.
-    /// Uses `FolderListItemModel.canOpen` — no extra `itemSync` call needed.
+    /// Returns true if `itemId` is a closed item that can be expanded or was explicitly closed.
     func canOpenFolder(itemId: UUID?) -> Bool {
         guard let itemId,
               let item = listModel.list.first(where: { $0.source.itemId == itemId }) else { return false }
-        return item.canOpen && !item.isOpen
+        return (item.canOpen || item.wasExplicitlyClosed) && !item.isOpen
     }
 
     /// Returns true if `itemId` has an open parent folder in the visible tree.

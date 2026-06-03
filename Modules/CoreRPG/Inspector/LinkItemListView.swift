@@ -141,7 +141,9 @@ private extension LinkItemListView {
     @ViewBuilder
     var contentView: some View {
         let items = listModel.list
-        let isEmpty = items.isEmpty && !root.folderLinkControllable.searchModel.searchText.isEmpty
+        // searchReturnedNoResults rather than items.isEmpty for the same reason as ListRootView:
+        // buildList preserves the old list when search returns nothing, so items.isEmpty is always false.
+        let isEmpty = root.folderLinkControllable.searchModel.searchReturnedNoResults
 
         listView(items: items)
             .frame(minWidth: 150, idealWidth: 250)
@@ -206,7 +208,10 @@ private struct InspectorRowView: View {
 #endif
 
     var body: some View {
-        let model = root.itemControllable.itemSync(for: item.source.itemId)
+        // Use the pre-resolved model from FolderListItemModel (set by mapResult via itemSync).
+        // This is always correct for entry rows: model points to the item whose entry is displayed,
+        // e.g. the sub-value model for group entries — no extra itemSync needed in the view.
+        let model = item.model
 
         HStack(spacing: 0) {
             rowContent(model: model)
@@ -234,7 +239,13 @@ private struct InspectorRowView: View {
 
     @ViewBuilder
     private func rowContent(model: (any ItemDataAccessable)?) -> some View {
-        if let entryId = item.source.entryId {
+        // Only render as an entry row when the entry genuinely belongs to this item's model.
+        // Folder children also carry a non-nil `source.entryId` — it's the parent folder's
+        // membership entry UUID used for SwiftUI identity (`FolderListItemModel.id`).
+        // That entry lives in the parent's model, not the child's, so `model[membershipId]`
+        // returns nil/empty → blank row. Checking model.entries avoids this.
+        if let entryId = item.source.entryId,
+           model?.entries.contains(where: { $0.id == entryId }) == true {
             entryRow(model: model, entryId: entryId)
         } else {
             standardItemRow(model: model)
@@ -296,7 +307,8 @@ private struct InspectorRowView: View {
 
     @ViewBuilder
     private var folderChevron: some View {
-        if item.canOpen || item.isOpen {
+        // Same three-way condition as SpecialCategoryFolderIndicator — see that struct for rationale.
+        if item.canOpen || item.isOpen || item.wasExplicitlyClosed {
             Button {
                 Task { await root.folderLinkControllable.toggleFolder(item: item) }
             } label: {

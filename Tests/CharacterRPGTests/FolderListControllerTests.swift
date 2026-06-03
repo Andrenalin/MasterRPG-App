@@ -261,26 +261,32 @@ struct FolderListControllerTests {
         #expect(!ids.contains(noMatchId), "Forest Elf must be filtered out")
     }
 
-    @Test("SearchLinkController: search returns matching entries as children of their character")
-    func linkControllerEntryMatchIsChildOfCharacter() async throws {
+    @Test("SearchLinkController common (no focus): entry match does NOT include the character — item-level only")
+    func linkControllerCommonInspectorItemLevelOnly() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let charId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Eldrin", itemId: charId)
-        let entryId = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: entryId,
+        let charWithNameMatch  = await root.itemController.addNew(type: .item)
+        let charWithEntryOnly  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Knight", itemId: charWithNameMatch)  // name matches
+        root.editController.reset(name: "Eldrin",        itemId: charWithEntryOnly)  // name doesn't
+
+        let entryId = await root.editController.addNewGroup(itemId: charWithEntryOnly)
+        root.editController.update(itemId: charWithEntryOnly, entryId: entryId,
                                    name: "Dragon Resistance", content: "")
 
         let (sut, _, _) = makeLinkSUT(for: root)
         let results = await sut.results(text: "Dragon")
 
-        let charResult = try #require(results.first(where: { $0.itemId == charId }),
-                                      "Character must appear because its entry matches")
-        #expect(charResult.children.contains(where: { $0.entryId == entryId }),
-                "Matching entry must be a child of the character result, not a flat sibling")
-        #expect(results.allSatisfy { $0.entryId == nil },
-                "No entry-level result must appear at the top level")
+        // Character whose name matches must appear, with no entry children
+        let nameResult = try #require(results.first(where: { $0.itemId == charWithNameMatch }),
+                                      "Character with matching name must appear")
+        #expect(nameResult.children.isEmpty,   "Common inspector: no entry children")
+        #expect(nameResult.canOpen == false,   "Common inspector: canOpen must be false")
+
+        // Character whose only match is an entry must NOT appear
+        #expect(!results.contains(where: { $0.itemId == charWithEntryOnly }),
+                "Character excluded: entries not searched in common inspector")
     }
 
     @Test("SearchLinkController: switching to folder mode returns hierarchical structure")

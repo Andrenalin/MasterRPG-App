@@ -615,7 +615,7 @@ struct FolderListControllerTests {
                 "Folder must be open: lastIsOpen=true survived in the cache while excluded from results")
     }
 
-    @Test("Closing folder during active search saves lastIsOpen=false — folder stays closed when search is cleared")
+    @Test("Closing auto-opened folder during search closes it immediately and keeps it closed")
     func closingFolderDuringSearchSavesState() async {
         let root = await makeRoot()
 
@@ -624,67 +624,406 @@ struct FolderListControllerTests {
         root.editController.reset(name: "Coastal Cliffs", itemId: childId)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
-        // Step 1: non-empty search → folder auto-opens (lastIsOpen stays false)
+        // Step 1: non-empty search → folder auto-opens (lastIsOpen stays false, wasExplicitlyClosed=false)
         await searchFolder(root, text: "Coastal")
         let autoOpen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(autoOpen?.isOpen == true,      "Folder auto-opens when child matches")
-        #expect(autoOpen?.lastIsOpen == false, "lastIsOpen is still false — not saved by auto-open")
+        #expect(autoOpen?.lastIsOpen == false, "lastIsOpen not changed by auto-open")
 
-        // Step 2: user closes folder during search
-        // toggleFolder sets lastIsOpen=false and calls resetFilter(), which immediately re-opens the folder
-        // because isSearching=true and result.children is non-empty.
-        // The visual state stays "open" but lastIsOpen=false is now recorded.
+        // Step 2: user closes folder during search → wasExplicitlyClosed=true → folder STAYS closed
+        // (appendToFlat: result.children non-empty, but wasExplicitlyClosed=true → isOpen=false)
         if let item = autoOpen { await root.folderListController.toggleFolder(item: item) }
         let afterToggle = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        // Visual re-open is expected (search forces it open again) — the key is lastIsOpen
-        #expect(afterToggle?.lastIsOpen == false,
-                "lastIsOpen must be false after user closes during search — this intent is saved for after-clear")
+        #expect(afterToggle?.isOpen == false,
+                "Folder must close immediately — wasExplicitlyClosed=true prevents auto-reopen by search")
+        #expect(afterToggle?.lastIsOpen == false)
+        #expect(afterToggle?.wasExplicitlyClosed == true, "wasExplicitlyClosed flag set")
 
         // Step 3: clear search → lastIsOpen=false → folder stays closed
         await searchFolder(root)
         let afterClear = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterClear?.isOpen == false,
-                "Folder must close when search is cleared: the toggle during search saved lastIsOpen=false")
+                "Folder stays closed after search cleared")
     }
 
-    @Test("Toggling canOpen folder during search saves lastIsOpen=true — folder opens when search is cleared")
-    func openingFolderDuringSearchSavesLastIsOpenTrue() async {
+    @Test("Toggling folder during search immediately shows ALL children (loadChildrenViaSearch uses empty text)")
+    func openingFolderDuringSearchShowsAllChildren() async {
         let root = await makeRoot()
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Glacier View", itemId: folderId)  // folder name matches "Glacier"
-        root.editController.reset(name: "Tropical Beach", itemId: childId) // child does NOT match "Glacier"
+        root.editController.reset(name: "Glacier View",  itemId: folderId) // name matches "Glacier"
+        root.editController.reset(name: "Tropical Beach", itemId: childId) // does NOT match "Glacier"
         root.editController.addItem(itemId: childId, parentId: folderId)
 
-        // Step 1: non-empty search — folder appears because name matches, child does not
-        // → canOpen=true (lazy), isOpen=false (no matching children to auto-open with)
+        // Step 1: search → folder appears (name match), starts closed (no children match)
         await searchFolder(root, text: "Glacier")
         let closedInSearch = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        #expect(closedInSearch?.canOpen == true, "Folder has canOpen=true (name match, no child match)")
-        #expect(closedInSearch?.isOpen == false, "Folder starts closed during search (no children auto-open)")
+        #expect(closedInSearch?.canOpen == true,  "Folder has canOpen=true (name match, no child match)")
+        #expect(closedInSearch?.isOpen == false,  "Folder starts closed")
+        #expect(!root.folderListController.listModel.list.contains(where: { $0.source.itemId == childId }),
+                "Child not visible before toggle")
 
-        // Step 2: user taps chevron to open the folder during search.
-        // toggleFolder sets lastIsOpen=true then calls loadChildrenViaSearch("Glacier", focusId).
-        // The scoped search returns nothing because the child "Tropical Beach" does not match "Glacier".
-        // appendToFlat then sets isOpen=false again (isSearching=true, result.children=[]).
-        // The folder visually closes — but lastIsOpen=true is SAVED. That is the key behavior.
+        // Step 2: user taps chevron → loadChildrenViaSearch uses EMPTY text (not "Glacier"),
+        // so ALL children are loaded regardless of the active search filter.
+        // appendToFlat: isSearching=true, result.children=[], but item.children non-empty
+        // AND lastIsOpen=true → item.isOpen = true (the fix).
         if let item = closedInSearch { await root.folderListController.toggleFolder(item: item) }
-        let afterToggle = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
-        #expect(afterToggle?.lastIsOpen == true,
-                "lastIsOpen=true must be saved by toggleFolder, even if appendToFlat immediately closes the folder")
 
-        // Step 3: clear search → appendToFlat uses lastIsOpen=true → folder opens
-        // Note: item.children was set to [] by loadChildrenViaSearch("Glacier") since the child
-        // "Tropical Beach" does not match. The folder is open but children won't be visible until
-        // the user re-taps the chevron on the empty-search list (triggering loadChildrenViaSearch("")).
+        let afterToggle = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(afterToggle?.isOpen == true,
+                "Folder must stay open after toggle — loadChildrenViaSearch(empty) loaded all children")
+        #expect(afterToggle?.lastIsOpen == true, "lastIsOpen=true persisted")
+        #expect(root.folderListController.listModel.list.contains(where: { $0.source.itemId == childId }),
+                "Child 'Tropical Beach' must be visible even though it doesn't match the search text")
+
+        // Step 3: clear search → folder stays open (lastIsOpen=true), child still visible
         await searchFolder(root)
         let afterClear = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterClear?.isOpen == true,
-                "Folder must open when search is cleared: the toggle during search saved lastIsOpen=true")
-        #expect(afterClear?.canOpen == true,
-                "canOpen=true: user can tap again to load children (empty search returns all children)")
-        _ = childId  // child not yet visible — requires one more toggle to load via empty-search scoped query
+                "Folder stays open after clearing search")
+        #expect(root.folderListController.listModel.list.contains(where: { $0.source.itemId == childId }),
+                "Child must remain visible after clearing search")
+    }
+
+    // MARK: - Close during search always works (wasExplicitlyClosed flag)
+
+    // MARK: - searchReturnedNoResults flag for empty-state UI
+
+    @Test("searchReturnedNoResults is false for empty search text")
+    func noResultsFlagFalseOnEmptySearch() async {
+        let root = await makeRoot()
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon", itemId: itemId)
+
+        await searchList(root)   // empty text
+        #expect(root.folderListController.searchModel.searchReturnedNoResults == false,
+                "Empty search must not set noResults flag — it shows all items, not 'no results'")
+    }
+
+    @Test("searchReturnedNoResults is true when non-empty search finds nothing")
+    func noResultsFlagTrueWhenNothingFound() async {
+        let root = await makeRoot()
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+
+        await searchList(root, text: "XYZ_NO_MATCH_99")
+        #expect(root.folderListController.searchModel.searchReturnedNoResults == true,
+                "Non-empty search with zero matches must set searchReturnedNoResults=true")
+    }
+
+    @Test("searchReturnedNoResults is false when search finds at least one result")
+    func noResultsFlagFalseWhenSomethingFound() async {
+        let root = await makeRoot()
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+
+        await searchList(root, text: "Dragon")
+        #expect(root.folderListController.searchModel.searchReturnedNoResults == false,
+                "Search that finds results must not set noResults flag")
+    }
+
+    @Test("searchReturnedNoResults resets to false when search text is cleared")
+    func noResultsFlagResetsOnClear() async {
+        let root = await makeRoot()
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+
+        // First set it to true
+        await searchList(root, text: "XYZ_NO_MATCH")
+        #expect(root.folderListController.searchModel.searchReturnedNoResults == true)
+
+        // Clear search → flag must reset
+        await searchList(root)
+        #expect(root.folderListController.searchModel.searchReturnedNoResults == false,
+                "Clearing search text must reset searchReturnedNoResults to false")
+    }
+
+    @Test("listModel.list is preserved (not emptied) when search returns no results — avoids flicker")
+    func listPreservedWhenSearchEmpty() async {
+        let root = await makeRoot()
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+
+        await searchList(root)
+        let countBeforeSearch = root.folderListController.listModel.list.count
+        #expect(countBeforeSearch > 0, "List must be populated after empty search")
+
+        await searchList(root, text: "XYZ_NO_MATCH")
+        #expect(root.folderListController.listModel.list.count == countBeforeSearch,
+                "list must be preserved (not emptied) when search finds nothing — prevents UI flicker")
+        #expect(root.folderListController.searchModel.searchReturnedNoResults == true,
+                "But the flag must be true so the view knows to show ContentUnavailableView.search")
+    }
+
+    @Test("folder mode: searchReturnedNoResults set correctly")
+    func noResultsFlagInFolderMode() async {
+        let root = await makeRoot()
+        let folderId = await root.itemController.addNew(type: .folder)
+        root.editController.reset(name: "Nature Archive", itemId: folderId)
+
+        // Search that matches folder
+        await searchFolder(root, text: "Nature")
+        #expect(root.folderListController.searchModel.searchReturnedNoResults == false,
+                "Folder name matches — not empty")
+
+        // Search that matches nothing
+        await searchFolder(root, text: "XYZ_NO_MATCH")
+        #expect(root.folderListController.searchModel.searchReturnedNoResults == true,
+                "Nothing matches — must set noResults flag in folder mode too")
+    }
+
+    // MARK: - Selected item always returned in non-empty search results
+
+    @Test("Non-matching selected item is always included in non-empty list search results")
+    func selectedItemAlwaysInListSearchResults() async {
+        let root = await makeRoot()
+
+        let dragonId = await root.itemController.addNew(type: .item)
+        let knightId = await root.itemController.addNew(type: .item)
+        let forestId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Scout",  itemId: dragonId)
+        root.editController.reset(name: "Knight Errant", itemId: knightId)
+        root.editController.reset(name: "Forest Walker", itemId: forestId)
+
+        // Step 1: empty search → populates cache with FolderListItemModel ids
+        await searchList(root)
+        let knightRow = root.folderListController.listModel.list.first(where: { $0.source.itemId == knightId })
+        guard let selectedId = knightRow?.id else {
+            #expect(Bool(false), "Knight must be in list after empty search")
+            return
+        }
+
+        // Step 2: user selects "Knight Errant"
+        root.folderListController.listModel.selected = selectedId
+
+        // Step 3: search "Dragon" — Knight doesn't match, Forest doesn't match
+        await searchList(root, text: "Dragon")
+        let ids = root.folderListController.listModel.list.map(\.source.itemId)
+
+        #expect(ids.contains(dragonId), "Dragon Scout must appear — normal match")
+        #expect(ids.contains(knightId), "Knight Errant must appear — selected item, even though it doesn't match")
+        #expect(!ids.contains(forestId), "Forest Walker must NOT appear — not selected, not matching")
+    }
+
+    @Test("Selected item is not duplicated when it also matches the search text")
+    func selectedMatchingItemNotDuplicated() async {
+        let root = await makeRoot()
+
+        let dragonId = await root.itemController.addNew(type: .item)
+        let knightId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Slayer", itemId: dragonId)
+        root.editController.reset(name: "Knight",        itemId: knightId)
+
+        await searchList(root)
+        let dragonRow = root.folderListController.listModel.list.first(where: { $0.source.itemId == dragonId })
+        root.folderListController.listModel.selected = dragonRow?.id
+
+        // Search "Dragon" — selected item also matches
+        await searchList(root, text: "Dragon")
+        let ids = root.folderListController.listModel.list.map(\.source.itemId)
+        let dragonCount = ids.filter { $0 == dragonId }.count
+
+        #expect(dragonCount == 1, "Selected matching item must appear exactly once — no duplicate")
+    }
+
+    @Test("No selected item: non-matching items are not included in results")
+    func noSelectionNoForcedInclusion() async {
+        let root = await makeRoot()
+
+        let dragonId = await root.itemController.addNew(type: .item)
+        let knightId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon",  itemId: dragonId)
+        root.editController.reset(name: "Knight",  itemId: knightId)
+
+        await searchList(root)
+        // Ensure nothing is selected
+        root.folderListController.listModel.selected = nil
+
+        await searchList(root, text: "Dragon")
+        let ids = root.folderListController.listModel.list.map(\.source.itemId)
+
+        #expect(ids.contains(dragonId),  "Dragon must appear — matches")
+        #expect(!ids.contains(knightId), "Knight must NOT appear — no selection, no match")
+    }
+
+    @Test("Selected item in folder mode: non-matching selected item is always included")
+    func selectedItemAlwaysInFolderModeResults() async {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let dragonId = await root.itemController.addNew(type: .item)
+        let knightId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Archive", itemId: folderId) // folder name: "Dragon"
+        root.editController.reset(name: "Sunset Photo",   itemId: dragonId)
+        root.editController.reset(name: "Knight Photo",   itemId: knightId)
+        // Both items are NOT in a folder (root level, don't match "Dragon")
+
+        await searchFolder(root)
+        let knightRow = root.folderListController.listModel.list.first(where: { $0.source.itemId == knightId })
+        root.folderListController.listModel.selected = knightRow?.id
+
+        // Search "Dragon" — folder matches, knightId doesn't match
+        await searchFolder(root, text: "Dragon")
+        let ids = root.folderListController.listModel.list.map(\.source.itemId)
+
+        #expect(ids.contains(folderId),  "Dragon Archive folder must appear — normal match")
+        #expect(ids.contains(knightId),  "Knight Photo must appear — selected item always included")
+        #expect(!ids.contains(dragonId), "Sunset Photo must NOT appear — not selected, not matching")
+    }
+
+    @Test("Closing folder during search keeps it closed even on subsequent re-searches")
+    func closedFolderStaysClosedAcrossSearches() async {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Coastal Photo", itemId: childId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+
+        // Step 1: search opens folder (child matches)
+        await searchFolder(root, text: "Coastal")
+        let autoOpen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(autoOpen?.isOpen == true, "Folder auto-opens")
+
+        // Step 2: user closes it
+        if let item = autoOpen { await root.folderListController.toggleFolder(item: item) }
+        let afterClose = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(afterClose?.isOpen == false,             "Folder closed immediately")
+        #expect(afterClose?.wasExplicitlyClosed == true, "wasExplicitlyClosed set")
+
+        // Step 3: same search runs again — folder must stay closed (not auto-reopen)
+        await searchFolder(root, text: "Coastal")
+        let afterReSearch = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(afterReSearch?.isOpen == false,
+                "Folder must stay closed on re-search — wasExplicitlyClosed prevents auto-reopen")
+    }
+
+    @Test("Closed folder during search can be reopened — wasExplicitlyClosed still shows chevron via canOpenFolder")
+    func closedFolderCanBeReopened() async {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Photo", itemId: childId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+
+        // Search → folder auto-opens
+        await searchFolder(root, text: "Dragon")
+        let autoOpen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(autoOpen?.isOpen == true, "Folder auto-opens")
+
+        // User closes it
+        if let item = autoOpen { await root.folderListController.toggleFolder(item: item) }
+        let afterClose = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(afterClose?.isOpen == false,             "Closed")
+        #expect(afterClose?.wasExplicitlyClosed == true, "wasExplicitlyClosed=true")
+        #expect(afterClose?.canOpen == false,
+                "canOpen=false because children were already in result.children (not lazy)")
+
+        // canOpenFolder must return true via wasExplicitlyClosed — chevron must show
+        #expect(root.folderListController.canOpenFolder(itemId: folderId) == true,
+                "canOpenFolder must be true when wasExplicitlyClosed=true so chevron is visible and reopen works")
+
+        // User reopens it → should work
+        root.folderListController.openFolder(itemId: folderId)
+        // openFolder spawns a Task — yield to let it run
+        try? await Task.sleep(for: .milliseconds(50))
+
+        let afterReopen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(afterReopen?.isOpen == true, "Folder must be open after user reopens via chevron")
+        #expect(afterReopen?.wasExplicitlyClosed == false, "wasExplicitlyClosed cleared when reopened")
+    }
+
+    @Test("After closing during search, re-opening clears wasExplicitlyClosed so auto-open works again")
+    func reopeningClearsExplicitlyClosedFlag() async {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Photo", itemId: childId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+
+        // Auto-open, then close
+        await searchFolder(root, text: "Dragon")
+        let folderItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        if let item = folderItem { await root.folderListController.toggleFolder(item: item) }
+        #expect(root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })?.wasExplicitlyClosed == true)
+
+        // Re-open explicitly — clears wasExplicitlyClosed
+        let closedItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        if let item = closedItem { await root.folderListController.toggleFolder(item: item) }
+        let afterReOpen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(afterReOpen?.isOpen == true,               "Folder is open after re-opening")
+        #expect(afterReOpen?.wasExplicitlyClosed == false, "wasExplicitlyClosed cleared by open")
+
+        // Now search again — folder should auto-open (wasExplicitlyClosed=false)
+        await searchFolder(root, text: "Dragon")
+        let afterSearch = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(afterSearch?.isOpen == true,
+                "Folder auto-opens again after wasExplicitlyClosed was cleared")
+    }
+
+    // MARK: - Toggle during search: all content shown regardless of search filter
+
+    // The new rule: loadChildrenViaSearch always uses EMPTY text so the user sees ALL children
+    // when they explicitly open a folder/item, not just those matching the active search.
+    // appendToFlat: isSearching=true, result.children=[], but item.children non-empty AND
+    // lastIsOpen=true → item.isOpen = true (respects user's explicit choice).
+
+    @Test("Toggling folder during search with multiple non-matching children shows ALL of them")
+    func toggleDuringSearchShowsAllChildren() async {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let child1   = await root.itemController.addNew(type: .item)
+        let child2   = await root.itemController.addNew(type: .item)
+        let child3   = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Nature Archive", itemId: folderId) // matches "Nature"
+        root.editController.reset(name: "Sunset Photo",   itemId: child1)   // no "Nature"
+        root.editController.reset(name: "Mountain Peak",  itemId: child2)   // no "Nature"
+        root.editController.reset(name: "Ocean Wave",     itemId: child3)   // no "Nature"
+        root.editController.addItem(itemId: child1, parentId: folderId)
+        root.editController.addItem(itemId: child2, parentId: folderId)
+        root.editController.addItem(itemId: child3, parentId: folderId)
+
+        await searchFolder(root, text: "Nature")
+        let folderNode = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(folderNode?.canOpen == true,  "Folder found by name match, canOpen=true")
+        #expect(folderNode?.isOpen == false,  "Starts closed (no child matches 'Nature')")
+
+        if let f = folderNode { await root.folderListController.toggleFolder(item: f) }
+
+        let flat = root.folderListController.listModel.list
+        #expect(flat.contains(where: { $0.source.itemId == child1 }), "Sunset Photo must appear")
+        #expect(flat.contains(where: { $0.source.itemId == child2 }), "Mountain Peak must appear")
+        #expect(flat.contains(where: { $0.source.itemId == child3 }), "Ocean Wave must appear")
+    }
+
+    @Test("Folder stays open and shows all children when search text changes after manual open")
+    func folderStaysOpenAfterSearchChange() async {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Glacier View",  itemId: folderId)
+        root.editController.reset(name: "Forest Trail",  itemId: childId)   // matches neither "Glacier" nor "Sunset"
+        root.editController.addItem(itemId: childId, parentId: folderId)
+
+        // Search "Glacier", open folder
+        await searchFolder(root, text: "Glacier")
+        let node = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        if let n = node { await root.folderListController.toggleFolder(item: n) }
+        #expect(root.folderListController.listModel.list.contains(where: { $0.source.itemId == childId }),
+                "Child must be visible after toggle with 'Glacier' search")
+
+        // Change search to "Glacier" again (re-search) — folder should remain open
+        await searchFolder(root, text: "Glacier")
+        let afterReSearch = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
+        #expect(afterReSearch?.isOpen == true,
+                "Folder must stay open after re-search — lastIsOpen=true preserved")
+        #expect(root.folderListController.listModel.list.contains(where: { $0.source.itemId == childId }),
+                "Child must remain visible after re-search")
     }
 
     // MARK: - FolderListItemModel.id uniqueness invariant
@@ -736,8 +1075,8 @@ struct FolderListControllerTests {
         await searchFolder(root)   // empty search, lazy — no children pre-loaded
         let list = root.folderListController.listModel.list
 
-        let itemNode   = try? list.first(where: { $0.source.itemId == itemId })
-        let folderNode = try? list.first(where: { $0.source.itemId == folderId })
+        let itemNode   = list.first(where: { $0.source.itemId == itemId })
+        let folderNode = list.first(where: { $0.source.itemId == folderId })
 
         #expect(itemNode?.id   == itemId,   "Root item: id must be itemId (no parentEntryId)")
         #expect(folderNode?.id == folderId, "Closed root folder: id must be itemId")
@@ -865,6 +1204,103 @@ struct FolderListControllerTests {
         // standalone=itemId, folder=itemId, children=membershipEntryId (unique per folder slot)
         #expect(Set(allIds).count == allIds.count,
                 "No duplicate FolderListItemModel.id in the flat list — SwiftUI ForEach identity is safe")
+    }
+
+    // MARK: - Inspector folder mode: folder children must not render as blank entry rows
+
+    /// **Bug**: `InspectorRowView.rowContent` checked only `item.source.entryId != nil` to
+    /// decide between entry row and standard item row. Folder children carry a non-nil
+    /// `source.entryId` — the parent's membership entry UUID used for SwiftUI identity.
+    /// That entry belongs to the *parent* model, not the child's. So `model[membershipId].name`
+    /// resolved to nil/empty → blank row.
+    ///
+    /// **Fix**: `rowContent` now also checks `model?.entries.contains(where: { $0.id == entryId })`.
+    /// Only when the model actually owns the entry is it rendered as an entry row.
+    @Test("Folder child source.entryId is the parent's membership UUID — child model does NOT own it")
+    func folderChildMembershipEntryIdNotInChildModel() async throws {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Sunset Shot", itemId: childId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+
+        // Use folderLinkController — the controller behind LinkItemListView (inspector)
+        root.folderLinkController.listDisplayModel.listMode = .folder
+        root.folderLinkController.searchModel.filterId = nil
+        await root.folderLinkController.performSearch()
+
+        let folderNode = root.folderLinkController.listModel.list
+            .first(where: { $0.source.itemId == folderId })
+        if let f = folderNode { await root.folderLinkController.toggleFolder(item: f) }
+
+        let childNode = try #require(
+            root.folderLinkController.listModel.list.first(where: { $0.source.itemId == childId }),
+            "Child must be visible in the inspector after opening the folder"
+        )
+
+        // Folder children carry source.entryId = membership UUID (for SwiftUI identity via mapResult).
+        let membershipId = try #require(
+            childNode.source.entryId,
+            "Folder child must have source.entryId set to the membership entry UUID"
+        )
+
+        // The membership entry is the PARENT FOLDER's entry linking to the child.
+        // The child item's own model does NOT contain it.
+        // If the view blindly checked `source.entryId != nil` it would call
+        // model[membershipId].name → nil → blank row. The fix checks model.entries first.
+        if let childModel = childNode.model {
+            // The membership entry belongs to the parent folder, not the child.
+            // InspectorRowView.rowContent must verify model.entries to avoid a blank row.
+            #expect(
+                !childModel.entries.contains(where: { $0.id == membershipId }),
+                "Child model must NOT own the membership entryId — it belongs to the parent folder"
+            )
+        }
+
+        // The child's item name is set and non-empty — confirms it can be displayed as a standard row
+        #expect(childNode.model != nil, "Child model must be resolved via mapResult")
+    }
+
+    @Test("Inspector folder mode: folder children display as standard item rows, not blank entry rows")
+    func inspectorFolderModeChildrenHaveCorrectModel() async throws {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        // Add two children — one named, one with default name
+        let child1 = await root.itemController.addNew(type: .item)
+        let child2 = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Mountain View", itemId: child1)
+        root.editController.reset(name: "Seascape",      itemId: child2)
+        root.editController.addItem(itemId: child1, parentId: folderId)
+        root.editController.addItem(itemId: child2, parentId: folderId)
+
+        root.folderLinkController.listDisplayModel.listMode = .folder
+        root.folderLinkController.searchModel.filterId = nil
+        await root.folderLinkController.performSearch()
+
+        let folderNode = root.folderLinkController.listModel.list
+            .first(where: { $0.source.itemId == folderId })
+        if let f = folderNode { await root.folderLinkController.toggleFolder(item: f) }
+
+        let list = root.folderLinkController.listModel.list
+        for itemId in [child1, child2] {
+            let node = try #require(
+                list.first(where: { $0.source.itemId == itemId }),
+                "Child \(itemId) must be visible"
+            )
+            // model must be set and must match the child item
+            let model = try #require(node.model, "model must be resolved via mapResult")
+            #expect(model.id == itemId, "model.id must equal the child's itemId")
+
+            // The membership entryId must NOT be in the child's model entries
+            if let eid = node.source.entryId {
+                #expect(
+                    !model.entries.contains(where: { $0.id == eid }),
+                    "Membership entryId \(eid) must not be in child model — confirms fix prevents blank rows"
+                )
+            }
+        }
     }
 }
 #endif

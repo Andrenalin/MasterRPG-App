@@ -29,6 +29,12 @@ public final class SearchModel: Sendable {
     var isSearching = false
     var results: [SearchResult] = []
     var detailResults: [SearchResult] = []
+
+    /// True after a non-empty search completed with zero results.
+    /// Drives `ContentUnavailableView.search` in list and inspector views.
+    /// Distinct from `listModel.list.isEmpty` because `buildList` preserves the previous list
+    /// when results are empty (prevents flickering), so `.list.isEmpty` would never be true.
+    var searchReturnedNoResults: Bool = false
     
     var selection: SearchResult?
     public var filterId: UUID?

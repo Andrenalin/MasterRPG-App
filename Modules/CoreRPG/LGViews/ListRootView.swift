@@ -47,7 +47,10 @@ struct ListRootView: View {
             }
 #endif
             .overlay {
-                if listModel.list.isEmpty && !listController.searchModel.searchText.isEmpty
+                // Use searchReturnedNoResults rather than list.isEmpty: buildList preserves the
+                // previous list when search returns nothing (prevents flicker), so list.isEmpty
+                // would never be true even when the search found zero matches.
+                if listController.searchModel.searchReturnedNoResults
                     && !listController.searchModel.searchText.starts(with: "@") {
                     ContentUnavailableView.search
                 }
@@ -267,8 +270,9 @@ private struct ListRowItemView: View {
     let leadingPadding: CGFloat
 
     var body: some View {
-        // Resolve the model once — avoids three separate dictionary lookups per render.
-        let model = root.itemControllable.itemOrEmpty(for: item.source.itemId)
+        // Use the pre-resolved model from FolderListItemModel (set by mapResult via itemSync).
+        // Falls back to itemOrEmpty only for items not yet through the search pipeline.
+        let model = item.model ?? root.itemControllable.itemOrEmpty(for: item.source.itemId)
         HStack {
             ItemRowView(
                 root: root,
@@ -334,8 +338,11 @@ private struct SpecialCategoryFolderIndicator: View {
     let listController: any FolderListControllable
 
     var body: some View {
-        // Show chevron when the item can be expanded (canOpen) or is already open.
-        if item.canOpen || item.isOpen {
+        // Show chevron when: (a) item has unexplored children (canOpen), (b) item is open,
+        // or (c) user explicitly closed it (wasExplicitlyClosed) so they can reopen it.
+        // Without (c), closing a folder during search hid the chevron permanently (canOpen=false
+        // because children were already in result.children, isOpen=false after close).
+        if item.canOpen || item.isOpen || item.wasExplicitlyClosed {
             Button {
                 Task { await listController.toggleFolder(item: item) }
             } label: {

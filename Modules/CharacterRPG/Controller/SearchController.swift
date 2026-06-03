@@ -265,11 +265,35 @@ extension SearchController {
             return await folderModeCharacterResults(searchText: searchText, focusId: focusId, displayMode: displayMode)
         case .list:
             if let focusId {
-                // Focused on a specific character: always return it with filtered entries.
-                // displayMode has no effect here — entries are always searched by name+content.
+                // Sub-value items (groupId != nil) are group-entry sub-values, not root characters.
+                // Return their entries as direct flat results so loadChildrenViaSearch can place
+                // them as children of the group entry row — not wrapped in a character result.
+                if let item = await itemController.item(for: focusId), item.groupId != nil {
+                    let entries = searchText.isEmpty
+                        ? item.entries
+                        : item.entries.filter {
+                            $0.name.localizedStandardContains(searchText) ||
+                            $0.content.localizedStandardContains(searchText)
+                        }
+                    return entries
+                        .map { entry in
+                            SearchResult(
+                                itemId: focusId,
+                                itemName: item.name,
+                                module: itemControllable.config.module,
+                                category: item.category,
+                                entryId: entry.id,
+                                entryName: entry.name,
+                                matchedContent: entry.content.isEmpty ? nil : entry.content,
+                                relevanceScore: 0
+                            )
+                        }
+                        .sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
+                }
+                // Root character: return it as root item with its entries as children.
                 return await focusedCharacterInspector(characterId: focusId, searchText: searchText)
             }
-            // No focus: use the CoreRPG-compatible inspector (entries as children, CharacterRPG filters).
+            // No focus: CoreRPG-compatible inspector (entries as children, CharacterRPG filters).
             return await inspectorSearchResults(searchText: searchText, parentId: nil, displayMode: displayMode)
         }
     }
@@ -288,31 +312,40 @@ extension SearchController {
             guard !Task.isCancelled else { break }
 
             if searchText.isEmpty {
-                // Include every entry; add sub-value's entries as this entry's children.
                 var entryResult = makeEntryResult(for: entry, characterId: characterId, characterName: character.name)
                 if let subValueId = entry.valueId,
                    let subValue = await itemController.item(for: subValueId) {
+                    // Use subValueId as itemId for sub-entries so the view resolves
+                    // model?[subEntry.id] against the sub-value model (which owns them),
+                    // not the character model (which only has the group-entry link).
                     entryResult.children = subValue.entries.map {
-                        makeEntryResult(for: $0, characterId: characterId, characterName: character.name)
+                        makeEntryResult(for: $0, characterId: subValueId, characterName: subValue.name)
                     }
                 }
                 entryChildren.append(entryResult)
             } else {
-                // Filter: entry name, entry content, or sub-value item name must match.
                 let entryNameMatch    = entry.name.localizedStandardContains(searchText)
                 let entryContentMatch = entry.content.localizedStandardContains(searchText)
                 var subValueNameMatch = false
+                var subEntryMatch     = false   // bug fix: also search sub-entry names/content
                 var subEntries: [SearchResult] = []
 
                 if let subValueId = entry.valueId,
                    let subValue = await itemController.item(for: subValueId) {
                     subValueNameMatch = subValue.name.localizedStandardContains(searchText)
+                    for subEntry in subValue.entries {
+                        if subEntry.name.localizedStandardContains(searchText) ||
+                           subEntry.content.localizedStandardContains(searchText) {
+                            subEntryMatch = true
+                        }
+                    }
+                    // Use subValueId as itemId — see empty-search comment above.
                     subEntries = subValue.entries.map {
-                        makeEntryResult(for: $0, characterId: characterId, characterName: character.name)
+                        makeEntryResult(for: $0, characterId: subValueId, characterName: subValue.name)
                     }
                 }
 
-                guard entryNameMatch || entryContentMatch || subValueNameMatch else { continue }
+                guard entryNameMatch || entryContentMatch || subValueNameMatch || subEntryMatch else { continue }
                 var entryResult = makeEntryResult(for: entry, characterId: characterId, characterName: character.name)
                 entryResult.children = subEntries
                 entryChildren.append(entryResult)
@@ -370,6 +403,9 @@ extension SearchController {
             await characterInspectorResult(character: character, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
             return foundResults
         } else {
+            // Unscoped common inspector: characters are items for linking only.
+            // Never return entry children and never set canOpen — the user links to a character,
+            // not to individual entries. Entry exploration requires the focused inspector.
             let itemIds = await itemControllable.itemDataModel.items
             for itemId in itemIds {
                 guard !Task.isCancelled else { break }
@@ -377,11 +413,12 @@ extension SearchController {
                       character.groupId == nil,
                       character.displayState == 0 else { continue }
                 if searchText.isEmpty {
-                    var result = characterResult(item: character, searchText: "", displayMode: displayMode)
-                    result.canOpen = !character.entries.isEmpty
-                    foundResults.append(result)
+                    foundResults.append(characterResult(item: character, searchText: "", displayMode: displayMode))
+                    // canOpen intentionally omitted (defaults false) — no entry expansion in common inspector
                 } else {
-                    await characterInspectorResult(character: character, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
+                    // Match at item level only — entries are not shown in the common inspector
+                    guard characterMatchesFilter(character, searchText: searchText, displayMode: displayMode) else { continue }
+                    foundResults.append(characterResult(item: character, searchText: searchText, displayMode: displayMode))
                 }
             }
             if searchText.isEmpty {

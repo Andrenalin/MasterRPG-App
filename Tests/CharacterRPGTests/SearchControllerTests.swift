@@ -161,16 +161,21 @@ struct SearchControllerTests {
 
     // MARK: - Inspector search, focusId == nil (CoreRPG-compatible: entries as children)
 
-    @Test("Inspector nil focus: entry name match gives entry as child of character result")
-    func inspectorNilFocusEntryMatchGivesEntryAsChild() async throws {
+    @Test("Inspector nil focus: character appears only when ITS OWN NAME matches — entries are not searched")
+    func inspectorNilFocusOnlyNameMatch() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
         let sut = root.searchController
 
-        let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Eldrin", itemId: charId)
-        let entryId = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: entryId, name: "Dragon Strength", content: "Very high")
+        let charWithNameMatch  = await root.itemController.addNew(type: .item)
+        let charWithEntryOnly  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Knight", itemId: charWithNameMatch)  // name matches
+        root.editController.reset(name: "Eldrin",        itemId: charWithEntryOnly)  // name doesn't match
+
+        // Only entry of Eldrin matches — but common inspector never searches entries
+        let entryId = await root.editController.addNewGroup(itemId: charWithEntryOnly)
+        root.editController.update(itemId: charWithEntryOnly, entryId: entryId,
+                                   name: "Dragon Strength", content: "Very high")
 
         let results = await sut.inspectorSearchResults(
             searchText: "Dragon",
@@ -179,14 +184,17 @@ struct SearchControllerTests {
             focusId: nil
         )
 
-        let charResult = try #require(results.first(where: { $0.itemId == charId }),
-                                      "Character must appear because its entry name matches")
-        #expect(!charResult.children.isEmpty, "Matching entry must be a child of the character result")
-        #expect(charResult.children.contains(where: { $0.entryId == entryId }),
-                "The matching entry must appear in children")
+        // Common inspector: item-level match only, no entry children, no canOpen
+        let nameMatchResult = try #require(results.first(where: { $0.itemId == charWithNameMatch }),
+                                           "Character whose NAME matches 'Dragon' must appear")
+        #expect(nameMatchResult.children.isEmpty, "Common inspector: no entry children")
+        #expect(nameMatchResult.canOpen == false,  "Common inspector: canOpen must be false")
+
+        #expect(!results.contains(where: { $0.itemId == charWithEntryOnly }),
+                "Character whose only match is an entry must be excluded — entries not searched in common inspector")
     }
 
-    @Test("Inspector nil focus: no match excludes character")
+    @Test("Inspector nil focus: character excluded when neither name nor description match")
     func inspectorNilFocusNoMatchExcludes() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
@@ -205,7 +213,7 @@ struct SearchControllerTests {
         )
 
         #expect(!results.contains(where: { $0.itemId == charId }),
-                "Character with no matching name, description, or entries must be excluded")
+                "Character with no matching name or description must be excluded (entries not searched in common inspector)")
     }
 
     // MARK: - Inspector search, focusId = character (focused character inspector)
@@ -618,8 +626,8 @@ struct InspectorSearchFixTests {
                 "Empty inspector search must return characters sorted A→Z")
     }
 
-    @Test("Inspector empty search: character with entries has canOpen=true")
-    func inspectorEmptySearchCanOpenReflectsEntries() async throws {
+    @Test("Inspector common (no focus): characters always have canOpen=false — no entry expansion in common view")
+    func inspectorCommonNeverHasCanOpen() async throws {
         let root = try await makeRoot()
 
         let charWithEntries    = await root.itemController.addNew(type: .item)
@@ -638,8 +646,11 @@ struct InspectorSearchFixTests {
         let withResult    = try #require(results.first(where: { $0.itemId == charWithEntries }))
         let withoutResult = try #require(results.first(where: { $0.itemId == charWithoutEntries }))
 
-        #expect(withResult.canOpen    == true,  "Character with entries must have canOpen=true")
-        #expect(withoutResult.canOpen == false, "Character without entries must have canOpen=false")
+        // Common inspector: characters are link targets, not character sheets.
+        // canOpen must be false regardless of whether they have entries.
+        #expect(withResult.canOpen    == false, "Common inspector: canOpen must be false even with entries")
+        #expect(withoutResult.canOpen == false, "Common inspector: canOpen must be false")
+        #expect(withResult.children.isEmpty,    "Common inspector: no entry children in results")
     }
 
     @Test("Inspector sub-value (groupId != nil) excluded from empty search results")

@@ -217,6 +217,16 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     /// `childFocusId` = entry.valueId (the sub-value item whose entries load on expand).
     public var childFocusId: UUID? = nil
 
+    /// Set by `toggleFolder` (close branch) so `appendToFlat` skips auto-opening this item even
+    /// when search results include matching children. Cleared when the user explicitly opens it.
+    /// Distinguishes "user closed" (wasExplicitlyClosed=true) from "never interacted" (false).
+    public var wasExplicitlyClosed: Bool = false
+
+    /// Direct reference to the domain model for this row.
+    /// Set by `mapResult` via `itemSync` so views never need a separate `itemSync` call.
+    /// Not included in equality/hash — identity is defined by `id`/`source`, not model content.
+    public var model: (any ItemDataAccessable)? = nil
+
     /// Creates an independent copy of this item and its entire children tree.
     /// Used by `resetDetailLink` to seed a `detailListModel` with pre-loaded items from the
     /// main list without sharing references — each model can evolve independently.
@@ -231,10 +241,12 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
             isHidden: isHidden,
             isFolded: isFolded
         )
-        copy.parentId     = parentId
-        copy.canOpen      = canOpen
-        copy.childFocusId = childFocusId
-        copy.children     = children.map { $0.deepCopy() }
+        copy.parentId          = parentId
+        copy.canOpen           = canOpen
+        copy.childFocusId      = childFocusId
+        copy.wasExplicitlyClosed = wasExplicitlyClosed
+        copy.model             = model        // same reference — model is shared, not deep-copied
+        copy.children          = children.map { $0.deepCopy() }
         return copy
     }
 
