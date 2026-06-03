@@ -75,8 +75,18 @@ extension FolderListControllable {
 }
 
 public extension FolderListControllable {
-    func update() {
+    func update() async {
         let previousSelectedId = listModel.selectedItemId
+        if let addedModelId = listModel.addedModelId, let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
+            listModel.selected = addedItem.id
+        }
+        
+        if listModel.parentModel != nil {
+            // Detail context: refresh the scoped detail list, not the root list.
+            await performDetailSearch()
+        } else {
+            await performSearch()
+        }
 
         resetFilter()
 

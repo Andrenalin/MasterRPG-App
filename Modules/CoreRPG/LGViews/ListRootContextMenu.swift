@@ -223,9 +223,9 @@ private extension ListRootContextMenu {
             ForEach(controller.folderItems(currentSelected: currentSelected)) { folder in
                 Button {
                     controller.moveItem(currentSelected: currentSelected, to: folder)
-                    listController?.update()
-                    // Also refresh the parent folder list
-                    root.folderListControllable.resetFilter()
+                    Task {
+                        await listController?.update()
+                    }
                 } label: {
                     Label {
                         Text(folder.name)
@@ -248,9 +248,9 @@ private extension ListRootContextMenu {
             ForEach(controller.collectionItems(currentSelected: currentSelected)) { folder in
                 Button {
                     controller.addItem(currentSelected: currentSelected, to: folder)
-                    listController?.update()
-                    // Also refresh the parent folder list
-                    root.folderListControllable.resetFilter()
+                    Task {
+                        await listController?.update()
+                    }
                 } label: {
                     Label {
                         Text(folder.name)
@@ -287,11 +287,8 @@ private extension ListRootContextMenu {
     func removeItemView(oneUp: Bool) -> some View {
         Button {
             controller.removeItemsFromFolder(currentSelected: currentSelected, parentId: parent?.id, oneUp: oneUp)
-            withAnimation {
-                // Refresh the detail list from the updated parent model entries
-                listController?.update()
-                // Also refresh the parent folder list
-                root.folderListControllable.resetFilter()
+            Task {
+                await listController?.update()
             }
         } label: {
             Label {

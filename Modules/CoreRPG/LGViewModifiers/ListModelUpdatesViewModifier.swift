@@ -75,18 +75,7 @@ private extension ListModelUpdatesViewModifier {
         }
 
         for await _ in stream {
-            if parentModel != nil {
-                // Detail context: refresh the scoped detail list, not the root list.
-                await listControllable.performDetailSearch()
-            } else {
-                listControllable.update()
-                // If the list is still empty after update (e.g. search results were cleared
-                // by a cancelled search or the view re-appeared without a listMode change),
-                // kick off a fresh search so items appear without requiring user interaction.
-                if listControllable.listModel.list.isEmpty {
-                    await listControllable.performSearch()
-                }
-            }
+            await listControllable.update()
         }
     }
 
