@@ -53,8 +53,10 @@ public struct LinkItemListView: View {
                     }
                 }
 
-                contentView
-                    .tint(root.configurable.module.tint)
+                UnavailableGlassOverlay(isUnavialable: root.folderLinkControllable.searchModel.searchReturnedNoResults) {
+                    contentView
+                }
+                .tint(root.configurable.module.tint)
                     // When parentModel changes: create/reset detailListModel (with deep-copied cache
                     // for warm start) then run a scoped detail search via inspectorSearchResults.
                     // When parentModel clears: tear down detailListModel and resume main search.

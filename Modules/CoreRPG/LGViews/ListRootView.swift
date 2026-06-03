@@ -15,46 +15,51 @@ struct ListRootView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        listView
-            .animation(.smooth, value: listModel.list.count)
-            .frame(minWidth: 250, idealWidth: 350)
+        UnavailableGlassOverlay(isUnavialable: listController.searchModel.searchReturnedNoResults
+                                && !listController.searchModel.searchText.starts(with: "@")) {
+            
+            listView
+                .animation(.smooth, value: listModel.list.count)
+                .frame(minWidth: 250, idealWidth: 350)
 #if !os(tvOS)
             // Always-present modifier: empty closure = no menu; avoids applyIf identity break
-            .contextMenu(forSelectionType: FolderListItemModel.ID.self) { _ in
-                if listController.listDisplayModel.isSelectionMode {
-                    ListRootContextMenu(root: root, controller: menuController, parentItem: parentModel, listController: listController)
+                .contextMenu(forSelectionType: FolderListItemModel.ID.self) { _ in
+                    if listController.listDisplayModel.isSelectionMode {
+                        ListRootContextMenu(root: root, controller: menuController, parentItem: parentModel, listController: listController)
+                    }
                 }
-            }
 #endif
-            .scrollIndicatorsFlash(onAppear: true)
-            .scrollIndicatorsFlash(trigger: listModel.list.count)
+                .scrollIndicatorsFlash(onAppear: true)
+                .scrollIndicatorsFlash(trigger: listModel.list.count)
 #if !os(visionOS)
-            .scrollDismissesKeyboard(.immediately)
+                .scrollDismissesKeyboard(.immediately)
 #endif
 #if os(macOS)
-            .onDeleteCommand {
-                guard let sel = listModel.selected,
-                      let index = listModel.list.firstIndex(where: { $0.id == sel }) else { return }
-                deleteItems(offsets: IndexSet(integer: index))
-            }
-            .onKeyPress(.leftArrow, phases: .down) { _ in
-                withAnimation { listController.closeParentFolder() }
-                return .handled
-            }
-            .onKeyPress(.rightArrow, phases: .down) { _ in
-                withAnimation { listController.openSelectedFolder() }
-                return .handled
-            }
-#endif
-            .overlay {
-                // Use searchReturnedNoResults rather than list.isEmpty: buildList preserves the
-                // previous list when search returns nothing (prevents flicker), so list.isEmpty
-                // would never be true even when the search found zero matches.
-                if listController.searchModel.searchReturnedNoResults
-                    && !listController.searchModel.searchText.starts(with: "@") {
-                    ContentUnavailableView.search
+                .onDeleteCommand {
+                    guard let sel = listModel.selected,
+                          let index = listModel.list.firstIndex(where: { $0.id == sel }) else { return }
+                    deleteItems(offsets: IndexSet(integer: index))
                 }
-            }
+                .onKeyPress(.leftArrow, phases: .down) { _ in
+                    withAnimation { listController.closeParentFolder() }
+                    return .handled
+                }
+                .onKeyPress(.rightArrow, phases: .down) { _ in
+                    withAnimation { listController.openSelectedFolder() }
+                    return .handled
+                }
+#endif
+//                .overlay {
+//                    // Use searchReturnedNoResults rather than list.isEmpty: buildList preserves the
+//                    // previous list when search returns nothing (prevents flicker), so list.isEmpty
+//                    // would never be true even when the search found zero matches.
+//                    if listController.searchModel.searchReturnedNoResults
+//                        && !listController.searchModel.searchText.starts(with: "@") {
+//                        ContentUnavailableView.search
+//                            .padding(32)
+//                    }
+//                }
+        }
             .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable, parentModel: parentModel)
             .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
 #if !os(tvOS)
@@ -173,6 +178,44 @@ private extension ListRootView {
         }
     }
 }
+
+struct UnavailableGlassOverlay<Content: View>: View {
+    let content: Content
+    let isUnavialable: Bool
+    
+    init(isUnavialable: Bool, @ViewBuilder content: () -> Content) {
+        self.isUnavialable = isUnavialable
+        self.content = content()
+    }
+    
+    var body: some View {
+//        ZStack {
+            // The underlying content
+            content
+                .disabled(isUnavialable)
+                .overlay {
+                    Color.primary.opacity(0.2)
+                        .opacity(isUnavialable ? 1 : 0)
+                    
+                    ContentUnavailableView.search
+                        .padding()
+                        .glassEffect(.regular.interactive())
+                        .padding()
+                        .opacity(isUnavialable ? 1 : 0)
+                }
+              
+//            if isUnavialable {
+//                Color.primary.opacity(0.2)
+//                
+//                ContentUnavailableView.search
+//                    .padding()
+//                    .glassEffect(.regular.interactive())
+//                    .padding()
+//            }
+//        }
+    }
+}
+
 
 // MARK: - ItemRowsView
 // Extracted from the @ViewBuilder itemRows() function so SwiftUI can skip this struct's
@@ -344,7 +387,7 @@ private struct SpecialCategoryFolderIndicator: View {
         // because children were already in result.children, isOpen=false after close).
         if item.canOpen || item.isOpen || item.wasExplicitlyClosed {
             Button {
-                Task { await listController.toggleFolder(item: item) }
+                listController.toggleFolder(item: item)
             } label: {
                 Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                     .imageScale(.small)
