@@ -26,17 +26,6 @@ struct ViewerRootView: View {
                     .background(.black.gradient)
             }
         }
-        .onChange(of: root.gameController.photoGameModel.openPhotoSpace, initial: false) {
-#if os(visionOS)
-            Task {
-                if root.gameController.photoGameModel.openPhotoSpace {
-                    await openSpace(id: "PhotoWorld", value: PhotoWorldSelection(id: model.id, rotationDegrees: 67))
-                } else {
-                    await dismissSpace()
-                }
-            }
-#endif
-        }
         .ignoresSafeArea(.container, edges: [.top, .bottom])
         .applyIf(configuration.addToolbar && !configuration.isGame) {
             $0.toolbar {

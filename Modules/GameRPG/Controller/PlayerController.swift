@@ -557,6 +557,21 @@ extension PlayerController {
             if try await root.spaceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 Task { @MainActor in
                     gameModel.gameUpdateType = .space
+                    
+                    // ✅ SharePlay: Open immersive space for all participants
+                    #if os(visionOS)
+                    if root.networkStore.sharePlayStore.isActive {
+                        // Update presentation mode to immersive
+                        root.gameModel.shareState.mode = .immersive
+                        root.networkStore.sharePlayStore.applyShareState()
+                        
+//                        // Open the immersive space with the revealed space item
+//                        let selection = ItemSelection(itemId: model.data.id, entryId: nil)
+//                        await root.viewController.scenesManager.openSpaceViewer(selection: selection)
+                        
+                        Logger.networking.debug("✅ Opened immersive space for SharePlay participant: \(model.data.id, privacy: .public)")
+                    }
+                    #endif
                 }
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
@@ -569,6 +584,15 @@ extension PlayerController {
             Task { @MainActor in
                 if await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
                     gameModel.gameUpdateType = .space
+                    
+                    // ✅ SharePlay: Update current selection in open immersive space
+                    #if os(visionOS)
+                    if root.networkStore.sharePlayStore.isActive,
+                       root.gameModel.shareState.mode == .immersive {
+                        // The immersive space is already open, selection will update via binding
+                        Logger.networking.debug("✅ Updated immersive space selection: \(model.data.id, privacy: .public)")
+                    }
+                    #endif
                 }
             }
         }

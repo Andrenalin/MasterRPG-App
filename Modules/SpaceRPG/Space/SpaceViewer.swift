@@ -2,9 +2,13 @@
 
 import CoreRPG
 import SwiftUI
+import os.log
 
 #if !os(tvOS)
 import RealityKit
+#if os(visionOS)
+import GroupActivities
+#endif
 
 struct SpaceViewer: View {
     let root: SpaceRootModel
@@ -69,6 +73,9 @@ struct SpaceViewer: View {
 #endif
             }
         }
+#if os(visionOS)
+        .immersiveSpaceTracker()  // ✅ Track immersive space lifecycle for ScenesManager
+#endif
     }
 }
 
@@ -483,6 +490,12 @@ extension Entity {
         return nil
     }
 }
+
+#if os(visionOS)
+// Note: SharePlay synchronization is handled at the GameRPG layer when opening
+// the immersive space, not here. SpaceViewer is a generic module and should not
+// depend on game-specific SharePlay logic.
+#endif
 
 extension EntityTargetValue<DragGesture.Value> {
     @MainActor

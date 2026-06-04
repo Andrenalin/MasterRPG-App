@@ -31,6 +31,10 @@ final class GameTableModel {
         self.photoRoot = photoRoot
 
         renderer = GameRenderer()
+        
+        // ✅ IMPORTANT: Wait for assets to load before continuing
+        await renderer.loadAssets()
+        
         setup = GameSetup(root: renderer.root)
         
         tabletopGame = TabletopGame(tableSetup: setup.setup)

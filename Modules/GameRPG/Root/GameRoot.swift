@@ -326,7 +326,7 @@ extension GameRoot {
 
         adventureRoot.adventureGameControllable.resetGame()
         #if os(visionOS)
-        gameModel.shareState.isMaster = (mode == .demo)
+        gameModel.shareState.isMaster = false
         #endif
         let player = PlayerController(root: self, asGameMaster: mode == .demo)
         gameModel.playerController = player

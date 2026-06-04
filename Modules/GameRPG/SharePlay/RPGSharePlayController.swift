@@ -91,6 +91,21 @@ final class RPGSharePlayController {
                     self?.canActivateSharePlay = value
                 }
             }.store(in: &cancellables)
+        
+        #if os(visionOS)
+        // ✅ Observe presentation mode changes and apply configuration
+        gameModel.shareState.modeChanged
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newMode in
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    Logger.sharePlay.debug("Presentation mode changed to: \(newMode.rawValue, privacy: .public)")
+                    
+                    // Apply the new spatial template configuration
+                    self.applyShareState()
+                }
+            }.store(in: &cancellables)
+        #endif
     }
 
     func setup(audioCoordinator: AudioListenerCoordinator?) {
@@ -364,7 +379,7 @@ extension RPGSharePlayController {
         guard let coordinator = await session.systemCoordinator else { return }
         systemCoordinator = coordinator
         applyShareState()
-
+        
         let immersionTask = Task { [weak self] in
             for await immersionStyle in coordinator.groupImmersionStyle {
                 guard let self else { return }
@@ -373,18 +388,19 @@ extension RPGSharePlayController {
         }
         tasks.insert(immersionTask)
     }
-
+    
     func applyShareState() {
         guard let coordinator = systemCoordinator else { return }
         var configuration = SystemCoordinator.Configuration()
         configuration.supportsGroupImmersiveSpace = true
         switch gameModel?.shareState.mode ?? .window {
         case .tabletop:
-            configuration.spatialTemplatePreference = .surround.contentExtent(100)
+            configuration.spatialTemplatePreference = .surround.contentExtent(1)
         case .window, .immersive:
             configuration.spatialTemplatePreference = .sideBySide
         }
         coordinator.configuration = configuration
     }
 }
+
 #endif

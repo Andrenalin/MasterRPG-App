@@ -29,16 +29,35 @@ class GameRenderer: TabletopGame.RenderDelegate {
         
         portalWorld = Entity()
         portal = Entity()
-
-        Task {
-            await loadAssets()
-        }
+        
+        // Assets will be loaded explicitly by GameTableModel
     }
     
     @MainActor
     func loadAssets() async {
-        let staticSceneEntity = try! await Entity(named: "static_scene", in: tabletopGameContentBunlde)
-        staticSceneEntity.setParent(root)
+        #if DEBUG
+        print("🎮 Loading TabletopGame assets...")
+        #endif
+        
+        do {
+            let staticSceneEntity = try await Entity(named: "static_scene", in: tabletopGameContentBunlde)
+            staticSceneEntity.setParent(root)
+            
+            #if DEBUG
+            print("✅ TabletopGame assets loaded successfully")
+            print("   Root children: \(root.children.count)")
+            print("   Static scene name: \(staticSceneEntity.name)")
+            print("   Static scene children: \(staticSceneEntity.children.count)")
+            
+            // List all children for debugging
+            for (index, child) in staticSceneEntity.children.enumerated() {
+                print("     Child \(index): \(child.name) (type: \(type(of: child)))")
+            }
+            #endif
+        } catch {
+            print("❌ Failed to load static_scene: \(error)")
+            print("   Continuing without static scene assets")
+        }
 
         portalWorld.components.set(WorldComponent())
         portalWorld.transform.translation = .init(rootOffset)

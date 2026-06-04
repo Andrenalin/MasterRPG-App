@@ -8,15 +8,9 @@ final class PhotoGameModel: Sendable {
     init() {}
 
     var openPhotoSpace: Bool = false
-#if os(visionOS)
-    var currentSelection: PhotoWorldSelection?
-#endif
     
     func reset() {
         openPhotoSpace = false
-#if os(visionOS)
-        currentSelection = nil
-#endif
     }
 }
 
@@ -69,12 +63,6 @@ extension GameController: GameControllable {
 extension GameController {
     func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws {
         guard subtype == .photoSpace else { return }
-#if os(visionOS)
-        Task { @MainActor in
-            photoGameModel.currentSelection = PhotoWorldSelection(id: data.id, rotationDegrees: 67)
-            photoGameModel.openPhotoSpace <=> true
-        }
-#endif
     }
 }
 

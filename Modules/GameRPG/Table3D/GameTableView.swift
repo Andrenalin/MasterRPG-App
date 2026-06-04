@@ -22,17 +22,24 @@ public struct GameTableView: View {
 
     public var body: some View {
         GeometryReader3D { proxy in
-            if let loadedGame = game, activityManager != nil {
+            if let loadedGame = game {  // ✅ Removed activityManager check - it was blocking render!
                 RealityView { content, attachments in
-                    content.entities.append(loadedGame.renderer.root)
+                    // ✅ Use .add() consistently
+                    content.add(loadedGame.renderer.root)
                     content.add(loadedGame.renderer.portalWorld)
                     content.add(loadedGame.renderer.portal)
+                    
                     if let panel = attachments.entity(for: "toolbar") {
-                        // 10 cm in front of the table's front edge, at table-surface height.
-                        // Parented to root so it scales with the table gesture.
                         panel.position = SIMD3<Float>(0, 0, Float(GameMetrics.tableEdge) + 0.1)
                         loadedGame.renderer.root.addChild(panel)
                     }
+                    
+                    // ✅ Debug logging
+                    #if DEBUG
+                    print("✅ Root added with \(loadedGame.renderer.root.children.count) children")
+                    print("   Position: \(loadedGame.renderer.root.position)")
+                    print("   Scale: \(loadedGame.renderer.root.scale)")
+                    #endif
                 } attachments: {
                     Attachment(id: "toolbar") {
                         GameTableToolbar(game: loadedGame)
@@ -44,14 +51,41 @@ public struct GameTableView: View {
             }
         }
         .task {
+            #if DEBUG
+            print("🚀 GameTableView.task: Starting initialization...")
+            #endif
+            
             let initGame = await GameTableModel(mapRoot: root.mapRoot, photoRoot: root.photoRoot)
             self.root.gameModel.gameTableModel = initGame
-            self.game = initGame
+            
+            #if DEBUG
+            print("✅ GameTableModel created, setting game state...")
+            #endif
+            
+            self.game = initGame  // This will trigger RealityView to render
             scaleController.renderer = initGame.renderer
             root.gameModel.shareState.mode = .tabletop
+            
+            #if DEBUG
+            print("📡 Applying SharePlay state...")
+            #endif
+            
             root.networkStore.sharePlayStore.applyShareState()
+            
+            #if DEBUG
+            print("🎮 Creating GroupActivityManager...")
+            #endif
+            
             self.activityManager = .init(tabletopGame: initGame.tabletopGame, sharePlayController: root.networkStore.sharePlayStore)
             initGame.setupSeating(sharePlayController: root.networkStore.sharePlayStore)
+            
+            // ✅ Verify initialization
+            #if DEBUG
+            print("✅ GameTableModel initialized")
+            print("   TabletopGame: \(initGame.tabletopGame)")
+            print("   ActivityManager: \(String(describing: activityManager))")
+            print("   SharePlay active: \(root.networkStore.sharePlayStore.isActive)")
+            #endif
         }
         .task {
             await scaleController.start()
