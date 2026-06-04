@@ -121,7 +121,7 @@ extension SearchLinkController: SearchRootControllable {
             )
         } else {
             // Returns entries as flat direct results — never the item itself.
-            return await searchController.inspectorEntryResults(
+            return searchController.inspectorEntryResults(
                 searchText: text,
                 itemId: focusId,
                 displayMode: listDisplayModel.displayMode

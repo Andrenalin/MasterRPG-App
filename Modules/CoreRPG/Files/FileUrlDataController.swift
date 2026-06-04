@@ -172,7 +172,8 @@ public extension FileUrlDataController {
             // try to get access to the old location
             let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
             if exists && !isDir {
-                return unconvertedFileUrl
+                // File already exists on disk - return FileUrl without data in memory
+                return FileUrl(fileId: unconvertedFileUrl.fileId, url: unconvertedFileUrl.rawUrl, location: unconvertedFileUrl.location, module: unconvertedFileUrl.module, relativeUrl: nil)
             }
         } catch {
             Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
@@ -186,9 +187,10 @@ public extension FileUrlDataController {
             try await cloudDocumentController.write(data: oldData, to: filePath)
         } catch {
             Logger.fileStore.error("Cannot create file in cloud app group \(error.localizedDescription, privacy: .public)")
-            let fullUrl = try? await locationFileManager.createLocalUrl(id: fileId, pathExtension: pathExtension)
-            var fileUrl = FileUrl(fileId: fileId, url: fullUrl ?? URL(fileURLWithPath: ""), location: .local, module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullUrl))
-            fileUrl.resetData(oldData) // added if any platform has issue to save data.
+            // Fallback: Keep data in memory when cloud storage fails
+            var fileUrl = FileUrl(fileId: fileId, url: fileURL, location: location, module: unconvertedFileUrl.module, relativeUrl: nil)
+            fileUrl.resetData(oldData)
+            Logger.fileStore.info("Keeping file data in memory as fallback")
             return fileUrl
         }
         let _ = fullUrl.startAccessingSecurityScopedResource()
@@ -198,9 +200,7 @@ public extension FileUrlDataController {
         } catch {
             Logger.fileStore.error("Cannot bookmark file \(error.localizedDescription, privacy: .public)")
         }
-        var fileUrl = FileUrl(fileId: fileId, url: fileURL, location: location, module: unconvertedFileUrl.module, relativeUrl: nil)
-        fileUrl.resetData(oldData) // added if any platform has issue to save data.
-        return fileUrl
+        return FileUrl(fileId: fileId, url: fileURL, location: location, module: unconvertedFileUrl.module, relativeUrl: nil)
     }
 
     /// ItemController will call to get FileUrl for given urls from picker
