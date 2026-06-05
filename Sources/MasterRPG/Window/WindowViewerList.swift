@@ -71,6 +71,7 @@ struct WindowViewerList: Scene {
                 .modifier(WindowViewerSetUpViewModifier(model: model, module: module))
             }
             .environment(model.scenesManager)
+            .environment(model)
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(model.windowPlacement(for: module))

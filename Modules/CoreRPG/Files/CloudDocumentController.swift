@@ -1,6 +1,30 @@
 // @copyright André Trettin
 
 import Foundation
+import os.log
+
+// MARK: - CloudKit Operation Counter
+
+actor CloudKitOperationCounter {
+    static let shared = CloudKitOperationCounter()
+    
+    private var operationCount: Int = 0
+    private let startTime: Date = Date()
+    
+    func recordOperation(function: String, file: String) {
+        operationCount += 1
+        let elapsed = Date().timeIntervalSince(startTime)
+        Logger.fileStore.info("☁️ CloudKit Op #\(self.operationCount, privacy: .public) [\(elapsed, privacy: .public)s] - \(function, privacy: .public)")
+    }
+    
+    func getCount() -> Int {
+        return operationCount
+    }
+    
+    func reset() {
+        operationCount = 0
+    }
+}
 
 struct CloudDocumentController: Sendable {
     init(modulePath: String) {
@@ -33,24 +57,41 @@ struct CloudDocumentController: Sendable {
     }
     
     func read(filePath: String) async throws -> Data? {
+        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.read(filePath:)", file: "CloudDocumentController.swift")
+        
         let url = fullUrl(filePath: filePath)
         
-        // Check if file needs to be downloaded first
-        if let values = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]),
-           values.ubiquitousItemDownloadingStatus != .current {
-            try? await FileManager.default.download(coordinatingAccessAt: url)
+        // Batch download check and read into single coordinated access
+        var data: Data?
+        try await FileManager.default.updateFile(coordinatingAccessTo: url) { coordUrl in
+            // Check if file needs to be downloaded first
+            if let values = try? coordUrl.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]),
+               values.ubiquitousItemDownloadingStatus != .current {
+                try? FileManager.default.startDownloadingUbiquitousItem(at: coordUrl)
+                // Note: This starts async download, but doesn't wait for completion
+            }
+            
+            data = try Data(contentsOf: coordUrl)
         }
         
-        return try? await FileManager.default.contentsOfFile(coordinatingAccessAt: url)
+        return data
     }
 
     func write(data: Data, to filePath: String) async throws {
-        let parentDir = fullUrl(filePath: filePath).deletingLastPathComponent()
-        try await FileManager.default.createDirectory(coordinatingAccessAt: parentDir, withIntermediateDirectories: true)
-        try await FileManager.default.write(data, coordinatingAccessTo: fullUrl(filePath: filePath))
+        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.write(data:to:)", file: "CloudDocumentController.swift")
+        
+        let fileUrl = fullUrl(filePath: filePath)
+        // Batch both operations into single coordinated access
+        try await FileManager.default.updateFile(coordinatingAccessTo: fileUrl) { url in
+            let parentDir = url.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
+            try data.write(to: url)
+        }
     }
 
     func download(filePath: String) async throws {
+        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.download(filePath:)", file: "CloudDocumentController.swift")
+        
         try await FileManager.default.download(coordinatingAccessAt: fullUrl(filePath: filePath))
     }
 
@@ -66,26 +107,40 @@ struct CloudDocumentController: Sendable {
     }
 
     func move(sourceUrl: URL, destinationFilename: String) async throws -> String {
+        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(sourceUrl:destinationFilename:)", file: "CloudDocumentController.swift")
+        
         let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: sourceUrl)
         try await write(data: data, to: destinationFilename)
         return destinationFilename
     }
 
     func move(url: URL, newCategory destination: String) async throws -> (URL, URL)? {
+        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(url:newCategory:)", file: "CloudDocumentController.swift")
+        
         var pathComponents = url.pathComponents
         guard let filename = pathComponents.last, pathComponents.count > 1 else { return nil }
         pathComponents[0] = destination
         let path = pathComponents.dropLast().joined(separator: "/")
         let newFilename = try await suggestedFileName(for: path, filename: filename)
         let newPath = path.appending("/\(newFilename)")
-        let destinationDirUrl = fullUrl(filePath: path)
-        try await FileManager.default.createDirectory(coordinatingAccessAt: destinationDirUrl, withIntermediateDirectories: true)
-        try await FileManager.default.moveItem(coordinatingAccessFrom: fullUrl(fileUrl: url), to: fullUrl(filePath: newPath))
+        
+        let sourceUrl = fullUrl(fileUrl: url)
+        let destUrl = fullUrl(filePath: newPath)
+        
+        // Batch directory creation and move into the move operation's coordination
+        try await FileManager.default.updateFile(coordinatingAccessTo: destUrl) { coordDestUrl in
+            let parentDir = coordDestUrl.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
+            try FileManager.default.moveItem(at: sourceUrl, to: coordDestUrl)
+        }
+        
         guard let relativeUrl = URL(string: newPath) else { return nil }
-        return (fullUrl(filePath: newPath), relativeUrl)
+        return (destUrl, relativeUrl)
     }
 
     func move(url: URL, newName destination: String) async throws -> (URL, URL)? {
+        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(url:newName:)", file: "CloudDocumentController.swift")
+        
         guard let newUrl = URL(string: destination) else { return nil }
         let pathComponents = newUrl.pathComponents
         guard pathComponents.last != nil else { return nil }
@@ -97,13 +152,19 @@ struct CloudDocumentController: Sendable {
         guard destination + ".\(fileExt)" != url.path(percentEncoded: false) else { return nil }
         let newFilename = try await suggestedFileName(for: path, filename: filename)
         let newPath = path.appending("\(path.isEmpty ? "" : "/")" + newFilename)
-        let destinationDirUrl = fullUrl(filePath: path)
-        _ = destinationDirUrl.startAccessingSecurityScopedResource()
-        defer { destinationDirUrl.stopAccessingSecurityScopedResource() }
-        try await FileManager.default.createDirectory(coordinatingAccessAt: destinationDirUrl, withIntermediateDirectories: true)
-        try await FileManager.default.moveItem(coordinatingAccessFrom: fullUrl(fileUrl: url), to: fullUrl(filePath: newPath))
+        
+        let sourceUrl = fullUrl(fileUrl: url)
+        let destUrl = fullUrl(filePath: newPath)
+        
+        // Batch directory creation and move into single coordinated operation
+        try await FileManager.default.updateFile(coordinatingAccessTo: destUrl) { coordDestUrl in
+            let parentDir = coordDestUrl.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
+            try FileManager.default.moveItem(at: sourceUrl, to: coordDestUrl)
+        }
+        
         guard let relativeUrl = URL(string: newPath) else { return nil }
-        return (fullUrl(filePath: newPath), relativeUrl)
+        return (destUrl, relativeUrl)
     }
 }
 
@@ -113,6 +174,8 @@ extension CloudDocumentController {
     }
     
     func suggestedFileName(for path: String, filename: String) async throws -> String {
+        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.suggestedFileName(for:filename:)", file: "CloudDocumentController.swift")
+        
         let url = fullUrl(filePath: path + "/" + filename)
         let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: url)
         if exists {

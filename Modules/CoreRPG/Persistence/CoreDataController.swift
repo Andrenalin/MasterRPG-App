@@ -349,6 +349,15 @@ private extension CoreDataController {
         guard context.hasPersistentChanges else { return }
         do {
             Logger.coreDataController.debug("save changes")
+            
+            // Log CloudKit operation before save
+            Task {
+                await CloudKitOperationCounter.shared.recordOperation(
+                    function: "CoreDataController.saveCoreData() -> context.save()",
+                    file: "CoreDataController.swift"
+                )
+            }
+            
             try context.save()
         } catch {
             Logger.coreDataController.error("save error \(error.localizedDescription, privacy: .public)")

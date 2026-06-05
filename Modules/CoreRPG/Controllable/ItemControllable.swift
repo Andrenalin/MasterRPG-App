@@ -43,11 +43,15 @@ public extension ItemControllable {
 
 public extension ItemControllable {
     @MainActor func addNew(type: ItemListCategory) async -> UUID {
+        await CloudKitOperationCounter.shared.recordOperation(
+            function: "ItemControllable.addNew(type:\(type))",
+            file: "ItemControllable.swift"
+        )
+        
         var model = Model.empty.copy()
         model.category = type
         try? await dataControllable?.replace(id: model.id, with: model)
-        insertIntoItems(model: model)
-        setModel(with: model)
+        resetModel(with: model)
         await save()
         return model.id
     }
@@ -56,14 +60,21 @@ public extension ItemControllable {
         self.itemOrEmpty(for: itemId).copy()
     }
     
-    func delete(itemId: UUID, withFileData: Bool = true) async {
+    func delete(itemId: UUID, withFileData: Bool = true, withDatabase: Bool = true) async {
+        
         guard let item = await self.item(for: itemId) else { return }
         let entries = item.entries
         for entry in entries {
             await cacheControllable?.remove(itemId: entry.id)
         }
         
-        try? await dataControllable?.delete(id: item.id)
+        if withDatabase {
+            await CloudKitOperationCounter.shared.recordOperation(
+                function: "ItemControllable.delete(itemId:withFileData:\(withFileData))",
+                file: "ItemControllable.swift"
+            )
+            try? await dataControllable?.delete(id: item.id)
+        }
         if let fileUrlDataController, let fileUrl = item.fileUrl {
             await cacheControllable?.remove(itemId: itemId)
             if withFileData {
@@ -78,29 +89,37 @@ public extension ItemControllable {
         guard let other = other as? Model, let second = self.itemSync(for: other.id) else { return false }
         return second.isEqual(other: other)
     }
+    
     @MainActor func replace(model: ModelType?, isInsert: Bool, forceSave: Bool = false) {
         guard let model = model as? Model else { return }
         if itemDataModel.isGameMode == true && forceSave == false {
             itemDataModel.gameItemData[model.id] = model
-            // TODO: this fix some 2 test but let shown the wrong image / previous ones
-//            itemDataModel.gameItems.removeAll(where: { $0 == model.id })
-//            itemDataModel.gameItems.append(model.id)
             return
         }
-        if let orignal = self.itemSync(for: model.id, noGame: true) {
-            let resort = orignal.name != model.name
-            if orignal.replace(with: model) {
-                try? dataControllable?.replaceSync(id: orignal.id, with: orignal.copy())
+        
+        if let original = self.itemSync(for: model.id, noGame: true) {
+            let resort = original.name != model.name
+            if original.replace(with: model) {
+                try? dataControllable?.replaceSync(id: original.id, with: original.copy())
                 if resort {
-                    resortItem(changed: orignal)
+                    resortItem(changed: original)
                 }
             }
         } else {
             if isInsert {
                 try? dataControllable?.replaceSync(id: model.id, with: model.copy())
             }
-            setModel(with: model)
-            insertIntoItems(model: model)
+            resetModel(with: model)
+        }
+    }
+    
+    @MainActor func mergeUpdates(model: ModelType) {
+        guard let model = model as? Model, let original = self.itemSync(for: model.id, noGame: true) else { return }
+        let resort = original.name != model.name
+        if original.replace(with: model) {
+            if resort {
+                resortItem(changed: original)
+            }
         }
     }
 }
@@ -181,6 +200,12 @@ public extension ItemControllable {
             updatedItems.append(item.id)
         }
         await itemDataModel.resetItems(updatedItems)
+    }
+    
+    @MainActor func resetModel(with model: ModelType?) {
+        guard let model = model as? Model else { return }
+        setModel(with: model)
+        insertIntoItems(model: model)
     }
 }
 
@@ -276,8 +301,7 @@ public extension ItemControllable {
 // MARK: - Intern
 
 private extension ItemControllable {
-    @MainActor func setModel(with model: ModelType) {
-        guard let model = model as? Model else { return }
+    @MainActor func setModel(with model: Model) {
         itemDataModel.setItem(id: model.id, item: model)
     }
 

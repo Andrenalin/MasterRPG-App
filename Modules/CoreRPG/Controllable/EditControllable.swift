@@ -340,6 +340,13 @@ public extension EditControllable {
     }
     
     @MainActor func delete(itemId: UUID) {
+        Task {
+            await CloudKitOperationCounter.shared.recordOperation(
+                function: "EditControllable.delete(itemId:)",
+                file: "EditControllable.swift"
+            )
+        }
+        
         guard var item = editModel(for: itemId) else { return }
         guard item.displayState != 2 else {
             // real delete
@@ -373,6 +380,13 @@ public extension EditControllable {
     }
     
     @MainActor func duplicate(item: any ItemDataAccessable) async {
+        Task {
+            await CloudKitOperationCounter.shared.recordOperation(
+                function: "EditControllable.duplicate(item:)",
+                file: "EditControllable.swift"
+            )
+        }
+        
         guard let model = editModel(for: item.id) else { return }
         let originalParentId = model.parentId
         let duplicate = model.duplicate()
@@ -433,6 +447,13 @@ public extension EditControllable {
     }
     
     @MainActor func restore(itemId: UUID) {
+        Task {
+            await CloudKitOperationCounter.shared.recordOperation(
+                function: "EditControllable.restore(itemId:)",
+                file: "EditControllable.swift"
+            )
+        }
+        
         guard var item = editModel(for: itemId) else { return }
 
         // If this is a folder being restored, restore its children
@@ -586,6 +607,13 @@ public extension EditControllable {
     }
 
     @MainActor func saveChanges(to newValue: Model, name: String) {
+        Task {
+            await CloudKitOperationCounter.shared.recordOperation(
+                function: "EditControllable.saveChanges(to:name:\(name))",
+                file: "EditControllable.swift"
+            )
+        }
+        
         if let previous = itemControllable.itemSync(for: newValue.id) as? Model {
             let (added, removed) = newValue.changedLinkRegisterModels(oldValue: previous)
             

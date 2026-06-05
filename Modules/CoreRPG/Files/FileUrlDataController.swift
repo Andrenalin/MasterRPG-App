@@ -106,6 +106,8 @@ public extension FileUrlDataController {
     }
 
     func loadData(for fileUrl: FileUrl) async throws -> Data? {
+        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.loadData(for:)", file: "FileUrlDataController.swift")
+        
         guard !fileUrl.hasUnconvertedData else { return fileUrl.data }
         return try await url(for: fileUrl) { url async throws -> Data? in
             guard let url else { return nil }
@@ -164,12 +166,14 @@ public extension FileUrlDataController {
 public extension FileUrlDataController {
     /// create a fileUrl with data from an import or on validation / convert data
     func createNewFileUrl(fileId: UUID, unconvertedFileUrl: FileUrl, pathExtension: String) async throws -> FileUrl? {
+        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createNewFileUrl(fileId:unconvertedFileUrl:pathExtension:)", file: "FileUrlDataController.swift")
+        
         guard let oldData = unconvertedFileUrl.data else { return nil }
         let location: FileLocation = unconvertedFileUrl.location == .url ? .url : .newCloud
         guard let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: location, module: unconvertedFileUrl.module) else { return nil }
 
         do {
-            // try to get access to the old location
+            // try to get access to the old location (single coordinated check)
             let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
             if exists && !isDir {
                 // File already exists on disk - return FileUrl without data in memory
@@ -179,11 +183,12 @@ public extension FileUrlDataController {
             Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
         }
 
-
         guard let fileURL = locationFileManager.relativeUrl(for: unconvertedFileUrl.rawUrl) else { return nil }
         let filePath = fileURL.pathComponents.joined(separator: "/")
         let fullUrl: URL = cloudDocumentController.fullUrl(filePath: filePath)
+        
         do {
+            // Write uses batched coordination internally now (createDirectory + write)
             try await cloudDocumentController.write(data: oldData, to: filePath)
         } catch {
             Logger.fileStore.error("Cannot create file in cloud app group \(error.localizedDescription, privacy: .public)")
@@ -193,6 +198,8 @@ public extension FileUrlDataController {
             Logger.fileStore.info("Keeping file data in memory as fallback")
             return fileUrl
         }
+        
+        // Bookmark without additional coordination (just security-scoped access)
         let _ = fullUrl.startAccessingSecurityScopedResource()
         defer { fullUrl.stopAccessingSecurityScopedResource() }
         do {
@@ -205,6 +212,8 @@ public extension FileUrlDataController {
 
     /// ItemController will call to get FileUrl for given urls from picker
     func createFileUrl(fileId: UUID, url: URL, module: String, category: String?) async throws -> FileUrl {
+        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createFileUrl(fileId:url:module:category:)", file: "FileUrlDataController.swift")
+        
         do {
             let values = try url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
             if values.ubiquitousItemDownloadingStatus != .current {
@@ -223,12 +232,32 @@ public extension FileUrlDataController {
     func isSameFile(existingFileUrl: FileUrl, newUrl: URL?) async -> Bool {
         guard let newUrl else { return false }
 
+        // Quick path comparison first (fast path for obvious matches)
         let nameUrl = cloudDocumentController.nameUrl(fullUrl: newUrl)
         if existingFileUrl.rawUrl.path() == nameUrl.path() {
             return true
         }
 
-        return false
+        // Check file identity using resource identifiers (reliable method)
+        return await url(for: existingFileUrl) { existingUrl in
+            guard let existingUrl else { return false }
+            do {
+                // Get file resource identifiers for both URLs
+                let existingValues = try existingUrl.resourceValues(forKeys: [.fileResourceIdentifierKey])
+                let newValues = try newUrl.resourceValues(forKeys: [.fileResourceIdentifierKey])
+                
+                // Compare the actual file identifiers
+                guard let existingId = existingValues.fileResourceIdentifier,
+                      let newId = newValues.fileResourceIdentifier else {
+                    return false
+                }
+                
+                return existingId.isEqual(newId)
+            } catch {
+                Logger.fileStore.debug("Cannot compare file identifiers: \(error.localizedDescription, privacy: .public)")
+                return false
+            }
+        } ?? false
     }
 
     /// called from ItemStore on delete of the item
@@ -237,6 +266,8 @@ public extension FileUrlDataController {
         switch fileUrl.location {
             case .local, .appCloud, .newCloud:
                 Task { @concurrent in
+                    await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.delete(_:)", file: "FileUrlDataController.swift")
+                    
                     guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return }
                     try? await FileManager.default.removeItem(coordinatingAccessAt: accessUrl)
                     fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
@@ -252,12 +283,16 @@ public extension FileUrlDataController {
     }
 
     func download(fileUrl: FileUrl) async throws {
+        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.download(fileUrl:)", file: "FileUrlDataController.swift")
+        
         if fileUrl.location == .newCloud {
             try await cloudDocumentController.download(filePath: fileUrl.rawUrl.absoluteString)
         }
     }
 
     func duplicate(fileUrl: FileUrl?, for fileId: UUID) async throws -> FileUrl? {
+        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.duplicate(fileUrl:for:)", file: "FileUrlDataController.swift")
+        
         guard var unconverted = fileUrl, let data = try await loadData(for: unconverted) else { return nil }
         unconverted.resetData(data)
         return try await createNewFileUrl(fileId: fileId, unconvertedFileUrl: unconverted, pathExtension: filenameExtension)
@@ -268,7 +303,9 @@ public extension FileUrlDataController {
 
 extension FileUrlDataController {
     public func move(fileUrl: FileUrl, name: String, category: String) async throws -> FileUrl? {
-        try await url(for: fileUrl) { url -> FileUrl? in
+        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:name:category:)", file: "FileUrlDataController.swift")
+        
+        return try await url(for: fileUrl) { url -> FileUrl? in
             guard let url else { return nil }
             var part = (locationFileManager.relativeUrl(for: fileUrl.rawUrl) ?? fileUrl.rawUrl).absoluteString
             if fileUrl.location == .icloud {
@@ -299,6 +336,8 @@ extension FileUrlDataController {
     }
 
     public func move(fileUrl: FileUrl?, from source: ItemListCategory, to destination: ItemListCategory) async -> FileUrl? {
+        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:from:to:)", file: "FileUrlDataController.swift")
+        
         do {
             guard let fileUrl, fileUrl.location == .newCloud else { return nil }
             let components = fileUrl.rawUrl.pathComponents
@@ -315,6 +354,8 @@ extension FileUrlDataController {
     }
 
     public func move(fileUrl: FileUrl?, to destination: String) async -> FileUrl? {
+        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:to:)", file: "FileUrlDataController.swift")
+        
         do {
             guard let fileUrl, fileUrl.location == .newCloud, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newName: destination) else { return nil }
             await bookmark(url: fullUrl, fileId: fileUrl.fileId)
