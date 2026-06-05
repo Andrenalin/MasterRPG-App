@@ -53,7 +53,7 @@ public struct LinkItemListView: View {
                     }
                 }
 
-                UnavailableGlassOverlay(isUnavailable: root.folderLinkControllable.searchModel.searchReturnedNoResults) {
+                UnavailableGlassOverlay(isUnavailable: shouldShowNoResults) {
                     contentView
                 }
                 .tint(root.configurable.module.tint)
@@ -138,6 +138,19 @@ private extension LinkItemListView {
             return detail
         }
         return root.folderLinkControllable.listModel
+    }
+    
+    /// Determines if the "no results" overlay should be shown.
+    /// True when:  
+    /// 1. There's an active search (non-empty search text), AND
+    /// 2. The currently displayed list is empty
+    ///
+    /// This check is list-context-aware: uses `listModel.list` which automatically
+    /// routes to either the main list or detail list based on `parentModel`.
+    /// Prevents false "no results" overlays when detail search returns empty but
+    /// main list has results, or vice versa.
+    var shouldShowNoResults: Bool {
+        !root.folderLinkControllable.searchModel.searchText.isEmpty && listModel.list.isEmpty
     }
 
     @ViewBuilder

@@ -577,7 +577,7 @@ extension UUID {
     ///
     /// XOR of the two UUID byte arrays is deterministic and produces a value distinct
     /// from both inputs (since parentId ≠ childId, the XOR is never zero).
-    func childPath(of parentId: UUID) -> UUID {
+    public func childPath(of parentId: UUID) -> UUID {
         let p = parentId.uuid, s = uuid
         return UUID(uuid: (
             p.0  ^ s.0,  p.1  ^ s.1,  p.2  ^ s.2,  p.3  ^ s.3,

@@ -120,8 +120,8 @@ extension SearchController {
         }
     }
 
-    /// Flat list: root characters and groups (`groupId == nil`).
-    /// Includes specialCategory items (groups/folders) since they are meaningful navigation nodes.
+    /// Flat list: root characters only (`groupId == nil`).
+    /// Excludes specialCategory items (groups/folders) — they only appear in folder mode.
     private func listModeCharacterResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
         let itemIds = await itemControllable.itemDataModel.items
         var foundResults: [SearchResult] = []
@@ -129,13 +129,10 @@ extension SearchController {
             guard !Task.isCancelled else { break }
             guard let item = await itemController.item(for: itemId),
                   item.groupId == nil,
-                  item.displayState == 0 else { continue }
-            if item.specialCategory {
-                await result(item: item, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
-            } else {
-                guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
-                foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
-            }
+                  item.displayState == 0,
+                  !item.specialCategory else { continue }
+            guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
+            foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
         }
         if searchText.isEmpty {
             return foundResults.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }

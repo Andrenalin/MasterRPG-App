@@ -413,10 +413,11 @@ struct SearchControllerTests {
 
 // MARK: - listSearchResults: list mode (CharacterRPG-specific behaviours)
 
-/// CharacterRPG diverges from CoreRPG in three ways for list mode:
+/// CharacterRPG list mode search behavior:
 ///  1. `groupId != nil` items (sub-values) are always excluded.
-///  2. `specialCategory` items (groups/folders) ARE included (CoreRPG excludes them).
-///  3. Relevance sort includes an alphabetical tiebreaker via `sortedByRelevance()`.
+///  2. `specialCategory` items (groups/folders) are EXCLUDED (flat list shows only regular characters).
+///  3. Empty search: alphabetical order (A→Z).
+///  4. Non-empty search: relevance order with alphabetical tiebreaker via `sortedByRelevance()`.
 @MainActor
 struct ListSearchResultsTests {
 
@@ -453,8 +454,8 @@ struct ListSearchResultsTests {
         #expect(!ids.contains(subValueId), "Sub-value (groupId != nil) must be excluded from list mode")
     }
 
-    @Test("List mode includes specialCategory items (CharacterRPG differs from CoreRPG here)")
-    func listModeIncludesSpecialCategoryItems() async throws {
+    @Test("List mode excludes specialCategory items (folders) — they only appear in folder mode")
+    func listModeExcludesSpecialCategoryItems() async throws {
         let root = try await makeRoot()
 
         let folderId = await root.itemController.addNew(type: .folder)
@@ -470,8 +471,54 @@ struct ListSearchResultsTests {
         )
         let ids = results.map(\.itemId)
 
-        #expect(ids.contains(folderId), "specialCategory folder must appear in CharacterRPG list mode")
-        #expect(ids.contains(charId),   "Regular character must also appear")
+        #expect(!ids.contains(folderId), "specialCategory folder must be excluded from list mode")
+        #expect(ids.contains(charId),    "Regular character must appear in list mode")
+    }
+    
+    @Test("List mode empty search excludes folders — returns only characters sorted A→Z")
+    func listModeEmptySearchExcludesFolders() async throws {
+        let root = try await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let charC = await root.itemController.addNew(type: .item)
+        let charA = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Heroes Folder", itemId: folderId)
+        root.editController.reset(name: "Cassia",        itemId: charC)
+        root.editController.reset(name: "Aldric",        itemId: charA)
+
+        let results = await root.searchController.listSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids = results.map(\.itemId)
+        let names = results.map(\.itemName)
+
+        #expect(!ids.contains(folderId), "Folder must be excluded from empty list search")
+        #expect(ids.contains(charC) && ids.contains(charA), "Characters must appear")
+        #expect(names == ["Aldric", "Cassia"], "Characters must be sorted A→Z")
+    }
+    
+    @Test("List mode non-empty search excludes folders even when folder name matches")
+    func listModeNonEmptySearchExcludesFoldersEvenWhenNameMatches() async throws {
+        let root = try await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Vault", itemId: folderId)
+        root.editController.reset(name: "Dragon Slayer", itemId: charId)
+
+        let results = await root.searchController.listSearchResults(
+            searchText: "Dragon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids = results.map(\.itemId)
+
+        #expect(!ids.contains(folderId), "Folder must not appear in list mode even when name matches search")
+        #expect(ids.contains(charId),    "Character with matching name must appear")
     }
 
     @Test("List mode empty search returns all root characters sorted A→Z, no sub-values")

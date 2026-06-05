@@ -15,7 +15,7 @@ struct ListRootView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        UnavailableGlassOverlay(isUnavailable: listController.searchModel.searchReturnedNoResults
+        UnavailableGlassOverlay(isUnavailable: shouldShowNoResults
                                 && !listController.searchModel.searchText.starts(with: "@")) {
             
             listView
@@ -115,6 +115,19 @@ private extension ListRootView {
             return detail
         }
         return listController.listModel
+    }
+    
+    /// Determines if the "no results" overlay should be shown.
+    /// True when:  
+    /// 1. There's an active search (non-empty search text), AND
+    /// 2. The currently displayed list is empty
+    ///
+    /// This check is list-context-aware: uses `listModel.list` which automatically
+    /// routes to either the main list or detail list based on `parentModel`.
+    /// Prevents false "no results" overlays when detail search returns empty but
+    /// main list has results, or vice versa.
+    var shouldShowNoResults: Bool {
+        !listController.searchModel.searchText.isEmpty && listModel.list.isEmpty
     }
 
     var fileTypes: [UTType] {

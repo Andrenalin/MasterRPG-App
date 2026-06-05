@@ -33,7 +33,15 @@ struct CloudDocumentController: Sendable {
     }
     
     func read(filePath: String) async throws -> Data? {
-        try? await FileManager.default.contentsOfFile(coordinatingAccessAt: fullUrl(filePath: filePath))
+        let url = fullUrl(filePath: filePath)
+        
+        // Check if file needs to be downloaded first
+        if let values = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]),
+           values.ubiquitousItemDownloadingStatus != .current {
+            try? await FileManager.default.download(coordinatingAccessAt: url)
+        }
+        
+        return try? await FileManager.default.contentsOfFile(coordinatingAccessAt: url)
     }
 
     func write(data: Data, to filePath: String) async throws {

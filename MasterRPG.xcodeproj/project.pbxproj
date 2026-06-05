@@ -1701,6 +1701,7 @@
 				SpaceRPGTests/ImportControllerTests.swift,
 				SpaceRPGTests/LinkControllerTests.swift,
 				SpaceRPGTests/MockRoot.swift,
+				SpaceRPGTests/SearchListControllerTests.swift,
 				SpaceRPGTests/SheetControllerTests.swift,
 				SpaceRPGTests/SpaceModelTests.swift,
 			);

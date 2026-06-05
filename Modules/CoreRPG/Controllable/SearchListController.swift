@@ -12,7 +12,7 @@ public struct SearchListController {
 
     let searchController: any SearchControllable
     public let searchModel: SearchModel
-    let listDisplayModel: ListDisplayModel
+    public let listDisplayModel: ListDisplayModel
 }
 
 extension SearchListController: SearchRootControllable {
@@ -49,7 +49,7 @@ extension SearchListController: SearchRootControllable {
     @MainActor public func syncExpandResults(focusId: UUID) -> [SearchResult] {
         guard let item = searchController.itemControllable.itemSync(for: focusId),
               item.specialCategory else { return [] }
-        return item.entries.compactMap { entry -> SearchResult? in
+        let results = item.entries.compactMap { entry -> SearchResult? in
             guard let child = searchController.itemControllable.itemSync(for: entry.childId),
                   child.displayState == 0 else { return nil }
             let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
@@ -62,6 +62,11 @@ extension SearchListController: SearchRootControllable {
             result.canOpen = child.specialCategory  // nested folders can themselves be expanded
             return result
         }
+        // Folders: alphabetical order. Collections: preserve entry order.
+        if item.category == .folder {
+            return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+        }
+        return results
     }
 
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {
@@ -84,7 +89,7 @@ public struct SearchLinkController {
 
     let searchController: any SearchControllable
     public let searchModel: SearchModel
-    let listDisplayModel: ListDisplayModel
+    public let listDisplayModel: ListDisplayModel
 }
 
 extension SearchLinkController: SearchRootControllable {
@@ -148,7 +153,7 @@ extension SearchLinkController: SearchRootControllable {
     @MainActor public func syncExpandResults(focusId: UUID) -> [SearchResult] {
         guard let item = searchController.itemControllable.itemSync(for: focusId) else { return [] }
         if item.specialCategory {
-            return item.entries.compactMap { entry -> SearchResult? in
+            let results = item.entries.compactMap { entry -> SearchResult? in
                 guard let child = searchController.itemControllable.itemSync(for: entry.childId),
                       child.displayState == 0 else { return nil }
                 let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
@@ -161,6 +166,11 @@ extension SearchLinkController: SearchRootControllable {
                 result.canOpen = child.specialCategory
                 return result
             }
+            // Folders: alphabetical order. Collections: preserve entry order.
+            if item.category == .folder {
+                return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+            }
+            return results
         } else {
             // Regular item: flat entry list (inspector entry expansion)
             return item.entries.map { entry in
