@@ -27,7 +27,7 @@ struct WindowUtilityList: Scene {
             .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
             .restorationBehaviorAll(.disabled)
 
-            WindowGroup("Map Edit Viewer", id: SceneId.mapEditor.rawValue) {
+            WindowGroup("Map Editor", id: SceneId.mapEditor.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.mapRoot.viewController.mapEditWindow(root: appModel.mapRoot)
                         .sceneTracker(for: SceneId.mapEditor)
@@ -73,7 +73,7 @@ struct WindowUtilityList: Scene {
             }
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))
-            .restorationBehaviorAll(.disabled)
+            .restorationBehaviorAll(.disabledOnlyVisionOS)
 #if os(macOS) || os(visionOS)
             .defaultLaunchBehavior(.suppressed)
 #endif

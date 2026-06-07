@@ -13,6 +13,7 @@ struct EditToolBarViewModifier: ViewModifier {
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(MapRootModel.self) private var root
 
+    @State private var exitReady: Bool = false
     @State private var hideScales: Bool = true
     @State private var showPinSelection: Bool = false
 
@@ -25,7 +26,7 @@ struct EditToolBarViewModifier: ViewModifier {
         if editorModel.mapMode != .edit {
             content
         } else {
-        content
+            content
             .overlay(alignment: .bottom) {
                 GlassEffectContainerView {
                     VStack(spacing: 8) {
@@ -62,6 +63,10 @@ struct EditToolBarViewModifier: ViewModifier {
                     mapEditController.addMonsters(entryId: entryId, location: nil, monsters: monsters, number: 1, editorModel: editorModel)
                 }
                 selectedPin.resetSelection(itemId: nil, entryId: nil)
+            }
+            .onDisappear() {
+                guard !exitReady else { return }
+                mapEditController.commitChanges(editorModel: editorModel)
             }
         #if os(macOS)
             .navigationTitle(navTitle)
@@ -111,14 +116,12 @@ struct EditToolBarViewModifier: ViewModifier {
                 ToolbarSpacer(.flexible, placement: bottomBarPlacement)
 #endif
 
-#if !os(macOS)
                 ToolbarItem(placement: bottomBarPlacement) {
                     cancelButtonView
                 }
                 ToolbarItem(placement: bottomBarPlacement) {
                     closeButtonView
                 }
-#endif
             }
         } // end else (edit mode)
     }
@@ -179,8 +182,13 @@ private extension EditToolBarViewModifier {
     @ViewBuilder var closeButtonView: some View {
         if !editorModel.hideCloseButton {
             Button {
+                exitReady = true
                 mapEditController.commitChanges(editorModel: editorModel)
+#if os(macOS) || os(visionOS)
+                scenesManager.dismissWindow(.mapEditor)
+#else
                 dismiss()
+#endif
             } label: {
                 let symbolName = "checkmark"
                 Image(systemName: symbolName)
@@ -192,8 +200,13 @@ private extension EditToolBarViewModifier {
     @ViewBuilder var cancelButtonView: some View {
         if !editorModel.hideCloseButton {
             Button(role: .destructive) {
+                exitReady = true
                 mapEditController.discardChanges(editorModel: editorModel)
+#if os(macOS) || os(visionOS)
+                scenesManager.dismissWindow(.mapEditor)
+#else
                 dismiss()
+#endif
             } label: {
                 let symbolName = "xmark"
                 Image(systemName: symbolName)

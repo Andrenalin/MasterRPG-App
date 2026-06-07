@@ -301,6 +301,8 @@ import OSLog
                 openWindow(id: scene.rawValue, value: selection)
             case .opening, .opened:
                 Logger.scenesManager.info("Window for scene \(scene.rawValue) is already open or opening")
+                // open new one:
+                openWindow(id: scene.rawValue, value: selection)
             }
         } else {
             Logger.scenesManager.info("First time tracking window for scene \(scene.rawValue) with state opening")

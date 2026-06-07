@@ -57,7 +57,7 @@ struct GameController: Sendable {
     let gameDiceModel: ValueGameModel
     
     @MainActor func gameItem(for itemId: UUID) -> ValueModel {
-        (gameModel.itemData[itemId] as? ValueModel) ?? itemController.itemOrEmpty(for: itemId)
+        itemController.itemOrEmpty(for: itemId)
     }
     
     @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {

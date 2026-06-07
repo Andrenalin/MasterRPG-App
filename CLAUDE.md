@@ -39,7 +39,7 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 - **MasterRPG**: Main iOS/visionOS app
 - **MasterMac**: Mac app
 - **MasterTV**: AppleTV app
-- **DiceRollerWidgetExtension**: iOS home screen widgets, LiveActivity, LockScreen (Dicem RiceRoller)
+- **DiceRollerWidgetExtension**: iOS home screen widgets, LiveActivity, LockScreen (Dice, DiceRoller)
 
 ### Controllers
 - **ItemController** holds the items and manage the list, trigger the save into the database

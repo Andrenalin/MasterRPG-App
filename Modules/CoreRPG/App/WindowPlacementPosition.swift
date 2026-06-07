@@ -17,6 +17,7 @@ public enum SceneRestorationBehaviorAll {
     case automatic
     /// Prevents the scene from being automatically restored
     case disabled
+    case disabledOnlyVisionOS
 }
 
 extension SwiftUI.Scene {
@@ -72,14 +73,18 @@ extension SwiftUI.Scene {
     /// On platforms that don't support `.restorationBehavior`, this is a no-op
     /// Mac always restore / visionOS not
     public func restorationBehaviorAll(_ behavior: SceneRestorationBehaviorAll) -> some SwiftUI.Scene {
-#if os(macOS)
-        self.restorationBehavior(.automatic)
-#elseif os(visionOS)
+#if os(macOS) || os(visionOS)
         switch behavior {
         case .automatic:
             self.restorationBehavior(.automatic)
         case .disabled:
             self.restorationBehavior(.disabled)
+        case .disabledOnlyVisionOS:
+#if os(visionOS)
+            self.restorationBehavior(.disabled)
+#else
+            self.restorationBehavior(.automatic)
+#endif
         }
 #else
         return self
