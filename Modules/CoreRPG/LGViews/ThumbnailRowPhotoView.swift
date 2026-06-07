@@ -19,6 +19,7 @@ public struct ThumbnailRowPhotoView: View {
     @State private var isLoading: Bool = false
     
     public var body: some View {
+        
         VStack {
             if let image = cachedImage {
                 imageView(image: image)
@@ -45,7 +46,7 @@ public struct ThumbnailRowPhotoView: View {
         }
         .frame(width: listDisplayModel.imageHeight, height: listDisplayModel.imageHeight)
         .task(id: model.fileUrl) {
-            initImage()
+            await loadImage()
         }
     }
 }
@@ -85,20 +86,25 @@ private extension ThumbnailRowPhotoView {
         }
     }
     
-    func initImage() {
+    /// Load thumbnail image with proper structured concurrency
+    func loadImage() async {
+        // Deduplication: skip if already loading or if URL unchanged with cached image
         guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage == nil) else { return }
+        
+        // Mark as loading and track current URL
         isLoading = true
         lastFileUrl = model.fileUrl
-        loadImage()
-    }
-    
-    func loadImage() {
-        Task(priority: .userInitiated) {
-            let fileId = entryId ?? model.id
-            await cacheController.thumbnailId(for: fileId, item: model)
-            let newImage = await cacheController.thumbnail(for: fileId)
-            cacheController.setCachedThumbnail(newImage, for: fileId)
-            isLoading = false
-        }
+        
+        let fileId = entryId ?? model.id
+        
+        // Perform async loading with proper task priority inheritance
+        await cacheController.thumbnailId(for: fileId, item: model)
+        let newImage = await cacheController.thumbnail(for: fileId)
+        
+        // Update observable cache on main actor
+        cacheController.setCachedThumbnail(newImage, for: fileId)
+        
+        // Reset loading state
+        isLoading = false
     }
 }
