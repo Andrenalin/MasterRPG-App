@@ -512,7 +512,7 @@ private struct ItemEditorBackgroundView<Editor: View>: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .opacity(shouldShowContent ? 1 : 0)
-            .transition(.scale)
+            .transition(.opacity)
     }
 }
 

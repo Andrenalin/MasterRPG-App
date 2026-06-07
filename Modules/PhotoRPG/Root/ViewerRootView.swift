@@ -17,38 +17,55 @@ struct ViewerRootView: View {
 #endif
 
     @State private var toolBarModel: GameToolBarModel = GameToolBarModel()
+    @State private var cacheItemListModel = CacheItemListModel()
 
     var body: some View {
-        VStack {
-            GeometryReader { geo in
-                AsyncImageViewer(model: model, size: geo.size, toolBarModel: toolBarModel)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(.black.gradient)
+        Group {
+            if configuration.addToolbar && !configuration.isGame {
+                contentView
+                    .toolbar { toolbarContent }
+                    .navigationTitle(model.name)
+                    .navigationBarTitleDisplayModeAll(.inline)
+            } else if configuration.isGame {
+                contentView
+                    .overlay(alignment: .bottomLeading) {
+                        rotateButton
+#if !os(visionOS)
+                            .buttonStyle(.glass)
+#endif
+                            .padding()
+                    }
+            } else {
+                contentView
             }
         }
         .ignoresSafeArea(.container, edges: [.top, .bottom])
-        .applyIf(configuration.addToolbar && !configuration.isGame) {
-            $0.toolbar {
-                toolbarContent
-            }
-            .navigationTitle(Text(model.name))
-            .navigationBarTitleDisplayModeAll(.inline)
-        }
-        .applyIf(configuration.isGame) {
-            $0.overlay(alignment: .bottomLeading)  {
-                rotateButton
 #if !os(visionOS)
-                    .buttonStyle(.glass)
+        .background(Color.black.gradient)
 #endif
-                    .padding()
-            }
-        }
-#if !os(visionOS)
-        .background(.black.gradient)
-#endif
-        .environment(CacheItemListModel())
+        .environment(cacheItemListModel)
     }
 }
+
+// MARK: - Content
+
+private extension ViewerRootView {
+    var contentView: some View {
+        GeometryReader { geo in
+            AsyncImageViewer(
+                model: model,
+                size: geo.size,
+                toolBarModel: toolBarModel
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+#if !os(visionOS)
+            .background(Color.black.gradient)
+#endif
+        }
+    }
+}
+
+// MARK: - Toolbar
 
 private extension ViewerRootView {
     @ToolbarContentBuilder
@@ -63,9 +80,14 @@ private extension ViewerRootView {
             rotateButton
         }
     }
-    
+}
+
+// MARK: - Buttons
+
+private extension ViewerRootView {
     var closeButton: some View {
-        Button {
+        let tintColor = root.config.module.tint
+        return Button {
             if let dismissAction {
                 dismissAction()
             } else {
@@ -75,24 +97,27 @@ private extension ViewerRootView {
             Image(systemName: "xmark.circle")
         }
 #if os(macOS)
-                .foregroundStyle(root.config.module.tint)
+        .foregroundStyle(tintColor)
 #else
-                .tint(root.config.module.tint)
+        .tint(tintColor)
 #endif
     }
     
     var rotateButton: some View {
-        Button {
-            withAnimation { toolBarModel.degrees += 90 }
+        let tintColor = root.config.module.tint
+        return Button {
+            withAnimation {
+                toolBarModel.degrees += 90
+            }
         } label: {
             Image(systemName: "rotate.right")
                 .rotationEffect(Angle(degrees: model.degrees))
         }
         .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
 #if os(macOS)
-                .foregroundStyle(root.config.module.tint)
+        .foregroundStyle(tintColor)
 #else
-                .tint(root.config.module.tint)
+        .tint(tintColor)
 #endif
     }
 }
@@ -101,10 +126,13 @@ private extension ViewerRootView {
     @Previewable @Environment(PhotoRootModel.self) var root
     
     NavigationStack {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), configuration: ViewerConfiguration())
+        ViewerRootView(
+            model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]),
+            configuration: ViewerConfiguration()
+        )
 #if os(macOS)
-            .frame(width: 800, height: 600)
+        .frame(width: 800, height: 600)
 #endif
-            .environment(PhotoRootModel.previewWithData)
+        .environment(PhotoRootModel.previewWithData)
     }
 }
