@@ -61,7 +61,7 @@ public struct PdfContentExtractionView: View {
     private var extractingView: some View {
         VStack(spacing: 16) {
             ProgressView()
-                .controlSize(.large)
+                .scaleEffect(1.5)
 
             Text("Extracting PDF content with Apple Intelligence...", bundle: .module)
                 .font(.headline)

@@ -16,29 +16,48 @@ struct AsyncImageViewer: View {
 
     @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
-
     @State private var imageError: Bool = false
-    @State private var isLoadedId: UUID = UUID()
 
     var body: some View {
         VStack {
             if let image = cachedImage(for: model.id) {
                 ImageViewer(id: model.id, image: image, photoDegrees: model.degrees, containerSize: size, contentMode: contentMode, toolBarModel: toolBarModel)
+            } else if isLoading {
+                VStack(alignment: .center, spacing: 20) {
+                    Spacer()
+                    Text("Loading image...", bundle: .module)
+                        .font(.largeTitle)
+
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .scaleEffect(1.5)  // ✅ Scale instead of controlSize
+                        .tint(Color.accentColor)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
             } else if imageError {
                 VStack(alignment: .center, spacing: 20) {
                     Spacer()
-                    Text("Wait for image ...", bundle: .module)
-                        .font(.largeTitle)
-
-                    ProgressView().progressViewStyle(.circular).tint(Color.accentColor)
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 64))
+                        .foregroundStyle(.secondary)
+                    
+                    Text("Failed to load image", bundle: .module)
+                        .font(.title2)
+                    
+                    Text("The image could not be loaded or is unavailable.", bundle: .module)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-        .id(isLoadedId)
-        .onChange(of: model.fileUrl, initial: true) {
-            loadImage()
+        .task(id: model.fileUrl) {
+            await loadImage()
         }
     }
 
@@ -50,24 +69,38 @@ struct AsyncImageViewer: View {
         root.editController.cacheController
     }
 
-    private func loadImage() {
+    /// Load full-size image with proper structured concurrency
+    private func loadImage() async {
+        // Deduplication: skip if already loading or if URL hasn't changed and we have a cached image
+        guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage(for: model.id) == nil) else {
+            return
+        }
+        
         let editController = root.editController
-        guard let cacheController = editController.cacheController else { return }
+        guard let cacheController = editController.cacheController else {
+            return
+        }
+        
+        // Mark as loading and track current URL
+        isLoading = true
+        lastFileUrl = model.fileUrl
+        imageError = false
+        
         let itemId = model.id
         let fileUrl = model.fileUrl
-        Task {
-            let loaderTask = Task(priority: .userInitiated) {
-                await editController.loadImage(cacheType: .image, item: model, itemId: itemId, fileUrl: fileUrl)
-            }
-            _ = await loaderTask.result
-            if cacheController.cachedImage(for: itemId) == nil {
-                imageError = true
-                Logger.itemController.warning("AsyncImageViewer: No image \(itemId, privacy: .public)")
-            } else {
-                imageError = false
-            }
-            isLoading = false
-            isLoadedId = UUID()
+        
+        // Perform image loading with structured concurrency
+        await editController.loadImage(cacheType: .image, item: model, itemId: itemId, fileUrl: fileUrl)
+        
+        // Check if image loaded successfully
+        if cacheController.cachedImage(for: itemId) == nil {
+            imageError = true
+            Logger.itemController.warning("AsyncImageViewer: Failed to load image \(itemId, privacy: .public)")
+        } else {
+            imageError = false
         }
+        
+        // Reset loading state
+        isLoading = false
     }
 }

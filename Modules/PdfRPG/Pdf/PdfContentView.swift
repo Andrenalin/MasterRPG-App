@@ -25,7 +25,7 @@ struct PdfContentView: View {
                     VStack {
                         ProgressView()
                             .progressViewStyle(.circular)
-                            .controlSize(.large)
+                            .scaleEffect(1.5)
                             .tint(Color.accentColor)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)

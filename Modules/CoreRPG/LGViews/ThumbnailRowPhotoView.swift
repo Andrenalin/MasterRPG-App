@@ -66,7 +66,7 @@ private extension ThumbnailRowPhotoView {
     func placeHolder(size: CGSize) -> some View {
         if isLoading {
             ProgressView()
-                .controlSize(.extraLarge)
+                .scaleEffect(2.0) 
                 .tint(Color.accentColor)
         } else {
             Image(systemName: model.fileUrl == nil ? "photo" : "photo.badge.arrow.down")

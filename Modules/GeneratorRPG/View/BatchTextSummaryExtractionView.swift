@@ -75,7 +75,7 @@ public struct BatchTextSummaryExtractionView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     if isRunning {
                         ProgressView()
-                            .controlSize(.small)
+                            .scaleEffect(0.8)
                     } else {
                         Button {
                             runBatch()
@@ -131,7 +131,7 @@ public struct BatchTextSummaryExtractionView: View {
                 .contentTransition(.symbolEffect(.automatic))
         case .analyzing:
             ProgressView()
-                .controlSize(.small)
+                .scaleEffect(0.8) 
         case .completed:
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)

@@ -81,7 +81,7 @@ public struct PdfSummaryAnalysisView: View {
     private var analyzingView: some View {
         VStack(spacing: 16) {
             ProgressView()
-                .controlSize(.large)
+                .scaleEffect(1.5)
 
             Text("Analyzing PDF with Apple Intelligence...", bundle: .module)
                 .font(.headline)

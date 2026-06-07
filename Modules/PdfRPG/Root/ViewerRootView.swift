@@ -41,7 +41,7 @@ struct ViewerRootView: View {
                     if searchModel.isSearching {
                         ProgressView()
                             .progressViewStyle(.circular)
-                            .controlSize(.large)
+                            .scaleEffect(1.5)
                             .foregroundStyle(Color.accentColor)
                     }
                 }
