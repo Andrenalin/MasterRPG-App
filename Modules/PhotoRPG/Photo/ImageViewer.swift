@@ -12,8 +12,14 @@ struct ImageViewer: View {
         self.toolBarModel = toolBarModel
         toolBarModel?.degrees = photoDegrees
         
+        let imageSize = ImageViewer.imageSize(image, degrees: photoDegrees)
         let (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: photoDegrees)
-        self._model = State(wrappedValue: ImageViewerModel(offset: newOffset, scale: newScale))
+        self._model = State(wrappedValue: ImageViewerModel(
+            offset: newOffset, 
+            scale: newScale,
+            degrees: photoDegrees,
+            imageSize: imageSize
+        ))
     }
     
     let id: UUID
@@ -23,6 +29,11 @@ struct ImageViewer: View {
     let toolBarModel: GameToolBarModel?
     
     @State private var model: ImageViewerModel
+    
+    // Computed property to get current degrees from toolbar or model cache
+    private var currentDegrees: Double {
+        toolBarModel?.degrees ?? model.degrees
+    }
         
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -32,24 +43,27 @@ struct ImageViewer: View {
                 .applyIf(contentMode == .fill) { content in
                     content
                         .resizable()
-                        .rotationEffect(Angle(degrees: toolBarModel?.degrees ?? 0))
+                        .rotationEffect(Angle(degrees: currentDegrees))
                         .aspectRatio(contentMode: contentMode)
                         .frame(width: containerSize.width, height: containerSize.height, alignment: .center)
                 }
                 .applyIf(contentMode != .fill) { content in
                     content
                         .scaleEffect(model.scale)
-                        .rotationEffect(Angle(degrees: toolBarModel?.degrees ?? 0))
+                        .rotationEffect(Angle(degrees: currentDegrees))
                         .offset(x: model.offset.x, y: model.offset.y)
                         .contentMargins(.all, 50)
-                        .frame(width: currentSize.width, height: currentSize.height)
+                        .frame(width: model.currentSize.width, height: model.currentSize.height)
                 }
         }
         .frame(width: containerSize.width, height: containerSize.height, alignment: .leading)
 #if !os(tvOS)
         .dragTapGesture(pressAction: pressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
-        .onChange(of: toolBarModel?.degrees) {
+        .onChange(of: toolBarModel?.degrees) { _, newDegrees in
+            if let newDegrees {
+                model.updateDegrees(newDegrees, originalImageSize: image.fixedSize)
+            }
             resetZoom()
         }
         .task(id: id) {
@@ -80,22 +94,20 @@ private extension ImageViewer {
     static func imageSize(_ image: AKImage, degrees: Double) -> CGSize {
         (degrees == 0 || degrees == 180) ? image.fixedSize : CGSize(width: image.size.height, height: image.size.width)
     }
-    
-    var currentSize: CGSize {
-        ImageViewer.imageSize(image, degrees: toolBarModel?.degrees ?? 0) * model.scale
-    }
 
     func resetZoom(withoutAnimation: Bool = false) {
-        let (newScale, newOffset): (CGFloat, CGPoint)
-        (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: toolBarModel?.degrees ?? 0)
+        let degrees = currentDegrees
+        let (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: degrees)
         model.normScale = newScale
+        model.updateDegrees(degrees, originalImageSize: image.fixedSize)
         zoom(scale: newScale, at: newOffset, withoutAnimation: withoutAnimation)
     }
 
     func zooming(on location: CGPoint) {
         let (newScale, newOffset): (CGFloat, CGPoint)
         if model.scale != model.normScale {
-            (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: toolBarModel?.degrees ?? 0)
+            let degrees = currentDegrees
+            (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: degrees)
         } else {
             (newScale, newOffset) = zoomIn(at: location)
         }
@@ -145,9 +157,8 @@ private extension ImageViewer {
             return
         }
         
-        let imgSize = ImageViewer.imageSize(image, degrees: toolBarModel?.degrees ?? 0)
         let scaleDiff = (newScale - model.scale) / 2
-        let imgOff = imgSize * scaleDiff
+        let imgOff = model.baseImageSize * scaleDiff
         let newOffsetNew = CGPoint(x: -imgOff.width, y: -imgOff.height)
         
         model.lastScale = value
@@ -160,43 +171,23 @@ private extension ImageViewer {
 
 private extension ImageViewer {
     func updateOffset(with newLocation: CGPoint, firstOffset: CGPoint) {
-        let imgSize = ImageViewer.imageSize(image, degrees: toolBarModel?.degrees ?? 0)
-        let offX = max(300, (containerSize.width - imgSize.width * model.scale) / 2)
-        let offY = max(300, (containerSize.height - imgSize.height * model.scale) / 2)
-        let minX = containerSize.width - (imgSize.width * model.scale) - offX
-        let minY = containerSize.height - (imgSize.height * model.scale) - offX
+        let offX = max(300, (containerSize.width - model.currentSize.width) / 2)
+        let offY = max(300, (containerSize.height - model.currentSize.height) / 2)
+        let minX = containerSize.width - model.currentSize.width - offX
+        let minY = containerSize.height - model.currentSize.height - offY
+        
         var newOffset = firstOffset + newLocation
-        if newOffset.x < minX {
-            newOffset.x = minX
-        }
-        if newOffset.x > offX {
-            newOffset.x = offX
-        }
-        if newOffset.y < minY {
-            newOffset.y = minY
-        }
-        if newOffset.y > offY {
-            newOffset.y = offY
-        }
+        newOffset.x = min(max(newOffset.x, minX), offX)
+        newOffset.y = min(max(newOffset.y, minY), offY)
+        
         model.lastOffset = firstOffset
         model.offset = newOffset
     }
     
     func translate(from location: CGPoint) -> CGPoint {
-        let imgSize = ImageViewer.imageSize(image, degrees: toolBarModel?.degrees ?? 0)
         var newOffset = (location - model.offset) / model.scale
-        if newOffset.x < 0 {
-            newOffset.x = 0
-        }
-        if newOffset.x > imgSize.width {
-            newOffset.x = imgSize.width
-        }
-        if newOffset.y < 0 {
-            newOffset.y = 0
-        }
-        if newOffset.y > imgSize.height {
-            newOffset.y = imgSize.height
-        }
+        newOffset.x = min(max(newOffset.x, 0), model.baseImageSize.width)
+        newOffset.y = min(max(newOffset.y, 0), model.baseImageSize.height)
         return newOffset
     }
 }
@@ -239,20 +230,40 @@ private extension ImageViewer {
 
 @Observable
 fileprivate final class ImageViewerModel {
-    init(offset: CGPoint = .zero, scale: CGFloat = 1) {
+    init(offset: CGPoint = .zero, scale: CGFloat = 1, degrees: Double = 0, imageSize: CGSize = .zero) {
         self.offset = offset
         self.lastOffset = offset
         self.scale = scale
         self.lastScale = scale
-        normScale = scale
+        self.normScale = scale
+        self.degrees = degrees
+        self.baseImageSize = imageSize
     }
     
     var offset: CGPoint
     var lastOffset: CGPoint
     var scale: CGFloat
     var lastScale: CGFloat
-    
     var normScale: CGFloat
+    
+    // Cache computed values
+    var degrees: Double
+    var baseImageSize: CGSize
+    
+    var currentSize: CGSize {
+        baseImageSize * scale
+    }
+    
+    func updateImageSize(_ size: CGSize) {
+        baseImageSize = size
+    }
+    
+    func updateDegrees(_ newDegrees: Double, originalImageSize: CGSize) {
+        degrees = newDegrees
+        baseImageSize = (newDegrees == 0 || newDegrees == 180) 
+            ? originalImageSize 
+            : CGSize(width: originalImageSize.height, height: originalImageSize.width)
+    }
 }
 
 //import RPGResourcesDebug
