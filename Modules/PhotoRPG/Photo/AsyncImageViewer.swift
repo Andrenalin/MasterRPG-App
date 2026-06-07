@@ -90,7 +90,7 @@ struct AsyncImageViewer: View {
         let fileUrl = model.fileUrl
         
         // Perform image loading with structured concurrency
-        await editController.loadImage(cacheType: .image, item: model, itemId: itemId, fileUrl: fileUrl)
+        _ = await editController.loadImage(cacheType: .image, item: model, itemId: itemId, fileUrl: fileUrl)
         
         // Check if image loaded successfully
         if cacheController.cachedImage(for: itemId) == nil {
