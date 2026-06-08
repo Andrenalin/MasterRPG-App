@@ -39,6 +39,20 @@ struct WindowUtilityList: Scene {
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
             .restorationBehaviorAll(.disabled)
+            
+            WindowGroup("Map Tile Editor", id: SceneId.mapTileEditor.rawValue) {
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.mapRoot.viewController.mapEditWindow(root: appModel.mapRoot, isTileEditor: true)
+                        .sceneTracker(for: SceneId.mapTileEditor)
+                        .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .map))
+                }
+                .environment(appModel.scenesManager)
+                .environment(appModel)
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
+            .restorationBehaviorAll(.disabled)
+
 
             BaseWindow("Logs", id: SceneId.logs.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in

@@ -5,15 +5,13 @@ import PhotoRPG
 import SwiftUI
 
 struct RootEditCanvasMap: View {
-    init(itemId: UUID, tile: MapEntryModel? = nil, isPinEdit: Bool = false) {
+    init(itemId: UUID, isTileEditor: Bool = false) {
         self.itemId = itemId
-        self.tile = tile
-        self.isPinEdit = isPinEdit
+        self.isTileEditor = isTileEditor
     }
     
     let itemId: UUID
-    var tile: MapEntryModel?
-    var isPinEdit: Bool = false
+    let isTileEditor: Bool
 
     @Environment(MapRootModel.self) private var root
 
@@ -25,7 +23,7 @@ struct RootEditCanvasMap: View {
     var body: some View {
         GeometryReader { geo in
             if let image {
-                MapEditor(editController: root.editController, image: image, photoDegrees: degrees, map: model, viewMode: .master, tile: tile, isPinEdit: isPinEdit, containerSize: geo.size)
+                MapEditor(editController: root.editController, image: image, photoDegrees: degrees, map: model, viewMode: .master, isTileEditor: isTileEditor, containerSize: geo.size)
                         .environment(dropPinModel)
             } else {
                 Color.clear

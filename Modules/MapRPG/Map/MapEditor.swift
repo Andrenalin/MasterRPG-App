@@ -11,8 +11,7 @@ struct MapEditor: View {
         photoDegrees: Double,
         map: MapModel,
         viewMode: MapDisplayMode,
-        tile: MapEntryModel? = nil,
-        isPinEdit: Bool,
+        isTileEditor: Bool = false,
         containerSize: CGSize,
         mapMode: MapMode = .edit,
         playerPinId: UUID? = nil,
@@ -25,8 +24,7 @@ struct MapEditor: View {
         self.photoDegrees = photoDegrees
         self.map = map
         self.viewMode = viewMode
-        self.tile = tile
-        self.isPinEdit = isPinEdit
+        self.isTileEditor = isTileEditor
         self.containerSize = containerSize
         self.closeAction = closeAction
         self.sendMapUpdatesAction = sendMapUpdates
@@ -45,8 +43,7 @@ struct MapEditor: View {
     let photoDegrees: Double
     let map: MapModel
     let viewMode: MapDisplayMode
-    let tile: MapEntryModel?
-    let isPinEdit: Bool
+    let isTileEditor: Bool
     let containerSize: CGSize
     let closeAction: (() -> Void)?
     let sendMapUpdatesAction: (() -> Void)?
@@ -236,7 +233,7 @@ extension MapEditor {
     func drawEntryView(entries: MapEntryViewerModel, entry: MapEntryModel) -> some View {
         let canActivate = viewModel.displayMode == .master
             && (viewModel.mapMode != .edit || viewModel.editEntries.entries.isEmpty)
-        return MapEntryViewer(entry: entry, displayMode: viewModel.displayMode, displayConfig: map.displayConfig, activateGestures: canActivate) {
+        return MapEntryViewer(entry: entry, displayMode: viewModel.displayMode, displayConfig: map.displayConfig, activateGestures: canActivate, mapImage: image) {
             viewModel.editEntries.addedNewNeedlePoint = nil
             viewModel.editEntries.eaten = true
 
@@ -418,7 +415,7 @@ private extension MapEditor {
 
     func releaseAction(_ value: DragGesture.Value) {
         if viewModel.mapMode == .edit {
-            let hasEditableEntry = tile != nil || !viewModel.editEntries.entries.isEmpty
+            let hasEditableEntry = !viewModel.editEntries.entries.isEmpty
             mapEditController.releaseAction(value, map: map, editorModel: viewModel, hasEditableEntry: hasEditableEntry)
         } else {
             viewModel.updatePointer(location: value.location, map: map)
@@ -458,9 +455,9 @@ private extension MapEditor {
 
     Group {
 #if os(macOS)
-        MapEditor(editController: root.editController, image: AKImage(named: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
+        MapEditor(editController: root.editController, image: AKImage(named: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, containerSize: CGSize(width: 300, height: 800))
 #else
-        MapEditor(editController: root.editController, image: AKImage(systemName: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
+        MapEditor(editController: root.editController, image: AKImage(systemName: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, containerSize: CGSize(width: 300, height: 800))
 #endif
     }
     .onAppear {

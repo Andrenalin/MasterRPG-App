@@ -50,6 +50,7 @@ struct MapEntryViewer: View {
     let displayMode: MapDisplayMode
     let displayConfig: DisplayConfigModel
     let activateGestures: Bool
+    let mapImage: AKImage?
     let doubleTapAction: () -> Void
     let longPressAction: () -> Void
 
@@ -61,7 +62,7 @@ struct MapEntryViewer: View {
                 .stroke(.green.opacity(0.8), style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
                 .applyIf(activateGestures, transform: gestureModifier)
         case .player:
-            path.fill(displayConfig.color)
+            playerCoverView(for: path)
                 .opacity(entry.isShown ? 0 : 1)
                 .applyIf(activateGestures, transform: gestureModifier)
         case .reader:
@@ -105,5 +106,52 @@ struct MapEntryViewer: View {
         LongPressGesture().onEnded { _ in
             longPressAction()
         }
+    }
+    
+    @ViewBuilder
+    private func playerCoverView(for path: Path) -> some View {
+        if displayConfig.tileCoordinates.count == 4, let mapImage {
+            // Use tile from map image
+            path.fill(
+                ImagePaint(
+                    image: Image(akImage: mapImage),
+                    sourceRect: tileSourceRect,
+                    scale: 1.0
+                )
+            )
+        } else {
+            // Fallback to solid color
+            path.fill(displayConfig.color)
+        }
+    }
+    
+    private var tileSourceRect: CGRect {
+        guard displayConfig.tileCoordinates.count == 4 else {
+            return CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
+        
+        let coords = displayConfig.tileCoordinates
+        let minX = coords.map { $0.x }.min() ?? 0
+        let maxX = coords.map { $0.x }.max() ?? 0
+        let minY = coords.map { $0.y }.min() ?? 0
+        let maxY = coords.map { $0.y }.max() ?? 0
+        
+        #if os(macOS)
+        guard let imageSize = mapImage?.size else {
+            return CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
+        #else
+        guard let imageSize = mapImage?.size else {
+            return CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
+        #endif
+        
+        // Normalize to 0-1 range for ImagePaint
+        return CGRect(
+            x: minX / imageSize.width,
+            y: minY / imageSize.height,
+            width: (maxX - minX) / imageSize.width,
+            height: (maxY - minY) / imageSize.height
+        )
     }
 }

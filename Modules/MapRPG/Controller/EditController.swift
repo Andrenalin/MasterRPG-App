@@ -177,7 +177,15 @@ extension EditController {
             item.displayConfig.color = coverColor
             save(updated: item, message: String(localized: "Change cover color", bundle: .module).localizedString)
         }
-    }    
+    }
+    
+    @MainActor func reset(tileCoordinates: [CGPoint], itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        if item.displayConfig.tileCoordinates != tileCoordinates {
+            item.displayConfig.tileCoordinates = tileCoordinates
+            save(updated: item, message: String(localized: "Change tile coordinates", bundle: .module).localizedString)
+        }
+    }
 }
 
 extension EditController {

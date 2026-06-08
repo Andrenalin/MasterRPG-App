@@ -108,7 +108,6 @@ struct RootGameMapViewer: View {
             photoDegrees: degrees,
             map: mapModel,
             viewMode: mode == .player ? .player : .master,
-            isPinEdit: false,
             containerSize: containerSize,
             mapMode: mode == .player ? .player : .gameMaster,
             playerPinId: playerPinId,

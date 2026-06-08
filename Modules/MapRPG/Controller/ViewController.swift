@@ -77,8 +77,8 @@ public extension ViewController {
         return ViewerRootView(model: model, configuration: configuration, dismissAction: dismissAction)
     }
     
-    @MainActor func mapEditWindow(root: MapRootModel) -> some View {
-        MapEditWindow()
+    @MainActor func mapEditWindow(root: MapRootModel, isTileEditor: Bool = false) -> some View {
+        MapEditWindow(isTileEditor: isTileEditor)
     }
     
     @MainActor func gameView(root: MapRootModel) -> some View {

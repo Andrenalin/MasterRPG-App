@@ -15,7 +15,7 @@ struct DisplayMapViewer: View {
 
     var body: some View {
         VStack {
-            MapEditor(editController: root.editController, image: image, photoDegrees: 0, map: mapUpdated, viewMode: .master, isPinEdit: false, containerSize: size, mapMode: .viewer, sendMapUpdates: sendMapUpdates, focused: focused)
+            MapEditor(editController: root.editController, image: image, photoDegrees: 0, map: mapUpdated, viewMode: .master, containerSize: size, mapMode: .viewer, sendMapUpdates: sendMapUpdates, focused: focused)
         }
         .frame(width: size.width, height: size.height)
         .onChange(of: root.itemController.itemOrEmpty(for: itemId).entries, initial: false) {

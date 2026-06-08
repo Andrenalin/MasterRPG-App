@@ -7,6 +7,7 @@ import SwiftUI
 
 enum MapEditorRoute: Equatable, Hashable, Codable {
     case mapEditor(UUID)
+    case tileEditor(UUID)
     case quickEditor(UUID)
     case selectionPdf
     case linkSelection(ItemRowModel)
@@ -16,7 +17,7 @@ enum MapEditorRoute: Equatable, Hashable, Codable {
 extension MapEditorRoute: NavigationDestination {
     public var method: NavigationMethod {
         switch self {
-        case .quickEditor, .mapEditor:
+        case .quickEditor, .mapEditor, .tileEditor:
             return .managedCover
         case .addLink:
             return .managedSheet
@@ -39,6 +40,8 @@ struct DestinationMapEditorRoute: View {
         switch route {
         case .mapEditor(let itemId):
             RootEditCanvasMap(itemId: itemId)
+        case .tileEditor(let itemId):
+            RootEditCanvasMap(itemId: itemId, isTileEditor: true)
         case .quickEditor(let itemId):
             QuickEntryEditor(model: root.itemController.itemOrEmpty(for: itemId))
 

@@ -12,6 +12,7 @@ extension SceneId {
     public static var imageSpaceViewer: Self { .init(rawValue: "imageSpaceViewer") }
     public static var logs: Self { .init(rawValue: "logs") }
     public static var mapEditor: Self { .init(rawValue: "mapEditor") }
+    public static var mapTileEditor: Self { .init(rawValue: "mapTileEditor") }
     public static var pdfViewer: Self { .init(rawValue: "pdfViewer") }
     public static var photoViewer: Self { .init(rawValue: "photoViewer") }
     public static var search: Self { .init(rawValue: "search") }
