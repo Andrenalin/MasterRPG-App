@@ -228,7 +228,7 @@ private extension EditToolBarViewModifier {
                 // Commit changes (tile coordinates are on the working copy's displayConfig)
                 mapEditController.commitChanges(editorModel: editorModel)
 #if os(macOS) || os(visionOS)
-                scenesManager.dismissWindow(.mapEditor)
+                scenesManager.dismissWindow(isTileEditor ? .mapTileEditor : .mapEditor)
 #else
                 dismiss()
 #endif
@@ -246,7 +246,7 @@ private extension EditToolBarViewModifier {
                 exitReady = true
                 mapEditController.discardChanges(editorModel: editorModel)
 #if os(macOS) || os(visionOS)
-                scenesManager.dismissWindow(.mapEditor)
+                scenesManager.dismissWindow(isTileEditor ? .mapTileEditor : .mapEditor)
 #else
                 dismiss()
 #endif

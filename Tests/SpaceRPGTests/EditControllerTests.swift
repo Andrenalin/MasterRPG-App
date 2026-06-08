@@ -610,6 +610,7 @@ struct EditControllerTests {
     @Test func deleteItem() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
+        await Task.yield()
         let sut = await root.editController
 
         // Create an item
@@ -628,6 +629,7 @@ struct EditControllerTests {
     @Test func deleteItemWithChildren() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
+        await Task.yield()
         let sut = await root.editController
 
         // Create a parent item
@@ -663,6 +665,7 @@ struct EditControllerTests {
     @Test func deleteFolderWithChildren() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
+        await Task.yield()
         let sut = await root.editController
 
         // Create a folder
@@ -880,6 +883,7 @@ struct EditControllerTests {
     @Test func restoreFolderWithChildren() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
+        await Task.yield()
         let sut = await root.editController
 
         // Create a folder
@@ -1066,6 +1070,7 @@ struct EditControllerTests {
     @Test func deleteFolderWithSelectiveChildRemoval() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
+        await Task.yield()
         let sut = await root.editController
 
         // Create a folder with multiple children

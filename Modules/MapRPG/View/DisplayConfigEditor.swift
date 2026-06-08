@@ -96,9 +96,40 @@ struct DisplayConfigEditor: View {
     
     @ViewBuilder private var tileCoordinatesView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Tile Cover", bundle: .module)
+            LabeledContent {
+                if let tileImage {
+                    Image(akImage: tileImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: 120, maxHeight: 80)
+                        .background(Color.secondary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                        )
+                        .overlay(alignment: .topTrailing) {
+                            Button(role: .destructive) {
+                                withAnimation {
+                                    clearTileCoordinates()
+                                }
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .imageScale(.large)
+                                    .foregroundStyle(.white, .red, .red)
+                            }
+                            .accessibilityLabel(Text("Remove Tile", bundle: .module))
+                            .borderLessTVBottonStyle()
+                            .padding(4)
+                            .contentShape(.circle)
+#if !os(visionOS)
+                            .glassEffect(.regular.interactive())
+#endif
+                            .opacity(model.displayConfig.tileCoordinates.isEmpty ? 0.0 : 1.0)
+                        }
+                }
                 Spacer()
+                
                 Button {
 #if os(visionOS) || os(macOS)
                     root.editController.sheetEditorModel.itemId = model.id
@@ -107,36 +138,13 @@ struct DisplayConfigEditor: View {
                     navigator.navigate(to: MapEditorRoute.mapTileEditor(model.id))
 #endif
                 } label: {
-                    Label("Edit Tile", systemImage: "rectangle.dashed")
+                    Label("Edit cover tile", systemImage: "rectangle.dashed")
                 }
                 .buttonStyle(.borderless)
                 .tint(root.configurable.module.tint)
                 
-                if !model.displayConfig.tileCoordinates.isEmpty {
-                    Button(role: .destructive) {
-                        clearTileCoordinates()
-                    } label: {
-                        Label("Clear", systemImage: "xmark.circle")
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-            
-            if let tileImage {
-                Image(akImage: tileImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: 120, maxHeight: 80)
-                    .background(Color.secondary.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                    )
-            } else if !model.displayConfig.tileCoordinates.isEmpty {
-                Text("Tile configured", bundle: .module)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } label: {
+                Text("Cover tile", bundle: .module)
             }
         }
     }

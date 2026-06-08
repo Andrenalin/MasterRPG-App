@@ -176,7 +176,7 @@ final class MasterPlayerControllerTests {
 
         result = try await sutPlayer.handle(sendedPlayAudioData!)
         #expect(nil == result)
-        await #expect(rootPlayer.audioRoot.audioController.model.playList.count == 2)
+        try await #require(rootPlayer.audioRoot.audioController.model.playList.count == 2)
         await #expect(rootPlayer.audioRoot.audioController.model.playList[0].id == audioId)
         let audioFirst = await rootSut.audioRoot.itemController.itemDataModel.items[1]
         await #expect(rootPlayer.audioRoot.audioController.model.playList[1].id == audioFirst)
