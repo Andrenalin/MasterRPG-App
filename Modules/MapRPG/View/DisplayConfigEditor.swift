@@ -11,7 +11,7 @@ struct DisplayConfigEditor: View {
     
     @Environment(\.navigator) private var navigator
     @Environment(ScenesManager.self) private var scenesManager
-
+    
     @State private var color = Color.black
     @State private var borderToggleEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
     @State private var showTileEditor = false
@@ -63,18 +63,18 @@ struct DisplayConfigEditor: View {
         .onChange(of: model.displayConfig.color) {
             resetColor()
         }
-    }    
+    }
 #endif
-
+    
     private func resetColor() {
         guard color != model.displayConfig.color else { return }
         color <=> model.displayConfig.color
     }
-
+    
     private func saveColor() {
         root.editController.reset(coverColor: color, itemId: model.id)
     }
-
+    
     @ViewBuilder private var activateBorderView: some View {
         ToggleEditor(model: borderToggleEditModel, title: "Activate Border", bundle: .module, icon: "rectangle")
             .onChange(of: model.displayConfig.hasBorder) {
@@ -101,10 +101,10 @@ struct DisplayConfigEditor: View {
                 Spacer()
                 Button {
 #if os(visionOS) || os(macOS)
-            root.editController.sheetEditorModel.itemId = model.id
-            scenesManager.openWindow(.mapEditor)
+                    root.editController.sheetEditorModel.itemId = model.id
+                    scenesManager.openWindow(.mapTileEditor)
 #else
-            navigator.navigate(to: MapEditorRoute.mapEditor(model.id))
+                    navigator.navigate(to: MapEditorRoute.mapTileEditor(model.id))
 #endif
                 } label: {
                     Label("Edit Tile", systemImage: "rectangle.dashed")
@@ -140,7 +140,7 @@ struct DisplayConfigEditor: View {
             }
         }
     }
-        
+    
     private func clearTileCoordinates() {
         root.editController.reset(tileCoordinates: [], itemId: model.id)
         tileImage = nil
@@ -168,16 +168,16 @@ struct DisplayConfigEditor: View {
                 
                 let tileRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
                 
-                #if os(macOS)
+#if os(macOS)
                 if let cgImage = fullImage.cgImage(forProposedRect: nil, context: nil, hints: nil),
                    let croppedCGImage = cgImage.cropping(to: tileRect) {
                     tileImage = NSImage(cgImage: croppedCGImage, size: tileRect.size)
                 }
-                #else
+#else
                 if let cgImage = fullImage.cgImage?.cropping(to: tileRect) {
                     tileImage = UIImage(cgImage: cgImage)
                 }
-                #endif
+#endif
             }
         }
     }

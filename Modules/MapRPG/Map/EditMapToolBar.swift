@@ -8,6 +8,7 @@ import CharacterRPG
 struct EditToolBarViewModifier: ViewModifier {
     let mapEditController: MapEditController
     let editorModel: MapEditorModel
+    let isTileEditor: Bool
 
     @Environment(\.dismiss) private var dismiss
     @Environment(ScenesManager.self) private var scenesManager
@@ -25,7 +26,28 @@ struct EditToolBarViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         if editorModel.mapMode != .edit {
             content
+        } else if isTileEditor {
+            // Tile Editor Mode: Simplified toolbar
+            content
+            #if os(macOS)
+                .navigationTitle(String(localized: "Edit Tile", bundle: .module))
+            #endif
+                .toolbar {
+#if !os(macOS)
+                    ToolbarItem(placement: titlePlacement) {
+                        Text("Edit Tile", bundle: .module)
+                            .foregroundStyle(.white)
+                    }
+#endif
+                    ToolbarItem(placement: bottomBarPlacement) {
+                        cancelButtonView
+                    }
+                    ToolbarItem(placement: bottomBarPlacement) {
+                        confirmTileButtonView
+                    }
+                }
         } else {
+            // Normal Edit Mode
             content
             .overlay(alignment: .bottom) {
                 GlassEffectContainerView {
@@ -167,6 +189,7 @@ private extension EditToolBarViewModifier {
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
                 .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Next")
         }
+        .disabled(isTileEditor)
     }
 
     @ViewBuilder var previousEntryButton: some View {
@@ -177,6 +200,7 @@ private extension EditToolBarViewModifier {
             Image(systemName: symbolName)
                 .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Previous")
         }
+        .disabled(isTileEditor)
     }
 
     @ViewBuilder var closeButtonView: some View {
@@ -193,6 +217,25 @@ private extension EditToolBarViewModifier {
                 let symbolName = "checkmark"
                 Image(systemName: symbolName)
                     .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Save")
+            }
+        }
+    }
+    
+    @ViewBuilder var confirmTileButtonView: some View {
+        if !editorModel.hideCloseButton {
+            Button {
+                exitReady = true
+                // Commit changes (tile coordinates are on the working copy's displayConfig)
+                mapEditController.commitChanges(editorModel: editorModel)
+#if os(macOS) || os(visionOS)
+                scenesManager.dismissWindow(.mapEditor)
+#else
+                dismiss()
+#endif
+            } label: {
+                let symbolName = "checkmark"
+                Image(systemName: symbolName)
+                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Confirm")
             }
         }
     }
@@ -413,7 +456,8 @@ private struct HexMapScaleView: View {
         }
         .modifier(EditToolBarViewModifier(
             mapEditController: MapEditController(editController: editController),
-            editorModel: editorModel
+            editorModel: editorModel,
+            isTileEditor: false
         ))
     }
 }

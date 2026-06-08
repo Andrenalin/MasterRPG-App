@@ -51,6 +51,7 @@ struct MapEditor: View {
     let mapEditController: MapEditController
 
     @State private var viewModel: MapEditorModel
+    @State private var tileEntry: MapEntryModel?
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(MapRootModel.self) private var root
@@ -142,13 +143,21 @@ struct MapEditor: View {
                 }
                 viewModel.firstAppear(map: map)
                 if viewModel.mapMode == .edit {
-                    mapEditController.prepareWorkingCopy(from: map, editorModel: viewModel)
+                    if isTileEditor {
+                        setupTileEditor()
+                    } else {
+                        mapEditController.prepareWorkingCopy(from: map, editorModel: viewModel)
+                    }
                 }
             }
             .onDisappear {
                 viewModel.appeared = false
             }
-            .modifier(EditToolBarViewModifier(mapEditController: mapEditController, editorModel: viewModel))
+            .modifier(EditToolBarViewModifier(
+                mapEditController: mapEditController,
+                editorModel: viewModel,
+                isTileEditor: isTileEditor
+            ))
         }
     }
 }
@@ -156,40 +165,55 @@ struct MapEditor: View {
 private extension MapEditor {
     var overlayMap: some View {
         ZStack(alignment: .topLeading) {
-            // Player mode: shown entries → pins → hidden entries (pins appear between layers)
-            if viewModel.displayMode == .player {
-                drawEntryViews(isShowing: true)
-                drawPins
-                drawEntryViews(isShowing: false)
-            } else {
-                drawEntryViews(isShowing: true)
-                drawEntryViews(isShowing: false)
-                drawPins
-            }
-
-            // Pointer pin (game mode)
-            if map.pointer.isShown {
-                drawPin(id: viewModel.pins.pointer.id)
-            }
-
-            // Expanded pin always on top
-            if let scalePinId = viewModel.pins.isExpandedId {
-                drawPin(id: scalePinId)
-            }
-
-            // Edit-mode only overlays
-            if viewModel.mapMode == .edit {
-                if let editEntry = viewModel.editEntries.entries.first {
-                    drawEntryView(entries: viewModel.editEntries, entry: editEntry)
-                }
-
+            // Tile Editor Mode: Only show tile entry for editing
+            if isTileEditor, let tileEntry = tileEntry {
+                drawEntryView(entries: viewModel.editEntries, entry: tileEntry)
+                
                 if viewModel.displayMode == .master || viewModel.displayMode == .reader {
-                    drawEntryPins()
+                    drawTileEntryPins()
                 }
-
+                
                 if let magnifyPoint = viewModel.editEntries.selectedNeedleCoordinate {
                     drawCrosshair(location: magnifyPoint)
                         .zIndex(500)
+                }
+            } else {
+                // Normal Editor Mode
+                // Player mode: shown entries → pins → hidden entries (pins appear between layers)
+                if viewModel.displayMode == .player {
+                    drawEntryViews(isShowing: true)
+                    drawPins
+                    drawEntryViews(isShowing: false)
+                } else {
+                    drawEntryViews(isShowing: true)
+                    drawEntryViews(isShowing: false)
+                    drawPins
+                }
+
+                // Pointer pin (game mode)
+                if map.pointer.isShown {
+                    drawPin(id: viewModel.pins.pointer.id)
+                }
+
+                // Expanded pin always on top
+                if let scalePinId = viewModel.pins.isExpandedId {
+                    drawPin(id: scalePinId)
+                }
+
+                // Edit-mode only overlays
+                if viewModel.mapMode == .edit {
+                    if let editEntry = viewModel.editEntries.entries.first {
+                        drawEntryView(entries: viewModel.editEntries, entry: editEntry)
+                    }
+
+                    if viewModel.displayMode == .master || viewModel.displayMode == .reader {
+                        drawEntryPins()
+                    }
+
+                    if let magnifyPoint = viewModel.editEntries.selectedNeedleCoordinate {
+                        drawCrosshair(location: magnifyPoint)
+                            .zIndex(500)
+                    }
                 }
             }
         }
@@ -217,6 +241,24 @@ private extension MapEditor {
         }
         dropPinModel.items = []
         dropPinModel.isTarget = false
+    }
+    
+    func setupTileEditor() {
+        // Create a temporary entry from tileCoordinates
+        let tileId = UUID()
+        let entry = MapEntryModel(
+            id: tileId,
+            name: String(localized: "Tile", bundle: .module),
+            content: "",
+            coordinates: map.displayConfig.tileCoordinates,
+            isShown: true
+        )
+        
+        tileEntry = entry
+        viewModel.editEntries.setEntry(entry: entry)
+        
+        // Create a working copy for the tile editor
+        mapEditController.prepareWorkingCopy(from: map, editorModel: viewModel)
     }
 }
 
@@ -345,6 +387,92 @@ private extension MapEditor {
             }
         }
     }
+    
+    @ViewBuilder
+    func drawTileEntryPins() -> some View {
+        if let entry = tileEntry {
+            ForEach(entry.coordinates.indexed(), id: \.index) { (index, point) in
+                TileNeedleMapPin(
+                    entries: viewModel.editEntries,
+                    entryId: entry.id,
+                    index: index,
+                    onUpdate: { updatedCoordinates in
+                        tileEntry?.coordinates = updatedCoordinates
+                        // Sync to working copy's displayConfig
+                        viewModel.workingCopy?.displayConfig.tileCoordinates = updatedCoordinates
+                    }
+                )
+                .offset(x: point.x - 22, y: point.y - 110)
+            }
+        }
+    }
+}
+
+// MARK: - Tile Needle Map Pin
+
+private struct TileNeedleMapPin: View {
+    let entries: MapEntryViewerModel
+    let entryId: UUID
+    let index: Int
+    let onUpdate: ([CGPoint]) -> Void
+    
+    @GestureState private var isDragging = false
+    
+    var coordinate: CGPoint {
+        let entry = entries.entry(entryId)
+        guard index >= 0 && index < entry.coordinates.count else { return .zero }
+        return entry.coordinates[index]
+    }
+    
+    var body: some View {
+        needleView
+    }
+    
+    var needleView: some View {
+        VStack(alignment: .center, spacing: 0) {
+            Circle()
+                .fill(Color.blue)
+                .frame(width: 44, height: 44)
+                .overlay {
+                    Circle()
+                        .stroke(Color.white, lineWidth: 2)
+                }
+            
+            needlePath
+                .stroke(Color.black, lineWidth: 1, antialiased: true)
+                .fill(Color.blue)
+                .frame(width: 4, height: 60)
+        }
+        .gesture(dragGesture)
+    }
+    
+    var dragGesture: some Gesture {
+        DragGesture(minimumDistance: 3)
+            .updating($isDragging) { _, state, _ in
+                state = true
+            }
+            .onChanged { value in
+                var position = coordinate
+                position.x += value.location.x - value.startLocation.x
+                position.y += value.location.y - value.startLocation.y
+                entries.update(coordinate: position, for: entryId, at: index)
+                entries.selectedNeedleCoordinate = position
+            }
+            .onEnded { _ in
+                let updatedEntry = entries.entry(entryId)
+                onUpdate(updatedEntry.coordinates)
+            }
+    }
+    
+    private var needlePath: Path {
+        var p = Path()
+        p.move(to: CGPoint(x: 0, y: 0))
+        p.addLine(to: CGPoint(x: 4, y: 0))
+        p.addLine(to: CGPoint(x: 4, y: 60))
+        p.addLine(to: CGPoint(x: 0, y: 60))
+        p.closeSubpath()
+        return p
+    }
 }
 
 // MARK: - Magnifier glass with Crosshair
@@ -414,7 +542,10 @@ private extension MapEditor {
     }
 
     func releaseAction(_ value: DragGesture.Value) {
-        if viewModel.mapMode == .edit {
+        if isTileEditor {
+            // In tile editor mode, handle adding/removing points
+            handleTileEditorRelease(value)
+        } else if viewModel.mapMode == .edit {
             let hasEditableEntry = !viewModel.editEntries.entries.isEmpty
             mapEditController.releaseAction(value, map: map, editorModel: viewModel, hasEditableEntry: hasEditableEntry)
         } else {
@@ -447,6 +578,29 @@ private extension MapEditor {
 
     func magnifierAction(_ value: CGFloat, isFirst: Bool) {
         viewModel.updateScale(value, updateLast: isFirst)
+    }
+    
+    func handleTileEditorRelease(_ value: DragGesture.Value) {
+        guard var entry = tileEntry else { return }
+        
+        let location = (value.location - viewModel.imageModel.offset) / viewModel.imageModel.scale
+        
+        // Check if clicking near an existing point to remove it
+        let threshold: CGFloat = 20 / viewModel.imageModel.scale
+        if let nearbyIndex = entry.coordinates.firstIndex(where: { point in
+            abs(point.x - location.x) < threshold && abs(point.y - location.y) < threshold
+        }) {
+            entry.coordinates.remove(at: nearbyIndex)
+        } else {
+            // Add new point
+            entry.coordinates.append(location)
+        }
+        
+        tileEntry = entry
+        viewModel.editEntries.setEntry(entry: entry)
+        
+        // Sync to working copy's displayConfig
+        viewModel.workingCopy?.displayConfig.tileCoordinates = entry.coordinates
     }
 }
 
