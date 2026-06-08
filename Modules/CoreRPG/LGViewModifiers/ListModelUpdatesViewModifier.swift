@@ -22,8 +22,8 @@ struct ListModelUpdatesViewModifier: ViewModifier {
     /// When set, the modifier is operating in detail-list context (folder/collection content).
     let parentModel: (any ItemDataAccessable)?
 
-    /// Stores the mode-change search task so that rapid mode switches cancel the previous.
-    @State private var searchTask: Task<Void, Never>?
+    /// Tracks whether the initial search has been performed.
+    @State private var hasPerformedInitialSearch = false
     
     @Environment(\.navigator) private var navigator
     
@@ -42,11 +42,16 @@ struct ListModelUpdatesViewModifier: ViewModifier {
             .onChange(of: listModel.selected) {
                 withAnimation { updateSelected() }
             }
-            .onChange(of: listControllable.listDisplayModel.listMode) {
-                // Cancel any previous mode-change search and start a fresh one.
-                // performSearch will handle resetFilter internally.
-                searchTask?.cancel()
-                searchTask = Task { await listControllable.performSearch(source: "listMode.onChange") }
+            .onChange(of: listControllable.listDisplayModel.listMode, initial: true) {
+                if hasPerformedInitialSearch {
+                    // Subsequent mode change — use sync search (data already in memory)
+                    listControllable.performSyncSearch(source: "listMode.onChange")
+                } else {
+                    // First time: use sync search since data should be loaded already
+                    // (itemDataModel.items is populated before views render)
+                    hasPerformedInitialSearch = true
+                    listControllable.performSyncSearch(source: "listMode.onChange.initial")
+                }
             }
             .onChange(of: listControllable.listDisplayModel.isSelectionMode, initial: true) {
                 withAnimation {

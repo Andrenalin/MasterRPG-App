@@ -9,6 +9,10 @@ public protocol SearchControllable: Sendable  {
     func globalSearchResults(searchText: String) async -> [SearchResult]
     func listSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult]
     func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult]
+    
+    // Synchronous versions using itemSync
+    @MainActor func syncListSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) -> [SearchResult]
+    @MainActor func syncInspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) -> [SearchResult]
 }
 
 // MARK: - Global Search from Game View
@@ -603,3 +607,122 @@ public extension Array where Element == SearchResult {
         }
     }
 }
+// MARK: - Synchronous Search (using itemSync)
+
+public extension SearchControllable {
+    /// Synchronous list search using only in-memory data.
+    /// Mirrors `listSearchResults` but uses `itemSync` instead of `await item(for:)`.
+    /// 
+    /// Default implementation for modules that don't need special handling.
+    /// CharacterRPG and other modules with groupId/valueId should override in SearchController.
+    @MainActor func syncListSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) -> [SearchResult] {
+        switch listMode {
+        case .list:
+            return syncListModeResults(searchText: searchText, displayMode: displayMode)
+        case .folder:
+            return syncFolderModeResults(searchText: searchText, focusId: focusId, displayMode: displayMode)
+        }
+    }
+
+    /// Synchronous inspector search using only in-memory data.
+    /// Mirrors `inspectorSearchResults` but uses `itemSync` instead of `await item(for:)`.
+    ///
+    /// Default implementation returns batch list results (no focus support).
+    /// CharacterRPG and other modules with groupId/valueId should override in SearchController.
+    @MainActor func syncInspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) -> [SearchResult] {
+        switch listMode {
+        case .folder:
+            return syncFolderModeResults(searchText: searchText, focusId: focusId, displayMode: displayMode, includeTags: false)
+        case .list:
+            // Default: batch list results only (no focused character inspector support)
+            return inspectorBatchListResults(searchText: searchText, displayMode: displayMode)
+        }
+    }
+
+    // MARK: - Sync List Mode
+    
+    @MainActor private func syncListModeResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) -> [SearchResult] {
+        let itemIds = itemControllable.itemDataModel.items
+        var results: [SearchResult] = []
+        for itemId in itemIds {
+            guard let item = itemControllable.itemSync(for: itemId),
+                  item.displayState == 0,
+                  !item.specialCategory else { continue }
+            guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
+            results.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
+        }
+        if searchText.isEmpty {
+            return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+        }
+        return results.sortedByRelevance()
+    }
+
+    // MARK: - Sync Folder Mode
+    
+    @MainActor private func syncFolderModeResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) -> [SearchResult] {
+        if let focusId {
+            guard let folder = itemControllable.itemSync(for: focusId) else { return [] }
+            var results: [SearchResult] = []
+            for entry in folder.entries {
+                let entryId = entry.id == entry.childId ? entry.id.childPath(of: folder.id) : entry.id
+                if let node = syncBuildFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, includeTags: includeTags) {
+                    results.append(node)
+                }
+            }
+            if searchText.isEmpty {
+                if folder.category == .folder {
+                    results.sort { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+                }
+            } else {
+                results = results.sortedByRelevance()
+            }
+            return results
+        } else {
+            let allIds = itemControllable.itemDataModel.items
+            var results: [SearchResult] = []
+            for itemId in allIds {
+                guard let item = itemControllable.itemSync(for: itemId),
+                      item.parentId == nil,
+                      item.displayState == 0 else { continue }
+                if let node = syncBuildFolderNode(itemId: itemId, searchText: searchText, displayMode: displayMode, includeTags: includeTags) {
+                    results.append(node)
+                }
+            }
+            if searchText.isEmpty {
+                return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+            }
+            return results.sortedByRelevance()
+        }
+    }
+
+    @MainActor private func syncBuildFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, includeTags: Bool = true) -> SearchResult? {
+        guard let item = itemControllable.itemSync(for: itemId),
+              item.displayState == 0 else { return nil }
+
+        let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode, includeTags: includeTags)
+
+        if item.specialCategory {
+            var childNodes: [SearchResult] = []
+            if !searchText.isEmpty {
+                for entry in item.entries {
+                    let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
+                    if let child = syncBuildFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, includeTags: includeTags) {
+                        childNodes.append(child)
+                    }
+                }
+                if item.category == .folder {
+                    childNodes = childNodes.sortedByRelevance()
+                }
+            }
+            guard itemMatches || !childNodes.isEmpty else { return nil }
+            var node = makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
+            node.children = childNodes
+            node.canOpen = childNodes.isEmpty
+            return node
+        } else {
+            guard itemMatches else { return nil }
+            return makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
+        }
+    }
+}
+

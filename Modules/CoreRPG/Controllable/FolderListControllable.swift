@@ -32,7 +32,7 @@ extension FolderListControllable {
         let searchText = searchModel.searchText
         let displayMode = listDisplayModel.displayMode
         
-        Logger.folderListControllable.info("🔍 [Search] Starting search - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue)")
+        Logger.folderListControllable.info("🔍 [Search] Starting ASYNC search - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue)")
         
         searchModel.isSearching = true
         defer { searchModel.isSearching = false }
@@ -47,7 +47,29 @@ extension FolderListControllable {
         withAnimation { resetFilter() }
         
         let duration = ContinuousClock.now - startTime
-        Logger.folderListControllable.info("✅ [Search] Completed - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue), duration: \(duration), results: \(newResults.count)")
+        Logger.folderListControllable.info("✅ [Search] Completed ASYNC - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue), duration: \(duration), results: \(newResults.count)")
+    }
+
+    /// Synchronous search using only in-memory data (itemSync).
+    /// Used for updates when search text hasn't changed and data is already loaded.
+    /// This avoids unnecessary async overhead and keeps updates on the same run loop.
+    @MainActor public func performSyncSearch(source: String) {
+        let startTime = ContinuousClock.now
+        let searchText = searchModel.searchText
+        let displayMode = listDisplayModel.displayMode
+        
+        Logger.folderListControllable.info("🔍 [Search] Starting SYNC search - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue)")
+        
+        searchModel.isSearching = true
+        defer { searchModel.isSearching = false }
+
+        let newResults = searchRootControllable.syncResults(text: searchModel.searchText)
+        searchModel.results = newResults
+        searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && newResults.isEmpty
+        withAnimation { resetFilter() }
+        
+        let duration = ContinuousClock.now - startTime
+        Logger.folderListControllable.info("✅ [Search] Completed SYNC - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue), duration: \(duration), results: \(newResults.count)")
     }
 
     /// Fire-and-forget variant for call sites that cannot `await` (e.g. synchronous
@@ -100,8 +122,8 @@ public extension FolderListControllable {
             await performDetailSearch()
             resetFilter()
         } else {
-            await performSearch(source: "update")
-            // performSearch already calls resetFilter inside withAnimation — no repeat needed.
+            // Use sync search for updates — data is already in memory from the observation stream
+            performSyncSearch(source: "update")
         }
 
         if let addedModelId = listModel.addedModelId,

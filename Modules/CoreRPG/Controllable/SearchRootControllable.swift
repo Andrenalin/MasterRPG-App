@@ -6,6 +6,9 @@ public protocol SearchRootControllable: Sendable  {
     var searchModel: SearchModel { get }
     /// Standard search — results stored on `searchModel.results`.
     @MainActor func results(text: String) async -> [SearchResult]
+    /// Synchronous version of results — pure in-memory search using itemSync.
+    /// Used for updates when we know the data is already loaded.
+    @MainActor func syncResults(text: String) -> [SearchResult]
     /// Child/entry expansion — called by `loadChildrenViaSearch` when the user taps a chevron.
     /// Returns flat entry/child results for the focusId item:
     ///   - `specialCategory` → folder children via folder-mode search.

@@ -4,6 +4,8 @@ import SwiftUI
 
 @MainActor
 struct FakeSearchController: SearchControllable, SearchRootControllable {
+    func syncResults(text: String) -> [SearchResult] { [] }
+    
     let searchModel: SearchModel = .preview()
 
     func results(text: String) async -> [SearchResult] { [] }
