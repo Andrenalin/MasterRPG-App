@@ -443,9 +443,11 @@ private struct TileNeedleMapPin: View {
                 .fill(Color.blue)
                 .frame(width: 4, height: 60)
         }
+#if !os(tvOS)
         .gesture(dragGesture)
+    #endif
     }
-    
+    #if !os(tvOS)
     var dragGesture: some Gesture {
         DragGesture(minimumDistance: 3)
             .updating($isDragging) { _, state, _ in
@@ -463,6 +465,7 @@ private struct TileNeedleMapPin: View {
                 onUpdate(updatedEntry.coordinates)
             }
     }
+    #endif
     
     private var needlePath: Path {
         var p = Path()
@@ -579,7 +582,8 @@ private extension MapEditor {
     func magnifierAction(_ value: CGFloat, isFirst: Bool) {
         viewModel.updateScale(value, updateLast: isFirst)
     }
-    
+
+#if !os(tvOS)
     func handleTileEditorRelease(_ value: DragGesture.Value) {
         guard var entry = tileEntry else { return }
         
@@ -602,6 +606,7 @@ private extension MapEditor {
         // Sync to working copy's displayConfig
         viewModel.workingCopy?.displayConfig.tileCoordinates = entry.coordinates
     }
+    #endif
 }
 
 #Preview(traits: .mockData) {
