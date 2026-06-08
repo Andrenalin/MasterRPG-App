@@ -286,12 +286,12 @@ extension EditController {
         }
     }
 
-    @MainActor func willDeleteChildren(of item: ValueModel) {
+    @MainActor func willDeleteChildren(of item: ValueModel) async {
         guard item.category != .folder else { return }
         for entry in item.entries {
-            guard let valueId = entry.valueId, let entryItem = editModel(for: valueId) else { continue }
-            entryItem.groupId = nil
-            save(updated: entryItem, message: String(localized: "Remove parent", bundle: .module).localizedString)
+            guard let valueId = entry.valueId else { continue }
+            await Task.yield()
+            await delete(itemId: valueId)
         }
     }
 
@@ -609,18 +609,41 @@ extension EditController {
     }
 
     @MainActor private func repairGroupItemConstraints(itemId: UUID, valueIdOwners: [UUID: [UUID]]) {
-        guard let owners = valueIdOwners[itemId], owners.count > 1,
-              let groupId = (itemControllable.itemSync(for: itemId) as? ValueModel)?.groupId
-        else { return }
-        let groupItemName = itemControllable.nameSync(itemId: itemId)
-        let authName = itemControllable.nameSync(itemId: groupId)
-        for ownerId in owners where ownerId != groupId {
-            guard let owner = editModel(for: ownerId) else { continue }
-            let before = owner.entries.count
-            owner.entries.removeAll { $0.valueId == itemId }
-            guard owner.entries.count != before else { continue }
-            Logger.editController.warning("[Repair] GroupItem '\(groupItemName, privacy: .public)': removed duplicate reference from '\(owner.name, privacy: .public)' (authoritative owner: '\(authName, privacy: .public)')")
-            save(updated: owner, message: String(localized: "Repair group item", bundle: .module).localizedString)
+        guard let groupItem = editModel(for: itemId) else { return }
+        groupItem.parentId = nil // groups always on root level / no relationship to folders
+
+        let owners = valueIdOwners[itemId]
+        let firstOwnerId = owners?.first
+        if groupItem.groupId != firstOwnerId {
+            if let oldOwnerId = groupItem.groupId {
+                removeOld(groupItemId: itemId, valueId: oldOwnerId)
+            }
+            groupItem.groupId = firstOwnerId
         }
+        if groupItem.groupId == nil {
+            groupItem.displayState = 0 // make this visible (or should I remove it?
+        }
+        save(updated: groupItem, message: "Reparing group item")
+        guard let owners, owners.count > 1 else { return }
+        for ownerId in owners.dropFirst() {
+            removeOld(groupItemId: itemId, valueId: ownerId)
+        }
+    }
+    
+    @MainActor private func removeOld(groupItemId: UUID, valueId: UUID) {
+        guard let oldOwner = editModel(for: valueId) else { return }
+        oldOwner.entries = oldOwner.entries.map {
+            if $0.valueId == groupItemId {
+                var changed = $0
+                changed.valueId = nil
+                return changed
+            } else {
+                return $0
+            }
+        }
+        let groupItemName = itemControllable.nameSync(itemId: groupItemId)
+
+        Logger.editController.warning("[Repair] GroupItem '\(groupItemName, privacy: .public)': removed duplicate reference from '\(oldOwner.name, privacy: .public)'")
+        save(updated: oldOwner, message: String(localized: "Repair group item", bundle: .module).localizedString)
     }
 }

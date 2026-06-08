@@ -77,11 +77,10 @@ extension LinkController: LinkControllable {
             validateLinks(on: inspectedId)
         }
         validateParentId()
-        editController.repairCharacterContrains()
     }
     
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), let replacedItem = itemController.copy(of: itemId) else { return }
+        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
         
         replacedItem.photos = replacedItem.photos.compactMap { photoId in
             if rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {

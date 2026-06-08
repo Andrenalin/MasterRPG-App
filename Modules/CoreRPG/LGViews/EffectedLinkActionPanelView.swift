@@ -79,18 +79,14 @@ public struct EffectedLinkActionPanelView: View {
 
 private extension EffectedLinkActionPanelView {
     @MainActor func removeItems(models: [ItemRowModel]) {
-        Task {
-            for model in models {
-                root.editControllable.delete(itemId: model.itemId)
-            }
+        for model in models {
+            root.editControllable.markForDeletion(itemId: model.itemId)
         }
     }
     
     @MainActor func restoreItems(models: [ItemRowModel]) {
-        Task {
-            for model in models {
-                root.editControllable.restore(itemId: model.itemId)
-            }
+        for model in models {
+            root.editControllable.restore(itemId: model.itemId)
         }
         Task { await root.folderListControllable.performSearch() }
     }

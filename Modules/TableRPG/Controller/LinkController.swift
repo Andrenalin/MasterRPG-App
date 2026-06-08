@@ -63,7 +63,7 @@ extension LinkController: LinkControllable {
     }
     
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), let replacedItem = itemController.copy(of: itemId) else { return }
+        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
         
         if let diceId = replacedItem.diceId {
             if !rootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {

@@ -17,7 +17,7 @@ public protocol EditControllable: Sendable {
     // overwrite extensions
     @MainActor func duplicate(item: any ItemDataAccessable) async
     @MainActor func validateBeforeSave(model: Model)
-    @MainActor func willDeleteChildren(of item: Model)
+    @MainActor func willDeleteChildren(of item: Model) async
     @MainActor func willRestore(item: inout Model)
     @MainActor func isOrphanedHidden(itemId: UUID) -> Bool
     @MainActor func willRepairOrphan(itemId: UUID)
@@ -31,7 +31,7 @@ public extension EditControllable {
     }
 
     @MainActor func validateBeforeSave(model: Model) {}
-    @MainActor func willDeleteChildren(of item: Model) {}
+    @MainActor func willDeleteChildren(of item: Model) async {}
     @MainActor func willRestore(item: inout Model) {}
 }
 
@@ -339,7 +339,7 @@ public extension EditControllable {
         return await itemControllable.item(for: itemId)
     }
     
-    @MainActor func delete(itemId: UUID) {
+    @MainActor func delete(itemId: UUID) async {
         Task {
             await CloudKitOperationCounter.shared.recordOperation(
                 function: "EditControllable.delete(itemId:)",
@@ -347,36 +347,22 @@ public extension EditControllable {
             )
         }
         
-        guard var item = editModel(for: itemId) else { return }
-        guard item.displayState != 2 else {
-            // real delete
-            Task {
-                await itemControllable.delete(itemId: itemId)
-            }
-            return
-        }
-        willDeleteChildren(of: item)
+        guard let item = await itemControllable.item(for: itemId) as? Model else { return }
+        await willDeleteChildren(of: item)
         for entry in item.entries {
-            if var entryItem = editModel(for: entry.childId) {
-                if item.category == .folder {
-                    entryItem.parentId = item.parentId // move to upper folder (or root if nil)
-                    entryItem.displayState = 2 // mark children as deleted when folder is deleted
-                } else {
-                    entryItem.displayState = 0 // for non-folder containers, reset to visible
-                }
-                save(updated: entryItem, message: String(localized: "Remove parent", bundle: .module).localizedString)
+            if item.category == .folder {
+                await Task.yield()
+                await delete(itemId: entry.childId)
+            } else if !item.specialCategory {
+                linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemControllable.config.module))
             }
         }
         
         tagController.remove(tags: item.tags, module: itemControllable.config.module)
         linkRegisterController.repairLinks(for: [ItemRowModel(itemId: itemId, typeId: itemControllable.config.module)])
         linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: itemControllable.config.module))
-        for entry in item.entries {
-            linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemControllable.config.module))
-        }
-
-        item.displayState = 2
-        save(updated: item, message: String(localized: "Delete", bundle: .module).localizedString)
+        
+        await itemControllable.delete(itemId: itemId)
     }
     
     @MainActor func duplicate(item: any ItemDataAccessable) async {
