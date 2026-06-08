@@ -44,7 +44,7 @@ struct SearchItemListViewModifier: ViewModifier {
                 }
                 withAnimation { searchModel.searchText = searchModel.searchFieldText }
             }
-            .onChange(of: searchModel.searchText, initial: true) {
+            .onChange(of: searchModel.searchText) {
                 updateSearch()
             }
             .onChange(of: searchModel.selectedTokens) {
@@ -74,7 +74,7 @@ struct SearchItemListViewModifier: ViewModifier {
             } catch {
                 return  // Cancelled by next keystroke — stop cleanly
             }
-            await listControllable.performSearch()
+            await listControllable.performSearch(source: "saerch update viewmodifier")
         }
     }
     

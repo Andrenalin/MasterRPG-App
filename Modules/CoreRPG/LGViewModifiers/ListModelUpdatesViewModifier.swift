@@ -42,12 +42,11 @@ struct ListModelUpdatesViewModifier: ViewModifier {
             .onChange(of: listModel.selected) {
                 withAnimation { updateSelected() }
             }
-            .onChange(of: listControllable.listDisplayModel.listMode, initial: true) {
-                // Rebuild immediately so the switch is visible at once, then cancel any
-                // previous mode-change search and start a fresh one.
-                withAnimation { listControllable.resetFilter() }
+            .onChange(of: listControllable.listDisplayModel.listMode) {
+                // Cancel any previous mode-change search and start a fresh one.
+                // performSearch will handle resetFilter internally.
                 searchTask?.cancel()
-                searchTask = Task { await listControllable.performSearch() }
+                searchTask = Task { await listControllable.performSearch(source: "listMode.onChange") }
             }
             .onChange(of: listControllable.listDisplayModel.isSelectionMode, initial: true) {
                 withAnimation {

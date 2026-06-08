@@ -2,6 +2,7 @@
 
 import Foundation
 import SwiftUI
+import os
 
 @MainActor
 public protocol FolderListControllable: Sendable {
@@ -26,22 +27,34 @@ extension FolderListControllable {
     /// Structured: if the enclosing `Task` is cancelled (e.g. view disappears or a
     /// newer search fires), this function exits at the next cancellation check and
     /// leaves the current list unchanged.
-    @MainActor public func performSearch() async {
+    @MainActor public func performSearch(source: String) async {
+        let startTime = ContinuousClock.now
+        let searchText = searchModel.searchText
+        let displayMode = listDisplayModel.displayMode
+        
+        Logger.folderListControllable.info("🔍 [Search] Starting search - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue)")
+        
         searchModel.isSearching = true
         defer { searchModel.isSearching = false }
 
         let newResults = await searchRootControllable.results(text: searchModel.searchText)
-        guard !Task.isCancelled else { return }
+        guard !Task.isCancelled else {
+            Logger.folderListControllable.info("⚠️ [Search] Cancelled - source: '\(source)', text: '\(searchText)'")
+            return
+        }
         searchModel.results = newResults
         searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && newResults.isEmpty
         withAnimation { resetFilter() }
+        
+        let duration = ContinuousClock.now - startTime
+        Logger.folderListControllable.info("✅ [Search] Completed - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue), duration: \(duration), results: \(newResults.count)")
     }
 
     /// Fire-and-forget variant for call sites that cannot `await` (e.g. synchronous
     /// protocol-extension callbacks like `resetParent`, `toggleFolder`).
     /// Assigning to `currentTask` auto-cancels the previous search via `didSet`.
     @MainActor func scheduleSearch() {
-        searchModel.currentTask = Task { await performSearch() }
+        searchModel.currentTask = Task { await performSearch(source: "scheduleSearch") }
     }
 
     /// Runs a scoped search for the detail list's parent and populates
@@ -87,7 +100,7 @@ public extension FolderListControllable {
             await performDetailSearch()
             resetFilter()
         } else {
-            await performSearch()
+            await performSearch(source: "update")
             // performSearch already calls resetFilter inside withAnimation — no repeat needed.
         }
 
@@ -129,7 +142,7 @@ public extension FolderListControllable {
     func resetItemOnce() async {
         guard listModel.updatedOnce == false else { return }
         listModel.updatedOnce = true
-        await performSearch()
+        await performSearch(source: "resetItemOnce")
     }
 
     func resetParent(model: (any ItemDataAccessable)?) {
