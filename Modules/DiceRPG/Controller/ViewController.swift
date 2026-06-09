@@ -43,27 +43,27 @@ public extension ViewController {
 }
 
 public extension ViewController {
-    func diceRollView(root: DiceRootModel) -> some View {
+    @MainActor func diceRollView(root: DiceRootModel) -> some View {
         DiceFocusRoll()
             .environment(root)
     }
 
-    func diceActionBarView(root: DiceRootModel) -> some View {
+    @MainActor func diceActionBarView(root: DiceRootModel) -> some View {
         DiceFocusActionBar()
             .environment(root)
     }
 
-    func diceResultView(root: DiceRootModel) -> some View {
+    @MainActor func diceResultView(root: DiceRootModel) -> some View {
         DiceFocusResult()
             .environment(root)
     }
 
-    func dicePlayerView(root: DiceRootModel) -> some View {
+    @MainActor func dicePlayerView(root: DiceRootModel) -> some View {
         DicePlayerRoot()
             .environment(root)
     }
 
-    func overlayGameView(root: DiceRootModel, hideDice: Bool) -> some View {
+    @MainActor func overlayGameView(root: DiceRootModel, hideDice: Bool) -> some View {
         RootDiceOverlay(hideDice: hideDice)
             .environment(root)
     }

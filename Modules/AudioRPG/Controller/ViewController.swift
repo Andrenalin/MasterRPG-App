@@ -44,21 +44,19 @@ public extension ViewController {
 // MARK: - Others
 
 public extension ViewController {
-    @MainActor
-    func viewAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
+    @MainActor func viewAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
         root.gameController.play(id: id, shouldPlay: true)
         return AudioPlayerView()
             .environment(root)
     }
 
-    @MainActor
-    func menuAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
+    @MainActor func menuAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
         root.gameController.play(id: id, shouldPlay: true)
         return AudioPlayerBarView()
             .environment(root)
     }
 
-    func viewVolume(root: AudioRootModel, alignment: Alignment) -> some View {
+    @MainActor func viewVolume(root: AudioRootModel, alignment: Alignment) -> some View {
         PlayerVolumeView(root: root, alignment: alignment)
     }
 }

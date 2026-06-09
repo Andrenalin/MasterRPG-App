@@ -27,33 +27,44 @@ public extension SyncDataControllable {
                 file: "ItemSyncable.swift"
             )
             
+            // Process deletions
             if !deletedIds.isEmpty {
                 let ids = try await dataControllable.fetchIds()
-                let removedIds = await Set(itemControllable.itemDataModel.items).subtracting(ids)
+                
+                // Safely access MainActor-isolated itemDataModel.items
+                let currentItems = await MainActor.run {
+                    Set(itemControllable.itemDataModel.items)
+                }
+                
+                let removedIds = currentItems.subtracting(ids)
                 for removedId in removedIds {
                     await itemControllable.delete(itemId: removedId, withFileData: false, withDatabase: false)
                 }
             }
             
-            // For inserted and updated items from sync:
+            // Process insertions
             // The data is ALREADY in Core Data (we're fetching from it!)
             // We only need to update in-memory models, NOT save back to database
             for insertedId in insertedIds {
                 guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
-                await itemControllable.resetModel(with: model)
+                await MainActor.run {
+                    itemControllable.resetModel(with: model)
+                }
             }
+            
+            // Process updates
             for updatedId in updatedIds {
                 guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
-                // Use replace with forceSave=false to skip database write
-                await itemControllable.mergeUpdates(model: model)
+                // Use mergeUpdates to avoid database writes during sync
+                await MainActor.run {
+                    itemControllable.mergeUpdates(model: model)
+                }
             }
         }
     }
     
     private func fetchUpdates() async {
         guard let newItems = try? await dataControllable.fetch() else { return }
-        //Task { @MainActor in
-            await itemControllable.updates(newItems)
-        //}
+        await itemControllable.updates(newItems)
     }
 }
