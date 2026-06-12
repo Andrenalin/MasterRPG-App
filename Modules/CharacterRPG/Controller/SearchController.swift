@@ -231,7 +231,7 @@ extension SearchController {
         let itemIds = itemControllable.itemDataModel.items
         var foundResults: [SearchResult] = []
         for itemId in itemIds {
-            guard let item = itemControllable.itemSync(for: itemId) as? ValueModel,
+            guard let item = itemController.itemSync(for: itemId),
                   item.groupId == nil,
                   item.displayState == 0,
                   !item.specialCategory else { continue }
@@ -247,7 +247,7 @@ extension SearchController {
     /// Synchronous folder tree: hierarchical results rooted at focusId or all root-level items.
     @MainActor private func syncFolderModeCharacterResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) -> [SearchResult] {
         if let focusId {
-            guard let folder = itemControllable.itemSync(for: focusId) as? ValueModel else { return [] }
+            guard let folder = itemController.itemSync(for: focusId) else { return [] }
             var results: [SearchResult] = []
             for entry in folder.entries {
                 if let node = syncBuildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id, includeTags: includeTags) {
@@ -328,7 +328,7 @@ extension SearchController {
                 // Sub-value items (groupId != nil) are group-entry sub-values, not root characters.
                 // Return their entries as direct flat results so loadChildrenViaSearch can place
                 // them as children of the group entry row — not wrapped in a character result.
-                guard let item = itemControllable.itemSync(for: focusId) as? ValueModel else { return [] }
+                guard let item = itemController.itemSync(for: focusId) else { return [] }
                 if item.groupId != nil {
                     let entries = searchText.isEmpty
                         ? item.entries
@@ -368,7 +368,8 @@ extension SearchController {
                 // Sub-value items (groupId != nil) are group-entry sub-values, not root characters.
                 // Return their entries as direct flat results so loadChildrenViaSearch can place
                 // them as children of the group entry row — not wrapped in a character result.
-                if let item = await itemController.item(for: focusId), item.groupId != nil {
+                guard let item = await itemController.item(for: focusId) else { return [] }
+                if item.groupId != nil {
                     let entries = searchText.isEmpty
                         ? item.entries
                         : item.entries.filter {
