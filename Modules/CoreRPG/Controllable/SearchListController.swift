@@ -80,6 +80,17 @@ extension SearchListController: SearchRootControllable {
         return results
     }
 
+    /// Synchronous scoped view: folder mode to return the parent's children.
+    /// Used by `performSyncDetailSearch` when switching between already-loaded items.
+    @MainActor public func syncScopedResults(text: String, focusId: UUID) -> [SearchResult] {
+        searchController.syncListSearchResults(
+            searchText: text,
+            listMode: .folder,
+            displayMode: listDisplayModel.displayMode,
+            focusId: focusId
+        )
+    }
+
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {
         SearchListController(
             searchController: searchController,
@@ -206,6 +217,18 @@ extension SearchLinkController: SearchRootControllable {
                 )
             }.sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
         }
+    }
+
+    /// Synchronous scoped view: always uses list mode so that per-module overrides
+    /// (e.g. CharacterRPG's `focusedCharacterInspector`) receive the focus and return
+    /// the item-as-root structure. Uses only in-memory data via `syncInspectorSearchResults`.
+    @MainActor public func syncScopedResults(text: String, focusId: UUID) -> [SearchResult] {
+        searchController.syncInspectorSearchResults(
+            searchText: text,
+            listMode: .list,
+            displayMode: listDisplayModel.displayMode,
+            focusId: focusId
+        )
     }
 
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {

@@ -41,6 +41,17 @@ public final class SearchModel: Sendable {
 
     /// Tracks the most-recently-scheduled background search task.
     /// Assigning a new task automatically cancels the previous one via `didSet`.
+    /// 
+    /// Alternative approach for future consideration: Use `AsyncStream` with debouncing
+    /// to handle rapid search text changes more elegantly. Example:
+    /// ```swift
+    /// // In a view or controller:
+    /// Task {
+    ///     for await searchText in searchTextStream.debounce(for: .milliseconds(300)) {
+    ///         await performSearch(text: searchText)
+    ///     }
+    /// }
+    /// ```
     @ObservationIgnored public var currentTask: Task<Void, Never>? {
         didSet { oldValue?.cancel() }
     }
@@ -59,7 +70,9 @@ public final class SearchModel: Sendable {
             searchTags = []
             return
         }
-        Task {
+        // Cancel any in-flight tag suggestion search before starting a new one
+        currentTask?.cancel()
+        currentTask = Task {
             await self.updateTagSuggestions(tagSearch: tagSearch)
         }
     }

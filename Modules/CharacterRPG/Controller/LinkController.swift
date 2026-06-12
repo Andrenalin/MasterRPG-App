@@ -37,7 +37,7 @@ extension LinkController: LinkControllable {
         } else {
             if let toggler, entryId == nil, editAction == nil {
                 Task { @MainActor in
-                    try await Task.sleep(for: .milliseconds(100))
+                    try? await Task.sleep(for: .milliseconds(100))
                     await toggler(itemId, itemController.config.module)
                 }
             }

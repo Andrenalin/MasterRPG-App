@@ -107,6 +107,22 @@ extension FolderListControllable {
         searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && newResults.isEmpty
         detailListModel.list = buildDetailListItems()
     }
+
+    /// Synchronous version of performDetailSearch using only in-memory data.
+    /// Used when switching between already-loaded items where async overhead
+    /// would cause the view to render stale data before the search completes.
+    @MainActor public func performSyncDetailSearch() {
+        guard let detailListModel = listModel.detailListModel,
+              let parentModel = detailListModel.parentModel else { return }
+        
+        let newResults = searchRootControllable.syncScopedResults(
+            text: searchModel.searchText,
+            focusId: parentModel.id
+        )
+        searchModel.detailResults = newResults
+        searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && newResults.isEmpty
+        detailListModel.list = buildDetailListItems()
+    }
 }
 
 public extension FolderListControllable {
@@ -181,11 +197,16 @@ public extension FolderListControllable {
     
     /// Called when a folder/collection is selected as the detail page's parent.
     /// Creates (or resets) `listModel.detailListModel` scoped to `model`, then
-    /// fires a background search to populate it.
+    /// performs a synchronous search to populate it immediately.
+    /// 
+    /// Uses sync search because:
+    /// - Data is already in memory from observation stream
+    /// - View needs immediate update when parentModel changes
+    /// - Async search causes view to render stale data during the await
     func resetDetail(model: (any ItemDataAccessable)) {
         listModel.resetDetailList(parentModel: model)
         listModel.detailListModel?.updatedOnce = true
-        searchModel.currentTask = Task { await performDetailSearch() }
+        performSyncDetailSearch()
     }
 
     /// Fire-and-forget `performDetailSearch` — used by `LinkItemListView` when `parentModel != nil`.
