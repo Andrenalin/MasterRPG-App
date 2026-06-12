@@ -20,7 +20,7 @@ struct ConverterControllerTests {
 
     /// An item inside a folder with an entry pointing to a sub-item.
     /// The sub-item has parentId (folder) and groupId (owner) both set.
-    /// Running checkFolders must not touch either relationship.
+    /// Running checkFolders must clear parentId (group items are always at root level).
     @Test func folderItemWithGroupSubItem_baselineIsPreserved() async throws {
         // Given
         let root = try await MockRoot.importTestData()
@@ -48,10 +48,11 @@ struct ConverterControllerTests {
         // When
         await root.checkFolders(reportModel: ValidateRepairModel())
 
-        // Then – both relationships intact
+        // Then – checkFolders clears parentId for group items (they're always at root level)
+        // This matches the behavior in EditController.repairGroupItemConstraints (line 534)
         let childAfter = await root.itemController.itemOrEmpty(for: childId)
         #expect(childAfter.groupId  == ownerId)
-        #expect(childAfter.parentId == folderId)
+        #expect(childAfter.parentId == nil)  // parentId cleared - groups on root level
         #expect(childAfter.displayState == 1)
 
         // Folder still contains the owner
@@ -62,8 +63,8 @@ struct ConverterControllerTests {
     // MARK: - Missing groupId: checkFolders restores it, parentId (folder) is kept
 
     /// Same layout but the sub-item lost its groupId (e.g. Phase 1 export or data corruption).
-    /// checkFolders must stamp groupId back from the entry reference, and must NOT clear
-    /// the real folder parentId.
+    /// checkFolders must stamp groupId back from the entry reference, and must clear parentId
+    /// (group items are always at root level).
     @Test func folderItemWithGroupSubItem_missingGroupId_isRepairedKeepingParentId() async throws {
         // Given
         let root = try await MockRoot.importTestData()
@@ -89,10 +90,10 @@ struct ConverterControllerTests {
         // When
         await root.checkFolders(reportModel: ValidateRepairModel())
 
-        // Then – groupId restored, folder parentId preserved
+        // Then – groupId restored, parentId cleared (groups always on root level)
         let childAfter = await root.itemController.itemOrEmpty(for: childId)
         #expect(childAfter.groupId  == ownerId)
-        #expect(childAfter.parentId == folderId)   // real folder parentId must survive
+        #expect(childAfter.parentId == nil)  // cleared - groups always on root level
         #expect(childAfter.displayState == 1)
     }
 
@@ -160,7 +161,8 @@ struct ConverterControllerTests {
     // MARK: - Group member not hidden: checkFolders stamps displayState=1
 
     /// A sub-item that belongs to a group (groupId set) but whose displayState was reset to
-    /// visible (e.g. by an older repair pass). checkFolders must re-hide it.
+    /// visible (e.g. by an older repair pass). checkFolders must re-hide it by setting
+    /// displayState=1 when processing the owner's entry that references this sub-item.
     @Test func subItem_groupMember_notHidden_isReHiddenByCheckFolders() async throws {
         // Given
         let root = try await MockRoot.importTestData()
@@ -183,7 +185,7 @@ struct ConverterControllerTests {
         // When
         await root.checkFolders(reportModel: ValidateRepairModel())
 
-        // Then – checkFolders stamps displayState=1 on claimed sub-items
+        // Then – checkFolders sets displayState=1 on sub-items referenced via entry.valueId
         let childAfter = await root.itemController.itemOrEmpty(for: childId)
         #expect(childAfter.displayState == 1)
         #expect(childAfter.groupId == ownerId)

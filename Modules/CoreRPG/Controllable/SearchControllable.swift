@@ -632,7 +632,9 @@ public extension SearchControllable {
     @MainActor func syncInspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) -> [SearchResult] {
         switch listMode {
         case .folder:
-            return syncFolderModeResults(searchText: searchText, focusId: focusId, displayMode: displayMode, includeTags: false)
+            // Inspector folder mode behaves like list mode for entries — same content is
+            // searched, only the tree structure differs (folder hierarchy instead of flat list).
+            return syncFolderModeResults(searchText: searchText, focusId: focusId, displayMode: displayMode, searchEntries: true, includeTags: false)
         case .list:
             // Default: batch list results only (no focused character inspector support)
             return inspectorBatchListResults(searchText: searchText, displayMode: displayMode)
@@ -659,13 +661,13 @@ public extension SearchControllable {
 
     // MARK: - Sync Folder Mode
     
-    @MainActor private func syncFolderModeResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) -> [SearchResult] {
+    @MainActor private func syncFolderModeResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, searchEntries: Bool = false, includeTags: Bool = true) -> [SearchResult] {
         if let focusId {
             guard let folder = itemControllable.itemSync(for: focusId) else { return [] }
             var results: [SearchResult] = []
             for entry in folder.entries {
                 let entryId = entry.id == entry.childId ? entry.id.childPath(of: folder.id) : entry.id
-                if let node = syncBuildFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, includeTags: includeTags) {
+                if let node = syncBuildFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, searchEntries: searchEntries, includeTags: includeTags) {
                     results.append(node)
                 }
             }
@@ -684,7 +686,7 @@ public extension SearchControllable {
                 guard let item = itemControllable.itemSync(for: itemId),
                       item.parentId == nil,
                       item.displayState == 0 else { continue }
-                if let node = syncBuildFolderNode(itemId: itemId, searchText: searchText, displayMode: displayMode, includeTags: includeTags) {
+                if let node = syncBuildFolderNode(itemId: itemId, searchText: searchText, displayMode: displayMode, searchEntries: searchEntries, includeTags: includeTags) {
                     results.append(node)
                 }
             }
@@ -695,7 +697,7 @@ public extension SearchControllable {
         }
     }
 
-    @MainActor private func syncBuildFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, includeTags: Bool = true) -> SearchResult? {
+    @MainActor private func syncBuildFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, searchEntries: Bool = false, includeTags: Bool = true) -> SearchResult? {
         guard let item = itemControllable.itemSync(for: itemId),
               item.displayState == 0 else { return nil }
 
@@ -706,7 +708,7 @@ public extension SearchControllable {
             if !searchText.isEmpty {
                 for entry in item.entries {
                     let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
-                    if let child = syncBuildFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, includeTags: includeTags) {
+                    if let child = syncBuildFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, searchEntries: searchEntries, includeTags: includeTags) {
                         childNodes.append(child)
                     }
                 }
@@ -719,6 +721,38 @@ public extension SearchControllable {
             node.children = childNodes
             node.canOpen = childNodes.isEmpty
             return node
+        } else if searchEntries {
+            // Inspector folder mode: also search entries and return matching ones as children.
+            // Empty search: never return entry children — set canOpen so user can expand.
+            var entryChildren: [SearchResult] = []
+            if !searchText.isEmpty {
+                for entry in item.entries {
+                    if entry.name.localizedStandardContains(searchText)
+                        || entry.content.localizedStandardContains(searchText) {
+                        entryChildren.append(SearchResult(
+                            itemId: item.id,
+                            itemName: item.name,
+                            module: itemControllable.config.module,
+                            category: item.category,
+                            entryId: entry.id,
+                            entryName: entry.name,
+                            matchedContent: entry.content.isEmpty ? nil : entry.content,
+                            relevanceScore: calculateRelevance(
+                                searchText: searchText,
+                                itemName: item.name,
+                                entryName: entry.name,
+                                content: entry.content,
+                                isItemMatch: false
+                            )
+                        ))
+                    }
+                }
+            }
+            guard itemMatches || !entryChildren.isEmpty else { return nil }
+            var result = makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
+            result.children = entryChildren.sortedByRelevance()
+            result.canOpen = !item.entries.isEmpty
+            return result
         } else {
             guard itemMatches else { return nil }
             return makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)

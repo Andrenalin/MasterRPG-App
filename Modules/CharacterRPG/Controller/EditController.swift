@@ -281,8 +281,16 @@ extension EditController {
     }
 
     @MainActor func willRestore(item: inout ValueModel) {
-        if let groupId = item.groupId, let groupItem = editModel(for: groupId), groupItem.displayState == 2 {
-            item.groupId = nil
+        if let groupId = item.groupId {
+            // Clear groupId if parent is deleted OR doesn't exist
+            if let groupItem = editModel(for: groupId) {
+                if groupItem.displayState == 2 {
+                    item.groupId = nil
+                }
+            } else {
+                // Parent doesn't exist - clear the orphaned groupId
+                item.groupId = nil
+            }
         }
     }
 

@@ -32,14 +32,14 @@ struct FolderListControllerTests {
     private func searchList(_ root: PhotoRootModel, text: String = "") async {
         root.folderListController.listDisplayModel.listMode = .list
         root.folderListController.searchModel.searchText = text
-        await root.folderListController.performSearch()
+        await root.folderListController.performSearch(source: "test")
     }
 
     /// Runs `performSearch` via the list controller in **folder** mode.
     private func searchFolder(_ root: PhotoRootModel, text: String = "") async {
         root.folderListController.listDisplayModel.listMode = .folder
         root.folderListController.searchModel.searchText = text
-        await root.folderListController.performSearch()
+        await root.folderListController.performSearch(source: "test")
     }
 
     // MARK: - buildList / resetFilter
@@ -1228,7 +1228,7 @@ struct FolderListControllerTests {
         // Use folderLinkController — the controller behind LinkItemListView (inspector)
         root.folderLinkController.listDisplayModel.listMode = .folder
         root.folderLinkController.searchModel.filterId = nil
-        await root.folderLinkController.performSearch()
+        await root.folderLinkController.performSearch(source: "test")
 
         let folderNode = root.folderLinkController.listModel.list
             .first(where: { $0.source.itemId == folderId })
@@ -1277,7 +1277,7 @@ struct FolderListControllerTests {
 
         root.folderLinkController.listDisplayModel.listMode = .folder
         root.folderLinkController.searchModel.filterId = nil
-        await root.folderLinkController.performSearch()
+        await root.folderLinkController.performSearch(source: "test")
 
         let folderNode = root.folderLinkController.listModel.list
             .first(where: { $0.source.itemId == folderId })

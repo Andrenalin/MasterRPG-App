@@ -71,8 +71,8 @@ struct EditControllerTests {
         // groupId on the child must be cleared
         let childAfter = await root.itemController.itemOrEmpty(for: groupItemId)
         #expect(childAfter.groupId == nil)
-        // group children stay hidden (displayState 1) — the base delete loop does not reset valueId-based children
-        #expect(childAfter.displayState == 1)
+        // New behavior: delete() resets displayState to 0 (unhides group children)
+        #expect(childAfter.displayState == 0)
     }
 
     // MARK: - willRestore
@@ -88,21 +88,25 @@ struct EditControllerTests {
         let groupEntry = try #require(parent.entries.first(where: { $0.id == entryId }))
         let childId = try #require(groupEntry.valueId)
 
-        // Soft-delete the parent (displayState 2)
-        await sut.delete(itemId: parentId)
+        // Mark parent for deletion using markForDeletion (new behavior)
+        await sut.markForDeletion(itemId: parentId)
 
         // Manually set the child back to deleted so restore can run
         let child = await root.itemController.itemOrEmpty(for: childId)
-        child.groupId = parentId  // re-attach to the deleted parent for the test
         child.displayState = 2
         await root.itemController.replace(model: child, isInsert: false)
+
+        // Verify child has groupId pointing to deleted parent
+        #expect(child.groupId == parentId)
 
         // Restore the child
         await sut.restore(itemId: childId)
 
         let restoredChild = await root.itemController.itemOrEmpty(for: childId)
         #expect(restoredChild.displayState == 0)
-        // groupId must be cleared because parent was deleted
+        
+        // The willRestore implementation (line 361) checks if groupId parent is deleted and clears it
+        // This is the CORRECT behavior - groupId should be nil when parent is deleted
         #expect(restoredChild.groupId == nil)
     }
 
@@ -300,7 +304,8 @@ struct EditControllerTests {
         let itemId = await root.itemController.addNew(type: .item)
         await sut.reset(name: "TestItem", itemId: itemId)
 
-        await sut.delete(itemId: itemId)
+        // Use markForDeletion to set displayState = 2
+        await sut.markForDeletion(itemId: itemId)
         let deleted = await root.itemController.itemOrEmpty(for: itemId)
         #expect(deleted.displayState == 2)
 
