@@ -113,9 +113,7 @@ private extension TextDoubleEditor {
         .submitLabel(.next)
         .focused($focusState)
         .onSubmit {
-            let formatter = NumberFormatter()
-            formatter.locale = Locale.current
-            if let value = formatter.number(from: text)?.doubleValue {
+            if let value = try? Double(text, format: .number) {
                 model.value <=> value
             }
             model.save()

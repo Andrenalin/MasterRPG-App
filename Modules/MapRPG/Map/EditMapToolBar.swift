@@ -410,7 +410,7 @@ private struct PinScaleView: View {
             Slider(value: $model.pinScale, in: 0.5 ... 3.5) {
                 Text("Pin Scale", bundle: .module)
             }
-            .accessibilityValue(String(format: "%.1f×", model.pinScale))
+            .accessibilityValue(model.pinScale.formatted(FloatingPointFormatStyle<Double>.number.precision(.fractionLength(1))) + "×")
             .labelsHidden()
 #endif
         }
@@ -433,7 +433,7 @@ private struct HexMapScaleView: View {
             .onChange(of: model.hexScale) {
                 onScaleChanged(model.hexScale)
             }
-            .accessibilityValue(String(format: "%.0f", model.hexScale))
+            .accessibilityValue(model.hexScale.formatted(.number.precision(.fractionLength(0))))
             .labelsHidden()
 #endif
         }

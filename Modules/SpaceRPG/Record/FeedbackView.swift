@@ -19,7 +19,7 @@ struct FeedbackView: View {
             if let activeMessage = messageList.activeMessage {
                 Text("\(activeMessage.message)")
                     .font(.headline)
-                    .fontWeight(.bold)
+                    .bold()
                     .foregroundStyle(.white)
                     .environment(\.colorScheme, .dark)
                     .transition(.opacity)

@@ -235,7 +235,7 @@ private struct TitleView: View {
     var body: some View {
         Text(LocalizedString.processingTitle)
             .font(.largeTitle)
-            .fontWeight(.bold)
+            .bold()
 
     }
 
