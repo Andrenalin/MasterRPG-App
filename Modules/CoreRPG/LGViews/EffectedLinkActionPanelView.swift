@@ -88,7 +88,7 @@ private extension EffectedLinkActionPanelView {
         for model in models {
             root.editControllable.restore(itemId: model.itemId)
         }
-        Task { await root.folderListControllable.performSearch(source: "Removed items") }
+        root.folderListControllable.scheduleSearch()
     }
 
     var removeEntryList: RemoveEntryListModel {

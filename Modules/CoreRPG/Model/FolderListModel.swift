@@ -113,9 +113,11 @@ public extension FolderListModel {
         for (key, cached) in cacheListModels {
             let isParent = cached.source.itemId == parentModel.id
             let isChild  = childItemIds.contains(cached.source.itemId)
-            if isParent || isChild {
-                detailListModel?.cacheListModels[key] = cached.deepCopy()
-            }
+            // Warm-start from the main list only for items the detail cache hasn't seen yet.
+            // Rows left from a previously-focused parent are kept as-is, so switching back to that
+            // character (or folder) redisplays instantly instead of rebuilding from scratch.
+            guard isParent || isChild, detailListModel?.cacheListModels[key] == nil else { continue }
+            detailListModel?.cacheListModels[key] = cached.deepCopy()
         }
     }
 }

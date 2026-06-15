@@ -8,7 +8,6 @@ public struct LinkItemListView: View {
         self.type = type
         self.selectionModel = selectionModel
         self.parentModel = parentModel
-        self._parentModelId = State(initialValue: parentModel?.id)
         // Scroll position comes from whichever model is active.
         // detailListModel may not exist yet at init time, so fall back to main.
         let initScrollId = parentModel != nil
@@ -23,7 +22,6 @@ public struct LinkItemListView: View {
     let selectionModel: ItemSelectionModel
     let parentModel: (any ItemDataAccessable)?
 
-    @State private var parentModelId: UUID?
     @State private var scrollPosition: UUID?
     @State private var showDetails: Bool = false
     @State private var showDetailsView: (any NavigationDestination)? = nil
@@ -60,7 +58,7 @@ public struct LinkItemListView: View {
                     // When parentModel changes: create/reset detailListModel (with deep-copied cache
                     // for warm start) then run a scoped detail search via inspectorSearchResults.
                     // When parentModel clears: tear down detailListModel and resume main search.
-                    .task(id: parentModelId) {
+                    .task(id: parentModel?.id) {
                         if let parent = parentModel {
                             root.folderLinkControllable.resetDetail(model: parent)
                         } else {
@@ -141,16 +139,12 @@ private extension LinkItemListView {
     }
     
     /// Determines if the "no results" overlay should be shown.
-    /// True when:  
-    /// 1. There's an active search (non-empty search text), AND
-    /// 2. The currently displayed list is empty
     ///
-    /// This check is list-context-aware: uses `listModel.list` which automatically
-    /// routes to either the main list or detail list based on `parentModel`.
-    /// Prevents false "no results" overlays when detail search returns empty but
-    /// main list has results, or vice versa.
+    /// Uses `searchModel.searchReturnedNoResults` rather than `listModel.list.isEmpty`: `buildList`
+    /// preserves the previous list when a search returns nothing (anti-flicker), so `list.isEmpty`
+    /// is never true even when the search matched zero items.
     var shouldShowNoResults: Bool {
-        !root.folderLinkControllable.searchModel.searchText.isEmpty && listModel.list.isEmpty
+        root.folderLinkControllable.searchModel.searchReturnedNoResults
     }
 
     @ViewBuilder

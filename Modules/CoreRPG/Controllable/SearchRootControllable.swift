@@ -11,7 +11,6 @@ public protocol SearchRootControllable: Sendable  {
     /// Results stored on `searchModel.results`.
     /// - Parameter text: The search query string
     /// - Returns: Array of search results matching the query
-    /// - Note: Use `syncResults(text:)` instead when data is known to be in memory
     @MainActor func results(text: String) async -> [SearchResult]
     
     /// Child/entry expansion — called by `loadChildrenViaSearch` when the user taps a chevron.
@@ -30,16 +29,8 @@ public protocol SearchRootControllable: Sendable  {
     /// - Note: Semantically different from `results(text:, focusId:)` — may return the item itself as root.
     @MainActor func scopedResults(text: String, focusId: UUID) async -> [SearchResult]
     
-    // MARK: - Synchronous Search (In-Memory Only)
-    
-    /// Synchronous search using only in-memory data via `itemSync`.
-    /// - Parameter text: The search query string
-    /// - Returns: Array of search results matching the query
-    /// - Note: Use this for updates when data is already loaded to avoid async suspension overhead.
-    ///   Particularly important during observation stream updates where suspending the main actor
-    ///   would cause unnecessary frame drops.
-    @MainActor func syncResults(text: String) -> [SearchResult]
-    
+    // MARK: - In-Memory Expansion (chevron tap)
+
     /// Synchronous child/entry expansion for `loadChildrenViaSearch`.
     ///
     /// Called when the user taps a chevron. Data is already in memory (the item was visible),
@@ -50,15 +41,6 @@ public protocol SearchRootControllable: Sendable  {
     /// - `specialCategory` → direct folder/collection children; nested folders get `canOpen=true`.
     /// - Regular item → flat entry list (inspector expansion).
     @MainActor func syncExpandResults(focusId: UUID) -> [SearchResult]
-    
-    /// Synchronous version of `scopedResults` using only in-memory data.
-    /// - Parameters:
-    ///   - text: The search query string
-    ///   - focusId: The UUID of the parent item to scope the search to
-    /// - Returns: View-rooted search results
-    /// - Note: Use when switching between already-loaded items to avoid rendering stale data
-    ///   while waiting for an async search to complete.
-    @MainActor func syncScopedResults(text: String, focusId: UUID) -> [SearchResult]
 
     // MARK: - Factory
     

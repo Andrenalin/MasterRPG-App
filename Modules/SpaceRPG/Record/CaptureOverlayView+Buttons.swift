@@ -28,7 +28,7 @@ extension CaptureOverlayView {
                 label: {
                     Text(buttonlabel)
                         .font(.body)
-                        .bold()
+                        .fontWeight(.bold)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 25)
                         .padding(.vertical, 20)

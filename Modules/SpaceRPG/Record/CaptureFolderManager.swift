@@ -135,7 +135,8 @@ final class CaptureFolderManager {
             return nil
         }
 
-        let timestamp = Date().formatted(.iso8601)
+        let formatter = ISO8601DateFormatter()
+        let timestamp = formatter.string(from: Date())
         let newCaptureDir = capturesFolder
             .appendingPathComponent(timestamp, isDirectory: true)
 

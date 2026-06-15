@@ -63,11 +63,15 @@ struct AudioPlayerScrubberView: View {
     private func formatTime(_ time: Double) -> String {
         guard !time.isNaN && time.isFinite else { return "--:--" }
 
-        let duration = Duration.seconds(Int(ceil(max(time, 0))))
-        if duration >= .seconds(3600) {
-            return duration.formatted(.time(pattern: .hourMinuteSecond(padHourToLength: 2)))
+        let totalSeconds = Int(ceil(max(time, 0)))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours > 0 {
+            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         } else {
-            return duration.formatted(.time(pattern: .minuteSecond(padMinuteToLength: 2)))
+            return String(format: "%02d:%02d", minutes, seconds)
         }
     }
 

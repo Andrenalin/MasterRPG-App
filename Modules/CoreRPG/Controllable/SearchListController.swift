@@ -25,17 +25,6 @@ extension SearchListController: SearchRootControllable {
         )
     }
 
-    /// Synchronous in-memory search using itemSync.
-    /// Mirrors the async `results` logic but uses only synchronous item access.
-    public func syncResults(text: String) -> [SearchResult] {
-        searchController.syncListSearchResults(
-            searchText: text,
-            listMode: listDisplayModel.listMode,
-            displayMode: listDisplayModel.displayMode,
-            focusId: listDisplayModel.listMode == .folder ? searchModel.filterId : nil
-        )
-    }
-
     /// Child/entry expansion: always uses folder mode so folder children are returned.
     public func results(text: String, focusId: UUID) async -> [SearchResult] {
         await searchController.listSearchResults(
@@ -80,17 +69,6 @@ extension SearchListController: SearchRootControllable {
         return results
     }
 
-    /// Synchronous scoped view: folder mode to return the parent's children.
-    /// Used by `performSyncDetailSearch` when switching between already-loaded items.
-    @MainActor public func syncScopedResults(text: String, focusId: UUID) -> [SearchResult] {
-        searchController.syncListSearchResults(
-            searchText: text,
-            listMode: .folder,
-            displayMode: listDisplayModel.displayMode,
-            focusId: focusId
-        )
-    }
-
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {
         SearchListController(
             searchController: searchController,
@@ -117,17 +95,6 @@ public struct SearchLinkController {
 extension SearchLinkController: SearchRootControllable {
     public func results(text: String) async -> [SearchResult] {
         await searchController.inspectorSearchResults(
-            searchText: text,
-            listMode: listDisplayModel.listMode,
-            displayMode: listDisplayModel.displayMode,
-            focusId: searchModel.filterId
-        )
-    }
-
-    /// Synchronous in-memory search using itemSync.
-    /// Mirrors the async `results` logic but uses only synchronous item access.
-    public func syncResults(text: String) -> [SearchResult] {
-        searchController.syncInspectorSearchResults(
             searchText: text,
             listMode: listDisplayModel.listMode,
             displayMode: listDisplayModel.displayMode,
@@ -217,18 +184,6 @@ extension SearchLinkController: SearchRootControllable {
                 )
             }.sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
         }
-    }
-
-    /// Synchronous scoped view: always uses list mode so that per-module overrides
-    /// (e.g. CharacterRPG's `focusedCharacterInspector`) receive the focus and return
-    /// the item-as-root structure. Uses only in-memory data via `syncInspectorSearchResults`.
-    @MainActor public func syncScopedResults(text: String, focusId: UUID) -> [SearchResult] {
-        searchController.syncInspectorSearchResults(
-            searchText: text,
-            listMode: .list,
-            displayMode: listDisplayModel.displayMode,
-            focusId: focusId
-        )
     }
 
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {

@@ -199,7 +199,7 @@ struct BlockGenView: View {
                     Text(title)
                         .contentTransition(.opacity)
                         .font(.largeTitle)
-                        .bold()
+                        .fontWeight(.bold)
                 }
                 if let description = campaign.information {
                     Text(description)
@@ -244,7 +244,7 @@ struct BlockEntryGenView: View {
                     Text(title)
                         .contentTransition(.opacity)
                         .font(.largeTitle)
-                        .bold()
+                        .fontWeight(.bold)
                 }
                 if let description = entry.content {
                     Text(description)

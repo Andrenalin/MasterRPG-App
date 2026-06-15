@@ -161,7 +161,7 @@ struct CampaignGenView: View {
                     Text("Campaign: \(title)", bundle: .module)
                         .contentTransition(.opacity)
                         .font(.largeTitle)
-                        .bold()
+                        .fontWeight(.bold)
                 }
                 if let description = campaign.description {
                     Text(description)
@@ -200,7 +200,7 @@ struct AdventureGenView: View {
                     Text("Adventure: \(title)", bundle: .module)
                         .contentTransition(.opacity)
                         .font(.largeTitle)
-                        .bold()
+                        .fontWeight(.bold)
                 }
                 if let description = adventure.description {
                     Text(description)
@@ -239,7 +239,7 @@ struct ScenarioGenView: View {
                     Text("Scenario: \(title)", bundle: .module)
                         .contentTransition(.opacity)
                         .font(.largeTitle)
-                        .bold()
+                        .fontWeight(.bold)
                 }
                 if let description = scenario.description {
                     Text(description)
@@ -278,7 +278,7 @@ struct EntryGenView: View {
                     Text(title)
                         .contentTransition(.opacity)
                         .font(.largeTitle)
-                        .bold()
+                        .fontWeight(.bold)
                 }
                 if let description = entry.content {
                     Text(description)

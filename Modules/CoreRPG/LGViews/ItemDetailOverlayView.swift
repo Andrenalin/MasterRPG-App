@@ -27,7 +27,7 @@ public struct ItemDetailOverlayView: View {
             if fullHeader || onlyDescription == false {
                 NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
                     .font(.headline)
-                    .bold()
+                    .fontWeight(.bold)
                     .foregroundStyle(.primary)
                 HStack(spacing: 4) {
                     TagItemRow(tags: model.tags)

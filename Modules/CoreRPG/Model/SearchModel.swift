@@ -56,8 +56,15 @@ public final class SearchModel: Sendable {
         didSet { oldValue?.cancel() }
     }
 
+    /// Separate token for tag-suggestion lookups so they never cancel — or get cancelled by —
+    /// the main search running on `currentTask`.
+    @ObservationIgnored var tagTask: Task<Void, Never>? {
+        didSet { oldValue?.cancel() }
+    }
+
     deinit {
         currentTask?.cancel()
+        tagTask?.cancel()
     }
     
     func updateTagSuggestions() {
@@ -70,9 +77,7 @@ public final class SearchModel: Sendable {
             searchTags = []
             return
         }
-        // Cancel any in-flight tag suggestion search before starting a new one
-        currentTask?.cancel()
-        currentTask = Task {
+        tagTask = Task {
             await self.updateTagSuggestions(tagSearch: tagSearch)
         }
     }

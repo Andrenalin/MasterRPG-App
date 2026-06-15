@@ -4,6 +4,9 @@ import Foundation
 import SwiftUI
 import os
 
+/// Distinguishes the two search targets the single search pipeline can run.
+enum FolderSearchKind: Sendable { case root, detail }
+
 @MainActor
 public protocol FolderListControllable: Sendable {
     var itemControllable: any ItemControllable { get }
@@ -50,33 +53,27 @@ extension FolderListControllable {
         Logger.folderListControllable.info("✅ [Search] Completed ASYNC - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue), duration: \(duration), results: \(newResults.count)")
     }
 
-    /// Synchronous search using only in-memory data (itemSync).
-    /// Used for updates when search text hasn't changed and data is already loaded.
-    /// This avoids unnecessary async overhead and keeps updates on the same run loop.
-    @MainActor public func performSyncSearch(source: String) {
-        let startTime = ContinuousClock.now
-        let searchText = searchModel.searchText
-        let displayMode = listDisplayModel.displayMode
-        
-        Logger.folderListControllable.info("🔍 [Search] Starting SYNC search - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue)")
-        
-        searchModel.isSearching = true
-        defer { searchModel.isSearching = false }
-
-        let newResults = searchRootControllable.syncResults(text: searchModel.searchText)
-        searchModel.results = newResults
-        searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && newResults.isEmpty
-        withAnimation { resetFilter() }
-        
-        let duration = ContinuousClock.now - startTime
-        Logger.folderListControllable.info("✅ [Search] Completed SYNC - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue), duration: \(duration), results: \(newResults.count)")
+    /// Single coalescing entry point for every search trigger. Assigning `searchModel.currentTask`
+    /// cancels any in-flight search (its `didSet`), so rapid triggers — keystrokes, mode toggles,
+    /// and the observation stream — collapse into one search instead of one-per-event. The 300ms
+    /// debounce applies only while typing a non-empty query; every other trigger uses a short
+    /// coalescing window so bursts still settle into a single call.
+    @MainActor func runSearch(source: String, kind: FolderSearchKind, debounceText: Bool) {
+        searchModel.currentTask = Task {
+            let delay: Duration = debounceText && !searchModel.searchText.isEmpty ? .milliseconds(300) : .milliseconds(50)
+            do { try await Task.sleep(for: delay) } catch { return }
+            guard !Task.isCancelled else { return }
+            switch kind {
+            case .root: await performSearch(source: source)
+            case .detail: await performDetailSearch()
+            }
+        }
     }
 
-    /// Fire-and-forget variant for call sites that cannot `await` (e.g. synchronous
-    /// protocol-extension callbacks like `resetParent`, `toggleFolder`).
-    /// Assigning to `currentTask` auto-cancels the previous search via `didSet`.
+    /// Fire-and-forget root search for call sites that cannot `await` (e.g. synchronous
+    /// protocol-extension callbacks like `resetParent`, `toggleFolder`, and the search field).
     @MainActor func scheduleSearch() {
-        searchModel.currentTask = Task { await performSearch(source: "scheduleSearch") }
+        runSearch(source: "scheduleSearch", kind: .root, debounceText: true)
     }
 
     /// Runs a scoped search for the detail list's parent and populates
@@ -104,44 +101,52 @@ extension FolderListControllable {
         )
         guard !Task.isCancelled else { return }
         searchModel.detailResults = newResults
-        searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && newResults.isEmpty
-        detailListModel.list = buildDetailListItems()
-    }
-
-    /// Synchronous version of performDetailSearch using only in-memory data.
-    /// Used when switching between already-loaded items where async overhead
-    /// would cause the view to render stale data before the search completes.
-    @MainActor public func performSyncDetailSearch() {
-        guard let detailListModel = listModel.detailListModel,
-              let parentModel = detailListModel.parentModel else { return }
-        
-        let newResults = searchRootControllable.syncScopedResults(
-            text: searchModel.searchText,
-            focusId: parentModel.id
-        )
-        searchModel.detailResults = newResults
-        searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && newResults.isEmpty
+        // The focused-character inspector always returns the character as a root container, so
+        // `newResults.isEmpty` never detects "no matches". A result counts as a real hit when it is
+        // not just the bare focal parent: any non-parent result, any entry-level result, or any
+        // result that carries children. Only the lone focal parent with no children means "no match".
+        let hasMatch = newResults.contains {
+            $0.itemId != parentModel.id || $0.entryId != nil || !$0.children.isEmpty
+        }
+        searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && !hasMatch
         detailListModel.list = buildDetailListItems()
     }
 }
 
 public extension FolderListControllable {
-    func update() async {
+    /// Data-change refresh (observation stream, context-menu moves). Routes the search through the
+    /// single `currentTask` so it coalesces with — and never clobbers — an in-flight user search,
+    /// then applies selection/scroll fix-up only after the (coalesced) search has rebuilt the list.
+    func update() {
         let previousSelectedId = listModel.selectedItemId
-        if let addedModelId = listModel.addedModelId, let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
+        if let addedModelId = listModel.addedModelId,
+           let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
             listModel.selected = addedItem.id
         }
-        
-        if listModel.parentModel != nil {
-            // Detail context: refresh the scoped detail list, not the root list.
-            // performDetailSearch only updates detailListModel.list; resetFilter rebuilds listModel.list too.
-            await performDetailSearch()
-            resetFilter()
-        } else {
-            // Use sync search for updates — data is already in memory from the observation stream
-            performSyncSearch(source: "update")
-        }
 
+        // Refresh the detail list whenever one is active. The focused character inspector sets
+        // detailListModel (via resetDetail) while the root listModel.parentModel stays nil, so
+        // routing on parentModel would wrongly run a root search and never populate the detail list.
+        let isDetail = listModel.detailListModel != nil
+        searchModel.currentTask = Task {
+            // Short coalescing window so a burst of data changes settles into one search.
+            do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
+            guard !Task.isCancelled else { return }
+            if isDetail {
+                // Detail context: refresh the scoped detail list, not the root list.
+                // performDetailSearch only updates detailListModel.list; resetFilter rebuilds listModel.list too.
+                await performDetailSearch()
+                resetFilter()
+            } else {
+                await performSearch(source: "update")
+            }
+            guard !Task.isCancelled else { return }
+            applyPostUpdateSelection(previousSelectedId: previousSelectedId)
+        }
+    }
+
+    /// Restores selection/scroll after `update()`'s search has rebuilt the list.
+    private func applyPostUpdateSelection(previousSelectedId: UUID?) {
         if let addedModelId = listModel.addedModelId,
            let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
             Task { @MainActor in
@@ -196,23 +201,24 @@ public extension FolderListControllable {
     }
     
     /// Called when a folder/collection is selected as the detail page's parent.
-    /// Creates (or resets) `listModel.detailListModel` scoped to `model`, then
-    /// performs a synchronous search to populate it immediately.
-    /// 
-    /// Uses sync search because:
-    /// - Data is already in memory from observation stream
-    /// - View needs immediate update when parentModel changes
-    /// - Async search causes view to render stale data during the await
+    /// Creates (or resets) `listModel.detailListModel` scoped to `model`, then populates it.
+    ///
+    /// The initial populate runs in its own task rather than the shared search token: the sibling
+    /// initial triggers (`listMode`/`displayMode` `onChange(initial:)` and the observation stream)
+    /// assign `currentTask` around the same time and would otherwise cancel this first populate
+    /// before the detail list is ever built — the cause of the focused inspector being blank on
+    /// first launch. Subsequent filter-field searches still go through the coalescing pipeline.
+    /// The detail cache is warm-started in `copyModel`, so revisited parents redisplay instantly.
     func resetDetail(model: (any ItemDataAccessable)) {
         listModel.resetDetailList(parentModel: model)
         listModel.detailListModel?.updatedOnce = true
-        performSyncDetailSearch()
+        Task { await performDetailSearch() }
     }
 
-    /// Fire-and-forget `performDetailSearch` — used by `LinkItemListView` when `parentModel != nil`.
-    /// Cancels any in-flight search via `searchModel.currentTask.didSet`.
+    /// Fire-and-forget scoped detail search — used by `LinkItemListView` / `resetDetail` when
+    /// `parentModel != nil`. Routes through the single coalescing pipeline (`runSearch`).
     @MainActor func scheduleDetailSearch() {
-        searchModel.currentTask = Task { await performDetailSearch() }
+        runSearch(source: "scheduleDetailSearch", kind: .detail, debounceText: true)
     }
 
     func selectedModel(for selectedId: UUID?) -> (any ItemDataAccessable)? {

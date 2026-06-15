@@ -38,11 +38,9 @@ struct PlayerTime: Equatable, Hashable, Sendable {
         }
 
         if hours > 0 {
-            return Duration.seconds(hours * TimeConstant.secsPerHour + mins * TimeConstant.secsPerMin + seconds)
-                .formatted(.time(pattern: .hourMinuteSecond(padHourToLength: 2)))
+            return String(format: "%02d:%02d:%02d", hours, mins, seconds)
         } else {
-            return Duration.seconds(mins * TimeConstant.secsPerMin + seconds)
-                .formatted(.time(pattern: .minuteSecond(padMinuteToLength: 2)))
+            return String(format: "%02d:%02d", mins, seconds)
         }
     }
 }

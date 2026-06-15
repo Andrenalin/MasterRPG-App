@@ -22,7 +22,7 @@ struct AnimatorView: View {
                 }
                 .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing)))
                 .task {
-                    try? await Task.sleep(for: .seconds(3))
+                    try? await Task.sleep(nanoseconds: 3*1_000_000_000)
                     withAnimation { showOne = false }
                 }
             }

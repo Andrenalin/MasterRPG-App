@@ -22,9 +22,6 @@ struct ListModelUpdatesViewModifier: ViewModifier {
     /// When set, the modifier is operating in detail-list context (folder/collection content).
     let parentModel: (any ItemDataAccessable)?
 
-    /// Tracks whether the initial search has been performed.
-    @State private var hasPerformedInitialSearch = false
-    
     @Environment(\.navigator) private var navigator
     
 #if os(iOS) || os(visionOS)
@@ -43,14 +40,11 @@ struct ListModelUpdatesViewModifier: ViewModifier {
                 withAnimation { updateSelected() }
             }
             .onChange(of: listControllable.listDisplayModel.listMode, initial: true) {
-                if hasPerformedInitialSearch {
-                    // Subsequent mode change — use sync search (data already in memory)
-                    listControllable.performSyncSearch(source: "listMode.onChange")
+                // Route through the single search pipeline; detail context when a parent scope is active.
+                if parentModel != nil {
+                    listControllable.scheduleDetailSearch()
                 } else {
-                    // First time: use sync search since data should be loaded already
-                    // (itemDataModel.items is populated before views render)
-                    hasPerformedInitialSearch = true
-                    listControllable.performSyncSearch(source: "listMode.onChange.initial")
+                    listControllable.scheduleSearch()
                 }
             }
             .onChange(of: listControllable.listDisplayModel.isSelectionMode, initial: true) {
@@ -79,7 +73,7 @@ private extension ListModelUpdatesViewModifier {
         }
 
         for await _ in stream {
-            await listControllable.update()
+            listControllable.update()
         }
     }
 

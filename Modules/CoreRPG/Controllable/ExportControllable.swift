@@ -36,7 +36,9 @@ public extension ExportControllable {
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
     func exportUrl(isSaveGame: Bool) -> URL {
-        let now = Date().formatted(Date.ISO8601FormatStyle(dateSeparator: .omitted).year().month().day())
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd"
+        let now = dateFormatter.string(from: Date())
         let name = isSaveGame ? "SavedGame.gms" : "Export.gmz"
         return URL.cachesDirectory.appending(path: "\(now)-\(name)")
     }

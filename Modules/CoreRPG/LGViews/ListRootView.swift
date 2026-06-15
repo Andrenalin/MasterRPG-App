@@ -49,16 +49,6 @@ struct ListRootView: View {
                     return .handled
                 }
 #endif
-//                .overlay {
-//                    // Use searchReturnedNoResults rather than list.isEmpty: buildList preserves the
-//                    // previous list when search returns nothing (prevents flicker), so list.isEmpty
-//                    // would never be true even when the search found zero matches.
-//                    if listController.searchModel.searchReturnedNoResults
-//                        && !listController.searchModel.searchText.starts(with: "@") {
-//                        ContentUnavailableView.search
-//                            .padding(32)
-//                    }
-//                }
         }
             .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable, parentModel: parentModel)
             .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
@@ -118,16 +108,13 @@ private extension ListRootView {
     }
     
     /// Determines if the "no results" overlay should be shown.
-    /// True when:  
-    /// 1. There's an active search (non-empty search text), AND
-    /// 2. The currently displayed list is empty
     ///
-    /// This check is list-context-aware: uses `listModel.list` which automatically
-    /// routes to either the main list or detail list based on `parentModel`.
-    /// Prevents false "no results" overlays when detail search returns empty but
-    /// main list has results, or vice versa.
+    /// Uses `searchModel.searchReturnedNoResults` rather than `listModel.list.isEmpty`: `buildList`
+    /// deliberately preserves the previous list when a search returns nothing (anti-flicker), so
+    /// `list.isEmpty` is never true even when the search matched zero items. The flag is set by the
+    /// single search pipeline, so it always reflects the active (and only) in-flight search.
     var shouldShowNoResults: Bool {
-        !listController.searchModel.searchText.isEmpty && listModel.list.isEmpty
+        listController.searchModel.searchReturnedNoResults
     }
 
     var fileTypes: [UTType] {

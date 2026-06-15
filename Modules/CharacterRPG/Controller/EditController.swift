@@ -331,12 +331,19 @@ extension EditController {
 
     private func parseDouble(from string: String) -> Double? {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        return try? Double(trimmed, format: .number)
+        let formatter = NumberFormatter()
+        formatter.locale = Locale.current
+        formatter.numberStyle = .decimal
+        return formatter.number(from: trimmed)?.doubleValue
     }
 
     private func parseInteger(from string: String) -> Int? {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        return try? Int(trimmed, format: .number)
+        let formatter = NumberFormatter()
+        formatter.locale = Locale.current
+        formatter.numberStyle = .decimal
+        formatter.allowsFloats = false
+        return formatter.number(from: trimmed)?.intValue
     }
 }
 
