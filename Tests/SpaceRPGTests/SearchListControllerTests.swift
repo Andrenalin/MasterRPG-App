@@ -214,7 +214,7 @@ struct SearchListControllerTests {
     @Test("syncExpandResults for collection preserves entry order (not alphabetical)")
     func syncExpandCollectionPreservesEntryOrder() async {
         let root = await makeRoot()
-        let controller = makeSearchListController(root: root)
+        let _ = makeSearchListController(root: root)
         
         // SpaceRPG doesn't have a distinct collection type, but we can test the logic
         // by checking that non-folder specialCategory items would preserve order.
