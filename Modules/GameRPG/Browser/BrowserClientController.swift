@@ -1,6 +1,154 @@
-//import Network
-//import OSLog
-//import SwiftUI
+import Network
+import OSLog
+import SwiftUI
+
+/// Events that occur during client-server life cycle and connection state changes.
+public enum NetworkEvent: Sendable {
+    case browserRunning
+    case connecting
+    case browserStopped(NWError?)
+}
+
+/// UI-friendly connection states mapped from `NetworkEvent`.
+public enum NetworkState: String, Sendable {
+    case stopped
+    case tlsFailed
+    case connected
+    case connecting
+    case waitingForConnection
+    case cancelled
+}
+
+
+@Observable @MainActor
+final class BrowserManager {
+    
+    // UI State
+    private(set) var connectionState: NetworkState = .cancelled
+    private(set) var errorMessage: String?
+    let games: BrowserGameListModel = BrowserGameListModel()
+    
+    // Tasks for monitoring state.
+    @ObservationIgnored private let browserController: BrowserClientController
+    @ObservationIgnored private var monitorTask: Task<Void, Never>?
+    @ObservationIgnored private var networkTask: Task<Void, Error>?
+    
+    init() {
+        self.browserController = BrowserClientController()
+        // Monitor both state events and messages concurrently using structured concurrency.
+        // `TaskGroup` ensures both tasks are canceled when the controller deinitializes.
+        self.monitorTask = Task { @MainActor in
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask { await self.monitorStateEvents() }
+            }
+        }
+    }
+    
+    /// Monitors state events from the manager and updates connection state.
+    private func monitorStateEvents() async {
+        for await event in browserController.networkUpdateEvents {
+            await handleStateEvent(event)
+        }
+    }
+    
+    /// Handles state events from the manager.
+    private func handleStateEvent(_ event: NetworkEvent) async {
+        switch event {
+        case .browserRunning:
+            connectionState = .waitingForConnection
+        case .connecting:
+            connectionState = .connecting
+        case .browserStopped(let error):
+            Logger.browserController.log("Client stopped: error is \(String(describing: error))")
+            self.errorMessage = "Client stopped"
+        }
+    }
+    
+    
+    public func start() -> Task<Void, Error>? {
+        networkTask = Task {
+            _ = await withTaskCancellationHandler {
+                do {
+                    try await browserController.startBrowser(in: games)
+                } catch {
+                    Logger.browserController.log("An error has occurred: \(error.localizedDescription)")
+                    self.connectionState = .stopped
+                }
+            } onCancel: {
+                Task { @MainActor in
+                    // After canceling the task, move the state to stopped.
+                    Logger.browserController.log("The task has been canceled.")
+                    self.connectionState = .stopped
+                }
+            }
+        }
+        return networkTask
+    }
+}
+
+@Observable @MainActor
+final class BrowserGameListModel {
+    init() {
+    }
+    
+    var list: [BrowserGameModel] = []
+    
+    func append(result: Bonjour.Endpoint) {
+        let updated: BrowserGameModel = BrowserGameModel(id: UUID(), endpoint: result)
+        list.append(updated)
+    }
+}
+
+@Observable @MainActor
+final class BrowserGameModel: Identifiable {
+    init(id: UUID, endpoint: Bonjour.Endpoint) {
+        self.id = id
+        self.endpoint = endpoint
+    }
+    
+    let id: UUID
+    let endpoint: Bonjour.Endpoint
+}
+
+actor BrowserClientController {
+    let networkUpdateEvents: AsyncStream<NetworkEvent>
+    private let networkUpdateContinuation: AsyncStream<NetworkEvent>.Continuation
+        
+    init() {
+        (self.networkUpdateEvents, self.networkUpdateContinuation) = AsyncStream.makeStream(of: NetworkEvent.self)
+    }
+    
+    func startBrowser(in games: BrowserGameListModel) async throws {
+        try await NetworkBrowser(
+            for: .bonjour(
+                GameServiceType.player.serviceName,
+                includeTxtRecord: true),
+            using: .tls)
+        .onStateUpdate { _, state in
+            self.handleBrowserStateUpdates(state)
+        }
+        .run { endpoints in
+            for endpoint in endpoints {
+                await games.append(result: endpoint)
+                Logger.browserController.log("Found endpoint: \(endpoint)")
+            }
+        }
+    }
+    
+    /// Relays messages based on the given `NetworkBrowser` state.
+    private func handleBrowserStateUpdates(_ state: NetworkBrowser<Bonjour>.State) {
+        switch state {
+        case .ready:
+            networkUpdateContinuation.yield(.browserRunning)
+        case .failed(let nWError):
+            networkUpdateContinuation.yield(.browserStopped(nWError))
+        case .cancelled:
+            networkUpdateContinuation.yield(.browserStopped(nil))
+        default: break
+        }
+    }
+}
+
 //
 ///// The visionOS app creates a client that discovers and creates connections to the iPadOS server.
 ///// Actor isolation ensures thread-safe network operations without data races.
@@ -160,7 +308,7 @@
 //        messageReceiveTask = nil
 //        currentConnectionInfo = nil
 //    }
-//    
+//
 //    deinit {
 //        currentConnectionInfo = nil
 //        messageReceiveTask?.cancel()

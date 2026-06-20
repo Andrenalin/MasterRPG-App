@@ -29,7 +29,7 @@ struct SharingInput: View {
             .hideKeyboardView(enabled: focusedField != nil, focusedField: $focusedField)
             .onAppear {
                 Task {
-                    try await Task.sleep(for: .seconds(0.5))
+                    try? await Task.sleep(for: .seconds(0.5))
                     focusedField = .name
                 }
             }

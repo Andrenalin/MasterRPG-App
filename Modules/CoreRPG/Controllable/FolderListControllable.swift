@@ -117,28 +117,31 @@ public extension FolderListControllable {
     /// Data-change refresh (observation stream, context-menu moves). Routes the search through the
     /// single `currentTask` so it coalesces with — and never clobbers — an in-flight user search,
     /// then applies selection/scroll fix-up only after the (coalesced) search has rebuilt the list.
-    func update() {
+    /// - `debounce`: the observation stream passes `true` to coalesce bursts; explicit user actions
+    ///   (context-menu move/add/remove) pass `false` so the list rebuilds immediately and reliably.
+    func update(debounce: Bool = true) {
         let previousSelectedId = listModel.selectedItemId
         if let addedModelId = listModel.addedModelId,
            let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
             listModel.selected = addedItem.id
         }
 
-        // Refresh the detail list whenever one is active. The focused character inspector sets
-        // detailListModel (via resetDetail) while the root listModel.parentModel stays nil, so
-        // routing on parentModel would wrongly run a root search and never populate the detail list.
-        let isDetail = listModel.detailListModel != nil
         searchModel.currentTask = Task {
-            // Short coalescing window so a burst of data changes settles into one search.
-            do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
+            if debounce {
+                // Coalesce a burst of data changes into one search.
+                do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
+            }
             guard !Task.isCancelled else { return }
-            if isDetail {
-                // Detail context: refresh the scoped detail list, not the root list.
-                // performDetailSearch only updates detailListModel.list; resetFilter rebuilds listModel.list too.
+            // Always refresh the root results: resetFilter rebuilds listModel.list from
+            // searchModel.results, so a move/add/remove must re-run performSearch to drop the item
+            // from the root level. (Routing only to performDetailSearch left listModel.list rebuilt
+            // from stale results — the moved item stayed at its old root position.)
+            await performSearch(source: "update")
+            // Additionally refresh an active scoped detail list (e.g. the focused character
+            // inspector), whose rows come from detailResults rather than the root results.
+            if listModel.detailListModel != nil {
+                guard !Task.isCancelled else { return }
                 await performDetailSearch()
-                resetFilter()
-            } else {
-                await performSearch(source: "update")
             }
             guard !Task.isCancelled else { return }
             applyPostUpdateSelection(previousSelectedId: previousSelectedId)
@@ -362,9 +365,16 @@ extension FolderListControllable {
                 for childResult in result.children {
                     appendToFlat(result: childResult, level: level + 1, isSearching: isSearching, flat: &flat, cache: cache)
                 }
+            } else if !isSearching {
+                // Empty search returns folders without children, so reload this open folder's
+                // children from the live item model. Keeps the tree in sync after a move/add/remove
+                // of folder membership without a re-toggle; mapResult reuses cached rows, so nested
+                // open/close state is preserved.
+                if item.canOpen { loadChildrenViaSearch(for: item, cache: cache) }
+                flattenCachedChildren(item.children, into: &flat, reload: true, cache: cache)
             } else if !item.children.isEmpty {
-                // Lazily-loaded children (from loadChildrenViaSearch) — include them
-                flattenCachedChildren(item.children, into: &flat)
+                // Active search: folder matched by name but no child matched — keep loaded children.
+                flattenCachedChildren(item.children, into: &flat, reload: false, cache: cache)
             }
         }
     }
@@ -400,26 +410,35 @@ extension FolderListControllable {
         return item
     }
 
-    // Expands open nodes in the cached children tree (used for lazy-loaded folder content).
-    private func flattenCachedChildren(_ items: [FolderListItemModel], into flat: inout [FolderListItemModel]) {
+    /// Expands open nodes in the cached children tree (lazy-loaded folder content).
+    /// When `reload` is true (empty search), each open folder's children are refreshed from the
+    /// live item model first, so membership changes propagate through the whole open subtree.
+    private func flattenCachedChildren(_ items: [FolderListItemModel], into flat: inout [FolderListItemModel], reload: Bool, cache: FolderListModel?) {
         for item in items {
             flat.append(item)
-            if item.isOpen && !item.children.isEmpty {
-                flattenCachedChildren(item.children, into: &flat)
+            guard item.isOpen else { continue }
+            if reload, item.canOpen {
+                loadChildrenViaSearch(for: item, cache: cache)
+            }
+            if !item.children.isEmpty {
+                flattenCachedChildren(item.children, into: &flat, reload: reload, cache: cache)
             }
         }
     }
 
     /// Loads children synchronously via `syncExpandResults` — no async needed because the data
-    /// is already in memory (`itemSync` dictionary lookup). Called when the user taps a chevron.
-    private func loadChildrenViaSearch(for item: FolderListItemModel) {
+    /// is already in memory (`itemSync` dictionary lookup). Called when the user taps a chevron and
+    /// when rebuilding an open folder in empty-search mode.
+    /// - `cache`: when non-nil, children are written to this model's cache (detail isolation);
+    ///   when nil, falls back to detecting the detail cache from the item's presence in it.
+    private func loadChildrenViaSearch(for item: FolderListItemModel, cache: FolderListModel? = nil) {
         let focusId = item.childFocusId ?? item.source.itemId
         let results = searchRootControllable.syncExpandResults(focusId: focusId)
         // Route children to the same cache as their parent for detail/common isolation.
         let detail = listModel.detailListModel
-        let cache: FolderListModel? = detail?.cacheListModels[item.id] != nil ? detail : nil
+        let resolvedCache: FolderListModel? = cache ?? (detail?.cacheListModels[item.id] != nil ? detail : nil)
         item.children = results.map { result in
-            let child = mapResult(result, level: item.level + 1, cache: cache)
+            let child = mapResult(result, level: item.level + 1, cache: resolvedCache)
             child.parentId = item.id
             return child
         }

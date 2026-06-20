@@ -224,7 +224,7 @@ private extension ListRootContextMenu {
                 Button {
                     controller.moveItem(currentSelected: currentSelected, to: folder)
                     Task {
-                        listController?.update()
+                        listController?.update(debounce: false)
                     }
                 } label: {
                     Label {
@@ -249,7 +249,7 @@ private extension ListRootContextMenu {
                 Button {
                     controller.addItem(currentSelected: currentSelected, to: folder)
                     Task {
-                        listController?.update()
+                        listController?.update(debounce: false)
                     }
                 } label: {
                     Label {
@@ -288,7 +288,7 @@ private extension ListRootContextMenu {
         Button {
             controller.removeItemsFromFolder(currentSelected: currentSelected, parentId: parent?.id, oneUp: oneUp)
             Task {
-                listController?.update()
+                listController?.update(debounce: false)
             }
         } label: {
             Label {

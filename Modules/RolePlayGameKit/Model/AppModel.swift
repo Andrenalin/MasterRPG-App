@@ -377,7 +377,7 @@ extension AppModel {
         guard let selectedTab: NetworkModules = selectedModule?.module else { return }
         let itemId: UUID? = root[selectedTab]?.currentSelectedItemId
         Task {
-            try await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
+            try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
             navigator(for: selectedTab).perform(route: KnownRoutes.route(module: selectedTab, itemId: itemId, entryId: nil))
         }
     }

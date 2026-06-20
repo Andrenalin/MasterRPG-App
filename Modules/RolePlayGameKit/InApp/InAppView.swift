@@ -22,7 +22,7 @@ public struct InAppView: View {
                         Button {
                             #if !os(visionOS)
                             Task {
-                                try await inAppController.purchase(product)
+                                try? await inAppController.purchase(product)
                             }
                             #endif
                         } label: {

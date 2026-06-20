@@ -14,6 +14,8 @@ struct BrowserView: View {
             ForEach(playerNetworkControllable.browserController.model.browsers) { browser in
                 BrowserRowView(root: root, playerNetworkControllable: playerNetworkControllable, model: browser)
             }
+            
+            GameBrowserView()
         }
         .onAppear {
             playerNetworkControllable.browserController.start()

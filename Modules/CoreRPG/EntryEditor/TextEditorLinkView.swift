@@ -24,17 +24,14 @@ struct TextEditorLinkView: View {
 #else
         let currentDefinition = formattingDefinition ?? ContentFormattingDefinition(links: [], colorScheme: colorScheme)
         
-        ZStack {
-#if os(macOS)
-            Color(nsColor: .controlBackgroundColor)
-#endif
+        VStack {
             TextEditor(text: $model.attributedText, selection: $selection)
                 .attributedTextFormattingDefinition(currentDefinition)
                 .textInputAutocapitalizationAll(.sentences)
                 .writingToolsBehavior(.complete)
                 .autocorrectionDisabled(true)
                 .padding(valueFor(iOS: 0, macOS: 4, tvOS: 0, visionOS: 0))
-                .onChange(of: model.links) { _, newLinks in
+                .onChange(of: model.links, initial: true) { _, newLinks in
                     updateFormattingDefinition(links: newLinks)
                 }
                 .onChange(of: colorScheme) { _, _ in
@@ -45,9 +42,15 @@ struct TextEditorLinkView: View {
                 }
         }
         .background {
+#if os(macOS)
+            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(nsColor: .controlBackgroundColor))
+#else
             Color.clear
+#endif
         }
+#if !os(macOS)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+#endif
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
         }
