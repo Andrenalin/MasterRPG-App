@@ -36,7 +36,7 @@ public extension AdventureRootModel {
                 return
             }
             let task = importController.importUrl(from: url)
-            let _ = try await task.value
+            let _ = try? await task.value
             Task { @MainActor in
                 editController.setCurrentItem(to: .previewWithData)
             }

@@ -117,6 +117,10 @@ extension EditController: EntryDataEditable {
     func editEntries(for item: MapModel) -> [MapEntryModel] {
         item.entries.filter { !$0.isHexGrid }
     }
+    
+    public func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        MapEditorRoute.quickEditor(itemRowModel.itemId)
+    }
 }
 
 // MARK: - AI Extraction

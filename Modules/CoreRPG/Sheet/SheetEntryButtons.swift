@@ -7,7 +7,7 @@ struct SheetEntryEditButton: View {
     let entryModel: SheetModel
     let isEditor: Bool
     let onlyIcon: Bool
-
+    
     var body: some View {
         Button {
             withAnimation {
@@ -39,12 +39,44 @@ struct SheetEntryEditButton: View {
     }
 }
 
+struct SheetEntryQuickEditButton: View {
+    let rootModel: SheetRootModel
+    let entryModel: SheetModel
+    let parentModel: SheetModel
+    let onlyIcon: Bool
+    
+    @Environment(\.navigator) private var navigator
+    
+    var body: some View {
+        
+        Button {
+            if let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
+                navigator.navigate(to: entryDataEditable.quickEditorDestination(itemRowModel: entryModel.source))
+                rootModel.updateParent(parentModel)
+            }
+        } label: {
+            Label {
+                Text("Quick Editor \(parentModel.name.withoutLink())", bundle: .module)
+            } icon: {
+                Image(systemName: "table.badge.more")
+                    .imageScale(.large)
+                    .foregroundStyle(.foreground, .tint)
+            }
+            .applyIf(onlyIcon) {
+                $0.labelStyle(.iconOnly)
+            }
+
+        }
+        .borderLessTVBottonStyle()
+    }
+}
+
 struct SheetEntryDeleteButton: View {
     let rootModel: SheetRootModel
     let parentModel: SheetModel
     let entryModel: SheetModel
     let onlyIcon: Bool
-
+    
     var body: some View {
         Button(role: .destructive) {
             withAnimation {
@@ -72,7 +104,7 @@ struct SheetEntryAddButton: View {
     let rootModel: SheetRootModel
     let parentModel: SheetModel
     let onlyIcon: Bool
-
+    
     var body: some View {
         if entryDataEditable != nil {
             Button {

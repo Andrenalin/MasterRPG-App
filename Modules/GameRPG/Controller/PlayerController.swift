@@ -609,7 +609,7 @@ extension PlayerController {
             Task {
                 _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
                 await root.characterRoot.gameControllable.focus(on: characterId)
-                try await Task.sleep(for: .seconds(1))
+                try? await Task.sleep(for: .seconds(1))
                 await MainActor.run { root.gameModel.selectedCharacter = characterId }
             }
             return nil

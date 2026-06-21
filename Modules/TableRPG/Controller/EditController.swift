@@ -74,6 +74,10 @@ extension EditController {
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
         TableEditorRoute.linkSelection(itemRowModel)
     }
+    
+    public func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        TableEditorRoute.quickEditor(itemRowModel.itemId)
+    }
 }
 
 // MARK: - Module Editor

@@ -11,6 +11,7 @@ struct SheetContextMenuView: View {
     @Environment(\.navigator) private var navigator
 
     var body: some View {
+        SheetEntryQuickEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, onlyIcon: false)
         Divider()
         SheetEntryAddButton(rootModel: rootModel, parentModel: parentModel, onlyIcon: false)
         addGroupButton

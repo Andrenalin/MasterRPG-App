@@ -28,6 +28,10 @@ extension FakeEditController: EntryDataEditable {
         InternalRoute.removeAlert
     }
     
+    func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        InternalRoute.removeAlert
+    }
+    
     func create(name: String, content: String) -> FakeEntryModel {
         FakeEntryModel.empty
     }

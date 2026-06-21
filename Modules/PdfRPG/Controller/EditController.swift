@@ -55,6 +55,10 @@ extension EditController: EntryDataEditable {
     func merge(itemId: UUID, entries: [PdfEntryModel], recoverEntries: [CoreRPG.ItemRowModel]?) -> [ItemRowModel] {
         []
     }
+    
+    public func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        SelectionRoute.selection
+    }
 }
 
 extension EditController {

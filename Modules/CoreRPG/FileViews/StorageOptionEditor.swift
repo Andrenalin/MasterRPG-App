@@ -30,7 +30,7 @@ struct StorageOptionEditor: View {
                 Button {
                     appSettings.resetCloudKit(to: useCloudKit)
                     Task {
-                        try await Task.sleep(for: .seconds(0.1))
+                        try? await Task.sleep(for: .seconds(0.1))
                         Darwin.exit(0)
                     }
                 } label: {

@@ -30,7 +30,7 @@ public extension SpaceRootModel {
                 return
             }
             let task = importController.importUrl(from: url, withOverwrite: true)
-            let _ = try await task.value
+            let _ = try? await task.value
         }
 #endif
         return root

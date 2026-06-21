@@ -153,6 +153,10 @@ extension EditController {
         guard let resolvedParentId, let parent = itemControllable.itemSync(for: resolvedParentId) as? Model else { return nil }
         return FolderRepresentable(id: parent.id, name: parent.name)
     }
+    
+    public func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        CharacterEditorRoute.quickEditor(itemRowModel.itemId)
+    }
 }
 
 // MARK: - New Editor Functions

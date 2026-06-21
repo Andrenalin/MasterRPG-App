@@ -39,7 +39,7 @@ public extension CharacterRootModel {
                 return
             }
             let task = importController.importUrl(from: url)
-            let _ = try await task.value
+            let _ = try? await task.value
         }
 #endif
         return root

@@ -27,7 +27,7 @@ public struct BlurText: View {
         .onChange(of: shown, initial: true) {
             Task {
                 let wait = shown ? 10 : 2
-                try await Task.sleep(for: .seconds(wait))
+                try? await Task.sleep(for: .seconds(wait))
                 shown.toggle()
             }
         }

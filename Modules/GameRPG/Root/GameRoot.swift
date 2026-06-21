@@ -402,7 +402,7 @@ extension GameRoot {
                 while gameModel.gameConfig.state != .stopped {
                     let photos = photoRoot.itemControllable.itemDataModel.items
                     for photo in photos {
-                        try await Task.sleep(for: .seconds(3))
+                        try? await Task.sleep(for: .seconds(3))
                         let data = await photoRoot.gameControllable.share(id: photo)
                         let gameNetworkModel = GameNetworkModel(counter: 1, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
                         await playerController.receivedProcess(gameNetworkModel)

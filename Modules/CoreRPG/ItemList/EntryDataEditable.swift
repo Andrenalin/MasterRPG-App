@@ -43,6 +43,7 @@ public protocol EntryDataEditable: EditControllable {
     @MainActor func create(name: String, content: String) -> Model.Entry
     @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) -> [ItemRowModel]
     @MainActor func remove(itemId: UUID, entryId: UUID)
+    func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination
     
     // MARK: - Entry Editor
     

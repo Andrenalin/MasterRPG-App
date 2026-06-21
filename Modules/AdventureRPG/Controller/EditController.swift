@@ -152,6 +152,10 @@ extension EditController {
         }
         return itemRowModels
     }
+    
+    public func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        AdventureEditorRoute.quickEditor(itemRowModel.itemId)
+    }
 }
 
 // MARK: - AI Extraction

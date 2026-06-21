@@ -31,7 +31,7 @@ public extension WeatherRootModel {
                 return
             }
             let task = importController.importUrl(from: url, withOverwrite: true)
-            let _ = try await task.value
+            let _ = try? await task.value
             let id = await importController.itemController.itemDataModel.items[0]
             Task { @MainActor in
                 editController.setCurrentItem(to: ItemRowTreeModel.previewWithData(id: id))
