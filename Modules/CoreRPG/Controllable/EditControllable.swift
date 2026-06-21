@@ -12,6 +12,7 @@ public protocol EditControllable: Sendable {
     var tagController: TagController { get }
     
     var editorModel: ItemEditorModel { get }
+    @MainActor var sheetRootModel: SheetRootModel { get }
     @MainActor var sheetEditorModel: SheetEditorModel { get }
 
     // overwrite extensions

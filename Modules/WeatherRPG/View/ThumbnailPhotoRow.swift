@@ -11,7 +11,7 @@ struct ThumbnailPhotoRow: View, Equatable {
     
     var body: some View {
         if let photoId = model?.photoId {
-            root.photoRoot.viewController.thumbnailRow(root: root.photoRoot, for: photoId, listDisplayModel: root.listDisplayModel)
+            root.photoRoot.viewController.thumbnailRow(root: root.photoRoot, for: photoId, listDisplayModel: root.folderListController.listDisplayModel)
         }
     }
     

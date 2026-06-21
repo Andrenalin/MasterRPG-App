@@ -49,16 +49,19 @@ public final class MapRootModel {
         _dataController = dataController
         let itemController = ItemController(config: config, photoRoot: photoRoot, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        let editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        let linkController = LinkController(root: self, rootManager: rootManager, itemController: itemController)
+        _linkController = linkController
+        let sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
+        _sheetController = sheetController
+        
+        let editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _editController = editController
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController, editController: editController)
         let gameController = GameController(rootManager: rootManager, root: self, itemController: itemController, exportController: exportController)
         _gameController = gameController
-        _linkController = LinkController(rootManager: rootManager, itemController: itemController, editController: editController, gameController: gameController)
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
-        _sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))
 

@@ -32,22 +32,28 @@ public final class AudioRootModel {
 
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: tagController)
-        _exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        _importController = ImportController(itemController: itemController, editController: editController)
-
+        
         let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
         _audioController = audioController
-
+        
+        let exportController = ExportController(rootManager: rootManager, itemController: itemController)
+        _exportController = exportController
         let gameController = GameController(rootManager: rootManager, itemController: itemController, audioController: audioController, exportController: exportController)
         _gameController = gameController
 
-        _linkController = LinkController(rootManager: rootManager, itemController: itemController, audioController: audioController, gameController: gameController)
+        let linkController = LinkController(rootManager: rootManager, itemController: itemController, audioController: audioController, gameController: gameController)
+        _linkController = linkController
+        
+        let sheetController = SheetController(itemController: itemController)
+        _sheetController = sheetController
+        
+        _editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: tagController)
+        _importController = ImportController(itemController: itemController, editController: editController)
+
+
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
 
-        _sheetController = SheetController(itemController: itemController)
-        
         let folderListModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
         
         _folderListController = FolderListController(listModel: folderListModel, listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))

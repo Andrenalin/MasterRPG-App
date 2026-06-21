@@ -9,32 +9,18 @@ struct DetailEditorView: View {
     let root: AdventureRootModel
     let model: AdventureModel
 
-    @State private var sheetRootModel: SheetRootModel?
-
     var body: some View {
         DetailSelectionEditorView(root: root, model: model)
             .onChange(of: model.id, initial: true) {
-                if sheetRootModel == nil {
-                    sheetRootModel = SheetRootModel(
-                        linkControllable: root.rootController.linkControllable,
-                        sheetControllable: root.rootController.sheetControllable,
-                        itemId: model.id,
-                        isEditor: true,
-                        editorModel: root.editController.sheetEditorModel
-                    )
-                } else {
-                    sheetRootModel?.reset(itemId: model.id)
-                }
+                root.editController.sheetRootModel.reset(itemId: model.id)
             }
 
-        if let sheetRootModel {
-            SheetRootEditorView(
-                root: root.rootController,
-                sheetRootModel: sheetRootModel,
-                headerTitle: String(localized: "Sections", bundle: .module).localizedString,
-                linkTypes: LinkAdventureModuleTransferable.self
-            )
-        }
+        SheetRootEditorView(
+            root: root.rootController,
+            sheetRootModel: root.editController.sheetRootModel,
+            headerTitle: String(localized: "Sections", bundle: .module).localizedString,
+            linkTypes: LinkAdventureModuleTransferable.self
+        )
     }
 }
 

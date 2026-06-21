@@ -26,14 +26,17 @@ public final class GeneratorRootModel {
         _dataController = dataController
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        _importController = ImportController(itemController: itemController, editController: editController)
         _gameController = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
+        _sheetController = SheetController(itemController: itemController)
+
+        _editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        
+        _importController = ImportController(itemController: itemController, editController: editController)
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
-        _sheetController = SheetController(itemController: itemController)
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))
 

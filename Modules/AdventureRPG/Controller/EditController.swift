@@ -53,14 +53,21 @@ struct LinkAdventureModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: AdventureRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, tagController: TagController) {
+    @MainActor init(root: AdventureRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
         self.root = root
         self.itemController = itemController
         self.linkRegisterController = linkRegisterController
         self.tagController = tagController
-        
         self.editorModel = ItemEditorModel()
-        self.sheetEditorModel = SheetEditorModel(module: itemController.config.module)
+        let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
+        self.sheetRootModel = SheetRootModel(
+            linkControllable: linkController,
+            sheetControllable: sheetController,
+            itemId: UUID(),
+            isEditor: true,
+            editorModel: sheetEditorModel
+        )
+        self.sheetEditorModel = sheetEditorModel
         self.adventureEditModel = AdventureEditModel()
     }
 
@@ -70,6 +77,7 @@ struct EditController: Sendable {
     let linkRegisterController: LinkRegisterController
     let tagController: TagController
     let editorModel: ItemEditorModel
+    let sheetRootModel: SheetRootModel
     let sheetEditorModel: SheetEditorModel
     let adventureEditModel: AdventureEditModel
 }

@@ -11,10 +11,9 @@ import TableRPG
 import CharacterRPG
 
 struct LinkController: Sendable {
+    let root: MapRootModel
     let rootManager: RootManager
     let itemController: ItemController
-    let editController: EditController
-    let gameController: GameController
     
     public var itemControllable: any ItemControllable { itemController }
 }
@@ -33,7 +32,7 @@ extension LinkController: LinkControllable {
                 return text
             }
             Task { @MainActor in
-                await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
+                await shareResult?.networkActions?.shareId(root.gameController.share(id: itemId))
             }
             return text
         } else {
@@ -95,7 +94,7 @@ extension LinkController: LinkControllable {
         guard let photoId = inspectedItem.photoId, let replacedItem = itemController.copy(of: itemId) else { return }
         if rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
             Task {
-                await editController.resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
+                await root.editController.resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
             }
         } else {
             Logger.linkController.warning("Map: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")

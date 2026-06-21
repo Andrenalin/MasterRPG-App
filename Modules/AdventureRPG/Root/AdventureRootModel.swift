@@ -55,11 +55,15 @@ public final class AdventureRootModel {
 
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        let linkController = LinkController(rootManager: root, itemController: itemController)
+        _linkController = linkController
+        let sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
+        _sheetController = sheetController
+        
+        _editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: root, itemController: itemController)
         _importController = ImportController(root: self, itemController: itemController)
         _gameController = GameController(rootManager: root, root: self, itemController: itemController, exportController: exportController)
-        _linkController = LinkController(rootManager: root, itemController: itemController)
         _searchController = SearchController(itemController: itemController)
         _sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
         _linkRegisterController = linkRegisterController

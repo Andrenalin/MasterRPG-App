@@ -11,13 +11,10 @@ public final class WeatherRootModel {
     @MainActor init(tagController: TagController, photoRoot: PhotoRootModel) {
         self.photoRoot = photoRoot
         
+        self.tagController = tagController
+        
         let config = ModuleConfiguration()
         self.config = config
-        
-        let listDisplayModel = ListDisplayModel()
-        self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
-        self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
         self.navigationModel = ModuleNavigationModel()
@@ -25,18 +22,23 @@ public final class WeatherRootModel {
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
+        
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
+        let listDisplayModel = ListDisplayModel()
+
         let dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         _dataController = dataController
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        _importController = ImportController(itemController: itemController, editController: editController)
         _gameController = GameController(rootManager: rootManager, photoRoot: photoRoot, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
+        _sheetController = SheetController(itemController: itemController)
+
+        _editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        _importController = ImportController(itemController: itemController, editController: editController)
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
-        _sheetController = SheetController(itemController: itemController)
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))
 
@@ -73,10 +75,9 @@ public final class WeatherRootModel {
     }
     
     let photoRoot: PhotoRootModel
+    let tagController: TagController
     public let config: ModuleConfiguration
     
-    public let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel

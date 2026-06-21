@@ -11,8 +11,6 @@ import PhotoRPG
 struct LinkController: Sendable {
     let rootManager: RootManager
     let itemController: ItemController
-    let editController: EditController
-    let gameController: GameController
     
     public var itemControllable: any ItemControllable { itemController }
 }

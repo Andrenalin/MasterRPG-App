@@ -15,6 +15,8 @@ import SwiftUI
     public var module: NetworkModules
     public var scrollEntryId: UUID?
     
+    public var parentModel: SheetModel?
+    
     func setEdit(source: ItemRowModel) {
         self.itemId <=> source.itemId
         self.entryId <=> source.entryId

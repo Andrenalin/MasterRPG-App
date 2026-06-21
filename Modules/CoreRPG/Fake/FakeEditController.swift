@@ -11,12 +11,13 @@ struct FakeEditController: EditControllable {
     var linkRegisterController: LinkRegisterController
 
     var editorModel: ItemEditorModel
+    var sheetRootModel: SheetRootModel
     var sheetEditorModel: SheetEditorModel
 
     var cacheItemListModel: CacheItemListModel
 
     @MainActor
-    static let fake = FakeEditController(itemControllable: FakeItemController.fake, tagController: TagController(), linkRegisterController: LinkRegisterController(root: nil), editorModel: ItemEditorModel(), sheetEditorModel: SheetEditorModel(), cacheItemListModel: CacheItemListModel())
+    static let fake = FakeEditController(itemControllable: FakeItemController.fake, tagController: TagController(), linkRegisterController: LinkRegisterController(root: nil), editorModel: ItemEditorModel(), sheetRootModel: SheetRootModel.fake, sheetEditorModel: SheetEditorModel(), cacheItemListModel: CacheItemListModel())
 }
 
 extension FakeEditController: EntryDataEditable {
@@ -39,4 +40,8 @@ extension FakeEditController: EntryDataEditable {
     func merge(itemId: UUID, entries: [FakeEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
         []
     }
+}
+
+extension SheetRootModel {
+    static let fake: SheetRootModel = SheetRootModel(linkControllable: FakeLinkController.fake, sheetControllable: FakeSheetController.fake, itemId: UUID(), isEditor: true)
 }

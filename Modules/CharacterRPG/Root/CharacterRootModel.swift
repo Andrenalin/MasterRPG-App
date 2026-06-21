@@ -35,16 +35,18 @@ public final class CharacterRootModel {
         _dataController = dataController
         let itemController = ItemController(config: config, tableRoot: tableRoot, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        let editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        let linkController = LinkController(rootManager: rootManager, itemController: itemController)
+        _linkController = linkController
+        let sheetController = SheetController(itemController: itemController, linkController: linkController, linkRegisterController: linkRegisterController)
+        _sheetController = sheetController
+        
+        let editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _editController = editController
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController, editController: editController)
         _gameController = GameController(rootManager: rootManager, root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, exportController: exportController)
-        let linkController = LinkController(rootManager: rootManager, itemController: itemController, editController: editController, gameController: gameController)
-        _linkController = linkController
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
-        _sheetController = SheetController(itemController: itemController, linkController: linkController, linkRegisterController: linkRegisterController)
         
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchControllable, searchModel: searchModel, listDisplayModel: listDisplayModel))
 

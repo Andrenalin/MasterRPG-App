@@ -59,6 +59,11 @@ private extension SheetView {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.title)
         }
+        .applyIf(isEditor && sheetModel.canAdd) {
+            $0.contextMenuAll {
+                SheetContextMenuView(rootModel: rootModel, parentModel: sheetModel, entryModel: sheetModel, isEditor: isEditor)
+            }
+        }
     }
     
     var inlineRows: some View {

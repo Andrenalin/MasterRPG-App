@@ -66,6 +66,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                         editorModel.removeItems.removeAll(where: { rowModels.contains($0) })
                         _ = editController.merge(itemId: model.id, entries: entries, recoverEntries: editorModel.removeItems)
                         root.editControllable.editorModel.hasChangedEntries += 1
+                        root.editControllable.sheetRootModel.updateParent()
                         dismiss()
                     }
                 }
@@ -214,6 +215,7 @@ private extension QuickEntryEditorView {
                     editorModel.removeItems = editController.merge(itemId: model.id, entries: entries, recoverEntries: nil)
                     if editorModel.removeItems.isEmpty {
                         root.editControllable.editorModel.hasChangedEntries += 1
+                        root.editControllable.sheetRootModel.updateParent()
                         dismiss()
                     } else {
                         root.removeEntryListModel.removeItems = editorModel.removeItems

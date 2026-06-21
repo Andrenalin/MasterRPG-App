@@ -423,6 +423,11 @@ public final class SheetRootModel: Sendable {
         updateParent(parentModel)
     }
 
+    func updateParent() {
+        guard let parentModel = editorModel.parentModel else { return }
+        updateParent(parentModel)
+    }
+    
     /// Re-syncs a SheetModel tree from live data, then invalidates linkTextModel cache for any entry
     /// whose content changed (hasChanged) and clears the flag.
     func updateParent(_ parentModel: SheetModel) {

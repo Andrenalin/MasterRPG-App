@@ -52,11 +52,11 @@ struct SheetEntryQuickEditButton: View {
         Button {
             if let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
                 navigator.navigate(to: entryDataEditable.quickEditorDestination(itemRowModel: entryModel.source))
-                rootModel.updateParent(parentModel)
+                rootModel.editorModel.parentModel = parentModel
             }
         } label: {
             Label {
-                Text("Quick Editor \(parentModel.name.withoutLink())", bundle: .module)
+                Text("Quick Editor for \(parentModel.name.withoutLink())", bundle: .module)
             } icon: {
                 Image(systemName: "table.badge.more")
                     .imageScale(.large)

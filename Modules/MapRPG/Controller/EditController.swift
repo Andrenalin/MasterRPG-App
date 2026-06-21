@@ -20,7 +20,7 @@ final class MapEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: MapRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, tagController: TagController) {
+    @MainActor init(root: MapRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
         self.root = root
         
         self.itemController = itemController
@@ -28,7 +28,15 @@ struct EditController: Sendable {
         self.tagController = tagController
         
         self.editorModel = ItemEditorModel()
-        self.sheetEditorModel = SheetEditorModel(itemId: nil, entryId: nil, module: itemController.config.module)
+        let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
+        self.sheetRootModel = SheetRootModel(
+            linkControllable: linkController,
+            sheetControllable: sheetController,
+            itemId: UUID(),
+            isEditor: true,
+            editorModel: sheetEditorModel
+        )
+        self.sheetEditorModel = sheetEditorModel
         self.mapEditModel = MapEditModel()
     }
 
@@ -39,6 +47,7 @@ struct EditController: Sendable {
     let tagController: TagController
 
     let editorModel: ItemEditorModel
+    let sheetRootModel: SheetRootModel
     let sheetEditorModel: SheetEditorModel
     let mapEditModel: MapEditModel
 }
