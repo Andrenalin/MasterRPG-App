@@ -25,7 +25,7 @@ import SwiftUI
 /// ```
 /// That in turn allows them to be manipulated or closed when performing deep linking actions like dismissAny().
 ///
-/// One can also use the ``managedPresentationView()`` modifier which does the same thing.
+/// One can also use the ``managedPresentationView(name:)`` modifier which does the same thing.
 /// ```swift
 /// .sheet(item: $showSettings) { destination in
 ///     destination()
@@ -71,7 +71,7 @@ public struct ManagedPresentationView<Content: View>: View {
             .modifier(NavigationPresentationModifiers(navigator: navigator))
             .environment(\.navigator, navigator)
             .onAppear {
-                Navigator.current = navigator
+                Navigator.set(current: navigator)
             }
     }
 
