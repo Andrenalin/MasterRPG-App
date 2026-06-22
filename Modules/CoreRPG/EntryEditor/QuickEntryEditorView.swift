@@ -33,7 +33,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @State private var textEditModel: TextEditModel
 
     @State private var model: EditController.Model
-    @State private var entries: [EditController.Model.Entry] = []
+    //@State private var entries: [EditController.Model.Entry] = []
     
     @State private var showHelp = false
     @State private var showInspector = false
@@ -62,7 +62,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                 .sizedSheet(isPresented: $showEffectedLinksAlert, idealSize: CGSize(width: 400, height: 600)) {
                     EffectedLinkActionPanelView(root: root, overwrite: true) { rowModels in
                         editorModel.removeItems.removeAll(where: { rowModels.contains($0) })
-                        _ = editController.merge(itemId: model.id, entries: entries, recoverEntries: editorModel.removeItems)
+                        _ = editController.merge(itemId: model.id, entries: model.entries, recoverEntries: editorModel.removeItems)
                         root.editControllable.editorModel.hasChangedEntries += 1
                         root.editControllable.sheetRootModel.updateParent()
                         navigator.dismiss()
@@ -119,8 +119,9 @@ private extension QuickEntryEditorView {
             textEditModel.reset(text: referenceText.input, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module))
         }
         .onChange(of: referenceText.output) {
-            entries = createMultiLineEntries(referenceText.output)
-            model.entries = entries
+            let parsedEntries = createMultiLineEntries(referenceText.output)
+            let entries = editController.merge(itemId: model.id, entries: parsedEntries)
+            model.entries <=> entries
         }
     }
 
@@ -210,6 +211,9 @@ private extension QuickEntryEditorView {
         ToolbarItem(placement: .confirmationAction) {
             ControlGroup {
                 Button(role: .confirm) {
+                    let parsedEntries = createMultiLineEntries(referenceText.input)
+                    let entries = editController.merge(itemId: model.id, entries: parsedEntries)
+                    model.entries = entries
                     editorModel.removeItems = editController.merge(itemId: model.id, entries: entries, recoverEntries: nil)
                     if editorModel.removeItems.isEmpty {
                         root.editControllable.editorModel.hasChangedEntries += 1

@@ -131,6 +131,15 @@ extension EditController {
         AdventureEntryModel(id: UUID(), name: name, content: content)
     }
 
+    @MainActor func merge(itemId: UUID, entries: [AdventureEntryModel]) -> [AdventureEntryModel] {
+        guard let item = editModel(for: itemId) else { return entries }
+        return entries.map { entry in
+            var foundEntry = item.entries.first(where: { $0.name == entry.name })
+            foundEntry?.content = entry.content
+            return foundEntry ?? entry
+        }
+    }
+
     @MainActor
     func merge(itemId: UUID, entries: [AdventureEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }

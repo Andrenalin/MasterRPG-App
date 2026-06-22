@@ -124,15 +124,25 @@ extension EditController {
         TableEntryModel(id: UUID(), name: name, content: content)
     }
 
-    @MainActor func merge(itemId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
-        guard let editModel = editModel(for: itemId) else { return [] }
-        var newEntries = entries.map { entry in
-            let foundEntry = editModel.entries.first(where: { $0.name == entry.name })
-            return TableEntryModel(id: foundEntry?.id ?? entry.id, name: entry.name, content: entry.content, displayState: entry.displayState, diceResult: entry.diceResult)
+    @MainActor func merge(itemId: UUID, entries: [TableEntryModel]) -> [TableEntryModel] {
+        guard let item = editModel(for: itemId) else { return entries }
+        return entries.map { entry in
+            var foundEntry = item.entries.first(where: { $0.name == entry.name })
+            foundEntry?.content = entry.content
+            return foundEntry ?? entry
         }
-        let removedIds = Set(editModel.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
+    }
+
+    @MainActor func merge(itemId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
+        guard let item = editModel(for: itemId) else { return [] }
+        var newEntries = entries.map { entry in
+            var foundEntry = item.entries.first(where: { $0.name == entry.name })
+            foundEntry?.content = entry.content
+            return foundEntry ?? entry
+        }
+        let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
         let module = itemController.config.module
-        let itemRowModels = removedIds.map { ItemRowModel(itemId: editModel.id, entryId: $0, typeId: module) }
+        let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
 
         var effectedLinks = true
         for itemRowModel in itemRowModels {
@@ -143,10 +153,10 @@ extension EditController {
         }
         if recoverEntries != nil || effectedLinks {
             if let recoverEntries {
-                newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { editModel[$0] })
+                newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
-            editModel.entries = newEntries
-            save(updated: editModel, message: String(localized: "Entries replaced", bundle: .module).localizedString)
+            item.entries = newEntries
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString)
             return []
         }
         return itemRowModels

@@ -61,6 +61,10 @@ extension EditController: EntryDataEditable {
         PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: "", bounds: .zero)
     }
     
+    @MainActor func merge(itemId: UUID, entries: [PdfEntryModel]) -> [PdfEntryModel] {
+        entries
+    }
+
     func merge(itemId: UUID, entries: [PdfEntryModel], recoverEntries: [CoreRPG.ItemRowModel]?) -> [ItemRowModel] {
         []
     }

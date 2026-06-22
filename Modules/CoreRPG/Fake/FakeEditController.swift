@@ -36,6 +36,10 @@ extension FakeEditController: EntryDataEditable {
     func create(name: String, content: String) -> FakeEntryModel {
         FakeEntryModel.empty
     }
+
+    func merge(itemId: UUID, entries: [FakeEntryModel]) -> [FakeEntryModel] {
+        entries
+    }
     
     func merge(itemId: UUID, entries: [FakeEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
         []
