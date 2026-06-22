@@ -26,10 +26,6 @@ struct DetailListView: View {
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
             if !model.specialCategory && !root.openFileWindowModel.showItem {
-                ControlGroup {
-                    QuickEditorButton(root: root, model: model)
-                    AddEntryButton(root: root, model: model)
-                }
 #if !os(tvOS)
                 TableExtractToolBarButton(model: model)
 #endif

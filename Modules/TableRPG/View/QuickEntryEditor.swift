@@ -8,7 +8,7 @@ struct QuickEntryEditor: View {
     let model: TableModel
 
     @Environment(TableRootModel.self) private var root
-
+    
     @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
 
     var body: some View {

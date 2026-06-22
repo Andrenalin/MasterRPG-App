@@ -19,7 +19,7 @@ extension AdventureEditorRoute: NavigationDestination {
     public var method: NavigationMethod {
         switch self {
         case .quickEditor:
-            return .cover
+            return .managedCover
         case .addLink, .generator:
             return .managedSheet
         case .selectionPdf, .linkSelection:

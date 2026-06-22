@@ -189,17 +189,17 @@ extension LinkController {
 
 extension LinkController {
     @MainActor
-    func linkText(model: ValueModel, entryId: UUID, withoutName: Bool = false) -> String {
+    func linkText(model: ValueModel, entry: ValueEntryModel, withoutName: Bool = false) -> String {
         var otherValue = ""
-        if let valueId = model[entryId].valueId {
+        if let valueId = entry.valueId {
             otherValue = itemController.itemOrEmpty(for: valueId).url(linkNumber: 0)
         }
         
-        if let valueText = calculate(entry: model[entryId], deep: 0), model[entryId].value != valueText {
+        if let valueText = calculate(entry: entry, deep: 0), entry.value != valueText {
             otherValue = "= \(valueText)"
         }
         
-        let rowText = model[entryId].valueLinkText(otherValue: " \(otherValue)", withoutName: withoutName)
+        let rowText = entry.valueLinkText(otherValue: " \(otherValue)", withoutName: withoutName)
         return rowText
     }
     

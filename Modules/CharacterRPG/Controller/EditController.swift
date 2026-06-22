@@ -144,8 +144,8 @@ extension EditController {
     }
     
     @MainActor public func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
-        guard let item = editModel(for: itemId) else { return "" }
-        return root.linkController.linkText(model: item, entryId: entry.id)
+        guard let item = editModel(for: itemId), let entry = entry as? ValueEntryModel else { return "" }
+        return root.linkController.linkText(model: item, entry: entry)
     }
     
     @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] {

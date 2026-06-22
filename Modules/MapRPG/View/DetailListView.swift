@@ -24,10 +24,8 @@ struct DetailListView: View {
         ToolbarItemGroup(placement: .secondaryActionAll) {
             if !model.specialCategory {
                 ControlGroup {
-                    QuickEditorButton(model: model)
                     MapEditorButton(model: model)
                     EditTileButton(model: model)
-                    AddEntryButton(root: root, model: model)
 #if !os(tvOS)
                     MapExtractToolBarButton(model: model)
 #endif

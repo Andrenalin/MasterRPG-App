@@ -16,7 +16,7 @@ extension CharacterEditorRoute: NavigationDestination {
     public var method: NavigationMethod {
         switch self {
         case .quickEditor:
-            return .cover
+            return .managedCover
         case .addLink:
             return .managedSheet
         case .selectionPdf, .linkSelection:

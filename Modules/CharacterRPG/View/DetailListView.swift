@@ -12,31 +12,25 @@ struct DetailListView: View {
         let _ = Self.printViewChangesOnlyInDebug()
 
         DetailFolderListView(root: root, model: model, folderListController: folderListController)
+#if os(iOS)
             .toolbar {
                 toolbarContent
             }
+#endif
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in
                 UserActivity.addPayLoad(for: activity, title: model.name, module: root.config.module, itemId: model.id)
             }
     }
-    
-    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .secondaryActionAll) {
-            if !model.specialCategory && !root.openFileWindowModel.showItem {
-                ControlGroup {
-                    AddEntryButton(root: root, model: model)
-                    AddGroupButton(root: root, model: model)
-                }
-            }
-        }
+
 #if os(iOS)
+    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .keyboard) {
             ForEach(root.editorLinkModel.modulesRow, id: \.self) { module in
                 AddLinkButton(root: root, model: model, module: module)
             }
         }
-#endif
     }
+#endif
 }

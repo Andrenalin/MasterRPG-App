@@ -21,10 +21,8 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     let inspector: Inspector
     let pdfOverlay: PDFOverlay
     
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
-    
     @Environment(ScenesManager.self) private var scenesManager
 
     private enum Field: Hashable {
@@ -67,7 +65,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                         _ = editController.merge(itemId: model.id, entries: entries, recoverEntries: editorModel.removeItems)
                         root.editControllable.editorModel.hasChangedEntries += 1
                         root.editControllable.sheetRootModel.updateParent()
-                        dismiss()
+                        navigator.dismiss()
                     }
                 }
                 .navigationTitle(model.name)
@@ -184,8 +182,8 @@ private extension QuickEntryEditorView {
 private extension QuickEntryEditorView {
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button {
-                dismiss()
+            Button(role: .cancel) {
+                navigator.dismiss()
             } label: {
                 Image(systemName: "xmark.circle")
             }
@@ -211,12 +209,12 @@ private extension QuickEntryEditorView {
 
         ToolbarItem(placement: .confirmationAction) {
             ControlGroup {
-                Button {
+                Button(role: .confirm) {
                     editorModel.removeItems = editController.merge(itemId: model.id, entries: entries, recoverEntries: nil)
                     if editorModel.removeItems.isEmpty {
                         root.editControllable.editorModel.hasChangedEntries += 1
                         root.editControllable.sheetRootModel.updateParent()
-                        dismiss()
+                        navigator.dismiss()
                     } else {
                         root.removeEntryListModel.removeItems = editorModel.removeItems
                         showEffectedLinksAlert.toggle()

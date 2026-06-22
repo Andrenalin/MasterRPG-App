@@ -25,8 +25,6 @@ struct DetailListView: View {
         ToolbarItemGroup(placement: .secondaryActionAll) {
             if !model.specialCategory && !root.openFileWindowModel.showItem {
                 ControlGroup {
-                    AdventureQuickEditorButton(model: model)
-                    AdventureAddEntryButton(root: root, model: model)
 #if !os(tvOS)
                     AdventureAIAssistantButton(root: root, model: model)
                     AdventureExtractToolBarButton(model: model)
