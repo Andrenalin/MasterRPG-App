@@ -10,7 +10,6 @@ struct ContentFormattingDefinition: AttributedTextFormattingDefinition {
     var colorScheme: ColorScheme = .light
 
     var body: some AttributedTextFormattingDefinition<Scope> {
-        NormalizeFonts()
         LinksAreAdaptive(links: links, colorScheme: colorScheme)
         LinksHaveAdaptiveBacks(links: links, colorScheme: colorScheme)
     }

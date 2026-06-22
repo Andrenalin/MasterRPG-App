@@ -6,7 +6,6 @@ struct TextEditorLinkView: View {
     @Bindable public var model: TextEditModel
     let maxHeight: CGFloat
     
-    @State private var selection: AttributedTextSelection = .init()
     @State private var formattingDefinition: ContentFormattingDefinition?
     @Environment(\.colorScheme) private var colorScheme
     
@@ -25,7 +24,7 @@ struct TextEditorLinkView: View {
         let currentDefinition = formattingDefinition ?? ContentFormattingDefinition(links: [], colorScheme: colorScheme)
         
         VStack {
-            TextEditor(text: $model.attributedText, selection: $selection)
+            TextEditor(text: $model.attributedText)
                 .attributedTextFormattingDefinition(currentDefinition)
                 .textInputAutocapitalizationAll(.sentences)
                 .writingToolsBehavior(.complete)
