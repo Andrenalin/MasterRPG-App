@@ -5,6 +5,7 @@ import SwiftUI
 
 struct AddtionalEntryRow: View, Equatable {
     let source: ItemRowModel
+    let entry: any EntryDataAccessable
     let textModel: LinkHighlightTextModel?
     
     @Environment(CharacterRootModel.self) private var root
@@ -39,8 +40,8 @@ struct AddtionalEntryRow: View, Equatable {
         root.itemController.itemOrEmpty(for: source.itemId)
     }
     
-    private var entry: ValueEntryModel {
-        model[entryId]
+    private var valueEntry: ValueEntryModel {
+        entry as? ValueEntryModel ?? model[entryId]
     }
     
     private var entryId: UUID {
@@ -48,8 +49,8 @@ struct AddtionalEntryRow: View, Equatable {
     }
     
     private var typeIcon: String {
-        guard entry.valueId != nil else {
-            return entry.type.icon
+        guard valueEntry.valueId != nil else {
+            return valueEntry.type.icon
         }
         return "square.on.square.squareshape.controlhandles"
     }
@@ -62,5 +63,5 @@ struct AddtionalEntryRow: View, Equatable {
 #Preview(traits: .mockData) {
     @Previewable @Environment(CharacterRootModel.self) var root
     
-    AddtionalEntryRow(source: ItemRowModel(itemId: root.itemController.itemDataModel.items.first!, entryId: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first!).entries[0].id, typeId: .value), textModel: LinkHighlightTextModel(linkControllable: nil, text: "Hello Links", highlightedText: "in", toggler: nil, shareResult: nil, editAction: nil))
+    AddtionalEntryRow(source: ItemRowModel(itemId: root.itemController.itemDataModel.items.first!, entryId: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first!).entries[0].id, typeId: .value), entry: ValueEntryModel.empty, textModel: LinkHighlightTextModel(linkControllable: nil, text: "Hello Links", highlightedText: "in", toggler: nil, shareResult: nil, editAction: nil))
 }

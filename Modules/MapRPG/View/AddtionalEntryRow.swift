@@ -6,6 +6,7 @@ import SwiftUI
 
 struct AddtionalEntryRow: View, Equatable {
     let source: ItemRowModel
+    let entry: any EntryDataAccessable
     
     @Environment(MapRootModel.self) private var root
     
@@ -28,8 +29,8 @@ struct AddtionalEntryRow: View, Equatable {
         root.itemController.itemOrEmpty(for: source.itemId)
     }
     
-    private var entry: MapEntryModel {
-        model[entryId]
+    private var mapEntryModel: MapEntryModel {
+        entry as? MapEntryModel ?? model[entryId]
     }
     
     private var entryId: UUID {
@@ -37,7 +38,7 @@ struct AddtionalEntryRow: View, Equatable {
     }
     
     private var pinsCounter: Int {
-        let entryRect = entry.rect
+        let entryRect = mapEntryModel.rect
         return model.mapPins.filter { entryRect.contains($0.location) }.count
         
     }

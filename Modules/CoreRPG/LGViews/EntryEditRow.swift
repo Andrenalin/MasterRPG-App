@@ -31,13 +31,13 @@ public struct EntryEditRow: View {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: listDisplayModel, entryId: entry.id)
                     
                     if editController.additioanlEnrtryViewType == .custom {
-                        editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), textModel: nil)
+                        editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), entry: entry, textModel: nil)
                     }
                 }
             }
             
             if editController.additioanlEnrtryViewType == .inline {
-                editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), textModel: linkTextModel)
+                editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), entry: entry, textModel: linkTextModel)
             } else {
                 LinkHighlightTextView(model: linkTextModel)
                     .multilineTextAlignment(.leading)
@@ -47,7 +47,7 @@ public struct EntryEditRow: View {
             
             if !hasThumbnail {
                 if editController.additioanlEnrtryViewType == .custom {
-                    editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), textModel: nil)
+                    editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), entry: entry, textModel: nil)
                 }
             }
         }

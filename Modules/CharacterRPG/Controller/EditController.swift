@@ -83,8 +83,8 @@ extension EditController {
     
     public var additioanlEnrtryViewType: AdditionalEntryViewType { .inline }
     
-    @MainActor public func additionalRowView(for source: ItemRowModel, textModel: LinkHighlightTextModel?) -> AnyView {
-        AnyView(AddtionalEntryRow(source: source, textModel: textModel).equatable())
+    @MainActor public func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessable, textModel: LinkHighlightTextModel?) -> AnyView {
+        AnyView(AddtionalEntryRow(source: source, entry: entry, textModel: textModel).equatable())
     }
     
     @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationItemId: UUID, destinationEntryId: UUID) {

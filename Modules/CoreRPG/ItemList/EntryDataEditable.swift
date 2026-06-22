@@ -31,7 +31,7 @@ public protocol EntryDataEditable: EditControllable {
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
     var additioanlEnrtryViewType: AdditionalEntryViewType { get }
     
-    @MainActor func additionalRowView(for source: ItemRowModel, textModel: LinkHighlightTextModel?) -> AnyView
+    @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessable, textModel: LinkHighlightTextModel?) -> AnyView
     
     @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String
     
@@ -93,7 +93,7 @@ public extension EntryDataEditable {
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }
     var additioanlEnrtryViewType: AdditionalEntryViewType { .none }
     
-    @MainActor func additionalRowView(for source: ItemRowModel, textModel: LinkHighlightTextModel?) -> AnyView { AnyView(EmptyView()) }
+    @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessable, textModel: LinkHighlightTextModel?) -> AnyView { AnyView(EmptyView()) }
     
     @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
         entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"

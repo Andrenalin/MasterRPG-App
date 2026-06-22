@@ -23,7 +23,7 @@ struct InlineRowViewer: View, Equatable {
                         ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: root.listDisplayModel, entryId: source.entryId)
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
-                    AddtionalEntryRow(source: source)
+                    AddtionalEntryRow(source: source, entry: entry)
                 }
             }
         }
@@ -35,6 +35,10 @@ struct InlineRowViewer: View, Equatable {
     
     var model: MapModel {
         root.itemController.itemOrEmpty(for: source.itemId)
+    }
+    
+    var entry: MapEntryModel {
+        model[source.entryId ?? UUID()]
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {
