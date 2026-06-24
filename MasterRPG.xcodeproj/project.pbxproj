@@ -229,7 +229,6 @@
 		8E8F02562ED1874500A0A6F7 /* SpaceRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E983DA62E27D057002B25C2 /* SpaceRPG.framework */; };
 		8E8F02572ED1874500A0A6F7 /* SpaceRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E983DA62E27D057002B25C2 /* SpaceRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E926E8B2B453D450025B659 /* WindowMacList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E926E8A2B453D450025B659 /* WindowMacList.swift */; };
-		8E9AE7002F7618C200016DA6 /* RPGTabletopGameContent in Frameworks */ = {isa = PBXBuildFile; productRef = 8E9AE6FF2F7618C200016DA6 /* RPGTabletopGameContent */; };
 		8E9AE7022F7618EE00016DA6 /* RPGTabletopGameContent in Frameworks */ = {isa = PBXBuildFile; productRef = 8E9AE7012F7618EE00016DA6 /* RPGTabletopGameContent */; };
 		8E9AE7042F76192800016DA6 /* RPGTabletopGameContent in Frameworks */ = {isa = PBXBuildFile; productRef = 8E9AE7032F76192800016DA6 /* RPGTabletopGameContent */; };
 		8E9AE7062F76193500016DA6 /* RPGTabletopGameContent in Frameworks */ = {isa = PBXBuildFile; productRef = 8E9AE7052F76193500016DA6 /* RPGTabletopGameContent */; };
@@ -2129,7 +2128,6 @@
 				8E52F6762EC994F5005E6838 /* GeneratorRPG.framework in Frameworks */,
 				590D76FC2ED9C36D007570CF /* AdventureRPG.framework in Frameworks */,
 				590D750A2ED9364C007570CF /* CharacterRPG.framework in Frameworks */,
-				8E9AE7002F7618C200016DA6 /* RPGTabletopGameContent in Frameworks */,
 				8E39AD142ED1E04E00076078 /* WeatherRPG.framework in Frameworks */,
 				8E39AD8A2ED1E26B00076078 /* DiceRPG.framework in Frameworks */,
 				8E56BD522ED9E8A80026F01C /* GameRPG.framework in Frameworks */,
@@ -3315,7 +3313,6 @@
 			);
 			name = MasterRPG;
 			packageProductDependencies = (
-				8E9AE6FF2F7618C200016DA6 /* RPGTabletopGameContent */,
 			);
 			productName = MasterRPG;
 			productReference = 8EC4E46928DDA29600D0279F /* MasterRPG.app */;
@@ -7959,10 +7956,6 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8E9AE6FF2F7618C200016DA6 /* RPGTabletopGameContent */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = RPGTabletopGameContent;
-		};
 		8E9AE7012F7618EE00016DA6 /* RPGTabletopGameContent */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E9AE6FE2F7618C200016DA6 /* XCLocalSwiftPackageReference "Resources/RPGTabletopGameContent" */;

@@ -146,32 +146,23 @@ extension SheetController: SheetControllable {
         let startTime = ContinuousClock.now
         Logger.sheetController.info("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
         
-        let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+        let item = itemController.itemOrEmpty(for: sheetModel.source.itemId)
 
         var changeCount = 0
-        unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
-            sheetModel.hasChanged = changed
-            if changed { changeCount += 1 }
-        }
-        unequalSet(lhs: &sheetModel.description, rhs: model.description) { changed in
-            sheetModel.hasChanged = sheetModel.hasChanged || changed
-            if changed { changeCount += 1 }
-        }
-
         var updatedInlineEntries: [SheetModel] = []
 
-        if let diceId = model.diceId {
+        if let diceId = item.diceId {
             let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
             // Reuse existing if found, otherwise create new
-            let diceSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? createDiceInline(diceId: diceId, itemId: model.id, level: sheetModel.level, isShown: sheetModel.isShown)
+            let diceSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? createDiceInline(diceId: diceId, itemId: item.id, level: sheetModel.level, isShown: sheetModel.isShown)
             diceSheetModel.source = diceSource
             updatedInlineEntries.append(diceSheetModel)
         }
 
-        if let photoId = model.photoId {
+        if let photoId = item.photoId {
             let photoSource = ItemRowModel(itemId: photoId, typeId: .photo)
             // Reuse existing if found, otherwise create new
-            let photoSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .photo }) ?? createPhotoInline(photoId: photoId, itemId: model.id, level: sheetModel.level, isShown: sheetModel.isShown)
+            let photoSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .photo }) ?? createPhotoInline(photoId: photoId, itemId: item.id, level: sheetModel.level, isShown: sheetModel.isShown)
             photoSheetModel.source = photoSource
             updatedInlineEntries.append(photoSheetModel)
         }
@@ -182,67 +173,21 @@ extension SheetController: SheetControllable {
             sheetModel.inlineEntries = updatedInlineEntries
         }
 
-        guard !sheetModel.isFolded else {
-            let duration = ContinuousClock.now - startTime
-            Logger.sheetController.info("✅ [Update] Completed (folded) - Duration: \(duration), Changes: \(changeCount)")
-            return
+        if !sheetModel.isFolded {
+            updateEntries(item: item, root: root, in: sheetModel, isEditor: isEditor)
         }
-        
-        let entryIds = model.entries.map { $0.id }
-        
-        // Remove deleted entries
-        let removedCount = sheetModel.entries.filter { entry in
-            guard let entryId = entry.source.entryId else { return false }
-            return !entryIds.contains(entryId)
-        }.count
-        
-        sheetModel.entries.removeAll { entry in
-            guard let entryId = entry.source.entryId else { return false }
-            return !entryIds.contains(entryId)
+
+        unequalSet(lhs: &sheetModel.name, rhs: item.name) { changed in
+            sheetModel.hasChanged = changed
+            if changed { changeCount += 1 }
         }
-        
-        var updatedEntries: [SheetModel] = []
-        var updatedCount = 0
-        var createdCount = 0
-        
-        for entry in model.entries {
-            if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
-                let (name, description) = entryNameDescription(entry: entry)
-                unequalSet(lhs: &existingSheetModel.name, rhs: name) { changed in
-                    existingSheetModel.hasChanged = changed
-                    if changed { updatedCount += 1 }
-                }
-                unequalSet(lhs: &existingSheetModel.description, rhs: description) { changed in
-                    existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
-                    if changed { updatedCount += 1 }
-                }
-                unequalSet(lhs: &existingSheetModel.editType, rhs: entry.editType) { changed in
-                    existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
-                    if changed { updatedCount += 1 }
-                }
-                // Update per-entry dice inline
-                if let diceId = entry.diceId {
-                    let destination = ItemRowModel(itemId: model.id, entryId: entry.id, typeId: itemController.config.module)
-                    let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
-                    let diceSheetModel = existingSheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? SheetModel(source: diceSource, destination: destination, level: sheetModel.level, type: .dice, name: "", description: "", entries: [])
-                    diceSheetModel.source = diceSource
-                    existingSheetModel.inlineEntries = [diceSheetModel]
-                } else {
-                    existingSheetModel.inlineEntries = []
-                }
-                existingSheetModel.entries.forEach { subSheetModel in
-                    root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel, isEditor: isEditor)
-                }
-                updatedEntries.append(existingSheetModel)
-            } else {
-                createdCount += 1
-                updatedEntries.append(sheet(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor))
-            }
+        unequalSet(lhs: &sheetModel.description, rhs: item.description) { changed in
+            sheetModel.hasChanged = sheetModel.hasChanged || changed
+            if changed { changeCount += 1 }
         }
-        sheetModel.entries = updatedEntries
-        
+
         let duration = ContinuousClock.now - startTime
-        Logger.sheetController.info("✅ [Update] Completed - Duration: \(duration), Changed fields: \(changeCount), Removed: \(removedCount), Updated: \(updatedCount), Created: \(createdCount), Total entries: \(updatedEntries.count)")
+        Logger.sheetController.info("✅ [Update] Completed - Duration: \(duration), Total entries: \(item.entries.count)")
     }
     
     // Helper function to count all sheets in a tree
@@ -253,5 +198,53 @@ extension SheetController: SheetControllable {
             count += countSheets(in: sheet.entries)
         }
         return count
+    }
+    
+    @MainActor private func updateEntries(item: ValueModel, root: RootManager, in sheetModel: SheetModel, isEditor: Bool) {
+        let entryIds = item.entries.map { $0.id }
+        
+        sheetModel.entries.removeAll { entry in
+            guard let entryId = entry.source.entryId else { return false }
+            return !entryIds.contains(entryId)
+        }
+        
+        var updatedEntries: [SheetModel] = []
+        
+        for entry in item.entries {
+            let updated = update(entry: entry, item: item, root: root, in: sheetModel, isEditor: isEditor)
+            updatedEntries.append(updated)
+        }
+        sheetModel.entries = updatedEntries
+    }
+    
+    @MainActor private func update(entry: ValueEntryModel, item: ValueModel, root: RootManager, in sheetModel: SheetModel, isEditor: Bool) -> SheetModel {
+        guard let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) else {
+            return sheet(entry: entry, root: root, itemId: item.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor)
+        }
+        
+        let (name, description) = entryNameDescription(entry: entry)
+        unequalSet(lhs: &existingSheetModel.name, rhs: name) { changed in
+            existingSheetModel.hasChanged = changed
+        }
+        unequalSet(lhs: &existingSheetModel.description, rhs: description) { changed in
+            existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
+        }
+        unequalSet(lhs: &existingSheetModel.editType, rhs: entry.editType) { changed in
+            existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
+        }
+        // Update per-entry dice inline
+        if let diceId = entry.diceId {
+            let destination = ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemController.config.module)
+            let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
+            let diceSheetModel = existingSheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? SheetModel(source: diceSource, destination: destination, level: sheetModel.level, type: .dice, name: "", description: "", entries: [])
+            diceSheetModel.source = diceSource
+            existingSheetModel.inlineEntries = [diceSheetModel]
+        } else {
+            existingSheetModel.inlineEntries = []
+        }
+        existingSheetModel.entries.forEach { subSheetModel in
+            root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel, isEditor: isEditor)
+        }
+        return existingSheetModel
     }
 }

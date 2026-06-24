@@ -101,14 +101,6 @@ extension FolderListControllable {
         )
         guard !Task.isCancelled else { return }
         searchModel.detailResults = newResults
-        // The focused-character inspector always returns the character as a root container, so
-        // `newResults.isEmpty` never detects "no matches". A result counts as a real hit when it is
-        // not just the bare focal parent: any non-parent result, any entry-level result, or any
-        // result that carries children. Only the lone focal parent with no children means "no match".
-        let hasMatch = newResults.contains {
-            $0.itemId != parentModel.id || $0.entryId != nil || !$0.children.isEmpty
-        }
-        searchModel.searchReturnedNoResults = !searchModel.searchText.isEmpty && !hasMatch
         detailListModel.list = buildDetailListItems()
     }
 }
