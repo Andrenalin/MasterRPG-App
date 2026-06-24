@@ -455,7 +455,7 @@ public final class SheetRootModel: Sendable {
         if sheetModel.hasChanged {
             let lookupId = sheetModel.source.entryId ?? sheetModel.source.itemId
             linkTextModel[.item(sheetModel.source.itemId)]?.reset(text: sheetModel.name)
-            linkTextModel[.entry(lookupId)]?.reset(text: sheetModel.name)
+            linkTextModel[.entry(lookupId)]?.reset(text: sheetModel.description)
             linkTextModel[.entryContent(lookupId)]?.reset(text: sheetModel.description)
             sheetModel.hasChanged = false
         }
@@ -466,7 +466,9 @@ public final class SheetRootModel: Sendable {
                 linkTextModel[.entryContent(lookupId)]?.reset(text: entry.description)
                 entry.hasChanged = false
             }
-            resetChangedLinkModels(in: entry)
+            for subEntry in entry.entries {
+                resetChangedLinkModels(in: subEntry)
+            }
         }
     }
 }
