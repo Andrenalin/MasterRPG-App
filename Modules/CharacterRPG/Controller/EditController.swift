@@ -331,8 +331,10 @@ extension EditController {
     
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
         guard let item = editModel(for: itemId) else { return }
-        if item[entryId].type == .text, parseDouble(from: content) != nil {
-            item[entryId].type = parseInteger(from: content) == nil ? .decimal : .number
+        let old = item[entryId].type
+        let newType = termineType(content: content, currentType: old)
+        if old != newType {
+            item[entryId].type = newType
             save(updated: item, message: String(localized: "update value type", bundle: .module).localizedString)
         }
         updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: true)
@@ -446,9 +448,20 @@ extension EditController {
 
 extension EditController {
     func create(name: String, content: String) -> ValueEntryModel {
-        ValueEntryModel(id: UUID(), name: name, type: .text, value: content)
+        ValueEntryModel(id: UUID(), name: name, type: termineType(content: content, currentType: .text), value: content)
     }
 
+    private func termineType(content: String, currentType: ValueEntryModel.ValueType) -> ValueEntryModel.ValueType {
+        guard currentType == .text else { return currentType }
+        guard content.allSatisfy({
+            $0 == " " || $0 == "+" || $0 == "-" || $0 == "*" || $0 == "/" || $0 == "." || $0 == "," || $0.isNumber
+        }) else { return currentType }
+        if parseInteger(from: content) == nil && (parseDouble(from: content) != nil || content.contains("/")) {
+            return .decimal
+        }
+        return .number
+    }
+    
     @MainActor func merge(itemId: UUID, entries: [ValueEntryModel]) -> [ValueEntryModel] {
         guard let item = editModel(for: itemId) else { return entries }
         return entries.map { entry in
@@ -460,11 +473,7 @@ extension EditController {
 
     @MainActor func merge(itemId: UUID, entries: [ValueEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
-        var newEntries = entries.map { entry in
-            var foundEntry = item.entries.first(where: { $0.name == entry.name })
-            foundEntry?.value = entry.value
-            return foundEntry ?? entry
-        }
+        var newEntries = merge(itemId: itemId, entries: entries)
         let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
         let module = itemController.config.module
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
