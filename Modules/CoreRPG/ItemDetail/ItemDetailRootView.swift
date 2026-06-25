@@ -435,7 +435,7 @@ private struct ItemEditorForegroundView<Editor: View>: View {
     private var formEditorContent: some View {
         ScrollViewReader { scrollProxy in
             ScrollView {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: 4) {
                     if !model.description.isEmpty {
                         ItemDetailOverlayView(
                             model: model,
