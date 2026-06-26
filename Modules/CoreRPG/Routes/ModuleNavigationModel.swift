@@ -10,8 +10,8 @@ import SwiftUI
     
     public var selectedItemId: UUID?
     public var selectedEntryId: UUID?
-    
-    public var folderItems: [UUID] = []
+
+    @ObservationIgnored public var navigator: Navigator?
     @ObservationIgnored public var folderModels: [UUID: FolderListModel] = [:]
 
     // Inspector

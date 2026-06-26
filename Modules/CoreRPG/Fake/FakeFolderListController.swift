@@ -13,6 +13,10 @@ struct FakeFolderListController: FolderListControllable {
         InternalRoute.export(ids: [itemId])
     }
     
+    func folderDestination(for itemId: UUID) -> any NavigationDestination {
+        InternalRoute.export(ids: [itemId])
+    }
+    
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
         InternalRoute.export(ids: [itemId])
     }

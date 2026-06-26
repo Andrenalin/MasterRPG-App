@@ -15,6 +15,10 @@ struct FolderListController: FolderListControllable {
         DiceRoute.detail(itemId)
     }
     
+    func folderDestination(for itemId: UUID) -> any NavigationDestination {
+        DiceDetailRoute.folder(itemId)
+    }
+
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
         DiceRoute.detail(itemId)
     }

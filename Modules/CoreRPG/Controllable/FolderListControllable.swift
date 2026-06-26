@@ -20,6 +20,7 @@ public protocol FolderListControllable: Sendable {
     func copy(listModel: FolderListModel) -> Self
     
     func detailDestination(for itemId: UUID) -> any NavigationDestination
+    func folderDestination(for itemId: UUID) -> any NavigationDestination
     func viewerDestination(for itemId: UUID) -> any NavigationDestination
 }
 

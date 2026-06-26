@@ -9,12 +9,12 @@ struct ListRootView: View {
     let root: ItemRootControllable
     let listController: any FolderListControllable
     let parentModel: (any ItemDataAccessable)?
-
+    
     @Environment(\.navigator) private var navigator
-
+    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-
+        
         UnavailableGlassOverlay(isUnavailable: shouldShowNoResults
                                 && !listController.searchModel.searchText.starts(with: "@")) {
             
@@ -50,47 +50,47 @@ struct ListRootView: View {
                 }
 #endif
         }
-            .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable, parentModel: parentModel)
-            .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
+        .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable, parentModel: parentModel)
+        .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
 #if !os(tvOS)
-            .applyIf(!fileTypes.isEmpty) {
-                $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
-            }
+        .applyIf(!fileTypes.isEmpty) {
+            $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
+        }
 #endif
-            .applyIf(parentModel == nil) {
-                $0
-                    .navigationTitle("\(root.configurable.module.title) - \(listModel.list.count)")
-                    .focusedSceneValue(\.listDisplayModel, listController.listDisplayModel)
-                    .onChange(of: root.navigationModel.triggerExport) {
-                        guard root.navigationModel.triggerExport, let itemId = root.currentSelectedItemId else { return }
-                        root.navigationModel.triggerExport = false
-                        navigator.navigate(to: InternalRoute.export(ids: [itemId]), method: .sheet)
-                    }
-                    .onChange(of: root.navigationModel.triggerGroupEditor) {
-                        guard root.navigationModel.triggerGroupEditor, let itemId = root.currentSelectedItemId else { return }
-                        root.navigationModel.triggerGroupEditor = false
-                        navigator.navigate(to: InternalRoute.groupEditor(ids: [itemId]), method: .sheet)
-                    }
-                    .onChange(of: root.navigationModel.triggerBatchExtraction) {
-                        guard root.navigationModel.triggerBatchExtraction, let itemId = root.currentSelectedItemId else { return }
-                        root.navigationModel.triggerBatchExtraction = false
-                        navigator.navigate(to: InternalRoute.batchExtraction(ids: [itemId]), method: .sheet)
-                    }
-                    .onChange(of: root.navigationModel.triggerDelete) {
-                        guard root.navigationModel.triggerDelete else { return }
-                        root.navigationModel.triggerDelete = false
-                        guard let sel = listModel.selected,
-                              let index = listModel.list.firstIndex(where: { $0.id == sel }) else { return }
-                        deleteItems(offsets: IndexSet(integer: index))
-                    }
-                    .onChange(of: root.navigationModel.triggerSpaceAction) {
-                        guard root.navigationModel.triggerSpaceAction else { return }
-                        root.navigationModel.triggerSpaceAction = false
-                        guard !root.viewControllable.hasCustomSpaceAction,
-                              root.openFileWindowModel.enabled else { return }
-                        withAnimation { root.openFileWindowModel.showItem.toggle() }
-                    }
-            }
+        .applyIf(parentModel == nil) {
+            $0
+                .navigationTitle("\(root.configurable.module.title) - \(listModel.list.count)")
+                .focusedSceneValue(\.listDisplayModel, listController.listDisplayModel)
+                .onChange(of: root.navigationModel.triggerExport) {
+                    guard root.navigationModel.triggerExport, let itemId = root.currentSelectedItemId else { return }
+                    root.navigationModel.triggerExport = false
+                    navigator.navigate(to: InternalRoute.export(ids: [itemId]), method: .sheet)
+                }
+                .onChange(of: root.navigationModel.triggerGroupEditor) {
+                    guard root.navigationModel.triggerGroupEditor, let itemId = root.currentSelectedItemId else { return }
+                    root.navigationModel.triggerGroupEditor = false
+                    navigator.navigate(to: InternalRoute.groupEditor(ids: [itemId]), method: .sheet)
+                }
+                .onChange(of: root.navigationModel.triggerBatchExtraction) {
+                    guard root.navigationModel.triggerBatchExtraction, let itemId = root.currentSelectedItemId else { return }
+                    root.navigationModel.triggerBatchExtraction = false
+                    navigator.navigate(to: InternalRoute.batchExtraction(ids: [itemId]), method: .sheet)
+                }
+                .onChange(of: root.navigationModel.triggerDelete) {
+                    guard root.navigationModel.triggerDelete else { return }
+                    root.navigationModel.triggerDelete = false
+                    guard let sel = listModel.selected,
+                          let index = listModel.list.firstIndex(where: { $0.id == sel }) else { return }
+                    deleteItems(offsets: IndexSet(integer: index))
+                }
+                .onChange(of: root.navigationModel.triggerSpaceAction) {
+                    guard root.navigationModel.triggerSpaceAction else { return }
+                    root.navigationModel.triggerSpaceAction = false
+                    guard !root.viewControllable.hasCustomSpaceAction,
+                          root.openFileWindowModel.enabled else { return }
+                    withAnimation { root.openFileWindowModel.showItem.toggle() }
+                }
+        }
     }
 }
 
@@ -116,20 +116,20 @@ private extension ListRootView {
     var shouldShowNoResults: Bool {
         listController.searchModel.searchReturnedNoResults
     }
-
+    
     var fileTypes: [UTType] {
         root.editControllable.fileUrlDataController?.fileTypes ?? []
     }
-
+    
     /// Computed once per body evaluation and passed down — avoids per-row re-creation.
     var menuController: ContextMenuMultiController {
         ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: listModel)
     }
-
+    
     func updateFile(url: URL) {
         listController.add(type: .item, url: url, root: root)
     }
-
+    
     @ViewBuilder
     var listView: some View {
         ScrollViewReader { proxy in
@@ -164,7 +164,7 @@ private extension ListRootView {
             }
         }
     }
-
+    
     /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.
     func deleteItems(offsets: IndexSet) {
         if let parentModel {
@@ -182,18 +182,18 @@ private extension ListRootView {
 struct UnavailableGlassOverlay<Content: View>: View {
     let content: Content
     let isUnavailable: Bool
-
+    
     init(isUnavailable: Bool, @ViewBuilder content: () -> Content) {
         self.isUnavailable = isUnavailable
         self.content = content()
     }
-
+    
     var body: some View {
         content
             .disabled(isUnavailable)
             .overlay {
                 Color.primary.opacity(isUnavailable ? 0.2 : 0)
-
+                
                 ContentUnavailableView.search
                     .padding()
 #if os(visionOS)
@@ -218,14 +218,14 @@ private struct ItemRowsView: View {
     let parentModel: (any ItemDataAccessable)?
     let listModel: FolderListModel
     let menuController: ContextMenuMultiController
-
+    
     @Environment(\.navigator) private var navigator
-
+    
     var body: some View {
         if listModel.list.isEmpty && parentModel != nil {
             dropHereView
         }
-
+        
         ForEach(listModel.list) { item in
             ListRowItemView(
                 root: root,
@@ -241,7 +241,7 @@ private struct ItemRowsView: View {
         .moveDisabled(parentModel == nil || parentModel?.category == .folder)
         .deleteDisabled(listController.listDisplayModel.isSelectionMode)
     }
-
+    
     private var dropHereView: some View {
         VStack(spacing: 0) {
             Text("Drop here", bundle: .module)
@@ -250,7 +250,7 @@ private struct ItemRowsView: View {
                 .background(root.configurable.module.color.gradient, in: .capsule)
                 .padding()
                 .dropDestination(for: root.configurable.module, isEnabled: true, handler: addLink)
-
+            
             Text("Drag items from the list or the inspector on this drop field to add the item to the folder or collection. After the first item is added you can add more items by dropping it on the exisiting items in this detail list.", bundle: .module)
                 .padding()
                 .lineLimit(5)
@@ -258,7 +258,7 @@ private struct ItemRowsView: View {
                 .foregroundStyle(.secondary)
         }
     }
-
+    
     private func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
         withAnimation {
@@ -267,7 +267,7 @@ private struct ItemRowsView: View {
             root.folderListControllable.resetFilter()
         }
     }
-
+    
     private func deleteItems(offsets: IndexSet) {
         if let parentModel {
             root.editControllable.removeItem(offsets: offsets, itemId: parentModel.id)
@@ -279,12 +279,12 @@ private struct ItemRowsView: View {
             navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
         }
     }
-
+    
     private func moveItems(source: IndexSet, destination: Int) {
         guard let parentModel else { return }
         root.editControllable.moveItems(source: source, destination: destination, itemId: parentModel.id)
     }
-
+    
     private var leadingPadding: CGFloat {
         let value = listController.listDisplayModel.isSelectionMode ? 12 : 8
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
@@ -302,7 +302,7 @@ private struct ListRowItemView: View {
     let parentModel: (any ItemDataAccessable)?
     let menuController: ContextMenuMultiController
     let leadingPadding: CGFloat
-
+    
     var body: some View {
         // Use the pre-resolved model from FolderListItemModel (set by mapResult via itemSync).
         // Falls back to itemOrEmpty only for items not yet through the search pipeline.
@@ -340,7 +340,7 @@ private struct ListRowItemView: View {
                     )
                 }
             }
-
+            
             SpecialCategoryFolderIndicator(
                 item: item,
                 listController: listController
@@ -352,7 +352,7 @@ private struct ListRowItemView: View {
         .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
         .listRowSeparatorAll(item.isOpen ? .visible : .hidden, edges: .bottom)
     }
-
+    
     private func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
         withAnimation {
@@ -370,7 +370,7 @@ private struct ListRowItemView: View {
 private struct SpecialCategoryFolderIndicator: View {
     let item: FolderListItemModel
     let listController: any FolderListControllable
-
+    
     var body: some View {
         // Show chevron when: (a) item has unexplored children (canOpen), (b) item is open,
         // or (c) user explicitly closed it (wasExplicitlyClosed) so they can reopen it.

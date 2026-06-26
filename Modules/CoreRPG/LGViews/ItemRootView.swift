@@ -10,6 +10,7 @@ public struct ItemRootView: View {
     let root: ItemRootController
     
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.navigator) private var navigator
     
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -17,6 +18,9 @@ public struct ItemRootView: View {
             .environment(root)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
+            .task {
+                root.navigationModel.navigator = navigator
+            }
     }
 }
 

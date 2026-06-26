@@ -17,6 +17,10 @@ struct FolderListController: FolderListControllable {
         PdfRoute.detail(itemId)
     }
     
+    func folderDestination(for itemId: UUID) -> any NavigationDestination {
+        PdfDetailRoute.folder(itemId)
+    }
+
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
         DetailRoute.viewer(itemId, nil)
     }

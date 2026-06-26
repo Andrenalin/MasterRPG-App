@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 @MainActor
@@ -14,6 +13,10 @@ struct FolderListController: FolderListControllable {
     
     func detailDestination(for itemId: UUID) -> any NavigationDestination {
         WeatherRoute.detail(itemId)
+    }
+    
+    func folderDestination(for itemId: UUID) -> any NavigationDestination {
+        WeatherDetailRoute.folder(itemId)
     }
     
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
