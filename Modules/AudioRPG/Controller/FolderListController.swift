@@ -21,6 +21,10 @@ struct FolderListController: FolderListControllable {
         AudioDetailRoute.folder(itemId)
     }
 
+    func folderInlineDestination(for itemId: UUID) -> any NavigationDestination {
+        AudioDetailRoute.folderInline(itemId)
+    }
+
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
         AudioRoute.detail(itemId)
     }

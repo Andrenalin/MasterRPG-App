@@ -21,6 +21,10 @@ struct FolderListController: FolderListControllable {
         PhotoDetailRoute.folder(itemId)
     }
 
+    func folderInlineDestination(for itemId: UUID) -> any NavigationDestination {
+        PhotoDetailRoute.folderInline(itemId)
+    }
+
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
         DetailRoute.viewer(itemId)
     }

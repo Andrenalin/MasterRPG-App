@@ -29,7 +29,7 @@ struct ItemRootListView: View {
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        ListRootView(root: root, listController: root.folderListControllable, parentModel: nil)
+        ListRootView(root: root, listController: root.folderListControllable, parentModel: nil, isSubFolder: false)
             .searchItemList(listControllable: root.folderListControllable)
             .navigationAutoReceive(InternalRoute.self)
     }

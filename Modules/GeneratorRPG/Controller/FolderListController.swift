@@ -19,7 +19,11 @@ struct FolderListController: FolderListControllable {
     func folderDestination(for itemId: UUID) -> any NavigationDestination {
         GeneratorDetailRoute.folder(itemId)
     }
-    
+
+    func folderInlineDestination(for itemId: UUID) -> any NavigationDestination {
+        GeneratorDetailRoute.folder(itemId)
+    }
+
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
         DetailRoute.viewer(itemId)
     }

@@ -19,6 +19,10 @@ struct FolderListController: FolderListControllable {
         AdventureDetailRoute.folder(itemId)
     }
 
+    func folderInlineDestination(for itemId: UUID) -> any NavigationDestination {
+        AdventureDetailRoute.folderInline(itemId)
+    }
+
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
         DetailRoute.viewer(itemId)
     }

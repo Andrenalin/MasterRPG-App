@@ -42,13 +42,7 @@ struct EntryContentEditor: View {
         EntryContentEditor(editModel: model, currentFocus: $focus)
             .padding()
     }
-#if os(iOS) || os(visionOS)
-    .background(Color(uiColor: .systemGroupedBackground))
-#elseif os(macOS)
-    .background(Color(nsColor: .windowBackgroundColor))
-#else
-    .background(Color.gray.opacity(0.1))
-#endif
+    .background(Color.adaptiveBackground)
     .preferredColorScheme(.light)
     .onAppear {
         model.text = "Sample content with [link](test)"

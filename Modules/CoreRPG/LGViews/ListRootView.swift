@@ -9,6 +9,7 @@ struct ListRootView: View {
     let root: ItemRootControllable
     let listController: any FolderListControllable
     let parentModel: (any ItemDataAccessable)?
+    var isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
     
@@ -51,7 +52,9 @@ struct ListRootView: View {
 #endif
         }
         .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable, parentModel: parentModel)
-        .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
+        .applyIf(!isSubFolder) {
+            $0.toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
+        }
 #if !os(tvOS)
         .applyIf(!fileTypes.isEmpty) {
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))

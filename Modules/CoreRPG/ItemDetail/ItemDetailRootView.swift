@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -24,13 +23,16 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
     public struct Configuration {
         public var editorAsBackground: Bool
         public var disableHideHeader: Bool
+        public var isSubFolder: Bool
 
         public init(
             editorAsBackground: Bool = false,
-            disableHideHeader: Bool = false
+            disableHideHeader: Bool = false,
+            isSubFolder: Bool = false
         ) {
             self.editorAsBackground = editorAsBackground
             self.disableHideHeader = disableHideHeader
+            self.isSubFolder = isSubFolder
         }
     }
 
@@ -60,6 +62,9 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
     @State private var itemIdHasUrl = UUID()
     @State private var headerModel = HeaderScrollModel()
     @Namespace private var editSheetNamespace
+    
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
+    @Environment(\.navigator) private var navigator
     
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -91,6 +96,13 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
             guard root.navigationModel.openHeaderEditor else { return }
             root.navigationModel.openHeaderEditor = false
             openEditingSheet()
+        }
+        .onChange(of: folderListController.listModel.detailListModel?.subFolderRoute) {
+            guard let itemId = folderListController.listModel.detailListModel?.subFolderRoute else { return }
+            if appSizeModel.mode == .compact {
+                navigator.navigate(to: folderListController.folderDestination(for: itemId))
+                folderListController.listModel.detailListModel?.subFolderRoute = nil
+            }
         }
         .sheet(item: $editingItem) { item in
             ManagedPresentationView {
@@ -186,7 +198,7 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
         HeaderContentScrollView(
             model: headerModel,
             backgroundColor: root.configurable.module.color,
-            disableHideHeader: configuration.disableHideHeader
+            disableHideHeader: configuration.disableHideHeader || configuration.isSubFolder
         ) {
             ItemDetailHeaderView(
                 module: root.configurable.module,
@@ -197,6 +209,9 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
             )
         } content: {
             contentBody
+                .overlay {
+                    subFolderDetail
+                }
         }
         .overlay(alignment: .center) {
             entryEditor
@@ -210,13 +225,35 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
             module: root.configurable.module
         ))
         .toolbar {
-            ItemDetailToolbarContent(
-                root: root,
-                model: model,
-                shouldShowContent: shouldShowContent,
-                editSheetNamespace: editSheetNamespace,
-                onEdit: { openEditingSheet() }
-            )
+            if !configuration.isSubFolder {
+                ItemDetailToolbarContent(
+                    root: root,
+                    model: model,
+                    shouldShowContent: shouldShowContent,
+                    editSheetNamespace: editSheetNamespace,
+                    onEdit: { openEditingSheet() }
+                )
+            }
+        }
+    }
+    
+    @ViewBuilder private var subFolderDetail: some View {
+        if let itemId = folderListController.listModel.detailListModel?.subFolderRoute {
+            folderListController.folderInlineDestination(for: itemId).asAnyView()
+                .overlay(alignment: .topTrailing) {
+                    Button {
+                        withAnimation { folderListController.listModel.detailListModel?.subFolderRoute = nil }
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .padding(8)
+                    .glassEffectAll()
+                    .padding(.trailing, 8)
+                }
+                .background {
+                    Rectangle().fill(Color.adaptiveBackground)
+                }
+                .transition(.move(edge: .bottom))
         }
     }
     
@@ -247,7 +284,8 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
                     model: model,
                     root: root,
                     folderListController: folderListController,
-                    shouldShowContent: shouldShowContent
+                    shouldShowContent: shouldShowContent,
+                    isSubFolder: configuration.isSubFolder
                 )
             }
         }
@@ -396,6 +434,7 @@ private struct ItemEditorForegroundView<Editor: View>: View {
     let root: any ItemRootControllable
     let folderListController: FolderListControllable
     let shouldShowContent: Bool
+    let isSubFolder: Bool
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -427,9 +466,10 @@ private struct ItemEditorForegroundView<Editor: View>: View {
         ListRootView(
             root: root,
             listController: folderListController,
-            parentModel: model
+            parentModel: model,
+            isSubFolder: isSubFolder
         )
-        .environment(folderListController.listDisplayModel)
+        //.environment(folderListController.listDisplayModel)
     }
     
     private var formEditorContent: some View {

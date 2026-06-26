@@ -7,11 +7,6 @@ struct DetailFolderListView: View {
     let root: AudioRootModel
     let model: AudioModel
     let folderListController: FolderListController
-
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-
-    @State private var detailRoute: AudioDetailRoute?
-    @State private var showFolderOverlay: Bool = false
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -38,25 +33,7 @@ struct DetailFolderListView: View {
         .overlay {
             overlayContent
         }
-// Deactivated for now - we rethink the subfolder approach
-//        .applyIf(appSizeModel.mode == .compact) {
-//            $0.navigate(to: $detailRoute)
-//                .onChange(of: folderListController.listModel.subFolderRoute) { _, newRoute in
-//                    if let subItemId = newRoute {
-//                        detailRoute = AudioDetailRoute.folder(subItemId)
-//                    }
-//                }
-//                .onChange(of: detailRoute) { _, newRoute in
-//                    if newRoute == nil {
-//                        folderListController.listModel.resetListModel()
-//                    }
-//                }
-//        }
-//        .onChange(of: root.navigationModel.folderItems) {
-//            handleFolderItemsChange()
-//        }
     }
-    
     
     // MARK: - Overlays
     
@@ -70,39 +47,5 @@ struct DetailFolderListView: View {
                 root.openFileWindowModel.showItem = false
             }
         }
-
-// Deactivated for now we rethink the subfolder approach
-//        if appSizeModel.mode == .regular,
-//           showFolderOverlay,
-//           let folderId = root.navigationModel.folderItems.last {
-//            AudioDetailRoute.folderInline(folderId)
-//                .padding(.top, 36)
-//                .toolbar {
-//                    ToolbarItem(placement: .cancellationAction) {
-//                        Button {
-//                            closeFolderOverlay()
-//                        } label: {
-//                            Image(systemName: "xmark")
-//                        }
-//                    }
-//                }
-//                .transition(.move(edge: .bottom))
-//        }
     }
-    
-    // MARK: - Actions
-    
-//    private func handleFolderItemsChange() {
-//        guard appSizeModel.mode == .regular else { return }
-//        guard !showFolderOverlay, root.navigationModel.folderItems.last != nil else { return }
-//        
-//        withAnimation {
-//            showFolderOverlay = true
-//        }
-//    }
-//    
-//    private func closeFolderOverlay() {
-//        showFolderOverlay = false
-//        folderListController.listModel.resetListModel()
-//    }
 }

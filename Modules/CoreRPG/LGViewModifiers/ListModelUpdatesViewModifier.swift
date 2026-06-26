@@ -95,9 +95,13 @@ private extension ListModelUpdatesViewModifier {
             listModel.listSelection <=> Set(arrayLiteral: id)
             if let itemId = listModel.selectedItemId {
                 if listModel.parentModel != nil {
+#if os(macOS)
+                    listModel.subFolderRoute = itemId
+#else
                     if let navigator = listModel.navigationModel.navigator?.currentNavigator {
                         navigator.navigate(to: listControllable.folderDestination(for: itemId))
                     }
+#endif
                     listModel.selected = nil
                 } else {
                     listModel.itemRoute = itemId

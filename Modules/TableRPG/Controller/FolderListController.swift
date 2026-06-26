@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 @MainActor
-struct FolderListController: FolderListControllable {
+struct FolderListController: FolderListControllable {    
     let listModel: FolderListModel
     let listDisplayModel: ListDisplayModel
     let itemControllable: any ItemControllable
@@ -14,9 +14,13 @@ struct FolderListController: FolderListControllable {
     func detailDestination(for itemId: UUID) -> any NavigationDestination {
         TableRoute.detail(itemId)
     }
-    
+
     func folderDestination(for itemId: UUID) -> any NavigationDestination {
         TableDetailRoute.folder(itemId)
+    }
+
+    func folderInlineDestination(for itemId: UUID) -> any NavigationDestination {
+        TableDetailRoute.folderInline(itemId)
     }
 
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
