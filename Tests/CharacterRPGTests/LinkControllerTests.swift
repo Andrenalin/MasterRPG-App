@@ -20,23 +20,26 @@ struct LinkControllerTests {
         let item = await root.itemController.item(for: itemId)?.copy()
         #expect(nil != item)
         let entryId = UUID()
-        item!.entries.append(ValueEntryModel(id: entryId, name: "Some Value", type: .number, isGenerator: false, value: "27", diceId: nil, valueId: nil))
+        var entry = ValueEntryModel(id: entryId, name: "Some Value", type: .number, isGenerator: false, value: "27", diceId: nil, valueId: nil)
+        item!.entries.append(entry)
         await root.itemController.replace(model: item!, isInsert: false)
 
         var result = "**Some Value**: 27 "
-        await #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entryId: entryId) == result)
+        await #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entry: entry) == result)
 
         item![entryId].value = "27+2"
+        entry = item![entryId]
         await root.itemController.replace(model: item!, isInsert: false)
 
         result = "**Some Value**: 27+2 = 29"
-        await #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entryId: entryId) == result)
+        await #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entry: entry) == result)
 
         item![entryId].value = "27+2+3"
+        entry = item![entryId]
         await root.itemController.replace(model: item!, isInsert: false)
 
         result = "**Some Value**: 27+2+3 = 32"
-        await #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entryId: entryId) == result)
+        await #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entry: entry) == result)
     }
     
     @Test func toggleWithShareTogglerAndEditAction() async throws {
