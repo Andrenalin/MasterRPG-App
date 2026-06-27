@@ -4,4 +4,7 @@
    <FileRef
       location = "container:MasterRPG.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:APP_INTENTS_EXPANSION_PLAN.md">
+   </FileRef>
 </Workspace>
