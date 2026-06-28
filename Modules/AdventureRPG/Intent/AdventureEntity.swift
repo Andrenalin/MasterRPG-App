@@ -115,7 +115,7 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
         var results: [AdventureEntity] = []
         for id in ids {
             guard let model = root.itemController.itemSync(for: id) else { continue }
-            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
+            guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
             let entity = AdventureEntity(root: root, model: model)
             results.append(entity)
         }
@@ -124,6 +124,26 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
 
     func allEntities() async throws -> [AdventureEntity] {
         try await suggestedEntities()
+    }
+}
+
+@available(iOS 27, macOS 27, visionOS 27, *)
+extension AdventureEntity: SyncableEntity {}
+
+@available(iOS 27, macOS 27, visionOS 27, *)
+extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
+    func reindexEntities(
+        for identifiers: [AdventureEntity.ID],
+        indexDescription: CSSearchableIndexDescription
+    ) async throws {
+        let entities = try await entities(for: identifiers)
+        try await CSSearchableIndex.default().indexAppEntities(entities)
+    }
+
+    @available(iOS 27, macOS 27, visionOS 27, *)
+    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
+        let all = try await allEntities()
+        try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
 

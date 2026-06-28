@@ -1,582 +1,338 @@
 ---
 name: app-intents
-description: "Implement App Intents for Siri, Shortcuts, Spotlight, widgets, Control Center, and Apple Intelligence on iOS. Covers AppIntent actions, AppEntity and EntityQuery models, AppShortcutsProvider phrases, IndexedEntity Spotlight indexing, WidgetConfigurationIntent, SnippetIntent, and assistant schemas. Use when exposing app actions or entities to system surfaces."
+description: Writes and reviews Swift App Intents code that exposes app actions and data to Siri, Shortcuts, Spotlight, widgets, Control Center, and Apple Intelligence. Use when adding AppIntent, AppEntity, OpenIntent, AppShortcutsProvider, EntityQuery, Focus Filters, AssistantEntity/AssistantIntent schemas, on-screen awareness, LongRunningIntent/CancellableIntent, EntityCollection, SyncableEntity, AppIntentsTesting, or when wiring SwiftData/networked data into intents.
+license: MIT
+metadata:
+  author: Anton Novoselov
+  version: "1.2.0"
 ---
 
-# App Intents (iOS 26+)
+Write and review Swift code that exposes app functionality through the App Intents framework, ensuring correct protocol conformance, safe data flow, and idiomatic discoverability wiring.
 
-Implement, review, and extend App Intents to expose app functionality to Siri,
-Shortcuts, Spotlight, widgets, Control Center, and Apple Intelligence.
+Review process:
 
-## Contents
+1. Check intent fundamentals (protocol, `perform()`, return types, dialog) using `references/fundamentals.md`.
+1. Validate parameters and parameter options using `references/parameters.md`.
+1. Validate entity types, display representations, and queries using `references/entities.md`.
+1. Check the `AppShortcutsProvider` registration and discoverability UI using `references/shortcuts-and-siri.md`.
+1. Validate `OpenIntent` navigation and snippet view return types using `references/open-and-snippet-intents.md`.
+1. Check dependency injection and the data-controller pattern using `references/dependencies.md`.
+1. Validate Spotlight indexing via `IndexedEntity`, `IndexedEntityQuery`, and attribute sets using `references/spotlight.md`.
+1. Check `@AssistantEntity` / `@AssistantIntent` schema adoption using `references/assistant-schemas.md`.
+1. Validate the Siri / Apple Intelligence integration (finding content, custom responses, donations, confirmation, ownership) using `references/siri-intelligence.md`.
+1. Check on-screen awareness and content transfer (view annotations, `IntentValueRepresentation`, system-integration annotations) using `references/onscreen-awareness.md`.
+1. For intents that run past 30 seconds, handle cancellation, or target a specific process, use `references/long-running-and-execution.md`.
+1. If writing or reviewing tests for intents, use `references/testing-intents.md` (covers the new `AppIntentsTesting` framework).
+1. Catch common mistakes using `references/anti-patterns.md`.
 
-- [Triage Workflow](#triage-workflow)
-- [AppIntent Protocol](#appintent-protocol)
-- [`@Parameter`](#parameter)
-- [AppEntity](#appentity)
-- [EntityQuery (4 Variants)](#entityquery-4-variants)
-- [AppEnum](#appenum)
-- [AppShortcutsProvider](#appshortcutsprovider)
-- [Siri Integration](#siri-integration)
-- [Interactive Widget Intents](#interactive-widget-intents)
-- [Control Center Widgets (iOS 18+)](#control-center-widgets-ios-18)
-- [Spotlight and IndexedEntity (iOS 18+)](#spotlight-and-indexedentity-ios-18)
-- [iOS 26 Additions](#ios-26-additions)
-- [Common Mistakes](#common-mistakes)
-- [Review Checklist](#review-checklist)
-- [References](#references)
+If doing partial work, load only the relevant reference files.
 
-## Triage Workflow
 
-### Step 1: Identify the integration surface
+## Task-based routing
 
-Determine which system feature the intent targets:
+Match the user's goal to the read order. Load only what you need.
 
-| Surface | Protocol | Since |
-|---|---|---|
-| Siri / Shortcuts | `AppIntent` | iOS 16 |
-| Configurable widget | `WidgetConfigurationIntent` | iOS 17 |
-| Control Center | `ControlConfigurationIntent` | iOS 18 |
-| Spotlight search | `IndexedEntity` | iOS 18 |
-| Apple Intelligence | `@AppIntent(schema:)` | iOS 18 |
-| Interactive snippets | `SnippetIntent` | iOS 26 |
-| Visual Intelligence | `IntentValueQuery` | iOS 26 |
+### "Create my first App Intent"
+1. `references/fundamentals.md` - protocol, `perform()`, return types
+2. `references/shortcuts-and-siri.md` - register it so it shows up
 
-### Step 2: Define the data model
+### "Add a parameter the user picks in Shortcuts"
+1. `references/parameters.md` - `@Parameter`, prompts, disambiguation
+2. `references/entities.md` - if the parameter is a domain entity
 
-- Prefer `AppEntity` shadow models for app data exposed to the system.
-- Create `AppEnum` types for fixed parameter choices.
-- Choose the right `EntityQuery` variant for resolution.
-- Mark searchable entities with `IndexedEntity` and `indexingKey` metadata.
+### "Make my app's data searchable from Siri / Spotlight"
+1. `references/entities.md` - `AppEntity`, `IndexedEntity`, `@Property`
+2. `references/spotlight.md` - indexing strategies, attribute sets
+3. `references/shortcuts-and-siri.md` - flexible matching, phrase rules
 
-### Step 3: Implement the intent
+### "Show a summary / interactive view when Siri runs my intent"
+1. `references/open-and-snippet-intents.md` - inline vs indirect snippets, `SnippetIntent`, `Button(intent:)`
+2. `references/fundamentals.md` - return types and snippet design rules
 
-- Conform to `AppIntent` (or a specialized sub-protocol).
-- Declare `@Parameter` properties for all user-facing inputs.
-- Implement `perform() async throws -> some IntentResult`.
-- Add `parameterSummary` for Shortcuts UI.
-- Register phrases via `AppShortcutsProvider`.
+### "Open a specific thing in my app from Siri / Shortcuts"
+1. `references/open-and-snippet-intents.md` - `OpenIntent`, `URLRepresentableIntent`, `TargetContentProvidingIntent`
+2. `references/dependencies.md` - navigator / scene routing
 
-### Step 4: Verify
+### "Bring my app's content and actions to Siri / Apple Intelligence"
+1. `references/siri-intelligence.md` - the integration model, finding content (semantic index / structured search / in-app search), custom responses, donations, confirmation/ownership
+2. `references/assistant-schemas.md` - schema macros, domains, multi-schema requirements, Xcode snippets
+3. `references/onscreen-awareness.md` - view annotations, content transfer, system-integration annotations
 
-- Build and run in Shortcuts app to confirm parameter resolution.
-- Test Siri phrases with the intent preview in Xcode.
-- Confirm `IndexedEntity` instances are indexed in a named Spotlight index.
-- Check widget configuration for `WidgetConfigurationIntent` intents.
+### "Integrate with Apple Intelligence"
+1. `references/assistant-schemas.md` - schema macros, domains, Use Model action, onscreen content
+2. `references/entities.md` - `@Property`, `Transferable` (required for several schemas)
 
-## AppIntent Protocol
+### "Let Siri understand what's on screen"
+1. `references/onscreen-awareness.md` - the 4 annotation APIs, content transfer, `displayRepresentations` fast path, annotations on notifications/Now Playing/AlarmKit
+2. `references/siri-intelligence.md` - how onscreen context fits the larger Siri story
 
-The system instantiates the struct via `init()`, sets parameters, then calls
-`perform()`. Declare a `title` and `parameterSummary` for Shortcuts UI.
+### "Make my intent run longer than 30 seconds or target a process"
+1. `references/long-running-and-execution.md` - `LongRunningIntent`, `CancellableIntent`, `allowedExecutionTargets`, background GPU
+2. `references/fundamentals.md` - `ProgressReportingIntent`, `supportedModes`
 
-```swift
-struct OrderSoupIntent: AppIntent {
-    static var title: LocalizedStringResource = "Order Soup"
-    static var description = IntentDescription("Place a soup order.")
+### "Handle large numbers of entities efficiently / sync across devices"
+1. `references/parameters.md` - `EntityCollection` (identifiers-only parameters)
+2. `references/entities.md` - `SyncableEntity` for cross-device identity, `RelevantEntities` for proactive suggestions
 
-    @Parameter(title: "Soup") var soup: SoupEntity
-    @Parameter(title: "Quantity", default: 1) var quantity: Int
+### "Support Visual Intelligence / image search"
+1. `references/assistant-schemas.md` - `IntentValueQuery`, `SemanticContentDescriptor`, `@UnionValue`
+2. `references/entities.md` - `Transferable` + `OpenIntent` pairing
 
-    static var parameterSummary: some ParameterSummary {
-        Summary("Order \(\.$soup)") { \.$quantity }
-    }
+### "Build an interactive widget or Control Center control"
+1. `references/open-and-snippet-intents.md` - `Button(intent:)`, `WidgetConfigurationIntent`, `ControlConfigurationIntent`, `ControlWidgetButton`
+2. `references/dependencies.md` - App Group shared storage, process boundaries
 
-    func perform() async throws -> some IntentResult {
-        try await OrderService.shared.place(soup: soup.id, quantity: quantity)
-        return .result(dialog: "Ordered \(quantity) \(soup.name).")
-    }
-}
+### "Structure my app around App Intents"
+1. `references/fundamentals.md` - intents as canonical action layer
+2. `references/dependencies.md` - `@Dependency`, cross-module `AppIntentsPackage`
+3. `references/entities.md` - entity-as-bridge pattern
+
+### "Test my App Intents"
+1. `references/testing-intents.md` - the `AppIntentsTesting` framework (out-of-process integration), direct struct unit tests, mocking `@Dependency`, test-only intents, what you can't test
+
+### "I'm hitting build errors or runtime bugs"
+1. `references/anti-patterns.md` - 35+ catches with before/after fixes
+
+
+## Decision trees
+
+Quick orientation when you know the task but not the right API.
+
+### Which intent protocol should I conform to?
+
+```
+Generic action?
+  → AppIntent
+
+Opens the app to a specific entity?
+  → OpenIntent (+ TargetContentProvidingIntent on iOS)
+
+Renders an interactive view only, no business logic?
+  → SnippetIntent
+
+Needs to bring the app forward conditionally?
+  → AppIntent with supportedModes (iOS 26+)
+  → or ForegroundContinuableIntent (iOS 17-18)
+
+Runs longer than 30 seconds (upload, sync, inference)?
+  → LongRunningIntent + performBackgroundTask (iOS 27+)
+
+Needs to clean up gracefully when cancelled (with the reason)?
+  → CancellableIntent + withIntentCancellationHandler (iOS 26.4+)
+
+Deletes entities with standard confirmation?
+  → DeleteIntent
+
+Routes a search query into the app?
+  → ShowInAppSearchResultsIntent
+
+Backs widget configuration?
+  → WidgetConfigurationIntent (empty conformance, no perform)
+
+Backs a Control Center control?
+  → ControlConfigurationIntent
+
+Has a universal-link URL representation?
+  → URLRepresentableIntent + OpenIntent (no perform needed)
+
+Matches an Apple Intelligence domain?
+  → AppIntent + @AppIntent(schema: .domain.action)
 ```
 
-Optional members: `description` (`IntentDescription`), `openAppWhenRun` (`Bool`),
-`isDiscoverable` (`Bool`), `authenticationPolicy` (`IntentAuthenticationPolicy`).
+### Which entity type should I use?
 
-## `@Parameter`
+```
+Fixed set known at compile time?
+  → AppEnum
 
-Declare each user-facing input with `@Parameter`. Non-optional parameters are
-required; the system requests values when needed. Defaults pre-fill a useful
-value. Optional parameters are not requested automatically, so ask for them in
-`perform()` when the intent cannot continue without a value.
+Dynamic data with a persistent id?
+  → AppEntity
 
-```swift
-// Required; the system asks for a value when needed
-@Parameter(title: "Count")
-var count: Int
+Entity must appear in Spotlight?
+  → AppEntity + IndexedEntity
 
-// Required and pre-filled
-@Parameter(title: "Count", default: 1)
-var count: Int
+Entity IS a file (scan, voice memo, exported image)?
+  → FileEntity
 
-// Optional; request it yourself if it becomes necessary
-@Parameter(title: "Count")
-var count: Int?
+Computed / aggregated data with no stable id?
+  → TransientAppEntity
+
+Needs Apple Intelligence schema awareness?
+  → AppEntity + @AppEntity(schema: .domain.type)
+
+Supports cross-app sharing?
+  → AppEntity + Transferable
 ```
 
-### Supported value types
+### Which query should my entity use?
 
-Primitives: `Bool`, `Int`, `Double`, `String`, `Duration`, `Date`, `Decimal`,
-`Measurement`, and `URL`. Collections: `Array` and `Set` of supported element
-types. Framework: `IntentPerson`, `IntentFile`. Custom: any `AppEntity` or
-`AppEnum`.
+```
+Small fixed set, enumerable?
+  → EnumerableEntityQuery (also gets a basic Find intent)
 
-### Common initializer patterns
+Large dataset, searchable by name?
+  → EntityQuery + EntityStringQuery
 
-```swift
-// Basic
-@Parameter(title: "Name")
-var name: String
+Many queryable properties, user should build predicates?
+  → EntityPropertyQuery (auto-generates Find intent with comparators + sort)
 
-// With default
-@Parameter(title: "Count", default: 5)
-var count: Int
+Simple id-only lookup, no search?
+  → UniqueIDEntityQuery
 
-// Numeric slider
-@Parameter(title: "Volume", controlStyle: .slider, inclusiveRange: (0, 100))
-var volume: Int
+Indexed in Spotlight and want reindexing support?
+  → IndexedEntityQuery (iOS 27+)
 
-// Options provider (dynamic list)
-@Parameter(title: "Category", optionsProvider: CategoryOptionsProvider())
-var category: Category
+Structured Siri search you can't index ahead of time?
+  → IntentValueQuery (structured input, returns 1+ entity types via @UnionValue)
 
-// File with content types
-@Parameter(title: "Document", supportedContentTypes: [.pdf, .plainText])
-var document: IntentFile
-
-// Measurement with unit
-@Parameter(title: "Distance", defaultUnit: .miles, supportsNegativeNumbers: false)
-var distance: Measurement<UnitLength>
+Visual intelligence / image search?
+  → IntentValueQuery + SemanticContentDescriptor
 ```
 
-See [references/appintents-advanced.md](references/appintents-advanced.md) for all initializer variants.
+### How should Siri find my content?
 
-## AppEntity
+```
+Content is local and indexable?
+  → IndexedEntity + indexAppEntities (semantic index) - the primary path
+  → add IndexedEntityQuery for reindexing support (iOS 27+)
 
-Prefer shadow models that mirror app data and expose only system-facing fields.
-Direct model conformance is allowed when the model is lightweight, stable, and
-appropriate for App Intents lifecycles.
+Too large / server-side / too volatile to index?
+  → IntentValueQuery (structured search input)
+
+User wants to search inside your own UI?
+  → @AppIntent(schema: .system.searchInApp) + ShowInAppSearchResultsIntent
+
+Content nobody has found or used yet, but relevant right now?
+  → RelevantEntities.updateEntities(_:for:) (iOS 27+)
+
+Teach the system how people use the app (patterns)?
+  → IntentDonationManager (donate UI interactions)
+```
+
+### Which property wrapper should I use on entity fields?
+
+```
+Stored on the entity struct, should appear in Shortcuts/Find/summary?
+  → @Property
+
+Derived from an underlying model object (cheap to compute)?
+  → @ComputedProperty (preferred over @Property for wrappers around models)
+
+Derived AND should be indexed in Spotlight?
+  → @ComputedProperty(indexingKey: \.keyName)
+
+Expensive to compute (network, ML inference, heavy query)?
+  → @DeferredProperty (async getter, only runs when system asks)
+
+Internal to the entity, not shown anywhere?
+  → plain stored property (no wrapper)
+```
+
+
+## Core Instructions
+
+- Target iOS 16+ / macOS 13+ minimum for App Intents. `IndexedEntity`, `OpenIntent`, focus filters, and control widgets require iOS 16+; `@AssistantEntity` / `@AssistantIntent` schemas require iOS 18.2+; anchored relative date styles and many assistant schemas require iOS 18.4+. The **27 releases** (WWDC 2026, iOS 27 / macOS 27) add `LongRunningIntent`, `EntityCollection`, `SyncableEntity`, `RelevantEntities`, `IndexedEntityQuery`, `OwnershipProvidingEntity`, `allowedExecutionTargets`, the `AppIntentsTesting` framework, and native `Duration`/`PersonNameComponents` parameters; `CancellableIntent` and `IntentValueRepresentation` are iOS 26.4+; `supportedModes` is iOS 26+. Apple's own naming for the WWDC 2026 cohort is "the 27 releases" - use that, not "iOS 19".
+- **Never** make a SwiftData `@Model` class or other reference-type data model conform to `AppEntity`. `AppEntity` requires `Sendable`; `@Model` classes are not sendable. Create a separate `struct` entity that shadows the fields you want to expose.
+- **Never** pass `ModelContext` across actor boundaries. `ModelContext` is not sendable. Pass `ModelContainer` (which is sendable) and create a local context inside the actor that needs one.
+- **Never** expose an intent to Siri/Spotlight only by writing its type, always register it through an `AppShortcutsProvider`. Types not registered there will not appear in Shortcuts, Siri suggestions, or the action button picker.
+- **Never** write a Siri activation phrase without interpolating `\(.applicationName)`. The App Intents macro rejects phrases without it at compile time, because phrases without the app name would collide with other apps' commands.
+- **Never** reach back into a SwiftUI `@Query` from inside an intent. `@Query` only works inside a `View`. Run a one-shot `FetchDescriptor` through a `ModelContext` instead, or route through a centralized data controller.
+- **Never** instantiate services, data stores, or authentication managers inside `perform()`. Inject them through `@Dependency` and register them once in `App.init()` with `AppDependencyManager.shared.add(dependency:)`.
+- **Never** use `String(format:)` or manual concatenation for localized intent dialog. Use `LocalizedStringResource`, and use Foundation's grammar-agreement markdown (`^[\(count) item](inflect: true)`) inside an `AttributedString` for pluralization.
+- Prefer `OpenIntent` for "take me to this thing" actions, `AppIntent & ShowsSnippetView` for self-contained one-shot summaries, and `AppIntent & ShowsSnippetIntent` + a paired `SnippetIntent` when the snippet contains `Button(intent:)` and needs to re-render after buttons fire.
+- Always set `static let isDiscoverable: Bool = false` on helper intents that only back a widget button, snippet button, or other intent - otherwise they pollute the user's Shortcuts library.
+- When an intent mutates data that widgets or control widgets display, call `WidgetCenter.shared.reloadAllTimelines()` inside `perform()` before returning.
+- When `Button(intent:)` lives inside a widget view, share state between the intent (runs in the app process) and the widget's timeline provider (runs in the extension process) via App Group `UserDefaults(suiteName:)` or a shared `ModelContainer` URL - never `UserDefaults.standard` or in-memory `@Dependency` state.
+- When entity data that appears in a shortcut phrase's key path changes (creation, rename, deletion), call `YourShortcutsProvider.updateAppShortcutParameters()` to invalidate the cached candidate list.
+- Prefer `EnumerableEntityQuery` when the whole set is small and cheap to load; implement `EntityQuery` + `EntityStringQuery` when the dataset is large or searchable; add `EntityPropertyQuery` to get a system-generated Find intent for free. `entities(for identifiers:)` is mandatory on every query; without it, parameter resolution breaks.
+- Mark entity fields that users might filter, sort, or reference in parameter summaries with `@Property` (stored) or `@ComputedProperty` (derived). Plain stored properties are invisible to the App Intents framework.
+- Use `TransientAppEntity` for return data that's computed on the fly (summaries, aggregates). Don't try to shoehorn it into `AppEntity` with a fake id.
+- When the entity already has a universal-link URL, conform it to `URLRepresentableEntity` and conform the open intent to `URLRepresentableIntent` - the system routes opens through your existing link handler without a `perform()`.
+- For entities visible onscreen that Siri should be able to understand, combine `.userActivity(_:element:)` on the view with `Transferable` conformance on the entity. Identification alone is not enough; Siri needs exportable content.
+- `SnippetIntent.perform()` is called multiple times per user interaction (initial show, after each button tap, on appearance changes, on `reload()`). Keep it pure: read state, assemble the view, return. Never mutate app state or kick off slow work inside a snippet intent's `perform()`.
+- Respect hard limits: 10 `AppShortcut`s per app, 1000 total trigger phrases (including parameter expansions). The first phrase in each shortcut's array is the primary one - it's shown on the Shortcuts home tile and as Siri's "what can I do with X?" answer.
+- Include at least one non-parameterized phrase per App Shortcut so it's discoverable before first launch; parameterized phrases don't appear in Spotlight until the app has run once and populated the parameter cache.
+- Prefer `supportedModes` + `continueInForeground` (iOS 26+) over `ForegroundContinuableIntent` / `needsToContinueInForegroundError` for new code that conditionally foregrounds. The newer form lets one intent declare it may run background or foreground based on runtime state.
+- Snippet views have a 340-point height ceiling; beyond this, scrolling breaks the glance overlay model. Link to the full app for deep content, and keep snippet text larger than system defaults for legibility at reading distance.
+- For text parameters that may receive input from Apple Intelligence's Use Model action, declare the type as `AttributedString` rather than `String` so rich formatting (bold, italic, lists, tables) is preserved losslessly.
+- The app's `App` struct initializer is executed when an intent runs, even if the UI never appears. Do all intent-relevant setup (`ModelContainer` creation, `AppDependencyManager.shared.add(...)`, log plumbing) inside `init()`, not inside view modifiers like `.task` or `.onAppear`.
+- `LocalizedStringResource` is the standard string type everywhere in App Intents (titles, dialog, parameter prompts). It shares string catalogs with SwiftUI, so localization works out of the box.
+- Grammar agreement (`inflect: true`) works in English, French, German, Italian, Spanish, and Portuguese (both variants). For other locales it falls back to the unmodified form.
+- Intents triggered from a system surface get ~30 seconds (no hard limit on macOS). For uploads, sync, large file ops, or on-device inference, conform to `LongRunningIntent` and do the work inside `performBackgroundTask { ... }` - and **report `progress` regularly**, because going quiet makes the system revoke the runtime extension. Pair with `CancellableIntent` to clean up with the cancellation reason. Don't try to beat the limit with a detached `Task`; unmanaged tasks aren't covered by the extension.
+- Use `EntityCollection<Entity>` instead of `[Entity]` for parameters that may hold many entities when `perform()` mostly needs ids - it skips full entity resolution during parameter handling. Call `resolvedEntities()` only when you need the full objects.
+- In schema-based **update** intents, distinguish "don't change" from "clear" with `$parameter.valueState` (`.set(value)` / `.set(nil)` / `.unset`), not a plain `nil` check - otherwise voice commands can never clear a field.
+- Conform entities to `SyncableEntity` when Siri might reference them in a cross-device conversation. If the id is already consistent everywhere (server UUID, CloudKit record id), just adopt the protocol; otherwise pair local and stable ids with `SyncableEntityIdentifier`.
+- Conform shareable entities to `OwnershipProvidingEntity` and keep their `ownership` (`.shared` / `.public`) current, so Siri confirms actions on content the user shared or published. By default Siri assumes entities are private and may skip confirmation.
+- To carry structured types other apps understand (a coordinate, a contact, a name), add an `IntentValueRepresentation` via the `ValueRepresentation` builder to the entity's `transferRepresentation` - `FileRepresentation`/`DataRepresentation` only cover file formats. Use the key-path form (`ValueRepresentation(exporting: \.place)`) when the entity already stores the system type.
+- For on-screen awareness, pick the annotation by shape: `.userActivity` for one primary item, `.appEntityIdentifier(_:)` for one among a few, `.appEntityIdentifier(forSelectionType:)` on a `List`/collection for many (lazy), `.appEntityUIElements(_:)` for custom `Canvas`/`CALayer` drawing. Annotations on Notifications, Now Playing, and AlarmKit require a real `AppEntity` - `TransientAppEntity` has no persistent id and can't be used there. Add a `displayRepresentations` query method so Siri can resolve onscreen entities without a full DB fetch.
+- Donate **UI** interactions with `IntentDonationManager` (the system already donates Siri/Shortcuts runs); donate after the action completes, don't over-donate (the system will start ignoring you), and delete stale donations.
+- Test with the `AppIntentsTesting` framework (out-of-process, in an XCUITest bundle) for the integration surface - intents, queries, `spotlightQuery()`, `viewAnnotations()`; use test-only intents (`isDiscoverable = false` + `#if DEBUG`) to seed data and reach internal state. Keep direct `perform()` struct tests for pure logic.
+
+
+## Output Format
+
+If the user asks for a review, organize findings by file. For each issue:
+
+1. State the file and relevant line(s).
+2. Name the anti-pattern being replaced.
+3. Show a brief before/after code fix.
+
+Skip files with no issues. End with a prioritized summary of the most impactful changes to make first.
+
+If the user asks you to write or fix intent code, make the changes directly instead of returning a findings report.
+
+Example output:
+
+### RecentItemsIntent.swift
+
+**Line 18: SwiftData `@Model` cannot conform to `AppEntity` (not `Sendable`).**
 
 ```swift
-struct SoupEntity: AppEntity {
-    static let defaultQuery = SoupEntityQuery()
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Soup"
-    var id: String
+// Before
+extension Article: AppEntity { ... }
 
-    @Property(title: "Name") var name: String
-    @Property(title: "Price") var price: Double
-
+// After
+struct ArticleEntity: AppEntity {
+    var id: UUID
+    var title: String
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Article"
+    static let defaultQuery = ArticleEntityQuery()
     var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(title: "\(name)", subtitle: "$\(String(format: "%.2f", price))")
-    }
-
-    init(from soup: Soup) {
-        self.id = soup.id; self.name = soup.name; self.price = soup.price
+        DisplayRepresentation(title: "\(title)")
     }
 }
 ```
 
-Required: `id`, `defaultQuery` (static), `displayRepresentation`,
-`typeDisplayRepresentation` (static). Mark properties with `@Property(title:)`
-to expose for filtering/sorting. Properties without `@Property` remain internal.
-
-## EntityQuery (4 Variants)
-
-### 1. EntityQuery (base -- resolve by ID)
+**Line 42: Siri phrase missing `\(.applicationName)` - will fail to build.**
 
 ```swift
-struct SoupEntityQuery: EntityQuery {
-    func entities(for identifiers: [String]) async throws -> [SoupEntity] {
-        SoupStore.shared.soups.filter { identifiers.contains($0.id) }.map { SoupEntity(from: $0) }
-    }
-    func suggestedEntities() async throws -> [SoupEntity] {
-        SoupStore.shared.featured.map { SoupEntity(from: $0) }
-    }
-}
+// Before
+AppShortcut(intent: OpenArticleIntent(), phrases: ["Open an article"], ...)
+
+// After
+AppShortcut(intent: OpenArticleIntent(), phrases: ["Open an article in \(.applicationName)"], ...)
 ```
 
-### 2. EntityStringQuery (free-text search)
+### Summary
 
-```swift
-struct SoupStringQuery: EntityStringQuery {
-    func entities(matching string: String) async throws -> [SoupEntity] {
-        SoupStore.shared.search(string).map { SoupEntity(from: $0) }
-    }
-    func entities(for identifiers: [String]) async throws -> [SoupEntity] {
-        SoupStore.shared.soups.filter { identifiers.contains($0.id) }.map { SoupEntity(from: $0) }
-    }
-}
-```
+1. **Sendability (high):** `Article` as `AppEntity` will fail to compile on Swift 6; create a shadow struct.
+2. **Siri phrases (high):** `\(.applicationName)` is required in every phrase.
 
-### 3. EnumerableEntityQuery (finite set)
+End of example.
 
-```swift
-struct AllSoupsQuery: EnumerableEntityQuery {
-    func allEntities() async throws -> [SoupEntity] {
-        SoupStore.shared.allSoups.map { SoupEntity(from: $0) }
-    }
-    func entities(for identifiers: [String]) async throws -> [SoupEntity] {
-        SoupStore.shared.soups.filter { identifiers.contains($0.id) }.map { SoupEntity(from: $0) }
-    }
-}
-```
-
-### 4. UniqueAppEntityQuery (singleton, iOS 18+)
-
-Use for single-instance entities like app settings.
-
-```swift
-struct AppSettingsEntity: UniqueAppEntity {
-    static let defaultQuery = AppSettingsQuery()
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Settings"
-    var displayRepresentation: DisplayRepresentation { "App Settings" }
-
-    var id: String { "app-settings" }
-}
-
-struct AppSettingsQuery: UniqueAppEntityQuery {
-    func uniqueEntity() async throws -> AppSettingsEntity {
-        AppSettingsEntity()
-    }
-}
-```
-
-See [references/appintents-advanced.md](references/appintents-advanced.md) for `EntityPropertyQuery` with
-filter/sort support.
-
-## AppEnum
-
-Define fixed sets of selectable values. `RawValue` must conform to
-`LosslessStringConvertible`; prefer `String` raw values for readable, stable
-identifiers.
-
-```swift
-enum SoupSize: String, AppEnum {
-    case small, medium, large
-
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Size"
-
-    static var caseDisplayRepresentations: [SoupSize: DisplayRepresentation] = [
-        .small: "Small",
-        .medium: "Medium",
-        .large: "Large"
-    ]
-}
-```
-
-```swift
-// Valid, but less readable in saved shortcuts and URL representations
-enum Priority: Int, AppEnum {
-    case low = 1, medium = 2, high = 3
-}
-
-// Preferred
-enum Priority: String, AppEnum {
-    case low, medium, high
-    // ...
-}
-```
-
-## AppShortcutsProvider
-
-Register pre-built shortcuts that appear in Siri and the Shortcuts app without
-user configuration.
-
-```swift
-struct MyAppShortcuts: AppShortcutsProvider {
-    static var appShortcuts: [AppShortcut] {
-        AppShortcut(
-            intent: OrderSoupIntent(),
-            phrases: [
-                "Order \(\.$soup) in \(.applicationName)",
-                "Get soup from \(.applicationName)"
-            ],
-            shortTitle: "Order Soup",
-            systemImageName: "cup.and.saucer"
-        )
-    }
-
-    static var shortcutTileColor: ShortcutTileColor = .navy
-}
-```
-
-### Phrase rules
-
-- Every phrase MUST include `\(.applicationName)`.
-- Phrases can reference parameters: `\(\.$soup)`.
-- Call `updateAppShortcutParameters()` when dynamic option values change.
-- Use `negativePhrases` to prevent false Siri activations.
-
-## Siri Integration
-
-### Donating intents
-
-Donate intents so the system learns user patterns and suggests them in Spotlight:
-
-```swift
-let intent = OrderSoupIntent()
-intent.soup = favoriteSoupEntity
-try await intent.donate()
-```
-
-### Predictable intents
-
-Conform to `PredictableIntent` for Siri prediction of upcoming actions.
-
-## Interactive Widget Intents
-
-Use `AppIntent` with `Button`/`Toggle` in widgets. Use
-`WidgetConfigurationIntent` for configurable widget parameters.
-Treat configuration intents as parameter contracts; put mutations in a separate
-action intent. For sensitive actions such as smart-home control, payments, or
-deletion, use an appropriate `authenticationPolicy` and/or
-`requestConfirmation(...)` before changing state.
-
-```swift
-struct ToggleFavoriteIntent: AppIntent {
-    static var title: LocalizedStringResource = "Toggle Favorite"
-    @Parameter(title: "Item ID") var itemID: String
-
-    func perform() async throws -> some IntentResult {
-        FavoriteStore.shared.toggle(itemID)
-        return .result()
-    }
-}
-
-// In widget view:
-Button(intent: ToggleFavoriteIntent(itemID: entry.id)) {
-    Image(systemName: entry.isFavorite ? "heart.fill" : "heart")
-}
-```
-
-### WidgetConfigurationIntent
-
-```swift
-struct BookWidgetConfig: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "Favorite Book"
-    @Parameter(title: "Book", default: "The Swift Programming Language") var bookTitle: String
-}
-
-// Connect to WidgetKit:
-struct MyWidget: Widget {
-    var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: "FavoriteBook", intent: BookWidgetConfig.self, provider: MyTimelineProvider()) { entry in
-            BookWidgetView(entry: entry)
-        }
-    }
-}
-```
-
-## Control Center Widgets (iOS 18+)
-
-Expose controls in Control Center and Lock Screen with `ControlConfigurationIntent`
-and `ControlWidget`. Parameters without defaults must be optional.
-Trigger state changes from a separate `AppIntent` / `SetValueIntent` with
-explicit entity parameters, not from the configuration intent.
-
-```swift
-struct LightControlConfig: ControlConfigurationIntent {
-    static var title: LocalizedStringResource = "Light Control"
-    @Parameter(title: "Light", default: .livingRoom) var light: LightEntity
-}
-
-struct ToggleLightIntent: AppIntent {
-    static var title: LocalizedStringResource = "Toggle Light"
-    static var authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
-
-    @Parameter(title: "Light") var light: LightEntity
-
-    func perform() async throws -> some IntentResult {
-        try await requestConfirmation(
-            actionName: .toggle,
-            dialog: "Toggle \(light.name)?"
-        )
-        try await LightService.shared.toggle(light.id)
-        return .result()
-    }
-}
-
-struct LightControl: ControlWidget {
-    var body: some ControlWidgetConfiguration {
-        AppIntentControlConfiguration(kind: "LightControl", intent: LightControlConfig.self) { config in
-            ControlWidgetToggle(config.light.name, isOn: config.light.isOn, action: ToggleLightIntent(light: config.light))
-        }
-    }
-}
-```
-
-## Spotlight and IndexedEntity (iOS 18+)
-
-Conform to `IndexedEntity` for Spotlight search. On iOS 26+, use `indexingKey`
-for structured metadata:
-
-```swift
-struct RecipeEntity: IndexedEntity {
-    static let defaultQuery = RecipeQuery()
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Recipe"
-    var id: String  // Stable recipe UUID or slug; do not use recycled row IDs
-
-    @Property(title: "Name", indexingKey: \.title) var name: String  // iOS 26+
-    @ComputedProperty(indexingKey: \.contentDescription)              // iOS 26+
-    var summary: String { "\(name) -- a delicious recipe" }
-
-    var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(title: "\(name)")
-    }
-
-    var attributeSet: CSSearchableItemAttributeSet {
-        let attrs = defaultAttributeSet
-        attrs.keywords = ["recipe"]
-        return attrs
-    }
-}
-
-struct RecipeQuery: EntityQuery {
-    func entities(for identifiers: [RecipeEntity.ID]) async throws -> [RecipeEntity] {
-        identifiers.compactMap { id in
-            RecipeStore.shared.recipe(id: id).map(RecipeEntity.init)
-        }
-    }
-}
-
-struct OpenRecipeIntent: OpenIntent {
-    static var title: LocalizedStringResource = "Open Recipe"
-    @Parameter(title: "Recipe") var target: RecipeEntity
-}
-```
-
-`IndexedEntity` describes metadata; still index instances in a named Spotlight
-index, e.g. `CSSearchableIndex(name: "...").indexAppEntities(entities)`.
-If you customize `attributeSet`, start from `defaultAttributeSet`; returning a
-fresh attribute set replaces display representation and property-derived
-metadata. Prefer `indexingKey` for metadata already exposed on the entity.
-Update and delete changed records in that same named index:
-
-```swift
-let recipeIndex = CSSearchableIndex(name: "Recipes")
-try await recipeIndex.indexAppEntities(changedRecipes)
-try await recipeIndex.deleteAppEntities(
-    identifiedBy: deletedRecipeIDs,
-    ofType: RecipeEntity.self
-)
-```
-
-For large syncs, use `beginBatch()`, `endBatch(withClientState:)`, and
-`fetchLastClientState()` so indexing can resume after a crash or jetsam.
-
-## iOS 26 Additions
-
-### SnippetIntent
-
-Display interactive snippets in system UI:
-
-```swift
-struct OrderStatusSnippet: SnippetIntent {
-    static var title: LocalizedStringResource = "Order Status"
-    func perform() async throws -> some IntentResult & ShowsSnippetView {
-        let status = await OrderTracker.currentStatus()
-        return .result(view: OrderStatusSnippetView(status: status))
-    }
-}
-
-struct CheckOrderStatusIntent: AppIntent {
-    static var title: LocalizedStringResource = "Check Order Status"
-    func perform() async throws -> some IntentResult & ShowsSnippetIntent {
-        .result(snippetIntent: OrderStatusSnippet())
-    }
-}
-```
-
-The system may call `perform()` multiple times, including after snippet button
-or toggle actions; keep `SnippetIntent.perform()` side-effect-free and do
-mutations in the calling action intent or a separate button/toggle action. A
-snippet-only intent is not discoverable in Shortcuts or Spotlight unless
-`isDiscoverable` is `true`.
-
-### IntentValueQuery (Visual Intelligence)
-
-```swift
-@available(iOS 26, *)
-@UnionValue
-enum ShoppingVisualResult {
-    case product(ProductEntity)
-    case store(StoreEntity)
-}
-
-@available(iOS 26, *)
-struct ShoppingVisualQuery: IntentValueQuery {
-    func values(for input: SemanticContentDescriptor) async throws -> [ShoppingVisualResult] {
-        try Task.checkCancellation()
-        async let productMatches = ProductStore.shared.matches(
-            labels: input.labels,
-            pixelBuffer: input.pixelBuffer,
-            limit: 5
-        )
-        async let storeMatches = StoreStore.shared.matches(
-            labels: input.labels,
-            pixelBuffer: input.pixelBuffer,
-            limit: 3
-        )
-        let ranked = await rank(productMatches, storeMatches)
-        return Array(ranked.prefix(8))
-    }
-}
-```
-
-Only one `IntentValueQuery` can take `SemanticContentDescriptor`; use
-`@UnionValue` when one query must return multiple app entity types. Treat
-`labels` as high-level English descriptors, not exhaustive synonyms or app
-taxonomy; combine them with `pixelBuffer` when available. Return small, ranked,
-cancellation-friendly results, and provide an `OpenIntent`, URL representation,
-or in-app search handoff for details and more results. Do not implement camera
-capture, Vision `VN*` requests, barcode classification, or Spotlight indexing
-inside the App Intents query; call an existing bounded app search or image-match
-service instead, with explicit result caps and timeouts when work may exceed a
-system UI budget.
-
-## Common Mistakes
-
-1. **Exposing too much app model state through AppEntity.** Prefer dedicated
-   shadow models with stable persistent IDs and only system-facing properties.
-
-2. **Missing `\(.applicationName)` in phrases.** Every `AppShortcut` phrase
-   MUST include the application name token. Siri uses it for disambiguation.
-
-3. **Treating optional `@Parameter` as required.** Optional parameters are not
-   requested automatically; call `requestValue` / `needsValueError` when the
-   intent cannot proceed without one.
-
-   ```swift
-   // Optional, so request it yourself if needed
-   @Parameter(title: "Count")
-   var count: Int?
-   ```
-
-4. **Using unstable AppEnum raw values.** `Int` is valid, but `String` raw values
-   are usually clearer for persistence and URL representations.
-
-5. **Forgetting `suggestedEntities()`.** Without it, the Shortcuts picker shows no defaults.
-6. **Throwing for missing entities in `entities(for:)`.** Omit missing entities instead.
-7. **Stale Spotlight index.** Re-index entities with a named `CSSearchableIndex`.
-8. **Missing `typeDisplayRepresentation`.** Both `AppEntity` and `AppEnum` require it.
-9. **Using deprecated `@Assistant*` schema macros.** Use `@AppIntent(schema:)`, `@AppEntity(schema:)`, and `@AppEnum(schema:)`.
-10. **Blocking or side-effecting perform().** Use `await` for I/O; keep `SnippetIntent.perform()` side-effect-free because the system may rerun it.
-11. **Mutating sensitive state from system surfaces without a guard.** Use confirmation and/or authentication for actions such as door locks, lights, purchases, and deletes.
-
-## Review Checklist
-
-- [ ] Every `AppIntent` has a descriptive `title` (verb + noun, title case)
-- [ ] Required `@Parameter` values are non-optional; optional values are requested when needed
-- [ ] `AppEntity` types expose stable IDs and only system-facing properties
-- [ ] `AppEntity` has `displayRepresentation` and `typeDisplayRepresentation`
-- [ ] `EntityQuery.entities(for:)` omits missing IDs; `suggestedEntities()` implemented
-- [ ] `AppEnum` prefers stable `String` raw values with `caseDisplayRepresentations`
-- [ ] `AppShortcutsProvider` phrases include `\(.applicationName)`; `parameterSummary` defined
-- [ ] `IndexedEntity` properties use key-path `indexingKey` values and entities are indexed
-- [ ] Control Center intents conform to `ControlConfigurationIntent`; widget intents to `WidgetConfigurationIntent`; no-default control parameters are optional
-- [ ] Sensitive App Intents request confirmation and/or authentication before mutating state
-- [ ] Visual Intelligence `IntentValueQuery` uses `SemanticContentDescriptor`, bounded results, opening paths, and iOS 26 availability
-- [ ] No deprecated `@AssistantIntent` / `@AssistantEntity` / `@AssistantEnum` schema macros
-- [ ] `perform()` uses async/await (no blocking); runs in expected isolation context; intent types are `Sendable`
 
 ## References
 
-- See [references/appintents-advanced.md](references/appintents-advanced.md) for `@Parameter` variants, EntityPropertyQuery, assistant schemas, focus filters, SiriKit migration, error handling, confirmation flows, authentication, URL-representable types, and Spotlight indexing details.
+- `references/fundamentals.md` - `AppIntent` protocol, `perform()`, return types (`IntentResult`, `ProvidesDialog`, `ReturnsValue`, `ShowsSnippetView`, `OpensIntent`), intent dialog, grammar agreement.
+- `references/parameters.md` - `@Parameter`, primitive vs entity parameters, `@AppEnum`, dialog options, parameter prompts.
+- `references/entities.md` - `AppEntity`, `IndexedEntity`, shadow-struct pattern, display representations, entity queries (`EnumerableEntityQuery`, `EntityQuery`, `EntityStringQuery`, `UniqueIDEntityQuery`).
+- `references/shortcuts-and-siri.md` - `AppShortcutsProvider`, phrases (`\(.applicationName)` rule), `shortcutTileColor`, `SiriTipView`, `ShortcutsLink`, parameter presentation.
+- `references/open-and-snippet-intents.md` - `OpenIntent`, snippet views (`ShowsSnippetView`), navigation via data controller, when to use which.
+- `references/dependencies.md` - `@Dependency`, `AppDependencyManager`, data-controller pattern, `ModelContainer` vs `ModelContext` sendability, main-actor vs local-context tradeoff.
+- `references/spotlight.md` - `IndexedEntity`, `IndexedEntityQuery` (reindexing), `CSSearchableIndex`, `attributeSet`, semantic index, index-on-launch vs index-on-change, debounced reindexing.
+- `references/assistant-schemas.md` - `@AssistantEntity`, `@AssistantIntent`, schema adoption, multi-schema requirements, `.system.searchInApp`, Visual Intelligence (iPad/macOS, system stores), Xcode code snippets, caveats.
+- `references/siri-intelligence.md` - the Siri / Apple Intelligence integration model: finding content (semantic index / structured search / in-app search), custom responses, interaction donations, confirmation + `OwnershipProvidingEntity`, validation flow.
+- `references/onscreen-awareness.md` - the 4 on-screen annotation APIs, content transfer (`IntentValueRepresentation`, resolve vs import), `displayRepresentations` fast path, entity annotations on Notifications / Now Playing / AlarmKit.
+- `references/long-running-and-execution.md` - the 30-second budget, `LongRunningIntent` + `performBackgroundTask`, `CancellableIntent`, background GPU, `allowedExecutionTargets`.
+- `references/testing-intents.md` - the `AppIntentsTesting` framework (out-of-process integration), direct `perform()` unit tests, mocking `@Dependency` via `AppDependencyManager`, test-only intents, what you can't unit-test.
+- `references/anti-patterns.md` - common mistakes LLMs make when generating App Intents code.

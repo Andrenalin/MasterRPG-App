@@ -2,10 +2,10 @@
   "version": 1,
   "skills": {
     "app-intents": {
-      "source": "dpearson2699/swift-ios-skills",
+      "source": "n0an/App-Intents-Agent-Skill",
       "sourceType": "github",
-      "skillPath": "skills/app-intents/SKILL.md",
-      "computedHash": "ba47bd4e28b2fe93d6b98f64373217932b303bfe2bfb2b188da1e0927af63760"
+      "skillPath": "app-intents/SKILL.md",
+      "computedHash": "fb727ef9d2ff854b607528e6671fb93547068495911e25f5005491492544216c"
     },
     "apple-hig-designer": {
       "source": "jamesrochabrun/skills",
