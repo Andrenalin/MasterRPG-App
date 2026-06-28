@@ -36,6 +36,23 @@ public struct FileUrl: Equatable, Hashable, Codable, Sendable {
 }
 
 public extension FileUrl {
+    // `data` is a transient transport field — exclude it from equality and hashing
+    // so that storing a file locally (which attaches/detaches data) does not change
+    // the CRDT update UUID and therefore does not change the item version.
+    static func == (lhs: FileUrl, rhs: FileUrl) -> Bool {
+        lhs.fileId == rhs.fileId &&
+        lhs.rawUrl == rhs.rawUrl &&
+        lhs.location == rhs.location &&
+        lhs.module == rhs.module
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(fileId)
+        hasher.combine(rawUrl)
+        hasher.combine(location)
+        hasher.combine(module)
+    }
+
     mutating func resetData(_ data: Data) {
         self.data = data
     }
