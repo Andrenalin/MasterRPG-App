@@ -7,7 +7,8 @@ struct DetailFolderListView: View {
     let root: MapRootModel
     let model: MapModel
     let folderListController: any FolderListControllable
-
+    var isSubFolder: Bool = false
+    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
@@ -15,7 +16,7 @@ struct DetailFolderListView: View {
             root: root.rootController,
             detailListController: folderListController,
             selectedModel: model,
-            configuration: .init(),
+            configuration: .init(isSubFolder: isSubFolder),
             linkTypes: LinkMapModuleTransferable.self
         ) {
             DetailEditorView(root: root, model: model)

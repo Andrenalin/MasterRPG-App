@@ -7,6 +7,7 @@ struct DetailFolderListView: View {
     let root: WeatherRootModel
     let model: WeatherModel
     let folderListController: any FolderListControllable
+    var isSubFolder: Bool = false
     @Binding var animate: Bool
 
     var body: some View {
@@ -14,7 +15,7 @@ struct DetailFolderListView: View {
             root: root.rootController,
             detailListController: folderListController,
             selectedModel: model,
-            configuration: .init(),
+            configuration: .init(isSubFolder: isSubFolder),
             linkTypes: EmptyLinkTransferable.self) {
                 WeatherEditor(model: model)
             }

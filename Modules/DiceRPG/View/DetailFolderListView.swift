@@ -7,7 +7,8 @@ struct DetailFolderListView: View {
     let root: DiceRootModel
     let model: DiceModel
     let folderListController: any FolderListControllable
-
+    var isSubFolder: Bool = false
+    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
@@ -15,7 +16,7 @@ struct DetailFolderListView: View {
             root: root.rootController,
             detailListController: folderListController,
             selectedModel: model,
-            configuration: .init(disableHideHeader: true),
+            configuration: .init(disableHideHeader: true, isSubFolder: isSubFolder),
             linkTypes: EmptyLinkTransferable.self
         ) {
             DetailEditorView(model: model)

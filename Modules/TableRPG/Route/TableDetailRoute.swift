@@ -77,7 +77,9 @@ struct TableDetailRouteDestinationView: View {
                 DetailListView(root: root, model: model, folderListController: root.folderListController.copy(listModel: FolderListModel(parentModel: parentModel, navigationModel: root.navigationModel)))
             }
         case .folderInline(let itemId):
-            DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId), folderListController: root.folderListController)
+            if let model = root.itemController.itemSync(for: itemId), let parentId = model.parentId, let parentModel = root.itemController.itemSync(for: parentId) {
+                DetailFolderListView(root: root, model: model, folderListController: root.folderListController.copy(listModel: FolderListModel(parentModel: parentModel, navigationModel: root.navigationModel)), isSubFolder: true)
+            }
 
 #if !os(tvOS)
         case .tableExtraction(let itemId):

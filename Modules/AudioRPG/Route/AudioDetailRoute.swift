@@ -62,24 +62,9 @@ struct AudioDetailRouteDestinationView: View {
                 DetailListView(root: root, model: model, folderListController: root.folderListController.copy(listModel: FolderListModel(parentModel: parentModel, navigationModel: root.navigationModel)))
             }
         case .folderInline(let itemId):
-            if let item = root.itemController.itemSync(for: itemId) {
-                DetailFolderListView(root: root, model: item, folderListController: detailFolderListController(item: item))
+            if let model = root.itemController.itemSync(for: itemId), let parentId = model.parentId, let parentModel = root.itemController.itemSync(for: parentId) {
+                DetailFolderListView(root: root, model: model, folderListController: root.folderListController.copy(listModel: FolderListModel(parentModel: parentModel, navigationModel: root.navigationModel)), isSubFolder: true)
             }
         }
-    }
-    
-    private func detailFolderListController(item: AudioModel) -> FolderListController {
-        root.folderListController.copy(listModel: currentListModel(item: item))
-    }
-    
-    private func currentListModel(item: AudioModel) -> FolderListModel {
-        if let existing = root.navigationModel.folderModels[item.id] {
-            return existing
-        }
-        
-        let newModel = root.folderListController.copyModel(parentModel: item)
-        root.navigationModel.folderModels[item.id] = newModel
-        return newModel
-    }
-
+    }    
 }

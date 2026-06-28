@@ -7,9 +7,8 @@ struct DetailFolderListView: View {
     let root: SpaceRootModel
     let model: SpaceModel
     let folderListController: any FolderListControllable
-
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-
+    var isSubFolder: Bool = false
+    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
@@ -17,7 +16,7 @@ struct DetailFolderListView: View {
             root: root.rootController,
             detailListController: folderListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: true),
+            configuration: .init(editorAsBackground: true, isSubFolder: isSubFolder),
             linkTypes: EmptyLinkTransferable.self
         ) {
             ViewerRootView(model: model, configuration: ViewerConfiguration(closeButton: false, addToolbar: false, isGame: false))

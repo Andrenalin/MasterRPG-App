@@ -54,6 +54,7 @@ struct WeatherDetailRouteDestinationView: View {
     let route: WeatherDetailRoute
 
     @Environment(WeatherRootModel.self) private var root
+    @State private var animate: Bool = false
 
     var body: some View {
         switch route {
@@ -62,8 +63,9 @@ struct WeatherDetailRouteDestinationView: View {
                 DetailListView(root: root, model: model, folderListController: root.folderListController.copy(listModel: FolderListModel(parentModel: parentModel, navigationModel: root.navigationModel)))
             }
         case .folderInline(let itemId):
-            DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId), folderListController: root.folderListController, animate: .constant(false))
+            if let model = root.itemController.itemSync(for: itemId), let parentId = model.parentId, let parentModel = root.itemController.itemSync(for: parentId) {
+                DetailFolderListView(root: root, model: model, folderListController: root.folderListController.copy(listModel: FolderListModel(parentModel: parentModel, navigationModel: root.navigationModel)), isSubFolder: true, animate: $animate)
+            }
         }
     }
-
 }

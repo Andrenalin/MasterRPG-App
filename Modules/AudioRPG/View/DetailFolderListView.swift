@@ -7,6 +7,7 @@ struct DetailFolderListView: View {
     let root: AudioRootModel
     let model: AudioModel
     let folderListController: FolderListController
+    var isSubFolder: Bool = false
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -15,7 +16,7 @@ struct DetailFolderListView: View {
             root: root.rootController,
             detailListController: folderListController,
             selectedModel: model,
-            configuration: .init(),
+            configuration: .init(isSubFolder: isSubFolder),
             linkTypes: EmptyLinkTransferable.self
         ) {
             DetailEditorView(root: root, model: model)

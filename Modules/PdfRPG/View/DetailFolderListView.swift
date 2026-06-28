@@ -8,7 +8,7 @@ struct DetailFolderListView: View {
     let model: PdfModel
     let folderListController: any FolderListControllable
     var isSubFolder: Bool = false
-
+    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 

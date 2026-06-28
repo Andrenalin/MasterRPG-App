@@ -7,14 +7,15 @@ struct DetailFolderListView: View {
     let root: CharacterRootModel
     let model: ValueModel
     let folderListController: any FolderListControllable
-
+    var isSubFolder: Bool = false
+    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         ItemDetailRootView(
             root: root.rootController,
             detailListController: folderListController,
             selectedModel: model,
-            configuration: .init(),
+            configuration: .init(isSubFolder: isSubFolder),
             linkTypes: LinkCharacterModuleTransferable.self
         ) {
             DetailEditorView(root: root, model: model)
