@@ -10,10 +10,9 @@ final class MasterNetworkController: Sendable {
     nonisolated(unsafe) private weak var delegate: (any MasterNetworkControllerDelegate)?
     let listnerBuilder: @Sendable (String, Bool, ListenerControllerDelegate) -> ListenerControllable
     let networkModel: MasterNetworkNodel
-    
+
     static func gameListnerBuilder() -> @Sendable (String, Bool, ListenerControllerDelegate) -> ListenerControllable {
-        return {
-            name, proxy, delegate in
+        return { name, proxy, delegate in
             if proxy {
                 return ListenerController(proxy: name, delegate: delegate)
             } else {
@@ -48,8 +47,8 @@ extension MasterNetworkController: MasterNetworkControllable {
         networkModel.listener = listnerBuilder(networkModel.name, false, self)
         networkModel.listener?.startListening()
 
-        networkModel.browserController = BrowserController(isMaster: true)
-        networkModel.browserController?.start()
+        networkModel.browserManager = BrowserManager(serviceType: .master)
+        networkModel.browserManager?.start()
         observeConnections()
     }
 
@@ -63,8 +62,8 @@ extension MasterNetworkController: MasterNetworkControllable {
         networkModel.listener = listnerBuilder(networkModel.name, true, self)
         networkModel.listener?.startListening()
 
-        networkModel.browserController = BrowserController(isMaster: true, proxy: true)
-        networkModel.browserController?.start()
+        networkModel.browserManager = BrowserManager(serviceType: .proxyClient)
+        networkModel.browserManager?.start()
         observeConnections()
     }
 
@@ -87,8 +86,8 @@ extension MasterNetworkController: MasterNetworkControllable {
 
     @MainActor
     private func resetConntections() {
-        networkModel.browserController?.stop()
-        networkModel.browserController = nil
+        networkModel.browserManager?.stop()
+        networkModel.browserManager = nil
         networkModel.listener?.stopListnening()
         networkModel.listener = nil
         networkModel.browserConnections = []
@@ -151,14 +150,14 @@ extension MasterNetworkController: ListenerControllerDelegate {
     }
 }
 
-// MARK: - Observe BrowserController for Connections
+// MARK: - Observe BrowserManager for Connections
 
 extension MasterNetworkController {
     @MainActor
     func observeConnections() {
-        guard let browserController = networkModel.browserController else { return }
+        guard networkModel.browserManager != nil else { return }
         _ = withObservationTracking {
-            browserController.model.browsers
+            networkModel.browserManager?.games
         } onChange: { [weak self] in
             Task { @concurrent in
                 await self?.checkForConnections()
@@ -168,24 +167,23 @@ extension MasterNetworkController {
 
     @MainActor
     func checkForConnections() {
-        guard let browserController = networkModel.browserController else { return }
-        Task { @concurrent in
-            let results = await browserController.allResults()
-            await MainActor.run { [weak self] in self?.refresh(results: results) }
-        }
+        guard networkModel.browserManager != nil else { return }
+        let games = networkModel.browserManager?.games ?? []
+        refresh(games: games)
         observeConnections()
     }
 
-    @MainActor func refresh(results: [NWBrowser.Result]) {
-        guard networkModel.browserController?.isBrowsing ?? false else {
-            networkModel.browserController = nil
+    @MainActor func refresh(games: [BrowserGameModel]) {
+        guard let manager = networkModel.browserManager, manager.isBrowsing else {
+            networkModel.browserManager = nil
             networkModel.browserConnections = []
             return
         }
-        for result in results {
-            if !networkModel.browserConnections.contains(result.endpoint) {
-                networkModel.browserConnections.append(result.endpoint)
-                connectToPlayer(with: result)
+        for game in games {
+            let endpoint = manager.nwEndpoint(for: game)
+            if !networkModel.browserConnections.contains(endpoint) {
+                networkModel.browserConnections.append(endpoint)
+                connectToPlayer(endpoint: endpoint)
             }
         }
     }
@@ -197,7 +195,7 @@ private extension MasterNetworkController {
         connection.startConnection()
     }
 
-    @MainActor func connectToPlayer(with browserResult: NWBrowser.Result) {
-        addNew(ConnectionController(id: UUID(), endpoint: browserResult.endpoint, delegate: self))
+    @MainActor func connectToPlayer(endpoint: NWEndpoint) {
+        addNew(ConnectionController(id: UUID(), endpoint: endpoint, delegate: self))
     }
 }

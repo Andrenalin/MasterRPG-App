@@ -42,7 +42,7 @@ extension NetworkProxyController {
     }
 
     @MainActor
-    func startPlayerGame(to model: BrowserDeviceModel?) async -> Bool {
+    func startPlayerGame(to model: BrowserGameModel?) async -> Bool {
         let name = self.model.name
         Logger.networking.debug("NetworkProxy: start player game \(name)")
         if let model {

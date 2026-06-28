@@ -12,9 +12,9 @@ protocol PlayerNetworkControllerDelegate: Sendable & AnyObject {
 
 protocol PlayerNetworkControllable: Sendable & AnyObject {
     var networkModel: PlayerNetworkNodel { get }
-    var browserController: BrowserController { get }
+    var browserManager: BrowserManager { get }
 
-    @MainActor func toggleConnection(to model: BrowserDeviceModel) async
+    @MainActor func toggleConnection(to model: BrowserGameModel) async
     @MainActor func stop() async
 
     func request(with content: MessageMapper?) async
@@ -84,7 +84,7 @@ final class PlayerNetworkNodel: @unchecked Sendable {
 final class PlayerNetworkControllableSpyingStub: PlayerNetworkControllable, @unchecked Sendable {
     // MARK: - Required Protocol Properties
 
-    let browserController: BrowserController
+    let browserManager: BrowserManager
     @MainActor
     let networkModel: PlayerNetworkNodel
 
@@ -99,8 +99,8 @@ final class PlayerNetworkControllableSpyingStub: PlayerNetworkControllable, @unc
 
     // MARK: - Spy: Captured Arguments
 
-    /// Last device model passed to `toggleConnection(to:)`
-    public var lastToggledDevice: BrowserDeviceModel?
+    /// Last game model passed to `toggleConnection(to:)`
+    public var lastToggledGame: BrowserGameModel?
     /// Last message mapper passed to `request(with:)`
     public var lastRequestData: MessageMapper?
 
@@ -108,19 +108,19 @@ final class PlayerNetworkControllableSpyingStub: PlayerNetworkControllable, @unc
 
     @MainActor
     init(
-        browserController: BrowserController = BrowserController(),
+        browserManager: BrowserManager = BrowserManager(),
         networkModel: PlayerNetworkNodel = PlayerNetworkNodel()
     ) {
-        self.browserController = browserController
+        self.browserManager = browserManager
         self.networkModel = networkModel
     }
 
     // MARK: - Protocol Methods
 
     @MainActor
-    func toggleConnection(to model: BrowserDeviceModel) async {
+    func toggleConnection(to model: BrowserGameModel) async {
         calledToggleConnection += 1
-        lastToggledDevice = model
+        lastToggledGame = model
     }
 
     @MainActor

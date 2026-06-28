@@ -8,20 +8,18 @@ struct BrowserView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            if !playerNetworkControllable.browserController.model.browsers.isEmpty {
-                Text(playerNetworkControllable.browserController.model.statusMessage, bundle: .module)
+            if !playerNetworkControllable.browserManager.games.isEmpty {
+                Text("Found \(playerNetworkControllable.browserManager.games.count) Players", bundle: .module)
             }
-            ForEach(playerNetworkControllable.browserController.model.browsers) { browser in
+            ForEach(playerNetworkControllable.browserManager.games) { browser in
                 BrowserRowView(root: root, playerNetworkControllable: playerNetworkControllable, model: browser)
             }
-            
-            GameBrowserView()
         }
         .onAppear {
-            playerNetworkControllable.browserController.start()
+            playerNetworkControllable.browserManager.start()
         }
         .animation(.default, value: playerNetworkControllable.networkModel.isConnected)
-        .animation(.default, value: playerNetworkControllable.browserController.isBrowsing)
+        .animation(.default, value: playerNetworkControllable.browserManager.isBrowsing)
     }
 }
 

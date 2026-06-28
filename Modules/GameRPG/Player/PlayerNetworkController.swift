@@ -10,7 +10,7 @@ final class PlayerNetworkController {
     // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
     nonisolated(unsafe) private weak var delegate: (any PlayerNetworkControllerDelegate)?
 
-    let browserController: BrowserController
+    let browserManager: BrowserManager
     let networkModel: PlayerNetworkNodel
 
     @MainActor
@@ -18,7 +18,7 @@ final class PlayerNetworkController {
         self.networkModel = PlayerNetworkNodel(name: name)
         self.proxy = proxy
         self.delegate = delegate
-        self.browserController = BrowserController(proxy: proxy)
+        self.browserManager = BrowserManager(serviceType: proxy ? .proxyClient : .player)
         Logger.playerNetworkController.debug("PlayerNetworkController: Init")
     }
 
@@ -29,18 +29,19 @@ final class PlayerNetworkController {
 
 extension PlayerNetworkController: PlayerNetworkControllable {
     @MainActor
-    func toggleConnection(to model: BrowserDeviceModel) async {
+    func toggleConnection(to model: BrowserGameModel) async {
         Logger.networking.debug("PlayerNetworkController: Start")
         guard networkModel.playerConnectionId == nil else {
             await stop()
             return
         }
 
-        guard let playerModel = await browserController.playerConection(for: model) else { return }
+        let endpoint = browserManager.nwEndpoint(for: model)
+        let playerModel = PlayerBrowserModel(name: model.deviceName, endpoint: endpoint, interface: nil)
         networkModel.model = playerModel
         networkModel.playerConnectionId = model.id
         await start(model: playerModel)
-        
+
         observeRemovedConnection()
     }
 
@@ -68,7 +69,7 @@ private extension PlayerNetworkController {
         await networkModel.reset(controller: ConnectionController(id: UUID(), endpoint: model.endpoint, delegate: self))
         await networkModel.connectionController?.startConnection()
     }
-    
+
     func restart(nwConnection: NWConnection) async {
         Logger.playerNetworkController.debug("PlayerConnection: Restart connection")
         await networkModel.reset(controller: ConnectionController(id: UUID(), connection: nwConnection, delegate: self))
@@ -120,14 +121,14 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
     }
 }
 
-// MARK: - Observe BrowserController for Lost Connection
+// MARK: - Observe BrowserManager for Lost Connection
 
 extension PlayerNetworkController {
     @MainActor
     func observeRemovedConnection() {
         guard networkModel.model != nil else { return }
         _ = withObservationTracking {
-            browserController.model.removed
+            browserManager.removed
         } onChange: { [weak self] in
             Task { @concurrent in
                 await self?.checkForRemoval()
@@ -138,16 +139,17 @@ extension PlayerNetworkController {
     @MainActor
     func checkForRemoval() async {
         guard networkModel.model != nil else { return }
-        for result in browserController.model.removed {
-            await removedConnection(for: result)
+        for game in browserManager.removed {
+            let endpoint = browserManager.nwEndpoint(for: game)
+            await removedConnection(endpoint: endpoint)
         }
         observeRemovedConnection()
     }
-    
-    func removedConnection(for result: NWBrowser.Result) async {
+
+    func removedConnection(endpoint: NWEndpoint) async {
         guard let model = await networkModel.model else { return }
-        Logger.playerNetworkController.debug("PlayerNetworkController: RemovedConnection \(result.endpoint.debugDescription)")
-        if model.endpoint == result.endpoint {
+        Logger.playerNetworkController.debug("PlayerNetworkController: RemovedConnection \(endpoint.debugDescription)")
+        if model.endpoint == endpoint {
             await lostConnection(for: UUID())
         }
     }

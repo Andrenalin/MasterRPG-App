@@ -99,7 +99,7 @@ final class PlayerController: Sendable {
 
 extension PlayerController {
     @MainActor
-    func start(to model: BrowserDeviceModel?) async -> Bool {
+    func start(to model: BrowserGameModel?) async -> Bool {
         Logger.networking.debug("PlayerController: Start")
         if root.gameModel.gameType == .player {
             root.networkProxyStore.startProxyServer()

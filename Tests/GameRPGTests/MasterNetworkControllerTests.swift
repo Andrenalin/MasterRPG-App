@@ -50,7 +50,7 @@ struct MasterNetworkControllerTests {
         #expect(isStreaming)
         await #expect(env.controller.networkModel.connections.isEmpty)
         #expect(env.listenerSpy.calledStartListening == 1)
-        await #expect(env.controller.networkModel.browserController?.isBrowsing ?? false)
+        await #expect(env.controller.networkModel.browserManager?.isBrowsing ?? false)
     }
 
     @Test("Toggle streaming stops and restarts services")
@@ -66,7 +66,7 @@ struct MasterNetworkControllerTests {
         var isStreaming = await env.controller.networkModel.isStreaming
         #expect(!isStreaming)
         await #expect(env.controller.networkModel.connections.isEmpty)
-        await #expect((env.controller.networkModel.browserController?.isBrowsing ?? false) == false)
+        await #expect((env.controller.networkModel.browserManager?.isBrowsing ?? false) == false)
 
         // Act - Toggle back on
         await env.controller.toggleStreaming()
@@ -76,7 +76,7 @@ struct MasterNetworkControllerTests {
         #expect(isStreaming)
         await #expect(env.controller.networkModel.connections.isEmpty)
         #expect(env.listenerSpy.calledStartListening == 2)
-        await #expect(env.controller.networkModel.browserController?.isBrowsing ?? false)
+        await #expect(env.controller.networkModel.browserManager?.isBrowsing ?? false)
     }
 
     @Test("New connection adds to connections list")

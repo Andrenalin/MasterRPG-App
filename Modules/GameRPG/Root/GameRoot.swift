@@ -308,7 +308,7 @@ extension GameRoot {
     }
 
     @MainActor
-    func startGame(to model: BrowserDeviceModel?, mode: GameType) async {
+    func startGame(to model: BrowserGameModel?, mode: GameType) async {
         if (mode == .proxy || mode == .observer || mode == .demo) {
             gameModel.selectedCharacter = nil
         }

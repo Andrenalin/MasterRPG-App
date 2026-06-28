@@ -6,23 +6,23 @@ import Foundation
 
 final class PlayerStoreAbstractionMock: PlayerNetworkControllable, @unchecked Sendable {
     @MainActor
-    init(browserController: BrowserController = BrowserController(), networkModel: PlayerNetworkNodel = PlayerNetworkNodel(), calledStop: Int = 0, calledToggleConnection: Int = 0, calledRequest: Int = 0, requestData: (any MessageMapper)? = nil) {
-        self.browserController = browserController
+    init(browserManager: BrowserManager = BrowserManager(), networkModel: PlayerNetworkNodel = PlayerNetworkNodel(), calledStop: Int = 0, calledToggleConnection: Int = 0, calledRequest: Int = 0, requestData: (any MessageMapper)? = nil) {
+        self.browserManager = browserManager
         self.networkModel = networkModel
         self.calledStop = calledStop
         self.calledToggleConnection = calledToggleConnection
         self.calledRequest = calledRequest
         self.requestData = requestData
     }
-    
-    let browserController: BrowserController
+
+    let browserManager: BrowserManager
     let networkModel: PlayerNetworkNodel
 
     var calledStop = 0
     var calledToggleConnection = 0
     var calledRequest = 0
 
-    func toggleConnection(to _: BrowserDeviceModel) {
+    func toggleConnection(to _: BrowserGameModel) {
         calledToggleConnection += 1
     }
 

@@ -33,7 +33,7 @@ final class MasterNetworkNodel: @unchecked Sendable {
     var connections: [ConnectionController] = []
     var isStreaming: Bool = false
     
-    @ObservationIgnored var browserController: BrowserController? = nil
+    @ObservationIgnored var browserManager: BrowserManager? = nil
     var browserConnections: [NWEndpoint] = []
     @ObservationIgnored var listener: ListenerControllable? = nil
     

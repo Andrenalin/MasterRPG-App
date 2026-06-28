@@ -6,7 +6,7 @@ import SwiftUI
 struct BrowserRowView: View {
     let root: GameRoot
     let playerNetworkControllable: any PlayerNetworkControllable
-    let model: BrowserDeviceModel
+    let model: BrowserGameModel
 
     @Environment(\.browserMode) private var browserMode
 
@@ -75,12 +75,4 @@ private extension BrowserRowView {
         let id = playerNetworkControllable.networkModel.playerConnectionId
         return id != nil && id != model.id
     }
-}
-
-#Preview {
-    BrowserRowView(
-        root: .preview,
-        playerNetworkControllable: PlayerNetworkController(name: "TestPlayer"),
-        model: BrowserDeviceModel(id: UUID(), deviceName: "iPad 10", connectionMode: .observer)
-    )
 }

@@ -67,7 +67,7 @@ extension NetworkController {
     }
 
     @MainActor
-    func startPlayerGame(to model: BrowserDeviceModel?) async -> Bool {
+    func startPlayerGame(to model: BrowserGameModel?) async -> Bool {
         let name = self.model.name
         Logger.networking.debug("NetworkController: start player game \(name, privacy: .public)")
         if let model {

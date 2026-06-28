@@ -23,7 +23,7 @@ struct SearchProxyView: View {
                 }
 
                 if let observerController = root.networkStore.model.playerStore {
-                    ForEach(observerController.browserController.model.browsers) { browser in
+                    ForEach(observerController.browserManager.games) { browser in
                         BrowserRowView(root: root, playerNetworkControllable: observerController, model: browser)
                             .environment(\.browserMode, .observer)
                     }
@@ -39,19 +39,19 @@ struct SearchProxyView: View {
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .onAppear {
-            root.networkStore.model.playerStore?.browserController.start()
-            root.networkProxyStore.model.playerNetworkController?.browserController.start()
+            root.networkStore.model.playerStore?.browserManager.start()
+            root.networkProxyStore.model.playerNetworkController?.browserManager.start()
         }
     }
 }
 
 private extension SearchProxyView {
-    func visibleProxyBrowsers(for controller: any PlayerNetworkControllable) -> [BrowserDeviceModel] {
+    func visibleProxyBrowsers(for controller: any PlayerNetworkControllable) -> [BrowserGameModel] {
         let observerNames = Set(
-            (root.networkStore.model.playerStore?.browserController.model.browsers ?? [])
+            (root.networkStore.model.playerStore?.browserManager.games ?? [])
                 .map { $0.deviceName }
         )
-        return controller.browserController.model.browsers.filter { !observerNames.contains($0.deviceName) }
+        return controller.browserManager.games.filter { !observerNames.contains($0.deviceName) }
     }
 }
 
