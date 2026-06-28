@@ -26,6 +26,9 @@ final class MasterControllerModel: Sendable {
     }
     
     func add(connectionId: ConnectionController.ID, playerId: UUID) {
+        // Evict any stale entry for this player from a previous connection,
+        // so lostPlayer(oldConnectionId) doesn't remove a player who has already reconnected.
+        connectIDPlayers = connectIDPlayers.filter { $0.value != playerId }
         connectIDPlayers[connectionId] = playerId
     }
     

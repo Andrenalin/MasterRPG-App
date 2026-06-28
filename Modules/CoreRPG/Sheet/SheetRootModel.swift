@@ -31,7 +31,19 @@ public final class SheetRootModel: Sendable {
         // Initialize lastIsShown to match isShown so first search clear works correctly
         initializeLastIsShownState(sheetModel: sheetModel)
     }
-    
+
+    // Use this init in fake/testing contexts where rootManager is not yet available.
+    // FakeSheetController.sheet ignores the root parameter anyway, so passing
+    // the SheetModel directly avoids the force-unwrap in FakeLinkController.rootManager.
+    public init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, sheetModel: SheetModel, isEditor: Bool) {
+        self.linkControllable = linkControllable
+        self.sheetControllable = sheetControllable
+        self.isEditor = isEditor
+        self.sheetModel = sheetModel
+        self.editorModel = SheetEditorModel(itemId: sheetModel.source.itemId, module: sheetModel.source.typeId)
+        initializeLastIsShownState(sheetModel: sheetModel)
+    }
+
     let isEditor: Bool
     public let editorModel: SheetEditorModel
     public private(set)var sheetModel: SheetModel

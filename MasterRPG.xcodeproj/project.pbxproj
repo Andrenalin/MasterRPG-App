@@ -1636,6 +1636,7 @@
 		8E8A40AB2FC125470049C6B5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				GameRPGTests/MasterControllerConnectionTests.swift,
 				GameRPGTests/MasterNetworkControllerTests.swift,
 				GameRPGTests/MasterPlayerControllerTests.swift,
 				GameRPGTests/Mocks/ConnectionAbstractionMock.swift,
