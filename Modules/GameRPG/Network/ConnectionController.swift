@@ -25,26 +25,27 @@ final class ConnectionController: Sendable, Identifiable {
     private let connection: NWConnection
     // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
     nonisolated(unsafe) private weak var delegate: (any ConnectionControllerDelegate)?
-    
+    // Owned receive task. Written on @MainActor (startConnection/cancel), read on concurrent (NWConnection handler).
+    // Both sides are serialised through NWConnection's internal queue, so nonisolated(unsafe) is safe here.
+    nonisolated(unsafe) private var receiveTask: Task<Void, Never>?
+
     init(id: UUID, endpoint: NWEndpoint, delegate: ConnectionControllerDelegate) {
         self.id = id
         self.connection = NWConnection.connection(endpoint: endpoint)
         self.delegate = delegate
-        let connectionContext = connection.debugDescription
-        Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init \(connectionContext, privacy: .public)")
+        Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init endpoint")
     }
-    
+
     init(id: UUID, connection: NWConnection, delegate: ConnectionControllerDelegate) {
         self.id = id
         self.connection = connection
         self.delegate = delegate
-        let connectionContext = connection.debugDescription
-        Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init \(connectionContext, privacy: .public)")
+        Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init connection")
     }
 }
 
 extension ConnectionController: ConnectionControllable {
-    
+
     func sendResponse(data: MessageMapper?) {
         let uuid = id.uuidString
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Send data")
@@ -57,95 +58,101 @@ extension ConnectionController: ConnectionControllable {
         request(type: .gameData, with: content)
     }
 
-    // Handle starting the peer-to-peer connection for both inbound and outbound connections.
     func startConnection() {
-        let connectionContext = connection.debugDescription
         let uuid = id.uuidString
-        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Start \(connectionContext, privacy: .public)")
+        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Start")
 
         connection.stateUpdateHandler = { [self] newState in
             Task { @concurrent in
                 await self.stateChanged(newState)
             }
         }
-
-        // Start the connection establishment.
         connection.start(queue: .main)
     }
-    
-    // Handle the user exiting the game.
+
     func cancel() {
+        receiveTask?.cancel()
+        receiveTask = nil
         connection.cancel()
     }
 
-    // MARK: - Player requests
     func request(type: GameMessageType, with content: MessageMapper?) {
         let message = NWProtocolFramer.Message(gameMessageType: type)
         let context = NWConnection.ContentContext(identifier: "PlayerRequest", metadata: [message])
-
         connection.send(content: content?.encodeData(), contentContext: context, isComplete: true, completion: .idempotent)
     }
 
-    // MARK: - Master response
     func response(type: GameMessageType, with content: MessageMapper?) {
         let message = NWProtocolFramer.Message(gameMessageType: type)
         let context = NWConnection.ContentContext(identifier: "MasterResponse", metadata: [message])
-
         connection.send(content: content?.encodeData(), contentContext: context, isComplete: true, completion: .idempotent)
     }
 }
 
 private extension ConnectionController {
     func stateChanged(_ newState: NWConnection.State) async {
-        let connectionContext = connection.debugDescription
         let uuid = id.uuidString
 
         switch newState {
         case .ready:
-            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Established \(connectionContext, privacy: .public)")
-            receiveNextMessage()
+            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Ready")
+            startReceiveLoop()
             await connectionReady()
 
         case let .failed(error):
-            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(connectionContext, privacy: .public) with error \(error.localizedDescription)")
+            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(error.localizedDescription, privacy: .public)")
             cancel()
             await connectionFailed(message: error.localizedDescription)
 
         case .cancelled:
-            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Cancelled \(connectionContext, privacy: .public)")
+            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Cancelled")
             await lostConnection()
 
         default:
             break
         }
     }
-}
 
-private extension ConnectionController {
-    // Receive a message, deliver it to your delegate, and continue receiving more messages.
-    func receiveNextMessage() {
-        connection.receiveMessage { [self] content, context, _, error in
-            Task { @concurrent in
-                await process(content: content, context: context, error: error)
-            }
+    func startReceiveLoop() {
+        receiveTask = Task { [weak self] in
+            guard let self else { return }
+            await self.receiveLoop()
         }
     }
-    
+
+    func receiveLoop() async {
+        while !Task.isCancelled {
+            let shouldContinue = await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
+                connection.receiveMessage { [weak self] content, context, _, error in
+                    guard let self else {
+                        continuation.resume(returning: false)
+                        return
+                    }
+                    Task { @concurrent in
+                        await self.process(content: content, context: context, error: error)
+                        continuation.resume(returning: error == nil)
+                    }
+                }
+            }
+            if !shouldContinue { break }
+        }
+    }
+
     func process(content: Data?, context: NWConnection.ContentContext?, error: Error?) async {
-        guard error == nil, let gameMessage = context?.protocolMetadata(definition: GameProtocol.definition) as? NWProtocolFramer.Message else {
+        guard error == nil,
+              let gameMessage = context?.protocolMetadata(definition: GameProtocol.definition) as? NWProtocolFramer.Message
+        else {
             let uuid = id.uuidString
-            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error?.localizedDescription ?? "Message is not from MasterRPG")")
-            cancel()
-            await connectionFailed(message: error?.localizedDescription ?? "Message is not from MasterRPG")
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error?.localizedDescription ?? "Message is not from MasterRPG", privacy: .public)")
+            if error != nil {
+                cancel()
+                await connectionFailed(message: error?.localizedDescription ?? "Message is not from MasterRPG")
+            }
             return
         }
-
         await receivedMessage(content: content, message: gameMessage)
-        receiveNextMessage()
     }
 }
-
-// MARK: - ConnectionController Delegate calls
 
 extension ConnectionController {
     func lostConnection() async {
@@ -156,7 +163,7 @@ extension ConnectionController {
 
     func connectionReady() async {
         let uuid = id.uuidString
-        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Ready")
+        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Established")
         await delegate?.readyConnection(for: id)
     }
 
@@ -169,7 +176,7 @@ extension ConnectionController {
     func receivedMessage(content: Data?, message: NWProtocolFramer.Message) async {
         guard message.gameMessageType == .gameData else {
             let uuid = id.uuidString
-            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Invalid message")
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Invalid message type")
             return
         }
         await delegate?.received(data: content, for: id)
@@ -179,4 +186,3 @@ extension ConnectionController {
 public extension Logger {
     static let connectionController = Logger(subsystem: subsystem, category: "ConnectionController")
 }
-

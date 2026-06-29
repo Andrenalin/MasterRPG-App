@@ -115,7 +115,7 @@ struct NetworkStoreTests {
 
         // Act & Assert - Start player game with device (should succeed)
         let connectResult = await env.networkController.startPlayerGame(
-            to: BrowserDeviceModel(id: UUID(), deviceName: "MasterTestDevice", connectionMode: .observer)
+            to: await BrowserGameModel(id: UUID(), endpointName: "MasterTestDevice", connectionMode: .observer)
         )
         #expect(connectResult)
         #expect(env.playerNetworkSpy.calledToggleConnection == 1)

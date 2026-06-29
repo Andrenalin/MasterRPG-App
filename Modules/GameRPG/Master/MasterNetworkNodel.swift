@@ -35,7 +35,7 @@ final class MasterNetworkNodel: @unchecked Sendable {
     
     @ObservationIgnored var browserManager: BrowserManager? = nil
     var browserConnections: [NWEndpoint] = []
-    @ObservationIgnored var listener: ListenerControllable? = nil
+    @ObservationIgnored var listener: (any ListenerManaging)? = nil
     
     func removeConnection(id: ConnectionController.ID) -> Bool {
         guard let index = connections.firstIndex(where: { $0.id == id }) else { return false }

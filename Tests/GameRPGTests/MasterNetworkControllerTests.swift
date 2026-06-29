@@ -22,7 +22,7 @@ struct MasterNetworkControllerTestEnvironment {
         let controller = await MasterNetworkController(
             name: name,
             delegate: delegateSpy,
-            listnerBuilder: { _, _, _ in listenerSpy }
+            listnerBuilder: { _, _, _ in listenerSpy as any ListenerManaging }
         )
 
         return MasterNetworkControllerTestEnvironment(
@@ -190,7 +190,7 @@ struct MasterNetworkControllerTests {
         await env.controller.startStreaming()
 
         // Act
-        await env.controller.cancelled()
+        await env.controller.listenerCancelled()
 
         // Assert
         let isStreaming = await env.controller.networkModel.isStreaming

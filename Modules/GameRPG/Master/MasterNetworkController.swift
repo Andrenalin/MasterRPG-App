@@ -8,21 +8,19 @@ import CoreRPG
 final class MasterNetworkController: Sendable {
     // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
     nonisolated(unsafe) private weak var delegate: (any MasterNetworkControllerDelegate)?
-    let listnerBuilder: @Sendable (String, Bool, ListenerControllerDelegate) -> ListenerControllable
+    let listnerBuilder: @MainActor @Sendable (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging
     let networkModel: MasterNetworkNodel
 
-    static func gameListnerBuilder() -> @Sendable (String, Bool, ListenerControllerDelegate) -> ListenerControllable {
+    static func gameListnerBuilder() -> @MainActor @Sendable (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging {
         return { name, proxy, delegate in
-            if proxy {
-                return ListenerController(proxy: name, delegate: delegate)
-            } else {
-                return ListenerController(master: name, delegate: delegate)
-            }
+            let manager = ListenerManager(name: name, serviceType: proxy ? .proxyServer : .player)
+            manager.delegate = delegate
+            return manager
         }
     }
 
     @MainActor
-    init(name: String, delegate: MasterNetworkControllerDelegate? = nil, listnerBuilder: @Sendable @escaping (String, Bool, ListenerControllerDelegate) -> ListenerControllable) {
+    init(name: String, delegate: MasterNetworkControllerDelegate? = nil, listnerBuilder: @MainActor @Sendable @escaping (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging) {
         self.networkModel = MasterNetworkNodel(name: name)
         self.delegate = delegate
         self.listnerBuilder = listnerBuilder
@@ -88,7 +86,7 @@ extension MasterNetworkController: MasterNetworkControllable {
     private func resetConntections() {
         networkModel.browserManager?.stop()
         networkModel.browserManager = nil
-        networkModel.listener?.stopListnening()
+        networkModel.listener?.stopListening()
         networkModel.listener = nil
         networkModel.browserConnections = []
         networkModel.connections = []
@@ -137,16 +135,21 @@ extension MasterNetworkController: ConnectionControllerDelegate {
     }
 }
 
-// MARK: - GameListnerDelegate
+// MARK: - ListenerManagerDelegate
 
-extension MasterNetworkController: ListenerControllerDelegate {
-    func cancelled() async {
+extension MasterNetworkController: ListenerManagerDelegate {
+    func listenerCancelled() async {
         await stopStreaming()
     }
 
+    func listenerNewConnection(_ connection: NWConnection) async {
+        Logger.networking.debug("MasterNetworkController: New Connection")
+        await addNew(ConnectionController(id: UUID(), connection: connection, delegate: self))
+    }
+
+    /// Convenience accessor used by tests to inject a connection directly.
     func newConnection(for nwConnection: NWConnection) async {
-        Logger.networking.debug("MasterNetworkController: New Connection \(nwConnection.debugDescription)")
-        await addNew(ConnectionController(id: UUID(), connection: nwConnection, delegate: self))
+        await listenerNewConnection(nwConnection)
     }
 }
 

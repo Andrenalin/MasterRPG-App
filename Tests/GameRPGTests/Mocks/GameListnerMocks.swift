@@ -5,27 +5,27 @@ import Network
 
 @testable import GameRPG
 
-final class GameListnerAbstractionMock: ListenerControllable, @unchecked Sendable {
+final class GameListnerAbstractionMock: ListenerManaging, @unchecked Sendable {
     var calledStopListening = 0
-    func stopListnening() {
+    @MainActor func stopListening() {
         calledStopListening += 1
     }
-    
+
     var calledStartListening = 0
-    func startListening() {
+    @MainActor func startListening() {
         calledStartListening += 1
     }
 }
 
-final class GameListnerDelegateMock: ListenerControllerDelegate, @unchecked Sendable {
+final class GameListnerDelegateMock: ListenerManagerDelegate, @unchecked Sendable {
     var calledCancelled = 0
     var calledNewConnection = 0
 
-    func cancelled() {
+    func listenerCancelled() async {
         calledCancelled += 1
     }
 
-    func newConnection(for _: NWConnection) {
+    func listenerNewConnection(_ connection: NWConnection) async {
         calledNewConnection += 1
     }
 }

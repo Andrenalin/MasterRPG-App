@@ -70,17 +70,22 @@ private extension PlayerNetworkController {
         await networkModel.connectionController?.startConnection()
     }
 
-    func restart(nwConnection: NWConnection) async {
+    func restart(connection: NWConnection) async {
         Logger.playerNetworkController.debug("PlayerConnection: Restart connection")
-        await networkModel.reset(controller: ConnectionController(id: UUID(), connection: nwConnection, delegate: self))
+        await networkModel.reset(controller: ConnectionController(id: UUID(), connection: connection, delegate: self))
         await networkModel.connectionController?.startConnection()
     }
 
     func startPlayerServer() async {
         guard await networkModel.listener == nil else { return }
         Logger.networking.debug("PlayerNetworkController: Create Listener")
-        await networkModel.reset(listener: await ListenerController(player: networkModel.name, delegate: self))
-        await networkModel.listener?.startListening()
+        await MainActor.run { [weak self] in
+            guard let self else { return }
+            let manager = ListenerManager(name: networkModel.name, serviceType: .master)
+            manager.delegate = self
+            networkModel.reset(listener: manager)
+            manager.startListening()
+        }
     }
 }
 
@@ -148,28 +153,28 @@ extension PlayerNetworkController {
 
     func removedConnection(endpoint: NWEndpoint) async {
         guard let model = await networkModel.model else { return }
-        Logger.playerNetworkController.debug("PlayerNetworkController: RemovedConnection \(endpoint.debugDescription)")
+        Logger.playerNetworkController.debug("PlayerNetworkController: RemovedConnection \(endpoint.debugDescription, privacy: .public)")
         if model.endpoint == endpoint {
             await lostConnection(for: UUID())
         }
     }
 }
 
-// MARK: - ListenerControllerDelegate
+// MARK: - ListenerManagerDelegate
 
-extension PlayerNetworkController: ListenerControllerDelegate {
-    func cancelled() async {
+extension PlayerNetworkController: ListenerManagerDelegate {
+    func listenerCancelled() async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Listener cancelled")
         await networkModel.reset(listener: nil)
         await stop()
     }
 
-    func newConnection(for nwConnection: NWConnection) async {
+    func listenerNewConnection(_ connection: NWConnection) async {
         await networkModel.reset(listener: nil)
         await networkModel.reset(isConnected: false)
         if await networkModel.connectionState == .lost {
-            Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection \(nwConnection.debugDescription)")
-            await restart(nwConnection: nwConnection)
+            Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection")
+            await restart(connection: connection)
         }
         await networkModel.reset(state: .notReady)
     }

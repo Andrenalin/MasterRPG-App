@@ -55,12 +55,12 @@ final class PlayerNetworkNodel: @unchecked Sendable {
         self.connectionController = controller
     }
 
-    func reset(listener: ListenerController?) {
+    func reset(listener: (any ListenerManaging)?) {
         self.listener = listener
     }
 
     @ObservationIgnored var connectionController: ConnectionController? = nil
-    @ObservationIgnored var listener: ListenerController? = nil
+    @ObservationIgnored var listener: (any ListenerManaging)? = nil
 }
 
 #if DEBUG

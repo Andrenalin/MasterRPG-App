@@ -80,7 +80,7 @@ final class BrowserManager {
     }
 
     func nwEndpoint(for game: BrowserGameModel) -> NWEndpoint {
-        .service(name: game.endpoint.name, type: serviceType.serviceName, domain: "local.", interface: nil)
+        .service(name: game.endpointName, type: serviceType.serviceName, domain: "local.", interface: nil)
     }
 
     private func cancelTasks() {
@@ -106,11 +106,11 @@ final class BrowserManager {
 
     private func updateGames(from endpoints: [Bonjour.Endpoint]) {
         let newNames = Set(endpoints.map { $0.name })
-        removed = games.filter { !newNames.contains($0.endpoint.name) }
-        games.removeAll { !newNames.contains($0.endpoint.name) }
-        let existing = Set(games.map { $0.endpoint.name })
+        removed = games.filter { !newNames.contains($0.endpointName) }
+        games.removeAll { !newNames.contains($0.endpointName) }
+        let existing = Set(games.map { $0.endpointName })
         for endpoint in endpoints where !existing.contains(endpoint.name) {
-            games.append(BrowserGameModel(id: UUID(), endpoint: endpoint, connectionMode: serviceType.connectionMode))
+            games.append(BrowserGameModel(id: UUID(), endpointName: endpoint.name, connectionMode: serviceType.connectionMode))
             Logger.browserController.log("Found endpoint: \(endpoint.name)")
         }
     }
@@ -119,16 +119,16 @@ final class BrowserManager {
 @Observable @MainActor
 final class BrowserGameModel: Identifiable {
     let id: UUID
-    let endpoint: Bonjour.Endpoint
+    let endpointName: String
     let connectionMode: BrowserConnectionMode
 
     var deviceName: String {
-        String(endpoint.name.prefix(while: { $0 != "." }))
+        String(endpointName.prefix(while: { $0 != "." }))
     }
 
-    init(id: UUID, endpoint: Bonjour.Endpoint, connectionMode: BrowserConnectionMode) {
+    init(id: UUID, endpointName: String, connectionMode: BrowserConnectionMode) {
         self.id = id
-        self.endpoint = endpoint
+        self.endpointName = endpointName
         self.connectionMode = connectionMode
     }
 }
