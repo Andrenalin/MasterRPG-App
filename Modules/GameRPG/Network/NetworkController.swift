@@ -180,12 +180,6 @@ extension NetworkController: PlayerNetworkControllerDelegate {
 // MARK: - SharePlay
 
 extension NetworkController: SharePlayControllerDelegate {
-    func handleInitial(_ model: GameNetworkModel) {
-        Task { @concurrent in
-            await self.model.playerDelegate?.received(model)
-        }
-    }
-
     func handleUpdate(_ model: GameNetworkModel, id: UUID) {
         Task { @concurrent in
             await self.model.playerDelegate?.received(model)

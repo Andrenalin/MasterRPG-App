@@ -112,7 +112,7 @@ actor ListenerServerController {
     }
 
     func run() async throws {
-        let listener = try NWListener(using: NWParameters(passcode: "GameMasterCode"))
+        let listener = try NWListener(using: NWParameters(passcode: GameSecurity.passcode))
         listener.service = NWListener.Service(name: name, type: serviceType.serviceName)
 
         listener.stateUpdateHandler = { [weak self] state in

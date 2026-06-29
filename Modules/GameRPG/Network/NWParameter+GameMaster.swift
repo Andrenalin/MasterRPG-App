@@ -18,7 +18,7 @@ extension NWConnection: ConnectionAbstraction {}
 
 extension NWConnection {
     static func connection(endpoint: NWEndpoint) -> NWConnection {
-        NWConnection(to: endpoint, using: NWParameters(passcode: "GameMasterCode"))
+        NWConnection(to: endpoint, using: NWParameters(passcode: GameSecurity.passcode))
     }
 }
 
