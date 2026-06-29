@@ -32,8 +32,8 @@ final class MasterPlayerControllerTests {
     private var playerDelegateMock: PlayerNetworkStoreDelegateMock!
     private var masterStoreAbstractionMock: MasterNetworkControllableMock!
     private var playerStoreAbstractionMock: PlayerStoreAbstractionMock!
-    private var networkMock: NetworkController!
-    private var networkProxyMock: NetworkProxyController!
+    private var networkMock: GameNetworkController!
+    private var networkProxyMock: GameNetworkController!
 
     func setUp() async throws {
         masterDeleagteMock = MasterNetworkStoreDelegateMock()
@@ -41,17 +41,17 @@ final class MasterPlayerControllerTests {
         let masterMock = await MasterNetworkControllableMock()
         let playerMock = await PlayerStoreAbstractionMock()
 
-        networkMock = await NetworkController(name: "Hello Test", masterBuilder: { _, _ in
+        networkMock = await GameNetworkController(name: "Hello Test", proxy: false, masterBuilder: { _, _ in
             masterMock
         }, playerBuilder: { _, _ in
             playerMock
         })
-        await networkMock.model.setMaster(delegate: masterDeleagteMock)
-        await networkMock.model.setPlayer(delegate: playerDelegateMock)
+        await networkMock.model.setMasterDelegate(masterDeleagteMock)
+        await networkMock.model.setPlayerDelegate(playerDelegateMock)
         masterStoreAbstractionMock = masterMock
         playerStoreAbstractionMock = playerMock
 
-        networkProxyMock = await NetworkProxyController(name: "Hello Test", masterBuilder: { _, _ in
+        networkProxyMock = await GameNetworkController(name: "Hello Test", proxy: true, masterBuilder: { _, _ in
             masterMock
         }, playerBuilder: { _, _ in
             playerMock

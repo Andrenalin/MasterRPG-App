@@ -172,13 +172,13 @@ struct ConverterControllerTests {
         let childId = await root.itemController.addNew(type: .item)
 
         // Sub-item has correct groupId but displayState was reset to 0 (visible)
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = await root.itemController.itemOrEmpty(for: childId).copy()
         child.displayState = 0     // should be 1
         child.groupId  = ownerId
         child.parentId = nil
         await root.itemController.replace(model: child, isInsert: false)
 
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = await root.itemController.itemOrEmpty(for: ownerId).copy()
         owner.entries.append(ValueEntryModel(id: UUID(), name: "SubEntry", type: .text, value: "", valueId: childId))
         await root.itemController.replace(model: owner, isInsert: false)
 

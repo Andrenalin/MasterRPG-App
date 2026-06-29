@@ -20,7 +20,7 @@ struct PlayerControllerTestEnvironment {
     let playerDelegateSpy: PlayerNetworkStoreDelegateMock
     let masterNetworkSpy: MasterNetworkControllableMock
     let playerNetworkSpy: PlayerStoreAbstractionMock
-    let networkController: NetworkController
+    let networkController: GameNetworkController
 
     /// Creates a PlayerController with test dependencies
     static func create() async throws -> PlayerControllerTestEnvironment {
@@ -29,13 +29,14 @@ struct PlayerControllerTestEnvironment {
         let masterNetworkSpy = await MasterNetworkControllableMock()
         let playerNetworkSpy = await PlayerStoreAbstractionMock()
 
-        let networkController = await NetworkController(
+        let networkController = await GameNetworkController(
             name: "Hello Test",
+            proxy: false,
             masterBuilder: { _, _ in masterNetworkSpy },
             playerBuilder: { _, _ in playerNetworkSpy }
         )
-        await networkController.model.setMaster(delegate: masterDelegateSpy)
-        await networkController.model.setPlayer(delegate: playerDelegateSpy)
+        await networkController.model.setMasterDelegate(masterDelegateSpy)
+        await networkController.model.setPlayerDelegate(playerDelegateSpy)
 
         let root = try await MockRoot.createGameRoot()
         try await MockRoot.resetTestData(for: root.adventureRoot)

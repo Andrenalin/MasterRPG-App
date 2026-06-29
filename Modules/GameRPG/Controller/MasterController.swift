@@ -50,9 +50,9 @@ final class MasterController: Sendable {
         gameModel.asProxy = asProxy
 
         if asProxy {
-            root.networkProxyStore.model.setMaster(delegate: self)
+            root.networkProxyStore.model.setProxyMasterDelegate(self)
         } else {
-            root.networkStore.model.setMaster(delegate: self)
+            root.networkStore.model.setMasterDelegate(self)
         }
         Logger.networking.debug("MasterController: Init")
     }

@@ -18,7 +18,7 @@ final class PlayerNetworkController {
         self.networkModel = PlayerNetworkNodel(name: name)
         self.proxy = proxy
         self.delegate = delegate
-        self.browserManager = BrowserManager(serviceType: proxy ? .proxyClient : .player)
+        self.browserManager = BrowserManager(serviceType: proxy ? .proxyServer : .player)
         Logger.playerNetworkController.debug("PlayerNetworkController: Init")
     }
 

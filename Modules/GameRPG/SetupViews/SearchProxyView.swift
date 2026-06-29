@@ -29,7 +29,7 @@ struct SearchProxyView: View {
                     }
                 }
 
-                if let proxyController = root.networkProxyStore.model.playerNetworkController {
+                if let proxyController = root.networkProxyStore.model.playerStore {
                     ForEach(visibleProxyBrowsers(for: proxyController)) { browser in
                         BrowserRowView(root: root, playerNetworkControllable: proxyController, model: browser)
                             .environment(\.browserMode, .proxy)
@@ -40,7 +40,7 @@ struct SearchProxyView: View {
         }
         .onAppear {
             root.networkStore.model.playerStore?.browserManager.start()
-            root.networkProxyStore.model.playerNetworkController?.browserManager.start()
+            root.networkProxyStore.model.playerStore?.browserManager.start()
         }
     }
 }

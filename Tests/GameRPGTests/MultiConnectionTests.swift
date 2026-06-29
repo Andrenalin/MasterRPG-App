@@ -44,8 +44,8 @@ struct MultiConnectionTestEnvironment {
     let playerDelegateSpy: PlayerNetworkStoreDelegateMock
     let masterNetworkSpy: MasterNetworkControllableMock
     let playerNetworkSpy: PlayerStoreAbstractionMock
-    let networkController: NetworkController
-    let networkProxyController: NetworkProxyController
+    let networkController: GameNetworkController
+    let networkProxyController: GameNetworkController
 
     /// Creates a complete test environment with master + 3 players
     static func create() async throws -> MultiConnectionTestEnvironment {
@@ -56,16 +56,18 @@ struct MultiConnectionTestEnvironment {
         let masterNetworkSpy = await MasterNetworkControllableMock()
         let playerNetworkSpy = await PlayerStoreAbstractionMock()
 
-        let networkController = await NetworkController(
+        let networkController = await GameNetworkController(
             name: "Hello Test",
+            proxy: false,
             masterBuilder: { _, _ in masterNetworkSpy },
             playerBuilder: { _, _ in playerNetworkSpy }
         )
-        await networkController.model.setMaster(delegate: masterDelegateSpy)
-        await networkController.model.setPlayer(delegate: playerDelegateSpy)
+        await networkController.model.setMasterDelegate(masterDelegateSpy)
+        await networkController.model.setPlayerDelegate(playerDelegateSpy)
 
-        let networkProxyController = await NetworkProxyController(
+        let networkProxyController = await GameNetworkController(
             name: "Hello Test",
+            proxy: true,
             masterBuilder: { _, _ in masterNetworkSpy },
             playerBuilder: { _, _ in playerNetworkSpy }
         )

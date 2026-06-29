@@ -85,8 +85,8 @@ final class PlayerController: Sendable {
         } else {
             proxyMasterController = MasterController(root: root, asProxy: true)
         }
-        root.networkStore.model.setPlayer(delegate: self)
-        root.networkProxyStore.model.setPlayer(delegate: self)
+        root.networkStore.model.setPlayerDelegate(self)
+        root.networkProxyStore.model.setProxyPlayerDelegate(self)
         Logger.networking.debug("PlayerController: Init")
     }
     

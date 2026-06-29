@@ -356,6 +356,7 @@ public extension EditControllable {
                 await delete(itemId: entry.childId)
             } else if !item.specialCategory {
                 linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemControllable.config.module))
+                reset(displayState: 0, itemId: entry.childId)
             }
         }
         
@@ -443,13 +444,19 @@ public extension EditControllable {
         
         guard var item = editModel(for: itemId) else { return }
 
-        // If this is a folder being restored, restore its children
+        // If this is a folder being restored, handle children based on their deletion state
         if item.category == .folder {
             for entry in item.entries {
                 if var entryItem = editModel(for: entry.childId) {
-                    entryItem.parentId = item.id // to this folder
-                    entryItem.displayState = 1 // hidden
-                    save(updated: entryItem, message: String(localized: "Restore parent", bundle: .module).localizedString)
+                    if entryItem.displayState == 2 {
+                        // Child is still marked for deletion — detach it from the restored folder
+                        entryItem.parentId = nil
+                        save(updated: entryItem, message: String(localized: "Restore parent", bundle: .module).localizedString)
+                    } else {
+                        entryItem.parentId = item.id
+                        entryItem.displayState = 1
+                        save(updated: entryItem, message: String(localized: "Restore parent", bundle: .module).localizedString)
+                    }
                 }
             }
         } else {

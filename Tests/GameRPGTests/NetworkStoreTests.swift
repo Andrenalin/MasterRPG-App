@@ -14,22 +14,23 @@ struct NetworkStoreTestEnvironment {
     let playerDelegateSpy: PlayerNetworkStoreDelegateMock
     let masterNetworkSpy: MasterNetworkControllableMock
     let playerNetworkSpy: PlayerStoreAbstractionMock
-    let networkController: NetworkController
+    let networkController: GameNetworkController
 
-    /// Creates a NetworkController with spy dependencies
+    /// Creates a GameNetworkController with spy dependencies
     static func create() async throws -> NetworkStoreTestEnvironment {
         let masterDelegateSpy = MasterNetworkStoreDelegateMock()
         let playerDelegateSpy = PlayerNetworkStoreDelegateMock()
         let masterNetworkSpy = await MasterNetworkControllableMock()
         let playerNetworkSpy = await PlayerStoreAbstractionMock()
 
-        let networkController = await NetworkController(
+        let networkController = await GameNetworkController(
             name: "Hello Test",
+            proxy: false,
             masterBuilder: { _, _ in masterNetworkSpy },
             playerBuilder: { _, _ in playerNetworkSpy }
         )
-        await networkController.model.setMaster(delegate: masterDelegateSpy)
-        await networkController.model.setPlayer(delegate: playerDelegateSpy)
+        await networkController.model.setMasterDelegate(masterDelegateSpy)
+        await networkController.model.setPlayerDelegate(playerDelegateSpy)
 
         return NetworkStoreTestEnvironment(
             masterDelegateSpy: masterDelegateSpy,

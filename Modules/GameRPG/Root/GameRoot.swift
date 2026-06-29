@@ -108,8 +108,8 @@ public final class GameRoot: @unchecked Sendable {
     let audioRoot: AudioRootModel
     let diceRoot: DiceRootModel
     let mapRoot: MapRootModel
-    var networkStore: NetworkController
-    var networkProxyStore: NetworkProxyController
+    var networkStore: GameNetworkController
+    var networkProxyStore: GameNetworkController
     let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel
     let spaceRoot: SpaceRootModel
@@ -132,8 +132,8 @@ public final class GameRoot: @unchecked Sendable {
         self.characterRoot = characterRoot
         self.weatherRoot = weatherRoot
         
-        self.networkStore = NetworkController(name: "Init")
-        self.networkProxyStore = NetworkProxyController(name: "Proxy")
+        self.networkStore = GameNetworkController(name: "Init")
+        self.networkProxyStore = GameNetworkController(proxyName: "Proxy")
         
         self.gameModel = GameModel()
         
