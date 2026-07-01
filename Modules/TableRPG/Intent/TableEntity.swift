@@ -111,7 +111,7 @@ struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         var results: [TableEntity] = []
         for id in ids {
             guard let model = root.itemController.itemSync(for: id) else { continue }
-            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
+            guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
             let entity = TableEntity(root: root, model: model)
             results.append(entity)
         }
@@ -122,6 +122,29 @@ struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         try await suggestedEntities()
     }
 }
+
+#if compiler(>=6.4)
+@available(iOS 27, macOS 27, visionOS 27, *)
+extension TableEntity: SyncableEntity, OwnershipProvidingEntity {
+    var ownership: EntityOwnership { .unknown }
+}
+
+@available(iOS 27, macOS 27, visionOS 27, *)
+extension TableEntityQuery: @preconcurrency IndexedEntityQuery {
+    func reindexEntities(
+        for identifiers: [TableEntity.ID],
+        indexDescription: CSSearchableIndexDescription
+    ) async throws {
+        let entities = try await entities(for: identifiers)
+        try await CSSearchableIndex.default().indexAppEntities(entities)
+    }
+
+    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
+        let all = try await allEntities()
+        try await CSSearchableIndex.default().indexAppEntities(all)
+    }
+}
+#endif
 
 extension TableEntity {
     var sharePreview: SharePreview<Never, Image> {

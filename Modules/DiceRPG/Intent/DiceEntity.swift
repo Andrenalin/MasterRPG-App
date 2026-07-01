@@ -61,6 +61,10 @@ struct DiceEntity: IndexedEntity {
         if let firstDie = model.dice.first {
             attributes.comment = "D\(firstDie.die.max)"
         }
+
+        if #available(iOS 27, macOS 27, visionOS 27, *) {
+            attributes.relatedAppEntityIdentifier = EntityIdentifier(for: self)
+        }
         
         return attributes
     }
@@ -132,9 +136,9 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     func entities(matching string: String) async throws -> [DiceEntity] {
         let allEntities = try await suggestedEntities()
         return allEntities.filter { entity in
-            entity.name.localizedCaseInsensitiveContains(string) ||
-            entity.description.localizedCaseInsensitiveContains(string) ||
-            entity.model.tags.contains(where: { $0.localizedCaseInsensitiveContains(string) })
+            entity.name.localizedStandardContains(string) ||
+            entity.description.localizedStandardContains(string) ||
+            entity.model.tags.contains(where: { $0.localizedStandardContains(string) })
         }
     }
 
@@ -148,6 +152,29 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         lastCacheUpdate = .distantPast
     }
 }
+
+#if compiler(>=6.4)
+@available(iOS 27, macOS 27, visionOS 27, *)
+extension DiceEntity: SyncableEntity, OwnershipProvidingEntity {
+    var ownership: EntityOwnership { .unknown }
+}
+
+@available(iOS 27, macOS 27, visionOS 27, *)
+extension DiceEntityQuery: @preconcurrency IndexedEntityQuery {
+    func reindexEntities(
+        for identifiers: [DiceEntity.ID],
+        indexDescription: CSSearchableIndexDescription
+    ) async throws {
+        let entities = try await entities(for: identifiers)
+        try await CSSearchableIndex.default().indexAppEntities(entities)
+    }
+
+    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
+        let all = try await allEntities()
+        try await CSSearchableIndex.default().indexAppEntities(all)
+    }
+}
+#endif
 
 extension DiceEntity {
     var sharePreview: SharePreview<Never, Image> {
