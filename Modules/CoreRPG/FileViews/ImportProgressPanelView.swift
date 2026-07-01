@@ -94,7 +94,15 @@ public struct ImportProgressPanelView: View {
                     .disabled(outcome == .finished)
                 }
 
-                if !importModel.isReviewReady {
+                if importModel.isReviewReady {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button {
+                            Task { await applyReview() }
+                        } label: {
+                            Label { Text("Apply", bundle: .module) } icon: { Image(systemName: "checkmark.circle") }
+                        }
+                    }
+                } else {
                     ToolbarItem(placement: .confirmationAction) {
                         Button {
                             navigator.dismiss()
@@ -119,16 +127,26 @@ public struct ImportProgressPanelView: View {
 
 private extension ImportProgressPanelView {
     @ViewBuilder var reviewContent: some View {
-        @Bindable var bm = importModel
-        ImportReviewView(reviewItems: $bm.reviewItems) {
-            let items = importModel.reviewItems
-            for item in items {
-                await item.applyResolution(item.resolution)
-            }
-            importModel.isReviewReady = false
-            importModel.reviewItems = []
-            navigator.dismiss()
+        if let reviewModel = importModel.reviewModel {
+            ImportReviewV1SplitView(model: reviewModel)
         }
+    }
+
+    private func applyReview() async {
+        if let reviewModel = importModel.reviewModel {
+            for module in reviewModel.modules {
+                for item in module.reviewItems {
+                    if let handler = importModel.applyHandlers[item.id] {
+                        await handler(item.itemModel.decision)
+                    }
+                }
+            }
+        }
+        importModel.isReviewReady = false
+        importModel.reviewModel = nil
+        importModel.pendingModules = [:]
+        importModel.applyHandlers = [:]
+        navigator.dismiss()
     }
 
     @ViewBuilder var progressView: some View {

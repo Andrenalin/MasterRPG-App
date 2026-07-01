@@ -203,6 +203,10 @@ final class SingleItemImportModel {
     var hasPropertyOverrides: Bool {
         properties.contains { defaultDecision(for: $0) != $0.decision }
     }
+
+    var entriesAreIdentical: Bool {
+        entries.allSatisfy { $0.entry.existing != nil && $0.entry.imported != nil }
+    }
     
     private func cascade(_ prop: SingleReviewItemProperty, parent: SingleReviewDecision) {
         prop.decision = defaultDecision(for: prop, given: parent)
@@ -376,6 +380,24 @@ extension SingleItemImportModel {
 
 private extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
+}
+
+extension SingleEntryImportModel {
+    func existingValue(for prop: SingleReviewEntryProperty) -> String? {
+        let v = entry.existing?[keyPath: prop.valueKeyPath] ?? ""; return v.isEmpty ? nil : v
+    }
+    func importedValue(for prop: SingleReviewEntryProperty) -> String? {
+        let v = entry.imported?[keyPath: prop.valueKeyPath] ?? ""; return v.isEmpty ? nil : v
+    }
+    func mergedValue(for prop: SingleReviewEntryProperty) -> String? {
+        let v = entry.merged?[keyPath: prop.valueKeyPath] ?? ""; return v.isEmpty ? nil : v
+    }
+    func effectiveValue(for prop: SingleReviewEntryProperty) -> String? {
+        let v = entry.item(for: prop.decision)?[keyPath: prop.valueKeyPath] ?? ""; return v.isEmpty ? nil : v
+    }
+    func isChanged(prop: SingleReviewEntryProperty) -> Bool {
+        existingValue(for: prop) != importedValue(for: prop)
+    }
 }
 
 // MARK: - Preview Data
@@ -644,91 +666,6 @@ private struct SRReferenceRow: View {
     }
 }
 
-// MARK: - VA: Column Compare
-//
-// Three-column grid: Existing | Active | Imported for every property.
-// Changed properties get a warm background tint. Override pickers appear inline.
-// Binary → two-button toggle. Enum → segmented. Sublist → expandable block.
-
-struct SingleItemReviewVA_ColumnCompare: View {
-    let model: SingleItemImportModel
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                ReviewDecisionCards(model: model)
-
-                if !model.references.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("References").font(.headline)
-                        ForEach(model.references) { ref in
-                            SRReferenceRow(reference: ref)
-                        }
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    VA_ColumnHeaders()
-                    ForEach(model.properties) { prop in
-                        VA_PropertyRow(model: model, property: prop)
-                    }
-                }
-                
-                ForEach(model.entries) { entry in
-                    VA_SublistBlock(model: model, entry: entry)
-                }
-            }
-            .padding()
-        }
-        .navigationTitle(model.name)
-    }
-}
-
-private struct VA_ColumnHeaders: View {
-    var body: some View {
-        HStack {
-            Text("Existing").font(.caption2).bold().foregroundStyle(.orange)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text("Active").font(.caption2).bold().foregroundStyle(.blue)
-                .frame(maxWidth: .infinity, alignment: .center)
-            Text("Imported").font(.caption2).bold().foregroundStyle(.green)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .padding(.horizontal, 12)
-    }
-}
-
-private struct VA_PropertyRow: View {
-    let model: SingleItemImportModel
-    let property: SingleReviewItemProperty
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 5) {
-                SRChangeDot(isChanged: property.decision != model.decision)
-                Text(property.displayName).font(.subheadline).bold()
-                if !property.supportsMerge {
-                    Text("binary").font(.caption2).foregroundStyle(.secondary)
-                        .padding(.horizontal, 5).padding(.vertical, 1)
-                        .background(Color.secondary.opacity(0.12)).clipShape(.capsule)
-                }
-            }
-            .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 6)
-
-            switch property.kind {
-            case .binary:
-                SRBinaryToggle(model: model, property: property)
-                    .padding(.horizontal, 12).padding(.bottom, 10)
-            default:
-                VA_ThreeColumnValue(model: model, property: property)
-                    .padding(.horizontal, 12).padding(.bottom, 10)
-            }
-        }
-        .background(property.decision != model.decision ? Color.orange.opacity(0.05) : Color.secondary.opacity(0.04))
-        .clipShape(.rect(cornerRadius: 10))
-    }
-}
-
 private struct VA_ThreeColumnValue: View {
     let model: SingleItemImportModel
     let property: SingleReviewItemProperty
@@ -793,37 +730,515 @@ private struct VA_Cell: View {
     }
 }
 
-private struct VA_SublistBlock: View {
-    let model: SingleItemImportModel
-    let entry: SingleEntryImportModel
-    @State private var isExpanded = true
+// MARK: - Additional Preview Data
+
+extension SingleItemImportModel {
+    // New item, no local version exists; existing == imported == merged, no conflicts.
+    static var previewNewImport: SingleItemImportModel {
+        var lore = EmtpyEntryViewModel.empty
+        lore.name = "Lore"
+        lore.content = "The Crimson Codex is an ancient tome sealed with three locks, each requiring a different key held by a different faction. Its pages shift language depending on who reads them, and every third moon it whispers the name of someone who will soon die."
+
+        var spells = EmtpyEntryViewModel.empty
+        spells.name = "Spell List"
+        spells.content = "Fireball (3rd), Chain Lightning (6th), Meteor Swarm (9th), Time Stop (9th), Wish (9th). Requires attunement by a wizard of 15th level or higher."
+
+        let snapshot = PreviewItemModel(
+            name: "Crimson Codex",
+            category: .photo,
+            description: "A legendary artifact of immense power, sought by wizards across three continents. Its pages are said to contain forbidden knowledge of the primordial age — spells erased from all other records after the Sundering.",
+            tags: ["artifact", "legendary", "magic", "tome", "attunement"],
+            entries: [lore, spells]
+        )
+        let reviewItem = SingleReviewItem(existing: snapshot, imported: snapshot, merged: snapshot)
+        let model = SingleItemImportModel.from(item: reviewItem)
+        model.references = [
+            SingleReviewReference(id: UUID(), moduleName: "Adventure", itemName: "The Vault of Eternity", isResolved: true),
+            SingleReviewReference(id: UUID(), moduleName: "Character", itemName: "Elara the Archivist", isResolved: false)
+        ]
+        return model
+    }
+
+    // Existing and imported have completely different entries; merged picks from both.
+    // Each entry is existing-only, imported-only, or merged-from-both depending on which
+    // versions share a UUID — entries with distinct UUIDs appear as separate sources.
+    static var previewConflictingEntries: SingleItemImportModel {
+        var existingHistory = EmtpyEntryViewModel.empty
+        existingHistory.name = "History"
+        existingHistory.content = "Founded in the third age by refugees from the Sunken Isles, Thornwall grew from a fishing village into a trade fortress. Its eastern gate has never been breached in four centuries of recorded conflict."
+
+        var existingNPCs = EmtpyEntryViewModel.empty
+        existingNPCs.name = "Key NPCs"
+        existingNPCs.content = "Mayor Brynn Holt — pragmatic, bribeable. Captain Sera — loyal to the crown above all else. The Fence known only as Dusty — last seen near the harbour, whereabouts now unknown."
+
+        var existingSecrets = EmtpyEntryViewModel.empty
+        existingSecrets.name = "Secrets"
+        existingSecrets.content = "A hidden passage beneath the granary connects to the old smugglers' dock. Only the mayor and Dusty know its exact location. The passage floods at high tide."
+
+        // Shared entry: same UUID in both versions, different content — exercises Was/New + per-property selection
+        var existingOverview = EmtpyEntryViewModel.empty
+        existingOverview.name = "Overview"
+        existingOverview.content = "Thornwall stands at the junction of the Ashen coast and the inland trade road, a modest but strategically vital settlement that has remained neutral for four generations."
+        var importedOverview = existingOverview   // copies UUID
+        importedOverview.content = "Thornwall is a chokepoint. Whoever controls its amber flow controls the northern economy. The Guild knows this. So does the Crown."
+
+        var existingFactions = EmtpyEntryViewModel.empty
+        existingFactions.name = "Factions"
+        existingFactions.content = "Amber Merchants' Guild (dominant), Fisher's Brotherhood (declining since the new dock taxes), The Watch (formally neutral, unofficially bought by the Guild over the past two years)."
+
+        var existingEconomy = EmtpyEntryViewModel.empty
+        existingEconomy.name = "Economy"
+        existingEconomy.content = "Primary exports: amber, salted fish, timber. The amber trade accounts for nearly 60% of all town revenue. A blocked sea lane could destabilise the entire settlement within weeks."
+
+        var importedRumors = EmtpyEntryViewModel.empty
+        importedRumors.name = "Rumors"
+        importedRumors.content = "Locals whisper that the mayor sold passage rights to a Thieves' Guild convoy last season. The harbour tax records were allegedly altered to conceal three shipments of untaxed amber."
+
+        var importedEvents = EmtpyEntryViewModel.empty
+        importedEvents.name = "Recent Events"
+        importedEvents.content = "A fire destroyed the western warehouse district three weeks ago. No cause was officially determined. Six bodies recovered; two remain unidentified. Guild marks were found on the salvage."
+
+        var importedTradeRoutes = EmtpyEntryViewModel.empty
+        importedTradeRoutes.name = "Trade Routes"
+        importedTradeRoutes.content = "Three overland routes connect Thornwall to the interior. The southern road through Mirewood is fastest but now subject to Guild tolls. The coastal path is longer but avoids all checkpoints."
+
+        var importedMilitary = EmtpyEntryViewModel.empty
+        importedMilitary.name = "Military Presence"
+        importedMilitary.content = "Twelve Watch soldiers nominally under the mayor's command. Six mercenaries recently hired by the Merchants' Guild. No naval force — the harbour is entirely undefended from the sea."
+
+        var importedDangers = EmtpyEntryViewModel.empty
+        importedDangers.name = "Dangers"
+        importedDangers.content = "Thieves' Guild expansion. Potential arson if the mayor fails to cooperate. Unknown buyer for stolen amber manifests. At least one Guild informant is embedded inside The Watch."
+
+        let existingItem = PreviewItemModel(
+            name: "Thornwall",
+            category: .photo,
+            description: "A fortified coastal trade town on the edge of the Ashen Reach. Known for amber trade and political neutrality — though neither may last much longer given the Guild pressure building from the south.",
+            tags: ["location", "town", "coastal", "trade"],
+            entries: [existingOverview, existingHistory, existingNPCs, existingSecrets, existingFactions, existingEconomy]
+        )
+        let importedItem = PreviewItemModel(
+            name: "Thornwall",
+            category: .photo,
+            description: "Trade hub on the Ashen Reach. Recent unrest and suspicious fires suggest the mayor's neutrality has been compromised. Thieves' Guild operatives are moving in from the south road.",
+            tags: ["conflict", "guild", "location", "town"],
+            entries: [importedOverview, importedRumors, importedEvents, importedTradeRoutes, importedMilitary, importedDangers]
+        )
+        let mergedItem = PreviewItemModel(
+            name: "Thornwall",
+            category: .photo,
+            description: "A fortified coastal trade town on the edge of the Ashen Reach. Known for amber trade and political neutrality — though neither may last much longer given the Guild pressure building from the south.",
+            tags: ["coastal", "conflict", "guild", "location", "town", "trade"],
+            entries: [importedOverview, existingHistory, existingNPCs, existingSecrets, existingFactions, existingEconomy,
+                      importedRumors, importedEvents, importedTradeRoutes, importedMilitary, importedDangers]
+        )
+        let reviewItem = SingleReviewItem(existing: existingItem, imported: importedItem, merged: mergedItem)
+        let model = SingleItemImportModel.from(item: reviewItem)
+        model.references = [
+            SingleReviewReference(id: UUID(), moduleName: "Map", itemName: "Ashen Reach Region", isResolved: true),
+            SingleReviewReference(id: UUID(), moduleName: "Adventure", itemName: "The Mayor's Ledger", isResolved: false),
+            SingleReviewReference(id: UUID(), moduleName: "Character", itemName: "Brynn Holt", isResolved: true)
+        ]
+        return model
+    }
+}
+
+// MARK: - VC: Accordion Form
+
+// Static row — no conflict: all three values identical, no interaction.
+private struct VC_StaticPropertyRow: View {
+    let displayName: String
+    let value: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.15)) { isExpanded.toggle() }
-            } label: {
-                HStack {
-                    Text("\(entry.properties.count) sub-items")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption2).foregroundStyle(.secondary)
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.caption2).foregroundStyle(Color.secondary.opacity(0.4))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(displayName).font(.subheadline).bold()
+                Text(value ?? "—").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(Color.secondary.opacity(0.03))
+        .clipShape(.rect(cornerRadius: 10))
+    }
+}
+
+// Conflict row — indicator inline with name, full effective value below, Was/New each on own line.
+// Expand shows the two non-selected alternatives; selecting one animates the value and closes.
+private struct VC_AccordionRow: View {
+    let model: SingleItemImportModel
+    let property: SingleReviewItemProperty
+    @State private var isExpanded = false
+
+    private var isOverridden: Bool { property.decision != model.decision }
+
+    private var alternatives: [SingleReviewDecision] {
+        property.availableDecisions.filter { $0 != property.decision }
+    }
+
+    private func value(for decision: SingleReviewDecision) -> String? {
+        switch decision {
+        case .existing: model.existingValue(for: property)
+        case .imported: model.importedValue(for: property)
+        case .merge:    model.mergedValue(for: property)
+        }
+    }
+
+    var body: some View {
+        if !model.isChanged(prop: property) {
+            VC_StaticPropertyRow(displayName: property.displayName,
+                                 value: model.effectiveValue(for: property))
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                Button {
+                    withAnimation(.spring(duration: 0.3)) { isExpanded.toggle() }
+                } label: {
+                    VStack(alignment: .leading, spacing: 5) {
+                        // Indicator + name + chevron — all inline, no content indentation
+                        HStack(spacing: 5) {
+                            Image(systemName: isOverridden ? "circle.fill" : "checkmark.circle.fill")
+                                .font(.subheadline)
+                                .foregroundStyle(isOverridden ? property.decision.tint : .secondary.opacity(0.5))
+                            Text(property.displayName).font(.subheadline).bold()
+                            Spacer()
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                .font(.caption).foregroundStyle(.tertiary)
+                        }
+                        // Effective value — cross-fades when decision changes
+                        Text(model.effectiveValue(for: property) ?? "—")
+                            .font(.callout)
+                            .foregroundStyle(.primary)
+                            .contentTransition(.opacity)
+                            .animation(.easeInOut(duration: 0.2), value: property.decision)
+                        // Was / New — each on its own line
+                        HStack(spacing: 4) {
+                            Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
+                            Text(model.existingValue(for: property) ?? "—")
+                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        HStack(spacing: 4) {
+                            Text("New:").font(.caption2).bold().foregroundStyle(.green)
+                            Text(model.importedValue(for: property) ?? "—")
+                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 12)
                 }
+                .buttonStyle(.plain)
+
+                if isExpanded {
+                    Divider()
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(alternatives) { d in
+                            VC_AlternativeBlock(decision: d, value: value(for: d)) {
+                                withAnimation(.spring(duration: 0.3)) {
+                                    model.setPropertyDecision(d, propertyID: property.id)
+                                    isExpanded = false
+                                }
+                            }
+                        }
+                    }
+                    .padding(12)
+                }
+            }
+            .background(Color.secondary.opacity(0.05))
+            .clipShape(.rect(cornerRadius: 10))
+        }
+    }
+}
+
+private struct VC_AlternativeBlock: View {
+    let decision: SingleReviewDecision
+    let value: String?
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            VStack(alignment: .leading, spacing: 5) {
+                Label(decision.rawValue, systemImage: decision.systemImage)
+                    .font(.caption2).bold().foregroundStyle(decision.tint)
+                Text(value ?? "—")
+                    .font(.callout)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(.primary)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(decision.tint.opacity(0.08))
+            .clipShape(.rect(cornerRadius: 8))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(decision.tint.opacity(0.2), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct SingleItemReviewVC_Accordion: View {
+    let model: SingleItemImportModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                ReviewDecisionCards(model: model)
+
+                if !model.references.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("References").font(.headline)
+                        ForEach(model.references) { SRReferenceRow(reference: $0) }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Properties").font(.headline)
+                    ForEach(model.properties) { prop in
+                        VC_AccordionRow(model: model, property: prop)
+                    }
+                }
+
+                if !model.entries.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Entries").font(.headline)
+                            Spacer()
+                            if model.entriesAreIdentical {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.subheadline).foregroundStyle(.green)
+                            } else {
+                                let ex = model.item.existing.entries.count
+                                let im = model.item.imported.entries.count
+                                if ex != im {
+                                    Text("\(ex) existing · \(im) imported")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        ForEach(model.entries) { VC_EntryAccordion(entry: $0) }
+                    }
+                }
+            }
+            .padding()
+        }
+        .navigationTitle(model.name)
+    }
+}
+
+private struct VC_EntryAccordion: View {
+    let entry: SingleEntryImportModel
+    @State private var isExpanded = false
+
+    private var hasExisting: Bool { entry.entry.existing != nil }
+    private var hasImported: Bool { entry.entry.imported != nil }
+
+    // "Name — Content" single-line summary for Was/New
+    private func summary(from source: (any EntryDataAccessable)?) -> String? {
+        guard let source else { return nil }
+        let namePart  = entry.properties.count > 0 ? source[keyPath: entry.properties[0].valueKeyPath] : ""
+        let contentPart = entry.properties.count > 1 ? source[keyPath: entry.properties[1].valueKeyPath] : ""
+        let pieces = [namePart, contentPart].filter { !$0.isEmpty }
+        return pieces.isEmpty ? nil : pieces.joined(separator: " — ")
+    }
+
+    private var anyPropertyChanged: Bool {
+        entry.properties.contains { entry.isChanged(prop: $0) }
+    }
+
+    private var indicatorName: String {
+        (!anyPropertyChanged && hasExisting && hasImported) ? "checkmark.circle.fill" : "circle.fill"
+    }
+    private var indicatorColor: Color {
+        if !anyPropertyChanged && hasExisting && hasImported { return .secondary.opacity(0.5) }
+        if hasExisting && !hasImported { return .orange }
+        if hasImported && !hasExisting { return .green }
+        return entry.decision.tint
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.spring(duration: 0.3)) { isExpanded.toggle() }
+            } label: {
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 5) {
+                        Image(systemName: indicatorName)
+                            .font(.subheadline).foregroundStyle(indicatorColor)
+                        Text(entry.name).font(.subheadline).bold()
+                        Spacer()
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption).foregroundStyle(.tertiary)
+                    }
+                    Text(entry.content)
+                        .font(.callout).foregroundStyle(.primary)
+                    if anyPropertyChanged {
+                        HStack(spacing: 4) {
+                            Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
+                            Text(summary(from: entry.entry.existing) ?? "—")
+                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        HStack(spacing: 4) {
+                            Text("New:").font(.caption2).bold().foregroundStyle(.green)
+                            Text(summary(from: entry.entry.imported) ?? "—")
+                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                    } else if hasExisting && !hasImported {
+                        Text("Only in existing version").font(.caption2).foregroundStyle(.orange)
+                    } else if hasImported && !hasExisting {
+                        Text("Only in imported version").font(.caption2).foregroundStyle(.green)
+                    }
+                }
+                .padding(.horizontal, 14).padding(.vertical, 12)
             }
             .buttonStyle(.plain)
 
             if isExpanded {
-                VStack(spacing: 4) {
-                    ForEach(entry.properties) { sub in
-                        Text(entry.name + entry.content)
-                    }
+                Divider()
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(entry.properties) { VC_EntryPropertyAccordion(entry: entry, property: $0) }
                 }
+                .padding(12)
+            }
+        }
+        .background(Color.secondary.opacity(0.05))
+        .clipShape(.rect(cornerRadius: 10))
+    }
+}
+
+// Interactive accordion for a single entry property — mirrors VC_AccordionRow.
+// Each sub-property (Name, Content) gets its own independent decision.
+private struct VC_EntryPropertyAccordion: View {
+    let entry: SingleEntryImportModel
+    let property: SingleReviewEntryProperty
+    @State private var isExpanded = false
+
+    private var isOverridden: Bool { property.decision != entry.decision }
+
+    private var alternatives: [SingleReviewDecision] {
+        property.availableDecisions.filter { $0 != property.decision }
+    }
+
+    private func value(for decision: SingleReviewDecision) -> String? {
+        switch decision {
+        case .existing: entry.existingValue(for: property)
+        case .imported: entry.importedValue(for: property)
+        case .merge:    entry.mergedValue(for: property)
+        }
+    }
+
+    var body: some View {
+        if !entry.isChanged(prop: property) {
+            HStack(spacing: 5) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.subheadline).foregroundStyle(Color.secondary.opacity(0.4))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(property.displayName).font(.caption).bold().foregroundStyle(.secondary)
+                    Text(entry.effectiveValue(for: property) ?? "—")
+                        .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer()
+            }
+            .padding(8)
+            .background(Color.secondary.opacity(0.03))
+            .clipShape(.rect(cornerRadius: 8))
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                Button {
+                    withAnimation(.spring(duration: 0.3)) { isExpanded.toggle() }
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 5) {
+                            Image(systemName: isOverridden ? "circle.fill" : "checkmark.circle.fill")
+                                .font(.subheadline)
+                                .foregroundStyle(isOverridden ? property.decision.tint : .secondary.opacity(0.5))
+                            Text(property.displayName).font(.caption).bold().foregroundStyle(.secondary)
+                            Spacer()
+                            Label(property.decision.rawValue, systemImage: property.decision.systemImage)
+                                .font(.caption2).foregroundStyle(property.decision.tint)
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                .font(.caption2).foregroundStyle(.tertiary)
+                        }
+                        Text(entry.effectiveValue(for: property) ?? "—")
+                            .font(.callout).foregroundStyle(.primary)
+                            .contentTransition(.opacity)
+                            .animation(.easeInOut(duration: 0.2), value: property.decision)
+                        HStack(spacing: 4) {
+                            Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
+                            Text(entry.existingValue(for: property) ?? "—")
+                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        HStack(spacing: 4) {
+                            Text("New:").font(.caption2).bold().foregroundStyle(.green)
+                            Text(entry.importedValue(for: property) ?? "—")
+                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                    }
+                    .padding(8)
+                }
+                .buttonStyle(.plain)
+
+                if isExpanded {
+                    Divider()
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(alternatives) { d in
+                            VC_AlternativeBlock(decision: d, value: value(for: d)) {
+                                withAnimation(.spring(duration: 0.3)) {
+                                    entry.setPropertyDecision(d, propertyID: property.id)
+                                    isExpanded = false
+                                }
+                            }
+                        }
+                    }
+                    .padding(8)
+                }
+            }
+            .background(Color.secondary.opacity(0.05))
+            .clipShape(.rect(cornerRadius: 8))
+        }
+    }
+}
+
+private struct VC_EntryPropertyRow: View {
+    let entry: SingleEntryImportModel
+    let property: SingleReviewEntryProperty
+
+    private func value(from item: (any EntryDataAccessable)?) -> String {
+        item?[keyPath: property.valueKeyPath] ?? "—"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(property.displayName).font(.caption2).bold().foregroundStyle(.secondary)
+            HStack(alignment: .top, spacing: 6) {
+                VC_MiniCell(label: "Existing", value: value(from: entry.entry.existing), tint: .orange, isActive: property.decision == .existing)
+                VC_MiniCell(label: "Merged",   value: value(from: entry.entry.merged),   tint: .blue,   isActive: property.decision == .merge)
+                VC_MiniCell(label: "Imported", value: value(from: entry.entry.imported), tint: .green,  isActive: property.decision == .imported)
             }
         }
     }
 }
 
-#Preview("VA · Column Compare") {
-    NavigationStack { SingleItemReviewVA_ColumnCompare(model: .preview) }
+private struct VC_MiniCell: View {
+    let label: String
+    let value: String
+    let tint: Color
+    let isActive: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.caption2).bold().foregroundStyle(tint)
+            Text(value).font(.caption).lineLimit(3).frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(6)
+        .background(isActive ? tint.opacity(0.12) : Color.secondary.opacity(0.05))
+        .foregroundStyle(isActive ? tint : .secondary)
+        .clipShape(.rect(cornerRadius: 6))
+    }
 }
+
+#Preview("VC · Accordion") {
+    NavigationStack { SingleItemReviewVC_Accordion(model: .previewConflictingEntries) }
+}
+

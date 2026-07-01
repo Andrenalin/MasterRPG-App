@@ -31,10 +31,20 @@ public final class ItemDataImportModel {
     public var totalImportingItems: Int = 0
     public var isImportRunning: Bool = false
     public var importMode: ImportMode = .merge
-    public var reviewItems: [ImportReviewItem] = []
     public var isReviewReady: Bool = false
+    var reviewModel: ImportReviewModel? = nil
 
+    var pendingModules: [NetworkModules: [ImportReviewItemModel]] = [:]
+    var applyHandlers: [UUID: @MainActor @Sendable (SingleReviewDecision) async -> Void] = [:]
     var withOverwrite: Bool { importMode == .overwrite }
+
+    func finalizeReview() {
+        let modules = pendingModules
+            .map { ImportReviewModule(id: $0.key, reviewItems: $0.value) }
+            .sorted { $0.name < $1.name }
+        reviewModel = modules.isEmpty ? nil : ImportReviewModel(modules: modules)
+        isReviewReady = true
+    }
 }
 
 public protocol ImportControllable: Sendable {
@@ -139,18 +149,23 @@ public extension ImportControllable {
                 let ic = itemControllable
                 let allLocalIds = await MainActor.run { Set(ic.itemDataModel.items) }
                 for deletedId in allLocalIds.subtracting(importedIds) {
-                    let itemName = await MainActor.run { ic.nameSync(itemId: deletedId) }
-                    let reviewItem = ImportReviewItem(
-                        id: deletedId,
-                        name: itemName,
-                        moduleName: module.title,
-                        kind: .deleted,
-                        resolution: .old,
-                        applyResolution: { resolution in
-                            if resolution == .new { await ic.delete(itemId: deletedId) }
+                    await MainActor.run {
+                        guard let deletedIA: any ItemDataAccessable = ic.itemSync(for: deletedId) else { return }
+                        let reviewItem = SingleReviewItem(existing: deletedIA, imported: deletedIA, merged: deletedIA)
+                        let itemModel = SingleItemImportModel.from(item: reviewItem)
+                        let reviewItemModel = ImportReviewItemModel(
+                            id: deletedId,
+                            kind: .different,
+                            existingStatus: deletedIA.name,
+                            importedStatus: "Not in import",
+                            mergedStatus: deletedIA.name,
+                            itemModel: itemModel
+                        )
+                        importModel.pendingModules[module, default: []].append(reviewItemModel)
+                        importModel.applyHandlers[deletedId] = { decision in
+                            if decision == .imported { await ic.delete(itemId: deletedId) }
                         }
-                    )
-                    await MainActor.run { importModel.reviewItems.append(reviewItem) }
+                    }
                 }
             }
         } else {
@@ -200,7 +215,7 @@ private extension ImportControllable {
             try await self.importStream(from: inputStream, forceSave: true, importModel: importModel)
             await MainActor.run {
                 importModel.isImportRunning = false
-                if importModel.importMode == .manual { importModel.isReviewReady = true }
+                if importModel.importMode == .manual { importModel.finalizeReview() }
             }
         } catch {
             await MainActor.run { importModel.isImportRunning = false }
@@ -227,20 +242,30 @@ private extension ImportControllable {
 
         case .manual:
             let existsLocally = await MainActor.run { itemController.itemSync(for: id) != nil }
-            let kind: ImportReviewItem.Kind = existsLocally ? .updated : .new
+            let kind: ImportReviewItemModel.ChangeKind = existsLocally ? .different : .added
             let mergedItem: ModelType? = existsLocally ? await itemController.merge(with: importedItem) : importedItem
-            let itemName = (importedItem as? any ItemDataAccessable)?.name ?? id.uuidString
-            let moduleName = itemController.config.module.title
-            let reviewItem = ImportReviewItem(
-                id: id,
-                name: itemName,
-                moduleName: moduleName,
-                kind: kind,
-                resolution: kind == .new ? .new : .merge,
-                applyResolution: { resolution in
-                    switch resolution {
-                    case .old: break
-                    case .new:
+            let module = itemController.config.module
+            await MainActor.run {
+                guard let importedIA = importedItem as? any ItemDataAccessable else { return }
+                let existingIA: (any ItemDataAccessable)? = itemController.itemSync(for: id)
+                let mergedIA = mergedItem as? any ItemDataAccessable
+                let existFinal: any ItemDataAccessable = existingIA ?? importedIA
+                let mergeFinal: any ItemDataAccessable = mergedIA ?? importedIA
+                let reviewItem = SingleReviewItem(existing: existFinal, imported: importedIA, merged: mergeFinal)
+                let itemModel = SingleItemImportModel.from(item: reviewItem)
+                let reviewItemModel = ImportReviewItemModel(
+                    id: id,
+                    kind: kind,
+                    existingStatus: existsLocally ? existFinal.name : "Not in library",
+                    importedStatus: importedIA.name,
+                    mergedStatus: existsLocally ? "Merged" : "Ready to add",
+                    itemModel: itemModel
+                )
+                importModel.pendingModules[module, default: []].append(reviewItemModel)
+                importModel.applyHandlers[id] = { decision in
+                    switch decision {
+                    case .existing: break
+                    case .imported:
                         itemController.replace(model: importedItem, isInsert: true, forceSave: true)
                         editCtrl.repairFolder(itemId: id)
                     case .merge:
@@ -250,8 +275,7 @@ private extension ImportControllable {
                         }
                     }
                 }
-            )
-            await MainActor.run { importModel.reviewItems.append(reviewItem) }
+            }
         }
 
         await MainActor.run { importModel.importedItems += 1 }
