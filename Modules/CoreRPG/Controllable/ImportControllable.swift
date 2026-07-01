@@ -241,40 +241,36 @@ private extension ImportControllable {
             await editCtrl.repairFolder(itemId: id)
 
         case .manual:
-            let existsLocally = await MainActor.run { itemController.itemSync(for: id) != nil }
-            let kind: ImportReviewItemModel.ChangeKind = existsLocally ? .different : .added
-            let mergedItem: ModelType? = existsLocally ? await itemController.merge(with: importedItem) : importedItem
-            let module = itemController.config.module
+            let merged = await itemController.merge(with: importedItem) as? any ItemDataAccessable
             await MainActor.run {
-                guard let importedIA = importedItem as? any ItemDataAccessable else { return }
-                let existingIA: (any ItemDataAccessable)? = itemController.itemSync(for: id)
-                let mergedIA = mergedItem as? any ItemDataAccessable
-                let existFinal: any ItemDataAccessable = existingIA ?? importedIA
-                let mergeFinal: any ItemDataAccessable = mergedIA ?? importedIA
-                let reviewItem = SingleReviewItem(existing: existFinal, imported: importedIA, merged: mergeFinal)
+                guard let imported = importedItem as? any ItemDataAccessable else { return }
+                let existing = itemController.itemSync(for: id)
+                let kind: ImportReviewItemModel.ChangeKind = merged == nil ? .added : .different
+                let module = itemController.config.module
+                let reviewItem = SingleReviewItem(existing: existing, imported: imported, merged: merged ?? imported)
                 let itemModel = SingleItemImportModel.from(item: reviewItem)
                 let reviewItemModel = ImportReviewItemModel(
                     id: id,
                     kind: kind,
-                    existingStatus: existsLocally ? existFinal.name : "Not in library",
-                    importedStatus: importedIA.name,
-                    mergedStatus: existsLocally ? "Merged" : "Ready to add",
+                    existingStatus: existing?.name ?? "Not in library",
+                    importedStatus: imported.name,
+                    mergedStatus: kind == .different ? "Merged" : "Ready to add",
                     itemModel: itemModel
                 )
                 importModel.pendingModules[module, default: []].append(reviewItemModel)
-                importModel.applyHandlers[id] = { decision in
-                    switch decision {
-                    case .existing: break
-                    case .imported:
-                        itemController.replace(model: importedItem, isInsert: true, forceSave: true)
-                        editCtrl.repairFolder(itemId: id)
-                    case .merge:
-                        if let merged = mergedItem {
-                            itemController.replace(model: merged, isInsert: true, forceSave: true)
-                            editCtrl.repairFolder(itemId: id)
-                        }
-                    }
-                }
+//                importModel.applyHandlers[id] = { decision in
+//                    switch decision {
+//                    case .existing: break
+//                    case .imported:
+//                        itemController.replace(model: importedItem, isInsert: true, forceSave: true)
+//                        editCtrl.repairFolder(itemId: id)
+//                    case .merge:
+//                        if let merged = mergedItem {
+//                            itemController.replace(model: merged, isInsert: true, forceSave: true)
+//                            editCtrl.repairFolder(itemId: id)
+//                        }
+//                    }
+//                }
             }
         }
 

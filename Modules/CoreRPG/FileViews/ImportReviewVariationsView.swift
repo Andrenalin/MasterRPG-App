@@ -6,7 +6,7 @@ import SwiftUI
 
 private struct IRDecisionBadge: View {
     let decision: SingleReviewDecision
-
+    
     var body: some View {
         Label(decision.rawValue, systemImage: decision.systemImage)
             .font(.caption2)
@@ -20,11 +20,11 @@ private struct IRDecisionBadge: View {
 
 private struct IRModuleRow: View {
     let module: ImportReviewModule
-
+    
     private var addedCount: Int   { module.reviewItems.filter { $0.kind == .added }.count }
     private var changedCount: Int { module.reviewItems.filter { $0.kind == .different }.count }
     private var blockedCount: Int { module.reviewItems.filter(\.hasBlockingReference).count }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -51,7 +51,7 @@ private struct IRModuleRow: View {
 
 private struct IRItemListRow: View {
     let item: ImportReviewItemModel
-
+    
     var body: some View {
         HStack {
             Image(systemName: item.kind == .added ? "plus.circle.fill" : "arrow.triangle.2.circlepath.circle.fill")
@@ -72,7 +72,7 @@ private struct IRItemListRow: View {
 
 private struct IRStatusGrid: View {
     let item: ImportReviewItemModel
-
+    
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 0) {
             GridRow {
@@ -88,7 +88,7 @@ private struct IRStatusCell: View {
     let title: String
     let value: String
     let tint: Color
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title).font(.caption2).foregroundStyle(tint)
@@ -103,7 +103,7 @@ private struct IRStatusCell: View {
 private struct IRReferenceSection: View {
     let item: ImportReviewItemModel
     let onSelect: (SingleReviewReference) -> Void
-
+    
     var body: some View {
         if !item.itemModel.references.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
@@ -119,7 +119,7 @@ private struct IRReferenceSection: View {
 private struct IRReferenceRow: View {
     let ref: SingleReviewReference
     let onSelect: () -> Void
-
+    
     var body: some View {
         Button(action: onSelect) {
             HStack {
@@ -146,7 +146,7 @@ private struct IRReferenceRow: View {
 private struct IRPropertySection: View {
     let item: ImportReviewItemModel
     let onDecision: (SingleReviewDecision, UUID) -> Void
-
+    
     var body: some View {
         if !item.itemModel.properties.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
@@ -163,7 +163,7 @@ private struct IRPropertyRow: View {
     let model: SingleItemImportModel
     let prop: SingleReviewItemProperty
     let onDecision: @MainActor (SingleReviewDecision) -> Void
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -205,29 +205,18 @@ private struct IRPropertyRow: View {
 /// Classic sidebar → item list → detail panel. Best for iPad and Mac.
 struct ImportReviewV1SplitView: View {
     @Bindable var model: ImportReviewModel
-
+    
     var body: some View {
-        NavigationSplitView {
-            List(selection: $model.selectedModuleID) {
-                ForEach(model.modules) { module in
-                    IRModuleRow(module: module).tag(module.id)
+        List(selection: $model.selectedModuleID) {
+            ForEach(model.modules) { module in
+                NavigationLink {
+                    V1ItemList(module: module, selectedID: $model.selectedItemID)
+                        .navigationTitle(module.name)
+                } label: {
+                    IRModuleRow(module: module)
+                        .tag(module.id)
                 }
-            }
-            .navigationTitle("Modules")
-        } content: {
-            if let module = model.selectedModule {
-                V1ItemList(module: module, selectedID: $model.selectedItemID)
-                    .navigationTitle(module.name)
-            } else {
-                ContentUnavailableView("Select a module", systemImage: "sidebar.left")
-            }
-        } detail: {
-            if let item = model.selectedItem {
-                SingleItemReviewVC_Accordion(model: item.itemModel)
-                    .navigationTitle(item.name)
-                    .id(item.id)
-            } else {
-                ContentUnavailableView("Select an item to review", systemImage: "list.bullet.rectangle")
+                
             }
         }
     }
@@ -236,20 +225,36 @@ struct ImportReviewV1SplitView: View {
 private struct V1ItemList: View {
     let module: ImportReviewModule
     @Binding var selectedID: ImportReviewItemModel.ID?
-
+    
     private var addedItems: [ImportReviewItemModel]   { module.reviewItems.filter { $0.kind == .added } }
     private var changedItems: [ImportReviewItemModel] { module.reviewItems.filter { $0.kind == .different } }
-
+    
     var body: some View {
         List(selection: $selectedID) {
             if !addedItems.isEmpty {
                 Section("Added") {
-                    ForEach(addedItems) { item in IRItemListRow(item: item).tag(item.id) }
+                    ForEach(addedItems) { item in
+                        NavigationLink {
+                            SingleItemReviewVC_Accordion(model: item.itemModel)
+                                .navigationTitle(item.name)
+                                .id(item.id)
+                        } label: {
+                            IRItemListRow(item: item).tag(item.id)
+                        }
+                    }
                 }
             }
             if !changedItems.isEmpty {
                 Section("Changed") {
-                    ForEach(changedItems) { item in IRItemListRow(item: item).tag(item.id) }
+                    ForEach(changedItems) { item in
+                        NavigationLink {
+                            SingleItemReviewVC_Accordion(model: item.itemModel)
+                                .navigationTitle(item.name)
+                                .id(item.id)
+                        } label: {
+                            IRItemListRow(item: item).tag(item.id)
+                        }
+                    }
                 }
             }
         }
@@ -269,7 +274,7 @@ private extension Array {
 private extension ImportReviewModel {
     static var preview: ImportReviewModel {
         let previewItem = SingleItemImportModel.preview
-
+        
         let blackKeep = ImportReviewItemModel(
             id: UUID(), kind: .different,
             existingStatus: "5 scenes, local notes kept",
@@ -298,7 +303,7 @@ private extension ImportReviewModel {
             mergedStatus: "Ready to add",
             itemModel: previewItem
         )
-
+        
         return ImportReviewModel(modules: [
             ImportReviewModule(id: .adventure, reviewItems: [blackKeep, frozenVault]),
             ImportReviewModule(id: .value, reviewItems: [maraVenn, captainHarl]),

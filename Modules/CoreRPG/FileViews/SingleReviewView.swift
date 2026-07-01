@@ -59,20 +59,20 @@ enum SingleReviewDecision: String, CaseIterable, Identifiable {
 
 @MainActor
 final class SingleReviewItem {
-    init(existing: any ItemDataAccessable, imported: any ItemDataAccessable, merged: any ItemDataAccessable) {
+    init(existing: (any ItemDataAccessable)?, imported: (any ItemDataAccessable)?, merged: any ItemDataAccessable) {
         self.existing = existing
         self.imported = imported
         self.merged = merged
     }
     
-    let existing: any ItemDataAccessable
-    let imported: any ItemDataAccessable
+    let existing: (any ItemDataAccessable)?
+    let imported: (any ItemDataAccessable)?
     let merged: any ItemDataAccessable
     
     func item(for decision: SingleReviewDecision) -> any ItemDataAccessable {
         switch decision {
-        case .existing: existing
-        case .imported: imported
+        case .existing: existing ?? merged
+        case .imported: imported ?? merged
         case .merge: merged
         }
     }
@@ -329,8 +329,8 @@ extension SingleItemImportModel {
         props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "File", kind: .binary, valueKeyPath: \.fileName, decision: .imported))
         
         // entries — sub-properties paired by name; id = "entry-<entryName>"
-        let existingEntries = item.existing.entries
-        let importedEntries = item.imported.entries
+        let existingEntries = item.existing?.entries ?? []
+        let importedEntries = item.imported?.entries ?? []
         let mergedEntries   = item.merged.entries
         let entries = (existingEntries + importedEntries + mergedEntries)
             .map(\.id)
@@ -345,8 +345,8 @@ extension SingleItemImportModel {
         item: SingleReviewItem,
         entryId: UUID
     ) -> SingleEntryImportModel {
-        let exiting = item.existing.entries.first(where: { $0.id == entryId })
-        let imported = item.imported.entries.first(where: { $0.id == entryId })
+        let exiting = item.existing?.entries.first(where: { $0.id == entryId })
+        let imported = item.imported?.entries.first(where: { $0.id == entryId })
         let merged = item.merged.entries.first(where: { $0.id == entryId })
         let entry = SingleReviewEntry(existing: exiting, imported: imported, merged: merged)
         var props: [SingleReviewEntryProperty] = []
@@ -1009,8 +1009,8 @@ struct SingleItemReviewVC_Accordion: View {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.subheadline).foregroundStyle(.green)
                             } else {
-                                let ex = model.item.existing.entries.count
-                                let im = model.item.imported.entries.count
+                                let ex = model.item.existing?.entries.count ?? 0
+                                let im = model.item.imported?.entries.count ?? 0
                                 if ex != im {
                                     Text("\(ex) existing · \(im) imported")
                                         .font(.caption).foregroundStyle(.secondary)

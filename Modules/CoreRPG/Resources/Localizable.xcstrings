@@ -1899,9 +1899,6 @@
         }
       }
     },
-    "Modules" : {
-
-    },
     "Monster" : {
       "localizations" : {
         "de" : {
@@ -2715,12 +2712,6 @@
           }
         }
       }
-    },
-    "Select a module" : {
-
-    },
-    "Select an item to review" : {
-
     },
     "Selected" : {
       "comment" : "A toggle label that indicates whether an option is selected.",
