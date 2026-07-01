@@ -129,7 +129,9 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
 
 #if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension AdventureEntity: SyncableEntity {}
+extension AdventureEntity: SyncableEntity, OwnershipProvidingEntity {
+    var ownership: EntityOwnership { .unknown }
+}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {

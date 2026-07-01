@@ -89,7 +89,7 @@ struct AudioEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         var results: [AudioEntity] = []
         for id in ids {
             guard let model = root.itemController.itemSync(for: id) else { continue }
-            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
+            guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
             let entity = AudioEntity(root: root, model: model)
             results.append(entity)
         }
@@ -100,6 +100,29 @@ struct AudioEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         try await suggestedEntities()
     }
 }
+
+#if compiler(>=6.4)
+@available(iOS 27, macOS 27, visionOS 27, *)
+extension AudioEntity: SyncableEntity, OwnershipProvidingEntity {
+    var ownership: EntityOwnership { .unknown }
+}
+
+@available(iOS 27, macOS 27, visionOS 27, *)
+extension AudioEntityQuery: @preconcurrency IndexedEntityQuery {
+    func reindexEntities(
+        for identifiers: [AudioEntity.ID],
+        indexDescription: CSSearchableIndexDescription
+    ) async throws {
+        let entities = try await entities(for: identifiers)
+        try await CSSearchableIndex.default().indexAppEntities(entities)
+    }
+
+    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
+        let all = try await allEntities()
+        try await CSSearchableIndex.default().indexAppEntities(all)
+    }
+}
+#endif
 
 extension AudioEntity {
     var sharePreview: SharePreview<Never, Image> {
