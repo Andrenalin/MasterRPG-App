@@ -153,17 +153,26 @@ final class SingleReviewEntryProperty: Identifiable {
 
 @Observable @MainActor
 final class SingleReviewReference: Identifiable {
-    init(id: UUID, moduleName: String, itemName: String, isResolved: Bool) {
-        self.id = id
-        self.moduleName = moduleName
-        self.itemName = itemName
-        self.isResolved = isResolved
+    enum Status {
+        case resolved      // item already exists in the app
+        case pendingImport // item is being imported in this batch
+        case missing       // item is not available
     }
-    
+
+    init(id: UUID, module: NetworkModules, itemName: String, status: Status = .missing) {
+        self.id = id
+        self.module = module
+        self.itemName = itemName
+        self.status = status
+    }
+
     let id: UUID
-    let moduleName: String
-    let itemName: String
-    let isResolved: Bool
+    let module: NetworkModules
+    var moduleName: String { module.title }
+    var itemName: String
+    var status: Status
+
+    var isResolved: Bool { status == .resolved }
 }
 
 @Observable @MainActor
@@ -314,7 +323,7 @@ extension SingleItemImportModel {
     // The UI never computes a merge; existing/imported/merged are provided by the caller
     // (typically the CRDT merge layer). Pass existing == imported and merged == imported
     // when there is no prior version.
-    static func from(item: SingleReviewItem) -> SingleItemImportModel {
+    @MainActor static func from(item: SingleReviewItem) -> SingleItemImportModel {
         var props: [SingleReviewItemProperty] = []
 
         props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Name", kind: .text, valueKeyPath: \.name, decision: .merge))
@@ -331,7 +340,12 @@ extension SingleItemImportModel {
             .reduce(into: [UUID]()) { if !$0.contains($1) { $0.append($1) } }
             .map { SingleItemImportModel.from(item: item, entryId: $0)}
         
-        let references: [SingleReviewReference] = []
+        // Scan the imported item's registered links; statuses are resolved later in finalizeReview()
+        let rawLinks = (item.imported as? any ItemLinkRegistable)?.linkRegisterModels ?? []
+        let references = rawLinks.compactMap { link -> SingleReviewReference? in
+            guard link.destination.typeId != .none else { return nil }
+            return SingleReviewReference(id: link.destination.itemId, module: link.destination.typeId, itemName: link.name)
+        }
         return SingleItemImportModel(item: item, properties: props, entries: entries, references: references)
     }
     
@@ -471,7 +485,7 @@ extension SingleItemImportModel {
         )
         let item = SingleReviewItem(existing: existingItem, imported: importedItem, merged: mergedItem)
         let model = SingleItemImportModel.from(item: item)
-        model.references = [SingleReviewReference(id: UUID(), moduleName: "Adventure", itemName: "Black Keep", isResolved: false)]
+        model.references = [SingleReviewReference(id: UUID(), module: .adventure, itemName: "Black Keep", status: .missing)]
         return model
     }
 }
@@ -635,19 +649,45 @@ private struct SRReferenceRow: View {
 
     var body: some View {
         HStack {
-            Image(systemName: reference.isResolved ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                .foregroundStyle(reference.isResolved ? .green : .red)
+            Image(systemName: reference.status.systemImage).foregroundStyle(reference.status.tint)
             VStack(alignment: .leading, spacing: 1) {
                 Text(reference.itemName)
                 Text(reference.moduleName).font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
-            Text(reference.isResolved ? "OK" : "Missing")
-                .font(.caption2).foregroundStyle(reference.isResolved ? .green : .red)
+            reference.status.label.font(.caption2).foregroundStyle(reference.status.tint)
         }
         .padding(10)
-        .background(reference.isResolved ? Color.green.opacity(0.06) : Color.red.opacity(0.1))
+        .background(reference.status.tint.opacity(0.08))
         .clipShape(.rect(cornerRadius: 8))
+    }
+}
+
+// MARK: - Reference Status UI Helpers
+
+extension SingleReviewReference.Status {
+    var systemImage: String {
+        switch self {
+        case .resolved:      "checkmark.circle.fill"
+        case .pendingImport: "arrow.down.circle.fill"
+        case .missing:       "exclamationmark.triangle.fill"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .resolved:      .green
+        case .pendingImport: .orange
+        case .missing:       .red
+        }
+    }
+
+    var label: Text {
+        switch self {
+        case .resolved:      Text("Resolved", bundle: .module)
+        case .pendingImport: Text("Pending Import", bundle: .module)
+        case .missing:       Text("Missing", bundle: .module)
+        }
     }
 }
 
@@ -674,8 +714,8 @@ extension SingleItemImportModel {
         let reviewItem = SingleReviewItem(existing: snapshot, imported: snapshot, merged: snapshot)
         let model = SingleItemImportModel.from(item: reviewItem)
         model.references = [
-            SingleReviewReference(id: UUID(), moduleName: "Adventure", itemName: "The Vault of Eternity", isResolved: true),
-            SingleReviewReference(id: UUID(), moduleName: "Character", itemName: "Elara the Archivist", isResolved: false)
+            SingleReviewReference(id: UUID(), module: .adventure, itemName: "The Vault of Eternity", status: .resolved),
+            SingleReviewReference(id: UUID(), module: .value, itemName: "Elara the Archivist", status: .missing)
         ]
         return model
     }
@@ -756,9 +796,9 @@ extension SingleItemImportModel {
         let reviewItem = SingleReviewItem(existing: existingItem, imported: importedItem, merged: mergedItem)
         let model = SingleItemImportModel.from(item: reviewItem)
         model.references = [
-            SingleReviewReference(id: UUID(), moduleName: "Map", itemName: "Ashen Reach Region", isResolved: true),
-            SingleReviewReference(id: UUID(), moduleName: "Adventure", itemName: "The Mayor's Ledger", isResolved: false),
-            SingleReviewReference(id: UUID(), moduleName: "Character", itemName: "Brynn Holt", isResolved: true)
+            SingleReviewReference(id: UUID(), module: .map, itemName: "Ashen Reach Region", status: .resolved),
+            SingleReviewReference(id: UUID(), module: .adventure, itemName: "The Mayor's Ledger", status: .pendingImport),
+            SingleReviewReference(id: UUID(), module: .value, itemName: "Brynn Holt", status: .resolved)
         ]
         return model
     }

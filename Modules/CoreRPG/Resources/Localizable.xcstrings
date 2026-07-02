@@ -2049,7 +2049,7 @@
         }
       }
     },
-    "Navigate to select this referenced item" : {
+    "Navigate to this referenced item" : {
 
     },
     "New" : {
@@ -2228,9 +2228,6 @@
         }
       }
     },
-    "OK" : {
-
-    },
     "Only in existing version" : {
 
     },
@@ -2320,6 +2317,9 @@
           }
         }
       }
+    },
+    "Pending Import" : {
+
     },
     "Photo" : {
       "localizations" : {
@@ -2568,6 +2568,9 @@
           }
         }
       }
+    },
+    "Resolved" : {
+
     },
     "Restore item" : {
       "comment" : "Action to restore an item.",

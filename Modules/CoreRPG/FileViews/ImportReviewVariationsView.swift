@@ -119,27 +119,24 @@ private struct IRReferenceSection: View {
 private struct IRReferenceRow: View {
     let ref: SingleReviewReference
     let onSelect: () -> Void
-    
+
     var body: some View {
         Button(action: onSelect) {
             HStack {
-                Image(systemName: ref.isResolved ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                    .foregroundStyle(ref.isResolved ? .green : .red)
+                Image(systemName: ref.status.systemImage).foregroundStyle(ref.status.tint)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(ref.itemName)
                     Text(ref.moduleName).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(ref.isResolved ? "OK" : "Missing")
-                    .font(.caption2)
-                    .foregroundStyle(ref.isResolved ? .green : .red)
+                ref.status.label.font(.caption2).foregroundStyle(ref.status.tint)
             }
             .padding(10)
-            .background(ref.isResolved ? Color.green.opacity(0.08) : Color.red.opacity(0.1))
+            .background(ref.status.tint.opacity(0.08))
             .clipShape(.rect(cornerRadius: 8))
         }
         .buttonStyle(.plain)
-        .accessibilityHint(ref.isResolved ? "Reference is resolved" : "Navigate to select this referenced item")
+        .accessibilityHint(ref.isResolved ? "Reference is resolved" : "Navigate to this referenced item")
     }
 }
 

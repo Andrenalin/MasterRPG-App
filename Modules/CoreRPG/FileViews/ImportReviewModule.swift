@@ -83,10 +83,13 @@ import SwiftUI
     }
 
     func selectDependency(_ reference: SingleReviewReference) {
-        guard let module = modules.first(where: { $0.name == reference.moduleName }),
-              let item = module.reviewItems.first(where: { $0.name == reference.itemName }) else { return }
-        selectedModuleID = module.id
-        selectedItemID = item.id
+        for module in modules {
+            if let item = module.reviewItems.first(where: { $0.id == reference.id }) {
+                selectedModuleID = module.id
+                selectedItemID = item.id
+                return
+            }
+        }
     }
 
     func setDecision(_ decision: SingleReviewDecision, for itemID: ImportReviewItemModel.ID) {

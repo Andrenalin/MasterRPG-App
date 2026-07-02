@@ -38,20 +38,54 @@ public final class ItemDataImportModel {
     var applyHandlers: [UUID: @MainActor @Sendable (SingleReviewDecision) async -> Void] = [:]
     var withOverwrite: Bool { importMode == .overwrite }
 
-    func finalizeReview() {
+    func finalizeReview(rootManager: RootManager? = nil) {
         let modules = pendingModules
             .map { ImportReviewModule(id: $0.key, reviewItems: $0.value) }
             .sorted { $0.name < $1.name }
         reviewModel = modules.isEmpty ? nil : ImportReviewModel(modules: modules)
+        if let rootManager { resolveReferences(rootManager: rootManager) }
         isReviewReady = true
+    }
+
+    private func resolveReferences(rootManager: RootManager) {
+        var pendingByModule: [NetworkModules: Set<UUID>] = [:]
+        for (module, items) in pendingModules {
+            pendingByModule[module] = Set(items.map(\.id))
+        }
+        for (_, items) in pendingModules {
+            for item in items {
+                for reference in item.itemModel.references {
+                    let destId = reference.id
+                    let destModule = reference.module
+                    if pendingByModule[destModule]?.contains(destId) == true {
+                        reference.status = .pendingImport
+                    } else if let lc = rootManager.rootModel(for: destModule)?.linkControllable {
+                        if lc.validateLink(itemId: destId) {
+                            reference.status = .resolved
+                            let resolved = lc.name(for: destId, entryId: nil)
+                            if !resolved.isEmpty { reference.itemName = resolved }
+                        } else {
+                            reference.status = .missing
+                        }
+                    } else {
+                        reference.status = .missing
+                    }
+                }
+            }
+        }
     }
 }
 
 public protocol ImportControllable: Sendable {
     var itemControllable: any ItemControllable { get }
     var editControllable: any EditControllable { get }
+    var rootManager: RootManager? { get }
 
     func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws
+}
+
+public extension ImportControllable {
+    var rootManager: RootManager? { nil }
 }
 
 public enum ItemDataImportableError: Error {
@@ -215,7 +249,7 @@ private extension ImportControllable {
             try await self.importStream(from: inputStream, forceSave: true, importModel: importModel)
             await MainActor.run {
                 importModel.isImportRunning = false
-                if importModel.importMode == .manual { importModel.finalizeReview() }
+                if importModel.importMode == .manual { importModel.finalizeReview(rootManager: rootManager) }
             }
         } catch {
             await MainActor.run { importModel.isImportRunning = false }
