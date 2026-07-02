@@ -202,6 +202,7 @@ private struct IRPropertyRow: View {
 /// Sidebar (modules) → content (items) → detail (accordion). Collapses to a stack on compact width.
 struct ImportReviewSplitView: View {
     @Bindable var model: ImportReviewModel
+    let rootManager: RootManager?
     let onCancel: () -> Void
     let onApply: () async -> Void
 
@@ -240,6 +241,10 @@ struct ImportReviewSplitView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+        .task {
+            guard let rootManager else { return }
+            model.resolveReferences(rootManager: rootManager)
+        }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button(role: .cancel, action: onCancel) {
@@ -341,5 +346,5 @@ private extension ImportReviewModel {
 // MARK: - Previews
 
 #Preview("Split View") {
-    ImportReviewSplitView(model: .preview, onCancel: {}, onApply: {})
+    ImportReviewSplitView(model: .preview, rootManager: nil, onCancel: {}, onApply: {})
 }

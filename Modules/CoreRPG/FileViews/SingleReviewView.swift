@@ -101,21 +101,24 @@ final class SingleReviewEntry {
 
 @Observable @MainActor
 final class SingleReviewItemProperty: Identifiable {
-    init(id: UUID, item: SingleReviewItem, displayName: String, kind: SingleReviewKind, valueKeyPath: KeyPath<any ItemDataAccessable, String>, decision: SingleReviewDecision) {
+    init(id: UUID, item: SingleReviewItem, displayName: String, kind: SingleReviewKind, valueKeyPath: KeyPath<any ItemDataAccessable, String>, decision: SingleReviewDecision, apply: @escaping (inout any ItemDataAccessable, any ItemDataAccessable) -> Void) {
         self.id = id
         self.item = item
         self.displayName = displayName
         self.kind = kind
         self.valueKeyPath = valueKeyPath
         self.decision = decision
+        self.apply = apply
     }
-    
+
     let id: UUID
     let item: SingleReviewItem
     let displayName: String
     let kind: SingleReviewKind
     let valueKeyPath: KeyPath<any ItemDataAccessable, String>
-    
+    /// Writes this property from the decided source model into the final model.
+    let apply: (inout any ItemDataAccessable, any ItemDataAccessable) -> Void
+
     var decision: SingleReviewDecision
 
     var supportsMerge: Bool { kind != .binary }
@@ -127,21 +130,24 @@ final class SingleReviewItemProperty: Identifiable {
 
 @Observable @MainActor
 final class SingleReviewEntryProperty: Identifiable {
-    init(id: UUID, entry: SingleReviewEntry, displayName: String, kind: SingleReviewKind, valueKeyPath: KeyPath<any EntryDataAccessable, String>, decision: SingleReviewDecision) {
+    init(id: UUID, entry: SingleReviewEntry, displayName: String, kind: SingleReviewKind, valueKeyPath: KeyPath<any EntryDataAccessable, String>, decision: SingleReviewDecision, apply: @escaping (inout any EntryDataAccessable, any EntryDataAccessable) -> Void) {
         self.id = id
         self.entry = entry
         self.displayName = displayName
         self.kind = kind
         self.valueKeyPath = valueKeyPath
         self.decision = decision
+        self.apply = apply
     }
-    
+
     let id: UUID
     let entry: SingleReviewEntry
     let displayName: String
     let kind: SingleReviewKind
     let valueKeyPath: KeyPath<any EntryDataAccessable, String>
-    
+    /// Writes this property from the decided source entry into the final entry.
+    let apply: (inout any EntryDataAccessable, any EntryDataAccessable) -> Void
+
     var decision: SingleReviewDecision
 
     var supportsMerge: Bool { kind != .binary }
@@ -159,18 +165,47 @@ final class SingleReviewReference: Identifiable {
         case missing       // item is not available
     }
 
-    init(id: UUID, module: NetworkModules, itemName: String, status: Status = .missing) {
-        self.id = id
-        self.module = module
+    init(itemName: String, destination: ItemRowModel, existsInLibrary: Bool, pendingItem: ImportReviewItemModel? = nil) {
         self.itemName = itemName
-        self.status = status
+        self.destination = destination
+        self.existsInLibrary = existsInLibrary
+        self.pendingItem = pendingItem
+        self.fixedStatus = nil
     }
 
-    let id: UUID
-    let module: NetworkModules
-    var moduleName: String { module.title }
-    var itemName: String
-    var status: Status
+    /// Preview/testing initializer with a fixed status.
+    init(itemName: String, destination: ItemRowModel, status: Status) {
+        self.itemName = itemName
+        self.destination = destination
+        self.existsInLibrary = status == .resolved
+        self.pendingItem = nil
+        self.fixedStatus = status
+    }
+
+    let id = UUID()
+    let itemName: String
+    /// The link target: itemId, entryId and module of the referenced item.
+    let destination: ItemRowModel
+    /// Whether the destination already exists in the local database.
+    let existsInLibrary: Bool
+    /// The review item that creates (or deletes) the destination when applied.
+    weak var pendingItem: ImportReviewItemModel?
+    private let fixedStatus: Status?
+
+    var module: NetworkModules { destination.typeId }
+    var moduleName: String { destination.typeId.title }
+
+    /// Recomputed whenever the decision of the destination review item changes.
+    var status: Status {
+        if let fixedStatus { return fixedStatus }
+        if let pendingItem {
+            if pendingItem.isDeletion {
+                return pendingItem.itemModel.decision == .imported ? .missing : (existsInLibrary ? .resolved : .missing)
+            }
+            if pendingItem.itemModel.decision != .existing { return .pendingImport }
+        }
+        return existsInLibrary ? .resolved : .missing
+    }
 
     var isResolved: Bool { status == .resolved }
 }
@@ -326,10 +361,10 @@ extension SingleItemImportModel {
     @MainActor static func from(item: SingleReviewItem) -> SingleItemImportModel {
         var props: [SingleReviewItemProperty] = []
 
-        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Name", kind: .text, valueKeyPath: \.name, decision: .merge))
-        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Description", kind: .text, valueKeyPath: \.description, decision: .merge))
-        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Tags", kind: .text, valueKeyPath: \.tagLine, decision: .merge))
-        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "File", kind: .binary, valueKeyPath: \.fileName, decision: .imported))
+        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Name", kind: .text, valueKeyPath: \.name, decision: .merge) { $0.name = $1.name })
+        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Description", kind: .text, valueKeyPath: \.description, decision: .merge) { $0.description = $1.description })
+        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Tags", kind: .text, valueKeyPath: \.tagLine, decision: .merge) { $0.tags = $1.tags })
+        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "File", kind: .binary, valueKeyPath: \.fileName, decision: .imported) { $0.fileUrl = $1.fileUrl })
         
         // entries — sub-properties paired by name; id = "entry-<entryName>"
         let existingEntries = item.existing?.entries ?? []
@@ -340,13 +375,8 @@ extension SingleItemImportModel {
             .reduce(into: [UUID]()) { if !$0.contains($1) { $0.append($1) } }
             .map { SingleItemImportModel.from(item: item, entryId: $0)}
         
-        // Scan the imported item's registered links; statuses are resolved later in finalizeReview()
-        let rawLinks = (item.imported as? any ItemLinkRegistable)?.linkRegisterModels ?? []
-        let references = rawLinks.compactMap { link -> SingleReviewReference? in
-            guard link.destination.typeId != .none else { return nil }
-            return SingleReviewReference(id: link.destination.itemId, module: link.destination.typeId, itemName: link.name)
-        }
-        return SingleItemImportModel(item: item, properties: props, entries: entries, references: references)
+        // References are resolved once all items are imported, see ImportReviewModel.resolveReferences(rootManager:)
+        return SingleItemImportModel(item: item, properties: props, entries: entries, references: [])
     }
     
     static func from(
@@ -360,9 +390,46 @@ extension SingleItemImportModel {
         var props: [SingleReviewEntryProperty] = []
         
 
-        props.append(SingleReviewEntryProperty(id: UUID(), entry: entry, displayName: "Name", kind: .text, valueKeyPath: \.name, decision: .merge))
-        props.append(SingleReviewEntryProperty(id: UUID(), entry: entry, displayName: "Content", kind: .text, valueKeyPath: \.content, decision: .merge))
+        props.append(SingleReviewEntryProperty(id: UUID(), entry: entry, displayName: "Name", kind: .text, valueKeyPath: \.name, decision: .merge) { $0.name = $1.name })
+        props.append(SingleReviewEntryProperty(id: UUID(), entry: entry, displayName: "Content", kind: .text, valueKeyPath: \.content, decision: .merge) { $0.content = $1.content })
         return SingleEntryImportModel(entry: entry, properties: props, references: [])
+    }
+}
+
+// MARK: - Materialize Decisions
+
+extension SingleItemImportModel {
+    /// Whether any property or entry deviates from the item-level decision.
+    var hasOverrides: Bool {
+        hasPropertyOverrides || entries.contains { $0.decision != decision || $0.hasPropertyOverrides }
+    }
+
+    /// Builds the final model with the item, property and entry decisions applied.
+    func materializedItem() -> any ItemDataAccessable {
+        var result = item.item(for: decision).copy()
+        for property in properties {
+            property.apply(&result, item.item(for: property.decision))
+        }
+        result.replaceEntries(with: entries.compactMap { $0.materializedEntry() })
+        return result
+    }
+}
+
+extension SingleEntryImportModel {
+    /// The final entry for the current decisions; nil drops the entry from the item.
+    func materializedEntry() -> (any EntryDataAccessable)? {
+        guard var result = entry.item(for: decision) else { return nil }
+        for property in properties {
+            guard let source = entry.item(for: property.decision) else { continue }
+            property.apply(&result, source)
+        }
+        return result
+    }
+}
+
+private extension ItemDataAccessable {
+    func replaceEntries(with newEntries: [any EntryDataAccessable]) {
+        entries = newEntries.compactMap { $0 as? Entry }
     }
 }
 
@@ -485,7 +552,7 @@ extension SingleItemImportModel {
         )
         let item = SingleReviewItem(existing: existingItem, imported: importedItem, merged: mergedItem)
         let model = SingleItemImportModel.from(item: item)
-        model.references = [SingleReviewReference(id: UUID(), module: .adventure, itemName: "Black Keep", status: .missing)]
+        model.references = [SingleReviewReference(itemName: "Black Keep", destination: ItemRowModel(itemId: UUID(), typeId: .adventure), status: .missing)]
         return model
     }
 }
@@ -714,8 +781,8 @@ extension SingleItemImportModel {
         let reviewItem = SingleReviewItem(existing: snapshot, imported: snapshot, merged: snapshot)
         let model = SingleItemImportModel.from(item: reviewItem)
         model.references = [
-            SingleReviewReference(id: UUID(), module: .adventure, itemName: "The Vault of Eternity", status: .resolved),
-            SingleReviewReference(id: UUID(), module: .value, itemName: "Elara the Archivist", status: .missing)
+            SingleReviewReference(itemName: "The Vault of Eternity", destination: ItemRowModel(itemId: UUID(), typeId: .adventure), status: .resolved),
+            SingleReviewReference(itemName: "Elara the Archivist", destination: ItemRowModel(itemId: UUID(), typeId: .value), status: .missing)
         ]
         return model
     }
@@ -796,9 +863,9 @@ extension SingleItemImportModel {
         let reviewItem = SingleReviewItem(existing: existingItem, imported: importedItem, merged: mergedItem)
         let model = SingleItemImportModel.from(item: reviewItem)
         model.references = [
-            SingleReviewReference(id: UUID(), module: .map, itemName: "Ashen Reach Region", status: .resolved),
-            SingleReviewReference(id: UUID(), module: .adventure, itemName: "The Mayor's Ledger", status: .pendingImport),
-            SingleReviewReference(id: UUID(), module: .value, itemName: "Brynn Holt", status: .resolved)
+            SingleReviewReference(itemName: "Ashen Reach Region", destination: ItemRowModel(itemId: UUID(), typeId: .map), status: .resolved),
+            SingleReviewReference(itemName: "The Mayor's Ledger", destination: ItemRowModel(itemId: UUID(), typeId: .adventure), status: .pendingImport),
+            SingleReviewReference(itemName: "Brynn Holt", destination: ItemRowModel(itemId: UUID(), typeId: .value), status: .resolved)
         ]
         return model
     }
@@ -988,6 +1055,24 @@ struct SingleItemReviewVC_Accordion: View {
     }
 }
 
+// Review text can contain RPG:// markdown links; render them read-only, no toggling.
+private struct VC_LinkText: View {
+    init(text: String) {
+        self.text = text
+        _model = State(initialValue: LinkHighlightTextModel(linkControllable: nil, text: text))
+    }
+
+    let text: String
+    @State private var model: LinkHighlightTextModel
+
+    var body: some View {
+        LinkHighlightTextView(model: model)
+            .onChange(of: text) { _, newText in
+                model.reset(text: newText)
+            }
+    }
+}
+
 private struct VC_EntryAccordion: View {
     let entry: SingleEntryImportModel
     @State private var isExpanded = false
@@ -1027,12 +1112,12 @@ private struct VC_EntryAccordion: View {
                     HStack(spacing: 5) {
                         Image(systemName: indicatorName)
                             .font(.subheadline).foregroundStyle(indicatorColor)
-                        Text(entry.name).font(.subheadline).bold()
+                        VC_LinkText(text: entry.name).font(.subheadline).bold()
                         Spacer()
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                             .font(.caption).foregroundStyle(.tertiary)
                     }
-                    Text(entry.content)
+                    VC_LinkText(text: entry.content)
                         .font(.callout).foregroundStyle(.primary)
                     if anyPropertyChanged {
                         HStack(spacing: 4) {

@@ -35,44 +35,14 @@ public final class ItemDataImportModel {
     var reviewModel: ImportReviewModel? = nil
 
     var pendingModules: [NetworkModules: [ImportReviewItemModel]] = [:]
-    var applyHandlers: [UUID: @MainActor @Sendable (SingleReviewDecision) async -> Void] = [:]
     var withOverwrite: Bool { importMode == .overwrite }
 
-    func finalizeReview(rootManager: RootManager? = nil) {
+    func finalizeReview() {
         let modules = pendingModules
             .map { ImportReviewModule(id: $0.key, reviewItems: $0.value) }
             .sorted { $0.name < $1.name }
         reviewModel = modules.isEmpty ? nil : ImportReviewModel(modules: modules)
-        if let rootManager { resolveReferences(rootManager: rootManager) }
         isReviewReady = true
-    }
-
-    private func resolveReferences(rootManager: RootManager) {
-        var pendingByModule: [NetworkModules: Set<UUID>] = [:]
-        for (module, items) in pendingModules {
-            pendingByModule[module] = Set(items.map(\.id))
-        }
-        for (_, items) in pendingModules {
-            for item in items {
-                for reference in item.itemModel.references {
-                    let destId = reference.id
-                    let destModule = reference.module
-                    if pendingByModule[destModule]?.contains(destId) == true {
-                        reference.status = .pendingImport
-                    } else if let lc = rootManager.rootModel(for: destModule)?.linkControllable {
-                        if lc.validateLink(itemId: destId) {
-                            reference.status = .resolved
-                            let resolved = lc.name(for: destId, entryId: nil)
-                            if !resolved.isEmpty { reference.itemName = resolved }
-                        } else {
-                            reference.status = .missing
-                        }
-                    } else {
-                        reference.status = .missing
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -193,12 +163,10 @@ public extension ImportControllable {
                             existingStatus: deletedIA.name,
                             importedStatus: "Not in import",
                             mergedStatus: deletedIA.name,
-                            itemModel: itemModel
+                            itemModel: itemModel,
+                            isDeletion: true
                         )
                         importModel.pendingModules[module, default: []].append(reviewItemModel)
-                        importModel.applyHandlers[deletedId] = { decision in
-                            if decision == .imported { await ic.delete(itemId: deletedId) }
-                        }
                     }
                 }
             }
@@ -237,7 +205,8 @@ private extension ImportControllable {
         defer { inputStream.close() }
 
         let fileHeader = try inputStream.readHeader()
-        guard fileHeader.token == ExportDataToken.counter.rawValue && fileHeader.version == ExportDataToken.version_2024.rawValue else { throw ItemDataImportableError.notEnoughData }
+        guard fileHeader.token == ExportDataToken.counter.rawValue &&
+                fileHeader.version == ExportDataToken.version_2024.rawValue else { throw ItemDataImportableError.notEnoughData }
 
         await MainActor.run {
             importModel.importedItems = 0
@@ -249,7 +218,7 @@ private extension ImportControllable {
             try await self.importStream(from: inputStream, forceSave: true, importModel: importModel)
             await MainActor.run {
                 importModel.isImportRunning = false
-                if importModel.importMode == .manual { importModel.finalizeReview(rootManager: rootManager) }
+                if importModel.importMode == .manual { importModel.finalizeReview() }
             }
         } catch {
             await MainActor.run { importModel.isImportRunning = false }
@@ -292,19 +261,6 @@ private extension ImportControllable {
                     itemModel: itemModel
                 )
                 importModel.pendingModules[module, default: []].append(reviewItemModel)
-//                importModel.applyHandlers[id] = { decision in
-//                    switch decision {
-//                    case .existing: break
-//                    case .imported:
-//                        itemController.replace(model: importedItem, isInsert: true, forceSave: true)
-//                        editCtrl.repairFolder(itemId: id)
-//                    case .merge:
-//                        if let merged = mergedItem {
-//                            itemController.replace(model: merged, isInsert: true, forceSave: true)
-//                            editCtrl.repairFolder(itemId: id)
-//                        }
-//                    }
-//                }
             }
         }
 

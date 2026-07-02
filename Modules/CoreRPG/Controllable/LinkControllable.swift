@@ -85,6 +85,9 @@ public protocol LinkControllable: Sendable {
         
     // Collect Links
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID]
+
+    // Links of an unsaved item
+    @MainActor func links(for item: any ItemDataAccessable) -> [LinkRegisterModel]
 }
 
 // MARK: - generate Links
@@ -311,6 +314,16 @@ public extension LinkControllable {
 
 public extension LinkControllable {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] { [] }
+}
+
+// MARK: - Links of an unsaved item
+
+public extension LinkControllable {
+    /// All links embedded in `item`, with `item` as source. Works for items that are not
+    /// in the database yet, e.g. during import review.
+    @MainActor func links(for item: any ItemDataAccessable) -> [LinkRegisterModel] {
+        (item as? any ItemLinkRegistable)?.linkRegisterModels ?? []
+    }
 }
 
 // MARK: - Format Inline Description

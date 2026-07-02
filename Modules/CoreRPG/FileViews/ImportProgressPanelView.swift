@@ -47,6 +47,7 @@ public struct ImportProgressPanelView: View {
         if importModel.isReviewReady, let reviewModel = importModel.reviewModel {
             ImportReviewSplitView(
                 model: reviewModel,
+                rootManager: importController.rootManager,
                 onCancel: {
                     importTask?.cancel()
                     navigator.dismiss()
@@ -127,20 +128,35 @@ public struct ImportProgressPanelView: View {
 
 private extension ImportProgressPanelView {
     func applyReview() async {
-        if let reviewModel = importModel.reviewModel {
+        if let reviewModel = importModel.reviewModel, let rootManager = importController.rootManager {
             for module in reviewModel.modules {
+                guard let root = rootManager.rootModel(for: module.id) else { continue }
                 for item in module.reviewItems {
-                    if let handler = importModel.applyHandlers[item.id] {
-                        await handler(item.itemModel.decision)
-                    }
+                    await apply(item: item, root: root)
                 }
             }
         }
         importModel.isReviewReady = false
         importModel.reviewModel = nil
         importModel.pendingModules = [:]
-        importModel.applyHandlers = [:]
         navigator.dismiss()
+    }
+
+    func apply(item: ImportReviewItemModel, root: any ItemRootControllable) async {
+        let itemModel = item.itemModel
+        if item.isDeletion {
+            if itemModel.decision == .imported {
+                await root.itemControllable.delete(itemId: item.id)
+            }
+            return
+        }
+        if itemModel.decision == .existing {
+            // Keep the local data untouched unless single properties or entries were overridden
+            guard itemModel.hasOverrides, itemModel.item.existing != nil else { return }
+        }
+        guard let model = itemModel.materializedItem() as? any Observable & ItemDataAccessable else { return }
+        root.itemControllable.replace(model: model, isInsert: true, forceSave: true)
+        root.editControllable.repairFolder(itemId: item.id)
     }
 }
 
