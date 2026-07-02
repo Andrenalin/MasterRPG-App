@@ -33,7 +33,7 @@ public struct SettingsView: View {
                 }
 
                 Button {
-                    navigator.navigate(to: SettingsRoute.importData, method: .managedSheet)
+                    navigator.navigate(to: SettingsRoute.importData, method: .managedCover)
                 } label: {
                     Label { Text("Import", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
                 }

@@ -200,29 +200,67 @@ private struct IRPropertyRow: View {
     }
 }
 
-// MARK: - V1: Three-Column NavigationSplitView
+// MARK: - Three-Column NavigationSplitView
 
-/// Classic sidebar → item list → detail panel. Best for iPad and Mac.
-struct ImportReviewV1SplitView: View {
+/// Sidebar (modules) → content (items) → detail (accordion). Collapses to a stack on compact width.
+struct ImportReviewSplitView: View {
     @Bindable var model: ImportReviewModel
+    let onCancel: () -> Void
+    let onApply: () async -> Void
 
     var body: some View {
-        List(selection: $model.selectedModuleID) {
-            ForEach(model.modules) { module in
-                NavigationLink(value: module) {
-                    IRModuleRow(module: module)
-                        .tag(module.id)
-                }
+        NavigationSplitView {
+            List(model.modules, selection: $model.selectedModuleID) { module in
+                IRModuleRow(module: module)
+            }
+            .navigationTitle(Text("Modules", bundle: .module))
+            .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 280)
+            .onChange(of: model.selectedModuleID) { _, newID in
+                guard let newID else { return }
+                model.select(moduleID: newID)
+            }
+        } content: {
+            if let module = model.selectedModule {
+                IRItemContentList(module: module, selectedID: $model.selectedItemID)
+                    .navigationTitle(module.name)
+                    .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 380)
+            } else {
+                ContentUnavailableView(
+                    String(localized: "Select a Module", bundle: .module),
+                    systemImage: "sidebar.left"
+                )
+            }
+        } detail: {
+            if let item = model.selectedItem {
+                SingleItemReviewVC_Accordion(model: item.itemModel)
+                    .navigationTitle(item.name)
+                    .id(item.id)
+            } else {
+                ContentUnavailableView(
+                    String(localized: "Select an Item", bundle: .module),
+                    systemImage: "doc.text"
+                )
             }
         }
-        .navigationDestination(for: ImportReviewModule.self) { module in
-            V1ItemList(module: module, selectedID: $model.selectedItemID)
-                .navigationTitle(module.name)
+        .navigationSplitViewStyle(.balanced)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button(role: .cancel, action: onCancel) {
+                    Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark") }
+                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button {
+                    Task { await onApply() }
+                } label: {
+                    Label { Text("Apply", bundle: .module) } icon: { Image(systemName: "checkmark.circle") }
+                }
+            }
         }
     }
 }
 
-private struct V1ItemList: View {
+private struct IRItemContentList: View {
     let module: ImportReviewModule
     @Binding var selectedID: ImportReviewItemModel.ID?
 
@@ -232,28 +270,23 @@ private struct V1ItemList: View {
     var body: some View {
         List(selection: $selectedID) {
             if !addedItems.isEmpty {
-                Section("Added") {
+                Section {
                     ForEach(addedItems) { item in
-                        NavigationLink(value: item) {
-                            IRItemListRow(item: item).tag(item.id)
-                        }
+                        IRItemListRow(item: item)
                     }
+                } header: {
+                    Text("Added", bundle: .module)
                 }
             }
             if !changedItems.isEmpty {
-                Section("Changed") {
+                Section {
                     ForEach(changedItems) { item in
-                        NavigationLink(value: item) {
-                            IRItemListRow(item: item).tag(item.id)
-                        }
+                        IRItemListRow(item: item)
                     }
+                } header: {
+                    Text("Changed", bundle: .module)
                 }
             }
-        }
-        .navigationDestination(for: ImportReviewItemModel.self) { item in
-            SingleItemReviewVC_Accordion(model: item.itemModel)
-                .navigationTitle(item.name)
-                .id(item.id)
         }
     }
 }
@@ -310,6 +343,6 @@ private extension ImportReviewModel {
 
 // MARK: - Previews
 
-#Preview("V1 · Split View") {
-    ImportReviewV1SplitView(model: .preview)
+#Preview("Split View") {
+    ImportReviewSplitView(model: .preview, onCancel: {}, onApply: {})
 }

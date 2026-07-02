@@ -44,79 +44,73 @@ public struct ImportProgressPanelView: View {
     @State private var importTask: Task<Void, any Error>?
 
     public var body: some View {
-        NavigationStack {
-            Group {
-                if importModel.isReviewReady {
-                    ImportReviewContent(importModel: importModel)
-                } else {
-                    VStack {
-                        ImportProgressSection(importModel: importModel)
-                        ImportStatusSection(
-                            outcome: outcome,
-                            importModel: importModel,
-                            showImportFileChooser: $showImportFileChooser,
-                            loadUrl: $loadUrl,
-                            urlProvider: urlProvider,
-                            isSaveGame: isSaveGame
-                        )
-                        if outcome == .notStarted {
-                            ImportInformationSection()
-                        }
+        if importModel.isReviewReady, let reviewModel = importModel.reviewModel {
+            ImportReviewSplitView(
+                model: reviewModel,
+                onCancel: {
+                    importTask?.cancel()
+                    navigator.dismiss()
+                },
+                onApply: { await applyReview() }
+            )
+        } else {
+            NavigationStack {
+                VStack {
+                    ImportProgressSection(importModel: importModel)
+                    ImportStatusSection(
+                        outcome: outcome,
+                        importModel: importModel,
+                        showImportFileChooser: $showImportFileChooser,
+                        loadUrl: $loadUrl,
+                        urlProvider: urlProvider,
+                        isSaveGame: isSaveGame
+                    )
+                    if outcome == .notStarted {
+                        ImportInformationSection()
                     }
-                    .padding()
                 }
-            }
-            .navigationTitle(Text("Importing", bundle: .module))
-            .navigationBarTitleDisplayModeAll(.inline)
-            .task(id: loadUrl) {
-                guard let loadUrl else { return }
-                do {
-                    outcome = .running
-                    saveDeferredHandler?(true)
-                    defer { saveDeferredHandler?(false) }
+                .padding()
+                .navigationTitle(Text("Importing", bundle: .module))
+                .navigationBarTitleDisplayModeAll(.inline)
+                .task(id: loadUrl) {
+                    guard let loadUrl else { return }
+                    do {
+                        outcome = .running
+                        saveDeferredHandler?(true)
+                        defer { saveDeferredHandler?(false) }
 
-                    importTask = importController.importUrl(from: loadUrl, importModel: importModel)
-                    try await importTask?.value
-                    outcome = .finished
-                } catch is CancellationError {
-                    outcome = .cancelled
-                } catch {
-                    outcome = .failed(error.localizedDescription)
+                        importTask = importController.importUrl(from: loadUrl, importModel: importModel)
+                        try await importTask?.value
+                        outcome = .finished
+                    } catch is CancellationError {
+                        outcome = .cancelled
+                    } catch {
+                        outcome = .failed(error.localizedDescription)
+                    }
                 }
-            }
 
 #if !os(tvOS)
-            .fileImporter(isPresented: $showImportFileChooser, allowedContentTypes: [isSaveGame ? .gmsDocument : .rpgDocument]) { result in
-                do {
-                    loadUrl = try result.get()
-                    outcome = .running
-                } catch is CancellationError {
-                    outcome = .cancelled
-                } catch {
-                    outcome = .failed(error.localizedDescription)
+                .fileImporter(isPresented: $showImportFileChooser, allowedContentTypes: [isSaveGame ? .gmsDocument : .rpgDocument]) { result in
+                    do {
+                        loadUrl = try result.get()
+                        outcome = .running
+                    } catch is CancellationError {
+                        outcome = .cancelled
+                    } catch {
+                        outcome = .failed(error.localizedDescription)
+                    }
                 }
-            }
 #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(role: .cancel) {
-                        importTask?.cancel()
-                        navigator.dismiss()
-                    } label: {
-                        Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark") }
-                    }
-                    .disabled(outcome == .finished)
-                }
-
-                if importModel.isReviewReady {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button {
-                            Task { await applyReview() }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(role: .cancel) {
+                            importTask?.cancel()
+                            navigator.dismiss()
                         } label: {
-                            Label { Text("Apply", bundle: .module) } icon: { Image(systemName: "checkmark.circle") }
+                            Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark") }
                         }
+                        .disabled(outcome == .finished)
                     }
-                } else {
                     ToolbarItem(placement: .confirmationAction) {
                         Button {
                             navigator.dismiss()
@@ -147,16 +141,6 @@ private extension ImportProgressPanelView {
         importModel.pendingModules = [:]
         importModel.applyHandlers = [:]
         navigator.dismiss()
-    }
-}
-
-private struct ImportReviewContent: View {
-    let importModel: ItemDataImportModel
-
-    var body: some View {
-        if let reviewModel = importModel.reviewModel {
-            ImportReviewV1SplitView(model: reviewModel)
-        }
     }
 }
 
