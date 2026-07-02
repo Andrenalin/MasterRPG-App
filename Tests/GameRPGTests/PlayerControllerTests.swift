@@ -42,7 +42,9 @@ struct PlayerControllerTestEnvironment {
         try await MockRoot.resetTestData(for: root.adventureRoot)
         try await MockRoot.resetGameController(for: root)
 
-        root.networkStore = networkController
+        await MainActor.run {
+            root.networkStore = networkController
+        }
         let playerId = UUID()
         let gameConfig = GameConfigModel(id: playerId, state: .started, master: .empty)
         let gameRoster = GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")])

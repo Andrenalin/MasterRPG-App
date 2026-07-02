@@ -60,8 +60,13 @@ final class MasterPlayerControllerTests {
         rootSut = try await MockRoot.createGameRoot()
         try await MockRoot.resetTestData(for: rootSut.adventureRoot)
         try await MockRoot.resetGameController(for: rootSut)
-        rootSut.networkStore = networkMock
-        rootSut.networkProxyStore = networkProxyMock
+        let rootSut = self.rootSut!
+        let networkMock = self.networkMock!
+        let networkProxyMock = self.networkProxyMock!
+        await MainActor.run {
+            rootSut.networkStore = networkMock
+            rootSut.networkProxyStore = networkProxyMock
+        }
 
         let masterId = UUID()
         gameConfigModelSut = GameConfigModel(id: masterId, state: .started, master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin"))
@@ -72,7 +77,10 @@ final class MasterPlayerControllerTests {
         try await MockRoot.resetTestData(for: rootPlayer.adventureRoot)
         try await MockRoot.resetGameController(for: rootPlayer)
 
-        rootPlayer.networkStore = networkMock
+        let rootPlayer = self.rootPlayer!
+        await MainActor.run {
+            rootPlayer.networkStore = networkMock
+        }
         let playerId = UUID()
         gameConfigModelPlayer = GameConfigModel(id: playerId, state: .started, master: .empty)
         await rootPlayer.gameModel.reset(gameConfig: gameConfigModelPlayer, gameRoster: GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")]))

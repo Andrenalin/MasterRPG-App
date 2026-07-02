@@ -38,7 +38,9 @@ final class MasterControllerModel: Sendable {
 }
 
 final class MasterController: Sendable {
-    unowned let root: GameRoot!
+    // unowned (not strong) to break the cycle GameRoot → GameModel → MasterController → GameRoot;
+    // GameModel always drops its controllers before GameRoot can go away (stopGame()).
+    unowned let root: GameRoot
     let gameModel: MasterControllerModel
     let asProxy: Bool
 
@@ -404,8 +406,14 @@ extension MasterController {
         case .reveal, .store:
             return try await root.spaceRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
-                try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
-                await send(type: .reveal, subtype: .show, updated: model.data)
+            if model.subType == .spaceTransform {
+                // Manipulation sync from a player — apply locally only; the network
+                // layer already fanned the message out to the other players.
+                try await root.spaceRoot.gameControllable.updateGame(data: model.data, subtype: .spaceTransform)
+                return nil
+            }
+            try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
+            await send(type: .reveal, subtype: .show, updated: model.data)
             return nil
         }
     }

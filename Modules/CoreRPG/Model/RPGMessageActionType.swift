@@ -18,8 +18,10 @@ public enum RPGMessageActionType: Int, Codable, Sendable {
     case mapPin = 4
 
     case photoSpace = 6
-    
+
     case valueResult = 7
+
+    case spaceTransform = 9
 }
 
 extension RPGMessageActionType: CustomDebugStringConvertible {
@@ -49,6 +51,8 @@ extension RPGMessageActionType: CustomDebugStringConvertible {
             return "PhotoSpace"
         case .valueResult:
             return "ValueResult"
+        case .spaceTransform:
+            return "SpaceTransform"
         }
     }
 }

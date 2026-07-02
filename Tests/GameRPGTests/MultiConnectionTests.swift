@@ -77,8 +77,10 @@ struct MultiConnectionTestEnvironment {
         let masterRoot = try await MockRoot.createGameRoot()
         try await MockRoot.resetTestData(for: masterRoot.adventureRoot)
         try await MockRoot.resetGameController(for: masterRoot)
-        masterRoot.networkStore = networkController
-        masterRoot.networkProxyStore = networkProxyController
+        await MainActor.run {
+            masterRoot.networkStore = networkController
+            masterRoot.networkProxyStore = networkProxyController
+        }
 
         let masterId = UUID()
         let masterConfig = GameConfigModel(
@@ -95,7 +97,9 @@ struct MultiConnectionTestEnvironment {
         let player1Root = try await MockRoot.createGameRoot()
         try await MockRoot.resetTestData(for: player1Root.adventureRoot)
         try await MockRoot.resetGameController(for: player1Root)
-        player1Root.networkStore = networkController
+        await MainActor.run {
+            player1Root.networkStore = networkController
+        }
 
         let player1Id = UUID()
         let player1Config = GameConfigModel(id: player1Id, state: .started, master: .empty)
@@ -108,7 +112,9 @@ struct MultiConnectionTestEnvironment {
         let player2Root = try await MockRoot.createGameRoot()
         try await MockRoot.resetTestData(for: player2Root.adventureRoot)
         try await MockRoot.resetGameController(for: player2Root)
-        player2Root.networkStore = networkController
+        await MainActor.run {
+            player2Root.networkStore = networkController
+        }
 
         let player2Id = UUID()
         let player2Config = GameConfigModel(id: player2Id, state: .started, master: .empty)
@@ -121,7 +127,9 @@ struct MultiConnectionTestEnvironment {
         let player3Root = try await MockRoot.createGameRoot()
         try await MockRoot.resetTestData(for: player3Root.adventureRoot)
         try await MockRoot.resetGameController(for: player3Root)
-        player3Root.networkStore = networkController
+        await MainActor.run {
+            player3Root.networkStore = networkController
+        }
 
         let player3Id = UUID()
         let player3Config = GameConfigModel(id: player3Id, state: .started, master: .empty)

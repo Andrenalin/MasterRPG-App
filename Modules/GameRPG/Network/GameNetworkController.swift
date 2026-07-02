@@ -102,8 +102,10 @@ extension GameNetworkController {
         Logger.networking.debug("GameNetworkController: start master game \(name, privacy: .public)")
         model.masterStore?.startStreaming()
         if !proxy && sharePlayStore.canActivateSharePlay {
-            sharePlayStore.startSharing(with: game.master.adventureTitle, image: titleImage)
+            // Subscribe to sessions() before activating, so the session delivered
+            // by activate() can never race past the for-await loop.
             sharePlayStore.joinGame()
+            sharePlayStore.startSharing(with: game.master.adventureTitle, image: titleImage)
         }
     }
 

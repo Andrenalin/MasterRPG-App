@@ -46,7 +46,7 @@ struct PlayerGameScreen: View {
             await prepareWindows()
         }
 #if os(visionOS)
-        .modifier(ImmersiveSpaceHandler(root: root))
+        .gameImmersiveSpaceSync(root: root)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
             root.diceRoot.viewController.dicePlayerView(root: root.diceRoot)
                 .environment(diceShowOptionModel)
@@ -125,22 +125,6 @@ private extension PlayerGameScreen {
 }
 
 #if os(visionOS)
-private struct ImmersiveSpaceHandler: ViewModifier {
-    let root: GameRoot
-
-    @Environment(ScenesManager.self) private var scenesManager
-
-    func body(content: Content) -> some View {
-        content.task(id: root.gameModel.shareState.groupImmersionActive) {
-            if root.gameModel.shareState.groupImmersionActive {
-                await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: root.spaceRoot.gameControllable.currentId, entryId: nil))
-            } else {
-                await scenesManager.dismissSpaceViewer()
-            }
-        }
-    }
-}
-
 private struct PlayerMenuView: View {
     @Environment(ScenesManager.self) private var scenesManager
     @State private var infoState: NetworkModules = .none

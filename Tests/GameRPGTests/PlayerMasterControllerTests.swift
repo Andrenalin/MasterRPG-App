@@ -58,8 +58,10 @@ struct PlayerMasterControllerTestEnvironment {
         let masterRoot = try await MockRoot.createGameRoot()
         try await MockRoot.resetTestData(for: masterRoot.adventureRoot)
         try await MockRoot.resetGameController(for: masterRoot)
-        masterRoot.networkStore = network
-        masterRoot.networkProxyStore = networkProxy
+        await MainActor.run {
+            masterRoot.networkStore = network
+            masterRoot.networkProxyStore = networkProxy
+        }
 
         let masterId = UUID()
         let masterGameConfig = GameConfigModel(id: masterId, state: .started, master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin"))
@@ -70,7 +72,9 @@ struct PlayerMasterControllerTestEnvironment {
         let playerRoot = try await MockRoot.createGameRoot()
         try await MockRoot.resetTestData(for: playerRoot.adventureRoot)
         try await MockRoot.resetGameController(for: playerRoot)
-        playerRoot.networkStore = network
+        await MainActor.run {
+            playerRoot.networkStore = network
+        }
 
         let playerId = UUID()
         let playerGameConfig = GameConfigModel(id: playerId, state: .started, master: .empty)

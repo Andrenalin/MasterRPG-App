@@ -6,11 +6,11 @@ import os.log
 import CoreRPG
 
 protocol ConnectionControllable {
-    func startConnection()
-    func cancel()
+    func startConnection() async
+    func cancel() async
 
-    func request(type: GameMessageType, with content: MessageMapper?)
-    func response(type: GameMessageType, with content: MessageMapper?)
+    func request(type: GameMessageType, with content: MessageMapper?) async
+    func response(type: GameMessageType, with content: MessageMapper?) async
 }
 
 protocol ConnectionControllerDelegate: Sendable & AnyObject {
@@ -20,14 +20,13 @@ protocol ConnectionControllerDelegate: Sendable & AnyObject {
     func readyConnection(for id: ConnectionController.ID) async
 }
 
-final class ConnectionController: Sendable, Identifiable {
-    let id: UUID
+actor ConnectionController: Identifiable {
+    nonisolated let id: UUID
     private let connection: NWConnection
-    // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
-    nonisolated(unsafe) private weak var delegate: (any ConnectionControllerDelegate)?
-    // Owned receive task. Written on @MainActor (startConnection/cancel), read on concurrent (NWConnection handler).
-    // Both sides are serialised through NWConnection's internal queue, so nonisolated(unsafe) is safe here.
-    nonisolated(unsafe) private var receiveTask: Task<Void, Never>?
+    // NWConnection needs a dispatch queue; callbacks hop from it into the actor.
+    private let queue = DispatchQueue(label: "de.andretrettin.MasterRPG.ConnectionController")
+    private weak var delegate: (any ConnectionControllerDelegate)?
+    private var receiveTask: Task<Void, Never>?
 
     init(id: UUID, endpoint: NWEndpoint, delegate: ConnectionControllerDelegate) {
         self.id = id
@@ -41,6 +40,12 @@ final class ConnectionController: Sendable, Identifiable {
         self.connection = connection
         self.delegate = delegate
         Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init connection")
+    }
+
+    deinit {
+        // Owners may drop connections without an explicit cancel() (e.g. resetConntections).
+        receiveTask?.cancel()
+        connection.cancel()
     }
 }
 
@@ -62,12 +67,12 @@ extension ConnectionController: ConnectionControllable {
         let uuid = id.uuidString
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Start")
 
-        connection.stateUpdateHandler = { [self] newState in
-            Task { @concurrent in
-                await self.stateChanged(newState)
+        connection.stateUpdateHandler = { [weak self] newState in
+            Task {
+                await self?.stateChanged(newState)
             }
         }
-        connection.start(queue: .main)
+        connection.start(queue: queue)
     }
 
     func cancel() {
@@ -128,7 +133,7 @@ private extension ConnectionController {
                         continuation.resume(returning: false)
                         return
                     }
-                    Task { @concurrent in
+                    Task {
                         await self.process(content: content, context: context, error: error)
                         continuation.resume(returning: error == nil)
                     }

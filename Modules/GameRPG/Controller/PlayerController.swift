@@ -67,7 +67,9 @@ actor GameModelMessage {
 }
 
 final class PlayerController: Sendable {
-    unowned let root: GameRoot!
+    // unowned (not strong) to break the cycle GameRoot → GameModel → PlayerController → GameRoot;
+    // GameModel always drops its controllers before GameRoot can go away (stopGame()).
+    unowned let root: GameRoot
     let gameModel: PlayerControllerModel
     let proxyMasterController: MasterController?
     
@@ -205,7 +207,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 Logger.networking.debug("PlayerController: Message will be ignored because of controls \(controls, privacy: .public)")
                 return
             }
-            guard await root.gameModel.gameType == .proxy || model.gameConfig.isMaster || model.data.type == .dice else {
+            guard await root.gameModel.gameType == .proxy || model.gameConfig.isMaster || model.data.type == .dice || model.subType == .spaceTransform else {
                 Logger.networking.debug("PlayerController: Message will be ignored because it is send from Player \(model.senderName, privacy: .public)")
                 return
             }
@@ -557,19 +559,13 @@ extension PlayerController {
             if try await root.spaceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 Task { @MainActor in
                     gameModel.gameUpdateType = .space
-                    
-                    // ✅ SharePlay: Open immersive space for all participants
+
                     #if os(visionOS)
                     if root.networkStore.sharePlayStore.isActive {
-                        // Update presentation mode to immersive
+                        // Switch the presentation mode; the modeChanged observer
+                        // reconfigures the spatial template, and the game screen
+                        // opens the immersive space when it shows the space module.
                         root.gameModel.shareState.mode = .immersive
-                        root.networkStore.sharePlayStore.applyShareState()
-                        
-//                        // Open the immersive space with the revealed space item
-//                        let selection = ItemSelection(itemId: model.data.id, entryId: nil)
-//                        await root.viewController.scenesManager.openSpaceViewer(selection: selection)
-                        
-                        Logger.networking.debug("✅ Opened immersive space for SharePlay participant: \(model.data.id, privacy: .public)")
                     }
                     #endif
                 }
@@ -581,6 +577,12 @@ extension PlayerController {
             try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
+            if model.subType == .spaceTransform {
+                // Manipulation sync (rotate / scale / move) — apply to the shared
+                // model state; transport-level fan-out already delivered it to everyone.
+                try await root.spaceRoot.gameControllable.updateGame(data: model.data, subtype: .spaceTransform)
+                return nil
+            }
             Task { @MainActor in
                 if await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
                     gameModel.gameUpdateType = .space

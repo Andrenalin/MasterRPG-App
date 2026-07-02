@@ -66,6 +66,7 @@ struct MasterGameScreen: View {
             }
         }
 #if os(visionOS)
+        .gameImmersiveSpaceSync(root: root)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
             root.diceRoot.viewController.dicePlayerView(root: root.diceRoot)
                 .environment(diceShowOptionModel)

@@ -11,7 +11,10 @@ class GameRenderer: TabletopGame.RenderDelegate {
     let cursorEntity: Entity
     let root: Entity
     var cuteBots: [Entity] = []
-    // The root offset controls the height of the table inside the app volume.
+    // Initial fallback for the table height inside the app volume. The value
+    // -0.7 assumes Apple's 1.5 m-tall sample volume (origin at volume center);
+    // our volume is flatter, so the view corrects it via placeTable(bottomY:)
+    // once RealityView reports the actual volume bounds.
     let rootOffset: Vector3D = .init(x: 0, y: -0.7, z: 0)
     weak var game: GameTableModel?
     let portalWorld: Entity
@@ -115,6 +118,18 @@ class GameRenderer: TabletopGame.RenderDelegate {
         let s = SIMD3<Float>(repeating: scale)
         root.scale   = s
         portal.scale = s
+    }
+
+    /// Positions the table scene at the actual bottom of the volumetric window.
+    /// RealityView's origin is the volume center and content outside the bounds
+    /// is clipped, so a fixed offset only works for one specific volume height —
+    /// the system may also clamp the requested window size.
+    func placeTable(bottomY: Float) {
+        root.transform.translation.y = bottomY
+        portalWorld.transform.translation.y = bottomY + GameMetrics.tableThickness * 0.5
+        for child in portal.children {
+            child.transform.translation.y = bottomY
+        }
     }
 
     @MainActor

@@ -79,9 +79,7 @@ struct MasterRPGApp: App {
 #endif
                 .environmentSetUp(appModel)
                 .appSettingsSetUp(appModel)
-            //                .groupActivityAssociation(.primary(SceneId.game.rawValue))
-
-
+                .gameWindowActivityAssociation(root: appModel.gameRoot, sceneId: SceneId.game.rawValue)
         }
         .commands {
             MenuMainCommand(appModel: appModel)

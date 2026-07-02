@@ -52,12 +52,19 @@ final class RPGSharePlayController {
     #endif
 
     private let groupStateObserver = GroupStateObserver()
-    private var cancellables: Set<AnyCancellable> = []
 
     private var messenger: GroupSessionMessenger?
-    var subscriptions = Set<AnyCancellable>()
-    private var tasks = Set<Task<Void, Never>>()
+    // Session-scoped tasks (state/participant/message/journal loops and in-flight
+    // sends), cancelled by reset(). Send tasks remove themselves on completion so
+    // the collection stays bounded during a long game.
+    private var tasks: [UUID: Task<Void, Never>] = [:]
     private var journal: GroupSessionJournal?
+
+    // Lifetime observers — survive session resets; re-created if setup() runs again.
+    private var eligibilityTask: Task<Void, Never>?
+    #if os(visionOS)
+    private var modeChangeTask: Task<Void, Never>?
+    #endif
 
     weak var delegate: SharePlayControllerDelegate?
     weak var playBack: AVPlaybackCoordinator?
@@ -84,27 +91,27 @@ final class RPGSharePlayController {
             await self?.sendPackage(package)
         }
 
-        groupStateObserver.$isEligibleForGroupSession
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] value in
-                MainActor.assumeIsolated {
-                    self?.canActivateSharePlay = value
-                }
-            }.store(in: &cancellables)
-        
+        eligibilityTask?.cancel()
+        eligibilityTask = Task { [weak self] in
+            guard let observer = self?.groupStateObserver else { return }
+            for await value in observer.$isEligibleForGroupSession.values {
+                guard let self else { return }
+                self.canActivateSharePlay = value
+            }
+        }
+
         #if os(visionOS)
-        // ✅ Observe presentation mode changes and apply configuration
-        gameModel.shareState.modeChanged
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] newMode in
-                MainActor.assumeIsolated {
-                    guard let self else { return }
-                    Logger.sharePlay.debug("Presentation mode changed to: \(newMode.rawValue, privacy: .public)")
-                    
-                    // Apply the new spatial template configuration
-                    self.applyShareState()
-                }
-            }.store(in: &cancellables)
+        // Observe presentation mode changes and apply configuration
+        modeChangeTask?.cancel()
+        modeChangeTask = Task { [weak self] in
+            for await newMode in gameModel.shareState.modeChanged.values {
+                guard let self else { return }
+                Logger.sharePlay.debug("Presentation mode changed to: \(newMode.rawValue, privacy: .public)")
+
+                // Apply the new spatial template configuration
+                self.applyShareState()
+            }
+        }
         #endif
     }
 
@@ -136,7 +143,7 @@ extension RPGSharePlayController {
 
         if let data = gameNetworkModel.data.data, let journal, fileJournal {
             Logger.sharePlay.debug("Journal: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
-            let journalTask = Task(priority: .userInitiated) { [weak self] in
+            addSendTask(priority: .userInitiated) { [weak self] in
                 guard let self else { return }
                 if let oldAttachment = self.gameModel?.attachments[gameNetworkModel.data.type] {
                     do {
@@ -155,14 +162,30 @@ extension RPGSharePlayController {
                     Logger.sharePlay.error("Cannot add attachment for module \(gameNetworkModel.data.type.token, privacy: .public) and id: \(gameNetworkModel.data.id, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
                 }
             }
-            tasks.insert(journalTask)
             return
         }
-        let sendTask = Task { [weak self] in
+        addSendTask { [weak self] in
             guard let self, let sender = self.packageSender else { return }
             await sender.send(data: data)
         }
-        tasks.insert(sendTask)
+    }
+
+    /// Runs a send operation as a session-scoped task that is cancellable by
+    /// reset() but removes itself when finished, so `tasks` stays bounded.
+    private func addSendTask(priority: TaskPriority? = nil, _ operation: @escaping @MainActor () async -> Void) {
+        let id = UUID()
+        tasks[id] = Task(priority: priority) { [weak self] in
+            await operation()
+            self?.tasks.removeValue(forKey: id)
+        }
+    }
+
+    /// Registers a session-scoped task that reset() cancels. Passing a stable
+    /// key replaces (and cancels) the previous task for that key, so repeated
+    /// registrations don't accumulate duplicate observers.
+    func trackSessionTask(_ task: Task<Void, Never>, key: UUID = UUID()) {
+        tasks[key]?.cancel()
+        tasks[key] = task
     }
 
     private func sendPackage(_ package: PackageMessage) async {
@@ -175,14 +198,14 @@ extension RPGSharePlayController {
         Logger.sharePlay.debug("SharePlay: reset state: \(self.printState(), privacy: .public)")
         isActive = false
         messenger = nil
-        tasks.forEach { $0.cancel() }
-        tasks = []
-        subscriptions = []
+        tasks.values.forEach { $0.cancel() }
+        tasks = [:]
         if groupSession != nil {
             groupSession?.leave()
             groupSession = nil
         }
         #if os(visionOS)
+        tabletopGame?.detachNetworkCoordinator()
         systemCoordinator = nil
         gameModel?.shareState.isSharePlayActive = false
         gameModel?.shareState.groupImmersionActive = false
@@ -254,24 +277,23 @@ extension RPGSharePlayController {
         #if os(visionOS)
         gameModel?.shareState.isSharePlayActive = true
         #endif
-        groupSession.$state
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
+        let stateTask = Task { [weak self] in
+            for await state in groupSession.$state.values {
                 guard let self else { return }
-                MainActor.assumeIsolated {
-                    let stateDescription = self.printState()
-                    Logger.sharePlay.debug("Session state: \(stateDescription, privacy: .public)")
-                    self.stateText = stateDescription
-                    if case .invalidated = state {
-                        self.groupSession = nil
-                        self.reset()
-                        // Notify the player controller so it resets hasSendPlayer
-                        // and marks the master as lost — required for re-sync on rejoin.
-                        self.delegate?.sharePlayLostConnection()
-                    }
+                let stateDescription = self.printState()
+                Logger.sharePlay.debug("Session state: \(stateDescription, privacy: .public)")
+                self.stateText = stateDescription
+                if case .invalidated = state {
+                    self.groupSession = nil
+                    self.reset()
+                    // Notify the player controller so it resets hasSendPlayer
+                    // and marks the master as lost — required for re-sync on rejoin.
+                    self.delegate?.sharePlayLostConnection()
+                    return
                 }
             }
-            .store(in: &subscriptions)
+        }
+        tasks[UUID()] = stateTask
 
         // Combine's .receive(on:) introduces an async hop that lets the @Published property
         // update before the sink runs — so groupSession.activeParticipants equals activeParticipants
@@ -292,9 +314,9 @@ extension RPGSharePlayController {
                 }
             }
         }
-        tasks.insert(participantTask)
+        tasks[UUID()] = participantTask
 
-        let task = Task { [weak self] in
+        let messageTask = Task { [weak self] in
             for await (message, context) in messenger.messages(of: PackageMessage.self) {
                 guard let self else { return }
                 Logger.sharePlay.debug("Received Update Message \(message.uuid, privacy: .public): \(message.count, privacy: .public) - \(message.total, privacy: .public) from \(context.source.id, privacy: .public)")
@@ -304,14 +326,14 @@ extension RPGSharePlayController {
                 }
             }
         }
-        tasks.insert(task)
+        tasks[UUID()] = messageTask
         let journalTask = Task { [weak self] in
             for await attachment in journal.attachments {
                 guard let self else { return }
                 await self.handle(attachment)
             }
         }
-        tasks.insert(journalTask)
+        tasks[UUID()] = journalTask
 
         groupSession.join()
         playBack?.coordinateWithSession(groupSession)
@@ -323,12 +345,10 @@ extension RPGSharePlayController {
         tabletopGame?.coordinateWithSession(groupSession)
 
         if tabletopGame != nil {
-            Task {
-                if let gameTableModel = self.gameModel?.gameTableModel {
-                    self.setupSeatAssignment(gameTableModel: gameTableModel)
-                } else {
-                    Logger.sharePlay.debug("GameTableModel not available at session configure time — seats assigned later")
-                }
+            if let gameTableModel = gameModel?.gameTableModel {
+                setupSeatAssignment(gameTableModel: gameTableModel)
+            } else {
+                Logger.sharePlay.debug("GameTableModel not available at session configure time — seats assigned later")
             }
         }
         #endif
@@ -386,7 +406,7 @@ extension RPGSharePlayController {
                 self.gameModel?.shareState.groupImmersionActive = immersionStyle != nil
             }
         }
-        tasks.insert(immersionTask)
+        tasks[UUID()] = immersionTask
     }
     
     func applyShareState() {

@@ -41,6 +41,15 @@ struct SpaceViewer: View {
     @State private var hasLoaded: Bool = false
     @State private var loadError: String?
 
+#if os(visionOS)
+    // Shared immersive space (SharePlay): placement and manipulation sync.
+    @Environment(\.immersiveSpaceDisplacement) private var immersiveSpaceDisplacement
+    @Environment(\.networkActions) private var networkActions
+
+    @State private var lastSentTransform: SpaceTransformModel?
+    @State private var isSharedPlacement = false
+#endif
+
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .bottomLeading) {
@@ -75,9 +84,80 @@ struct SpaceViewer: View {
         }
 #if os(visionOS)
         .immersiveSpaceTracker()  // ✅ Track immersive space lifecycle for ScenesManager
+        .onChange(of: immersiveSpaceDisplacement) {
+            // The system sets a displacement when it aligns the immersive space
+            // for SharePlay — move the model from the head anchor to the shared origin.
+            applySharedPlacementIfNeeded()
+        }
+        .onChange(of: root.gameController.spaceGameModel.sharedTransform) { _, newValue in
+            apply(remote: newValue)
+        }
+        .task(id: hasLoaded) {
+            await sendTransformLoop()
+        }
 #endif
     }
 }
+
+#if os(visionOS)
+// MARK: - Shared immersive space synchronization
+
+private extension SpaceViewer {
+    /// Re-anchors the model from the local head pose to the immersive space
+    /// origin, which the system aligns across all SharePlay participants.
+    @MainActor
+    func applySharedPlacementIfNeeded() {
+        guard isImmersiveSpace, immersiveSpaceDisplacement != .identity, !isSharedPlacement else { return }
+        guard let anchor = rootEntity as? AnchorEntity, let objectEntity else { return }
+        isSharedPlacement = true
+
+        anchor.anchoring = AnchoringComponent(.world(transform: matrix_identity_float4x4))
+        // Center the model at the shared origin, one meter up — every
+        // participant computes the same coordinates.
+        let center = objectEntity.visualBounds(relativeTo: anchor).center
+        objectEntity.position += SIMD3(-center.x, 1.0 - center.y, -center.z)
+    }
+
+    @MainActor
+    func apply(remote transform: SpaceTransformModel?) {
+        guard isImmersiveSpace, let transform, let objectEntity else { return }
+        guard transform != lastSentTransform else { return }  // echo of our own send
+
+        yaw = transform.yaw
+        pitch = transform.pitch
+        objectEntity.position = transform.position
+        objectEntity.scale = transform.scale
+    }
+
+    /// Broadcasts local manipulations (drag / magnify / rotate) on the game
+    /// control channel, throttled so a gesture in progress streams updates.
+    @MainActor
+    func sendTransformLoop() async {
+        guard isImmersiveSpace, hasLoaded, networkActions != nil else { return }
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(300))
+            sendTransformIfChanged()
+        }
+    }
+
+    @MainActor
+    func sendTransformIfChanged() {
+        guard let objectEntity else { return }
+        let current = SpaceTransformModel(position: objectEntity.position, scale: objectEntity.scale, yaw: yaw, pitch: pitch)
+        guard lastSentTransform != nil else {
+            // Baseline after load — don't broadcast the initial pose.
+            lastSentTransform = current
+            return
+        }
+        // Skip when nothing changed or when the current pose is one we just
+        // received from another participant.
+        guard current != lastSentTransform, current != root.gameController.spaceGameModel.sharedTransform else { return }
+        lastSentTransform = current
+        guard let data = current.encodeData() else { return }
+        networkActions?.game(NetworkCodableDataType(id: id, type: .space, version: 0, data: data), .spaceTransform, nil)
+    }
+}
+#endif
 
 private extension SpaceViewer {
     var progressView: some View {
@@ -253,6 +333,9 @@ private extension SpaceViewer {
                 headAnchor.addChild(loadedEntity)
                 content.add(headAnchor)
                 self.rootEntity = headAnchor
+                // If the system already aligned the space for SharePlay (joining an
+                // active group immersion), move straight to the shared origin.
+                applySharedPlacementIfNeeded()
             } else {
                 loadedEntity.position = -visualCenter
                 content.add(newRootEntity)

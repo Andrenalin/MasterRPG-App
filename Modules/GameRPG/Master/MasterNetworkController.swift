@@ -101,13 +101,15 @@ extension MasterNetworkController {
     }
 
     func sendResponse(data: MessageMapper?) async {
-        await networkModel.connections.forEach { $0.sendResponse(data: data) }
+        for connection in await networkModel.connections {
+            await connection.sendResponse(data: data)
+        }
     }
 
     func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async {
         for connection in await networkModel.connections {
             if connection.id != except {
-                connection.sendResponse(data: data)
+                await connection.sendResponse(data: data)
             }
         }
     }
@@ -195,7 +197,9 @@ extension MasterNetworkController {
 private extension MasterNetworkController {
     @MainActor func addNew(_ connection: ConnectionController) {
         networkModel.connections.append(connection)
-        connection.startConnection()
+        Task {
+            await connection.startConnection()
+        }
     }
 
     @MainActor func connectToPlayer(endpoint: NWEndpoint) {

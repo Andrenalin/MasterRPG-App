@@ -600,17 +600,19 @@ extension RPGSharePlayController {
         Logger.sharePlay.debug("Setting up SharePlay seat assignment (isMaster: \(isMaster, privacy: .public))")
         gameTableModel.assignSeatsForSharePlay(groupSession: groupSession, isMaster: isMaster)
 
-        groupSession.$activeParticipants
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
+        let seatTask = Task { [weak self] in
+            for await _ in groupSession.$activeParticipants.values {
                 guard let self else { return }
-                MainActor.assumeIsolated {
-                    let isMaster = self.gameModel?.gameConfig.isMaster ?? false
-                    gameTableModel.updateSeatsForParticipantChange(groupSession: self.groupSession, isMaster: isMaster)
-                }
+                let isMaster = self.gameModel?.gameConfig.isMaster ?? false
+                gameTableModel.updateSeatsForParticipantChange(groupSession: self.groupSession, isMaster: isMaster)
             }
-            .store(in: &subscriptions)
+        }
+        trackSessionTask(seatTask, key: Self.seatObservationTaskKey)
     }
+}
+
+private extension RPGSharePlayController {
+    static let seatObservationTaskKey = UUID()
 }
 
 #endif

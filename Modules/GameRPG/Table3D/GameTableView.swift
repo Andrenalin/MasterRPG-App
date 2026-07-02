@@ -28,18 +28,29 @@ public struct GameTableView: View {
                     content.add(loadedGame.renderer.root)
                     content.add(loadedGame.renderer.portalWorld)
                     content.add(loadedGame.renderer.portal)
-                    
+
+                    // Place the table on the actual floor of the volume. The volume is
+                    // flatter than Apple's 1.5 m sample (and the system may clamp the
+                    // requested size), so the fixed rootOffset would clip the scene.
+                    let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
+                    loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
+
                     if let panel = attachments.entity(for: "toolbar") {
                         panel.position = SIMD3<Float>(0, 0, Float(GameMetrics.tableEdge) + 0.1)
                         loadedGame.renderer.root.addChild(panel)
                     }
-                    
+
                     // ✅ Debug logging
                     #if DEBUG
                     print("✅ Root added with \(loadedGame.renderer.root.children.count) children")
                     print("   Position: \(loadedGame.renderer.root.position)")
                     print("   Scale: \(loadedGame.renderer.root.scale)")
+                    print("   Volume bounds: \(volumeBounds)")
                     #endif
+                } update: { content, _ in
+                    // Re-anchor to the volume floor when the user resizes the volume.
+                    let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
+                    loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
                 } attachments: {
                     Attachment(id: "toolbar") {
                         GameTableToolbar(game: loadedGame)

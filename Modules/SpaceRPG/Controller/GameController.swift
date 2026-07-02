@@ -8,9 +8,14 @@ final class SpaceGameModel: Sendable {
     init() {}
 
     var openSpace: Bool = false
-    
+
+    /// The most recent manipulation received from another participant,
+    /// applied by SpaceViewer. Keyed to a single current model.
+    var sharedTransform: SpaceTransformModel?
+
     func reset() {
         openSpace = false
+        sharedTransform = nil
     }
 }
 
@@ -53,5 +58,17 @@ extension GameController: GameControllable {
 
     @MainActor func resetGameState() {
         spaceGameModel.reset()
+    }
+}
+
+extension GameController {
+    func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws {
+        guard subtype == .spaceTransform,
+              let transform = SpaceTransformModel.decodeData(of: data.data) else { return }
+        await MainActor.run {
+            if spaceGameModel.sharedTransform != transform {
+                spaceGameModel.sharedTransform = transform
+            }
+        }
     }
 }

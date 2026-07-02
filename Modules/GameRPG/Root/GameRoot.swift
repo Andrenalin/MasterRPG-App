@@ -103,11 +103,13 @@ final class GameModel: Sendable {
     var gamePlayer: PlayerGameModel { gameConfig.player(in: gameRoster) }
 }
 
-public final class GameRoot: @unchecked Sendable {
+@MainActor
+public final class GameRoot {
     let adventureRoot: AdventureRootModel
     let audioRoot: AudioRootModel
     let diceRoot: DiceRootModel
     let mapRoot: MapRootModel
+    // var (not let) so tests can inject spy stores; safe under MainActor isolation.
     var networkStore: GameNetworkController
     var networkProxyStore: GameNetworkController
     let pdfRoot: PdfRootModel
@@ -119,7 +121,6 @@ public final class GameRoot: @unchecked Sendable {
 
     let gameModel: GameModel
 
-    @MainActor
     public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
@@ -151,11 +152,11 @@ public final class GameRoot: @unchecked Sendable {
         _logGameController.unsafelyUnwrapped
     }
     
-    @MainActor lazy var searchController: SearchGlobalController = {
+    lazy var searchController: SearchGlobalController = {
         SearchGlobalController(root: self)
     }()
 
-    @MainActor public lazy var networkActions: NetworkActions = NetworkActions { @MainActor [weak self] idType in
+    public lazy var networkActions: NetworkActions = NetworkActions { @MainActor [weak self] idType in
         guard let store = self?.gameModel.masterController else { return }
         Task {
             await store.show(for: idType)
@@ -182,7 +183,7 @@ public final class GameRoot: @unchecked Sendable {
         }
     }
 
-    @MainActor public lazy var sharingControlActions: SharingControlActions = SharingControlActions { [weak self] in
+    public lazy var sharingControlActions: SharingControlActions = SharingControlActions { [weak self] in
         self?.gameModel.gameRoster.controls ?? []
     } update: { [weak self] newControls in
         if self?.gameModel.gameRoster.controls != newControls {
@@ -193,11 +194,10 @@ public final class GameRoot: @unchecked Sendable {
         }
     }
 
-    @MainActor public lazy var sharingFeatureActions: SharingFeatureActions = SharingFeatureActions { [weak self] in
+    public lazy var sharingFeatureActions: SharingFeatureActions = SharingFeatureActions { [weak self] in
         self?.gameModel.gameRoster.features ?? GameFeatureModel()
     }
     
-    @MainActor
     var characterName: String {
         if let selectedCharacter = gameModel.selectedCharacter {
             return characterRoot.linkControllable.name(for: selectedCharacter)
@@ -206,7 +206,6 @@ public final class GameRoot: @unchecked Sendable {
         }
     }
 
-    @MainActor
     var gameMasterName: String {
         String(localized: "GameMaster", bundle: .module).localizedString
     }
@@ -215,7 +214,6 @@ public final class GameRoot: @unchecked Sendable {
 // MARK: - Master / Player selection views and handling
 
 extension GameRoot {
-    @MainActor
     func resetSelectedAdventure(uuidString: String) {
         guard let uuid = UUID(uuidString: uuidString) else {
             if gameModel.selectedAdventure != nil {
@@ -226,7 +224,6 @@ extension GameRoot {
         gameModel.selectedAdventure <=> uuid
     }
 
-    @MainActor
     func resetSelectedCharacter(uuidString: String) {
         guard let uuid = UUID(uuidString: uuidString) else {
             if gameModel.selectedCharacter != nil {
@@ -237,7 +234,6 @@ extension GameRoot {
         gameModel.selectedCharacter <=> uuid
     }
 
-    @MainActor
     func resetSelectedGameMaster(uuidString: String) {
         guard let uuid = UUID(uuidString: uuidString) else {
             if gameModel.selectedGameMaster != nil {
@@ -252,7 +248,6 @@ extension GameRoot {
 // MARK: - Master Control Game
 
 extension GameRoot {
-    @MainActor
     func startMaster() async {
         guard gameModel.gameConfig.state == .stopped else {
             await stopGame()
@@ -295,7 +290,6 @@ extension GameRoot {
 // MARK: - Player Control Game
 
 extension GameRoot {
-    @MainActor
     private func name(for type: GameType) -> String {
         switch type {
         case .observer:
@@ -307,7 +301,6 @@ extension GameRoot {
         }
     }
 
-    @MainActor
     func startGame(to model: BrowserGameModel?, mode: GameType) async {
         if (mode == .proxy || mode == .observer || mode == .demo) {
             gameModel.selectedCharacter = nil
@@ -348,7 +341,6 @@ extension GameRoot {
         }
     }
 
-    @MainActor
     func joinGame(for type: GameType) {
         gameModel.startGameTime = Date.now
         gameModel.playerGameStarted = true
@@ -365,7 +357,6 @@ extension GameRoot {
     }
 
     // both
-    @MainActor
     func stopGame() async {
         gameModel.playerGameStarted = false
         gameModel.gameConfig.state = .stopped
@@ -384,7 +375,6 @@ extension GameRoot {
 #endif
     }
 
-    @MainActor
     func saveGame() -> ItemModuleIds {
         adventureRoot.adventureGameControllable.saveGame()
     }
@@ -393,7 +383,6 @@ extension GameRoot {
 // MARK: - Demo
 
 extension GameRoot {
-    @MainActor
     func startDemo() async {
         await startGame(to: nil, mode: .demo)
 
@@ -448,7 +437,6 @@ extension GameRoot {
 // MARK: - Search Helpers
 
 extension GameRoot {
-    @MainActor
     func rootController(for module: NetworkModules) -> ItemRootController {
         switch module {
         case .adventure:
@@ -480,7 +468,7 @@ extension GameRoot {
 // MARK: - Widget
 
 extension GameRoot {
-    @MainActor func widgetGameRunningChanged() {
+    func widgetGameRunningChanged() {
         if gameModel.gameConfig.state == .started {
             let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
             defaults?.set(true, forKey: UserDefaults.DiceKeys.isGameActive)

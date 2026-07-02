@@ -49,7 +49,7 @@ extension PlayerNetworkController: PlayerNetworkControllable {
     func stop() async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Stop")
         networkModel.connectionState = .notReady
-        networkModel.connectionController?.cancel()
+        await networkModel.connectionController?.cancel()
         networkModel.connectionController = nil
         networkModel.playerConnectionId = nil
         networkModel.model = nil
