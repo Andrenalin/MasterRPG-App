@@ -62,9 +62,11 @@ struct DiceEntity: IndexedEntity {
             attributes.comment = "D\(firstDie.die.max)"
         }
 
+#if compiler(>=6.4)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
             attributes.relatedAppEntityIdentifier = EntityIdentifier(for: self)
         }
+#endif
         
         return attributes
     }
