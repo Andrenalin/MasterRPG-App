@@ -6,6 +6,14 @@ public protocol ExampleUrlProvider {
     @MainActor func urlExampleData(isGerman: Bool) -> URL?
 }
 
+private enum ImportOutcome: Equatable, Sendable {
+    case notStarted
+    case running
+    case cancelled
+    case finished
+    case failed(String)
+}
+
 public struct ImportProgressPanelView: View {
     public init(importController: any ImportControllable) {
         self.urlProvider = nil
@@ -39,14 +47,20 @@ public struct ImportProgressPanelView: View {
         NavigationStack {
             Group {
                 if importModel.isReviewReady {
-                    reviewContent
+                    ImportReviewContent(importModel: importModel)
                 } else {
                     VStack {
-                        progressView
-                        statusText
-                        
+                        ImportProgressSection(importModel: importModel)
+                        ImportStatusSection(
+                            outcome: outcome,
+                            importModel: importModel,
+                            showImportFileChooser: $showImportFileChooser,
+                            loadUrl: $loadUrl,
+                            urlProvider: urlProvider,
+                            isSaveGame: isSaveGame
+                        )
                         if outcome == .notStarted {
-                            informationDownloadText
+                            ImportInformationSection()
                         }
                     }
                     .padding()
@@ -115,24 +129,10 @@ public struct ImportProgressPanelView: View {
             }
         }
     }
-
-    private enum ImportOutcome: Equatable, Sendable {
-        case notStarted
-        case running
-        case cancelled
-        case finished
-        case failed(String)
-    }
 }
 
 private extension ImportProgressPanelView {
-    @ViewBuilder var reviewContent: some View {
-        if let reviewModel = importModel.reviewModel {
-            ImportReviewV1SplitView(model: reviewModel)
-        }
-    }
-
-    private func applyReview() async {
+    func applyReview() async {
         if let reviewModel = importModel.reviewModel {
             for module in reviewModel.modules {
                 for item in module.reviewItems {
@@ -148,8 +148,22 @@ private extension ImportProgressPanelView {
         importModel.applyHandlers = [:]
         navigator.dismiss()
     }
+}
 
-    @ViewBuilder var progressView: some View {
+private struct ImportReviewContent: View {
+    let importModel: ItemDataImportModel
+
+    var body: some View {
+        if let reviewModel = importModel.reviewModel {
+            ImportReviewV1SplitView(model: reviewModel)
+        }
+    }
+}
+
+private struct ImportProgressSection: View {
+    let importModel: ItemDataImportModel
+
+    var body: some View {
         if importModel.isImportRunning && importModel.totalImportingItems > 0 {
             ProgressView(
                 value: Double(importModel.importedItems),
@@ -159,8 +173,48 @@ private extension ImportProgressPanelView {
             .accessibilityLabel(Text("Import progress", bundle: .module))
         }
     }
+}
 
-    var chooseUrlButtons: some View {
+private struct ImportStatusSection: View {
+    let outcome: ImportOutcome
+    let importModel: ItemDataImportModel
+    @Binding var showImportFileChooser: Bool
+    @Binding var loadUrl: URL?
+    let urlProvider: (any ExampleUrlProvider)?
+    let isSaveGame: Bool
+
+    var body: some View {
+        VStack {
+            switch outcome {
+            case .notStarted:
+                ImportChooseUrlView(
+                    showImportFileChooser: $showImportFileChooser,
+                    loadUrl: $loadUrl,
+                    urlProvider: urlProvider,
+                    isSaveGame: isSaveGame,
+                    importModel: importModel
+                )
+            case .running:
+                Text("Importing \(importModel.importedItems) of \(importModel.totalImportingItems)", bundle: .module)
+            case .finished:
+                Text("Import is finished, \(importModel.importedItems) are successfully imported.", bundle: .module)
+            case .cancelled:
+                Text("Import is cancelled, but \(importModel.importedItems) are successfully imported.", bundle: .module)
+            case .failed(let message):
+                Text(message)
+            }
+        }
+    }
+}
+
+private struct ImportChooseUrlView: View {
+    @Binding var showImportFileChooser: Bool
+    @Binding var loadUrl: URL?
+    let urlProvider: (any ExampleUrlProvider)?
+    let isSaveGame: Bool
+    @Bindable var importModel: ItemDataImportModel
+
+    var body: some View {
         VStack(spacing: 20) {
             Button {
                 showImportFileChooser = true
@@ -199,8 +253,7 @@ private extension ImportProgressPanelView {
                 }
                 .padding(.bottom, 20)
 
-                @Bindable var bm = importModel
-                Picker(selection: $bm.importMode) {
+                Picker(selection: $importModel.importMode) {
                     Label { Text("Merge", bundle: .module) } icon: { Image(systemName: "arrow.triangle.merge") }
                         .tag(ImportMode.merge)
                     Label { Text("Overwrite", bundle: .module) } icon: { Image(systemName: "exclamationmark.triangle") }
@@ -215,25 +268,10 @@ private extension ImportProgressPanelView {
         }
         .disabled(showImportFileChooser)
     }
+}
 
-    var statusText: some View {
-        VStack {
-            switch outcome {
-            case .notStarted:
-                chooseUrlButtons
-            case .running:
-                Text("Importing \(importModel.importedItems) of \(importModel.totalImportingItems)", bundle: .module)
-            case .finished:
-                Text("Import is finished, \(importModel.importedItems) are successfully imported.", bundle: .module)
-            case .cancelled:
-                Text("Import is cancelled, but \(importModel.importedItems) are successfully imported.", bundle: .module)
-            case .failed(let message):
-                Text(message)
-            }
-        }
-    }
-    
-    var informationDownloadText: some View {
+private struct ImportInformationSection: View {
+    var body: some View {
         GroupBoxTV {
             VStack(spacing: 16) {
                 Text("Use the Free Support [Page](https://github.com/Andrenalin/MasterRPG)", bundle: .module)

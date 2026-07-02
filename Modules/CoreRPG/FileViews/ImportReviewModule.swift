@@ -2,7 +2,10 @@
 
 import SwiftUI
 
-@MainActor @Observable final class ImportReviewModule: Identifiable {
+@MainActor @Observable final class ImportReviewModule: Identifiable, Hashable {
+    nonisolated static func == (lhs: ImportReviewModule, rhs: ImportReviewModule) -> Bool { lhs.id == rhs.id }
+    nonisolated func hash(into hasher: inout Hasher) { hasher.combine(id) }
+
     init(id: NetworkModules, reviewItems: [ImportReviewItemModel]) {
         self.id = id
         self.reviewItems = reviewItems
@@ -14,7 +17,10 @@ import SwiftUI
     var name: String { id.title }
 }
 
-@MainActor @Observable final class ImportReviewItemModel: Identifiable {
+@MainActor @Observable final class ImportReviewItemModel: Identifiable, Hashable {
+    nonisolated static func == (lhs: ImportReviewItemModel, rhs: ImportReviewItemModel) -> Bool { lhs.id == rhs.id }
+    nonisolated func hash(into hasher: inout Hasher) { hasher.combine(id) }
+
     init(id: UUID, kind: ImportReviewItemModel.ChangeKind, existingStatus: String, importedStatus: String, mergedStatus: String, itemModel: SingleItemImportModel) {
         self.id = id
         self.kind = kind

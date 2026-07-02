@@ -205,19 +205,19 @@ private struct IRPropertyRow: View {
 /// Classic sidebar → item list → detail panel. Best for iPad and Mac.
 struct ImportReviewV1SplitView: View {
     @Bindable var model: ImportReviewModel
-    
+
     var body: some View {
         List(selection: $model.selectedModuleID) {
             ForEach(model.modules) { module in
-                NavigationLink {
-                    V1ItemList(module: module, selectedID: $model.selectedItemID)
-                        .navigationTitle(module.name)
-                } label: {
+                NavigationLink(value: module) {
                     IRModuleRow(module: module)
                         .tag(module.id)
                 }
-                
             }
+        }
+        .navigationDestination(for: ImportReviewModule.self) { module in
+            V1ItemList(module: module, selectedID: $model.selectedItemID)
+                .navigationTitle(module.name)
         }
     }
 }
@@ -225,20 +225,16 @@ struct ImportReviewV1SplitView: View {
 private struct V1ItemList: View {
     let module: ImportReviewModule
     @Binding var selectedID: ImportReviewItemModel.ID?
-    
+
     private var addedItems: [ImportReviewItemModel]   { module.reviewItems.filter { $0.kind == .added } }
     private var changedItems: [ImportReviewItemModel] { module.reviewItems.filter { $0.kind == .different } }
-    
+
     var body: some View {
         List(selection: $selectedID) {
             if !addedItems.isEmpty {
                 Section("Added") {
                     ForEach(addedItems) { item in
-                        NavigationLink {
-                            SingleItemReviewVC_Accordion(model: item.itemModel)
-                                .navigationTitle(item.name)
-                                .id(item.id)
-                        } label: {
+                        NavigationLink(value: item) {
                             IRItemListRow(item: item).tag(item.id)
                         }
                     }
@@ -247,16 +243,17 @@ private struct V1ItemList: View {
             if !changedItems.isEmpty {
                 Section("Changed") {
                     ForEach(changedItems) { item in
-                        NavigationLink {
-                            SingleItemReviewVC_Accordion(model: item.itemModel)
-                                .navigationTitle(item.name)
-                                .id(item.id)
-                        } label: {
+                        NavigationLink(value: item) {
                             IRItemListRow(item: item).tag(item.id)
                         }
                     }
                 }
             }
+        }
+        .navigationDestination(for: ImportReviewItemModel.self) { item in
+            SingleItemReviewVC_Accordion(model: item.itemModel)
+                .navigationTitle(item.name)
+                .id(item.id)
         }
     }
 }

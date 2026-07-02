@@ -50,9 +50,9 @@ enum SingleReviewDecision: String, CaseIterable, Identifiable {
 
     var tagline: String {
         switch self {
-        case .merge:    "Combine both versions"
-        case .existing: "Keep your current data"
-        case .imported: "Replace with imported"
+        case .merge:    String(localized: "Combine both versions", bundle: .module)
+        case .existing: String(localized: "Keep your current data", bundle: .module)
+        case .imported: String(localized: "Replace with imported", bundle: .module)
         }
     }
 }
@@ -237,9 +237,9 @@ final class SingleItemImportModel {
         return item[keyPath: firstProperty.valueKeyPath]
     }
     
-    func isChanged(for property: SingleReviewItemProperty) -> Bool {
-        let hasDescision = properties.first(where: { $0.id == property.id })?.decision ?? .merge
-        return hasDescision != decision
+    func hasOverride(for property: SingleReviewItemProperty) -> Bool {
+        let hasDecision = properties.first(where: { $0.id == property.id })?.decision ?? .merge
+        return hasDecision != decision
     }
 }
 
@@ -247,12 +247,14 @@ final class SingleItemImportModel {
 @Observable @MainActor
 final class SingleEntryImportModel: Identifiable {
     init(entry: SingleReviewEntry, properties: [SingleReviewEntryProperty], references: [SingleReviewReference], decision: SingleReviewDecision = .merge) {
+        self.id = entry.existing?.id ?? UUID()
         self.entry = entry
         self.properties = properties
         self.references = references
         self.decision = decision
     }
     
+    let id: UUID
     let entry: SingleReviewEntry
     let properties: [SingleReviewEntryProperty]
     var references: [SingleReviewReference]
@@ -302,14 +304,6 @@ final class SingleEntryImportModel: Identifiable {
         return item?[keyPath: firstProperty.valueKeyPath] ?? "No content found"
     }
     
-    func isChanged(for property: SingleReviewItemProperty) -> Bool {
-        let hasDescision = properties.first(where: { $0.id == property.id })?.decision ?? .merge
-        return hasDescision != decision
-    }
-    
-    var id: UUID {
-        entry.existing?.id ?? UUID()
-    }
 }
 // MARK: - Preview Data
 
@@ -337,7 +331,7 @@ extension SingleItemImportModel {
             .reduce(into: [UUID]()) { if !$0.contains($1) { $0.append($1) } }
             .map { SingleItemImportModel.from(item: item, entryId: $0)}
         
-        let references = [SingleReviewReference(id: UUID(), moduleName: "Table", itemName: "Loot A", isResolved: false)]
+        let references: [SingleReviewReference] = []
         return SingleItemImportModel(item: item, properties: props, entries: entries, references: references)
     }
     
@@ -636,15 +630,6 @@ private struct SRBinarySide: View {
     }
 }
 
-private struct SRChangeDot: View {
-    let isChanged: Bool
-    var body: some View {
-        if isChanged {
-            Circle().fill(Color.orange).frame(width: 6, height: 6)
-        }
-    }
-}
-
 private struct SRReferenceRow: View {
     let reference: SingleReviewReference
 
@@ -663,70 +648,6 @@ private struct SRReferenceRow: View {
         .padding(10)
         .background(reference.isResolved ? Color.green.opacity(0.06) : Color.red.opacity(0.1))
         .clipShape(.rect(cornerRadius: 8))
-    }
-}
-
-private struct VA_ThreeColumnValue: View {
-    let model: SingleItemImportModel
-    let property: SingleReviewItemProperty
-
-    var body: some View {
-        VStack(spacing: 8) {
-            HStack(alignment: .top, spacing: 6) {
-                VA_Cell(value: model.existingValue(for: property), tint: .orange,
-                        isActive: property.decision == .existing, label: nil)
-                VA_Cell(value: model.mergedValue(for: property), tint: property.decision.tint,
-                        isActive: property.decision == .merge, label: property.decision.rawValue)
-                VA_Cell(value: model.importedValue(for: property), tint: .green,
-                        isActive: property.decision == .imported, label: nil)
-            }
-
-            if case .picker(let options) = property.kind {
-                Picker("", selection: Binding(
-                    get: { model.effectiveValue(for: property) ?? "" },
-                    set: { _ in }
-                )) {
-                    ForEach(options, id: \.self) { opt in Text(opt).tag(opt) }
-                }
-                .pickerStyle(.segmented)
-                .disabled(true)
-            }
-
-            // Override picker only when values differ
-            if model.isChanged(for: property) {
-                Picker("Override", selection: Binding(
-                    get: { property.decision },
-                    set: { model.setPropertyDecision($0, propertyID: property.id) }
-                )) {
-                    ForEach(property.availableDecisions) { d in
-                        Label(d.rawValue, systemImage: d.systemImage).tag(d)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-        }
-    }
-}
-
-private struct VA_Cell: View {
-    let value: String?
-    let tint: Color
-    let isActive: Bool
-    let label: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            if let label {
-                Text(label).font(.caption2).bold().foregroundStyle(tint)
-            }
-            Text(value ?? "—")
-                .font(.caption).lineLimit(3)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(8)
-        .background(isActive ? tint.opacity(0.12) : Color.secondary.opacity(0.05))
-        .foregroundStyle(isActive ? tint : .secondary)
-        .clipShape(.rect(cornerRadius: 7))
     }
 }
 
@@ -1197,44 +1118,6 @@ private struct VC_EntryPropertyAccordion: View {
             .background(Color.secondary.opacity(0.05))
             .clipShape(.rect(cornerRadius: 8))
         }
-    }
-}
-
-private struct VC_EntryPropertyRow: View {
-    let entry: SingleEntryImportModel
-    let property: SingleReviewEntryProperty
-
-    private func value(from item: (any EntryDataAccessable)?) -> String {
-        item?[keyPath: property.valueKeyPath] ?? "—"
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(property.displayName).font(.caption2).bold().foregroundStyle(.secondary)
-            HStack(alignment: .top, spacing: 6) {
-                VC_MiniCell(label: "Existing", value: value(from: entry.entry.existing), tint: .orange, isActive: property.decision == .existing)
-                VC_MiniCell(label: "Merged",   value: value(from: entry.entry.merged),   tint: .blue,   isActive: property.decision == .merge)
-                VC_MiniCell(label: "Imported", value: value(from: entry.entry.imported), tint: .green,  isActive: property.decision == .imported)
-            }
-        }
-    }
-}
-
-private struct VC_MiniCell: View {
-    let label: String
-    let value: String
-    let tint: Color
-    let isActive: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.caption2).bold().foregroundStyle(tint)
-            Text(value).font(.caption).lineLimit(3).frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(6)
-        .background(isActive ? tint.opacity(0.12) : Color.secondary.opacity(0.05))
-        .foregroundStyle(isActive ? tint : .secondary)
-        .clipShape(.rect(cornerRadius: 6))
     }
 }
 

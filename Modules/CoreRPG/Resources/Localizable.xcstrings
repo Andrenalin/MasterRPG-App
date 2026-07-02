@@ -58,6 +58,7 @@
       }
     },
     "%@ — New" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -68,6 +69,7 @@
       }
     },
     "%@ — Not in Import" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -78,6 +80,7 @@
       }
     },
     "%@ — Updated" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1642,6 +1645,7 @@
       }
     },
     "Keep" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1652,6 +1656,7 @@
       }
     },
     "Keep Existing" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3159,6 +3164,7 @@
       }
     },
     "Use Imported" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
