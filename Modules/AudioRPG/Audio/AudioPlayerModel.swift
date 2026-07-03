@@ -56,6 +56,7 @@ public final class AudioPlayerModel {
 
     private(set) var subscriptions = Set<AnyCancellable>()
     var timeObserver: Any? = nil
+    @ObservationIgnored var sharedAudioTask: Task<Void, Never>?
     
     func add(subscriptions: Set<AnyCancellable>) {
         self.subscriptions = self.subscriptions.union(subscriptions)

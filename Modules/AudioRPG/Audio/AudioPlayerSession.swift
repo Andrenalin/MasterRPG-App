@@ -81,7 +81,15 @@ private extension AudioPlayerSession {
         })
 
         audioSessionObservers.append(center.addObserver(forName: AVAudioSession.interruptionNotification, object: audioSession, queue: .main) { [weak self] note in
-            self?.handleInterruption(notification: note)
+            // Extract the Sendable raw values — the Notification itself must not
+            // cross into the MainActor closure.
+            let typeRaw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+            let optionsRaw = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt
+            // queue: .main ⇒ delivered on the main thread; assumeIsolated is safe and
+            // keeps the wasPlaying write/read strictly ordered (no Task-per-event races).
+            MainActor.assumeIsolated {
+                self?.handleInterruption(typeRaw: typeRaw, optionsRaw: optionsRaw)
+            }
         })
 
         audioSessionObservers.append(center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: audioSession, queue: .main) { [weak self] note in
@@ -106,23 +114,21 @@ private extension AudioPlayerSession {
         }
     }
 
-    func handleInterruption(notification: Notification) {
-        guard let info = notification.userInfo,
-              let rawValue = info[AVAudioSessionInterruptionTypeKey] as? UInt else { return }
-        
-        let type = AVAudioSession.InterruptionType(rawValue: rawValue)
+    @MainActor
+    func handleInterruption(typeRaw: UInt?, optionsRaw: UInt?) {
+        guard let typeRaw else { return }
+
+        let type = AVAudioSession.InterruptionType(rawValue: typeRaw)
         if type == .began {
-            Task { @MainActor in
-                model.reset(wasPlaying: model.delegate?.beginInterruption() ?? false)
-            }
-        } else {
-            if let rawValue = info[AVAudioSessionInterruptionOptionKey] as? UInt {
-                let options = AVAudioSession.InterruptionOptions(rawValue: rawValue)
-                if options == .shouldResume {
-                    setActive()
-                    Task{ @MainActor in
-                        model.delegate?.endInterruption(wasPlaying: model.wasPlaying)
-                    }
+            model.reset(wasPlaying: model.delegate?.beginInterruption() ?? false)
+        } else if let optionsRaw,
+                  AVAudioSession.InterruptionOptions(rawValue: optionsRaw) == .shouldResume {
+            let wasPlaying = model.wasPlaying
+            Task { @concurrent [weak self] in
+                // setActive is a blocking AVAudioSession call — keep it off the main actor.
+                self?.setActive()
+                await MainActor.run {
+                    self?.model.delegate?.endInterruption(wasPlaying: wasPlaying)
                 }
             }
         }

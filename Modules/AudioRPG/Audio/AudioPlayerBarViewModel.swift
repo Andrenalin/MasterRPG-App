@@ -29,53 +29,46 @@ final class AudioPlayerBarViewModel {
             return
         }
 
-        artworkLoadTask = Task {
-            do {
-                let asset = AVURLAsset(url: item.url)
-
-                // Check for cancellation
-                guard !Task.isCancelled else { return }
-
-                let metadata = try await asset.load(.commonMetadata)
-
-                // Check for cancellation after async work
-                guard !Task.isCancelled else { return }
-
-                // Look for artwork in metadata
-                for metadataItem in metadata {
-                    guard let key = metadataItem.commonKey?.rawValue,
-                          key == AVMetadataKey.commonKeyArtwork.rawValue else {
-                        continue
-                    }
-
-                    if let data = try await metadataItem.load(.dataValue) {
-                        guard !Task.isCancelled else { return }
-
-#if canImport(AppKit)
-                        if let nsImage = NSImage(data: data) {
-                            guard !Task.isCancelled else { return }
-                            self.albumArtwork = Image(nsImage: nsImage)
-                            return
-                        }
-#elseif canImport(UIKit)
-                        if let uiImage = UIImage(data: data) {
-                            guard !Task.isCancelled else { return }
-                            self.albumArtwork = Image(uiImage: uiImage)
-                            return
-                        }
-#endif
-                    }
-                }
-
-                // No artwork found in metadata
-                guard !Task.isCancelled else { return }
-                self.albumArtwork = nil
-            } catch {
-                // Only update if not cancelled
-                guard !Task.isCancelled else { return }
-                self.albumArtwork = nil
-            }
+        artworkLoadTask = Task { [weak self] in
+            let data = await Self.loadArtworkData(url: item.url)
+            guard !Task.isCancelled else { return }
+            self?.albumArtwork = Self.artworkImage(from: data)
         }
+    }
+
+    /// Metadata parsing and data extraction have no UI dependency — @concurrent keeps
+    /// them off the main actor (nonisolated async would inherit the caller's isolation).
+    @concurrent
+    private static func loadArtworkData(url: URL) async -> Data? {
+        do {
+            let asset = AVURLAsset(url: url)
+            let metadata = try await asset.load(.commonMetadata)
+
+            for metadataItem in metadata {
+                guard !Task.isCancelled else { return nil }
+                guard metadataItem.commonKey?.rawValue == AVMetadataKey.commonKeyArtwork.rawValue else { continue }
+                if let data = try await metadataItem.load(.dataValue) {
+                    return data
+                }
+            }
+        } catch {
+            // No artwork on error — the caller falls back to nil.
+        }
+        return nil
+    }
+
+    private static func artworkImage(from data: Data?) -> Image? {
+        guard let data else { return nil }
+#if canImport(AppKit)
+        if let nsImage = NSImage(data: data) {
+            return Image(nsImage: nsImage)
+        }
+#elseif canImport(UIKit)
+        if let uiImage = UIImage(data: data) {
+            return Image(uiImage: uiImage)
+        }
+#endif
+        return nil
     }
 
     func toggleMute(audioPlayerModel: AudioPlayerModel) {

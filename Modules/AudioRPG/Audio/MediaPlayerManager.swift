@@ -13,62 +13,71 @@ enum RemoteCommand {
 }
 
 /// The behavior of an object that handles remote commands.
-protocol RemoteCommandHandler: AnyObject {
+/// Sendable: MPRemoteCommandCenter may invoke targets from outside the main actor;
+/// implementations dispatch to their own isolation (see AudioController).
+protocol RemoteCommandHandler: AnyObject, Sendable {
     func performRemoteCommand(_: RemoteCommand)
 }
 
 struct MediaPlayerCoordinator {
+    /// @MainActor and synchronous — callers are already on the main actor; spawning
+    /// a Task per call (once per second from the time observer) is pure churn.
+    @MainActor
     static func handleItemChange(item: PlaylistItem?, index: Int, count: Int) {
-        Task { @MainActor in
-            let nowPlayingInfoCenter = MPNowPlayingInfoCenter.default()
-            var newNowPlayingInfo = [String: Any]()
-            
-            // Reinitialize the information unless there is a current item.
-            if let currentItem = item {
-                newNowPlayingInfo = nowPlayingInfoCenter.nowPlayingInfo ?? [String: Any]()
-                
-                // Update information about the item.
-                newNowPlayingInfo[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
-                newNowPlayingInfo[MPNowPlayingInfoPropertyIsLiveStream] = false
-                newNowPlayingInfo[MPNowPlayingInfoPropertyAssetURL] = currentItem.url
-                newNowPlayingInfo[MPMediaItemPropertyTitle] = currentItem.title
-                newNowPlayingInfo[MPMediaItemPropertyAlbumTitle] = currentItem.artist
-                newNowPlayingInfo[MPMediaItemPropertyArtist] = "MasterRPG"
-                //            nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size, requestHandler: { size -> AKImage in return image })
-                
-                newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueIndex] = index
-                newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueCount] = count
-                
-                // Reinitialize information about the playback position.
-                newNowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = nil
-                newNowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = nil
-                newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = nil
-                newNowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = nil
-            }
-            let update = newNowPlayingInfo
-            nowPlayingInfoCenter.nowPlayingInfo = update
+        let nowPlayingInfoCenter = MPNowPlayingInfoCenter.default()
+        var newNowPlayingInfo = [String: Any]()
+
+        // Reinitialize the information unless there is a current item.
+        if let currentItem = item {
+            newNowPlayingInfo = nowPlayingInfoCenter.nowPlayingInfo ?? [String: Any]()
+
+            // Update information about the item.
+            newNowPlayingInfo[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
+            newNowPlayingInfo[MPNowPlayingInfoPropertyIsLiveStream] = false
+            newNowPlayingInfo[MPNowPlayingInfoPropertyAssetURL] = currentItem.url
+            newNowPlayingInfo[MPMediaItemPropertyTitle] = currentItem.title
+            newNowPlayingInfo[MPMediaItemPropertyAlbumTitle] = currentItem.artist
+            newNowPlayingInfo[MPMediaItemPropertyArtist] = "MasterRPG"
+            //            nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size, requestHandler: { size -> AKImage in return image })
+
+            newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueIndex] = index
+            newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueCount] = count
+
+            // Reinitialize information about the playback position.
+            newNowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = nil
+            newNowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = nil
+            newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = nil
+            newNowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = nil
         }
+        nowPlayingInfoCenter.nowPlayingInfo = newNowPlayingInfo
     }
-    
+
     /// Updates the information in the MPNowPlayingInfoCenter when the playback rate or position changes.
+    @MainActor
     static func handlePlaybackChange(playing: Bool, rate: Float, position: Double, duration: Double) {
-        Task { @MainActor in
-            let nowPlayingInfoCenter = MPNowPlayingInfoCenter.default()
-            var updatedNowPlayingInfo = nowPlayingInfoCenter.nowPlayingInfo ?? [String: Any]()
-            
-            updatedNowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = Float(duration)
-            updatedNowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = Float(position)
-            updatedNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = rate
-            updatedNowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1.0
-            
-            let update = updatedNowPlayingInfo
-            nowPlayingInfoCenter.nowPlayingInfo = update
-        }
+        let nowPlayingInfoCenter = MPNowPlayingInfoCenter.default()
+        var updatedNowPlayingInfo = nowPlayingInfoCenter.nowPlayingInfo ?? [String: Any]()
+
+        updatedNowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = Float(duration)
+        updatedNowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = Float(position)
+        updatedNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = rate
+        updatedNowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1.0
+
+        nowPlayingInfoCenter.nowPlayingInfo = updatedNowPlayingInfo
     }
-    
+
+    @MainActor
     static func handleRemoteCommands(using handler: RemoteCommandHandler) {
         let commandCenter = MPRemoteCommandCenter.shared()
-        
+
+        // addTarget accumulates: after a media-services reset this runs again, and
+        // without the removes every remote press would be handled twice.
+        commandCenter.pauseCommand.removeTarget(nil)
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.nextTrackCommand.removeTarget(nil)
+        commandCenter.previousTrackCommand.removeTarget(nil)
+        commandCenter.changePlaybackPositionCommand.removeTarget(nil)
+
         commandCenter.pauseCommand.addTarget { [weak handler] _ in
             guard let handler else { return .noActionableNowPlayingItem }
             handler.performRemoteCommand(.pause)

@@ -2,6 +2,7 @@
 
 import Foundation
 import AVFoundation
+import Synchronization
 
 @MainActor @Observable
 public final class AudioListenerCoordinator {
@@ -9,7 +10,7 @@ public final class AudioListenerCoordinator {
     public let playbackCoordinator: AVPlayerPlaybackCoordinator
     @ObservationIgnored
     private let coordinatorDelegate = CoordinatorDelegate()
-    
+
     public var sharedAudioId: UUID?
 
     public init(playbackCoordinator: AVPlayerPlaybackCoordinator) {
@@ -17,41 +18,25 @@ public final class AudioListenerCoordinator {
         self.playbackCoordinator.delegate = coordinatorDelegate
     }
 
-    func coordinatePlayback(of audioId: UUID) async {
+    func coordinatePlayback(of audioId: UUID) {
         guard audioId != sharedAudioId else { return }
-        await updateSharedAudio(audioId: audioId)
-    }
-
-    private func updateSharedAudio(audioId: UUID) async {
         coordinatorDelegate.setAudioId(audioId)
         sharedAudioId = audioId
     }
 
+    /// AVFoundation calls identifierFor(_:) on an arbitrary queue; all mutable state
+    /// lives behind the Mutex. @unchecked remains only because NSObject itself is
+    /// not Sendable — the type carries no other unguarded state.
     private final class CoordinatorDelegate: NSObject, AVPlayerPlaybackCoordinatorDelegate, @unchecked Sendable {
-        private let lock = NSLock()
-        private var _audioId: UUID?
-        
-        var audioId: UUID? {
-            get {
-                lock.lock()
-                defer { lock.unlock() }
-                return _audioId
-            }
-            set {
-                lock.lock()
-                defer { lock.unlock() }
-                _audioId = newValue
-            }
-        }
+        private let audioId = Mutex<UUID?>(nil)
 
         func setAudioId(_ audioId: UUID?) {
-            self.audioId = audioId
+            self.audioId.withLock { $0 = audioId }
         }
-        
+
         func playbackCoordinator(_ coordinator: AVPlayerPlaybackCoordinator,
                                  identifierFor playerItem: AVPlayerItem) -> String {
-            guard let audioId else { return UUID().uuidString }
-            return audioId.uuidString
+            audioId.withLock { $0 }?.uuidString ?? UUID().uuidString
         }
     }
 }

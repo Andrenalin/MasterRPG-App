@@ -42,7 +42,7 @@ extension AudioController {
             pause()
         } else {
             if model.isPlaybackComplete, let id = model.currentId {
-                Task { @MainActor in
+                Task {
                     await preparePlay(id: id)
                 }
             } else {
@@ -58,7 +58,7 @@ extension AudioController {
                 pause()
             }
             model.set(currentId: id)
-            Task { @MainActor in
+            Task {
                 await preparePlay(id: id, triggerPlay: triggerPlay)
             }
             return
@@ -91,58 +91,82 @@ extension AudioController {
 // MARK: - Playlist
 
 extension AudioController {
+    /// Snapshot of the fields the @concurrent loading code needs, extracted on the
+    /// MainActor so no live AudioModel instance crosses the isolation boundary.
+    private struct AudioAssetRequest: Sendable {
+        let id: UUID
+        let title: String
+        let artist: String
+        let fileUrl: FileUrl
+    }
+
+    @MainActor
     func add(audio models: [AudioModel], replace: Bool = false) async {
         if replace {
-            await MainActor.run {
-                model.playList = []
-                model.isPlaybackComplete = false
-            }
+            model.playList = []
+            model.isPlaybackComplete = false
         }
 
-        for item in models {
-            guard let playItem = await audioAsset(for: item) else { continue }
-            await MainActor.run {
-                model.playList.append(playItem)
-            }
+        let requests = models.compactMap { item -> AudioAssetRequest? in
+            guard let fileUrl = item.fileUrl else { return nil }
+            return AudioAssetRequest(
+                id: item.id,
+                title: item.name,
+                artist: item.description.isEmpty ? "MasterRPG" : item.description,
+                fileUrl: fileUrl
+            )
         }
+
+        var playItems: [PlaylistItem] = []
+        for request in requests {
+            guard let playItem = await audioAsset(for: request) else { continue }
+            playItems.append(playItem)
+        }
+        // Single mutation: one observation change instead of one per item.
+        model.playList.append(contentsOf: playItems)
     }
-    
-    private func audioAsset(for item: AudioModel) async -> PlaylistItem? {
-        guard let fileUrl = item.fileUrl, let fileUrlDataController = itemController.fileUrlDataController else { return nil }
+
+    /// @concurrent: file copies and asset loading must not run on the main actor —
+    /// nonisolated async would inherit the (main actor) caller's isolation here.
+    @concurrent
+    private func audioAsset(for request: AudioAssetRequest) async -> PlaylistItem? {
+        guard let fileUrlDataController = itemController.fileUrlDataController else { return nil }
 
         var audioAsset: PlaylistItem? = nil
         do {
-            _ = await fileUrlDataController.fileDownloaded(for: fileUrl)
-            audioAsset = try await fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
+            _ = await fileUrlDataController.fileDownloaded(for: request.fileUrl)
+            audioAsset = try await fileUrlDataController.url(for: request.fileUrl) { url -> PlaylistItem? in
                 guard let url else { return nil }
-                // Use ResourceCache for better performance
-                let key = "audio.\(item.id.uuidString)"
-                let data = try await ResourceCache.shared.load(key: key, from: url)
-                let fileExtension = url.pathExtension
-                let tempUrl = URL.temporaryDirectory.appending(path: item.id.uuidString).appendingPathExtension(fileExtension)
-                try data.write(to: tempUrl)
-                let asset = AVURLAsset(url: tempUrl)
-                let duration = try await asset.load(.duration)
-                let description = item.description.isEmpty ? "MasterRPG" : item.description
-                return PlaylistItem(id: item.id, url: asset.url, title: item.name, artist: description, duration: duration)
+                // Copy file-to-file: AVURLAsset streams from disk, so the track never
+                // needs to be loaded into memory.
+                let tempUrl = URL.temporaryDirectory.appending(path: request.id.uuidString).appendingPathExtension(url.pathExtension)
+                let fileManager = FileManager.default
+                if fileManager.fileExists(atPath: tempUrl.path) {
+                    try fileManager.removeItem(at: tempUrl)
+                }
+                try fileManager.copyItem(at: url, to: tempUrl)
+                return try await self.playlistItem(for: request, assetUrl: tempUrl)
             }
         } catch {
             Logger.audioController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
         }
 
         do {
-            if audioAsset == nil, let data = fileUrl.data {
-                let tempUrl = URL.temporaryDirectory.appending(path: item.id.uuidString).appendingPathExtension(itemController.config.filenameExtension)
+            if audioAsset == nil, let data = request.fileUrl.data {
+                let tempUrl = URL.temporaryDirectory.appending(path: request.id.uuidString).appendingPathExtension(itemController.config.filenameExtension)
                 try data.write(to: tempUrl)
-                let asset = AVURLAsset(url: tempUrl)
-                let duration = try await asset.load(.duration)
-                let description = item.description.isEmpty ? "MasterRPG" : item.description
-                return PlaylistItem(id: item.id, url: asset.url, title: item.name, artist: description, duration: duration)
+                return try await playlistItem(for: request, assetUrl: tempUrl)
             }
         } catch {
             Logger.audioController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")
         }
         return audioAsset
+    }
+
+    private func playlistItem(for request: AudioAssetRequest, assetUrl: URL) async throws -> PlaylistItem {
+        let asset = AVURLAsset(url: assetUrl)
+        let duration = try await asset.load(.duration)
+        return PlaylistItem(id: request.id, url: asset.url, title: request.title, artist: request.artist, duration: duration)
     }
     
     @MainActor func loadAndPlay(id: UUID) {
@@ -183,20 +207,19 @@ extension AudioController {
         // calls identifierFor(_:) during replaceCurrentItem, and needs the UUID already set.
         // Without this order the coordinator gets a random UUID on first play (works second time
         // only because sharedAudioId is already populated from the previous call).
-        await model.coordinator?.coordinatePlayback(of: id)
-        await replaceCurrentItem()
+        model.coordinator?.coordinatePlayback(of: id)
+        replaceCurrentItem()
         if triggerPlay { play() }
     }
-    
-    func replaceCurrentItem() async {
-        guard let currentItem = await model.currentItem, let index = await model.currentIndex else { return }
+
+    @MainActor
+    func replaceCurrentItem() {
+        guard let currentItem = model.currentItem, let index = model.currentIndex else { return }
 
         let playerItem = AVPlayerItem(url: currentItem.url)
-        await model.player.replaceCurrentItem(with: playerItem)
-        await MediaPlayerCoordinator.handleItemChange(item: currentItem, index: index, count: model.playList.count)
-        Task { @MainActor in
-            Logger.audioController.debug("🎧 \(currentItem.title, privacy: .public) -> \(currentItem.artist, privacy: .public)  enqueued for playback.")
-        }
+        model.player.replaceCurrentItem(with: playerItem)
+        MediaPlayerCoordinator.handleItemChange(item: currentItem, index: index, count: model.playList.count)
+        Logger.audioController.debug("🎧 \(currentItem.title, privacy: .public) -> \(currentItem.artist, privacy: .public)  enqueued for playback.")
     }
 }
 
@@ -209,7 +232,11 @@ private extension AudioController {
         model.audioSession = session
 
         model.coordinator = AudioListenerCoordinator(playbackCoordinator: model.player.playbackCoordinator)
-        
+        // Re-observe here (not in observePlayback, which early-returns on re-init):
+        // after a media-services reset the coordinator is a new instance and the
+        // old observation task would keep following the stale one.
+        observeSharedAudio()
+
         MediaPlayerCoordinator.handleRemoteCommands(using: self)
 
         observePlayback()
@@ -233,19 +260,22 @@ private extension AudioController {
         var notifications: Set<AnyCancellable> = []
         NotificationCenter.default
             .publisher(for: .AVPlayerItemDidPlayToEndTime)
-            .map { _ in true }
-            .sink { isPlaybackComplete in
-                Task { @MainActor in
-                    // we could do a reset or something else
-                    // maybe shutdown the audio session?
+            .sink { [weak self] notification in
+                // The notification fires for every AVPlayerItem in the process —
+                // extract the (Sendable) identity here and match it against our
+                // current item on the main actor before advancing the playlist.
+                let endedItem = (notification.object as? AVPlayerItem).map(ObjectIdentifier.init)
+                Task { @MainActor [weak self] in
+                    guard let self, let endedItem,
+                          let current = self.model.player.currentItem,
+                          ObjectIdentifier(current) == endedItem else { return }
+                    self.resetPlaylist(complete: true)
                 }
             }
             .store(in: &notifications)
 
         model.add(subscriptions: subscriptions)
         model.add(subscriptions: notifications)
-
-        observeSharedAudio()
 
         addTimeObserver()
     }
@@ -265,10 +295,9 @@ private extension AudioController {
         guard let duration = model.player.currentItem?.duration else { return }
         model.playerTime = PlayerTime(elapsedTime: time.seconds, remainingTime: duration.seconds - time.seconds)
 
+        // Track advancing is driven by AVPlayerItemDidPlayToEndTime (see observePlayback) —
+        // a remaining-time heuristic here would also fire when the user scrubs near the end.
         MediaPlayerCoordinator.handlePlaybackChange(playing: model.isPlaying, rate: model.player.rate, position: time.seconds, duration: duration.seconds)
-        if duration.seconds - time.seconds < 1 {
-            resetPlaylist(complete: true)
-        }
     }
     
     @MainActor private func removeTimeObserver() {
@@ -280,25 +309,23 @@ private extension AudioController {
     @MainActor
     func observeSharedAudio() {
         guard let coordinator = model.coordinator else { return }
-        _ = withObservationTracking {
-            coordinator.sharedAudioId
-        } onChange: { [weak self] in
-            Task {
-                await self?.checkForSharedAudio()
+        model.sharedAudioTask?.cancel()
+        // Observations delivers every change for the lifetime of the task — unlike
+        // withObservationTracking, which fires once and silently died whenever an
+        // early exit skipped the re-arm.
+        model.sharedAudioTask = Task { [weak self] in
+            for await audioId in Observations({ @MainActor in coordinator.sharedAudioId }) {
+                guard let self else { return }
+                await self.handleSharedAudio(audioId)
             }
         }
     }
-    
+
     @MainActor
-    func checkForSharedAudio() {
-        guard let audioId = model.coordinator?.sharedAudioId, audioId != model.currentItem?.id else { return }
-        
-        if let model = itemController.itemSync(for: audioId) {
-            Task {
-                await add(audio: [model], replace: true)
-            }
-        }
-        observeSharedAudio()
+    private func handleSharedAudio(_ audioId: UUID?) async {
+        guard let audioId, audioId != model.currentItem?.id else { return }
+        guard let item = itemController.itemSync(for: audioId) else { return }
+        await add(audio: [item], replace: true)
     }
 
     @MainActor func resetPlaylist(complete: Bool) {
