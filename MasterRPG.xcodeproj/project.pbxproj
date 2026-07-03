@@ -1767,6 +1767,7 @@
 		593D0D2D2E31F2D000410232 /* AudioRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AudioRPG; sourceTree = "<group>"; };
 		599DCAD12E8E30C00056E46C /* GeneratorRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GeneratorRPG; sourceTree = "<group>"; };
 		59CE1E9D2E84F011009C6CB5 /* GameRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GameRPG; sourceTree = "<group>"; };
+		8E08AC3E2FF79017003B247F /* Docu */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Docu; sourceTree = "<group>"; };
 		8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E0DCFC22F8722C90045FE8D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = DiceRollerWidget; sourceTree = "<group>"; };
 		8E19D4D32FC5418100B23172 /* .agents */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = .agents; sourceTree = "<group>"; };
 		8E3620AE2E1A80FF00E5C99A /* CoreRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CoreRPG; sourceTree = "<group>"; };
@@ -2270,13 +2271,14 @@
 				8E19D4D32FC5418100B23172 /* .agents */,
 				8EEB00E32FC5411B004B78D8 /* AGENTS.md */,
 				8EEB00E42FC5411B004B78D8 /* CLAUDE.md */,
+				8E08AC3E2FF79017003B247F /* Docu */,
+				8EECE62129D94BD300E52384 /* Frameworks */,
 				8E8EEC3E2CD8EC3A0010A25B /* Modules */,
+				8EC4E46A28DDA29600D0279F /* Products */,
 				8EC4E48A28DDAAF300D0279F /* Resources */,
 				8EC4E47C28DDAAF300D0279F /* Sources */,
-				8E8A403F2FC125460049C6B5 /* Tests */,
 				8E8A40C12FC131880049C6B5 /* TestPlans */,
-				8EECE62129D94BD300E52384 /* Frameworks */,
-				8EC4E46A28DDA29600D0279F /* Products */,
+				8E8A403F2FC125460049C6B5 /* Tests */,
 			);
 			sourceTree = "<group>";
 		};
