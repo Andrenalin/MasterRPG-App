@@ -91,7 +91,7 @@ public final class AppModel: Sendable {
     
     @ObservationIgnored let tagController: TagController
 
-    private let root: RootManager
+    let root: RootManager
     
     @MainActor public init() {
         let gameStateModel = AppGameStateModel()

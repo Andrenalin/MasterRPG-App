@@ -147,7 +147,7 @@ extension AudioModel: ItemDiffComparable {
     }
     
     public var version: Int {
-        fileUrl_.update.hashValue
+        fileUrl?.contentVersion ?? fileUrl_.update.hashValue
     }
 }
 

@@ -101,12 +101,13 @@ final class SingleReviewEntry {
 
 @Observable @MainActor
 final class SingleReviewItemProperty: Identifiable {
-    init(id: UUID, item: SingleReviewItem, displayName: String, kind: SingleReviewKind, valueKeyPath: KeyPath<any ItemDataAccessable, String>, decision: SingleReviewDecision, apply: @escaping (inout any ItemDataAccessable, any ItemDataAccessable) -> Void) {
+    init(id: UUID, item: SingleReviewItem, displayName: String, kind: SingleReviewKind, valueKeyPath: KeyPath<any ItemDataAccessable, String>, compareKeyPath: KeyPath<any ItemDataAccessable, String>? = nil, decision: SingleReviewDecision, apply: @escaping (inout any ItemDataAccessable, any ItemDataAccessable) -> Void) {
         self.id = id
         self.item = item
         self.displayName = displayName
         self.kind = kind
         self.valueKeyPath = valueKeyPath
+        self.compareKeyPath = compareKeyPath ?? valueKeyPath
         self.decision = decision
         self.apply = apply
     }
@@ -116,6 +117,10 @@ final class SingleReviewItemProperty: Identifiable {
     let displayName: String
     let kind: SingleReviewKind
     let valueKeyPath: KeyPath<any ItemDataAccessable, String>
+    /// Used to detect changes; defaults to `valueKeyPath`. The File property compares the
+    /// stable content identity instead of the displayed name, so the same binary stored
+    /// at a different location does not show up as a change.
+    let compareKeyPath: KeyPath<any ItemDataAccessable, String>
     /// Writes this property from the decided source model into the final model.
     let apply: (inout any ItemDataAccessable, any ItemDataAccessable) -> Void
 
@@ -364,7 +369,7 @@ extension SingleItemImportModel {
         props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Name", kind: .text, valueKeyPath: \.name, decision: .merge) { $0.name = $1.name })
         props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Description", kind: .text, valueKeyPath: \.description, decision: .merge) { $0.description = $1.description })
         props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Tags", kind: .text, valueKeyPath: \.tagLine, decision: .merge) { $0.tags = $1.tags })
-        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "File", kind: .binary, valueKeyPath: \.fileName, decision: .imported) { $0.fileUrl = $1.fileUrl })
+        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "File", kind: .binary, valueKeyPath: \.fileName, compareKeyPath: \.fileIdentity, decision: .imported) { $0.fileUrl = $1.fileUrl })
         
         // entries — sub-properties paired by name; id = "entry-<entryName>"
         let existingEntries = item.existing?.entries ?? []
@@ -445,7 +450,7 @@ extension SingleItemImportModel {
     }
 
     func isChanged(prop: SingleReviewItemProperty) -> Bool {
-        existingValue(for: prop) != importedValue(for: prop)
+        item.item(for: .existing)[keyPath: prop.compareKeyPath] != item.item(for: .imported)[keyPath: prop.compareKeyPath]
     }
 
     private func value(from item: any ItemDataAccessable, for prop: SingleReviewItemProperty) -> String? {
@@ -559,9 +564,19 @@ extension SingleItemImportModel {
 
 extension ItemDataAccessable {
     var fileName: String {
-        fileUrl?.rawValue ?? "No file set"
+        guard let fileUrl else { return "No file set" }
+        let name = fileUrl.rawUrl.lastPathComponent
+        return name.isEmpty ? fileUrl.rawValue : name
     }
-    
+
+    /// Stable identity for change detection: the content hash when available, so the same
+    /// binary at a different location compares equal and changed data at the same url does
+    /// not. Falls back to the raw url representation for legacy items without a hash.
+    var fileIdentity: String {
+        guard let fileUrl else { return "" }
+        return fileUrl.contentHash ?? fileUrl.rawValue
+    }
+
     var tagLine: String {
         tags.joined(separator: ",")
     }
@@ -1008,6 +1023,7 @@ private struct VC_AlternativeBlock: View {
 
 struct SingleItemReviewVC_Accordion: View {
     let model: SingleItemImportModel
+    var root: (any ItemRootControllable)? = nil
 
     var body: some View {
         ScrollView {
@@ -1024,7 +1040,11 @@ struct SingleItemReviewVC_Accordion: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Properties").font(.headline)
                     ForEach(model.properties) { prop in
-                        VC_AccordionRow(model: model, property: prop)
+                        if prop.kind == .binary {
+                            VC_FileAccordionRow(model: model, property: prop, root: root)
+                        } else {
+                            VC_AccordionRow(model: model, property: prop)
+                        }
                     }
                 }
 
@@ -1052,6 +1072,118 @@ struct SingleItemReviewVC_Accordion: View {
             .padding()
         }
         .navigationTitle(model.name)
+    }
+}
+
+// File property row — the raw filename text is not helpful, so when the file changed
+// this shows a thumbnail preview (photo or module custom view, see ViewControllable)
+// next to the filenames. Identical filenames collapse into a single "Both:" line.
+private struct VC_FileAccordionRow: View {
+    let model: SingleItemImportModel
+    let property: SingleReviewItemProperty
+    let root: (any ItemRootControllable)?
+    @State private var isExpanded = false
+    @State private var listDisplayModel = ListDisplayModel()
+
+    private var isOverridden: Bool { property.decision != model.decision }
+    private var wasName: String { model.item.item(for: .existing).fileName }
+    private var newName: String { model.item.item(for: .imported).fileName }
+
+    private var alternatives: [SingleReviewDecision] {
+        property.availableDecisions.filter { $0 != property.decision }
+    }
+
+    private func value(for decision: SingleReviewDecision) -> String? {
+        switch decision {
+        case .existing: model.existingValue(for: property)
+        case .imported: model.importedValue(for: property)
+        case .merge:    model.mergedValue(for: property)
+        }
+    }
+
+    var body: some View {
+        if !model.isChanged(prop: property) {
+            VC_StaticPropertyRow(displayName: property.displayName,
+                                 value: model.effectiveValue(for: property))
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                Button {
+                    withAnimation(.spring(duration: 0.3)) { isExpanded.toggle() }
+                } label: {
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 5) {
+                            Image(systemName: isOverridden ? "circle.fill" : "checkmark.circle.fill")
+                                .font(.subheadline)
+                                .foregroundStyle(isOverridden ? property.decision.tint : .secondary.opacity(0.5))
+                            Text(property.displayName).font(.subheadline).bold()
+                            Spacer()
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                .font(.caption).foregroundStyle(.tertiary)
+                        }
+                        HStack(alignment: .top, spacing: 10) {
+                            thumbnail
+                            VStack(alignment: .leading, spacing: 4) {
+                                fileNames
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                }
+                .buttonStyle(.plain)
+
+                if isExpanded {
+                    Divider()
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(alternatives) { d in
+                            VC_AlternativeBlock(decision: d, value: value(for: d)) {
+                                withAnimation(.spring(duration: 0.3)) {
+                                    model.setPropertyDecision(d, propertyID: property.id)
+                                    isExpanded = false
+                                }
+                            }
+                        }
+                    }
+                    .padding(12)
+                }
+            }
+            .background(Color.secondary.opacity(0.05))
+            .clipShape(.rect(cornerRadius: 10))
+        }
+    }
+
+    @ViewBuilder
+    private var thumbnail: some View {
+        if let root {
+            if root.viewControllable.thumbnailRowViewType == .custom {
+                root.viewControllable.thumbnailRowView(for: model.item.merged.id)
+            } else if root.viewControllable.thumbnailRowViewType == .photo,
+                      let cacheController = root.cacheControllable {
+                ThumbnailRowPhotoView(
+                    cacheController: cacheController,
+                    model: model.item.item(for: property.decision),
+                    listDisplayModel: listDisplayModel
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var fileNames: some View {
+        if wasName == newName {
+            HStack(spacing: 4) {
+                Text("Both:").font(.caption2).bold().foregroundStyle(.secondary)
+                Text(wasName).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }
+        } else {
+            HStack(spacing: 4) {
+                Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
+                Text(wasName).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }
+            HStack(spacing: 4) {
+                Text("New:").font(.caption2).bold().foregroundStyle(.green)
+                Text(newName).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }
+        }
     }
 }
 

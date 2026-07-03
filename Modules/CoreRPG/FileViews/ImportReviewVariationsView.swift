@@ -230,7 +230,7 @@ struct ImportReviewSplitView: View {
             }
         } detail: {
             if let item = model.selectedItem {
-                SingleItemReviewVC_Accordion(model: item.itemModel)
+                SingleItemReviewVC_Accordion(model: item.itemModel, root: selectedModuleRoot)
                     .navigationTitle(item.name)
                     .id(item.id)
             } else {
@@ -259,6 +259,11 @@ struct ImportReviewSplitView: View {
                 }
             }
         }
+    }
+
+    private var selectedModuleRoot: (any ItemRootControllable)? {
+        guard let module = model.selectedModule else { return nil }
+        return rootManager?.rootModel(for: module.id)
     }
 }
 

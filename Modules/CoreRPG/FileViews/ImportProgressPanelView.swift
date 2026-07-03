@@ -16,19 +16,22 @@ private enum ImportOutcome: Equatable, Sendable {
 
 public struct ImportProgressPanelView: View {
     public init(importController: any ImportControllable) {
+        self.rootManager = nil
         self.urlProvider = nil
         self.importController = importController
         self.isSaveGame = true
         self.saveDeferredHandler = nil
     }
 
-    public init(urlProvider: any ExampleUrlProvider, importController: any ImportControllable, saveDeferredHandler: ((Bool) -> Void)?) {
+    public init(rootManager: RootManager?, urlProvider: any ExampleUrlProvider, importController: any ImportControllable, saveDeferredHandler: ((Bool) -> Void)?) {
+        self.rootManager = rootManager
         self.urlProvider = urlProvider
         self.importController = importController
         self.isSaveGame = false
         self.saveDeferredHandler = saveDeferredHandler
     }
 
+    let rootManager: RootManager?
     let urlProvider: (any ExampleUrlProvider)?
     let importController: any ImportControllable
     let isSaveGame: Bool
@@ -47,7 +50,7 @@ public struct ImportProgressPanelView: View {
         if importModel.isReviewReady, let reviewModel = importModel.reviewModel {
             ImportReviewSplitView(
                 model: reviewModel,
-                rootManager: importController.rootManager,
+                rootManager: rootManager,
                 onCancel: {
                     importTask?.cancel()
                     navigator.dismiss()
@@ -128,7 +131,7 @@ public struct ImportProgressPanelView: View {
 
 private extension ImportProgressPanelView {
     func applyReview() async {
-        if let reviewModel = importModel.reviewModel, let rootManager = importController.rootManager {
+        if let reviewModel = importModel.reviewModel, let rootManager {
             for module in reviewModel.modules {
                 guard let root = rootManager.rootModel(for: module.id) else { continue }
                 for item in module.reviewItems {
@@ -286,7 +289,7 @@ private struct ImportInformationSection: View {
 }
 
 #Preview {
-    ImportProgressPanelView(urlProvider: FakeExampleUrlProvider(), importController: FakeImportController.fake, saveDeferredHandler: nil)
+    ImportProgressPanelView(rootManager: nil, urlProvider: FakeExampleUrlProvider(), importController: FakeImportController.fake, saveDeferredHandler: nil)
 }
 
 struct FakeExampleUrlProvider: ExampleUrlProvider {

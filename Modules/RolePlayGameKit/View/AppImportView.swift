@@ -8,7 +8,7 @@ struct AppImportView: View {
     let appModel: AppModel
         
     var body: some View {
-        ImportProgressPanelView(urlProvider: appModel, importController: importController) { value in
+        ImportProgressPanelView(rootManager: appModel.root, urlProvider: appModel, importController: importController) { value in
             appModel.saveIsDeferred = value
         }
     }

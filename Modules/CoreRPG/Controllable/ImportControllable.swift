@@ -49,14 +49,14 @@ public final class ItemDataImportModel {
 public protocol ImportControllable: Sendable {
     var itemControllable: any ItemControllable { get }
     var editControllable: any EditControllable { get }
-    var rootManager: RootManager? { get }
+    //var rootManager: RootManager? { get }
 
     func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws
 }
 
-public extension ImportControllable {
-    var rootManager: RootManager? { nil }
-}
+//public extension ImportControllable {
+//    var rootManager: RootManager? { nil }
+//}
 
 public enum ItemDataImportableError: Error {
     case openError
@@ -128,7 +128,7 @@ public extension ImportControllable {
                     do {
                         let newItem = try itemControllable.decode(data: data, with: decoder, version: version)
                         if let currentFile {
-                            try await addFile(data: currentFile, to: newItem)
+                            try await addFile(data: currentFile, to: newItem, forceSave: forceSave)
                         }
                         try await addItem(importedItem: newItem, id: newItem.id, forceSave: forceSave, importModel: importModel)
                         importedIds.insert(newItem.id)
@@ -284,9 +284,17 @@ private extension ImportControllable {
         }
     }
 
-    func addFile(data: Data, to item: any ItemDataAccessable) async throws {
+    func addFile(data: Data, to item: any ItemDataAccessable, forceSave: Bool) async throws {
         guard let fileUrlDataController, var fileUrl = item.fileUrl else { return }
         var item = item
+
+        // Reuse the existing file when the binary is unchanged — do not write the same file again
+        if let existingFileUrl = await contentHashedExistingFileUrl(for: item.id, forceSave: forceSave),
+           existingFileUrl.contentHash == FileUrl.contentHash(of: data) {
+            await itemControllable.reset(fileUrl: existingFileUrl, item: &item)
+            return
+        }
+
         fileUrl.resetData(data)
         do {
             let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
@@ -296,6 +304,24 @@ private extension ImportControllable {
             Logger.importController.error("Cannot save bookmark \(module, privacy: .public), file stored as data")
             await itemControllable.reset(fileUrl: fileUrl, item: &item)
         }
+    }
+
+    /// The existing item's fileUrl with a content hash. Legacy items have no hash yet —
+    /// eagerly calculate it from the file on disk once and persist it on the item.
+    func contentHashedExistingFileUrl(for itemId: UUID, forceSave: Bool) async -> FileUrl? {
+        guard let existing = await itemControllable.item(for: itemId), var existingFileUrl = existing.fileUrl else { return nil }
+        guard existingFileUrl.contentHash == nil else { return existingFileUrl }
+        guard let data = try? await fileUrlDataController?.loadData(for: existingFileUrl) else { return nil }
+        existingFileUrl.resetContentHash(of: data)
+        await persist(fileUrl: existingFileUrl, itemId: itemId, forceSave: forceSave)
+        return existingFileUrl
+    }
+
+    @MainActor
+    func persist(fileUrl: FileUrl, itemId: UUID, forceSave: Bool) {
+        guard var copy = itemControllable.copy(of: itemId) else { return }
+        copy.fileUrl = fileUrl
+        itemControllable.replace(model: copy, isInsert: false, forceSave: forceSave)
     }
 }
 
