@@ -12,6 +12,9 @@
         <attribute name="tags" attributeType="String" defaultValueString=""/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGAudioEntry" inverseName="audio" inverseEntity="RPGAudioEntry"/>
+        <fetchIndex name="byUuid">
+            <fetchIndexElement property="uuid" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="RPGAudioEntry" representedClassName="RPGAudioEntry" syncable="YES" codeGenerationType="class">
         <attribute name="audioUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>

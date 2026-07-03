@@ -78,10 +78,7 @@ extension RPGMapEntry {
         }
     }
     
-    func coordinateOrNew(for uuid: UUID) -> RPGPosition {
-        if let coordinate = coordinateModels.first(where: { $0.uuid == uuid }) {
-            return coordinate
-        }
+    func newCoordinate() -> RPGPosition {
         if let context = managedObjectContext {
             return RPGPosition(context: context)
         }
@@ -102,10 +99,7 @@ extension RPGDisplayConfig {
         }
     }
     
-    func coordinateOrNew(for uuid: UUID) -> RPGPosition {
-        if let coordinate = tileCoordinateModels.first(where: { $0.uuid == uuid }) {
-            return coordinate
-        }
+    func newCoordinate() -> RPGPosition {
         if let context = managedObjectContext {
             return RPGPosition(context: context)
         }

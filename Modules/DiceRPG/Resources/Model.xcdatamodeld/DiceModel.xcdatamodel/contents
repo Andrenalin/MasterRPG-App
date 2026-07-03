@@ -24,6 +24,9 @@
         <attribute name="tags" optional="YES" attributeType="String"/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGDiceEntry" inverseName="die" inverseEntity="RPGDiceEntry"/>
+        <fetchIndex name="byUuid">
+            <fetchIndexElement property="uuid" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="RPGDiceEntry" representedClassName="RPGDiceEntry" syncable="YES" codeGenerationType="class">
         <attribute name="childUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>

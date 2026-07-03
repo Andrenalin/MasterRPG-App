@@ -15,6 +15,9 @@
         <attribute name="valueCategory" attributeType="String" defaultValueString=""/>
         <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGValueEntry" inverseName="rpgValue" inverseEntity="RPGValueEntry"/>
         <relationship name="photos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGValuePhoto" inverseName="rpgValue" inverseEntity="RPGValuePhoto"/>
+        <fetchIndex name="byUuid">
+            <fetchIndexElement property="uuid" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="RPGValueEntry" representedClassName="RPGValueEntry" syncable="YES" codeGenerationType="class">
         <attribute name="calculated" attributeType="String" defaultValueString=""/>

@@ -6,7 +6,7 @@ import CoreData
 
 struct DataController: DataPersistenceControllable {
     @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
-        self.dataController = CoreDataController<ValueModel, RPGValue>(context: context, batchContext: batchContext)
+        self.dataController = CoreDataController<ValueModel, RPGValue>(context: context, batchContext: batchContext, relationshipKeyPaths: ["entries", "photos"])
         self.token = token
     }
     
@@ -45,18 +45,34 @@ extension DataController: CoreDataPersistable {
         model.displayState <=> Int32(viewModel.displayState)
         model.photoUUID <=> viewModel.photoId_.rawValue
         unequalSet(lhs: &model.photosUpdate, rhs: viewModel.photos_.$update.rawValue) {
-            model.photoIds = viewModel.photos.enumerated().map {
+            let oldPhotos = model.photoIds
+            let newPhotos = viewModel.photos.enumerated().map {
                 let entry = model.photoOrNew(for: $1)
                 entry.uuid = $1
                 entry.index = Int16($0)
                 return entry
             }
+            model.photoIds = newPhotos
+            // The inverse rule is Nullify, so photos dropped from the relationship
+            // would remain as orphaned rows (locally and in CloudKit) — delete them.
+            let keptPhotos = Set(newPhotos.map(ObjectIdentifier.init))
+            for photo in oldPhotos where !keptPhotos.contains(ObjectIdentifier(photo)) {
+                model.managedObjectContext?.delete(photo)
+            }
         }
         unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
-            model.entriesModel = viewModel.entries.enumerated().map {
+            let oldEntries = model.entriesModel
+            let newEntries = viewModel.entries.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
+            }
+            model.entriesModel = newEntries
+            // The inverse rule is Nullify, so entries dropped from the relationship
+            // would remain as orphaned rows (locally and in CloudKit) — delete them.
+            let keptEntries = Set(newEntries.map(ObjectIdentifier.init))
+            for entry in oldEntries where !keptEntries.contains(ObjectIdentifier(entry)) {
+                model.managedObjectContext?.delete(entry)
             }
         }
         model.parentUUID <=> viewModel.parentId

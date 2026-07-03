@@ -10,13 +10,16 @@ struct DataController: DataPersistenceControllable {
         self.dataController = CoreDataController<MapModel, RPGMap>(
             context: context,
             batchContext: batchContext,
+            // Core Data relationship names, not the Swift convenience wrappers
+            // (entryModels etc.) — unknown key paths are silently ignored and
+            // the prefetch never happens.
             relationshipKeyPaths: [
-                "entryModels",
-                "entryModels.coordinateModels",
-                "mapPinModels",
-                "mapPinModels.location",
+                "entries",
+                "entries.coordinates",
+                "mapPins",
+                "mapPins.location",
                 "displayConfig",
-                "displayConfig.tileCoordinateModels"
+                "displayConfig.tileCoordinates"
             ]
         )
         self.token = token
@@ -61,10 +64,19 @@ extension DataController: CoreDataPersistable {
         model.mapCategory <=> viewModel.category_.rawValue
         model.displayState <=> Int32(viewModel.displayState)
         unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
-            model.entryModels = viewModel.entries.enumerated().map {
+            let oldEntries = model.entryModels
+            let newEntries = viewModel.entries.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
+            }
+            model.entryModels = newEntries
+            // The inverse rule is Nullify, so entries dropped from the relationship
+            // would remain as orphaned rows (locally and in CloudKit) — delete them.
+            // Deleting an entry cascades to its coordinates.
+            let keptEntries = Set(newEntries.map(ObjectIdentifier.init))
+            for entry in oldEntries where !keptEntries.contains(ObjectIdentifier(entry)) {
+                model.managedObjectContext?.delete(entry)
             }
         }
         unequalSet(lhs: &model.displayConfigUpdate, rhs: viewModel.displayConfig_.$update.rawValue) {
@@ -78,10 +90,19 @@ extension DataController: CoreDataPersistable {
             model.height = viewModel.height
         }
         unequalSet(lhs: &model.mapPinsUpdate, rhs: viewModel.mapPins_.$update.rawValue) {
-            model.mapPinModels = viewModel.mapPins.enumerated().map {
+            let oldPins = model.mapPinModels
+            let newPins = viewModel.mapPins.enumerated().map {
                 let entry = model.mapPinOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
+            }
+            model.mapPinModels = newPins
+            // The inverse rule is Nullify, so pins dropped from the relationship
+            // would remain as orphaned rows (locally and in CloudKit) — delete them.
+            // Deleting a pin cascades to its location.
+            let keptPins = Set(newPins.map(ObjectIdentifier.init))
+            for pin in oldPins where !keptPins.contains(ObjectIdentifier(pin)) {
+                model.managedObjectContext?.delete(pin)
             }
         }
         model.pinScale <=> viewModel.pinScale
@@ -157,16 +178,27 @@ extension DataController: CoreDataPersistable {
         model.isHexGrid = viewModel.isHexGrid
         model.isShown = viewModel.isShown
         unequalSet(lhs: &model.coordinatesUpdate, rhs: viewModel.$coordinates.$update.rawValue) {
+            // Positions carry no stable id (the old lookup passed a fresh UUID, so
+            // every update created an all-new set and orphaned the previous rows via
+            // the Nullify inverse). Reuse by index and delete the surplus instead.
+            let oldCoordinates = model.coordinateModels
             model.coordinateModels = viewModel.coordinates.enumerated().map {
-                let coordinate = model.coordinateOrNew(for: UUID())
+                let coordinate = $0 < oldCoordinates.count ? oldCoordinates[$0] : model.newCoordinate()
                 self.map($1, into: coordinate, index: $0)
                 return coordinate
+            }
+            for coordinate in oldCoordinates.dropFirst(viewModel.coordinates.count) {
+                model.managedObjectContext?.delete(coordinate)
             }
         }
     }
 
     private func map(_ viewModel: CGPoint, into model: RPGPosition, index: Int) {
-        model.uuid = UUID()
+        // Keep the uuid stable on reused positions — rewriting it dirties every
+        // row and forces a full CloudKit re-export of the whole coordinate set.
+        if model.uuid == nil {
+            model.uuid = UUID()
+        }
         model.xPos = viewModel.x
         model.yPos = viewModel.y
         model.index = Int16(index)
@@ -178,10 +210,16 @@ extension DataController: CoreDataPersistable {
 
         model.borderColor = JSONString.encode(value: CodableColor(viewModel.borderColor))
         model.borderThickness = viewModel.borderThickness
+        // Same reuse-by-index pattern as entry coordinates — the old fresh-UUID
+        // lookup orphaned the previous tile set on every update.
+        let oldCoordinates = model.tileCoordinateModels
         model.tileCoordinateModels = viewModel.tileCoordinates.enumerated().map {
-            let coordinate = model.coordinateOrNew(for: UUID())
+            let coordinate = $0 < oldCoordinates.count ? oldCoordinates[$0] : model.newCoordinate()
             map($1, into: coordinate, index: $0)
             return coordinate
+        }
+        for coordinate in oldCoordinates.dropFirst(viewModel.tileCoordinates.count) {
+            model.managedObjectContext?.delete(coordinate)
         }
     }
 

@@ -27,8 +27,10 @@ public struct PersistentHistoryCleaner: @unchecked Sendable {
             return
         }
 
-        // Delete all history before the safe timestamp — no actor filter, so CloudKit
+        // Delete history before the safe timestamp — no actor filter, so CloudKit
         // mirroring transactions (author = NSCloudKitMirroringDelegate) are also cleaned.
+        // The timestamp is capped at 7 days ago (see lastCommonTransactionTimestamp),
+        // which is what protects transactions the mirroring delegate has not exported yet.
         let deleteHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: timestamp)
 
         let allActors = appActors
@@ -52,6 +54,9 @@ public struct PersistentHistoryCleaner: @unchecked Sendable {
     }
 
     @MainActor func updateTimeStamp(actor: AppPersistentActor, to timestamp: Date) {
+        // Never rewind an actor's position — that would make it reprocess history
+        // it has already merged. Only advance actors that lag behind the cleanup point.
+        if let current = userDefault.lastHistoryTransactionTimestamp(for: actor), current >= timestamp { return }
         userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: timestamp)
     }
 }
@@ -159,10 +164,14 @@ extension PersistentHistoryTrackerManager {
 fileprivate extension UserDefaults {
     func lastCommonTransactionTimestamp(in appActors: [AppPersistentActor]) -> Date? {
         let sevenDaysAgo = Date().addingTimeInterval(-7*24*60*60)
+        // Only delete history that every app actor has consumed AND that is at least
+        // 7 days old. The CloudKit mirroring delegate is not tracked in appActors, so
+        // the 7-day floor is the only protection for its unconsumed transactions —
+        // deleting those invalidates its history token and forces a full re-mirror.
         let timestamp = appActors
             .compactMap { lastHistoryTransactionTimestamp(for: $0) }
             .min() ?? sevenDaysAgo
-        return max(timestamp, sevenDaysAgo)
+        return min(timestamp, sevenDaysAgo)
     }
 
     func lastHistoryTransactionTimestamp(for appActor: AppPersistentActor) -> Date? {

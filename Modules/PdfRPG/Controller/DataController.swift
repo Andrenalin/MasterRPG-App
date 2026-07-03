@@ -7,7 +7,7 @@ import CoreGraphics
 
 struct DataController: DataPersistenceControllable {
     @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
-            self.dataController = CoreDataController<PdfModel, RPGPdf>(context: context, batchContext: batchContext)
+            self.dataController = CoreDataController<PdfModel, RPGPdf>(context: context, batchContext: batchContext, relationshipKeyPaths: ["entries"])
             self.token = token
         }
         
@@ -45,10 +45,18 @@ extension DataController: CoreDataPersistable {
             model.fileUrl = viewModel.fileUrl?.rawValue ?? ""
         }
         unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
-            model.entriesModel = viewModel.entries.enumerated().map {
+            let oldEntries = model.entriesModel
+            let newEntries = viewModel.entries.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
+            }
+            model.entriesModel = newEntries
+            // The inverse rule is Nullify, so entries dropped from the relationship
+            // would remain as orphaned rows (locally and in CloudKit) — delete them.
+            let keptEntries = Set(newEntries.map(ObjectIdentifier.init))
+            for entry in oldEntries where !keptEntries.contains(ObjectIdentifier(entry)) {
+                model.managedObjectContext?.delete(entry)
             }
         }
         model.parentId <=> viewModel.parentId

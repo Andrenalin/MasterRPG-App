@@ -153,7 +153,7 @@ All modules using the bundle version of SwiftUI views for example `Text("Editor 
 
 ## App Groups & Entitlements
 - App Group: `group.de.andretrettin.MasterRPG` (shared data between app and widgets)
-- iCloud Container: `iCloud.de.andretrettin.MasterRPG`
+- iCloud Container: `iCloud.de.andretrettin.gamemaster`
 - Background Modes: audio, airplay, remote-notification, fetch
 
 ## Xcode MCP

@@ -24,9 +24,9 @@ public protocol CoreDataPersistable: Sendable {
 public extension CoreDataPersistable {
     func replaceSync(id: UUID, with viewModel: any ModelType) throws {
         guard let viewModel = viewModel as? Model else { return }
-        Task {
-            await dataController.queueReplace(uuid: id, with: viewModel, updater: mapModel(_:into:))
-        }
+        // Enqueue synchronously — an unstructured Task gives no ordering guarantee
+        // between rapid edits to the same id and can lose the edit to a racing save().
+        dataController.queueReplace(uuid: id, with: viewModel, updater: mapModel(_:into:))
     }
 
     func replace(id: UUID, with viewModel: any ModelType) async throws {

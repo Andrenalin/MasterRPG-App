@@ -4,23 +4,29 @@ import Combine
 @preconcurrency import CoreData
 import os.log
 import SwiftUI
+import Synchronization
 
 public protocol CoreDataId {
     var uuid: UUID? { get }
 }
 
-actor CoreDataModel: Sendable {
-    private(set) var updatedIds: Set<UUID> = []
-    private(set) var pendingOperations: [PendingOperation] = []
+/// Mutex-backed (not an actor) so enqueuing is synchronous: operations arrive in
+/// call order and are always visible to the next `flushPendingOperations`. An
+/// unstructured Task per enqueue could reorder rapid edits to the same id or miss
+/// a save that races the enqueue.
+final class CoreDataModel: Sendable {
+    private let operations = Mutex<[PendingOperation]>([])
 
     func addPendingOperation(_ operation: PendingOperation) {
-        pendingOperations.append(operation)
+        operations.withLock { $0.append(operation) }
     }
 
     func clearPendingOperations() -> [PendingOperation] {
-        let operations = pendingOperations
-        pendingOperations.removeAll()
-        return operations
+        operations.withLock { pending in
+            let cleared = pending
+            pending.removeAll()
+            return cleared
+        }
     }
 }
 
@@ -67,10 +73,11 @@ public extension CoreDataController {
     func fetch(mapper: @escaping @Sendable (DataType) -> Model) async throws -> [Model] {
         await context.perform {
             let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
-            // Prefetch relationships to avoid N+1 queries
+            // Prefetch relationships to avoid N+1 queries.
+            // No fetchBatchSize here — batched fetches disable relationship prefetching,
+            // and the result set is mapped in full right away anyway.
             if !relationshipKeyPaths.isEmpty {
                 request.relationshipKeyPathsForPrefetching = relationshipKeyPaths
-                request.fetchBatchSize = 20
             }
             // Disable faulting to force immediate hydration and avoid lazy loading overhead
             request.returnsObjectsAsFaults = false
@@ -104,8 +111,10 @@ public extension CoreDataController {
         }
     }
 
-    /// Queue a replace operation to be executed later during save
-    func queueReplace(uuid: UUID, with viewModel: Model, updater: @escaping @Sendable (Model, DataType) -> Void) async {
+    /// Queue a replace operation to be executed later during save.
+    /// Synchronous on purpose: callers rely on the operation being enqueued in call
+    /// order and being visible to any subsequent `save()`/`flushPendingOperations()`.
+    func queueReplace(uuid: UUID, with viewModel: Model, updater: @escaping @Sendable (Model, DataType) -> Void) {
         let operation = PendingOperation(
             id: uuid,
             model: viewModel,
@@ -115,7 +124,7 @@ public extension CoreDataController {
                 updater(typedModel, typedObject)
             }
         )
-        await model.addPendingOperation(operation)
+        model.addPendingOperation(operation)
     }
 
     /// Drains the pending-operations queue into the context without calling `context.save()`.
@@ -123,7 +132,7 @@ public extension CoreDataController {
     /// covers every module's changes. Direct callers (`addNew`, `delete`, `batchReplace`) use
     /// `save()` instead, which flushes and saves immediately.
     func flushPendingOperations() async throws {
-        let pendingOperations = await model.clearPendingOperations()
+        let pendingOperations = model.clearPendingOperations()
         guard !pendingOperations.isEmpty else { return }
 
         var operationsByID: [UUID: PendingOperation] = [:]
@@ -159,31 +168,29 @@ public extension CoreDataController {
 
 public extension CoreDataController {
     
-    /// Batch delete using NSBatchDeleteRequest for better performance
-    func batchDelete(uuids: [UUID]) async throws {
+    /// Batch delete in chunks through the context, NOT via NSBatchDeleteRequest.
+    /// NSPersistentCloudKitContainer does not support batch requests — they bypass the
+    /// context save, so the mirroring delegate never exports the deletions and other
+    /// devices resurrect the items. Context deletes + save sync normally.
+    func batchDelete(uuids: [UUID], chunkSize: Int = 100) async throws {
         guard !uuids.isEmpty else { return }
 
-        try await batchContext.perform {
-            let request = NSFetchRequest<NSFetchRequestResult>(entityName: String(describing: DataType.self))
-            request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
+        for chunk in uuids.chunked(into: chunkSize) {
+            await context.perform {
+                let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
+                request.predicate = NSPredicate(format: "uuid IN %@", chunk as [NSUUID])
+                request.includesPropertyValues = false
 
-            let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: request)
-            batchDeleteRequest.resultType = .resultTypeObjectIDs
-
-            do {
-                let result = try self.batchContext.execute(batchDeleteRequest) as? NSBatchDeleteResult
-                let objectIDArray = result?.result as? [NSManagedObjectID]
-                let changes = [NSDeletedObjectsKey: objectIDArray ?? []]
-
-                // Merge changes to both batchContext and main context to ensure immediate consistency
-                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [self.batchContext, self.context])
-
-                Logger.coreDataController.info("Batch deleted \(uuids.count) objects")
-            } catch {
-                Logger.coreDataController.error("Batch delete error: \(error.localizedDescription, privacy: .public)")
-                throw error
+                do {
+                    let objects = try context.fetch(request) as? [DataType] ?? []
+                    objects.forEach { context.delete($0) }
+                    saveCoreData()
+                } catch {
+                    Logger.coreDataController.error("Batch delete error: \(error.localizedDescription, privacy: .public)")
+                }
             }
         }
+        Logger.coreDataController.info("Batch deleted \(uuids.count) objects")
     }
     
     /// Batch replace/insert operations with automatic chunking
@@ -265,16 +272,24 @@ private extension CoreDataController {
         do {
             let data = try self.context.fetch(request) as! [DataType]
             var seenId: Set<UUID> = []
-            return data.compactMap {
-                guard let id = $0.uuid else { return nil }
+            var foundDuplicates = false
+            let models = data.compactMap { item -> Model? in
+                guard let id = item.uuid else { return nil }
                 guard !seenId.contains(id) else {
                     Logger.coreDataController.warning("duplicate uuid \(id, privacy: .public) - delete coredata object")
-                    context.delete($0)
+                    context.delete(item)
+                    foundDuplicates = true
                     return nil
                 }
                 seenId.insert(id)
-                return mapper($0)
+                return mapper(item)
             }
+            // Save the repair right away so the deletions form their own transaction
+            // instead of riding along with the next unrelated save.
+            if foundDuplicates {
+                saveCoreData()
+            }
+            return models
         } catch {
             Logger.coreDataController.error("fetch error \(error.localizedDescription, privacy: .public)")
         }
@@ -285,16 +300,22 @@ private extension CoreDataController {
         do {
             let data = try self.context.fetch(request) as! [DataType]
             var seenId: Set<UUID> = []
-            return data.compactMap {
-                guard let id = $0.uuid else { return nil }
+            var foundDuplicates = false
+            let ids = data.compactMap { item -> UUID? in
+                guard let id = item.uuid else { return nil }
                 guard !seenId.contains(id) else {
                     Logger.coreDataController.warning("duplicate uuid \(id, privacy: .public) - delete coredata object")
-                    context.delete($0)
+                    context.delete(item)
+                    foundDuplicates = true
                     return nil
                 }
                 seenId.insert(id)
                 return id
             }
+            if foundDuplicates {
+                saveCoreData()
+            }
+            return ids
         } catch {
             Logger.coreDataController.error("fetch error \(error.localizedDescription, privacy: .public)")
         }
@@ -314,11 +335,10 @@ private extension CoreDataController {
             let objects = try context.fetch(fetchId) as! [DataType]
             let result = objects.first
             if objects.count > 1 {
+                // Log only. This runs on every sync-triggered read — deleting here would
+                // turn reads into writes that re-export to CloudKit and can ping-pong
+                // between devices. Duplicates are repaired by the full fetch at startup.
                 Logger.coreDataController.warning("fetch id \(uuid, privacy: .public) has \(objects.count) objects")
-                let delObjs = objects.dropFirst()
-                delObjs.forEach {
-                    context.delete($0)
-                }
             }
             return result
         } catch {

@@ -20,6 +20,9 @@
         <attribute name="weatherCategory" attributeType="String" defaultValueString=""/>
         <attribute name="weatherUpdate" attributeType="String" defaultValueString=""/>
         <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGWeatherEntry" inverseName="weather" inverseEntity="RPGWeatherEntry"/>
+        <fetchIndex name="byUuid">
+            <fetchIndexElement property="uuid" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="RPGWeatherEntry" representedClassName="RPGWeatherEntry" syncable="YES" codeGenerationType="class">
         <attribute name="childUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>

@@ -12,6 +12,9 @@
         <attribute name="tags" attributeType="String" defaultValueString=""/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGAdventureEntry" inverseName="adventure" inverseEntity="RPGAdventureEntry"/>
+        <fetchIndex name="byUuid">
+            <fetchIndexElement property="uuid" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="RPGAdventureEntry" representedClassName="RPGAdventureEntry" syncable="YES" codeGenerationType="class">
         <attribute name="content" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>

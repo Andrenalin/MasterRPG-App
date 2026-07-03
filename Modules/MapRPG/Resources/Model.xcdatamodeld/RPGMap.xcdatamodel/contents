@@ -28,6 +28,9 @@
         <relationship name="displayConfig" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="RPGDisplayConfig" inverseName="map" inverseEntity="RPGDisplayConfig"/>
         <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGMapEntry" inverseName="map" inverseEntity="RPGMapEntry"/>
         <relationship name="mapPins" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="RPGMapPin" inverseName="map" inverseEntity="RPGMapPin"/>
+        <fetchIndex name="byUuid">
+            <fetchIndexElement property="uuid" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="RPGMapEntry" representedClassName="RPGMapEntry" syncable="YES" codeGenerationType="class">
         <attribute name="content" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
