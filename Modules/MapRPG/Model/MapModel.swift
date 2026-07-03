@@ -404,6 +404,20 @@ extension MapModel: ItemDiffComparable {
     }
 }
 
+// MARK: - Review Properties
+
+extension MapModel {
+    @MainActor public var reviewProperties: [ReviewCustomProperty] {
+        [
+            ReviewCustomProperty(displayName: "Photo") { ReviewPropertyValue(photoId: ($0 as? MapModel)?.photoId) },
+            ReviewCustomProperty(displayName: "Pins") { ReviewPropertyValue(($0 as? MapModel)?.mapPins.count ?? 0) },
+            ReviewCustomProperty(displayName: "Pin Scale") { ReviewPropertyValue(($0 as? MapModel)?.pinScale ?? 1) },
+            ReviewCustomProperty(displayName: "Hex Scale") { ReviewPropertyValue(($0 as? MapModel)?.hexMapScale ?? 0) },
+            ReviewCustomProperty(displayName: "Rotation") { ReviewPropertyValue(($0 as? MapModel)?.degrees ?? 0) }
+        ]
+    }
+}
+
 extension MapModel: ItemDuplicatable {
     public func duplicate() -> MapModel {
         let copyName = duplicateName(from: name)

@@ -18,6 +18,10 @@ extension ViewController: ViewControllable {
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
         AnyView(ThumbnailPhotoRow(itemId: itemId).equatable())
     }
+
+    @MainActor public func thumbnailRowView(for model: any ItemDataAccessable) -> AnyView {
+        AnyView(ThumbnailPhotoRow(itemId: model.id, item: model as? MapModel).equatable())
+    }
     
     @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
         AnyView(InlineRowViewer(source: source, destination: destination).equatable())

@@ -157,6 +157,18 @@ extension SpaceModel: ItemDiffComparable {
     }
 }
 
+// MARK: - Review Properties
+
+extension SpaceModel {
+    @MainActor public var reviewProperties: [ReviewCustomProperty] {
+        [
+            ReviewCustomProperty(displayName: "Rotation") {
+                ReviewPropertyValue(($0 as? SpaceModel)?.degrees ?? 0)
+            }
+        ]
+    }
+}
+
 extension SpaceModel: ItemDuplicatable {
     public func duplicate() -> SpaceModel {
         let copyName = duplicateName(from: name)

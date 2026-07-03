@@ -232,6 +232,24 @@ extension WeatherModel: ItemDiffComparable {
     }
 }
 
+// MARK: - Review Properties
+
+extension WeatherModel {
+    @MainActor public var reviewProperties: [ReviewCustomProperty] {
+        [
+            ReviewCustomProperty(displayName: "Photo") { ReviewPropertyValue(photoId: ($0 as? WeatherModel)?.photoId) },
+            ReviewCustomProperty(displayName: "Time") { ReviewPropertyValue(($0 as? WeatherModel)?.time ?? 0) },
+            ReviewCustomProperty(displayName: "Clouds") { .option("\(($0 as? WeatherModel)?.cloudThickness ?? Cloud.Thickness.none)") },
+            ReviewCustomProperty(displayName: "Storm") { .option("\(($0 as? WeatherModel)?.stormType ?? Storm.Contents.none)") },
+            ReviewCustomProperty(displayName: "Rain Angle") { ReviewPropertyValue(($0 as? WeatherModel)?.rainAngle ?? 0) },
+            ReviewCustomProperty(displayName: "Rain Intensity") { ReviewPropertyValue(($0 as? WeatherModel)?.rainIntensity ?? 0) },
+            ReviewCustomProperty(displayName: "Lightning Frequency") { ReviewPropertyValue(($0 as? WeatherModel)?.lightningFrequency ?? 0) },
+            ReviewCustomProperty(displayName: "Lightning Max Bolts") { ReviewPropertyValue(($0 as? WeatherModel)?.lightningMaxBolts ?? 0) },
+            ReviewCustomProperty(displayName: "Lightning Fork Probability") { ReviewPropertyValue(($0 as? WeatherModel)?.lightningForkProbability ?? 0) }
+        ]
+    }
+}
+
 extension WeatherModel: ItemDuplicatable {
     public func duplicate() -> WeatherModel {
         let copyName = duplicateName(from: name)

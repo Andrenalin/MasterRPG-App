@@ -189,6 +189,17 @@ extension AdventureModel: ItemDiffComparable {
     }
 }
 
+// MARK: - Review Properties
+
+extension AdventureModel {
+    @MainActor public var reviewProperties: [ReviewCustomProperty] {
+        [
+            ReviewCustomProperty(displayName: "Photo") { ReviewPropertyValue(photoId: ($0 as? AdventureModel)?.photoId) },
+            ReviewCustomProperty(displayName: "Dice") { ReviewPropertyValue(diceId: ($0 as? AdventureModel)?.diceId) }
+        ]
+    }
+}
+
 extension AdventureModel: ItemDuplicatable {
     public func duplicate() -> AdventureModel {
         let copyName = duplicateName(from: name)

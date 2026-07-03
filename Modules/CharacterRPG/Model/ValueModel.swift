@@ -239,6 +239,21 @@ extension ValueModel: ItemDiffComparable {
     }
 }
 
+// MARK: - Review Properties
+
+extension ValueModel {
+    @MainActor public var reviewProperties: [ReviewCustomProperty] {
+        [
+            ReviewCustomProperty(displayName: "Photo") { ReviewPropertyValue(photoId: ($0 as? ValueModel)?.photoId) },
+            ReviewCustomProperty(displayName: "Dice") { ReviewPropertyValue(diceId: ($0 as? ValueModel)?.diceId) },
+            ReviewCustomProperty(displayName: "Group") {
+                .link(($0 as? ValueModel)?.groupId.map { ItemRowModel(itemId: $0, typeId: .value) })
+            },
+            ReviewCustomProperty(displayName: "Photos") { ReviewPropertyValue(($0 as? ValueModel)?.photos.count ?? 0) }
+        ]
+    }
+}
+
 extension ValueModel: ItemDuplicatable {
     public func duplicate() -> ValueModel {
         let copyName = duplicateName(from: name)

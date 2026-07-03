@@ -95,6 +95,17 @@ import SwiftUI
         }
     }
 
+    /// Model of a linked item for display: prefers the import batch (imported items are
+    /// not in the database yet), then falls back to the database.
+    func displayModel(for destination: ItemRowModel, preferImported: Bool, rootManager: RootManager?) -> (any ItemDataAccessable)? {
+        if let pending = modules.first(where: { $0.id == destination.typeId })?
+            .reviewItems.first(where: { $0.id == destination.itemId }) {
+            let item = pending.itemModel.item
+            return preferImported ? (item.imported ?? item.merged) : (item.existing ?? item.merged)
+        }
+        return rootManager?.rootModel(for: destination.typeId)?.itemControllable.itemSync(for: destination.itemId)
+    }
+
     /// Builds the reference list for every review item once all items are imported.
     /// The imported items are not in the database yet, so each module's LinkControllable
     /// extracts the links directly from the imported item, used as link source.

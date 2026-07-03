@@ -215,6 +215,19 @@ extension TableModel: ItemDiffComparable {
     }
 }
 
+// MARK: - Review Properties
+
+extension TableModel {
+    @MainActor public var reviewProperties: [ReviewCustomProperty] {
+        [
+            ReviewCustomProperty(displayName: "Table Type") {
+                .option("\(($0 as? TableModel)?.tableType ?? TableType.list)")
+            },
+            ReviewCustomProperty(displayName: "Dice") { ReviewPropertyValue(diceId: ($0 as? TableModel)?.diceId) }
+        ]
+    }
+}
+
 extension TableModel: ItemDuplicatable {
     public func duplicate() -> TableModel {
         let copyName = duplicateName(from: name)

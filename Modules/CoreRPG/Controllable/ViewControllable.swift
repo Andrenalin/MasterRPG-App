@@ -48,6 +48,9 @@ public protocol ViewControllable: Sendable {
     @MainActor func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView
     @MainActor func sharingView(for itemId: UUID) -> AnyView
     @MainActor func thumbnailRowView(for itemId: UUID) -> AnyView
+    /// Renders the thumbnail from the passed model instead of looking it up by id.
+    /// Needed when the model is not in the database yet, e.g. an imported item under review.
+    @MainActor func thumbnailRowView(for model: any ItemDataAccessable) -> AnyView
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView
     @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView
     @MainActor func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView?
@@ -61,6 +64,7 @@ public extension ViewControllable {
     @MainActor func sharingView(for itemId: UUID) -> AnyView { AnyView(EmptyView()) }
 
     @MainActor func thumbnailRowView(for itemId: UUID) -> AnyView { AnyView(EmptyView()) }
+    @MainActor func thumbnailRowView(for model: any ItemDataAccessable) -> AnyView { thumbnailRowView(for: model.id) }
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
     @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
 

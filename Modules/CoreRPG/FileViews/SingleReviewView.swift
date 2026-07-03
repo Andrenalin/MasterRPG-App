@@ -10,15 +10,17 @@ import SwiftUI
 
 enum SingleReviewKind {
     case text
+    case tags
     case picker(options: [String])   // shown as segmented / menu picker
     case binary                       // only existing / imported, no merge version
     case sublist                      // contains nested sub-properties
+    case link                         // linked item, rendered with the destination module's thumbnail
 }
 
 extension SingleReviewKind: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
-        case (.text, .text), (.binary, .binary), (.sublist, .sublist): true
+        case (.text, .text), (.binary, .binary), (.sublist, .sublist), (.link, .link): true
         case (.picker(let a), .picker(let b)):                          a == b
         default: false
         }
@@ -101,13 +103,15 @@ final class SingleReviewEntry {
 
 @Observable @MainActor
 final class SingleReviewItemProperty: Identifiable {
-    init(id: UUID, item: SingleReviewItem, displayName: String, kind: SingleReviewKind, valueKeyPath: KeyPath<any ItemDataAccessable, String>, compareKeyPath: KeyPath<any ItemDataAccessable, String>? = nil, decision: SingleReviewDecision, apply: @escaping (inout any ItemDataAccessable, any ItemDataAccessable) -> Void) {
+    init(id: UUID, item: SingleReviewItem, displayName: String, kind: SingleReviewKind, value: @escaping @MainActor (any ItemDataAccessable) -> String, compareValue: (@MainActor (any ItemDataAccessable) -> String)? = nil, reviewValue: (@MainActor (any ItemDataAccessable) -> ReviewPropertyValue)? = nil, isReadOnly: Bool = false, decision: SingleReviewDecision, apply: @escaping @MainActor (inout any ItemDataAccessable, any ItemDataAccessable) -> Void) {
         self.id = id
         self.item = item
         self.displayName = displayName
         self.kind = kind
-        self.valueKeyPath = valueKeyPath
-        self.compareKeyPath = compareKeyPath ?? valueKeyPath
+        self.value = value
+        self.compareValue = compareValue ?? value
+        self.reviewValue = reviewValue
+        self.isReadOnly = isReadOnly
         self.decision = decision
         self.apply = apply
     }
@@ -116,13 +120,18 @@ final class SingleReviewItemProperty: Identifiable {
     let item: SingleReviewItem
     let displayName: String
     let kind: SingleReviewKind
-    let valueKeyPath: KeyPath<any ItemDataAccessable, String>
-    /// Used to detect changes; defaults to `valueKeyPath`. The File property compares the
+    /// Reads the displayed string representation from one model version.
+    let value: @MainActor (any ItemDataAccessable) -> String
+    /// Used to detect changes; defaults to `value`. The File property compares the
     /// stable content identity instead of the displayed name, so the same binary stored
     /// at a different location does not show up as a change.
-    let compareKeyPath: KeyPath<any ItemDataAccessable, String>
+    let compareValue: @MainActor (any ItemDataAccessable) -> String
+    /// The typed value of a custom model property, e.g. `.link` for photoId / diceId.
+    let reviewValue: (@MainActor (any ItemDataAccessable) -> ReviewPropertyValue)?
+    /// Display only, no per-property decision — the value follows the item decision.
+    let isReadOnly: Bool
     /// Writes this property from the decided source model into the final model.
-    let apply: (inout any ItemDataAccessable, any ItemDataAccessable) -> Void
+    let apply: @MainActor (inout any ItemDataAccessable, any ItemDataAccessable) -> Void
 
     var decision: SingleReviewDecision
 
@@ -275,15 +284,13 @@ final class SingleItemImportModel {
     
     var name: String {
         guard let firstProperty = properties.first else { return "No name found" }
-        let item = item.item(for: firstProperty.decision)
-        return item[keyPath: firstProperty.valueKeyPath]
+        return firstProperty.value(item.item(for: firstProperty.decision))
     }
-    
+
     var description: String {
         guard properties.count > 1 else { return "No description found" }
         let firstProperty = properties[1]
-        let item = item.item(for: firstProperty.decision)
-        return item[keyPath: firstProperty.valueKeyPath]
+        return firstProperty.value(item.item(for: firstProperty.decision))
     }
     
     func hasOverride(for property: SingleReviewItemProperty) -> Bool {
@@ -366,10 +373,31 @@ extension SingleItemImportModel {
     @MainActor static func from(item: SingleReviewItem) -> SingleItemImportModel {
         var props: [SingleReviewItemProperty] = []
 
-        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Name", kind: .text, valueKeyPath: \.name, decision: .merge) { $0.name = $1.name })
-        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Description", kind: .text, valueKeyPath: \.description, decision: .merge) { $0.description = $1.description })
-        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Tags", kind: .text, valueKeyPath: \.tagLine, decision: .merge) { $0.tags = $1.tags })
-        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "File", kind: .binary, valueKeyPath: \.fileName, compareKeyPath: \.fileIdentity, decision: .imported) { $0.fileUrl = $1.fileUrl })
+        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Name", kind: .text, value: { $0.name }, decision: .merge) { $0.name = $1.name })
+        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Description", kind: .text, value: { $0.description }, decision: .merge) { $0.description = $1.description })
+        props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "Tags", kind: .tags, value: { $0.tagLine }, decision: .merge) { $0.tags = $1.tags })
+        // File row only for models that carry a file — modules without file support always have a nil fileUrl
+        if item.existing?.fileUrl != nil || item.imported?.fileUrl != nil || item.merged.fileUrl != nil {
+            props.append(SingleReviewItemProperty(id: UUID(), item: item, displayName: "File", kind: .binary, value: { $0.fileName }, compareValue: { $0.fileIdentity }, decision: .imported) { $0.fileUrl = $1.fileUrl })
+        }
+
+        // Custom model properties (toggles, enums, numbers) rendered via their string
+        // representation — read only, the value follows the item decision on apply.
+        // Link values (photoId / diceId) render with the destination module's thumbnail.
+        for custom in (item.imported ?? item.merged).reviewProperties {
+            let isLink = if case .link = custom.value(item.merged) { true } else { false }
+            props.append(SingleReviewItemProperty(
+                id: UUID(),
+                item: item,
+                displayName: custom.displayName,
+                kind: isLink ? .link : .text,
+                value: { custom.value($0).displayText },
+                reviewValue: custom.value,
+                isReadOnly: true,
+                decision: .merge,
+                apply: { _, _ in }
+            ))
+        }
         
         // entries — sub-properties paired by name; id = "entry-<entryName>"
         let existingEntries = item.existing?.entries ?? []
@@ -450,11 +478,11 @@ extension SingleItemImportModel {
     }
 
     func isChanged(prop: SingleReviewItemProperty) -> Bool {
-        item.item(for: .existing)[keyPath: prop.compareKeyPath] != item.item(for: .imported)[keyPath: prop.compareKeyPath]
+        prop.compareValue(item.item(for: .existing)) != prop.compareValue(item.item(for: .imported))
     }
 
     private func value(from item: any ItemDataAccessable, for prop: SingleReviewItemProperty) -> String? {
-        item[keyPath: prop.valueKeyPath].nilIfEmpty
+        prop.value(item).nilIfEmpty
     }
 }
 
@@ -909,6 +937,140 @@ private struct VC_StaticPropertyRow: View {
     }
 }
 
+// Linked item property (photoId / diceId) — read only, renders the destination module's
+// thumbnail plus the linked item's name for the existing and imported version. The linked
+// model is resolved from the import batch first because imported items are not in the
+// database yet, then from the database.
+private struct VC_LinkPropertyRow: View {
+    let model: SingleItemImportModel
+    let property: SingleReviewItemProperty
+    let rootManager: RootManager?
+    let reviewModel: ImportReviewModel?
+    @State private var listDisplayModel = ListDisplayModel()
+
+    var body: some View {
+        if !model.isChanged(prop: property) {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.caption2).foregroundStyle(Color.secondary.opacity(0.4))
+                Text(property.displayName).font(.subheadline).bold()
+                Spacer()
+                linkView(for: .imported, preferImported: true)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Color.secondary.opacity(0.03))
+            .clipShape(.rect(cornerRadius: 10))
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 5) {
+                    Image(systemName: "circle.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(property.decision.tint)
+                    Text(property.displayName).font(.subheadline).bold()
+                    Spacer()
+                }
+                HStack(spacing: 4) {
+                    Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
+                    linkView(for: .existing, preferImported: false)
+                    Spacer()
+                }
+                HStack(spacing: 4) {
+                    Text("New:").font(.caption2).bold().foregroundStyle(.green)
+                    linkView(for: .imported, preferImported: true)
+                    Spacer()
+                }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.secondary.opacity(0.05))
+            .clipShape(.rect(cornerRadius: 10))
+        }
+    }
+}
+
+private extension VC_LinkPropertyRow {
+    func link(for decision: SingleReviewDecision) -> ItemRowModel? {
+        guard case .link(let row) = property.reviewValue?(model.item.item(for: decision)) else { return nil }
+        return row
+    }
+
+    func resolvedModel(for link: ItemRowModel, preferImported: Bool) -> (any ItemDataAccessable)? {
+        reviewModel?.displayModel(for: link, preferImported: preferImported, rootManager: rootManager)
+            ?? rootManager?.rootModel(for: link.typeId)?.itemControllable.itemSync(for: link.itemId)
+    }
+
+    @ViewBuilder
+    func linkView(for decision: SingleReviewDecision, preferImported: Bool) -> some View {
+        if let link = link(for: decision) {
+            if let resolved = resolvedModel(for: link, preferImported: preferImported) {
+                HStack(spacing: 8) {
+                    thumbnail(for: resolved, module: link.typeId)
+                    Text(resolved.name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+            } else {
+                Text("Missing", bundle: .module).font(.caption).foregroundStyle(.red)
+            }
+        } else {
+            Text("Not set", bundle: .module).font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    func thumbnail(for resolved: any ItemDataAccessable, module: NetworkModules) -> some View {
+        if let root = rootManager?.rootModel(for: module) {
+            if root.viewControllable.thumbnailRowViewType == .custom {
+                root.viewControllable.thumbnailRowView(for: resolved)
+            } else if root.viewControllable.thumbnailRowViewType == .photo,
+                      let cacheController = root.cacheControllable {
+                ThumbnailRowPhotoView(
+                    cacheController: cacheController,
+                    model: resolved,
+                    listDisplayModel: listDisplayModel,
+                    entryId: resolved.fileUrl?.reviewThumbnailKey
+                )
+            }
+        }
+    }
+}
+
+// Read-only custom property that changed — shows the effective value (follows the item
+// decision) with Was/New lines, but offers no per-property choice.
+private struct VC_ReadOnlyPropertyRow: View {
+    let model: SingleItemImportModel
+    let property: SingleReviewItemProperty
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 5) {
+                Image(systemName: "circle.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(property.decision.tint)
+                Text(property.displayName).font(.subheadline).bold()
+                Spacer()
+            }
+            Text(model.effectiveValue(for: property) ?? "—")
+                .font(.callout)
+                .foregroundStyle(.primary)
+                .contentTransition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: property.decision)
+            HStack(spacing: 4) {
+                Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
+                Text(model.existingValue(for: property) ?? "—")
+                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }
+            HStack(spacing: 4) {
+                Text("New:").font(.caption2).bold().foregroundStyle(.green)
+                Text(model.importedValue(for: property) ?? "—")
+                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondary.opacity(0.05))
+        .clipShape(.rect(cornerRadius: 10))
+    }
+}
+
 // Conflict row — indicator inline with name, full effective value below, Was/New each on own line.
 // Expand shows the two non-selected alternatives; selecting one animates the value and closes.
 private struct VC_AccordionRow: View {
@@ -934,6 +1096,8 @@ private struct VC_AccordionRow: View {
         if !model.isChanged(prop: property) {
             VC_StaticPropertyRow(displayName: property.displayName,
                                  value: model.effectiveValue(for: property))
+        } else if property.isReadOnly {
+            VC_ReadOnlyPropertyRow(model: model, property: property)
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 Button {
@@ -1024,6 +1188,8 @@ private struct VC_AlternativeBlock: View {
 struct SingleItemReviewVC_Accordion: View {
     let model: SingleItemImportModel
     var root: (any ItemRootControllable)? = nil
+    var rootManager: RootManager? = nil
+    var reviewModel: ImportReviewModel? = nil
 
     var body: some View {
         ScrollView {
@@ -1042,6 +1208,8 @@ struct SingleItemReviewVC_Accordion: View {
                     ForEach(model.properties) { prop in
                         if prop.kind == .binary {
                             VC_FileAccordionRow(model: model, property: prop, root: root)
+                        } else if prop.kind == .link {
+                            VC_LinkPropertyRow(model: model, property: prop, rootManager: rootManager, reviewModel: reviewModel)
                         } else {
                             VC_AccordionRow(model: model, property: prop)
                         }
@@ -1135,7 +1303,9 @@ private struct VC_FileAccordionRow: View {
                     Divider()
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(alternatives) { d in
-                            VC_AlternativeBlock(decision: d, value: value(for: d)) {
+                            VC_FileAlternativeBlock(decision: d, value: value(for: d)) {
+                                thumbnail(for: d)
+                            } onSelect: {
                                 withAnimation(.spring(duration: 0.3)) {
                                     model.setPropertyDecision(d, propertyID: property.id)
                                     isExpanded = false
@@ -1151,17 +1321,26 @@ private struct VC_FileAccordionRow: View {
         }
     }
 
-    @ViewBuilder
     private var thumbnail: some View {
+        thumbnail(for: property.decision)
+    }
+
+    @ViewBuilder
+    private func thumbnail(for decision: SingleReviewDecision) -> some View {
+        let decidedItem = model.item.item(for: decision)
         if let root {
             if root.viewControllable.thumbnailRowViewType == .custom {
-                root.viewControllable.thumbnailRowView(for: model.item.merged.id)
+                root.viewControllable.thumbnailRowView(for: decidedItem)
             } else if root.viewControllable.thumbnailRowViewType == .photo,
-                      let cacheController = root.cacheControllable {
+                      let cacheController = root.cacheControllable,
+                      let fileUrl = decidedItem.fileUrl {
+                // Keyed per binary so the existing and imported previews get their own
+                // cache slots and do not overwrite the item's list thumbnail.
                 ThumbnailRowPhotoView(
                     cacheController: cacheController,
-                    model: model.item.item(for: property.decision),
-                    listDisplayModel: listDisplayModel
+                    model: decidedItem,
+                    listDisplayModel: listDisplayModel,
+                    entryId: fileUrl.reviewThumbnailKey
                 )
             }
         }
@@ -1184,6 +1363,51 @@ private struct VC_FileAccordionRow: View {
                 Text(newName).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             }
         }
+    }
+}
+
+private extension FileUrl {
+    /// Stable cache key that is distinct per binary — existing and imported can share
+    /// the same fileId, but their content hashes differ exactly when the files differ.
+    var reviewThumbnailKey: UUID {
+        guard let contentHash, let digest = Data(base64Encoded: contentHash), digest.count >= 16 else { return fileId }
+        let bytes = Array(digest.prefix(16))
+        return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                           bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+    }
+}
+
+// Decision alternative for the file property — shows the thumbnail of that version
+// next to the filename so the user sees what each choice looks like.
+private struct VC_FileAlternativeBlock<Thumbnail: View>: View {
+    let decision: SingleReviewDecision
+    let value: String?
+    @ViewBuilder let thumbnail: () -> Thumbnail
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(alignment: .top, spacing: 10) {
+                thumbnail()
+                VStack(alignment: .leading, spacing: 5) {
+                    Label(decision.rawValue, systemImage: decision.systemImage)
+                        .font(.caption2).bold().foregroundStyle(decision.tint)
+                    Text(value ?? "—")
+                        .font(.callout)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundStyle(.primary)
+                }
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(decision.tint.opacity(0.08))
+            .clipShape(.rect(cornerRadius: 8))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(decision.tint.opacity(0.2), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 

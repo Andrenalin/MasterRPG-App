@@ -168,6 +168,18 @@ extension PhotoModel: ItemDuplicatable {
     }
 }
 
+// MARK: - Review Properties
+
+extension PhotoModel {
+    @MainActor public var reviewProperties: [ReviewCustomProperty] {
+        [
+            ReviewCustomProperty(displayName: "Rotation") {
+                ReviewPropertyValue(($0 as? PhotoModel)?.degrees ?? 0)
+            }
+        ]
+    }
+}
+
 extension PhotoModel: ItemDataAccessable {
     public static var empty: PhotoModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> PhotoModel {

@@ -6,21 +6,22 @@ import SwiftUI
 
 struct ThumbnailDiceRow: View, Equatable {
     let itemId: UUID
-    
+    var item: DiceModel? = nil
+
     @Environment(DiceRootModel.self) private var root
-    
+
     var body: some View {
         if let die = model?.dice.first {
             ThumbnailDice(die: die)
         }
     }
-    
+
     private var model: DiceModel? {
-        root.itemController.itemSync(for: itemId)
+        item ?? root.itemController.itemSync(for: itemId)
     }
-    
+
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.itemId == rhs.itemId
+        lhs.itemId == rhs.itemId && lhs.item == rhs.item
     }
 }
 

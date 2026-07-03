@@ -34,13 +34,13 @@ private struct IRModuleRow: View {
             }
             HStack(spacing: 8) {
                 if addedCount > 0 {
-                    Label("\(addedCount) new", systemImage: "circle.fill").foregroundStyle(.green)
+                    Label("\(addedCount)", systemImage: "circle.fill").foregroundStyle(.green)
                 }
                 if changedCount > 0 {
-                    Label("\(changedCount) changed", systemImage: "circle.fill").foregroundStyle(.orange)
+                    Label("\(changedCount)", systemImage: "circle.fill").foregroundStyle(.orange)
                 }
                 if blockedCount > 0 {
-                    Label("\(blockedCount) blocked", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                    Label("\(blockedCount)", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
                 }
             }
             .font(.caption)
@@ -230,7 +230,7 @@ struct ImportReviewSplitView: View {
             }
         } detail: {
             if let item = model.selectedItem {
-                SingleItemReviewVC_Accordion(model: item.itemModel, root: selectedModuleRoot)
+                SingleItemReviewVC_Accordion(model: item.itemModel, root: selectedModuleRoot, rootManager: rootManager, reviewModel: model)
                     .navigationTitle(item.name)
                     .id(item.id)
             } else {

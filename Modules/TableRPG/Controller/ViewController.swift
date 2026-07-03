@@ -17,6 +17,10 @@ extension ViewController: ViewControllable {
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
         AnyView(ThumbnailDiceRow(itemId: itemId).equatable())
     }
+
+    @MainActor public func thumbnailRowView(for model: any ItemDataAccessable) -> AnyView {
+        AnyView(ThumbnailDiceRow(itemId: model.id, item: model as? TableModel).equatable())
+    }
 }
 
 // MARK: External Views

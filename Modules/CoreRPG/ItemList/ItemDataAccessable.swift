@@ -3,6 +3,55 @@
 import Foundation
 import SwiftUI
 
+/// A model property value for the import review. Non-string types (toggles, enums,
+/// numbers) provide a string representation used for rendering and change detection.
+public enum ReviewPropertyValue: Equatable, Sendable {
+    case text(String)
+    case toggle(Bool)
+    case number(Double)
+    case option(String)
+    /// A linked item (e.g. photoId / diceId) — rendered with the destination module's thumbnail.
+    case link(ItemRowModel?)
+
+    public var displayText: String {
+        switch self {
+        case .text(let value): value
+        case .toggle(let value): value ? String(localized: "On", bundle: .module) : String(localized: "Off", bundle: .module)
+        case .number(let value): value.formatted(.number)
+        case .option(let value): value
+        case .link(let value): value?.itemId.uuidString ?? ""
+        }
+    }
+}
+
+public extension ReviewPropertyValue {
+    init(_ value: String) { self = .text(value) }
+    init(_ value: Bool) { self = .toggle(value) }
+    init(_ value: some BinaryInteger) { self = .number(Double(value)) }
+    init(_ value: some BinaryFloatingPoint) { self = .number(Double(value)) }
+    /// Enums with a String raw value render their raw value.
+    init(_ value: some RawRepresentable<String>) { self = .option(value.rawValue) }
+    init(photoId: UUID?) { self = .link(photoId.map { ItemRowModel(itemId: $0, typeId: .photo) }) }
+    init(diceId: UUID?) { self = .link(diceId.map { ItemRowModel(itemId: $0, typeId: .dice) }) }
+}
+
+/// Describes one custom model property shown in the import review in addition to the
+/// standard name / description / tags / file rows. Read-only: the review displays the
+/// value per model version; the value itself follows the chosen version on apply.
+public struct ReviewCustomProperty: Sendable {
+    public init(
+        displayName: String,
+        value: @escaping @MainActor (any ItemDataAccessable) -> ReviewPropertyValue
+    ) {
+        self.displayName = displayName
+        self.value = value
+    }
+
+    public let displayName: String
+    /// Reads the property from one model version (existing, imported or merged).
+    public let value: @MainActor (any ItemDataAccessable) -> ReviewPropertyValue
+}
+
 public protocol ItemDataAccessable: Sendable, Equatable {
     associatedtype Entry: EntryDataAccessable, Identifiable, Equatable
 
@@ -36,9 +85,13 @@ public protocol ItemDataAccessable: Sendable, Equatable {
     func filter(filter: String, includeEntries: Bool) -> Bool
     func isEqual(other: Self) -> Bool
     @MainActor func replace(with model: Self) -> Bool
+
+    /// Custom model properties shown in the import review in addition to the standard ones.
+    @MainActor var reviewProperties: [ReviewCustomProperty] { get }
 }
 
 public extension ItemDataAccessable {
+    @MainActor var reviewProperties: [ReviewCustomProperty] { [] }
     var url: URL? {
         fileUrl?.rawUrl
     }

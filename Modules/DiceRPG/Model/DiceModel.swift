@@ -467,6 +467,26 @@ extension DiceModel: ItemDiffComparable {
     }
 }
 
+// MARK: - Review Properties
+
+extension DiceModel {
+    @MainActor public var reviewProperties: [ReviewCustomProperty] {
+        [
+            ReviewCustomProperty(displayName: "Dice") { ReviewPropertyValue(($0 as? DiceModel)?.dice.count ?? 0) },
+            ReviewCustomProperty(displayName: "Sum Up") { ReviewPropertyValue(($0 as? DiceModel)?.sumUp ?? true) },
+            ReviewCustomProperty(displayName: "Modifier") { ReviewPropertyValue(($0 as? DiceModel)?.modifier ?? 0) },
+            ReviewCustomProperty(displayName: "Percent Dice") { ReviewPropertyValue(($0 as? DiceModel)?.percentDice ?? false) },
+            ReviewCustomProperty(displayName: "Compare") { .option(($0 as? DiceModel)?.compareOption.rawText ?? "Off") },
+            ReviewCustomProperty(displayName: "Compare Value") { ReviewPropertyValue(($0 as? DiceModel)?.compareValue ?? 0) },
+            ReviewCustomProperty(displayName: "Reorder Dice") { ReviewPropertyValue(($0 as? DiceModel)?.reorderDice ?? false) },
+            ReviewCustomProperty(displayName: "Add Dice Every") { ReviewPropertyValue(($0 as? DiceModel)?.addDiceEvery ?? 0) },
+            ReviewCustomProperty(displayName: "Rerolls") { ReviewPropertyValue(($0 as? DiceModel)?.rerollOptions.count ?? 0) },
+            ReviewCustomProperty(displayName: "Coup Values") { ReviewPropertyValue(($0 as? DiceModel)?.coupValues.count ?? 0) },
+            ReviewCustomProperty(displayName: "Fumble Values") { ReviewPropertyValue(($0 as? DiceModel)?.fumbleValues.count ?? 0) }
+        ]
+    }
+}
+
 extension DiceModel: ItemDuplicatable {
     public func duplicate() -> DiceModel {
         let copyName = duplicateName(from: name)
