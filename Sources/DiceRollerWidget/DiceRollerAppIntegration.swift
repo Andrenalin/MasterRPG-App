@@ -3,7 +3,6 @@
 import CoreRPG
 import DiceRPG
 import SwiftUI
-import WidgetKit
 
 /// Integration view for managing dice roller widget from the main app
 struct DiceRollerWidgetConfiguration: View {
@@ -55,7 +54,7 @@ struct DiceRollerWidgetConfiguration: View {
                 if let lastRoll = configuration.lastRoll {
                     HStack {
                         if let firstDie = lastRoll.diceModel.dice.first {
-                            firstDie.diceImage(for: lastRoll.sum)
+                            firstDie.diceImage(for: firstDie.result.last ?? firstDie.die.max)
                                 .resizable()
                                 .frame(width: 40, height: 40)
                                 .foregroundStyle(resultColor(for: lastRoll.result))
@@ -106,8 +105,8 @@ struct DiceRollerWidgetConfiguration: View {
                     }
                 }
                 
-                Button("Reload All Widgets") {
-                    WidgetCenter.shared.reloadAllTimelines()
+                Button("Reload Dice Widgets") {
+                    DiceWidgetReloader.reloadDiceWidgets()
                 }
             } header: {
                 Text("Widget Management")
@@ -180,7 +179,7 @@ struct DiceRollerWidgetConfiguration: View {
         }
         
         // Reload widget to reflect changes
-        WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
     }
     
     private func saveGameName(_ name: String) {
@@ -191,7 +190,7 @@ struct DiceRollerWidgetConfiguration: View {
     private func clearHistory() {
         configuration.lastRoll = nil
         configuration.save()
-        WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
     }
     
     private func resultColor(for result: DiceResultModel.DiceResult) -> Color {
@@ -475,7 +474,7 @@ struct DiceRollerView: View {
                 config.lastRoll = result
                 config.selectedDice = diceModel
                 config.save()
-                WidgetCenter.shared.reloadAllTimelines()
+                DiceWidgetReloader.reloadDiceWidgets()
 
                 // Update Live Activity if game is active
                 let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
@@ -697,19 +696,19 @@ struct FavoriteDiceManagementView: View {
         configuration.save()
         
         // Reload widget
-        WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
     }
     
     private func deleteFavorites(at offsets: IndexSet) {
         configuration.favoriteDice.remove(atOffsets: offsets)
         configuration.save()
-        WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
     }
     
     private func moveFavorites(from source: IndexSet, to destination: Int) {
         configuration.favoriteDice.move(fromOffsets: source, toOffset: destination)
         configuration.save()
-        WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
     }
     
     private func diceDescription(_ diceModel: DiceModel) -> String {

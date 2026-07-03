@@ -14,20 +14,7 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> DiceRollerEntry {
         DiceRollerEntry(
             date: Date(),
-            configuration: DiceConfiguration(
-                selectedDice: DiceModel.preview,
-                lastRoll: DiceResultModel(
-                    diceModel: DiceModel.preview,
-                    result: .rolled,
-                    values: "18",
-                    sum: 18,
-                    checked: false,
-                    timeStamp: Date()
-                ),
-                availableDice: [.die20(color: .G), .die12(color: .G), .die6(color: .G)],
-                showHistory: true,
-                favoriteDice: []
-            ),
+            snapshot: .preview,
             intent: ConfigureDiceWidgetIntent()
         )
     }
@@ -35,43 +22,25 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
     func snapshot(for configuration: ConfigureDiceWidgetIntent, in context: Context) async -> DiceRollerEntry {
         DiceRollerEntry(
             date: Date(),
-            configuration: .default,
+            snapshot: .preview,
             intent: configuration
         )
     }
 
     func timeline(for configuration: ConfigureDiceWidgetIntent, in context: Context) async -> Timeline<DiceRollerEntry> {
-        // Load dice configuration
-        let diceConfig = DiceConfiguration.loadFromUserDefaults()
-        
-        // Check game status for smart refresh
+        let snapshot = DiceWidgetSnapshot.loadFromUserDefaults()
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
-        
-        // Create entry
+
         let entry = DiceRollerEntry(
             date: Date(),
-            configuration: diceConfig,
-            intent: configuration
+            snapshot: snapshot,
+            intent: configuration,
+            isGameActive: isGameActive,
+            relevance: relevance(for: snapshot, isGameActive: isGameActive)
         )
-        
-        // Smart refresh policy based on game state
-        let refreshInterval: TimeInterval
-        if isGameActive {
-            // Active game: Refresh every 5 minutes
-            refreshInterval = 5 * 60
-        } else if diceConfig.lastRoll != nil {
-            // Recent activity: Refresh every 15 minutes
-            refreshInterval = 15 * 60
-        } else {
-            // Idle: Refresh every 30 minutes
-            refreshInterval = 30 * 60
-        }
-        
-        let nextUpdate = Date().addingTimeInterval(refreshInterval)
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-        
-        return timeline
+
+        return Timeline(entries: [entry], policy: .never)
     }
     
     // iOS 18+: Provide recommended configurations
@@ -88,39 +57,38 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
             )
         ]
     }
+
+    private func relevance(for snapshot: DiceWidgetSnapshot, isGameActive: Bool) -> TimelineEntryRelevance {
+        if isGameActive {
+            return TimelineEntryRelevance(score: 100, duration: 3600)
+        }
+
+        if let timestamp = snapshot.lastRoll?.timestamp {
+            let timeSinceRoll = Date().timeIntervalSince(timestamp)
+            if timeSinceRoll < 300 {
+                return TimelineEntryRelevance(score: 75, duration: 300)
+            }
+            return TimelineEntryRelevance(score: 50, duration: 1800)
+        }
+
+        return TimelineEntryRelevance(score: 10)
+    }
 }
 
 // MARK: - Entry Model with Relevance
 
 struct DiceRollerEntry: TimelineEntry {
     let date: Date
-    let configuration: DiceConfiguration
+    let snapshot: DiceWidgetSnapshot
     var intent: ConfigureDiceWidgetIntent = ConfigureDiceWidgetIntent()
+    var isGameActive: Bool = false
+    var relevance: TimelineEntryRelevance?
 
     static var preview: DiceRollerEntry {
         DiceRollerEntry(
             date: Date(),
-            configuration: .default,
+            snapshot: .preview,
             intent: ConfigureDiceWidgetIntent()
         )
-    }
-    
-    // iOS 17+: Relevance for StandBy mode
-    var relevance: TimelineEntryRelevance? {
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
-        
-        if isGameActive {
-            // High relevance during active game (shown prominently in StandBy)
-            return TimelineEntryRelevance(score: 100, duration: 3600)
-        } else if configuration.lastRoll != nil {
-            // Medium relevance if there's recent activity
-            let timeSinceRoll = Date().timeIntervalSince(configuration.lastRoll?.timestamp ?? Date.distantPast)
-            if timeSinceRoll < 300 { // 5 minutes
-                return TimelineEntryRelevance(score: 75, duration: 300)
-            }
-            return TimelineEntryRelevance(score: 50, duration: 1800)
-        }
-        return TimelineEntryRelevance(score: 10)
     }
 }

@@ -8,25 +8,20 @@ import WidgetKit
 
 /// A widget that displays a dice roller with Liquid Glass design
 struct DiceRollerWidget: Widget {
-    let kind: String = "DiceRollerWidget"
+    let kind: String = DiceWidgetKind.roller
     
     private var supportedWidgetFamilies: [WidgetFamily] {
         #if os(iOS)
         return [
             .systemSmall,
             .systemMedium,
-            .systemLarge,
-            .systemExtraLarge, // iOS 18+ iPad
-            .accessoryCircular, // Lock Screen
-            .accessoryRectangular,
-            .accessoryInline
+            .systemLarge
         ]
         #elseif os(macOS)
         return [
             .systemSmall,
             .systemMedium,
-            .systemLarge,
-            .systemExtraLarge
+            .systemLarge
         ]
         #else
         return [
@@ -56,6 +51,7 @@ struct DiceRollerWidget: Widget {
                 }
                 .widgetAccentable() // iOS 18+: Full tinting support
                 .invalidatableContent() // iOS 18+: Auto-refresh on interaction
+                .widgetURL(DiceWidgetDeepLink.diceRoot)
         }
         .configurationDisplayName("Dice Roller")
         .description("Quickly roll dice for your RPG game with Liquid Glass design")
@@ -73,11 +69,14 @@ struct DiceRollerWidget: Widget {
 struct DiceRollerAccessoryWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
-            kind: "DiceAccessory",
+            kind: DiceWidgetKind.accessory,
             intent: ConfigureDiceWidgetIntent.self,
             provider: DiceRollerProvider()
         ) { entry in
             AccessoryDiceView(entry: entry)
+                .containerBackground(for: .widget) { }
+                .widgetAccentable()
+                .widgetURL(DiceWidgetDeepLink.diceRoot)
         }
         .configurationDisplayName("Quick Dice")
         .description("Compact dice roller for Lock Screen")
@@ -99,23 +98,22 @@ struct AccessoryDiceView: View {
             ZStack {
                 AccessoryWidgetBackground()
                 VStack(spacing: 2) {
-                    if let firstDie = entry.configuration.lastRoll?.diceModel.dice.first {
-                        Image(systemName: diceSymbol(for: firstDie.die.max))
+                    if let lastRoll = entry.snapshot.lastRoll {
+                        Image(systemName: diceSymbol(for: lastRoll.dice.sides))
                             .font(.system(size: 18))
                     }
-                    Text("\(entry.configuration.lastRoll?.sum ?? 0)")
+                    Text("\(entry.snapshot.lastRoll?.sum ?? 0)")
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                 }
             }
             
         case .accessoryRectangular:
             HStack(spacing: 8) {
-                if let lastRoll = entry.configuration.lastRoll,
-                   let firstDie = lastRoll.diceModel.dice.first {
-                    Image(systemName: diceSymbol(for: firstDie.die.max))
+                if let lastRoll = entry.snapshot.lastRoll {
+                    Image(systemName: diceSymbol(for: lastRoll.dice.sides))
                         .font(.system(size: 20))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(lastRoll.diceModel.name)
+                        Text(lastRoll.dice.name)
                             .font(.headline)
                         Text("\(lastRoll.sum)")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -129,8 +127,8 @@ struct AccessoryDiceView: View {
             }
             
         case .accessoryInline:
-            if let lastRoll = entry.configuration.lastRoll {
-                Text("🎲 \(lastRoll.diceModel.name): \(lastRoll.sum)")
+            if let lastRoll = entry.snapshot.lastRoll {
+                Text("🎲 \(lastRoll.dice.name): \(lastRoll.sum)")
             } else {
                 Text("🎲 Tap to roll")
             }
@@ -159,7 +157,7 @@ struct AccessoryDiceView: View {
 #if os(iOS)
 struct DiceRollerControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
-        StaticControlConfiguration(kind: "DiceControl") {
+        StaticControlConfiguration(kind: DiceWidgetKind.control) {
             ControlWidgetButton(action: RollDiceIntent(diceType: IntentDiceType.d20)) {
                 Label("Roll D20", systemImage: "dice.fill")
             }
@@ -172,21 +170,14 @@ struct DiceRollerControl: ControlWidget {
 
 // MARK: - Widget Configuration Intent (iOS 18+)
 
-struct ConfigureDiceWidgetIntent: AppIntent, WidgetConfigurationIntent {
+struct ConfigureDiceWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Configure Dice Widget"
     static let description = IntentDescription("Customize your dice widget appearance")
-    
-    @Parameter(title: "Auto-Refresh", default: true)
-    var autoRefresh: Bool
-    
+
     @Parameter(title: "Show Favorites Only", default: false)
     var showFavoritesOnly: Bool
-    
+
     init() {}
-    
-    func perform() async throws -> some IntentResult {
-        return .result()
-    }
 }
 
 // MARK: - Widget Bundle

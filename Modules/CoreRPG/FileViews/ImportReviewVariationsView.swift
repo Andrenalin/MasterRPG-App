@@ -185,7 +185,15 @@ private struct IRPropertyRow: View {
                     }
                 }
             }
-            Picker("Decision for \(prop.displayName)", selection: Binding(get: { prop.decision }, set: onDecision)) {
+            Picker(
+                "Decision for \(prop.displayName)",
+                selection: Binding(
+                    get: { prop.decision },
+                    set: { newDecision in
+                        onDecision(newDecision)
+                    }
+                )
+            ) {
                 ForEach(prop.availableDecisions) { d in Text(d.rawValue).tag(d) }
             }
             .pickerStyle(.segmented)

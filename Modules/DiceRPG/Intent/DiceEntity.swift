@@ -97,6 +97,8 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     private static var cachedEntities: [DiceEntity] = []
     private static var lastCacheUpdate: Date = .distantPast
     private static let cacheValidityDuration: TimeInterval = 60 // 1 minute
+    private static let suggestedEntityLimit = 20
+    private static let matchingEntityLimit = 25
 
     func suggestedEntities() async throws -> [DiceEntity] {
         // Return cached entities if still valid
@@ -105,7 +107,7 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         }
         
         // Fetch fresh entities
-        let entities = await fetchEntities()
+        let entities = await fetchEntities(limit: Self.suggestedEntityLimit)
         
         // Update cache
         Self.cachedEntities = entities
@@ -114,10 +116,11 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         return entities
     }
     
-    private func fetchEntities() async -> [DiceEntity] {
+    private func fetchEntities(limit: Int? = nil) async -> [DiceEntity] {
         let ids = root.itemController.itemDataModel.items
+        let selectedIds = ids.prefix(limit ?? ids.count)
         var results: [DiceEntity] = []
-        for id in ids {
+        for id in selectedIds {
             guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = DiceEntity(root: root, model: model)
             results.append(entity)
@@ -136,16 +139,25 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching string: String) async throws -> [DiceEntity] {
-        let allEntities = try await suggestedEntities()
-        return allEntities.filter { entity in
-            entity.name.localizedStandardContains(string) ||
-            entity.description.localizedStandardContains(string) ||
-            entity.model.tags.contains(where: { $0.localizedStandardContains(string) })
+        guard !string.isEmpty else { return try await suggestedEntities() }
+        let ids = root.itemController.itemDataModel.items
+        var results: [DiceEntity] = []
+        for id in ids {
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            let entity = DiceEntity(root: root, model: model)
+            guard entity.name.localizedStandardContains(string) ||
+                    entity.description.localizedStandardContains(string) ||
+                    model.tags.contains(where: { $0.localizedStandardContains(string) }) else {
+                continue
+            }
+            results.append(entity)
+            guard results.count < Self.matchingEntityLimit else { break }
         }
+        return results
     }
 
     func allEntities() async throws -> [DiceEntity] {
-        try await suggestedEntities()
+        await fetchEntities()
     }
     
     // iOS 18+: Invalidate cache when data changes

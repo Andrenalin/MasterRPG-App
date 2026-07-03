@@ -182,6 +182,7 @@ public extension ItemControllable {
 
     func save() async {
         try? await dataControllable?.save()
+        await AppIntentContentInvalidator.invalidate()
     }
 
     func flushPendingOperations() async {

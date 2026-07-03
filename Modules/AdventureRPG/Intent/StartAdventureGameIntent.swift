@@ -5,11 +5,11 @@
 import CoreRPG
 import AppIntents
 
-struct StartAdventureGameIntent: AppIntent {
-    static let title: LocalizedStringResource = "Start Adventure Game"
-    static let supportedModes: IntentModes = .foreground
+public struct StartAdventureGameIntent: AppIntent {
+    public static let title: LocalizedStringResource = "Start Adventure Game"
+    public static let supportedModes: IntentModes = .foreground
 
-    static var parameterSummary: some ParameterSummary {
+    public static var parameterSummary: some ParameterSummary {
         Summary("Start game for \(\.$target)")
     }
 
@@ -19,8 +19,10 @@ struct StartAdventureGameIntent: AppIntent {
     @Dependency var root: AdventureRootModel
     @Dependency var navigator: Navigator
 
+    public init() {}
+
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
         root.adventureGameControllable.startGame(with: target.id)
         root.startGame()
         navigator.perform(route: KnownRoutes.game)

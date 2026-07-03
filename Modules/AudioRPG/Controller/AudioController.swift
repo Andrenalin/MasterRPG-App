@@ -313,8 +313,8 @@ private extension AudioController {
         // Observations delivers every change for the lifetime of the task — unlike
         // withObservationTracking, which fires once and silently died whenever an
         // early exit skipped the re-arm.
-        model.sharedAudioTask = Task { [weak self] in
-            for await audioId in Observations({ @MainActor in coordinator.sharedAudioId }) {
+        model.sharedAudioTask = Task { @MainActor [weak self] in
+            for await audioId in Observations({ coordinator.sharedAudioId }) {
                 guard let self else { return }
                 await self.handleSharedAudio(audioId)
             }

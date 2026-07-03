@@ -12,10 +12,9 @@ struct DiceRollerWidgetView: View {
     @Environment(\.widgetRenderingMode) var renderingMode
     
     let entry: DiceRollerEntry
-    
-    /// Check if game is currently active
-    private var isGameActive: Bool {
-        UserDefaults(suiteName: UserDefaults.appGroupString)?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
+
+    private var shouldShowFavorites: Bool {
+        (entry.isGameActive || entry.intent.showFavoritesOnly) && !entry.snapshot.favoriteDice.isEmpty
     }
     
     var body: some View {
@@ -36,18 +35,16 @@ struct DiceRollerWidgetView: View {
     private var smallWidgetView: some View {
         VStack(spacing: 8) {
             // Dice icon with result
-            if let lastRoll = entry.configuration.lastRoll {
+            if let lastRoll = entry.snapshot.lastRoll {
                 // Show last roll result
                 diceResultView(lastRoll)
             } else {
                 // Show dice type icon
-                if let firstDie = entry.configuration.selectedDice.dice.first {
-                    dieImageView(firstDie, size: 40, sides: firstDie.die.max)
-                }
+                dieImageView(entry.snapshot.selectedDice, size: 40)
             }
 
             // Dice type label
-            Text(entry.configuration.selectedDice.name)
+            Text(entry.snapshot.selectedDice.name)
                 .font(.caption)
                 .fontWeight(.medium)
                 .widgetAccentable()
@@ -61,7 +58,7 @@ struct DiceRollerWidgetView: View {
         HStack(spacing: 16) {
             // Left side - Current dice and result
             VStack(spacing: 8) {
-                if let lastRoll = entry.configuration.lastRoll {
+                if let lastRoll = entry.snapshot.lastRoll {
                     diceResultView(lastRoll)
 
                     if let timestamp = lastRoll.timestamp {
@@ -70,13 +67,11 @@ struct DiceRollerWidgetView: View {
                             .foregroundStyle(.secondary)
                     }
                 } else {
-                    if let firstDie = entry.configuration.selectedDice.dice.first {
-                        dieImageView(firstDie, size: 50, sides: firstDie.die.max)
+                    dieImageView(entry.snapshot.selectedDice, size: 50)
 
-                        Text(entry.configuration.selectedDice.name)
-                            .font(.headline)
-                            .widgetAccentable()
-                    }
+                    Text(entry.snapshot.selectedDice.name)
+                        .font(.headline)
+                        .widgetAccentable()
                 }
             }
             .frame(maxWidth: .infinity)
@@ -86,7 +81,7 @@ struct DiceRollerWidgetView: View {
             // Right side - Show favorites only if game is active AND we have favorites
             // Otherwise always show quick roll
             VStack(spacing: 4) {
-                if isGameActive && !entry.configuration.favoriteDice.isEmpty {
+                if shouldShowFavorites {
                     Text("Favorites")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -117,7 +112,7 @@ struct DiceRollerWidgetView: View {
 
                 Spacer()
 
-                if let lastRoll = entry.configuration.lastRoll, let timestamp = lastRoll.timestamp {
+                if let lastRoll = entry.snapshot.lastRoll, let timestamp = lastRoll.timestamp {
                     Text(timestamp, style: .time)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -125,28 +120,26 @@ struct DiceRollerWidgetView: View {
             }
 
             // Main dice display
-            if let lastRoll = entry.configuration.lastRoll {
+            if let lastRoll = entry.snapshot.lastRoll {
                 diceResultView(lastRoll)
 
                 Text("Last Roll")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                if let firstDie = entry.configuration.selectedDice.dice.first {
-                    dieImageView(firstDie, size: 60, sides: firstDie.die.max)
+                dieImageView(entry.snapshot.selectedDice, size: 60)
 
-                    Text(entry.configuration.selectedDice.name)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .widgetAccentable()
-                }
+                Text(entry.snapshot.selectedDice.name)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .widgetAccentable()
             }
 
             Divider()
 
             // Dice selection grid - Show favorites only if game is active AND we have favorites
             // Otherwise always show quick roll
-            if isGameActive && !entry.configuration.favoriteDice.isEmpty {
+            if shouldShowFavorites {
                 Text("Favorite Dice")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -167,8 +160,8 @@ struct DiceRollerWidgetView: View {
 
     /// Renders a die image that works correctly in both full color and tinted modes
     @ViewBuilder
-    private func dieImageView(_ die: DieModel, size: CGFloat, sides: Int) -> some View {
-        die.diceImage(for: sides)
+    private func dieImageView(_ dice: DiceWidgetDice, size: CGFloat) -> some View {
+        dice.dieModel.diceImage(for: dice.displayFace)
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
@@ -176,7 +169,7 @@ struct DiceRollerWidgetView: View {
             .unredacted() // Ensure images always render
     }
 
-    private func diceResultView(_ result: DiceResultModel) -> some View {
+    private func diceResultView(_ result: DiceWidgetRoll) -> some View {
         VStack(spacing: 4) {
             ZStack {
                 // Background circle - only show in full color mode
@@ -186,13 +179,11 @@ struct DiceRollerWidgetView: View {
                         .frame(width: 70, height: 70)
                 }
 
-                if let firstDie = result.diceModel.dice.first {
-                    dieImageView(firstDie, size: 64, sides: result.sum)
-                }
+                dieImageView(result.dice, size: 64)
             }
             .widgetAccentable() // Mark the entire result as accentable content
 
-            Text(result.diceModel.name)
+            Text(result.dice.name)
                 .font(.caption)
                 .fontWeight(.medium)
         }
@@ -204,7 +195,10 @@ struct DiceRollerWidgetView: View {
                 Button(intent: RollDiceIntent(diceType: diceType)) {
                     VStack(spacing: 2) {
                         let die = diceType.toDieModel()
-                        dieImageView(die, size: 32, sides: die.die.max)
+                        dieImageView(
+                            DiceWidgetDice(id: die.id, name: diceType.rawValue, sides: die.die.max),
+                            size: 32
+                        )
 
                         Text(diceType.rawValue)
                             .font(.system(size: 8))
@@ -220,12 +214,10 @@ struct DiceRollerWidgetView: View {
     
     private var favoriteDiceGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(entry.configuration.favoriteDice.prefix(6)) { favorite in
-                Button(intent: RollFavoriteDiceIntent(diceId: favorite.diceModel.id)) {
+            ForEach(entry.snapshot.favoriteDice.prefix(6)) { favorite in
+                Button(intent: RollFavoriteDiceIntent(diceId: favorite.id)) {
                     VStack(spacing: 2) {
-                        if let firstDie = favorite.diceModel.dice.first {
-                            dieImageView(firstDie, size: 32, sides: firstDie.die.max)
-                        }
+                        dieImageView(favorite.dice, size: 32)
                         
                         Text(favorite.name)
                             .font(.system(size: 8))
@@ -240,7 +232,7 @@ struct DiceRollerWidgetView: View {
         }
     }
 
-    private func resultColor(for result: DiceResultModel) -> Color {
+    private func resultColor(for result: DiceWidgetRoll) -> Color {
         switch result.result {
         case .coup:
             return .green
@@ -261,7 +253,7 @@ struct DiceRollerWidgetView: View {
 } timeline: {
     DiceRollerEntry(
         date: .now,
-        configuration: .default
+        snapshot: .preview
     )
 }
 
@@ -270,7 +262,7 @@ struct DiceRollerWidgetView: View {
 } timeline: {
     DiceRollerEntry(
         date: .now,
-        configuration: .default
+        snapshot: .preview
     )
 }
 
@@ -279,6 +271,6 @@ struct DiceRollerWidgetView: View {
 } timeline: {
     DiceRollerEntry(
         date: .now,
-        configuration: .default
+        snapshot: .preview
     )
 }

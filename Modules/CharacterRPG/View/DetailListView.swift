@@ -21,7 +21,15 @@ struct DetailListView: View {
             .accentColor(root.configurable.module.tint)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in
                 UserActivity.addPayLoad(for: activity, title: model.name, module: root.config.module, itemId: model.id)
+#if !os(tvOS)
+                root.addSiriContext(to: activity, itemId: model.id)
+#endif
             }
+#if !os(tvOS)
+            .task(id: model.id) {
+                await root.donateSiriViewingIntent(for: model.id)
+            }
+#endif
     }
 
 #if os(iOS)

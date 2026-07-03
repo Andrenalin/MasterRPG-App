@@ -7,6 +7,7 @@ import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -22,7 +23,7 @@ struct MyAppPackage: AppIntentsPackage {
         AudioFrameworkPackage.self,
         CharacterFrameworkPackage.self,
         DiceFrameworkPackage.self,
-//        GeneratorFrameworkPackage.self,
+        GeneratorFrameworkPackage.self,
         MapFrameworkPackage.self,
         PdfFrameworkPackage.self,
         PhotoFrameworkPackage.self,

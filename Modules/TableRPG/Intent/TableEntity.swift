@@ -84,9 +84,11 @@ extension TableEntity: Transferable {
 @MainActor
 struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: TableRootModel
+    private static let suggestedEntityLimit = 20
+    private static let matchingEntityLimit = 25
 
     func suggestedEntities() async throws -> [TableEntity] {
-        let ids = root.itemController.itemDataModel.items
+        let ids = root.itemController.itemDataModel.items.prefix(Self.suggestedEntityLimit)
         var results: [TableEntity] = []
         for id in ids {
             guard let model = root.itemController.itemSync(for: id) else { continue }
@@ -107,6 +109,7 @@ struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [TableEntity] {
+        guard !matching.isEmpty else { return try await suggestedEntities() }
         let ids = root.itemController.itemDataModel.items
         var results: [TableEntity] = []
         for id in ids {
@@ -114,12 +117,20 @@ struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
             guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
             let entity = TableEntity(root: root, model: model)
             results.append(entity)
+            guard results.count < Self.matchingEntityLimit else { break }
         }
         return results
     }
 
     func allEntities() async throws -> [TableEntity] {
-        try await suggestedEntities()
+        let ids = root.itemController.itemDataModel.items
+        var results: [TableEntity] = []
+        for id in ids {
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            let entity = TableEntity(root: root, model: model)
+            results.append(entity)
+        }
+        return results
     }
 }
 

@@ -9,33 +9,33 @@ import CoreTransferable
 import SwiftUI
 import PDFKit
 
-struct AdventureEntity: IndexedEntity {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation {
+public struct AdventureEntity: IndexedEntity {
+    public static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Adventure"),
             numericFormat: "\(placeholder: .int) Adventure"
         )
     }
 
-    var displayRepresentation: DisplayRepresentation {
+    public var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
             title: "\(name)",
             image: .init(systemName: icon)
         )
     }
 
-    static let defaultQuery = AdventureEntityQuery()
+    public static let defaultQuery = AdventureEntityQuery()
 
-    var id: UUID { model.id }
+    public var id: UUID { model.id }
 
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name }
+    public var name: String { model.name }
 
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.description }
+    public var description: String { model.description }
 
-    var icon: String {
+    public var icon: String {
         model.specialCategory ? model.category.icon : root.config.module.icon
     }
 
@@ -49,7 +49,7 @@ struct AdventureEntity: IndexedEntity {
 }
 
 extension AdventureEntity: Transferable {
-    static var transferRepresentation: some TransferRepresentation {
+    public static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
             let url = URL.documentsDirectory.appending(path: "\(landmark.name).pdf")
 
@@ -85,12 +85,16 @@ extension AdventureEntity: Transferable {
     }
 }
 
-@MainActor
-struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
+public struct AdventureEntityQuery: @preconcurrency EntityQuery, @preconcurrency EntityStringQuery, @preconcurrency EnumerableEntityQuery {
     @Dependency var root: AdventureRootModel
+    private static let suggestedEntityLimit = 20
+    private static let matchingEntityLimit = 25
 
-    func suggestedEntities() async throws -> [AdventureEntity] {
-        let ids = root.itemController.itemDataModel.items
+    public init() {}
+
+    @MainActor
+    public func suggestedEntities() async throws -> [AdventureEntity] {
+        let ids = root.itemController.itemDataModel.items.prefix(Self.suggestedEntityLimit)
         var results: [AdventureEntity] = []
         for id in ids {
             guard let model = root.itemController.itemSync(for: id) else { continue }
@@ -100,7 +104,8 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
         return results
     }
 
-    func entities(for identifiers: [AdventureEntity.ID]) async throws -> [AdventureEntity] {
+    @MainActor
+    public func entities(for identifiers: [AdventureEntity.ID]) async throws -> [AdventureEntity] {
         var results: [AdventureEntity] = []
         for id in identifiers {
             guard let model = root.itemController.itemSync(for: id) else { continue }
@@ -110,7 +115,9 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
         return results
     }
 
-    func entities(matching: String) async throws -> [AdventureEntity] {
+    @MainActor
+    public func entities(matching: String) async throws -> [AdventureEntity] {
+        guard !matching.isEmpty else { return try await suggestedEntities() }
         let ids = root.itemController.itemDataModel.items
         var results: [AdventureEntity] = []
         for id in ids {
@@ -118,12 +125,21 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
             guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
             let entity = AdventureEntity(root: root, model: model)
             results.append(entity)
+            guard results.count < Self.matchingEntityLimit else { break }
         }
         return results
     }
 
-    func allEntities() async throws -> [AdventureEntity] {
-        try await suggestedEntities()
+    @MainActor
+    public func allEntities() async throws -> [AdventureEntity] {
+        let ids = root.itemController.itemDataModel.items
+        var results: [AdventureEntity] = []
+        for id in ids {
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            let entity = AdventureEntity(root: root, model: model)
+            results.append(entity)
+        }
+        return results
     }
 }
 

@@ -20,12 +20,11 @@ AppIntentConfiguration(
 
 **Benefits:**
 - Users can configure widget without opening app
-- Auto-refresh toggle
 - Show favorites only mode
+- Widget refreshes are driven by dice state changes
 - Better user experience
 
 **Configuration Options:**
-- ✅ Auto-Refresh (on/off)
 - ✅ Show Favorites Only (on/off)
 
 ### 2. **Lock Screen Widgets (iOS 18+)**
@@ -76,39 +75,37 @@ struct DiceRollerControl: ControlWidget {
 - Tap to roll D20 instantly
 - No need to open app or widget
 
-### 4. **Extra Large Widgets**
+### 4. **Explicit Size Scoping**
 
-iPad and macOS support:
+The main widget supports only the sizes with dedicated layouts:
 
 ```swift
 .supportedFamilies([
-    .systemExtraLarge // iOS 18+ iPad & macOS
+    .systemSmall,
+    .systemMedium,
+    .systemLarge
 ])
 ```
 
 **Benefits:**
-- More dice shown at once
-- Bigger buttons
-- Better for iPad Pro
+- Avoids cramped or unimplemented widget families
+- Keeps layout predictable across iPhone, iPad, macOS, and visionOS
+- Accessory widgets live in a separate configuration with accessory-only layouts
 
-### 5. **Smart Refresh Policy**
+### 5. **Budget-Friendly Refresh Policy**
 
-Battery-optimized refresh rates:
+Widgets load a compact App Group snapshot and use targeted reloads when dice state changes:
 
 ```swift
-if isGameActive {
-    refreshInterval = 5 * 60  // 5 min during game
-} else if diceConfig.lastRoll != nil {
-    refreshInterval = 15 * 60 // 15 min with activity
-} else {
-    refreshInterval = 30 * 60 // 30 min when idle
-}
+Timeline(entries: [entry], policy: .never)
+WidgetCenter.shared.reloadTimelines(ofKind: DiceWidgetKind.roller)
+WidgetCenter.shared.reloadTimelines(ofKind: DiceWidgetKind.accessory)
 ```
 
 **Impact:**
-- 30-50% better battery life
-- More frequent updates during gameplay
-- Less frequent when idle
+- Avoids periodic polling
+- Keeps reloads limited to dice widgets
+- Keeps widget views lightweight by reading a compact snapshot instead of the full dice configuration
 
 ### 6. **Relevance Score (iOS 17+)**
 
@@ -160,7 +157,7 @@ Platform-specific glass effects:
 
 ### 8. **Invalidatable Content (iOS 18+)**
 
-Auto-refresh on interaction:
+Content invalidation on interaction:
 
 ```swift
 DiceRollerWidgetView(entry: entry)
@@ -169,7 +166,7 @@ DiceRollerWidgetView(entry: entry)
 
 **What It Does:**
 - Widget refreshes when button tapped
-- No manual timeline reload needed
+- App intents still save state and request targeted timeline reloads
 - Instant visual feedback
 
 ### 9. **Disfavored Locations (iOS 18+)**
@@ -227,7 +224,7 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
 |---------|-------------|
 | Lock Screen Widgets | ✅ |
 | Control Widget | ✅ |
-| Extra Large (iPad) | ✅ |
+| Explicit Small/Medium/Large Layouts | ✅ |
 | StandBy Optimization | ✅ |
 | App Intent Config | ✅ |
 | Invalidatable Content | ✅ |
@@ -246,7 +243,7 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
 
 | Feature | Implemented |
 |---------|-------------|
-| Extra Large Widgets | ✅ |
+| Small/Medium/Large Widgets | ✅ |
 | Vibrancy Effects | ✅ |
 | Desktop Integration | ✅ |
 | Notification Center | ✅ |
@@ -260,7 +257,7 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
 | Small | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Medium | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Large | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Extra Large | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Extra Large | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Circular | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Rectangular | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Inline | ❌ | ❌ | ❌ | ❌ | ✅ |
@@ -269,18 +266,18 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
 
 ### Timeline Update Frequency
 
-| Scenario | Refresh Rate | Relevance Score |
+| Scenario | Timeline Policy | Relevance Score |
 |----------|--------------|-----------------|
-| Active Game | 5 minutes | 100 |
-| Recent Activity (< 5 min) | 15 minutes | 75 |
-| Recent Activity (> 5 min) | 15 minutes | 50 |
-| Idle | 30 minutes | 10 |
+| Active Game | Targeted reload | 100 |
+| Recent Activity (< 5 min) | Targeted reload | 75 |
+| Recent Activity (> 5 min) | Targeted reload | 50 |
+| Idle | No scheduled polling | 10 |
 
 ### Battery Impact
 
-- **Before:** Fixed 15-minute refresh = ~96 updates/day
-- **After:** Adaptive 5-30 minute = ~48-288 updates/day
-- **Savings:** Up to 50% less battery usage when idle
+- **Before:** Periodic refreshes could wake the widget even when dice state did not change
+- **After:** `.never` timelines plus targeted reloads update only the relevant dice widgets
+- **Savings:** Fewer unnecessary widget reloads when idle
 
 ## 🎯 User Scenarios
 
@@ -291,7 +288,7 @@ User starts game in app
     ↓
 Widget relevance: 100 (high priority)
     ↓
-Refresh every 5 minutes
+Timeline reload requested when dice state changes
     ↓
 Shown in StandBy mode
     ↓
@@ -307,7 +304,7 @@ Game not active
     ↓
 Widget relevance: 10 (low priority)
     ↓
-Refresh every 30 minutes
+No scheduled polling
     ↓
 Not prioritized in StandBy
     ↓
@@ -404,8 +401,8 @@ Quick information access
 ### Battery Impact
 
 - **Before:** ~1.5% per day
-- **After:** ~0.8% per day (smart refresh)
-- **Improvement:** 47% better battery
+- **After:** Lower idle work from `.never` timelines and targeted reloads
+- **Improvement:** Fewer widget wakes when dice state is unchanged
 
 ## 🧪 Testing Checklist
 
@@ -414,7 +411,6 @@ Quick information access
 - [x] Small widget displays correctly
 - [x] Medium widget shows favorites
 - [x] Large widget shows full grid
-- [x] Extra Large (iPad) shows more content
 - [x] Lock Screen circular widget works
 - [x] Lock Screen rectangular widget works
 - [x] Lock Screen inline widget works
@@ -422,15 +418,14 @@ Quick information access
 
 ### Configuration
 
-- [x] User can toggle auto-refresh
 - [x] User can enable favorites-only mode
 - [x] Recommendations shown when adding widget
 - [x] Configuration persists
 
 ### Refresh & Relevance
 
-- [x] Active game refreshes every 5 min
-- [x] Idle state refreshes every 30 min
+- [x] Dice changes trigger targeted reloads
+- [x] Idle state avoids scheduled polling
 - [x] High relevance during game
 - [x] Low relevance when idle
 - [x] StandBy shows widget during game
@@ -492,8 +487,8 @@ All widgets now feature:
 - ✅ iOS 18+ App Intent configuration
 - ✅ Lock Screen widgets (3 types)
 - ✅ Control Center quick action
-- ✅ Extra Large support (iPad/Mac)
-- ✅ Smart refresh (battery optimized)
+- ✅ Explicit supported families
+- ✅ Targeted reloads (battery optimized)
 - ✅ Relevance scores (StandBy)
 - ✅ Full Liquid Glass support
 - ✅ visionOS depth effects

@@ -12,6 +12,9 @@ public extension UserDefaults {
     enum DiceKeys {
         /// Main dice configuration data
         public static let diceConfiguration = "diceConfiguration"
+
+        /// Compact dice payload read by widgets and Live Activities
+        public static let widgetSnapshot = "diceWidgetSnapshot"
         
         /// Whether a game session is currently active
         public static let isGameActive = "isGameActive"

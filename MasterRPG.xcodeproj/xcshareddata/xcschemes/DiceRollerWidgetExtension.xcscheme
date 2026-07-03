@@ -35,20 +35,6 @@
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8E49F9D82B8F654D00527E6D"
-               BuildableName = "MasterRPG.app"
-               BlueprintName = "MasterMac"
-               ReferencedContainer = "container:MasterRPG.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction

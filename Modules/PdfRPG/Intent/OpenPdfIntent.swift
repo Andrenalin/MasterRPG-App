@@ -25,4 +25,29 @@ struct OpenPdfIntent: OpenIntent {
 extension OpenPdfIntent: TargetContentProvidingIntent {}
 #endif
 
+extension PdfRootModel {
+    @MainActor
+    func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
+#if compiler(>=6.4)
+        guard #available(iOS 27, macOS 27, visionOS 27, *) else { return }
+        activity.appEntityIdentifier = EntityIdentifier(for: PdfEntity.self, identifier: itemId)
+#endif
+    }
+
+    @MainActor
+    func donateSiriViewingIntent(for itemId: UUID) async {
+#if compiler(>=6.4)
+        guard #available(iOS 27, macOS 27, visionOS 27, *),
+              let model = itemController.itemSync(for: itemId)
+        else { return }
+
+        var intent = OpenPdfIntent()
+        intent.target = PdfEntity(root: self, model: model)
+        do {
+            try await IntentDonationManager.shared.donate(intent: intent)
+        } catch {}
+#endif
+    }
+}
+
 #endif

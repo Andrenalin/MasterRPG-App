@@ -4,12 +4,12 @@ import CoreRPG
 import AppIntents
 
 
-struct NavigateIntent: AppIntent {
-    static let title: LocalizedStringResource = "Navigate to Section"
+public struct NavigateIntent: AppIntent {
+    public static let title: LocalizedStringResource = "Navigate to Section"
     
-    static let supportedModes: IntentModes = .foreground
+    public static let supportedModes: IntentModes = .foreground
     
-    static var parameterSummary: some ParameterSummary {
+    public static var parameterSummary: some ParameterSummary {
         Summary("Navigate to \(\.$navigationOption)")
     }
     
@@ -20,8 +20,10 @@ struct NavigateIntent: AppIntent {
     var navigationOption: NavigationOption
     
     @Dependency var appModel: AppModel
+
+    public init() {}
     
-    func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some IntentResult {
         await appModel.routeToModule(navigationOption.module)
         return .result()
     }

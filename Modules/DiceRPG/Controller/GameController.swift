@@ -6,9 +6,6 @@ import Foundation
 import Observation
 import os.log
 import RPGResources
-#if !os(tvOS)
-import WidgetKit
-#endif
 
 @MainActor @Observable
 final class DiceGameModel: Sendable {
@@ -185,7 +182,7 @@ extension GameController: DiceGameStorable {
         
         // Force reload widget timelines
         Logger.widget.debug("🔄 Reloading widget timelines...")
-        WidgetKit.WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
         #endif
     }
     
@@ -210,7 +207,7 @@ extension GameController: DiceGameStorable {
         configuration.save()
         
         Logger.widget.debug("✅ All favorites cleared, reloading widget...")
-        WidgetKit.WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
         #endif
     }
 
@@ -617,7 +614,7 @@ extension GameController {
         config.save()
 
         // Reload widgets
-        WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
 
         // Update Live Activity if game is active
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)

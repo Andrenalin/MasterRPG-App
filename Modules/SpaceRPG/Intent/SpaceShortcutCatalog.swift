@@ -1,0 +1,90 @@
+// @copyright André Trettin
+
+#if !os(tvOS)
+
+import CoreRPG
+import AppIntents
+import CoreSpotlight
+import Foundation
+
+public enum SpaceShortcutCatalog {
+    public static var all: [AppShortcut] {
+        [
+            open,
+            create,
+            addNote,
+            search,
+            delete
+        ]
+    }
+
+    public static var open: AppShortcut {
+        AppShortcut(
+            intent: OpenSpaceIntent(),
+            phrases: [
+                "Open a 3D object in \(.applicationName)",
+                "Show \(\.$target) in \(.applicationName)"
+            ],
+            shortTitle: "Open Space",
+            systemImageName: "view.3d"
+        )
+    }
+
+    public static var create: AppShortcut {
+        AppShortcut(
+            intent: CreateSpaceIntent(),
+            phrases: [
+                "Create a 3D object in \(.applicationName)"
+            ],
+            shortTitle: "Create 3D Object",
+            systemImageName: "plus.circle"
+        )
+    }
+
+    public static var addNote: AppShortcut {
+        AppShortcut(
+            intent: AddSpaceNoteIntent(),
+            phrases: [
+                "Add a note to a 3D object in \(.applicationName)"
+            ],
+            shortTitle: "Add 3D Note",
+            systemImageName: "note.text.badge.plus"
+        )
+    }
+
+    public static var search: AppShortcut {
+        AppShortcut(
+            intent: SearchSpacesIntent(),
+            phrases: [
+                "Search 3D objects in \(.applicationName)"
+            ],
+            shortTitle: "Search 3D Objects",
+            systemImageName: "magnifyingglass"
+        )
+    }
+
+    public static var delete: AppShortcut {
+        AppShortcut(
+            intent: DeleteSpaceIntent(),
+            phrases: [
+                "Delete a 3D object in \(.applicationName)"
+            ],
+            shortTitle: "Delete 3D Object",
+            systemImageName: "trash"
+        )
+    }
+
+    @MainActor
+    public static func reindexAll(root: SpaceRootModel) async {
+        guard CSSearchableIndex.isIndexingAvailable() else { return }
+        let entities = root.itemController.itemDataModel.items.compactMap { id -> SpaceEntity? in
+            guard let model = root.itemController.itemSync(for: id) else { return nil }
+            return SpaceEntity(root: root, model: model)
+        }
+        try? await CSSearchableIndex.default().indexAppEntities(entities)
+    }
+}
+
+public struct SpaceFrameworkPackage: AppIntentsPackage { }
+
+#endif

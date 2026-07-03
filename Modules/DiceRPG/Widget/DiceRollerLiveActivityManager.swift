@@ -9,12 +9,14 @@ import CoreRPG
 
 public struct DiceRollerActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        public var lastRoll: DiceResultModel
+        public var lastRoll: DiceWidgetRoll
         public var rollCount: Int
+        public var favoriteDice: [DiceWidgetFavorite]
 
-        public init(lastRoll: DiceResultModel, rollCount: Int) {
+        public init(lastRoll: DiceWidgetRoll, rollCount: Int, favoriteDice: [DiceWidgetFavorite]) {
             self.lastRoll = lastRoll
             self.rollCount = rollCount
+            self.favoriteDice = favoriteDice
         }
     }
 
@@ -52,8 +54,10 @@ public final class DiceRollerLiveActivityManager {
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         let gameName = defaults?.string(forKey: "currentGameName") ?? "RPG Game"
 
-        // Capture activity reference before crossing isolation boundaries
-        let activity = currentActivity
+        let activity = currentActivity ?? Activity<DiceRollerActivityAttributes>.activities.first
+        currentActivity = activity
+        let snapshot = DiceWidgetSnapshot.loadFromUserDefaults()
+        let roll = DiceWidgetRoll(result)
 
         if let activity {
             // Capture the current state before crossing isolation boundaries
@@ -61,8 +65,9 @@ public final class DiceRollerLiveActivityManager {
 
             // Update existing activity
             let updatedState = DiceRollerActivityAttributes.ContentState(
-                lastRoll: result,
-                rollCount: currentRollCount + 1
+                lastRoll: roll,
+                rollCount: currentRollCount + 1,
+                favoriteDice: snapshot.favoriteDice
             )
 
             let activityContent = ActivityContent(
@@ -79,8 +84,9 @@ public final class DiceRollerLiveActivityManager {
             )
 
             let initialState = DiceRollerActivityAttributes.ContentState(
-                lastRoll: result,
-                rollCount: 1
+                lastRoll: roll,
+                rollCount: 1,
+                favoriteDice: snapshot.favoriteDice
             )
 
             let content = ActivityContent(
@@ -149,12 +155,14 @@ import CoreRPG
 /// Stub for macOS - Live Activities are not supported on macOS
 public struct DiceRollerActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        public var lastRoll: DiceResultModel
+        public var lastRoll: DiceWidgetRoll
         public var rollCount: Int
+        public var favoriteDice: [DiceWidgetFavorite]
 
-        public init(lastRoll: DiceResultModel, rollCount: Int) {
+        public init(lastRoll: DiceWidgetRoll, rollCount: Int, favoriteDice: [DiceWidgetFavorite]) {
             self.lastRoll = lastRoll
             self.rollCount = rollCount
+            self.favoriteDice = favoriteDice
         }
     }
 

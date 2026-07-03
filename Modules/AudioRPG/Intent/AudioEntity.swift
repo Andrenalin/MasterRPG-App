@@ -25,26 +25,26 @@ struct AudioEntity: IndexedEntity {
 
     static let defaultQuery = AudioEntityQuery()
 
-    var id: UUID { model.id }
+    let id: UUID
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name }
+    var name: String { displayName }
 
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.description }
+    var description: String { contentDescription }
 
-    var icon: String {
-        MainActor.assumeIsolated {
-            model.specialCategory ? model.category.icon : root.config.module.icon
-        }
-    }
+    var icon: String { symbolName }
 
-    var root: AudioRootModel
-    var model: AudioModel
+    private let displayName: String
+    private let contentDescription: String
+    private let symbolName: String
     
+    @MainActor
     init(root: AudioRootModel, model: AudioModel) {
-        self.root = root
-        self.model = model
+        id = model.id
+        displayName = model.name
+        contentDescription = model.description
+        symbolName = model.specialCategory ? model.category.icon : root.config.module.icon
     }
 }
 
@@ -62,9 +62,11 @@ extension AudioEntity: Transferable {
 @MainActor
 struct AudioEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: AudioRootModel
+    private static let suggestedEntityLimit = 20
+    private static let matchingEntityLimit = 25
 
     func suggestedEntities() async throws -> [AudioEntity] {
-        let ids = root.itemController.itemDataModel.items
+        let ids = root.itemController.itemDataModel.items.prefix(Self.suggestedEntityLimit)
         var results: [AudioEntity] = []
         for id in ids {
             guard let model = root.itemController.itemSync(for: id) else { continue }
@@ -85,6 +87,7 @@ struct AudioEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [AudioEntity] {
+        guard !matching.isEmpty else { return try await suggestedEntities() }
         let ids = root.itemController.itemDataModel.items
         var results: [AudioEntity] = []
         for id in ids {
@@ -92,12 +95,20 @@ struct AudioEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
             guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
             let entity = AudioEntity(root: root, model: model)
             results.append(entity)
+            guard results.count < Self.matchingEntityLimit else { break }
         }
         return results
     }
 
     func allEntities() async throws -> [AudioEntity] {
-        try await suggestedEntities()
+        let ids = root.itemController.itemDataModel.items
+        var results: [AudioEntity] = []
+        for id in ids {
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            let entity = AudioEntity(root: root, model: model)
+            results.append(entity)
+        }
+        return results
     }
 }
 

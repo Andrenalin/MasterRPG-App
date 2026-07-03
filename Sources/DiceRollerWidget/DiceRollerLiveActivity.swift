@@ -34,16 +34,14 @@ struct DiceRollerLiveActivity: Widget {
                 }
                 
                 DynamicIslandExpandedRegion(.bottom) {
-                    favoriteDiceButtons
+                    favoriteDiceButtons(context.state.favoriteDice)
                         .padding(.top, 8)
                 }
             } compactLeading: {
                 // Compact leading UI
-                if let firstDie = context.state.lastRoll.diceModel.dice.first {
-                    Image(systemName: diceSymbol(for: firstDie.die.max))
-                        .font(.system(size: 14))
-                        .foregroundStyle(compactResultColor(for: context.state.lastRoll))
-                }
+                Image(systemName: diceSymbol(for: context.state.lastRoll.dice.sides))
+                    .font(.system(size: 14))
+                    .foregroundStyle(compactResultColor(for: context.state.lastRoll))
             } compactTrailing: {
                 // Compact trailing UI
                 Text("\(context.state.lastRoll.sum)")
@@ -52,13 +50,11 @@ struct DiceRollerLiveActivity: Widget {
                     .foregroundStyle(compactResultColor(for: context.state.lastRoll))
             } minimal: {
                 // Minimal UI
-                if let firstDie = context.state.lastRoll.diceModel.dice.first {
-                    Image(systemName: diceSymbol(for: firstDie.die.max))
-                        .font(.system(size: 14))
-                        .foregroundStyle(compactResultColor(for: context.state.lastRoll))
-                }
+                Image(systemName: diceSymbol(for: context.state.lastRoll.dice.sides))
+                    .font(.system(size: 14))
+                    .foregroundStyle(compactResultColor(for: context.state.lastRoll))
             }
-            .widgetURL(URL(string: "masterrpg://dice"))
+            .widgetURL(DiceWidgetDeepLink.diceRoot)
             .keylineTint(compactResultColor(for: context.state.lastRoll))
         }
     }
@@ -78,17 +74,13 @@ struct DiceRollerLiveActivity: Widget {
         }
     }
 
-    private func diceIconView(for result: DiceResultModel) -> some View {
-        Group {
-            if let firstDie = result.diceModel.dice.first {
-                Image(systemName: diceSymbol(for: firstDie.die.max))
-                    .font(.system(size: 20))
-                    .foregroundStyle(.white)
-            }
-        }
+    private func diceIconView(for result: DiceWidgetRoll) -> some View {
+        Image(systemName: diceSymbol(for: result.dice.sides))
+            .font(.system(size: 20))
+            .foregroundStyle(.white)
     }
 
-    private func diceResultBadge(for result: DiceResultModel) -> some View {
+    private func diceResultBadge(for result: DiceWidgetRoll) -> some View {
         ZStack {
             Circle()
                 .fill(resultColor(for: result))
@@ -101,22 +93,18 @@ struct DiceRollerLiveActivity: Widget {
         }
     }
 
-    @ViewBuilder private var favoriteDiceButtons: some View {
-        let config = DiceConfiguration.loadFromUserDefaults()
-        
-        if config.favoriteDice.isEmpty {
+    @ViewBuilder private func favoriteDiceButtons(_ favorites: [DiceWidgetFavorite]) -> some View {
+        if favorites.isEmpty {
             // Fall back to quick roll if no favorites
             quickRollButtons
         } else {
             // Show favorite dice (up to 6)
             HStack(spacing: 12) {
-                ForEach(config.favoriteDice.prefix(6)) { favorite in
-                    Button(intent: RollFavoriteDiceIntent(diceId: favorite.diceModel.id)) {
+                ForEach(favorites.prefix(6)) { favorite in
+                    Button(intent: RollFavoriteDiceLiveActivityIntent(diceId: favorite.id)) {
                         VStack(spacing: 2) {
-                            if let firstDie = favorite.diceModel.dice.first {
-                                Image(systemName: diceSymbol(for: firstDie.die.max))
-                                    .font(.system(size: 14))
-                            }
+                            Image(systemName: diceSymbol(for: favorite.dice.sides))
+                                .font(.system(size: 14))
                             Text(favorite.name)
                                 .font(.system(size: 8))
                                 .lineLimit(1)
@@ -134,7 +122,7 @@ struct DiceRollerLiveActivity: Widget {
     private var quickRollButtons: some View {
         HStack(spacing: 12) {
             ForEach([IntentDiceType.d4, .d6, .d8, .d10, .d12, .d20], id: \.self) { diceType in
-                Button(intent: RollDiceIntent(diceType: diceType)) {
+                Button(intent: RollDiceLiveActivityIntent(diceType: diceType)) {
                     VStack(spacing: 2) {
                         let sides = diceType.toDieModel().die.max
                         Image(systemName: diceSymbol(for: sides))
@@ -150,7 +138,7 @@ struct DiceRollerLiveActivity: Widget {
         }
     }
 
-    private func resultColor(for result: DiceResultModel) -> Color {
+    private func resultColor(for result: DiceWidgetRoll) -> Color {
         switch result.result {
         case .coup:
             return .green
@@ -163,7 +151,7 @@ struct DiceRollerLiveActivity: Widget {
         }
     }
 
-    private func compactResultColor(for result: DiceResultModel) -> Color {
+    private func compactResultColor(for result: DiceWidgetRoll) -> Color {
         switch result.result {
         case .coup:
             return .green
@@ -190,11 +178,9 @@ struct DiceRollerLiveActivityView: View {
                         .frame(width: 60, height: 60)
 
                     VStack(spacing: 4) {
-                        if let firstDie = context.state.lastRoll.diceModel.dice.first {
-                            Image(systemName: diceSymbol(for: firstDie.die.max))
-                                .font(.system(size: 20))
-                                .foregroundStyle(.white)
-                        }
+                        Image(systemName: diceSymbol(for: context.state.lastRoll.dice.sides))
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white)
 
                         Text("\(context.state.lastRoll.sum)")
                             .font(.system(size: 20, weight: .bold, design: .rounded))
@@ -202,7 +188,7 @@ struct DiceRollerLiveActivityView: View {
                     }
                 }
 
-                Text(context.state.lastRoll.diceModel.name)
+                Text(context.state.lastRoll.dice.name)
                     .font(.caption2)
                     .fontWeight(.medium)
                     .foregroundStyle(.secondary)
@@ -212,9 +198,9 @@ struct DiceRollerLiveActivityView: View {
 
             // Right side - Favorite or quick roll buttons
             VStack(alignment: .leading, spacing: 8) {
-                let config = DiceConfiguration.loadFromUserDefaults()
-                
-                if config.favoriteDice.isEmpty {
+                let favorites = context.state.favoriteDice
+
+                if favorites.isEmpty {
                     // Fall back to quick roll if no favorites
                     Text("Quick Roll")
                         .font(.caption2)
@@ -222,7 +208,7 @@ struct DiceRollerLiveActivityView: View {
 
                     HStack(spacing: 8) {
                         ForEach([IntentDiceType.d20, .d12, .d10], id: \.self) { diceType in
-                            Button(intent: RollDiceIntent(diceType: diceType)) {
+                            Button(intent: RollDiceLiveActivityIntent(diceType: diceType)) {
                                 VStack(spacing: 2) {
                                     let sides = diceType.toDieModel().die.max
                                     Image(systemName: diceSymbol(for: sides))
@@ -244,13 +230,11 @@ struct DiceRollerLiveActivityView: View {
                         .foregroundStyle(.secondary)
 
                     HStack(spacing: 8) {
-                        ForEach(config.favoriteDice.prefix(3)) { favorite in
-                            Button(intent: RollFavoriteDiceIntent(diceId: favorite.diceModel.id)) {
+                        ForEach(favorites.prefix(3)) { favorite in
+                            Button(intent: RollFavoriteDiceLiveActivityIntent(diceId: favorite.id)) {
                                 VStack(spacing: 2) {
-                                    if let firstDie = favorite.diceModel.dice.first {
-                                        Image(systemName: diceSymbol(for: firstDie.die.max))
-                                            .font(.system(size: 16))
-                                    }
+                                    Image(systemName: diceSymbol(for: favorite.dice.sides))
+                                        .font(.system(size: 16))
                                     Text(favorite.name)
                                         .font(.system(size: 8, weight: .medium))
                                         .lineLimit(1)

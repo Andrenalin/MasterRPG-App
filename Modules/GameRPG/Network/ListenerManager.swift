@@ -32,7 +32,7 @@ final class ListenerManager: ListenerManaging {
 
     @ObservationIgnored private var monitorTask: Task<Void, Never>?
     @ObservationIgnored private var networkTask: Task<Void, Never>?
-    nonisolated(unsafe) weak var delegate: (any ListenerManagerDelegate)?
+    weak var delegate: (any ListenerManagerDelegate)?
 
     init(name: String, serviceType: GameServiceType) {
         self.name = name

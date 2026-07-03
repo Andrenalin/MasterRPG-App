@@ -26,4 +26,29 @@ struct OpenCharacterIntent: OpenIntent {
 extension OpenCharacterIntent: TargetContentProvidingIntent {}
 #endif
 
+extension CharacterRootModel {
+    @MainActor
+    func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
+#if compiler(>=6.4)
+        guard #available(iOS 27, macOS 27, visionOS 27, *) else { return }
+        activity.appEntityIdentifier = EntityIdentifier(for: CharacterEntity.self, identifier: itemId)
+#endif
+    }
+
+    @MainActor
+    func donateSiriViewingIntent(for itemId: UUID) async {
+#if compiler(>=6.4)
+        guard #available(iOS 27, macOS 27, visionOS 27, *),
+              let model = itemController.itemSync(for: itemId)
+        else { return }
+
+        var intent = OpenCharacterIntent()
+        intent.target = CharacterEntity(root: self, model: model)
+        do {
+            try await IntentDonationManager.shared.donate(intent: intent)
+        } catch {}
+#endif
+    }
+}
+
 #endif

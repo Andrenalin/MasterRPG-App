@@ -7,9 +7,10 @@ import SwiftUI
 import WidgetKit
 
 /// App Intent for rolling dice from the widget
-struct RollDiceIntent: AppIntent, WidgetConfigurationIntent {
+struct RollDiceIntent: AppIntent {
     static let title: LocalizedStringResource = "Roll Dice"
     static let description = IntentDescription("Roll a dice and show the result")
+    static let isDiscoverable = false
 
     @Parameter(title: "Dice Type", default: .d20)
     var diceType: IntentDiceType
@@ -23,15 +24,17 @@ struct RollDiceIntent: AppIntent, WidgetConfigurationIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        // Convert to DieModel and roll
+        await DiceIntentPerformer.roll(diceType)
+        return .result()
+    }
+}
+
+private enum DiceIntentPerformer {
+    static func roll(_ diceType: IntentDiceType) async {
         let die = diceType.toDieModel()
         let rolledDie = die.role(resetResults: true, reroleOptions: [])
         let result = rolledDie.result.first ?? die.die.max
-
-        // Create dice model with the rolled die
         let diceModel = DiceModel(id: UUID(), name: diceType.rawValue, dice: [rolledDie])
-
-        // Create result model
         let rollResult = DiceResultModel(
             diceModel: diceModel,
             result: .rolled,
@@ -41,29 +44,16 @@ struct RollDiceIntent: AppIntent, WidgetConfigurationIntent {
             timeStamp: Date()
         )
 
-        // Save to configuration
         var config = DiceConfiguration.loadFromUserDefaults()
         config.lastRoll = rollResult
         config.selectedDice = diceModel
         config.save()
 
-        // Reload widgets
-        WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
 
-        // Start Live Activity if game is running
-        await startLiveActivityIfNeeded(with: rollResult)
-
-        return .result()
-    }
-
-    private func startLiveActivityIfNeeded(with result: DiceResultModel) async {
-        // Check if a game is currently running
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
-
-        if isGameActive {
-            // Start or update Live Activity
-            await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
+        if defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) == true {
+            await DiceRollerLiveActivityManager.shared.startOrUpdate(with: rollResult)
         }
     }
 }
@@ -72,13 +62,14 @@ struct RollDiceIntent: AppIntent, WidgetConfigurationIntent {
 struct ClearDiceHistoryIntent: AppIntent {
     static let title: LocalizedStringResource = "Clear History"
     static let description = IntentDescription("Clear dice roll history")
+    static let isDiscoverable = false
     
     func perform() async throws -> some IntentResult {
         var config = DiceConfiguration.loadFromUserDefaults()
         config.lastRoll = nil
         config.save()
-        
-        WidgetCenter.shared.reloadAllTimelines()
+
+        DiceWidgetReloader.reloadDiceWidgets()
         
         return .result()
     }
@@ -88,6 +79,7 @@ struct ClearDiceHistoryIntent: AppIntent {
 struct RollFavoriteDiceIntent: AppIntent {
     static let title: LocalizedStringResource = "Roll Favorite Dice"
     static let description = IntentDescription("Roll a favorite dice configuration")
+    static let isDiscoverable = false
     
     @Parameter(title: "Dice ID")
     var diceId: String
@@ -117,6 +109,58 @@ struct RollFavoriteDiceIntent: AppIntent {
         return .result(opensIntent: OpenURLIntent(url))
     }
 }
+
+#if os(iOS)
+/// Live Activity action for rolling dice without leaving the Lock Screen or Dynamic Island.
+struct RollDiceLiveActivityIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Roll Dice"
+    static let description = IntentDescription("Roll a dice and show the result")
+    static let isDiscoverable = false
+
+    @Parameter(title: "Dice Type", default: .d20)
+    var diceType: IntentDiceType
+
+    init(diceType: IntentDiceType) {
+        self.diceType = diceType
+    }
+
+    init() {
+        self.diceType = .d20
+    }
+
+    func perform() async throws -> some IntentResult {
+        await DiceIntentPerformer.roll(diceType)
+        return .result()
+    }
+}
+
+/// Live Activity action for opening a favorite dice roll in the app.
+struct RollFavoriteDiceLiveActivityIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Roll Favorite Dice"
+    static let description = IntentDescription("Roll a favorite dice configuration")
+    static let isDiscoverable = false
+
+    @Parameter(title: "Dice ID")
+    var diceId: String
+
+    init() {
+        self.diceId = ""
+    }
+
+    init(diceId: UUID) {
+        self.diceId = diceId.uuidString
+    }
+
+    func perform() async throws -> some IntentResult {
+        guard let uuid = UUID(uuidString: diceId),
+              let url = URL(string: "\(URL.appScheme)://\(NetworkModules.dice.token)/0/\(uuid.uuidString)/roll") else {
+            return .result()
+        }
+
+        return .result(opensIntent: OpenURLIntent(url))
+    }
+}
+#endif
 
 // MARK: - Dice Type for Intents
 

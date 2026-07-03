@@ -59,6 +59,22 @@ struct MasterRPGApp: App {
 
         let generatorRootModel = appModel.generatorRoot
         AppDependencyManager.shared.add(dependency: generatorRootModel)
+
+#if !os(tvOS)
+        let appIntentAppModel = data
+        MasterRPGShortcuts.updateAppShortcutParameters()
+        Task { @MainActor in
+            AppIntentContentInvalidator.configure(
+                refreshShortcutParameters: {
+                    MasterRPGShortcuts.updateAppShortcutParameters()
+                },
+                reindexContent: {
+                    await MasterRPGSpotlightIndexer.reindexAll(appModel: appIntentAppModel)
+                }
+            )
+            AppIntentContentInvalidator.invalidate()
+        }
+#endif
     }
 
     private let appModel: AppModel = AppModel.shared

@@ -6,16 +6,18 @@ import CoreRPG
 import AppIntents
 import CoreSpotlight
 
-struct DeleteAdventureIntent: DeleteIntent {
-    static let title: LocalizedStringResource = "Delete Adventure"
+public struct DeleteAdventureIntent: DeleteIntent {
+    public static let title: LocalizedStringResource = "Delete Adventure"
 
     @Parameter(title: "Adventures")
-    var entities: [AdventureEntity]
+    public var entities: [AdventureEntity]
 
     @Dependency var root: AdventureRootModel
 
+    public init() {}
+
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
         let ids = entities.map(\.id)
 
         for id in ids {
@@ -23,17 +25,24 @@ struct DeleteAdventureIntent: DeleteIntent {
         }
         await root.itemController.save()
 
-        CSSearchableIndex.default().deleteSearchableItems(
-            withIdentifiers: ids.map(\.uuidString),
-            completionHandler: nil
-        )
-        AdventureShortcuts.updateAppShortcutParameters()
+        if CSSearchableIndex.isIndexingAvailable() {
+#if compiler(>=6.4)
+            if #available(iOS 27, macOS 27, visionOS 27, *) {
+                try await CSSearchableIndex.default().deleteAppEntities(
+                    identifiedBy: ids,
+                    ofType: AdventureEntity.self
+                )
+            } else {
+                try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
+            }
+#else
+            try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
+#endif
+        }
 
         let count = entities.count
-        let dialog: LocalizedStringResource = count == 1
-            ? "Deleted 1 adventure."
-            : "Deleted \(count) adventures."
-        return .result(dialog: "Deleted \(count) adventures.")
+        let message = AttributedString(localized: "Deleted ^[\(count) adventure](inflect: true).")
+        return .result(dialog: "\(message)")
     }
 }
 

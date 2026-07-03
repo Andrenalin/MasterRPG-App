@@ -2,12 +2,12 @@
 
 import AppIntents
 
-struct AppShortcuts: AppShortcutsProvider {
-    static var appShortcuts: [AppShortcut] {
+public enum RPGShortcutCatalog {
+    public static var navigate: AppShortcut {
         AppShortcut(
             intent: NavigateIntent(),
             phrases: [
-                "Navigate in \(.applicationName)",
+                "Navigate around \(.applicationName)",
                 "Navigate to \(\.$navigationOption) in \(.applicationName)"
             ],
             shortTitle: "Navigate",

@@ -6,25 +6,24 @@ import CoreRPG
 import AppIntents
 import Foundation
 import SwiftUI
-import WidgetKit
 
-struct RollSpecificDiceIntent: AppIntent {
-    static let title: LocalizedStringResource = "Roll Specific Dice"
-    static let description = IntentDescription("Roll a specific dice from your collection")
+public struct RollSpecificDiceIntent: AppIntent {
+    public static let title: LocalizedStringResource = "Roll Specific Dice"
+    public static let description = IntentDescription("Roll a specific dice from your collection")
     
     @Parameter(title: "Dice", requestValueDialog: "Which dice do you want to roll?")
     var dice: DiceEntity
     
     @Dependency var root: DiceRootModel
     
-    init() {}
+    public init() {}
     
     init(dice: DiceEntity) {
         self.dice = dice
     }
     
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+    public func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         // Roll all dice in the dice model
         
         root.gameController.rollDice(itemId: dice.model.id, rollSynced: true)
@@ -37,7 +36,7 @@ struct RollSpecificDiceIntent: AppIntent {
         config.save()
         
         // Reload widgets
-        WidgetCenter.shared.reloadAllTimelines()
+        DiceWidgetReloader.reloadDiceWidgets()
         
         // Start Live Activity if game is running
         await startLiveActivityIfNeeded(with: rollResult)
