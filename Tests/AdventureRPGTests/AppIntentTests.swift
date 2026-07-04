@@ -3,6 +3,7 @@
 #if canImport(Testing) && !os(tvOS)
 
 import AppIntents
+import CoreRPG
 import Foundation
 import Testing
 

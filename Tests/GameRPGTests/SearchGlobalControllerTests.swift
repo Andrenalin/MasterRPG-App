@@ -6,6 +6,13 @@ import Foundation
 import Testing
 
 @testable import GameRPG
+@testable import AudioRPG
+@testable import CharacterRPG
+@testable import DiceRPG
+@testable import PdfRPG
+@testable import PhotoRPG
+@testable import SpaceRPG
+@testable import TableRPG
 
 /// Tests for `SearchGlobalController` — verifies that global search returns results
 /// from each module and respects the player-mode filter.

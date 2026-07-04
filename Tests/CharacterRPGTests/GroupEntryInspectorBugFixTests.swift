@@ -471,7 +471,7 @@ struct CharacterInspectorToggleAllContentTests {
         // Search "Aragorn" → character appears by name, canOpen=true, entries don't match
         root.folderLinkController.searchModel.filterId = nil
         root.folderLinkController.searchModel.searchText = "Aragorn"
-        await root.folderLinkController.performSearch()
+        await root.folderLinkController.performSearch(source: "test")
 
         let charItem = try #require(
             root.folderLinkController.listModel.list.first(where: { $0.source.itemId == charId })

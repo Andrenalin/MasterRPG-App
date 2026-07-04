@@ -122,7 +122,7 @@ struct InspectorToggleBugFixTests {
 
         // Populate the link inspector list (unscoped, no parentModel)
         root.folderLinkController.searchModel.filterId = nil
-        await root.folderLinkController.performSearch()
+        await root.folderLinkController.performSearch(source: "test")
 
         let listItem = try #require(
             root.folderLinkController.listModel.list.first(where: { $0.source.itemId == itemId }),
@@ -153,7 +153,7 @@ struct InspectorToggleBugFixTests {
         let e2     = addEntry(to: itemId, name: "Entry B", content: "", root: root)
 
         root.folderLinkController.searchModel.filterId = nil
-        await root.folderLinkController.performSearch()
+        await root.folderLinkController.performSearch(source: "test")
 
         let listItem = try #require(
             root.folderLinkController.listModel.list.first(where: { $0.source.itemId == itemId })
@@ -261,7 +261,7 @@ struct InspectorToggleShowsAllContentTests {
 
         // Search "Dragon" → item appears by name, canOpen=true
         root.folderLinkController.searchModel.filterId = nil
-        await root.folderLinkController.performSearch()
+        await root.folderLinkController.performSearch(source: "test")
 
         let listItem = try #require(
             root.folderLinkController.listModel.list.first(where: { $0.source.itemId == itemId })
@@ -292,7 +292,7 @@ struct InspectorToggleShowsAllContentTests {
 
         root.folderLinkController.listDisplayModel.listMode = .folder
         root.folderLinkController.searchModel.filterId = nil
-        await root.folderLinkController.performSearch()
+        await root.folderLinkController.performSearch(source: "test")
 
         let folderNode = try #require(
             root.folderLinkController.listModel.list.first(where: { $0.source.itemId == folderId })
@@ -318,7 +318,7 @@ struct InspectorToggleShowsAllContentTests {
         let e2 = addEntry(to: itemId, name: "Dragon Chapter", content: "Fire", root: root)
 
         root.folderLinkController.searchModel.filterId = nil
-        await root.folderLinkController.performSearch()
+        await root.folderLinkController.performSearch(source: "test")
 
         let listItem = try #require(
             root.folderLinkController.listModel.list.first(where: { $0.source.itemId == itemId })
@@ -331,7 +331,7 @@ struct InspectorToggleShowsAllContentTests {
                 "All entries visible after toggle")
 
         // Re-run the same search — item should stay open with all entries
-        await root.folderLinkController.performSearch()
+        await root.folderLinkController.performSearch(source: "test")
         let afterReSearch = root.folderLinkController.listModel.list
             .first(where: { $0.source.itemId == itemId })
         #expect(afterReSearch?.isOpen == true,
