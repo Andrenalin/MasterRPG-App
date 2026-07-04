@@ -116,8 +116,8 @@ extension AudioModel: nonisolated ItemGameReportable {}
 extension AudioModel: nonisolated ItemLinkRegistable {}
 
 extension AudioModel: nonisolated ItemDiffComparable {
-    // Nonisolated shims: ItemDiffComparable requirements must stay nonisolated
-    // (every model's == calls isSame). Bodies run isolated via assumeIsolated.
+    // Legacy concrete shims remain nonisolated for direct Equatable-style calls.
+    // Generic ItemDiffComparable access is MainActor-isolated by the protocol.
     nonisolated public func merge(_ other: AudioModel) -> AudioModel {
         MainActor.assumeIsolated {
             mergeOnMain(other)
@@ -166,16 +166,14 @@ extension AudioModel: nonisolated ItemDiffComparable {
         }
     }
 
-    nonisolated public var version: Int {
-        MainActor.assumeIsolated {
-            fileUrl?.contentVersion ?? fileUrl_.update.hashValue
-        }
+    public var version: Int {
+        fileUrl?.contentVersion ?? fileUrl_.update.hashValue
     }
 }
 
 extension AudioModel: nonisolated ItemDuplicatable {
-    // Nonisolated shim: witnesses both nonisolated ItemDuplicatable.duplicate and
-    // @MainActor ItemDataAccessable.duplicate.
+    // Nonisolated shim remains for legacy concrete callers. Generic item access
+    // is MainActor-isolated by ItemDuplicatable and ItemDataAccessable.
     nonisolated public func duplicate() -> AudioModel {
         MainActor.assumeIsolated {
             let copyName = duplicateName(from: name)

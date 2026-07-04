@@ -34,6 +34,8 @@ final class MasterNetworkNodel {
     var isStreaming: Bool = false
     
     @ObservationIgnored var browserManager: BrowserManager? = nil
+    @ObservationIgnored var observeConnectionsTask: Task<Void, Never>? = nil
+    @ObservationIgnored var connectionStartTasks: [ConnectionController.ID: Task<Void, Never>] = [:]
     var browserConnections: [NWEndpoint] = []
     @ObservationIgnored var listener: (any ListenerManaging)? = nil
     

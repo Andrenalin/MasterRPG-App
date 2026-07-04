@@ -30,7 +30,7 @@ public enum DisplayStateMask: Int {
 }
 
 public extension ItemDataAccessable {
-    static var typeId: NetworkModules { .none }
+    nonisolated static var typeId: NetworkModules { .none }
 
     @MainActor var isHidden: Bool {
         displayState == DisplayStateMask.totalHidden.rawValue
@@ -53,8 +53,9 @@ public extension ItemDataAccessable {
     }
 }
 
-// Nonisolated on purpose: entry value types (structs) share this protocol with
-// domain models. @MainActor models witness it with a nonisolated shim.
+// Duplicating item models reads MainActor-owned observable state. Entry value
+// types can satisfy this isolation trivially at main-actor call sites.
+@MainActor
 public protocol ItemDuplicatable {
     func duplicate() -> Self
 }

@@ -54,7 +54,7 @@ final class ListenerManager: ListenerManaging {
 
         monitorTask = Task { @MainActor [weak self] in
             for await event in controller.events {
-                self?.handle(event)
+                await self?.handle(event)
             }
         }
 
@@ -82,19 +82,19 @@ final class ListenerManager: ListenerManaging {
         monitorTask = nil
     }
 
-    private func handle(_ event: ListenerEvent) {
+    private func handle(_ event: ListenerEvent) async {
         switch event {
         case .ready:
             state = .waitingForConnection
         case .failed(let error):
             Logger.listenerController.error("ListenerManager: Failed \(error.localizedDescription, privacy: .public)")
             state = .stopped
-            Task { await delegate?.listenerCancelled() }
+            await delegate?.listenerCancelled()
         case .cancelled:
             state = .cancelled
-            Task { await delegate?.listenerCancelled() }
+            await delegate?.listenerCancelled()
         case .newConnection(let connection):
-            Task { await delegate?.listenerNewConnection(connection) }
+            await delegate?.listenerNewConnection(connection)
         }
     }
 }

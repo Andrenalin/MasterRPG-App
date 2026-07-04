@@ -5,10 +5,29 @@ import Network
 import os.log
 import CoreRPG
 
+actor PlayerNetworkControllerDelegateBox {
+    private weak var delegate: (any PlayerNetworkControllerDelegate)?
+
+    init(_ delegate: (any PlayerNetworkControllerDelegate)?) {
+        self.delegate = delegate
+    }
+
+    func playerLostMaster() async {
+        await delegate?.playerLostMaster()
+    }
+
+    func playerReceived(data: Data?) async {
+        await delegate?.playerReceived(data: data)
+    }
+
+    func playerReady() async {
+        await delegate?.playerReady()
+    }
+}
+
 final class PlayerNetworkController {
     let proxy: Bool
-    // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
-    nonisolated(unsafe) private weak var delegate: (any PlayerNetworkControllerDelegate)?
+    private let delegate: PlayerNetworkControllerDelegateBox
 
     let browserManager: BrowserManager
     let networkModel: PlayerNetworkNodel
@@ -17,7 +36,7 @@ final class PlayerNetworkController {
     init(name: String, proxy: Bool = false, delegate: PlayerNetworkControllerDelegate? = nil) {
         self.networkModel = PlayerNetworkNodel(name: name)
         self.proxy = proxy
-        self.delegate = delegate
+        self.delegate = PlayerNetworkControllerDelegateBox(delegate)
         self.browserManager = BrowserManager(serviceType: proxy ? .proxyServer : .player)
         Logger.playerNetworkController.debug("PlayerNetworkController: Init")
     }
@@ -48,6 +67,10 @@ extension PlayerNetworkController: PlayerNetworkControllable {
     @MainActor
     func stop() async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Stop")
+        networkModel.observeRemovalTask?.cancel()
+        networkModel.observeRemovalTask = nil
+        networkModel.connectionStartTask?.cancel()
+        networkModel.connectionStartTask = nil
         networkModel.connectionState = .notReady
         await networkModel.connectionController?.cancel()
         networkModel.connectionController = nil
@@ -111,18 +134,18 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             Logger.playerNetworkController.debug("PlayerNetworkController: Lost connection to server, start own listener")
             await networkModel.reset(state: .lost)
             await startPlayerServer()
-            await delegate?.playerLostMaster()
+            await delegate.playerLostMaster()
         }
     }
 
     func readyConnection(for id: ConnectionController.ID) async {
         await networkModel.reset(isConnected: true)
         await networkModel.reset(state: .ready)
-        await delegate?.playerReady()
+        await delegate.playerReady()
     }
 
     func received(data: Data?, for id: ConnectionController.ID) async {
-        await delegate?.playerReceived(data: data)
+        await delegate.playerReceived(data: data)
     }
 }
 
@@ -135,9 +158,17 @@ extension PlayerNetworkController {
         _ = withObservationTracking {
             browserManager.removed
         } onChange: { [weak self] in
-            Task { @concurrent in
-                await self?.checkForRemoval()
+            Task { @MainActor [weak self] in
+                self?.scheduleRemovalCheck()
             }
+        }
+    }
+
+    @MainActor
+    private func scheduleRemovalCheck() {
+        networkModel.observeRemovalTask?.cancel()
+        networkModel.observeRemovalTask = Task { @MainActor [weak self] in
+            await self?.checkForRemoval()
         }
     }
 

@@ -218,7 +218,7 @@ extension ValueEntryModel {
     }
 }
 
-extension ValueEntryModel: EntryDataAccessable, ItemDuplicatable {
+extension ValueEntryModel: EntryDataAccessable {
     public var content: String {
         get { value }
         set { value = newValue }
@@ -246,6 +246,8 @@ extension ValueEntryModel: EntryDataAccessable, ItemDuplicatable {
     
     public func linkContent() -> String { value }
 }
+
+extension ValueEntryModel: nonisolated ItemDuplicatable {}
 
 extension ValueEntryModel: ItemLinkEditable {
     public var textLinkContent: String {

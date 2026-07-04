@@ -2,7 +2,7 @@
 
 import Foundation
 
-enum RPGMessageType: Int, Codable, Sendable {
+enum RPGMessageType: Int, Codable, Hashable, Sendable {
     // both
     case reveal = 1
     case store = 2

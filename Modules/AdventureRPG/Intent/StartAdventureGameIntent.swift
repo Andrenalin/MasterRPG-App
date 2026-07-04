@@ -23,7 +23,7 @@ public struct StartAdventureGameIntent: AppIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
-        root.adventureGameControllable.startGame(with: target.id)
+        await root.adventureGameControllable.startGame(with: target.id)
         root.startGame()
         navigator.perform(route: KnownRoutes.game)
         return .result(dialog: "Starting \"\(target.name)\".")

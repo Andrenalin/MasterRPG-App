@@ -27,8 +27,8 @@ final class PlayerControllerModel: Sendable {
     var lostMaster: Bool = true
     var hasSendPlayer = false
     var asGameMaster = false
-    
-    var gameModelMessage = GameModelMessage()
+    var sendCharacterTask: Task<Void, Never>?
+    var proxyFocusTask: Task<Void, Never>?
 
     func increaseMessageCounter() {
         messageCounter += 1
@@ -47,25 +47,6 @@ final class PlayerControllerModel: Sendable {
     }
 }
 
-actor GameModelMessage {
-    private var messages: [GameNetworkModel] = []
-    private var processing: Bool = false
-    
-    func append(_ message: GameNetworkModel) {
-        messages.append(message)
-    }
-    
-    func next() -> GameNetworkModel? {
-        guard !processing && !messages.isEmpty else { return nil }
-        processing = true
-        return messages.removeFirst()
-    }
-    
-    func processed() {
-        processing = false
-    }
-}
-
 final class PlayerController: Sendable {
     // Strong on purpose: an intentional, temporary cycle GameRoot → GameModel →
     // PlayerController → GameRoot that stopGame() breaks by dropping the controllers.
@@ -75,6 +56,7 @@ final class PlayerController: Sendable {
     let root: GameRoot
     let gameModel: PlayerControllerModel
     let proxyMasterController: MasterController?
+    let messagePipeline = GameMessagePipeline()
     
     @MainActor
     init(root: GameRoot, asGameMaster: Bool) {
@@ -84,9 +66,7 @@ final class PlayerController: Sendable {
         
         if asGameMaster {
             proxyMasterController = nil
-            Task {
-                await root.networkStore.setupLocal()
-            }
+            root.networkStore.setupLocal()
         } else {
             proxyMasterController = MasterController(root: root, asProxy: true)
         }
@@ -117,9 +97,14 @@ extension PlayerController {
     @MainActor
     func stop() async {
         Logger.networking.debug("PlayerController: Stop")
+        await messagePipeline.cancelAll()
+        gameModel.sendCharacterTask?.cancel()
+        gameModel.sendCharacterTask = nil
+        gameModel.proxyFocusTask?.cancel()
+        gameModel.proxyFocusTask = nil
         await root.networkProxyStore.stopGame()
         await root.networkStore.stopGame()
-        root.adventureRoot.adventureGameControllable.resetGame()
+        await root.adventureRoot.adventureGameControllable.resetGame()
         gameModel.hasSendPlayer = false
     }
     
@@ -171,6 +156,10 @@ extension PlayerController {
 extension PlayerController: PlayerNetworkStoreDelegate {
     func lostConnection() async {
         Logger.networking.debug("PlayerController: Lost Connection - Reset State")
+        await MainActor.run {
+            gameModel.sendCharacterTask?.cancel()
+            gameModel.sendCharacterTask = nil
+        }
         await gameModel.reset(lostMaster: true)
         await gameModel.reset(sendPlayer: false)
     }
@@ -178,7 +167,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     func ready() async {
         Logger.networking.debug("PlayerController: Ready")
         await gameModel.reset(lostMaster: false)
-        await sendCharacter()
+        await scheduleSendCharacter()
     }
     
     func receivedFile(_ model: GameNetworkModel) async {
@@ -193,7 +182,18 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     
     func receivedProcess(_ model: GameNetworkModel, fromProxy: Bool = false) async {
         Logger.networking.debug("PlayerController: Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-        
+
+        let origin: GameMessageOrigin = fromProxy ? .proxy : .direct(nil)
+        guard await messagePipeline.enqueue(GameMessageEvent(model: model, origin: origin)) else {
+            Logger.networking.debug("PlayerController: Duplicate ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+            return
+        }
+        await processMessages()
+    }
+
+    private func prepareForProcessing(_ event: GameMessageEvent) async -> Bool {
+        let model = event.model
+
         if await !gameModel.asGameMaster {
             let controls = model.gameRoster.controls
             if model.gameConfig.isMaster {
@@ -208,26 +208,29 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             let type = await root.gameModel.gameType
             guard type == .proxy || type == .observer || controls.isEmpty || controls.contains(where: { $0.name == configName && $0.show == true }) else {
                 Logger.networking.debug("PlayerController: Message will be ignored because of controls \(controls, privacy: .public)")
-                return
+                return false
             }
             guard await root.gameModel.gameType == .proxy || model.gameConfig.isMaster || model.data.type == .dice || model.subType == .spaceTransform else {
                 Logger.networking.debug("PlayerController: Message will be ignored because it is send from Player \(model.senderName, privacy: .public)")
-                return
+                return false
             }
         }
-        
-        if !fromProxy {
+
+        if !event.fromProxy {
             await root.networkProxyStore.sendPlayer(data: model)
-            Task { await self.sendCharacter() }
+            await scheduleSendCharacter()
         }
-        
-        await gameModel.gameModelMessage.append(model)
-        await processMessages()
+        return true
     }
     
     func processMessages() async {
-        while let message = await gameModel.gameModelMessage.next() {
-            let response = try? await handle(message)
+        while let event = await messagePipeline.next() {
+            guard await prepareForProcessing(event) else {
+                await messagePipeline.processed()
+                continue
+            }
+
+            let response = try? await handle(event.model)
             if let response {
                 await send(model: response)
                 if response.subType == .ok {
@@ -236,7 +239,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             } else {
                 await gameModel.increaseMessageCounter()
             }
-            await gameModel.gameModelMessage.processed()
+            await messagePipeline.processed()
         }
     }
 }
@@ -365,7 +368,7 @@ extension PlayerController {
         case .reveal:
             if try await root.mapRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: false) {
                 _ = await root.mapRoot.gameControllable.setCurrent(itemId: model.data.id)
-                Task { @MainActor in
+                await MainActor.run {
                     if gameModel.asGameMaster {
                         gameModel.gameUpdateType = .map
                     }
@@ -394,10 +397,10 @@ extension PlayerController {
                     
                     // Update fog of war on 3D board
                     #if os(visionOS)
-                    Task { @MainActor in
-                        let isGameMaster = root.gameModel.gameConfig.isMaster
-                        await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
-                            root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+                    let isGameMaster = await root.gameModel.gameConfig.isMaster
+                    await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
+                    await MainActor.run {
+                        root.gameModel.gameTableModel?.syncPawnsWithMapPins()
                     }
                     #endif
                 } else {
@@ -409,7 +412,7 @@ extension PlayerController {
             default:
                 break
             }
-            Task { @MainActor in
+            await MainActor.run {
                 gameModel.gameUpdateType = .map
             }
         }
@@ -420,7 +423,7 @@ extension PlayerController {
         switch model.type {
             case .reveal:
                 if try await root.pdfRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                    Task { @MainActor in
+                    await MainActor.run {
                         gameModel.gameUpdateType = .pdf
                     }
                     return await response(for: model, isSuccess: true, requestData: false)
@@ -440,7 +443,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.photoRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                Task { @MainActor in
+                await MainActor.run {
                     gameModel.gameUpdateType = .photo
                     root.photoRoot.photoGameControllable.resetPhotoSpace()
                 }
@@ -461,12 +464,11 @@ extension PlayerController {
                     try await root.photoRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
                 }
             }
-            let saveTask = Task { @MainActor in
-                if await root.photoRoot.gameControllable.setCurrent(itemId: model.data.id) {
+            if await root.photoRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                await MainActor.run {
                     gameModel.gameUpdateType = .photo
                 }
             }
-            let _ = await saveTask.result
         }
         return nil
     }
@@ -475,7 +477,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.tableRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                Task { @MainActor in
+                await MainActor.run {
                     gameModel.gameUpdateType = .table
                 }
                 return await response(for: model, isSuccess: true, requestData: false)
@@ -497,7 +499,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.characterRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                Task { @MainActor in
+                await MainActor.run {
                     gameModel.gameUpdateType = .value
                 }
                 return await response(for: model, isSuccess: true, requestData: false)
@@ -511,19 +513,15 @@ extension PlayerController {
             switch model.subType {
             case .generic:
                 if let characterId = await root.gameModel.gamePlayer.characterId {
-                    Task { @MainActor in
-                        await root.characterRoot.valueGameControllable.addItem(id: model.data.id, data: model.data, for: characterId)
-                    }
+                    await root.characterRoot.valueGameControllable.addItem(id: model.data.id, data: model.data, for: characterId)
                 }
             case .valueResult:
                 if let characterId = await root.gameModel.gamePlayer.characterId {
-                    Task { @MainActor in
-                        await root.characterRoot.valueGameControllable.add(result: model.data, for: characterId)
-                    }
+                    await root.characterRoot.valueGameControllable.add(result: model.data, for: characterId)
                 }
             default:
-                Task { @MainActor in
-                    if await root.characterRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                if await root.characterRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                    await MainActor.run {
                         gameModel.gameUpdateType = .value
                     }
                 }
@@ -536,7 +534,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.weatherRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                Task { @MainActor in
+                await MainActor.run {
                     gameModel.gameUpdateType = .weather
                 }
                 return await response(for: model, isSuccess: true, requestData: false)
@@ -547,8 +545,8 @@ extension PlayerController {
             try await root.weatherRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
-            Task { @MainActor in
-                if await root.weatherRoot.gameControllable.setCurrent(itemId: model.data.id) {
+            if await root.weatherRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                await MainActor.run {
                     gameModel.gameUpdateType = .weather
                 }
             }
@@ -560,7 +558,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.spaceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                Task { @MainActor in
+                await MainActor.run {
                     gameModel.gameUpdateType = .space
 
                     #if os(visionOS)
@@ -586,8 +584,8 @@ extension PlayerController {
                 try await root.spaceRoot.gameControllable.updateGame(data: model.data, subtype: .spaceTransform)
                 return nil
             }
-            Task { @MainActor in
-                if await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
+            if await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                await MainActor.run {
                     gameModel.gameUpdateType = .space
                     
                     // ✅ SharePlay: Update current selection in open immersive space
@@ -611,12 +609,7 @@ extension PlayerController {
         case .update:
             try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: false, deep: true)
             let characterId = model.data.id
-            Task {
-                _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
-                await root.characterRoot.gameControllable.focus(on: characterId)
-                try? await Task.sleep(for: .seconds(1))
-                await MainActor.run { root.gameModel.selectedCharacter = characterId }
-            }
+            await scheduleProxyFocus(characterId: characterId)
             return nil
         }
     }
@@ -628,6 +621,47 @@ extension PlayerController {
             return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: gameConfig, gameRoster: gameRoster, data: model.data)
         }
         return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: isSuccess ? .ok : .failed, gameConfig: gameConfig, gameRoster: gameRoster, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
+    }
+
+    func scheduleSendCharacter() async {
+        await MainActor.run {
+            guard gameModel.sendCharacterTask == nil else { return }
+            gameModel.sendCharacterTask = Task { [weak self] in
+                await self?.sendCharacter()
+                await MainActor.run {
+                    self?.gameModel.sendCharacterTask = nil
+                }
+            }
+        }
+    }
+
+    func scheduleProxyFocus(characterId: UUID) async {
+        await MainActor.run {
+            gameModel.proxyFocusTask?.cancel()
+            gameModel.proxyFocusTask = Task { [weak self] in
+                guard let self else { return }
+                _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
+                await root.characterRoot.gameControllable.focus(on: characterId)
+                do {
+                    try await Task.sleep(for: .seconds(1))
+                } catch {
+                    await MainActor.run {
+                        self.gameModel.proxyFocusTask = nil
+                    }
+                    return
+                }
+                guard !Task.isCancelled else {
+                    await MainActor.run {
+                        self.gameModel.proxyFocusTask = nil
+                    }
+                    return
+                }
+                await MainActor.run {
+                    root.gameModel.selectedCharacter = characterId
+                    gameModel.proxyFocusTask = nil
+                }
+            }
+        }
     }
     
     func sendCharacter() async {
@@ -643,6 +677,7 @@ extension PlayerController {
         } catch {
             return
         }
+        guard !Task.isCancelled else { return }
         await sendAudioList()
     }
 

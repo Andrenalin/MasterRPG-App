@@ -27,7 +27,7 @@ public protocol DiceGameStorable {
     @MainActor func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?)
     func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType
     @MainActor func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID
-    @MainActor func setFocusDice(on diceId: UUID?)
+    @MainActor func setFocusDice(on diceId: UUID?) async
     func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws
     
     @MainActor func toggleFavoriteDice(itemId: UUID, diceName: String?)
@@ -116,20 +116,18 @@ extension GameController: DiceGameStorable {
     }
     
     func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType {
-        let saveTask = Task { @MainActor in
+        let oldResultCategory = await MainActor.run {
             let nilResult: ResultCategory? = nil
-            guard let model = await itemControllable.item(for: itemId) as? DiceModel else { return nilResult }
+            guard let model = itemController.itemSync(for: itemId) else { return nilResult }
             let oldResultCategory = model.resultCategory
             model.resultCategory = resultCategory
             return oldResultCategory
         }
-        let oldResultCategory = await saveTask.value
         let result = try await createGameData(for: itemId)
-        let restoreTask = Task { @MainActor in
-            guard let model = await itemControllable.item(for: itemId) as? DiceModel else { return }
+        await MainActor.run {
+            guard let model = itemController.itemSync(for: itemId) else { return }
             model.resultCategory = oldResultCategory
         }
-        let _ = await restoreTask.result
         return result
     }
     
@@ -209,30 +207,27 @@ extension GameController: DiceGameStorable {
         #endif
     }
 
-    @MainActor func setFocusDice(on diceId: UUID?) {
-        Task {
-            if let diceId {
-                await focus(on: diceId)
-            } else {
-                let gameDice = DiceModel.empty(UUID())
-                gameDice.dice.append(DieModel.die20)
-                setGame(item: gameDice, itemId: gameDice.id)
-                await focus(on: gameDice.id)
-            }
+    @MainActor func setFocusDice(on diceId: UUID?) async {
+        if let diceId {
+            await focus(on: diceId)
+        } else {
+            let gameDice = DiceModel.empty(UUID())
+            gameDice.dice.append(DieModel.die20)
+            setGame(item: gameDice, itemId: gameDice.id)
+            await focus(on: gameDice.id)
         }
     }
     
     func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws {
         try await updateGame(data: data, hide: hide, deep: false)
         if focus {
-            let saveTask = Task { @MainActor in
+            await MainActor.run {
                 if let index = gameModel.focusItemIds.firstIndex(where: { $0 == data.id }) {
                     gameModel.focusItemIds.remove(at: index)
                 }
                 reset(for: data.id)
                 gameModel.focusItemIds.insert(data.id, at: 0)
             }
-            let _ = await saveTask.result
         }
     }
     

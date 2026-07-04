@@ -414,11 +414,8 @@ extension MapModel: nonisolated ItemDiffComparable {
         }
     }
     
-    nonisolated public var version: Int {
-        return MainActor.assumeIsolated {
-            (hexMapScale + pinScale).hashValue
-    
-        }
+    public var version: Int {
+        (hexMapScale + pinScale).hashValue
     }
 }
 

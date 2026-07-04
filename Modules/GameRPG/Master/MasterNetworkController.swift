@@ -5,9 +5,28 @@ import Network
 import os.log
 import CoreRPG
 
+actor MasterNetworkControllerDelegateBox {
+    private weak var delegate: (any MasterNetworkControllerDelegate)?
+
+    init(_ delegate: (any MasterNetworkControllerDelegate)?) {
+        self.delegate = delegate
+    }
+
+    func masterLostPlayer(with connectionId: ConnectionController.ID) async {
+        await delegate?.masterLostPlayer(with: connectionId)
+    }
+
+    func masterReady(for connectionId: ConnectionController.ID) async {
+        await delegate?.masterReady(for: connectionId)
+    }
+
+    func masterReceived(data: Data?, for connectionId: ConnectionController.ID, fileJournal: Bool) async {
+        await delegate?.masterReceived(data: data, for: connectionId, fileJournal: fileJournal)
+    }
+}
+
 final class MasterNetworkController: Sendable {
-    // Set once in init, never reassigned. Swift runtime zeroes weak refs atomically — safe for concurrent reads.
-    nonisolated(unsafe) private weak var delegate: (any MasterNetworkControllerDelegate)?
+    private let delegate: MasterNetworkControllerDelegateBox
     let listnerBuilder: @MainActor @Sendable (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging
     let networkModel: MasterNetworkNodel
 
@@ -22,7 +41,7 @@ final class MasterNetworkController: Sendable {
     @MainActor
     init(name: String, delegate: MasterNetworkControllerDelegate? = nil, listnerBuilder: @MainActor @Sendable @escaping (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging) {
         self.networkModel = MasterNetworkNodel(name: name)
-        self.delegate = delegate
+        self.delegate = MasterNetworkControllerDelegateBox(delegate)
         self.listnerBuilder = listnerBuilder
         Logger.networking.debug("MasterNetworkController: Init")
     }
@@ -84,6 +103,10 @@ extension MasterNetworkController: MasterNetworkControllable {
 
     @MainActor
     private func resetConntections() {
+        networkModel.observeConnectionsTask?.cancel()
+        networkModel.observeConnectionsTask = nil
+        networkModel.connectionStartTasks.values.forEach { $0.cancel() }
+        networkModel.connectionStartTasks.removeAll()
         networkModel.browserManager?.stop()
         networkModel.browserManager = nil
         networkModel.listener?.stopListening()
@@ -101,15 +124,23 @@ extension MasterNetworkController {
     }
 
     func sendResponse(data: MessageMapper?) async {
-        for connection in await networkModel.connections {
-            await connection.sendResponse(data: data)
+        let connections = await networkModel.connections
+        await withDiscardingTaskGroup { group in
+            for connection in connections {
+                group.addTask {
+                    await connection.sendResponse(data: data)
+                }
+            }
         }
     }
 
     func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async {
-        for connection in await networkModel.connections {
-            if connection.id != except {
-                await connection.sendResponse(data: data)
+        let connections = await networkModel.connections
+        await withDiscardingTaskGroup { group in
+            for connection in connections where connection.id != except {
+                group.addTask {
+                    await connection.sendResponse(data: data)
+                }
             }
         }
     }
@@ -120,7 +151,7 @@ extension MasterNetworkController {
 extension MasterNetworkController: ConnectionControllerDelegate {
     func failed(with error: String?, for id: ConnectionController.ID) async {
         if await networkModel.removeConnection(id: id) {
-            await delegate?.masterLostPlayer(with: id)
+            await delegate.masterLostPlayer(with: id)
         }
     }
 
@@ -129,11 +160,11 @@ extension MasterNetworkController: ConnectionControllerDelegate {
     }
 
     func readyConnection(for id: ConnectionController.ID) async {
-        await delegate?.masterReady(for: id)
+        await delegate.masterReady(for: id)
     }
 
     func received(data: Data?, for id: ConnectionController.ID) async {
-        await delegate?.masterReceived(data: data, for: id, fileJournal: false)
+        await delegate.masterReceived(data: data, for: id, fileJournal: false)
     }
 }
 
@@ -164,9 +195,17 @@ extension MasterNetworkController {
         _ = withObservationTracking {
             networkModel.browserManager?.games
         } onChange: { [weak self] in
-            Task { @concurrent in
-                await self?.checkForConnections()
+            Task { @MainActor [weak self] in
+                self?.scheduleConnectionCheck()
             }
+        }
+    }
+
+    @MainActor
+    private func scheduleConnectionCheck() {
+        networkModel.observeConnectionsTask?.cancel()
+        networkModel.observeConnectionsTask = Task { @MainActor [weak self] in
+            self?.checkForConnections()
         }
     }
 
@@ -197,8 +236,11 @@ extension MasterNetworkController {
 private extension MasterNetworkController {
     @MainActor func addNew(_ connection: ConnectionController) {
         networkModel.connections.append(connection)
-        Task {
+        let id = connection.id
+        networkModel.connectionStartTasks[id]?.cancel()
+        networkModel.connectionStartTasks[id] = Task { @MainActor [weak self] in
             await connection.startConnection()
+            self?.networkModel.connectionStartTasks.removeValue(forKey: id)
         }
     }
 

@@ -18,6 +18,8 @@ final class GameNetworkController: Sendable {
 
     @MainActor
     let sharePlayStore: RPGSharePlayController
+    @MainActor
+    private var delegateTasks: [UUID: Task<Void, Never>] = [:]
 
     // MARK: Static builders
 
@@ -88,8 +90,9 @@ final class GameNetworkController: Sendable {
         model.didSetup()
     }
 
-    func setupLocal() async {
-        await model.setLocalPlayers(to: true)
+    @MainActor
+    func setupLocal() {
+        model.setLocalPlayers(to: true)
     }
 }
 
@@ -135,6 +138,8 @@ extension GameNetworkController {
     func stopGame() async {
         let name = model.name
         Logger.networking.debug("GameNetworkController: stop game \(name, privacy: .public)")
+        delegateTasks.values.forEach { $0.cancel() }
+        delegateTasks.removeAll()
         if await isStreaming() {
             model.masterStore?.stopStreaming()
             await model.playerStore?.stop()
@@ -255,42 +260,47 @@ extension GameNetworkController: PlayerNetworkControllerDelegate {
 // MARK: - SharePlayControllerDelegate
 
 extension GameNetworkController: SharePlayControllerDelegate {
+    @MainActor
     func handleUpdate(_ model: GameNetworkModel, id: UUID) {
-        Task { @concurrent in
+        scheduleDelegateTask {
             await self.model.playerDelegate?.received(model)
             await self.model.masterDelegate?.received(model, connectionId: id)
-            if await self.model.hasLocalPlayer {
+            if self.model.hasLocalPlayer {
                 await self.model.masterStore?.sendResponse(data: model)
             }
         }
     }
 
+    @MainActor
     func handleFileUpdate(_ model: GameNetworkModel) {
-        Task { @concurrent in
+        scheduleDelegateTask {
             await self.model.playerDelegate?.receivedFile(model)
             await self.model.masterDelegate?.receivedFile(model)
-            if await self.model.hasLocalPlayer {
+            if self.model.hasLocalPlayer {
                 await self.model.masterStore?.sendResponse(data: model)
             }
         }
     }
 
+    @MainActor
     func sharePlayLostPlayer(id: UUID) {
-        Task { @concurrent in
-            await model.masterDelegate?.lostPlayer(for: id)
+        scheduleDelegateTask {
+            await self.model.masterDelegate?.lostPlayer(for: id)
         }
     }
 
+    @MainActor
     func sharePlayLostConnection() {
-        Task { @concurrent in
-            await model.playerDelegate?.lostConnection()
+        scheduleDelegateTask {
+            await self.model.playerDelegate?.lostConnection()
         }
     }
 
+    @MainActor
     func sharePlaySessionConfigured() {
-        Task { @concurrent in
-            guard await !model.hasLocalPlayer else { return }
-            await model.playerDelegate?.ready()
+        scheduleDelegateTask {
+            guard !self.model.hasLocalPlayer else { return }
+            await self.model.playerDelegate?.ready()
         }
     }
 }
@@ -302,10 +312,18 @@ extension GameNetworkController {
         await model.masterStore?.networkModel.isStreaming ?? false
     }
 
+    @MainActor
     func resetName(name: String) {
-        Task { @MainActor in
-            model.masterStore?.networkModel.name = name
-            model.playerStore?.networkModel.name = name
+        model.masterStore?.networkModel.name = name
+        model.playerStore?.networkModel.name = name
+    }
+
+    @MainActor
+    private func scheduleDelegateTask(_ operation: @escaping @MainActor @Sendable () async -> Void) {
+        let id = UUID()
+        delegateTasks[id] = Task { @MainActor [weak self] in
+            await operation()
+            self?.delegateTasks.removeValue(forKey: id)
         }
     }
 }

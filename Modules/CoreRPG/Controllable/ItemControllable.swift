@@ -3,6 +3,11 @@
 import Foundation
 import Observation
 
+public enum GameMutationPolicy: Equatable, Sendable {
+    case memoryOnly
+    case persist
+}
+
 public protocol ItemControllable: Sendable  {
     associatedtype Model: ItemDataAccessable & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistable & Identifiable & Equatable & Hashable & Codable & ModelType
     
@@ -93,7 +98,7 @@ public extension ItemControllable {
     @MainActor func replace(model: ModelType?, isInsert: Bool, forceSave: Bool = false) {
         guard let model = model as? Model else { return }
         if itemDataModel.isGameMode == true && forceSave == false {
-            itemDataModel.gameItemData[model.id] = model
+            replaceInGameMemory(model: model)
             return
         }
         
@@ -111,6 +116,20 @@ public extension ItemControllable {
             }
             resetModel(with: model)
         }
+    }
+
+    @MainActor func replaceForGame(model: ModelType?, isInsert: Bool, policy: GameMutationPolicy) {
+        switch policy {
+        case .memoryOnly:
+            replaceInGameMemory(model: model)
+        case .persist:
+            replace(model: model, isInsert: isInsert, forceSave: true)
+        }
+    }
+
+    @MainActor func replaceInGameMemory(model: ModelType?) {
+        guard let model = model as? Model else { return }
+        itemDataModel.gameItemData[model.id] = model
     }
     
     @MainActor func mergeUpdates(model: ModelType) {

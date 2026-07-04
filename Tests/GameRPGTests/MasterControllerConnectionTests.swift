@@ -62,6 +62,70 @@ struct MasterControllerModelConnectionTests {
     }
 }
 
+// MARK: - GameMessagePipeline unit tests
+
+@Suite("GameMessagePipeline")
+struct GameMessagePipelineTests {
+
+    @Test("duplicate non-ack message is ignored")
+    func duplicateNonAckMessageIsIgnored() async {
+        let pipeline = GameMessagePipeline()
+        let message = Self.message(counter: 4, senderId: UUID())
+        let event = GameMessageEvent(model: message, origin: .direct(UUID()))
+
+        let first = await pipeline.enqueue(event)
+        let duplicate = await pipeline.enqueue(GameMessageEvent(model: message, origin: .sharePlay(UUID())))
+
+        #expect(first)
+        #expect(!duplicate)
+    }
+
+    @Test("same counter from different senders is accepted")
+    func sameCounterFromDifferentSendersIsAccepted() async {
+        let pipeline = GameMessagePipeline()
+        let first = Self.message(counter: 8, senderId: UUID())
+        let second = Self.message(counter: 8, senderId: UUID(), dataId: first.data.id)
+
+        let firstQueued = await pipeline.enqueue(GameMessageEvent(model: first, origin: .direct(UUID())))
+        let secondQueued = await pipeline.enqueue(GameMessageEvent(model: second, origin: .direct(UUID())))
+
+        #expect(firstQueued)
+        #expect(secondQueued)
+    }
+
+    @Test("counter zero messages are not deduplicated")
+    func counterZeroMessagesAreNotDeduplicated() async {
+        let pipeline = GameMessagePipeline()
+        let message = Self.message(counter: 0, senderId: UUID())
+
+        let first = await pipeline.enqueue(GameMessageEvent(model: message, origin: .direct(UUID())))
+        let second = await pipeline.enqueue(GameMessageEvent(model: message, origin: .sharePlay(UUID())))
+
+        #expect(first)
+        #expect(second)
+    }
+
+    @Test("cancelled pipeline rejects new messages")
+    func cancelledPipelineRejectsNewMessages() async {
+        let pipeline = GameMessagePipeline()
+        await pipeline.cancelAll()
+
+        let queued = await pipeline.enqueue(GameMessageEvent(model: Self.message(counter: 1, senderId: UUID()), origin: .direct(UUID())))
+
+        #expect(!queued)
+    }
+
+    private static func message(counter: Int, senderId: UUID, dataId: UUID = UUID()) -> GameNetworkModel {
+        let gameConfig = GameConfigModel(
+            id: senderId,
+            state: .started,
+            master: MasterGameModel(id: UUID(), type: .master, name: "Master")
+        )
+        let data = NetworkCodableDataType(id: dataId, type: .photo, version: 1, data: nil)
+        return GameNetworkModel(counter: counter, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameConfig, data: data)
+    }
+}
+
 // MARK: - MasterController lostPlayer integration tests
 
 @Suite("MasterController lostPlayer")

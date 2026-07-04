@@ -54,7 +54,7 @@ public extension DiceRootModel {
             let _ = try? await task.value
             let saveTask = Task { @MainActor in
                 editController.setCurrentItem(to: .previewWithData)
-                gameController.setFocusDice(on: itemController.itemDataModel.items[0])
+                await gameController.setFocusDice(on: itemController.itemDataModel.items[0])
             }
             _ = await saveTask.result
             _ = await gameController.setCurrent(itemId: itemController.itemDataModel.items[0])

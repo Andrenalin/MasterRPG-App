@@ -15,9 +15,9 @@ import CharacterRPG
 import WeatherRPG
 
 public protocol AdventureStoreGameable {
-    @MainActor func startGame(with id: UUID)
+    @MainActor func startGame(with id: UUID) async
     @MainActor func focusDice(for itemId: UUID) -> UUID?
-    @MainActor func resetGame()
+    @MainActor func resetGame() async
     @MainActor func saveGame() -> ItemModuleIds
 }
 
@@ -66,10 +66,8 @@ extension GameController: GameControllable {
 
 extension GameController: AdventureStoreGameable {
     @MainActor
-    func startGame(with id: UUID) {
-        Task {
-            await focus(on: id)
-        }
+    func startGame(with id: UUID) async {
+        await focus(on: id)
         root.mapRoot.mapGameControllable.startGameAsMaster()
     }
     
@@ -82,19 +80,17 @@ extension GameController: AdventureStoreGameable {
     }
 
     @MainActor
-    func resetGame() {
-        Task {
-            await reset()
-            await root.audioRoot.gameControllable.reset()
-            await root.diceRoot.gameControllable.reset()
-            await root.mapRoot.gameControllable.reset()
-            await root.pdfRoot.gameControllable.reset()
-            await root.photoRoot.gameControllable.reset()
-            await root.spaceRoot.gameControllable.reset()
-            await root.tableRoot.gameControllable.reset()
-            await root.characterRoot.gameControllable.reset()
-            await root.weatherRoot.gameControllable.reset()
-        }
+    func resetGame() async {
+        await reset()
+        await root.audioRoot.gameControllable.reset()
+        await root.diceRoot.gameControllable.reset()
+        await root.mapRoot.gameControllable.reset()
+        await root.pdfRoot.gameControllable.reset()
+        await root.photoRoot.gameControllable.reset()
+        await root.spaceRoot.gameControllable.reset()
+        await root.tableRoot.gameControllable.reset()
+        await root.characterRoot.gameControllable.reset()
+        await root.weatherRoot.gameControllable.reset()
     }
 
     @MainActor

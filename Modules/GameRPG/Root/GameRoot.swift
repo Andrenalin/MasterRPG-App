@@ -120,6 +120,8 @@ public final class GameRoot {
     let weatherRoot: WeatherRootModel
 
     let gameModel: GameModel
+    private var networkActionTasks: [UUID: Task<Void, Never>] = [:]
+    private var demoTask: Task<Void, Never>?
 
     public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         self.adventureRoot = adventureRoot
@@ -158,13 +160,13 @@ public final class GameRoot {
 
     public lazy var networkActions: NetworkActions = NetworkActions { @MainActor [weak self] idType in
         guard let store = self?.gameModel.masterController else { return }
-        Task {
+        self?.scheduleNetworkAction {
             await store.show(for: idType)
         }
     } send: { @MainActor [weak self] update in
         let masterStore = self?.gameModel.masterController
         let playerStore = self?.gameModel.playerController
-        Task {
+        self?.scheduleNetworkAction {
             if let masterStore {
                 await masterStore.send(updated: update)
             } else {
@@ -174,7 +176,7 @@ public final class GameRoot {
     } game: { @MainActor [weak self] message, actionType, playerId in
         let masterStore = self?.gameModel.masterController
         let playerStore = self?.gameModel.playerController
-        Task {
+        self?.scheduleNetworkAction {
             if let masterStore {
                 await masterStore.game(message: message, actionType: actionType, playerId: playerId)
             } else {
@@ -189,7 +191,7 @@ public final class GameRoot {
         if self?.gameModel.gameRoster.controls != newControls {
             self?.gameModel.gameRoster.controls = newControls
         }
-        Task {
+        self?.scheduleNetworkAction {
             await self?.gameModel.masterController?.resetPlayers()
         }
     }
@@ -208,6 +210,21 @@ public final class GameRoot {
 
     var gameMasterName: String {
         String(localized: "GameMaster", bundle: .module).localizedString
+    }
+
+    private func scheduleNetworkAction(_ operation: @escaping @MainActor @Sendable () async -> Void) {
+        let id = UUID()
+        networkActionTasks[id] = Task { @MainActor [weak self] in
+            await operation()
+            self?.networkActionTasks.removeValue(forKey: id)
+        }
+    }
+
+    private func cancelOwnedTasks() {
+        networkActionTasks.values.forEach { $0.cancel() }
+        networkActionTasks.removeAll()
+        demoTask?.cancel()
+        demoTask = nil
     }
 }
 
@@ -271,7 +288,7 @@ extension GameRoot {
         networkProxyStore.resetName(name: gameMasterName)
         networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
 
-        adventureRoot.adventureGameControllable.startGame(with: id)
+        await adventureRoot.adventureGameControllable.startGame(with: id)
         gameModel.playerController = PlayerController(root: self, asGameMaster: true)
         gameModel.masterController = MasterController(root: self, asProxy: false)
 
@@ -279,7 +296,7 @@ extension GameRoot {
         adventureRoot.startGame()
 
         await gameModel.masterController?.start()
-        diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: gameModel.selectedAdventure!))
+        await diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: gameModel.selectedAdventure!))
         
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = true
@@ -317,7 +334,7 @@ extension GameRoot {
             networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
         }
 
-        adventureRoot.adventureGameControllable.resetGame()
+        await adventureRoot.adventureGameControllable.resetGame()
         #if os(visionOS)
         gameModel.shareState.isMaster = false
         #endif
@@ -325,13 +342,13 @@ extension GameRoot {
         gameModel.playerController = player
 
         if mode == .demo {
-            joinGame(for: mode)
+            await joinGame(for: mode)
 
 #if !os(macOS)
             UIApplication.shared.isIdleTimerDisabled = true
 #endif
         } else if await player.start(to: model) {
-            joinGame(for: mode)
+            await joinGame(for: mode)
 
 #if !os(macOS)
             UIApplication.shared.isIdleTimerDisabled = true
@@ -341,7 +358,7 @@ extension GameRoot {
         }
     }
 
-    func joinGame(for type: GameType) {
+    func joinGame(for type: GameType) async {
         gameModel.startGameTime = Date.now
         gameModel.playerGameStarted = true
         var newConfig = gameModel.gameConfig
@@ -351,13 +368,14 @@ extension GameRoot {
         gameModel.gameRoster.players[0].name = name(for: type)
         adventureRoot.startGame()
         if type != .observer {
-            characterRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)
-            diceRoot.diceGameControllable.setFocusDice(on: characterRoot.valueGameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
+            await characterRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)
+            await diceRoot.diceGameControllable.setFocusDice(on: characterRoot.valueGameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
         }
     }
 
     // both
     func stopGame() async {
+        cancelOwnedTasks()
         gameModel.playerGameStarted = false
         gameModel.gameConfig.state = .stopped
         gameModel.gameConfig = .empty
@@ -365,7 +383,7 @@ extension GameRoot {
         gameModel.masterController = nil
         await gameModel.playerController?.stop()
         gameModel.playerController = nil
-        adventureRoot.adventureGameControllable.resetGame()
+        await adventureRoot.adventureGameControllable.resetGame()
         #if os(visionOS)
         gameModel.shareState = GameShareStateModel()
         #endif
@@ -385,13 +403,20 @@ extension GameRoot {
 extension GameRoot {
     func startDemo() async {
         await startGame(to: nil, mode: .demo)
+        demoTask?.cancel()
 
         if let playerController = gameModel.playerController {
-            Task {
-                while gameModel.gameConfig.state != .stopped {
+            demoTask = Task { @MainActor [weak self] in
+                guard let self else { return }
+                while !Task.isCancelled && gameModel.gameConfig.state != .stopped {
                     let photos = photoRoot.itemControllable.itemDataModel.items
                     for photo in photos {
-                        try? await Task.sleep(for: .seconds(3))
+                        do {
+                            try await Task.sleep(for: .seconds(3))
+                        } catch {
+                            return
+                        }
+                        guard !Task.isCancelled else { return }
                         let data = await photoRoot.gameControllable.share(id: photo)
                         let gameNetworkModel = GameNetworkModel(counter: 1, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
@@ -399,7 +424,12 @@ extension GameRoot {
                     
                     let weathers = weatherRoot.itemControllable.itemDataModel.items
                     for weather in weathers {
-                        try await Task.sleep(for: .seconds(5))
+                        do {
+                            try await Task.sleep(for: .seconds(5))
+                        } catch {
+                            return
+                        }
+                        guard !Task.isCancelled else { return }
                         let data = await weatherRoot.gameControllable.share(id: weather)
                         let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
@@ -407,7 +437,12 @@ extension GameRoot {
                     
                     let maps = mapRoot.itemControllable.itemDataModel.items
                     for map in maps {
-                        try await Task.sleep(for: .seconds(5))
+                        do {
+                            try await Task.sleep(for: .seconds(5))
+                        } catch {
+                            return
+                        }
+                        guard !Task.isCancelled else { return }
                         let data = await mapRoot.gameControllable.share(id: map)
                         let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
@@ -421,7 +456,12 @@ extension GameRoot {
                                 showMap = false
                             }
                             guard let data else { break }
-                            try await Task.sleep(for: .seconds(3))
+                            do {
+                                try await Task.sleep(for: .seconds(3))
+                            } catch {
+                                return
+                            }
+                            guard !Task.isCancelled else { return }
                             
                             let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .update, subType: .mapState, gameConfig: gameModel.gameConfig, data: data)
                             await playerController.receivedProcess(gameNetworkModel)

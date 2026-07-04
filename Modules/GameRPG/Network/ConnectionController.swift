@@ -119,6 +119,7 @@ private extension ConnectionController {
     }
 
     func startReceiveLoop() {
+        guard receiveTask == nil else { return }
         receiveTask = Task { [weak self] in
             guard let self else { return }
             await self.receiveLoop()

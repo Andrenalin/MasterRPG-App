@@ -61,6 +61,8 @@ final class PlayerNetworkNodel {
 
     @ObservationIgnored var connectionController: ConnectionController? = nil
     @ObservationIgnored var listener: (any ListenerManaging)? = nil
+    @ObservationIgnored var observeRemovalTask: Task<Void, Never>? = nil
+    @ObservationIgnored var connectionStartTask: Task<Void, Never>? = nil
 }
 
 #if DEBUG
@@ -178,4 +180,3 @@ final class PlayerNetworkControllerDelegateSpyingStub: PlayerNetworkControllerDe
     }
 }
 #endif
-

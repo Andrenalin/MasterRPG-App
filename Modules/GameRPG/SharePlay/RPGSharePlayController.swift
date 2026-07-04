@@ -13,6 +13,7 @@ import SwiftUI
 import TabletopKit
 #endif
 
+@MainActor
 protocol SharePlayControllerDelegate: AnyObject {
     func handleUpdate(_ model: GameNetworkModel, id: UUID) -> Void
     func handleFileUpdate(_ model: GameNetworkModel) -> Void

@@ -165,11 +165,8 @@ extension SpaceModel: nonisolated ItemDiffComparable {
         }
     }
     
-    nonisolated public var version: Int {
-        return MainActor.assumeIsolated {
-            fileUrl?.contentVersion ?? fileUrl_.update.hashValue
-    
-        }
+    public var version: Int {
+        fileUrl?.contentVersion ?? fileUrl_.update.hashValue
     }
 }
 

@@ -3,7 +3,7 @@
 import Foundation
 import SwiftUI
 
-public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
+public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
     case none = 0
     case photo = 1
     case map = 2

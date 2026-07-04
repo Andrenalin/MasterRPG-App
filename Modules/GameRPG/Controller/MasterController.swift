@@ -17,7 +17,6 @@ import SpaceRPG
 @MainActor @Observable
 final class MasterControllerModel: Sendable {
     var messageCounter: Int = 0
-    var seenCounter: Int = 0
     var connectIDPlayers: [ConnectionController.ID: UUID] = [:]
     var asProxy = false
     
@@ -31,10 +30,6 @@ final class MasterControllerModel: Sendable {
         connectIDPlayers = connectIDPlayers.filter { $0.value != playerId }
         connectIDPlayers[connectionId] = playerId
     }
-    
-    func reset(seenCounter: Int) {
-        self.seenCounter = seenCounter
-    }
 }
 
 final class MasterController: Sendable {
@@ -46,6 +41,7 @@ final class MasterController: Sendable {
     let root: GameRoot
     let gameModel: MasterControllerModel
     let asProxy: Bool
+    let messagePipeline = GameMessagePipeline()
 
     @MainActor
     init(root: GameRoot, asProxy: Bool) {
@@ -80,9 +76,10 @@ extension MasterController {
     @MainActor
     func stop() async {
         Logger.networking.debug("MasterController: Stop")
+        await messagePipeline.cancelAll()
         await root.networkStore.stopGame()
         await root.networkProxyStore.stopGame()
-        root.adventureRoot.adventureGameControllable.resetGame()
+        await root.adventureRoot.adventureGameControllable.resetGame()
         root.gameModel.gameRoster.players = []
         root.gameModel.gameRoster.controls = []
     }
@@ -172,25 +169,32 @@ extension MasterController: MasterNetworkStoreDelegate {
     
     func receivedProcess(_ model: GameNetworkModel, connectionId: ConnectionController.ID?) async {
         Logger.networking.debug("MasterController: Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-        
+
+        let event = GameMessageEvent(model: model, origin: .direct(connectionId))
+        guard await messagePipeline.enqueue(event) else {
+            Logger.networking.debug("MasterController: Duplicate ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+            return
+        }
+        await processMessages()
+    }
+
+    private func processMessages() async {
+        while let event = await messagePipeline.next() {
+            await process(event)
+            await messagePipeline.processed()
+        }
+    }
+
+    private func process(_ event: GameMessageEvent) async {
+        let model = event.model
+
         await root.logGameController.updateMessage(counter: model.counter, player: model.gameConfig.id)
-        if let connectionId {
+        if let connectionId = event.connectionId {
             await gameModel.add(connectionId: connectionId, playerId: model.gameConfig.id)
         }
         
         if await root.gameModel.add(playerId: model.gameConfig.id, playerModel: model.gameConfig.player(in: model.gameRoster), sharingModel: SharingControlModel(id: model.gameConfig.id, name: model.senderName, show: true)) {
             await resetPlayers()
-        }
-        let shouldProcess = await MainActor.run {
-            guard model.counter == 0 || gameModel.seenCounter < model.counter else { return false }
-            if model.subType != .ok && model.subType != .failed && model.counter > 0 {
-                gameModel.seenCounter = model.counter
-            }
-            return true
-        }
-        guard shouldProcess else {
-            Logger.networking.debug("MasterController: Answered already \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
-            return
         }
 
         if asProxy {
@@ -209,7 +213,11 @@ extension MasterController: MasterNetworkStoreDelegate {
     func receivedFile(_ model: GameNetworkModel) async {
         Logger.networking.debug("MasterController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
         guard await root.gameModel.gameConfig.isMaster != model.gameConfig.isMaster else { return }
-        await received(model, connectionId: nil)
+        guard await messagePipeline.enqueue(GameMessageEvent(model: model, origin: .file)) else {
+            Logger.networking.debug("MasterController: Duplicate file ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+            return
+        }
+        await processMessages()
     }
 }
 
@@ -435,6 +443,10 @@ extension MasterController: MasterNetworkProxyControllerDelegate {
     
     func receivedServerProxy(_ model: GameNetworkModel) async {
         Logger.networking.debug("MasterController: Proxy Received \(model.counter, privacy: .public)/\(model.proxyCounter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-        await receivedProcess(model, connectionId: nil)
+        guard await messagePipeline.enqueue(GameMessageEvent(model: model, origin: .proxy)) else {
+            Logger.networking.debug("MasterController: Duplicate proxy ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+            return
+        }
+        await processMessages()
     }
 }

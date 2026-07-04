@@ -24,7 +24,7 @@ public protocol ValueGameStorable {
     @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func imageIds(for id: UUID) -> [UUID]
     @MainActor func playerPinPhoto(for characterId: UUID) -> UUID?
-    @MainActor func startGame(for id: UUID?)
+    @MainActor func startGame(for id: UUID?) async
     func updatePlayer(data: NetworkCodableDataType) async throws
     
     @MainActor func create(name: String, value: String, resultCategory: ResultCategory) -> NetworkCodableDataType
@@ -179,11 +179,9 @@ extension GameController: ValueGameStorable {
     }
 
     @MainActor
-    public func startGame(for id: UUID?) {
+    public func startGame(for id: UUID?) async {
         guard let characterId = root.linkController.validate(id: id) else { return }
-        Task {
-            await focus(on: [characterId])
-        }
+        await focus(on: [characterId])
     }
 
     public func updatePlayer(data: NetworkCodableDataType) async throws {

@@ -3,8 +3,9 @@
 import Foundation
 import Observation
 
+@MainActor
 public protocol ItemGameReportable {
-    @MainActor var players: [UUID] { get set }
+    var players: [UUID] { get set }
 }
 
 @MainActor @Observable
@@ -78,6 +79,28 @@ public final class ItemGameModel {
         } else {
             items.append(itemId)
         }
+    }
+
+    func apply(itemId: UUID, item: ModelType, hide: Bool, previousIds: [UUID]) -> [ModelType] {
+        if hide {
+            if !items.contains(itemId) {
+                items.append(itemId)
+            }
+        } else if let index = items.firstIndex(of: itemId) {
+            if index != 0 {
+                items.remove(at: index)
+                items.insert(itemId, at: 0)
+            }
+        } else {
+            items.insert(itemId, at: 0)
+        }
+
+        itemData[itemId] = item
+        guard !hide else { return [] }
+        return Set(items)
+            .subtracting(previousIds)
+            .subtracting([itemId])
+            .compactMap { itemData[$0] }
     }
 
     func item(for itemId: UUID) -> ModelType? {
@@ -221,7 +244,7 @@ public extension GameControllable {
         guard await hasItem(id: itemId, version: data.version) == false else {
             _ = await setCurrent(itemId: itemId)
             if save, let model = await gameModel.itemData[itemId] {
-                await itemControllable.replace(model: model, isInsert: true, forceSave: true)
+                await itemControllable.replaceForGame(model: model, isInsert: true, policy: .persist)
             }
             return true
         }
@@ -231,6 +254,10 @@ public extension GameControllable {
     }
 
     func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool) async throws {
+        try await updateGame(data: data, hide: hide, deep: deep, policy: hide ? .memoryOnly : .persist)
+    }
+
+    func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool, policy: GameMutationPolicy) async throws {
         let beforeIds = await gameModel.items
         if let encodedData = data.data {
             do {
@@ -248,21 +275,11 @@ public extension GameControllable {
             item = await itemControllable.item(for: data.id)
         }
         guard let item else { throw ItemGameStorableError.itemMissing }
-        if hide {
-            await gameModel.append(itemId: data.id)
-        } else {
-            let index = await gameModel.items.firstIndex(where: { $0 == data.id })
-            await gameModel.insert(itemId: data.id, at: 0, removeIndex: ((index ?? 0) > 0 ? index : nil))
-        }
-        await gameModel.append(itemId: data.id, item: item, onlyItem: true)
-        if !hide {
-            await itemControllable.replace(model: item, isInsert: true, forceSave: true)
-            let otherItems = await MainActor.run {
-                Set(gameModel.items).subtracting(beforeIds).subtracting([data.id])
-                    .compactMap { gameModel.itemData[$0] }
-            }
+        let otherItems = await gameModel.apply(itemId: data.id, item: item, hide: hide, previousIds: beforeIds)
+        if policy == .persist {
+            await itemControllable.replaceForGame(model: item, isInsert: true, policy: .persist)
             for otherItem in otherItems {
-                await itemControllable.replace(model: otherItem, isInsert: true, forceSave: true)
+                await itemControllable.replaceForGame(model: otherItem, isInsert: true, policy: .persist)
             }
         }
     }

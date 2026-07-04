@@ -2,7 +2,7 @@
 
 import Foundation
 
-public enum RPGMessageActionType: Int, Codable, Sendable {
+public enum RPGMessageActionType: Int, Codable, Hashable, Sendable {
     case store = 10
     case show = 20
     case ok = 200
