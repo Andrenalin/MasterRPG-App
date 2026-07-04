@@ -3,6 +3,11 @@
 import Foundation
 import os.log
 import Observation
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 public protocol ExportControllable: Sendable {
     var rootManager: RootManager { get }
@@ -197,7 +202,12 @@ public extension ExportControllable {
 
     @MainActor private func inlineFiles(for itemId: UUID) async -> Data? {
         guard let fileUrlDataController, let item = await itemControllable.item(for: itemId), let fileUrl = item.fileUrl else { return nil }
-        return try? await fileUrlDataController.loadData(for: fileUrl)
+        if let data = try? await fileUrlDataController.loadData(for: fileUrl) {
+            return data
+        }
+        guard itemControllable.config.module == .photo,
+              let image = await itemControllable.cacheControllable?.photo(for: itemId) else { return nil }
+        return image.jpegData(compressionQuality: 0.9)
     }
 
     @MainActor private func token() async -> NetworkModules {

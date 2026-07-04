@@ -30,6 +30,8 @@ extension CacheController: ImageCacheControllable {
         let image: AKImage?
         if let data = fileUrl.data {
             image = AKImage(data: data)
+        } else if let data = try? await fileUrlDataController.loadData(for: fileUrl) {
+            image = AKImage(data: data)
         } else {
             image = await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
                 guard let url else { return nil }

@@ -425,41 +425,56 @@ private extension ImportControllable {
     @MainActor func addFile(data: Data, to item: any ItemDataAccessable, forceSave: Bool) async throws {
         guard let fileUrlDataController, var fileUrl = item.fileUrl else { return }
         var item = item
+        let module = itemControllable.config.module.rawValue
+        let importedHash = FileUrl.contentHash(of: data)
+        let localFileUrl = itemControllable.itemSync(for: item.id, noGame: true)?.fileUrl
 
         // Reuse the existing file when the binary is unchanged — do not write the same file again
-        if let existingFileUrl = await contentHashedExistingFileUrl(for: item.id, forceSave: forceSave),
-           existingFileUrl.contentHash == FileUrl.contentHash(of: data) {
-            await itemControllable.reset(fileUrl: existingFileUrl, item: &item)
+        if let existingFileUrl = await reusableExistingFileUrl(for: item.id, importedHash: importedHash, forceSave: forceSave) {
+            Logger.importController.debug("Import addFile reuses existing file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(existingFileUrl.fileId, privacy: .public) hash=\(importedHash, privacy: .public) forceSave=\(forceSave, privacy: .public)")
+            item.fileUrl = existingFileUrl
             return
+        }
+
+        if let localFileUrl {
+            Logger.importController.warning("Import addFile rewrites existing file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) forceSave=\(forceSave, privacy: .public) localHash=\(localFileUrl.contentHash ?? "nil", privacy: .public) importedHash=\(importedHash, privacy: .public) localUrl=\(localFileUrl.rawUrl.absoluteString, privacy: .public) importedUrl=\(fileUrl.rawUrl.absoluteString, privacy: .public)")
+        } else {
+            Logger.importController.debug("Import addFile writes new file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) hash=\(importedHash, privacy: .public) forceSave=\(forceSave, privacy: .public)")
         }
 
         fileUrl.resetData(data)
         do {
             let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
+            Logger.importController.debug("Import addFile stored imported file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) storedUrl=\((updated ?? fileUrl).rawUrl.absoluteString, privacy: .public) storedHash=\((updated ?? fileUrl).contentHash ?? "nil", privacy: .public)")
             await itemControllable.reset(fileUrl: updated ?? fileUrl, item: &item)
         } catch {
-            let module = await MainActor.run { itemControllable.config.module.rawValue }
             Logger.importController.error("Cannot save bookmark \(module, privacy: .public), file stored as data")
             await itemControllable.reset(fileUrl: fileUrl, item: &item)
         }
     }
 
-    /// The existing item's fileUrl with a content hash. Legacy items have no hash yet —
-    /// eagerly calculate it from the file on disk once and persist it on the item.
-    @MainActor func contentHashedExistingFileUrl(for itemId: UUID, forceSave: Bool) async -> FileUrl? {
-        guard let existing = await itemControllable.item(for: itemId), var existingFileUrl = existing.fileUrl else { return nil }
-        guard existingFileUrl.contentHash == nil else { return existingFileUrl }
+    /// The existing item's local file URL when the imported bytes are unchanged.
+    /// In game mode (`forceSave == false`) this deliberately avoids writing a
+    /// content-hash-only change back into the game item observed by the UI.
+    @MainActor func reusableExistingFileUrl(for itemId: UUID, importedHash: String, forceSave: Bool) async -> FileUrl? {
+        guard let existing = itemControllable.itemSync(for: itemId, noGame: true), var existingFileUrl = existing.fileUrl else { return nil }
+        if let contentHash = existingFileUrl.contentHash {
+            return contentHash == importedHash ? existingFileUrl : nil
+        }
         guard let data = try? await fileUrlDataController?.loadData(for: existingFileUrl) else { return nil }
+        guard FileUrl.contentHash(of: data) == importedHash else { return nil }
+        guard forceSave else { return existingFileUrl }
+
         existingFileUrl.resetContentHash(of: data)
-        persist(fileUrl: existingFileUrl, itemId: itemId, forceSave: forceSave)
+        persist(fileUrl: existingFileUrl, itemId: itemId)
         return existingFileUrl
     }
 
     @MainActor
-    func persist(fileUrl: FileUrl, itemId: UUID, forceSave: Bool) {
-        guard var copy = itemControllable.copy(of: itemId) else { return }
+    func persist(fileUrl: FileUrl, itemId: UUID) {
+        guard var copy = itemControllable.itemSync(for: itemId, noGame: true)?.copy() else { return }
         copy.fileUrl = fileUrl
-        itemControllable.replace(model: copy, isInsert: false, forceSave: forceSave)
+        itemControllable.replace(model: copy, isInsert: false, forceSave: true)
     }
 }
 

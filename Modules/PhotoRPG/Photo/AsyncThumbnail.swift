@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 struct AsyncThumbnail: View {
-    let model: PhotoModel
+    let itemId: UUID?
     let size: CGSize
     let color: Color
 
@@ -14,28 +14,46 @@ struct AsyncThumbnail: View {
     @State private var isLoading: Bool = false
 
     var body: some View {
-        @Bindable var model = model
-        Group {
-            if let image = cachedImage {
-                Image(akImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                placeholderView
+        if let itemId {
+            let model = root.itemController.itemOrEmpty(for: itemId)
+            Group {
+                if let image = cachedImage(for: model.id) {
+                    Image(akImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else {
+                    placeholderView
+                }
             }
-        }
-        .task(id: model.fileUrl) {
-            await initImage()
+            .task(id: loadKey(for: model)) {
+                await initImage(for: model)
+            }
+        } else {
+            placeholderView
         }
     }
 }
 
 // MARK: - Private Helpers
 
+private struct AsyncThumbnailLoadKey: Equatable {
+    let itemId: UUID
+    let fileUrl: FileUrl?
+    let hasInlineData: Bool
+}
+
 private extension AsyncThumbnail {
     /// Synchronously access the cached thumbnail from the observable cache
-    var cachedImage: AKImage? {
-        root.itemController.cacheController?.cachedThumbnail(for: model.id)
+    func cachedImage(for itemId: UUID) -> AKImage? {
+        root.itemController.cacheController?.cachedThumbnail(for: itemId)
+    }
+
+    func loadKey(for model: PhotoModel) -> AsyncThumbnailLoadKey {
+        AsyncThumbnailLoadKey(
+            itemId: model.id,
+            fileUrl: model.fileUrl,
+            hasInlineData: model.fileUrl?.data != nil
+        )
     }
     
     @ViewBuilder
@@ -49,17 +67,18 @@ private extension AsyncThumbnail {
     }
     
     /// Initialize image loading with deduplication
-    func initImage() async {
-        // Avoid redundant loads if already loading or if the URL hasn't changed and we have a cached image
-        guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage == nil) else { return }
+    func initImage(for model: PhotoModel) async {
+        guard model.fileUrl != nil else { return }
+        // Avoid redundant loads once this URL already has an observable cached image.
+        guard lastFileUrl != model.fileUrl || cachedImage(for: model.id) == nil else { return }
         
         isLoading = true
         lastFileUrl = model.fileUrl
-        await loadImage()
+        await loadImage(for: model)
     }
     
     /// Load the thumbnail asynchronously and update the observable cache
-    func loadImage() async {
+    func loadImage(for model: PhotoModel) async {
         guard let cacheController = root.itemController.cacheController else {
             isLoading = false
             return
@@ -82,7 +101,7 @@ private extension AsyncThumbnail {
 }
 
 #Preview {
-    AsyncThumbnail(model: .preview, size: CGSize(width: 128, height: 128), color: .gray)
+    AsyncThumbnail(itemId: PhotoModel.preview.id, size: CGSize(width: 128, height: 128), color: .gray)
         .environment(PhotoRootModel.preview)
         .frame(width: 256, height: 256)
 }

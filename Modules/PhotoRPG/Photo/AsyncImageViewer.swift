@@ -56,9 +56,17 @@ struct AsyncImageViewer: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-        .task(id: model.fileUrl) {
+        .task(id: loadKey) {
             await loadImage()
         }
+    }
+
+    private var loadKey: AsyncImageViewerLoadKey {
+        AsyncImageViewerLoadKey(
+            itemId: model.id,
+            fileUrl: model.fileUrl,
+            hasInlineData: model.fileUrl?.data != nil
+        )
     }
 
     private func cachedImage(for itemId: UUID) -> AKImage? {
@@ -71,8 +79,8 @@ struct AsyncImageViewer: View {
 
     /// Load full-size image with proper structured concurrency
     private func loadImage() async {
-        // Deduplication: skip if already loading or if URL hasn't changed and we have a cached image
-        guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage(for: model.id) == nil) else {
+        // Deduplication: skip once this URL already has an observable cached image.
+        guard lastFileUrl != model.fileUrl || cachedImage(for: model.id) == nil else {
             return
         }
         
@@ -103,4 +111,10 @@ struct AsyncImageViewer: View {
         // Reset loading state
         isLoading = false
     }
+}
+
+private struct AsyncImageViewerLoadKey: Equatable {
+    let itemId: UUID
+    let fileUrl: FileUrl?
+    let hasInlineData: Bool
 }

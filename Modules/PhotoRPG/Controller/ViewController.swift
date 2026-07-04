@@ -76,7 +76,7 @@ public extension ViewController {
 
 public extension ViewController {    
     @MainActor func mapImage(root: PhotoRootModel, for itemId: UUID?, size: CGSize, color: Color) -> some View {
-        AsyncThumbnail(model: root.itemController.itemOrEmpty(for: itemId ?? UUID()), size: size, color: color)
+        AsyncThumbnail(itemId: itemId, size: size, color: color)
             .environment(root)
     }
 

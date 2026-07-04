@@ -11,6 +11,7 @@ import Testing
 @testable import DiceRPG
 @testable import AudioRPG
 @testable import MapRPG
+@testable import PdfRPG
 @testable import PhotoRPG
 @testable import SpaceRPG
 @testable import TableRPG
@@ -112,35 +113,43 @@ struct PlayerMasterControllerTests {
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
 
-        let audioId = env.playerRoot.audioRoot.itemController.itemDataModel.items[1]
+        let audioId = try #require(env.playerRoot.audioRoot.itemController.itemDataModel.items.first {
+            env.playerRoot.audioRoot.itemController.itemSync(for: $0)?.fileUrl != nil
+        })
         let version = env.playerRoot.audioRoot.itemController.itemOrEmpty(for: audioId).version
-        #expect(env.playerRoot.audioRoot.itemController.itemOrEmpty(for: audioId).entries.isEmpty)
         #expect(await env.playerRoot.audioRoot.gameController.currentId != audioId)
 
         // Act - Player sends audio to master
         let audioShareData = try await env.playerRoot.audioRoot.gameController.createGameData(for: audioId)
         await env.player.game(message: audioShareData, actionType: .generic)
-        let sendedAudioData = env.playerNetworkSpy.requestData as? GameNetworkModel
-        #expect(nil != sendedAudioData)
+        let sentAudioData = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(sentAudioData.type == .update)
+        #expect(sentAudioData.subType == .generic)
+        #expect(sentAudioData.data.id == audioId)
+        #expect(sentAudioData.data.type == .audio)
 
-        // Assert - Master receives and processes audio
-        let result = try await env.master.handle(sendedAudioData!)
+        // Assert - Master receives, persists, and sends audio back
+        let result = try await env.master.handle(sentAudioData)
         #expect(nil == result)
-        let resendAudioData = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
-        #expect(resendAudioData!.type == .reveal)
-        #expect(resendAudioData!.subType == .show)
-        #expect(resendAudioData!.data.type == .audio)
+        let resendAudioData = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(resendAudioData.type == .reveal)
+        #expect(resendAudioData.subType == .show)
+        #expect(resendAudioData.data.id == audioId)
+        #expect(resendAudioData.data.type == .audio)
         #expect(await env.masterRoot.audioRoot.gameController.currentId == audioId)
         #expect(env.masterRoot.audioRoot.gameController.gameItem(for: audioId).version == version)
         #expect(env.masterRoot.audioRoot.itemController.itemDataModel.items.count == 1)
+        let persistedAudio = try #require(env.masterRoot.audioRoot.itemController.itemSync(for: audioId, noGame: true))
+        #expect(persistedAudio.version == version)
+        #expect(persistedAudio.fileUrl != nil)
         #expect(await env.playerRoot.audioRoot.gameController.currentId != audioId)
 
         // Act - Player receives audio back from master
-        let playerResult = try await env.player.handle(resendAudioData!)
+        let playerResult = try await env.player.handle(resendAudioData)
 
         // Assert - Player now has audio displayed
-        #expect(nil != playerResult)
-        #expect(playerResult!.subType == .ok)
+        let playerResponse = try #require(playerResult)
+        #expect(playerResponse.subType == .ok)
         #expect(await env.playerRoot.audioRoot.gameController.currentId == audioId)
         #expect(env.playerRoot.audioRoot.gameController.gameItem(for: audioId).version == version)
         #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 12)
@@ -155,37 +164,132 @@ struct PlayerMasterControllerTests {
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
 
-        let photoId = env.playerRoot.photoRoot.itemController.itemDataModel.items[0]
+        let photoId = try #require(env.playerRoot.photoRoot.itemController.itemDataModel.items.first {
+            env.playerRoot.photoRoot.itemController.itemSync(for: $0)?.fileUrl != nil
+        })
         let version = env.playerRoot.photoRoot.itemController.itemOrEmpty(for: photoId).version
         #expect(await env.playerRoot.photoRoot.gameController.currentId != photoId)
 
         // Act - Player sends photo to master
         let photoShareData = try await env.playerRoot.photoRoot.gameController.createGameData(for: photoId)
         await env.player.game(message: photoShareData, actionType: .generic)
-        let sendedPhotoData = env.playerNetworkSpy.requestData as? GameNetworkModel
-        #expect(nil != sendedPhotoData)
+        let sentPhotoData = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(sentPhotoData.type == .update)
+        #expect(sentPhotoData.subType == .generic)
+        #expect(sentPhotoData.data.id == photoId)
+        #expect(sentPhotoData.data.type == .photo)
 
-        // Assert - Master receives and processes photo
-        let result = try await env.master.handle(sendedPhotoData!)
+        // Assert - Master receives, persists, and sends photo back
+        let result = try await env.master.handle(sentPhotoData)
         #expect(nil == result)
-        let resendPhotoData = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
-        #expect(resendPhotoData!.type == .reveal)
-        #expect(resendPhotoData!.subType == .show)
-        #expect(resendPhotoData!.data.type == .photo)
+        let resendPhotoData = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(resendPhotoData.type == .reveal)
+        #expect(resendPhotoData.subType == .show)
+        #expect(resendPhotoData.data.id == photoId)
+        #expect(resendPhotoData.data.type == .photo)
         #expect(await env.masterRoot.photoRoot.gameController.currentId == photoId)
         #expect(env.masterRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
         #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.count == 1)
+        let persistedPhoto = try #require(env.masterRoot.photoRoot.itemController.itemSync(for: photoId, noGame: true))
+        #expect(persistedPhoto.version == version)
+        #expect(persistedPhoto.fileUrl != nil)
         #expect(await env.playerRoot.photoRoot.gameController.currentId != photoId)
 
         // Act - Player receives photo back from master
-        let playerResult = try await env.player.handle(resendPhotoData!)
+        let playerResult = try await env.player.handle(resendPhotoData)
 
         // Assert - Player now has photo displayed
-        #expect(nil != playerResult)
-        #expect(playerResult!.subType == .ok)
+        let playerResponse = try #require(playerResult)
+        #expect(playerResponse.subType == .ok)
         #expect(await env.playerRoot.photoRoot.gameController.currentId == photoId)
         #expect(env.playerRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
         #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 6)
+    }
+
+    @Test("Player sends pdf to master, master saves it, and player receives it back")
+    func handlePdf() async throws {
+        // Arrange
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.pdfTestData, itemCounter: 0)
+        #expect(env.playerRoot.pdfRoot.itemController.itemDataModel.items.count == 6)
+        env.masterRoot.adventureRoot.startGame()
+        env.playerRoot.adventureRoot.startGame()
+
+        let pdfId = try #require(env.playerRoot.pdfRoot.itemController.itemDataModel.items.first {
+            env.playerRoot.pdfRoot.itemController.itemSync(for: $0)?.fileUrl != nil
+        })
+        let version = env.playerRoot.pdfRoot.itemController.itemOrEmpty(for: pdfId).version
+        #expect(await env.playerRoot.pdfRoot.gameController.currentId != pdfId)
+
+        // Act - Player sends pdf to master
+        let pdfShareData = try await env.playerRoot.pdfRoot.gameController.createGameData(for: pdfId)
+        await env.player.game(message: pdfShareData, actionType: .generic)
+        let sentPdfData = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(sentPdfData.type == .update)
+        #expect(sentPdfData.subType == .generic)
+        #expect(sentPdfData.data.id == pdfId)
+        #expect(sentPdfData.data.type == .pdf)
+
+        // Assert - Master receives, persists, and sends pdf back
+        let result = try await env.master.handle(sentPdfData)
+        #expect(nil == result)
+        let resendPdfData = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(resendPdfData.type == .reveal)
+        #expect(resendPdfData.subType == .show)
+        #expect(resendPdfData.data.id == pdfId)
+        #expect(resendPdfData.data.type == .pdf)
+        #expect(await env.masterRoot.pdfRoot.gameController.currentId == pdfId)
+        #expect(env.masterRoot.pdfRoot.gameController.gameItem(for: pdfId).version == version)
+        let persistedPdf = try #require(env.masterRoot.pdfRoot.itemController.itemSync(for: pdfId, noGame: true))
+        #expect(persistedPdf.version == version)
+        #expect(persistedPdf.fileUrl != nil)
+        #expect(env.masterRoot.pdfRoot.itemController.itemDataModel.items.contains(pdfId))
+        #expect(await env.playerRoot.pdfRoot.gameController.currentId != pdfId)
+
+        // Act - Player receives pdf back from master
+        let playerResult = try await env.player.handle(resendPdfData)
+
+        // Assert - Player now has pdf displayed
+        let playerResponse = try #require(playerResult)
+        #expect(playerResponse.subType == .ok)
+        #expect(await env.playerRoot.pdfRoot.gameController.currentId == pdfId)
+        #expect(env.playerRoot.pdfRoot.gameController.gameItem(for: pdfId).version == version)
+        #expect(env.playerRoot.pdfRoot.itemController.itemDataModel.items.count == 6)
+    }
+
+    @Test("Player sends multiple photos to master and master saves each one")
+    func handleMultiplePhotos() async throws {
+        // Arrange
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
+        #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 6)
+        env.masterRoot.adventureRoot.startGame()
+        env.playerRoot.adventureRoot.startGame()
+
+        let photoIds = Array(env.playerRoot.photoRoot.itemController.itemDataModel.items.filter {
+            env.playerRoot.photoRoot.itemController.itemSync(for: $0)?.fileUrl != nil
+        }.prefix(2))
+        #expect(photoIds.count == 2)
+
+        for photoId in photoIds {
+            let version = env.playerRoot.photoRoot.itemController.itemOrEmpty(for: photoId).version
+
+            // Act - Player sends photo to master
+            let photoShareData = try await env.playerRoot.photoRoot.gameController.createGameData(for: photoId)
+            await env.player.game(message: photoShareData, actionType: .generic)
+            let sentPhotoData = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+
+            // Assert - Master imports and persists the photo
+            let result = try await env.master.handle(sentPhotoData)
+            #expect(nil == result)
+            #expect(await env.masterRoot.photoRoot.gameController.currentId == photoId)
+            #expect(env.masterRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
+
+            let masterPhoto = try #require(env.masterRoot.photoRoot.itemController.itemSync(for: photoId, noGame: true))
+            #expect(masterPhoto.version == version)
+            #expect(masterPhoto.fileUrl != nil)
+            #expect(masterPhoto.fileUrl?.contentHash != nil)
+        }
     }
 
     @Test("Player sends space to master and receives it back")
@@ -204,27 +308,33 @@ struct PlayerMasterControllerTests {
         // Act - Player sends space to master
         let spaceShareData = try await env.playerRoot.spaceRoot.gameController.createGameData(for: spaceId)
         await env.player.game(message: spaceShareData, actionType: .generic)
-        let sendedSpaceData = env.playerNetworkSpy.requestData as? GameNetworkModel
-        #expect(nil != sendedSpaceData)
+        let sentSpaceData = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(sentSpaceData.type == .update)
+        #expect(sentSpaceData.subType == .generic)
+        #expect(sentSpaceData.data.id == spaceId)
+        #expect(sentSpaceData.data.type == .space)
 
-        // Assert - Master receives and processes space
-        let result = try await env.master.handle(sendedSpaceData!)
+        // Assert - Master receives, persists, and sends space back
+        let result = try await env.master.handle(sentSpaceData)
         #expect(nil == result)
-        let resendSpaceData = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
-        #expect(resendSpaceData!.type == .reveal)
-        #expect(resendSpaceData!.subType == .show)
-        #expect(resendSpaceData!.data.type == .space)
+        let resendSpaceData = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(resendSpaceData.type == .reveal)
+        #expect(resendSpaceData.subType == .show)
+        #expect(resendSpaceData.data.id == spaceId)
+        #expect(resendSpaceData.data.type == .space)
         #expect(await env.masterRoot.spaceRoot.gameController.currentId == spaceId)
         #expect(env.masterRoot.spaceRoot.gameController.gameItem(for: spaceId).version == version)
         #expect(env.masterRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
+        let persistedSpace = try #require(env.masterRoot.spaceRoot.itemController.itemSync(for: spaceId, noGame: true))
+        #expect(persistedSpace.version == version)
         #expect(await env.playerRoot.spaceRoot.gameController.currentId != spaceId)
 
         // Act - Player receives space back from master
-        let playerResult = try await env.player.handle(resendSpaceData!)
+        let playerResult = try await env.player.handle(resendSpaceData)
 
         // Assert - Player now has space displayed
-        #expect(nil != playerResult)
-        #expect(playerResult!.subType == .ok)
+        let playerResponse = try #require(playerResult)
+        #expect(playerResponse.subType == .ok)
         #expect(await env.playerRoot.spaceRoot.gameController.currentId == spaceId)
         #expect(env.playerRoot.spaceRoot.gameController.gameItem(for: spaceId).version == version)
         #expect(env.playerRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
