@@ -7,6 +7,7 @@ import Testing
 
 @testable import PhotoRPG
 
+@MainActor
 struct PhotoModelTests {
     func setUp() async throws -> PhotoModel {
         PhotoModel(id: UUID(), name: "Hello", degrees: 90.0)

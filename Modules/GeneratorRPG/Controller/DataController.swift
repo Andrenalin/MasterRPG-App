@@ -14,11 +14,12 @@ struct DataController: DataPersistenceControllable {
         let token: String
 }
 
-extension DataController: CoreDataPersistable {
-    // MARK: model -> viewlmodel
+extension DataController: CoreDataSnapshotPersistable {
+    // MARK: managed object -> snapshot (context queue)
 
-    func mapViewModel(_ model: RPGGenerator, token: String) -> GeneratorModel {
-        GeneratorModel(
+    @Sendable
+    func mapSnapshot(_ model: RPGGenerator, token: String) -> GeneratorSnapshot {
+        GeneratorSnapshot(
             id: model.uuid ?? UUID(),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
@@ -32,27 +33,41 @@ extension DataController: CoreDataPersistable {
         )
     }
 
-    // MARK: viewmodel -> model
+    // MARK: snapshot -> managed object (context queue)
     
-    func mapModel(_ viewModel: GeneratorModel, into model: RPGGenerator) {
-        model.uuid <=> viewModel.id
-        model.name <=> viewModel.name_.rawValue
-        model.information <=> viewModel.description_.rawValue
-        model.tags <=> viewModel.tags_.rawValue
-        model.generatorCategory <=> viewModel.category_.rawValue
-        model.displayState <=> Int32(viewModel.displayState)
-        unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
-            model.entriesModel = viewModel.entries.enumerated().map {
+    @Sendable
+    func applySnapshot(_ snapshot: GeneratorSnapshot, into model: RPGGenerator) {
+        model.uuid <=> snapshot.id
+        model.name <=> snapshot.name.rawValue
+        model.information <=> snapshot.description.rawValue
+        model.tags <=> snapshot.tags.rawValue
+        model.generatorCategory <=> snapshot.category.rawValue
+        model.displayState <=> Int32(snapshot.displayState)
+        unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
+            model.entriesModel = snapshot.entries.wrappedValue.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
             }
         }
-        model.parentId <=> viewModel.parentId
-        model.genType <=> Int16(viewModel.genType.rawValue)
-        model.referenceId <=> viewModel.referenceId
+        model.parentId <=> snapshot.parentId
+        model.genType <=> Int16(snapshot.genType.rawValue)
+        model.referenceId <=> snapshot.referenceId
     }
     
+
+    // MARK: model <-> snapshot (MainActor)
+
+    @MainActor
+    func makeModel(from snapshot: GeneratorSnapshot) -> GeneratorModel {
+        snapshot.makeModel()
+    }
+
+    @MainActor
+    func makeSnapshot(from model: GeneratorModel) -> GeneratorSnapshot {
+        GeneratorSnapshot(model)
+    }
+
     // MARK: - ChildEntryViewModel
 
     private func map(_ model: RPGGeneratorEntry) -> ChildEntryModel {

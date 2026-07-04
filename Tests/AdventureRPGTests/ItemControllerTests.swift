@@ -16,6 +16,7 @@ import WeatherRPG
 @testable import PhotoRPG
 @testable import TableRPG
 
+@MainActor
 struct ItemControllerTests {
     @Test func itemRegisterLinks() async throws {
         let root = try await MockRoot.importTestData()

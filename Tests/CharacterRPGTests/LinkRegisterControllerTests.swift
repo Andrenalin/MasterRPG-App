@@ -12,6 +12,7 @@ import Testing
 
 @testable import CharacterRPG
 
+@MainActor
 struct LinkRegisterControllerTests {
     func setUp() async throws -> CharacterRootModel {
         let root = try await MockRoot.importTestData()

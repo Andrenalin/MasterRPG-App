@@ -69,7 +69,7 @@ extension PhotoRootModel: RootControllable {
 
 // MARK: Preview - Test
 extension PhotoModel {
-    static let previewId = UUID(uuidString: "12975503-CC29-4837-8018-EFF774E97595")!
+    nonisolated static let previewId = UUID(uuidString: "12975503-CC29-4837-8018-EFF774E97595")!
     static let preview = PhotoModel(id: previewId, name: "ExodusAtlantisMap", description: "Imaginary map of Atlantis for Amber DRPG \"Exodus\", a tabletop roleplaying game. Author: Theresa Thomas. From Wikimedia: [Wikipedia](https://commons.wikimedia.org/wiki/File:ExodusAtlantisMap.jpg)", tags: ["Map", "Fanatasy"], degrees: 0, entries: [])
 }
 

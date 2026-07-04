@@ -29,7 +29,7 @@ struct RollDiceIntent: AppIntent, WidgetConfigurationIntent {
         let result = rolledDie.result.first ?? die.die.max
 
         // Create dice model with the rolled die
-        let diceModel = DiceModel(id: UUID(), name: diceType.rawValue, dice: [rolledDie])
+        let diceModel = DiceSnapshot(id: UUID(), name: diceType.rawValue, dice: [rolledDie])
 
         // Create result model
         let rollResult = DiceResultModel(

@@ -7,6 +7,7 @@ import Testing
 
 @testable import DiceRPG
 
+@MainActor
 struct GameControllerTests {
     @Test func setGameDice() async throws {
         let (root, dice) = await GameControllerTests.setupDice()

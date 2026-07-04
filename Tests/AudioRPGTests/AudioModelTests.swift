@@ -6,6 +6,7 @@ import Testing
 
 @testable import AudioRPG
 
+@MainActor
 struct AudioModelTests {
     func setUp() async throws -> AudioModel {
         AudioModel(id: UUID(), name: "Hello", description: "TestDesc", tags: ["tag1", "tag2"], category: .map, displayState: 0, fileUrl: nil, entries: [AudioEntryModel.empty])

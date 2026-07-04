@@ -6,7 +6,9 @@ import os.log
 
 public struct DiceResultModel: Equatable, Hashable, Codable, Sendable, Identifiable {
     public let id: UUID
-    public let diceModel: DiceModel
+    // Value snapshot — this struct crosses process/actor boundaries
+    // (game network, widget storage, Live Activity content state).
+    public let diceModel: DiceSnapshot
     public var result: DiceResult
     public var values: String
     public var sum: Int
@@ -29,7 +31,7 @@ public struct DiceResultModel: Equatable, Hashable, Codable, Sendable, Identifia
         }
     }
     
-    public init(diceModel: DiceModel) {
+    public init(diceModel: DiceSnapshot) {
         self.id = UUID()
         self.diceModel = diceModel
         self.result = .notRolled
@@ -39,7 +41,7 @@ public struct DiceResultModel: Equatable, Hashable, Codable, Sendable, Identifia
         self.timestamp = Date.now
     }
     
-    public init(diceModel: DiceModel, result: DiceResult, values: String, sum: Int, checked: Bool, timeStamp: Date = Date.now) {
+    public init(diceModel: DiceSnapshot, result: DiceResult, values: String, sum: Int, checked: Bool, timeStamp: Date = Date.now) {
         self.id = UUID()
         self.diceModel = diceModel
         self.result = result
@@ -47,6 +49,18 @@ public struct DiceResultModel: Equatable, Hashable, Codable, Sendable, Identifia
         self.sum = sum
         self.checked = checked
         self.timestamp = timeStamp
+    }
+}
+
+public extension DiceResultModel {
+    @MainActor
+    init(diceModel: DiceModel) {
+        self.init(diceModel: DiceSnapshot(diceModel))
+    }
+
+    @MainActor
+    init(diceModel: DiceModel, result: DiceResult, values: String, sum: Int, checked: Bool, timeStamp: Date = Date.now) {
+        self.init(diceModel: DiceSnapshot(diceModel), result: result, values: values, sum: sum, checked: checked, timeStamp: timeStamp)
     }
 }
 

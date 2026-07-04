@@ -27,7 +27,7 @@ extension SearchController {
     ///   searched in the list view.
     /// - **Folders / collections** (`specialCategory`): delegates to `result()` which searches
     ///   the collection's children entries.
-    func globalSearchResults(searchText: String) async -> [SearchResult] {
+    @MainActor func globalSearchResults(searchText: String) async -> [SearchResult] {
         guard !searchText.isEmpty else { return [] }
         
         let itemIds = await itemControllable.itemDataModel.items
@@ -69,7 +69,7 @@ extension SearchController {
     }
     
     // displayMode: .regular in global search so all fields are covered.
-    private func result(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
+    @MainActor private func result(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
         if itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) {
             foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
         }
@@ -133,7 +133,7 @@ extension SearchController {
 
     /// Flat list: root characters only (`groupId == nil`).
     /// Excludes specialCategory items (groups/folders) — they only appear in folder mode.
-    private func listModeCharacterResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
+    @MainActor private func listModeCharacterResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
         let itemIds = await itemControllable.itemDataModel.items
         var foundResults: [SearchResult] = []
         for itemId in itemIds {
@@ -152,7 +152,7 @@ extension SearchController {
     }
 
     /// Folder tree: hierarchical results rooted at focusId or all root-level items.
-    private func folderModeCharacterResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) async -> [SearchResult] {
+    @MainActor private func folderModeCharacterResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) async -> [SearchResult] {
         if let focusId {
             guard let folder = await itemController.item(for: focusId) else { return [] }
             var results: [SearchResult] = []
@@ -191,7 +191,7 @@ extension SearchController {
     }
 
     /// Recursively builds one folder-tree node, filtering sub-values (`groupId != nil`).
-    private func buildCharacterFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, includeTags: Bool = true) async -> SearchResult? {
+    @MainActor private func buildCharacterFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, includeTags: Bool = true) async -> SearchResult? {
         guard !Task.isCancelled,
               let item = await itemController.item(for: itemId),
               item.groupId == nil,
@@ -461,7 +461,7 @@ extension SearchController {
     /// If searchText is set, only entries that match (name, content, or sub-value name) are children.
     /// For each included entry whose valueId points to a sub-value, the sub-value's own entries
     /// are added as children of that entry result.
-    private func focusedCharacterInspector(characterId: UUID, searchText: String) async -> [SearchResult] {
+    @MainActor private func focusedCharacterInspector(characterId: UUID, searchText: String) async -> [SearchResult] {
         guard let character = await itemController.item(for: characterId) else { return [] }
 
         var entryChildren: [SearchResult] = []
@@ -518,7 +518,7 @@ extension SearchController {
         return [result]
     }
 
-    private func makeEntryResult(for entry: ValueEntryModel, characterId: UUID, characterName: String) -> SearchResult {
+    @MainActor private func makeEntryResult(for entry: ValueEntryModel, characterId: UUID, characterName: String) -> SearchResult {
         var result = SearchResult(
             itemId: characterId,
             itemName: characterName,
@@ -586,7 +586,7 @@ extension SearchController {
     /// which caused the inspector to show nothing on first appear):
     /// - `parentId != nil`, empty → delegates to `focusedCharacterInspector` (all entries shown)
     /// - `parentId == nil`, empty → all root characters, A→Z, `canOpen = !entries.isEmpty`
-    func inspectorSearchResults(searchText: String, parentId: UUID?, displayMode: ListDisplayModel.DisplayMode = .medium) async -> [SearchResult] {
+    @MainActor func inspectorSearchResults(searchText: String, parentId: UUID?, displayMode: ListDisplayModel.DisplayMode = .medium) async -> [SearchResult] {
         var foundResults: [SearchResult] = []
         if let parentId {
             if searchText.isEmpty {
@@ -622,7 +622,7 @@ extension SearchController {
     }
 
     /// Inspector search scoped to a single character (legacy helper).
-    func inspectorSearchResults(searchText: String, characterId: UUID) async -> [SearchResult] {
+    @MainActor func inspectorSearchResults(searchText: String, characterId: UUID) async -> [SearchResult] {
         await inspectorSearchResults(searchText: searchText, parentId: characterId)
     }
 
@@ -674,7 +674,7 @@ extension SearchController {
 
     /// Searches `character` at item-level (displayMode-aware) and all entries (always name+content).
     /// Matching entries become children of the character result, not flat siblings.
-    private func characterInspectorResult(character: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
+    @MainActor private func characterInspectorResult(character: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
         let characterMatches = itemMatchesFilter(character, searchText: searchText, displayMode: displayMode, includeTags: false)
         var entryChildren: [SearchResult] = []
         await collectValueEntries(of: character, characterId: character.id, characterName: character.name, searchText: searchText, into: &entryChildren)
@@ -687,7 +687,7 @@ extension SearchController {
     /// Collects matching entries from `item` into `entryChildren`.
     /// Inspector always searches entry name + content, regardless of displayMode.
     /// Recurses into sub-value groups via `entry.valueId`.
-    private func collectValueEntries(of item: ValueModel, characterId: UUID, characterName: String, searchText: String, into entryChildren: inout [SearchResult]) async {
+    @MainActor private func collectValueEntries(of item: ValueModel, characterId: UUID, characterName: String, searchText: String, into entryChildren: inout [SearchResult]) async {
         for entry in item.entries {
             guard !Task.isCancelled else { break }
 

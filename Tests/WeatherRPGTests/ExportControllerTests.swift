@@ -9,6 +9,7 @@ import Testing
 
 @testable import WeatherRPG
 
+@MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
         let root = await WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())

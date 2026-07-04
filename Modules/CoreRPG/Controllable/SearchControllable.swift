@@ -6,7 +6,7 @@ import Observation
 public protocol SearchControllable: Sendable  {
     var itemControllable: any ItemControllable { get }
 
-    func globalSearchResults(searchText: String) async -> [SearchResult]
+    @MainActor func globalSearchResults(searchText: String) async -> [SearchResult]
     func listSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult]
     func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult]
     
@@ -18,7 +18,7 @@ public protocol SearchControllable: Sendable  {
 // MARK: - Global Search from Game View
 
 public extension SearchControllable {
-    func globalSearchResults(searchText: String) async -> [SearchResult] {
+    @MainActor func globalSearchResults(searchText: String) async -> [SearchResult] {
         guard searchText.isEmpty == false else { return [] }
         
         let itemIds = await itemControllable.itemDataModel.items
@@ -95,7 +95,7 @@ public extension SearchControllable {
     // searchEntries: when true (inspector), non-special items also search entry name+content
     //   and return matching entries as result.children (same as inspectorBatchListResults).
     // includeTags: when false (inspector), tag matching is skipped even in regular display mode.
-    private func folderModeResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, searchEntries: Bool = false, includeTags: Bool = true) async -> [SearchResult] {
+    @MainActor private func folderModeResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, searchEntries: Bool = false, includeTags: Bool = true) async -> [SearchResult] {
         if let focusId {
             guard let folder = await itemControllable.item(for: focusId) else { return [] }
             var results: [SearchResult] = []
@@ -142,7 +142,7 @@ public extension SearchControllable {
     //   returns entry children — canOpen is set so the user can expand on demand.
     // includeTags: forwarded to itemMatchesFilter; false for inspector (no tag matching).
     // Returns nil when neither this item nor any descendant matches the search.
-    private func buildFolderTreeNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, searchEntries: Bool = false, includeTags: Bool = true) async -> SearchResult? {
+    @MainActor private func buildFolderTreeNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, searchEntries: Bool = false, includeTags: Bool = true) async -> SearchResult? {
         guard !Task.isCancelled,
               let item = await itemControllable.item(for: itemId),
               item.displayState == 0 else { return nil }
@@ -216,7 +216,7 @@ public extension SearchControllable {
     // compact  → name only
     // medium   → name + description
     // regular  → name + description + tags (tags excluded for inspector via includeTags: false)
-    func itemMatchesFilter(_ item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) -> Bool {
+    @MainActor func itemMatchesFilter(_ item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) -> Bool {
         guard !searchText.isEmpty else { return true }
         if item.name.localizedStandardContains(searchText) { return true }
         if displayMode != .compact {
@@ -228,7 +228,7 @@ public extension SearchControllable {
         return false
     }
 
-    func makeResult(item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil) -> SearchResult {
+    @MainActor func makeResult(item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil) -> SearchResult {
         let description: String? = displayMode != .compact ? (item.description.isEmpty ? nil : item.description) : nil
         var score = searchText.isEmpty ? 100 : calculateRelevance(
             searchText: searchText,
@@ -457,7 +457,7 @@ public extension SearchControllable {
     /// Matching entries become `result.children`; `specialCategory` items recurse into
     /// child items (needed when a collection is the focus). Folders are never added to
     /// `foundResults` — only their leaf descendants are.
-    private func inspectorResult(item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
+    @MainActor private func inspectorResult(item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
         guard !Task.isCancelled else { return }
 
         let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode, includeTags: false)

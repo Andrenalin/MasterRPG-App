@@ -7,6 +7,7 @@ import Testing
 
 @testable import PdfRPG
 
+@MainActor
 struct PdfModelTests {
     func setUp() async throws -> PdfModel {
         PdfModel(id: UUID(), name: "Hello")

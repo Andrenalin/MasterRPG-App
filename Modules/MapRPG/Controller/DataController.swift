@@ -29,11 +29,12 @@ struct DataController: DataPersistenceControllable {
     let token: String
 }
 
-extension DataController: CoreDataPersistable {
-    // MARK: model -> viewlmodel
+extension DataController: CoreDataSnapshotPersistable {
+    // MARK: managed object -> snapshot (context queue)
 
-    func mapViewModel(_ model: RPGMap, token: String) -> MapModel {
-        MapModel(
+    @Sendable
+    func mapSnapshot(_ model: RPGMap, token: String) -> MapSnapshot {
+        MapSnapshot(
             id: model.uuid ?? UUID(),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
@@ -54,18 +55,19 @@ extension DataController: CoreDataPersistable {
         )
     }
 
-    // MARK: viewmodel -> model
+    // MARK: snapshot -> managed object (context queue)
 
-    func mapModel(_ viewModel: MapModel, into model: RPGMap) {
-        model.uuid <=> viewModel.id
-        model.name <=> viewModel.name_.rawValue
-        model.information <=> viewModel.description_.rawValue
-        model.tags <=> viewModel.tags_.rawValue
-        model.mapCategory <=> viewModel.category_.rawValue
-        model.displayState <=> Int32(viewModel.displayState)
-        unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
+    @Sendable
+    func applySnapshot(_ snapshot: MapSnapshot, into model: RPGMap) {
+        model.uuid <=> snapshot.id
+        model.name <=> snapshot.name.rawValue
+        model.information <=> snapshot.description.rawValue
+        model.tags <=> snapshot.tags.rawValue
+        model.mapCategory <=> snapshot.category.rawValue
+        model.displayState <=> Int32(snapshot.displayState)
+        unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
             let oldEntries = model.entryModels
-            let newEntries = viewModel.entries.enumerated().map {
+            let newEntries = snapshot.entries.wrappedValue.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
@@ -79,19 +81,19 @@ extension DataController: CoreDataPersistable {
                 model.managedObjectContext?.delete(entry)
             }
         }
-        unequalSet(lhs: &model.displayConfigUpdate, rhs: viewModel.displayConfig_.$update.rawValue) {
-            let displayConfig = model.displyConfigOrNew(for: viewModel.id)
-            self.map(viewModel.displayConfig, into: displayConfig)
+        unequalSet(lhs: &model.displayConfigUpdate, rhs: snapshot.displayConfig.$update.rawValue) {
+            let displayConfig = model.displyConfigOrNew(for: snapshot.id)
+            self.map(snapshot.displayConfig.wrappedValue, into: displayConfig)
             model.displayConfig = displayConfig
         }
-        unequalSet(lhs: &model.mapUpdate, rhs: viewModel.photoId_.$update.rawValue) {
-            model.photoUUID = viewModel.photoId
-            model.width = viewModel.width
-            model.height = viewModel.height
+        unequalSet(lhs: &model.mapUpdate, rhs: snapshot.photoId.$update.rawValue) {
+            model.photoUUID = snapshot.photoId.wrappedValue
+            model.width = snapshot.width
+            model.height = snapshot.height
         }
-        unequalSet(lhs: &model.mapPinsUpdate, rhs: viewModel.mapPins_.$update.rawValue) {
+        unequalSet(lhs: &model.mapPinsUpdate, rhs: snapshot.mapPins.$update.rawValue) {
             let oldPins = model.mapPinModels
-            let newPins = viewModel.mapPins.enumerated().map {
+            let newPins = snapshot.mapPins.wrappedValue.enumerated().map {
                 let entry = model.mapPinOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
@@ -105,9 +107,22 @@ extension DataController: CoreDataPersistable {
                 model.managedObjectContext?.delete(pin)
             }
         }
-        model.pinScale <=> viewModel.pinScale
-        model.hexMapScale <=> viewModel.hexMapScale_.rawValue
-        model.parentId <=> viewModel.parentId
+        model.pinScale <=> snapshot.pinScale
+        model.hexMapScale <=> snapshot.hexMapScale.rawValue
+        model.parentId <=> snapshot.parentId
+    }
+
+
+    // MARK: model <-> snapshot (MainActor)
+
+    @MainActor
+    func makeModel(from snapshot: MapSnapshot) -> MapModel {
+        snapshot.makeModel()
+    }
+
+    @MainActor
+    func makeSnapshot(from model: MapModel) -> MapSnapshot {
+        MapSnapshot(model)
     }
 
     // MARK: - MapEntryModel

@@ -7,6 +7,7 @@ import Testing
 
 @testable import SpaceRPG
 
+@MainActor
 struct SpaceModelTests {
     func setUp() async throws -> SpaceModel {
         SpaceModel(id: UUID(), name: "Hello", displayState: 0, degrees: 90.0)

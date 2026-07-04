@@ -27,24 +27,36 @@ struct DiceEntity: IndexedEntity {
 
     static let defaultQuery = DiceEntityQuery()
 
-    var id: UUID { model.id }
+    let id: UUID
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name }
+    var name: String { storedName }
 
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.description }
+    var description: String { storedDescription }
 
-    var icon: String {
-        model.specialCategory ? model.category.icon : root.config.module.icon
-    }
-    
+    let icon: String
+    private let storedName: String
+    private let storedDescription: String
+    private let storedTags: [String]
+    private let storedFirstDieMax: Int?
+
     var root: DiceRootModel
     var model: DiceModel
-    
+
+    // Display fields are captured eagerly: entity properties are nonisolated, the
+    // @MainActor model must not be read from them. All queries are @MainActor.
+    @MainActor
     init(root: DiceRootModel, model: DiceModel) {
         self.root = root
         self.model = model
+        self.id = model.id
+        self.storedName = model.name
+        self.storedDescription = model.description
+        self.storedTags = model.tags
+        self.storedFirstDieMax = model.dice.first.map { Int($0.die.max) }
+        let isSpecial = model.category == .folder || model.category.isCollection
+        self.icon = isSpecial ? model.category.icon : root.config.module.icon
     }
     
     // MARK: - Spotlight Integration (iOS 18+)
@@ -53,13 +65,13 @@ struct DiceEntity: IndexedEntity {
         let attributes = CSSearchableItemAttributeSet(contentType: .item)
         attributes.title = name
         attributes.contentDescription = description
-        attributes.keywords = ["dice", "roll", name] + model.tags
+        attributes.keywords = ["dice", "roll", name] + storedTags
         attributes.contentType = "Dice"
         attributes.contentTypeTree = ["Dice", "Game", "RPG"]
         
         // Add dice-specific metadata
-        if let firstDie = model.dice.first {
-            attributes.comment = "D\(firstDie.die.max)"
+        if let firstDieMax = storedFirstDieMax {
+            attributes.comment = "D\(firstDieMax)"
         }
 
 #if compiler(>=6.4)

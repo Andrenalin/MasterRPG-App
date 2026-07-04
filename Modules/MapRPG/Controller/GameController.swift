@@ -150,7 +150,7 @@ extension GameController: MapGameStorable {
         }
     }
 
-    func missingPlayerImages(itemId: UUID) async -> [NetworkCodableDataType] {
+    @MainActor func missingPlayerImages(itemId: UUID) async -> [NetworkCodableDataType] {
         let model = await gameItem(for: itemId)
         var result: [NetworkCodableDataType] = []
         for pin in model.mapPins.filter({ $0.isPlayer }) {

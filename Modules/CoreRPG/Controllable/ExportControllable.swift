@@ -175,7 +175,10 @@ public extension ExportControllable {
             guard let item = await self.itemControllable.item(for: itemId, fullIds: fullIds, partialIds: partialIds) else {
                 throw ItemDataExportableError.writeError
             }
-            return ExportStream(id: itemId, data: try encoder.encode(item))
+            // Models may be @MainActor-isolated; encode on the main actor so the
+            // Codable implementation (wire format) stays untouched.
+            let data = try await MainActor.run { try JSONEncoder().encode(item) }
+            return ExportStream(id: itemId, data: data)
         }
 
         let version = itemControllable.itemDataModel.version
@@ -193,7 +196,7 @@ public extension ExportControllable {
         }
     }
 
-    private func inlineFiles(for itemId: UUID) async -> Data? {
+    @MainActor private func inlineFiles(for itemId: UUID) async -> Data? {
         guard let fileUrlDataController, let item = await itemControllable.item(for: itemId), let fileUrl = item.fileUrl else { return nil }
         return try? await fileUrlDataController.loadData(for: fileUrl)
     }

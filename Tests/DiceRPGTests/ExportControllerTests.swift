@@ -6,6 +6,7 @@ import Testing
 
 @testable import DiceRPG
 
+@MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
         let root = await DiceRootModel.testRoot()

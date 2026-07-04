@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-public struct MapPinModel: Identifiable, Equatable, Hashable {
+public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
     public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0) {
         self.id = id
         self.name = name
@@ -17,7 +17,7 @@ public struct MapPinModel: Identifiable, Equatable, Hashable {
         self.timeInterval = timeInterval
     }
     
-    public enum MapPinSize: Int, Identifiable, Hashable, Equatable, Codable, CaseIterable {
+    public enum MapPinSize: Int, Identifiable, Hashable, Equatable, Codable, CaseIterable, Sendable {
         case tiny = 0
         case small = 1
         case normal = 2

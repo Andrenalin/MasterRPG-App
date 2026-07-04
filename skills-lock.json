@@ -96,6 +96,12 @@
       "skillPath": "skills/widgetkit/SKILL.md",
       "computedHash": "e7d728d6ff968624243ae0cc805d69ddda184ff4e323911ac47167852e1235bf"
     },
+    "widgets": {
+      "source": "n0an/Widgets-Agent-Skill",
+      "sourceType": "github",
+      "skillPath": "widgets/SKILL.md",
+      "computedHash": "161cec00ded4f2aff93eef3ae68270cfb359b969ef6727197d14e4ee06c38e04"
+    },
     "xcode-build-benchmark": {
       "source": "avdlee/xcode-build-optimization-agent-skill",
       "sourceType": "github",

@@ -7,6 +7,7 @@ import Testing
 
 @testable import SpaceRPG
 
+@MainActor
 struct ImportControllerTests {
 
     @Test func importing() async throws {

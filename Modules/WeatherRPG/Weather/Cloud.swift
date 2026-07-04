@@ -8,7 +8,7 @@
 import SwiftUI
 
 public class Cloud {
-    public enum Thickness: Int, Identifiable, CaseIterable, Hashable, Codable {
+    public enum Thickness: Int, Identifiable, CaseIterable, Hashable, Codable, Sendable {
         case none, thin, light, regular, thick, ultra
         
         public var id: Int {

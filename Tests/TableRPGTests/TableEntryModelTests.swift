@@ -7,6 +7,7 @@ import Testing
 
 @testable import TableRPG
 
+@MainActor
 struct TableEntryModelTests {
     func setUp() async throws -> TableEntryModel {
         TableEntryModel(

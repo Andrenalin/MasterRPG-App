@@ -4,7 +4,7 @@ import Foundation
 import Observation
 
 public protocol ItemGameReportable {
-    var players: [UUID] { get set }
+    @MainActor var players: [UUID] { get set }
 }
 
 @MainActor @Observable
@@ -140,7 +140,7 @@ public extension GameControllable {
         }
     }
 
-    func hasItem(id: UUID, version: Int) async -> Bool {
+    @MainActor func hasItem(id: UUID, version: Int) async -> Bool {
         guard await gameModel.itemData[id] != nil, let localItem = await itemControllable.item(for: id) else {
             guard let item = await itemControllable.item(for: id, version: version) else { return false }
             let gameItem = item.copy()

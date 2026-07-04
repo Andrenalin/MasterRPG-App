@@ -15,6 +15,7 @@ import Testing
 @testable import CharacterRPG
 
 @Suite("Repair Cleanup CharacterRPG")
+@MainActor
 struct CharacterRepairTests {
 
 }

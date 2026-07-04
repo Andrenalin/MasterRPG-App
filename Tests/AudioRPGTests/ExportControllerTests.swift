@@ -7,6 +7,7 @@ import Testing
 
 @testable import AudioRPG
 
+@MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
         let root = await AudioRootModel.testRoot()

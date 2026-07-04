@@ -4,47 +4,51 @@ import CoreRPG
 import Foundation
 import Observation
 
-@Observable
-public final class ValueModel: Identifiable, @unchecked Sendable {
-    public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .character, displayState: Int = 0, photoId: UUID? = nil, photos: [UUID] = [], entries: [ValueEntryModel] = [], parentId: UUID? = nil, diceId: UUID? = nil, groupId: UUID? = nil) {
+// MainActor-owned model. Sendable via global-actor isolation (no @unchecked):
+// persistence crosses the Core Data boundary as ValueSnapshot,
+// the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
+@MainActor @Observable
+public final class ValueModel: nonisolated Identifiable {
+    nonisolated public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .character, displayState: Int = 0, photoId: UUID? = nil, photos: [UUID] = [], entries: [ValueEntryModel] = [], parentId: UUID? = nil, diceId: UUID? = nil, groupId: UUID? = nil) {
         self.id = id
-        name_ = CRDT(wrappedValue: name)
-        description_ = CRDT(wrappedValue: description)
-        tags_ = CRDT(wrappedValue: tags)
-        category_ = CRDT(wrappedValue: category)
-        self.displayState = displayState
-        photoId_ = CRDT(wrappedValue: photoId)
-        photos_ = CRDTDataUpdate(wrappedValue: photos)
-        entries_ = CRDTDataUpdate(wrappedValue: entries)
-        self.parentId = parentId
-        self.diceId = diceId
-        self.groupId = groupId
+        _name_ = CRDT(wrappedValue: name)
+        _description_ = CRDT(wrappedValue: description)
+        _tags_ = CRDT(wrappedValue: tags)
+        _category_ = CRDT(wrappedValue: category)
+        self._displayState = displayState
+        _photoId_ = CRDT(wrappedValue: photoId)
+        _photos_ = CRDTDataUpdate(wrappedValue: photos)
+        _entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self._parentId = parentId
+        self._diceId = diceId
+        self._groupId = groupId
     }
 
-    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, photos: CRDTDataUpdate<[UUID]>, entries: CRDTDataUpdate<[ValueEntryModel]>, parentId: UUID?, diceId: UUID?, groupId: UUID? = nil) {
+    nonisolated public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, photos: CRDTDataUpdate<[UUID]>, entries: CRDTDataUpdate<[ValueEntryModel]>, parentId: UUID?, diceId: UUID?, groupId: UUID? = nil) {
         self.id = id
-        name_ = name
-        description_ = description
-        tags_ = tags
-        category_ = category
-        self.displayState = displayState
-        photoId_ = photoId
-        photos_ = photos
-        entries_ = entries
-        self.parentId = parentId
-        self.diceId = diceId
-        self.groupId = groupId
+        _name_ = name
+        _description_ = description
+        _tags_ = tags
+        _category_ = category
+        self._displayState = displayState
+        _photoId_ = photoId
+        _photos_ = photos
+        _entries_ = entries
+        self._parentId = parentId
+        self._diceId = diceId
+        self._groupId = groupId
     }
 
-    public init(from decoder: Decoder) throws {
+    nonisolated public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<ValueModel.CodingKeys> = try decoder.container(keyedBy: ValueModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: ValueModel.CodingKeys._id)
+        self.id = try container.decode(UUID.self, forKey: ValueModel.CodingKeys._id)
         self._name_ = try container.decode(CRDT<String>.self, forKey: ValueModel.CodingKeys._name_)
         self._description_ = try container.decode(CRDT<String>.self, forKey: ValueModel.CodingKeys._description_)
         self._tags_ = try container.decode(CRDT<[String]>.self, forKey: ValueModel.CodingKeys._tags_)
         self._category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: ValueModel.CodingKeys._category_)
-        self._displayState = try container.decode(Int.self, forKey: ValueModel.CodingKeys._displayState)
+        let decodedDisplayState = try container.decode(Int.self, forKey: ValueModel.CodingKeys._displayState)
+        self._displayState = decodedDisplayState
         self._photoId_ = try container.decode(CRDT<UUID?>.self, forKey: ValueModel.CodingKeys._photoId_)
         self._photos_ = try container.decode(CRDTDataUpdate<[UUID]>.self, forKey: ValueModel.CodingKeys._photos_)
         self._entries_ = try container.decode(CRDTDataUpdate<[ValueEntryModel]>.self, forKey: ValueModel.CodingKeys._entries_)
@@ -52,7 +56,7 @@ public final class ValueModel: Identifiable, @unchecked Sendable {
         self._diceId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._diceId)
         let decodedGroupId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._groupId)
         // Migrate pre-groupId data: items with displayState==1 used parentId for group membership
-        if decodedGroupId == nil && self._displayState == 1, let parentId = decodedParentId {
+        if decodedGroupId == nil && decodedDisplayState == 1, let parentId = decodedParentId {
             self._parentId = nil
             self._groupId = parentId
         } else {
@@ -61,7 +65,8 @@ public final class ValueModel: Identifiable, @unchecked Sendable {
         }
     }
 
-    public var id: UUID
+    // `let`: nonisolated access (Identifiable, hashing) per SE-0434.
+    public let id: UUID
 
     public var name: String {
         get { name_.wrappedValue }
@@ -114,13 +119,16 @@ public final class ValueModel: Identifiable, @unchecked Sendable {
     public var quickEditEntries: Set<UUID> = []
 }
 
-extension ValueModel: Comparable {
-    public static func < (lhs: ValueModel, rhs: ValueModel) -> Bool {
-        lhs.name < rhs.name
+extension ValueModel: nonisolated Comparable {
+    nonisolated public static func < (lhs: ValueModel, rhs: ValueModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.name < rhs.name
+    
+        }
     }
 }
 
-extension ValueModel: ItemLinkRegistable {
+extension ValueModel: nonisolated ItemLinkRegistable {
     @MainActor public var linkRegisterModels: [LinkRegisterModel] {
         changedLinkRegisterModels(oldValue: .empty).0
     }
@@ -191,50 +199,56 @@ extension ValueModel: ItemLinkRegistable {
     }
 }
 
-extension ValueModel: ItemDiffComparable {
-    public func merge(_ other: ValueModel) -> ValueModel {
-        let mergedCategory = category_.merged(other: other.category_)
-        let mergedEntries: CRDTDataUpdate<[ValueEntryModel]>
-        if mergedCategory.wrappedValue == .folder {
-            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-            let combined = allIds
-                .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-            mergedEntries = CRDTDataUpdate(wrappedValue: combined)
-        } else {
-            mergedEntries = entries_.merged(other: other.entries_)
+extension ValueModel: nonisolated ItemDiffComparable {
+    nonisolated public func merge(_ other: ValueModel) -> ValueModel {
+        return MainActor.assumeIsolated {
+            let mergedCategory = category_.merged(other: other.category_)
+            let mergedEntries: CRDTDataUpdate<[ValueEntryModel]>
+            if mergedCategory.wrappedValue == .folder {
+                let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
+                let combined = allIds
+                    .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
+                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+                mergedEntries = CRDTDataUpdate(wrappedValue: combined)
+            } else {
+                mergedEntries = entries_.merged(other: other.entries_)
+            }
+            return ValueModel(
+                id: id,
+                name: name_.merged(other: other.name_),
+                description: description_.merged(other: other.description_),
+                tags: tags_.merged(other: other.tags_),
+                category: mergedCategory,
+                displayState: other.displayState,
+                photoId: photoId_.merged(other: other.photoId_),
+                photos: photos_.merged(other: other.photos_),
+                entries: mergedEntries,
+                parentId: other.parentId,
+                diceId: other.diceId,
+                groupId: other.groupId
+            )
+    
         }
-        return ValueModel(
-            id: id,
-            name: name_.merged(other: other.name_),
-            description: description_.merged(other: other.description_),
-            tags: tags_.merged(other: other.tags_),
-            category: mergedCategory,
-            displayState: other.displayState,
-            photoId: photoId_.merged(other: other.photoId_),
-            photos: photos_.merged(other: other.photos_),
-            entries: mergedEntries,
-            parentId: other.parentId,
-            diceId: other.diceId,
-            groupId: other.groupId
-        )
     }
 
-    public func isSame(_ other: ValueModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        photoId == other.photoId &&
-        photos_.update == other.photos_.update &&
-        entries_.update == other.entries_.update &&
-        parentId == other.parentId &&
-        diceId == other.diceId &&
-        groupId == other.groupId &&
-        // santity checks
-        entries.count == other.entries.count &&
-        entries.enumerated().allSatisfy { index, entry in
-            entry == other.entries[index]
+    nonisolated public func isSame(_ other: ValueModel) -> Bool {
+        return MainActor.assumeIsolated {
+            name == other.name &&
+            description == other.description &&
+            tags == other.tags &&
+            category == other.category &&
+            photoId == other.photoId &&
+            photos_.update == other.photos_.update &&
+            entries_.update == other.entries_.update &&
+            parentId == other.parentId &&
+            diceId == other.diceId &&
+            groupId == other.groupId &&
+            // santity checks
+            entries.count == other.entries.count &&
+            entries.enumerated().allSatisfy { index, entry in
+                entry == other.entries[index]
+            }
+    
         }
     }
 }
@@ -254,10 +268,13 @@ extension ValueModel {
     }
 }
 
-extension ValueModel: ItemDuplicatable {
-    public func duplicate() -> ValueModel {
-        let copyName = duplicateName(from: name)
-        return ValueModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, photos: photos, entries: entries.map { $0.duplicate() }, parentId: nil, diceId: diceId, groupId: nil)
+extension ValueModel: nonisolated ItemDuplicatable {
+    nonisolated public func duplicate() -> ValueModel {
+        return MainActor.assumeIsolated {
+            let copyName = duplicateName(from: name)
+            return ValueModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, photos: photos, entries: entries.map { $0.duplicate() }, parentId: nil, diceId: diceId, groupId: nil)
+    
+        }
     }
 
     public func duplicateWithoutCopy() -> ValueModel {
@@ -269,19 +286,19 @@ extension ValueModel: ItemDuplicatable {
     }
 }
 
-extension ValueModel: ItemReferencable {}
+extension ValueModel: nonisolated ItemReferencable {}
 
-extension ValueModel: ItemDataAccessable {
+extension ValueModel: nonisolated ItemDataAccessable {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}
     }
 
-    public static var empty: ValueModel { empty(UUID()) }
-    public static func empty(_ id: UUID) -> ValueModel {
+    nonisolated public static var empty: ValueModel { empty(UUID()) }
+    nonisolated public static func empty(_ id: UUID) -> ValueModel {
         ValueModel(id: id, name: "", description: "", tags: [], category: .item, displayState: 0, entries: [])
     }
-    public static let typeId: NetworkModules = .value
+    nonisolated public static let typeId: NetworkModules = .value
 
     public func copy() -> ValueModel {
         ValueModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, photos: photos_, entries: entries_, parentId: parentId, diceId: diceId, groupId: groupId)
@@ -339,7 +356,7 @@ extension ValueModel: ItemDataAccessable {
     }
 }
 
-extension ValueModel: Codable {
+extension ValueModel: nonisolated Codable {
     enum CodingKeys: CodingKey {
         case _id
         case _name_
@@ -355,30 +372,37 @@ extension ValueModel: Codable {
         case _groupId
     }
 
-    public final func encode(to encoder: Encoder) throws {
-        var container: KeyedEncodingContainer<ValueModel.CodingKeys> = encoder.container(keyedBy: ValueModel.CodingKeys.self)
+    nonisolated public final func encode(to encoder: Encoder) throws {
+        nonisolated(unsafe) let encoder = encoder
+        try MainActor.assumeIsolated {
+            var container: KeyedEncodingContainer<ValueModel.CodingKeys> = encoder.container(keyedBy: ValueModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: ValueModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: ValueModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: ValueModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: ValueModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: ValueModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: ValueModel.CodingKeys._displayState)
-        try container.encode(self._photoId_, forKey: ValueModel.CodingKeys._photoId_)
-        try container.encode(self._photos_, forKey: ValueModel.CodingKeys._photos_)
-        try container.encode(self._entries_, forKey: ValueModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self._parentId, forKey: ValueModel.CodingKeys._parentId)
-        try container.encodeIfPresent(self._diceId, forKey: ValueModel.CodingKeys._diceId)
-        try container.encodeIfPresent(self._groupId, forKey: ValueModel.CodingKeys._groupId)
+            try container.encode(self.id, forKey: ValueModel.CodingKeys._id)
+            try container.encode(self._name_, forKey: ValueModel.CodingKeys._name_)
+            try container.encode(self._description_, forKey: ValueModel.CodingKeys._description_)
+            try container.encode(self._tags_, forKey: ValueModel.CodingKeys._tags_)
+            try container.encode(self._category_, forKey: ValueModel.CodingKeys._category_)
+            try container.encode(self._displayState, forKey: ValueModel.CodingKeys._displayState)
+            try container.encode(self._photoId_, forKey: ValueModel.CodingKeys._photoId_)
+            try container.encode(self._photos_, forKey: ValueModel.CodingKeys._photos_)
+            try container.encode(self._entries_, forKey: ValueModel.CodingKeys._entries_)
+            try container.encodeIfPresent(self._parentId, forKey: ValueModel.CodingKeys._parentId)
+            try container.encodeIfPresent(self._diceId, forKey: ValueModel.CodingKeys._diceId)
+            try container.encodeIfPresent(self._groupId, forKey: ValueModel.CodingKeys._groupId)
+    
+        }
     }
 }
 
-extension ValueModel: Equatable, Hashable {
-    public static func == (lhs: ValueModel, rhs: ValueModel) -> Bool {
-        lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+extension ValueModel: nonisolated Equatable, nonisolated Hashable {
+    nonisolated public static func == (lhs: ValueModel, rhs: ValueModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+    
+        }
     }
 
-    public func hash(into hasher: inout Hasher) {
+    nonisolated public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

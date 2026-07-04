@@ -14,11 +14,12 @@ struct DataController: DataPersistenceControllable {
     let token: String
 }
 
-extension DataController: CoreDataPersistable {
-    // MARK: model -> viewlmodel
+extension DataController: CoreDataSnapshotPersistable {
+    // MARK: managed object -> snapshot (context queue)
     
-    func mapViewModel(_ model: RPGValue, token: String) -> ValueModel {
-        ValueModel(
+    @Sendable
+    func mapSnapshot(_ model: RPGValue, token: String) -> ValueSnapshot {
+        ValueSnapshot(
             id: model.uuid ?? UUID(),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
@@ -34,19 +35,20 @@ extension DataController: CoreDataPersistable {
         )
     }
     
-    // MARK: viewmodel -> model
+    // MARK: snapshot -> managed object (context queue)
     
-    func mapModel(_ viewModel: ValueModel, into model: RPGValue) {
-        model.uuid <=> viewModel.id
-        model.name <=> viewModel.name_.rawValue
-        model.information <=> viewModel.description_.rawValue
-        model.tags <=> viewModel.tags_.rawValue
-        model.valueCategory <=> viewModel.category_.rawValue
-        model.displayState <=> Int32(viewModel.displayState)
-        model.photoUUID <=> viewModel.photoId_.rawValue
-        unequalSet(lhs: &model.photosUpdate, rhs: viewModel.photos_.$update.rawValue) {
+    @Sendable
+    func applySnapshot(_ snapshot: ValueSnapshot, into model: RPGValue) {
+        model.uuid <=> snapshot.id
+        model.name <=> snapshot.name.rawValue
+        model.information <=> snapshot.description.rawValue
+        model.tags <=> snapshot.tags.rawValue
+        model.valueCategory <=> snapshot.category.rawValue
+        model.displayState <=> Int32(snapshot.displayState)
+        model.photoUUID <=> snapshot.photoId.rawValue
+        unequalSet(lhs: &model.photosUpdate, rhs: snapshot.photos.$update.rawValue) {
             let oldPhotos = model.photoIds
-            let newPhotos = viewModel.photos.enumerated().map {
+            let newPhotos = snapshot.photos.wrappedValue.enumerated().map {
                 let entry = model.photoOrNew(for: $1)
                 entry.uuid = $1
                 entry.index = Int16($0)
@@ -60,9 +62,9 @@ extension DataController: CoreDataPersistable {
                 model.managedObjectContext?.delete(photo)
             }
         }
-        unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
+        unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
             let oldEntries = model.entriesModel
-            let newEntries = viewModel.entries.enumerated().map {
+            let newEntries = snapshot.entries.wrappedValue.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
@@ -75,11 +77,24 @@ extension DataController: CoreDataPersistable {
                 model.managedObjectContext?.delete(entry)
             }
         }
-        model.parentUUID <=> viewModel.parentId
-        model.diceUUID <=> viewModel.diceId
-        model.groupUUID <=> viewModel.groupId
+        model.parentUUID <=> snapshot.parentId
+        model.diceUUID <=> snapshot.diceId
+        model.groupUUID <=> snapshot.groupId
     }
     
+
+    // MARK: model <-> snapshot (MainActor)
+
+    @MainActor
+    func makeModel(from snapshot: ValueSnapshot) -> ValueModel {
+        snapshot.makeModel()
+    }
+
+    @MainActor
+    func makeSnapshot(from model: ValueModel) -> ValueSnapshot {
+        ValueSnapshot(model)
+    }
+
     // MARK: - ValueEntryModel
     
     private func map(_ model: [RPGValueEntry]) -> [ValueEntryModel] {

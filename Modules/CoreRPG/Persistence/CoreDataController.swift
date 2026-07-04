@@ -32,8 +32,11 @@ final class CoreDataModel: Sendable {
 
 struct PendingOperation: Sendable {
     let id: UUID
-    let model: any ModelType
-    let updater: @Sendable (any ModelType, NSManagedObject) -> Void
+    // `any Sendable` (not `any ModelType`) so both live-model copies and the new
+    // snapshot structs can ride the same queue — ModelType is Sendable, so the
+    // legacy path is unaffected.
+    let model: any Sendable
+    let updater: @Sendable (any Sendable, NSManagedObject) -> Void
 }
 
 public struct CoreDataController<Model: ModelType, DataType: NSManagedObject & CoreDataId>: Sendable {
@@ -127,6 +130,21 @@ public extension CoreDataController {
         model.addPendingOperation(operation)
     }
 
+    /// Snapshot variant: queue a replace whose payload is a plain Sendable value,
+    /// applied on the context queue during the next flush/save.
+    func queueReplace<Snapshot: Sendable>(uuid: UUID, snapshot: Snapshot, updater: @escaping @Sendable (Snapshot, DataType) -> Void) {
+        let operation = PendingOperation(
+            id: uuid,
+            model: snapshot,
+            updater: { value, nsObject in
+                guard let typedSnapshot = value as? Snapshot,
+                      let typedObject = nsObject as? DataType else { return }
+                updater(typedSnapshot, typedObject)
+            }
+        )
+        model.addPendingOperation(operation)
+    }
+
     /// Drains the pending-operations queue into the context without calling `context.save()`.
     /// Use from `AdventureRootModel.save()` for all module roots so a single `context.save()`
     /// covers every module's changes. Direct callers (`addNew`, `delete`, `batchReplace`) use
@@ -161,6 +179,80 @@ public extension CoreDataController {
         await context.perform {
             saveCoreData()
         }
+    }
+}
+
+// MARK: - Snapshot Operations
+//
+// Sendable-snapshot variants of the fetch/replace paths. Mapping runs entirely on
+// the context queue and only value types cross out — used by modules whose domain
+// models are @MainActor and therefore must not be touched on the Core Data queue.
+
+public extension CoreDataController {
+    /// Mirrors fetch(mapper:) including relationship prefetching and duplicate repair.
+    func fetchSnapshots<Snapshot: Sendable>(mapper: @escaping @Sendable (DataType) -> Snapshot) async throws -> [Snapshot] {
+        await context.perform {
+            let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
+            // Prefetch relationships to avoid N+1 queries.
+            // No fetchBatchSize here — batched fetches disable relationship prefetching,
+            // and the result set is mapped in full right away anyway.
+            if !relationshipKeyPaths.isEmpty {
+                request.relationshipKeyPathsForPrefetching = relationshipKeyPaths
+            }
+            request.returnsObjectsAsFaults = false
+            return fetchAndDelete(request: request, mapper: mapper)
+        }
+    }
+
+    func fetchSnapshot<Snapshot: Sendable>(uuid: UUID, mapper: @escaping @Sendable (DataType) -> Snapshot) async throws -> Snapshot? {
+        await context.perform {
+            guard let data = fetchCoreData(uuid: uuid) else { return nil }
+            return mapper(data)
+        }
+    }
+
+    func replace<Snapshot: Sendable>(uuid: UUID, snapshot: Snapshot, updater: @escaping @Sendable (Snapshot, DataType) -> Void) async throws {
+        await context.perform {
+            if let current = fetchCoreData(uuid: uuid) {
+                updater(snapshot, current)
+            } else {
+                Logger.coreDataController.debug("add new \(uuid, privacy: .public)")
+                let new = DataType(context: context)
+                updater(snapshot, new)
+            }
+        }
+    }
+
+    /// Mirrors batchReplace(models:...) — single upfront existence check, chunked apply, one save.
+    func batchReplace<Snapshot: Sendable>(
+        snapshots: [Snapshot],
+        keyPath: KeyPath<Snapshot, UUID>,
+        updater: @escaping @Sendable (Snapshot, DataType) -> Void,
+        chunkSize: Int = 100
+    ) async throws {
+        guard !snapshots.isEmpty else { return }
+
+        let allUUIDs = snapshots.map { $0[keyPath: keyPath] }
+        let existingUUIDs = try await batchExists(uuids: allUUIDs)
+
+        for chunk in snapshots.chunked(into: chunkSize) {
+            await context.perform {
+                for snapshot in chunk {
+                    let uuid = snapshot[keyPath: keyPath]
+                    if existingUUIDs.contains(uuid) {
+                        if let existing = fetchCoreData(uuid: uuid) {
+                            updater(snapshot, existing)
+                        }
+                    } else {
+                        let new = DataType(context: context)
+                        updater(snapshot, new)
+                    }
+                }
+            }
+        }
+
+        try await save()
+        Logger.coreDataController.info("Batch replaced \(snapshots.count) snapshots")
     }
 }
 
@@ -268,12 +360,12 @@ private extension CoreDataController {
 // MARK: - Core Data Background Task (Existing)
 
 private extension CoreDataController {
-    func fetchAndDelete(request: NSFetchRequest<NSFetchRequestResult>, mapper: @escaping @Sendable (DataType) -> Model?) -> [Model] {
+    func fetchAndDelete<T>(request: NSFetchRequest<NSFetchRequestResult>, mapper: @escaping @Sendable (DataType) -> T?) -> [T] {
         do {
             let data = try self.context.fetch(request) as! [DataType]
             var seenId: Set<UUID> = []
             var foundDuplicates = false
-            let models = data.compactMap { item -> Model? in
+            let models = data.compactMap { item -> T? in
                 guard let id = item.uuid else { return nil }
                 guard !seenId.contains(id) else {
                     Logger.coreDataController.warning("duplicate uuid \(id, privacy: .public) - delete coredata object")

@@ -118,14 +118,14 @@ extension LinkController {
 }
 
 extension PdfModel {
-    static let previewId = UUID(uuidString: "F5AC90DF-36F2-3152-B283-F0CF9D0BAC35")!
+    nonisolated static let previewId = UUID(uuidString: "F5AC90DF-36F2-3152-B283-F0CF9D0BAC35")!
 
     @MainActor
     static let preview = PdfModel(id: PdfModel.previewId, name: "Rulebook", description: "Here is a rule book", tags: ["Fanatasy", "DS"], entries: [.preview])
 }
 
 extension PdfEntryModel {
-    static let previewId = UUID(uuidString: "A5AC90DF-36F2-3152-B283-F0CF9D0BAC35")!
+    nonisolated static let previewId = UUID(uuidString: "A5AC90DF-36F2-3152-B283-F0CF9D0BAC35")!
     
     @MainActor
     static let preview = PdfEntryModel(id: PdfModel.previewId, name: "First Bookmark", content: "Some Text from the pdf on a page", pageNumber: "3", bounds: .zero)

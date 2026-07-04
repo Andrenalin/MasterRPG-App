@@ -31,13 +31,9 @@ public struct DiceRollerActivityAttributes: ActivityAttributes {
 public final class DiceRollerLiveActivityManager {
     public static let shared = DiceRollerLiveActivityManager()
 
-    // ActivityKit's Activity<T> is not Sendable but manages its own thread-safety
-    // Using nonisolated(unsafe) because:
-    // 1. ActivityKit handles thread-safety internally
-    // 2. All access is serialized through @MainActor methods
-    // 3. Activity.update/end are inherently thread-safe
-    // TODO: Remove when ActivityKit adds proper Sendable conformance (FB tracked: rdar://problem/XXXXX)
-    nonisolated(unsafe) private var currentActivity: Activity<DiceRollerActivityAttributes>?
+    // Isolated stored property: the manager is @MainActor and every access is
+    // serialized through its methods — no unsafe opt-out needed.
+    private var currentActivity: Activity<DiceRollerActivityAttributes>?
 
     private init() {}
 

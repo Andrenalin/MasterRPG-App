@@ -52,38 +52,43 @@ public struct ReviewCustomProperty: Sendable {
     public let value: @MainActor (any ItemDataAccessable) -> ReviewPropertyValue
 }
 
+// Model state is MainActor-owned: all content requirements are @MainActor so that
+// @MainActor domain models can conform without escape hatches. Nonisolated models
+// (not yet migrated) satisfy isolated requirements trivially. Only `id` and the
+// static factories stay nonisolated — they must be callable from nonisolated
+// generic code (Identifiable, decode) and are backed by immutable/Sendable state.
 public protocol ItemDataAccessable: Sendable, Equatable {
     associatedtype Entry: EntryDataAccessable, Identifiable, Equatable
 
     static var empty: Self { get }
     static var typeId: NetworkModules { get }
     static func empty(_ id: UUID) -> Self
-    
+
     var id: UUID { get }
-    var name: String { get set }
-    var category: ItemListCategory { get set }
-    var description: String { get set }
-    var tags: [String] { get set }
-    var displayState: Int { get set }
-    var isGroupHidden: Bool { get }
-    var isGroupHiddenToggle: Bool { get set }
-    var entries: [Entry] { get nonmutating set }
-    var fileUrl: FileUrl? { get set }
-    var parentId: UUID? { get set }
+    @MainActor var name: String { get set }
+    @MainActor var category: ItemListCategory { get set }
+    @MainActor var description: String { get set }
+    @MainActor var tags: [String] { get set }
+    @MainActor var displayState: Int { get set }
+    @MainActor var isGroupHidden: Bool { get }
+    @MainActor var isGroupHiddenToggle: Bool { get set }
+    @MainActor var entries: [Entry] { get nonmutating set }
+    @MainActor var fileUrl: FileUrl? { get set }
+    @MainActor var parentId: UUID? { get set }
 
-    subscript(id: UUID) -> Entry { get set }
+    @MainActor subscript(id: UUID) -> Entry { get set }
 
-    func urlAdr(linkNumber: Int) -> String
-    func urlAdr(linkNumber: Int, entryId: UUID) -> String
-    func urlName() -> String
-    func urlName(entryId: UUID) -> String
-    func url(linkNumber: Int) -> String
-    func url(linkNumber: Int, entryId: UUID) -> String
+    @MainActor func urlAdr(linkNumber: Int) -> String
+    @MainActor func urlAdr(linkNumber: Int, entryId: UUID) -> String
+    @MainActor func urlName() -> String
+    @MainActor func urlName(entryId: UUID) -> String
+    @MainActor func url(linkNumber: Int) -> String
+    @MainActor func url(linkNumber: Int, entryId: UUID) -> String
 
-    func copy() -> Self
-    func duplicate() -> Self
-    func filter(filter: String, includeEntries: Bool) -> Bool
-    func isEqual(other: Self) -> Bool
+    @MainActor func copy() -> Self
+    @MainActor func duplicate() -> Self
+    @MainActor func filter(filter: String, includeEntries: Bool) -> Bool
+    @MainActor func isEqual(other: Self) -> Bool
     @MainActor func replace(with model: Self) -> Bool
 
     /// Custom model properties shown in the import review in addition to the standard ones.
@@ -92,47 +97,47 @@ public protocol ItemDataAccessable: Sendable, Equatable {
 
 public extension ItemDataAccessable {
     @MainActor var reviewProperties: [ReviewCustomProperty] { [] }
-    var url: URL? {
+    @MainActor var url: URL? {
         fileUrl?.rawUrl
     }
-    
-    var fileUrl: FileUrl? {
+
+    @MainActor var fileUrl: FileUrl? {
         nil
     }
-    
-    var isFolder: Bool {
+
+    @MainActor var isFolder: Bool {
         category == .folder
     }
 
-    var specialCategory: Bool {
+    @MainActor var specialCategory: Bool {
         category == .folder || category.isCollection
     }
-    
-    func hasEntry(entryId: UUID) -> Bool {
+
+    @MainActor func hasEntry(entryId: UUID) -> Bool {
         entries.contains(where: { $0.childId == entryId })
     }
-    
-    func urlAdr(linkNumber: Int) -> String {
+
+    @MainActor func urlAdr(linkNumber: Int) -> String {
         "\(URL.appScheme)://\(Self.typeId.token)/\(linkNumber)/\(id)"
     }
 
-    func urlAdr(linkNumber: Int, entryId: UUID) -> String {
+    @MainActor func urlAdr(linkNumber: Int, entryId: UUID) -> String {
         "\(urlAdr(linkNumber: linkNumber))/\(entryId)"
     }
 
-    func urlName() -> String {
+    @MainActor func urlName() -> String {
         name.withoutLink()
     }
 
-    func urlName(entryId: UUID) -> String {
+    @MainActor func urlName(entryId: UUID) -> String {
         self[entryId].name.withoutLink()
     }
 
-    func url(linkNumber: Int) -> String {
+    @MainActor func url(linkNumber: Int) -> String {
         "[\(urlName())](\(urlAdr(linkNumber: linkNumber)))"
     }
 
-    func url(linkNumber: Int, entryId: UUID) -> String {
+    @MainActor func url(linkNumber: Int, entryId: UUID) -> String {
         "[\(urlName(entryId: entryId))](\(urlAdr(linkNumber: linkNumber, entryId: entryId)))"
     }
 }

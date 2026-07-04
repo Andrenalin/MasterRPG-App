@@ -7,6 +7,7 @@ import Testing
 
 @testable import SpaceRPG
 
+@MainActor
 struct EditControllerTests {
     @Test func resetName() async throws {
         let root = try await MockRoot.importTestData()

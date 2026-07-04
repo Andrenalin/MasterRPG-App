@@ -129,7 +129,7 @@ extension LinkController {
 // Example Preview Data
 
 extension TableModel {
-    static let previewId = UUID(uuidString: "25321D0A-CBAC-4A6C-944C-C8916049FC45")!
+    nonisolated static let previewId = UUID(uuidString: "25321D0A-CBAC-4A6C-944C-C8916049FC45")!
     static let preview = TableModel(
         id: previewId,
         name: "Beutetabelle B",

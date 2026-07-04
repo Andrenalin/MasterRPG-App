@@ -3,7 +3,7 @@
 import SwiftUI
 
 @Observable
-final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistable & Identifiable & Equatable & Hashable & Codable, @unchecked Sendable {
+final class FakeItemModel: Identifiable, @unchecked Sendable {
     
     var entries: [FakeEntryModel]
     
@@ -49,7 +49,10 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
         .init(id: id, name: name, category: category, description: description, tags: tags, displayState: displayState, isGroupHiddenToggle: isGroupHiddenToggle)
     }
     
-    func duplicate() -> Self {
+    // Explicitly nonisolated: witnesses both the @MainActor ItemDataAccessable.duplicate
+    // requirement and the nonisolated ItemDuplicatable.duplicate — inference would
+    // otherwise pick @MainActor and break the latter.
+    nonisolated func duplicate() -> Self {
         .init(id: id, name: name, category: category, description: description, tags: tags, displayState: displayState, isGroupHiddenToggle: isGroupHiddenToggle)
     }
     
@@ -107,3 +110,7 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
         try container.encode(self._isGroupHiddenToggle, forKey: FakeItemModel.CodingKeys._isGroupHiddenToggle)
     }
 }
+
+// Conformances live in an extension (like the real models) so that witness
+// inference does not isolate the class members to the MainActor requirements.
+extension FakeItemModel: ItemDataAccessable, ItemDiffComparable, ItemDuplicatable, ItemLinkRegistable, Equatable, Hashable, Codable {}

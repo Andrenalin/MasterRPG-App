@@ -3,7 +3,7 @@
 import CoreRPG
 import Foundation
 
-public struct SpaceEntryModel: Identifiable, Equatable, Hashable, Codable {
+public struct SpaceEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     init(id: UUID, spaceId: UUID, displayState: Int = 0) {
         self.id = id
         self.spaceId = spaceId

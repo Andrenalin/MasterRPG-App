@@ -453,7 +453,7 @@ struct DiceRollerView: View {
                 let value = rolledDie.result.first ?? selectedDie.die.max
 
                 // Create dice model with the rolled die
-                let diceModel = DiceModel(id: UUID(), name: "D\(selectedDie.die.max)", dice: [rolledDie])
+                let diceModel = DiceSnapshot(id: UUID(), name: "D\(selectedDie.die.max)", dice: [rolledDie])
 
                 let result = DiceResultModel(
                     diceModel: diceModel,
@@ -525,15 +525,15 @@ struct FavoriteDiceManagementView: View {
     @Binding var configuration: DiceConfiguration
     @State private var showingAddFavorite = false
     @State private var newFavoriteName = ""
-    @State private var selectedDiceModel: DiceModel?
+    @State private var selectedDiceModel: DiceSnapshot?
     @Environment(\.dismiss) private var dismiss
     
     // Sample dice models for selection - in real app, get from character/game
-    private let availableDiceModels: [DiceModel] = [
-        DiceModel(id: UUID(), name: "Attack Roll", dice: [.die20(color: .G)]),
-        DiceModel(id: UUID(), name: "Damage", dice: [.die8(color: .G), .die6(color: .G)]),
-        DiceModel(id: UUID(), name: "Skill Check", dice: [.die20(color: .G)]),
-        DiceModel(id: UUID(), name: "Sneak Attack", dice: [.die6(color: .G), .die6(color: .G), .die6(color: .G)])
+    private let availableDiceModels: [DiceSnapshot] = [
+        DiceSnapshot(id: UUID(), name: "Attack Roll", dice: [.die20(color: .G)]),
+        DiceSnapshot(id: UUID(), name: "Damage", dice: [.die8(color: .G), .die6(color: .G)]),
+        DiceSnapshot(id: UUID(), name: "Skill Check", dice: [.die20(color: .G)]),
+        DiceSnapshot(id: UUID(), name: "Sneak Attack", dice: [.die6(color: .G), .die6(color: .G), .die6(color: .G)])
     ]
     
     var body: some View {
@@ -684,7 +684,7 @@ struct FavoriteDiceManagementView: View {
         }
     }
     
-    private func addFavorite(diceModel: DiceModel) {
+    private func addFavorite(diceModel: DiceSnapshot) {
         guard configuration.favoriteDice.count < 6 else { return }
         guard !configuration.favoriteDice.contains(where: { $0.diceModel.id == diceModel.id }) else { return }
         
@@ -712,7 +712,7 @@ struct FavoriteDiceManagementView: View {
         WidgetCenter.shared.reloadAllTimelines()
     }
     
-    private func diceDescription(_ diceModel: DiceModel) -> String {
+    private func diceDescription(_ diceModel: DiceSnapshot) -> String {
         let diceNames = diceModel.dice.map { "D\($0.die.max)" }.joined(separator: " + ")
         return diceNames
     }

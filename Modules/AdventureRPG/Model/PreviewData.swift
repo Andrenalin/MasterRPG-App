@@ -60,7 +60,7 @@ public extension AdventureRootModel {
 
 // MARK: Preview - Test
 extension AdventureModel {
-    static let previewId = UUID(uuidString: "5F6D6D52-3DDB-4B20-8D45-DFB543799417")!
+    nonisolated static let previewId = UUID(uuidString: "5F6D6D52-3DDB-4B20-8D45-DFB543799417")!
     static let preview = testViewModel
 }
 
@@ -113,7 +113,7 @@ extension LinkController {
 }
 
 extension UUID {
-    static let previewId = UUID(uuidString: "70E57E66-3FCE-4E8E-B032-5C79A2322EB8")!
+    nonisolated static let previewId = UUID(uuidString: "70E57E66-3FCE-4E8E-B032-5C79A2322EB8")!
     static let previewEntryId = UUID(uuidString: "70E57E66-3FCE-4E8E-B032-5C79A2322EB8")!
 }
 

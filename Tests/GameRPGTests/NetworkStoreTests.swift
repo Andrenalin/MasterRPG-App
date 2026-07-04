@@ -9,6 +9,7 @@ import Testing
 @testable import GameRPG
 
 /// Test environment for NetworkController tests.
+@MainActor
 struct NetworkStoreTestEnvironment {
     let masterDelegateSpy: MasterNetworkStoreDelegateMock
     let playerDelegateSpy: PlayerNetworkStoreDelegateMock
@@ -43,6 +44,7 @@ struct NetworkStoreTestEnvironment {
 }
 
 @Suite("Network controller tests")
+@MainActor
 struct NetworkStoreTests {
 
     // Test data

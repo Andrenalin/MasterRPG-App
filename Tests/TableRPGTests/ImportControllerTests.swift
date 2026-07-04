@@ -8,6 +8,7 @@ import Testing
 
 @testable import TableRPG
 
+@MainActor
 struct ImportControllerTests {
     @Test func importing() async throws {
         let root = try await MockRoot.importTestData()

@@ -15,9 +15,9 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
         DiceRollerEntry(
             date: Date(),
             configuration: DiceConfiguration(
-                selectedDice: DiceModel.preview,
+                selectedDice: DiceModel.previewSnapshot,
                 lastRoll: DiceResultModel(
-                    diceModel: DiceModel.preview,
+                    diceModel: DiceModel.previewSnapshot,
                     result: .rolled,
                     values: "18",
                     sum: 18,

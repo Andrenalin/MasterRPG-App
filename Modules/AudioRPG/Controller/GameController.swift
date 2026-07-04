@@ -88,7 +88,10 @@ extension GameController: GameControllable {
 extension GameController {
     func audioAsset(for itemId: UUID) async -> PlaylistItem? {
         let item = await gameItem(for: itemId)
-        guard let fileUrl = item.fileUrl, let fileUrlDataController = itemController.fileUrlDataController else { return nil }
+        // Extract the Sendable fields on the MainActor — the @MainActor model must
+        // not be read inside the file-loading closures below.
+        let (itemFileUrl, title) = await MainActor.run { (item.fileUrl, item.name) }
+        guard let fileUrl = itemFileUrl, let fileUrlDataController = itemController.fileUrlDataController else { return nil }
 
         var audioAsset: PlaylistItem? = nil
         do {
@@ -103,7 +106,7 @@ extension GameController {
                 try data.write(to: tempUrl)
                 let asset = AVURLAsset(url: tempUrl)
                 let duration = try await asset.load(.duration)
-                return PlaylistItem(id: itemId, url: asset.url, title: item.name, artist: "MasterRPG", duration: duration)
+                return PlaylistItem(id: itemId, url: asset.url, title: title, artist: "MasterRPG", duration: duration)
             }
         } catch {
             Logger.gameController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
@@ -115,7 +118,7 @@ extension GameController {
                 try data.write(to: tempUrl)
                 let asset = AVURLAsset(url: tempUrl)
                 let duration = try await asset.load(.duration)
-                return PlaylistItem(id: itemId, url: asset.url, title: item.name, artist: "MasterRPG", duration: duration)
+                return PlaylistItem(id: itemId, url: asset.url, title: title, artist: "MasterRPG", duration: duration)
             }
         } catch {
             Logger.gameController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")

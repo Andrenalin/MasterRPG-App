@@ -3,7 +3,7 @@
 import CoreRPG
 import Foundation
 
-public struct TableEntryModel: Identifiable, Equatable, Hashable, Codable {
+public struct TableEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     init(id: UUID, name: String, content: String, displayState: Int = 0, diceResult: String? = nil) {
         self.id = id
         self.name = name

@@ -7,6 +7,7 @@ import Testing
 
 @testable import DiceRPG
 
+@MainActor
 struct ItemControllerTests {
     @Test func addNewItem() async throws {
         // Arrange
@@ -141,8 +142,7 @@ struct ItemControllerTests {
         // Act - compare first item with modified copy of second item
         if let secondItem {
             // Create a modified copy with the first item's ID to test isEqual
-            let modifiedCopy = secondItem
-            modifiedCopy.id = itemId1
+            let modifiedCopy = secondItem.copy(withId: itemId1)
             
             let isEqual = await sut.isEqual(with: modifiedCopy)
             

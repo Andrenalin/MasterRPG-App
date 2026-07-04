@@ -7,6 +7,7 @@ import Testing
 
 @testable import SpaceRPG
 
+@MainActor
 struct LinkControllerTests {
     @Test func generateLinks() async throws {
         let root = try await MockRoot.importTestData()

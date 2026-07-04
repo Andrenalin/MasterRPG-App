@@ -11,6 +11,7 @@ import Testing
 
 @testable import CharacterRPG
 
+@MainActor
 struct EditControllerTests {
 
     @MainActor

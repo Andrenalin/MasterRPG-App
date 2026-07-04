@@ -518,7 +518,7 @@ public extension EditControllable {
 // MARK: - Files
 
 public extension EditControllable {
-    func folderPath(itemId: UUID?) async -> String {
+    @MainActor func folderPath(itemId: UUID?) async -> String {
         guard let itemId, let item = await editModel(for: itemId) else { return "" }
         var name = ""
         if let parentId = item.parentId {
@@ -528,7 +528,7 @@ public extension EditControllable {
         return name
     }
     
-    func movedFile(itemId: UUID) {
+    @MainActor func movedFile(itemId: UUID) {
         Task {
             guard let fileUrlDataController, let item = await editModel(for: itemId), let oldFileUrl = item.fileUrl, item.displayState != 2 else { return }
             let path = await folderPath(itemId: itemId)
@@ -539,7 +539,7 @@ public extension EditControllable {
         }
     }
     
-    func resetFile(url: URL?, itemId: UUID) async {
+    @MainActor func resetFile(url: URL?, itemId: UUID) async {
         guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
 
         // Check if we have an existing file
@@ -572,7 +572,7 @@ public extension EditControllable {
         await reset(fileUrl: updatedFileUrl, itemId: itemId)
     }
     
-    func resetFile(data: Data?, itemId: UUID, path: String) async throws {
+    @MainActor func resetFile(data: Data?, itemId: UUID, path: String) async throws {
         guard let item = await editModel(for: itemId) else { return }
         if item.fileUrl != nil {
             await resetFile(url: nil, itemId: itemId)

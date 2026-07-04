@@ -10,6 +10,7 @@ import Testing
 // MARK: - MasterControllerModel unit tests
 
 @Suite("MasterControllerModel connection mapping")
+@MainActor
 struct MasterControllerModelConnectionTests {
 
     @Test("add registers a new connectionId for a player")
@@ -64,6 +65,7 @@ struct MasterControllerModelConnectionTests {
 // MARK: - MasterController lostPlayer integration tests
 
 @Suite("MasterController lostPlayer")
+@MainActor
 struct MasterControllerLostPlayerTests {
 
     @Test("lostPlayer is a no-op when the connectionId is unknown")

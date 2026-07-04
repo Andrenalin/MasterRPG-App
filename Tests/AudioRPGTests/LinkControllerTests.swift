@@ -7,6 +7,7 @@ import Testing
 
 @testable import AudioRPG
 
+@MainActor
 struct LinkControllerTests {
     @Test func toggleTextLink() async throws {
         let root = try await MockRoot.importTestData()

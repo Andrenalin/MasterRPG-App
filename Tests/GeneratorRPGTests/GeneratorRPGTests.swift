@@ -8,6 +8,7 @@
 import Testing
 @testable import GeneratorRPG
 
+@MainActor
 struct GeneratorRPGTests {
 
     @Test func example() async throws {

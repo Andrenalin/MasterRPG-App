@@ -14,11 +14,12 @@ struct DataController: DataPersistenceControllable {
     let token: String
 }
 
-extension DataController: CoreDataPersistable {
-    // MARK: model -> viewlmodel
+extension DataController: CoreDataSnapshotPersistable {
+    // MARK: managed object -> snapshot (context queue)
     
-    func mapViewModel(_ model: RPGTable, token: String) -> TableModel {
-        TableModel(
+    @Sendable
+    func mapSnapshot(_ model: RPGTable, token: String) -> TableSnapshot {
+        TableSnapshot(
             id: model.uuid ?? UUID(),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
@@ -32,20 +33,21 @@ extension DataController: CoreDataPersistable {
         )
     }
     
-    // MARK: viewmodel -> model
+    // MARK: snapshot -> managed object (context queue)
     
-    func mapModel(_ viewModel: TableModel, into model: RPGTable) {
-        model.uuid <=> viewModel.id
-        model.name <=> viewModel.name_.rawValue
-        model.information <=> viewModel.description_.rawValue
-        model.tags <=> viewModel.tags_.rawValue
-        model.tableCategory <=> viewModel.category_.rawValue
-        model.displayState <=> Int32(viewModel.displayState)
-        model.tableType <=> viewModel.tableType_.rawValue
-        model.diceUUID <=> viewModel.diceId_.rawValue
-        unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
+    @Sendable
+    func applySnapshot(_ snapshot: TableSnapshot, into model: RPGTable) {
+        model.uuid <=> snapshot.id
+        model.name <=> snapshot.name.rawValue
+        model.information <=> snapshot.description.rawValue
+        model.tags <=> snapshot.tags.rawValue
+        model.tableCategory <=> snapshot.category.rawValue
+        model.displayState <=> Int32(snapshot.displayState)
+        model.tableType <=> snapshot.tableType.rawValue
+        model.diceUUID <=> snapshot.diceId.rawValue
+        unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
             let oldEntries = model.entriesModel
-            let newEntries = viewModel.entries.enumerated().map {
+            let newEntries = snapshot.entries.wrappedValue.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
@@ -58,9 +60,22 @@ extension DataController: CoreDataPersistable {
                 model.managedObjectContext?.delete(entry)
             }
         }
-        model.parentId <=> viewModel.parentId
+        model.parentId <=> snapshot.parentId
     }
     
+
+    // MARK: model <-> snapshot (MainActor)
+
+    @MainActor
+    func makeModel(from snapshot: TableSnapshot) -> TableModel {
+        snapshot.makeModel()
+    }
+
+    @MainActor
+    func makeSnapshot(from model: TableModel) -> TableSnapshot {
+        TableSnapshot(model)
+    }
+
     // MARK: - TableEntryViewModel
     
     private func map(_ model: RPGTableEntry) -> TableEntryModel {

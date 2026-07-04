@@ -9,52 +9,55 @@ enum MapPinId {
     case id
 }
 
-@Observable
-public final class MapModel: Identifiable, @unchecked Sendable {
-    public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0, parentId: UUID? = nil) {
+// MainActor-owned model. Sendable via global-actor isolation (no @unchecked):
+// persistence crosses the Core Data boundary as MapSnapshot,
+// the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
+@MainActor @Observable
+public final class MapModel: nonisolated Identifiable {
+    nonisolated public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0, parentId: UUID? = nil) {
         self.id = id
-        name_ = CRDT(wrappedValue: name)
-        description_ = CRDT(wrappedValue: description)
-        tags_ = CRDT(wrappedValue: tags)
-        category_ = CRDT(wrappedValue: category)
-        self.displayState = displayState
-        entries_ = CRDTDataUpdate(wrappedValue: entries)
-        displayConfig_ = CRDTDataUpdate(wrappedValue: displayConfig)
-        photoId_ = CRDTDataUpdate(wrappedValue: photoId)
-        self.width = width
-        self.height = height
-        mapPins_ = CRDTDataUpdate(wrappedValue: mapPins)
-        self.pinScale = pinScale
-        hexMapScale_ = CRDT(wrappedValue: hexMapScale)
-        self.scale = scale
-        self.degrees = degrees
-        self.parentId = parentId
+        _name_ = CRDT(wrappedValue: name)
+        _description_ = CRDT(wrappedValue: description)
+        _tags_ = CRDT(wrappedValue: tags)
+        _category_ = CRDT(wrappedValue: category)
+        self._displayState = displayState
+        _entries_ = CRDTDataUpdate(wrappedValue: entries)
+        _displayConfig_ = CRDTDataUpdate(wrappedValue: displayConfig)
+        _photoId_ = CRDTDataUpdate(wrappedValue: photoId)
+        self._width = width
+        self._height = height
+        _mapPins_ = CRDTDataUpdate(wrappedValue: mapPins)
+        self._pinScale = pinScale
+        _hexMapScale_ = CRDT(wrappedValue: hexMapScale)
+        self._scale = scale
+        self._degrees = degrees
+        self._parentId = parentId
     }
 
-    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double, parentId: UUID?) {
+    nonisolated public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double, parentId: UUID?) {
         self.id = id
-        name_ = name
-        description_ = description
-        tags_ = tags
-        category_ = category
-        self.displayState = displayState
-        entries_ = entries
-        displayConfig_ = displayConfig
-        photoId_ = photoId
-        self.width = width
-        self.height = height
-        mapPins_ = mapPins
-        self.pinScale = pinScale
-        hexMapScale_ = hexMapScale
-        self.scale = scale
-        self.degrees = degrees
-        self.parentId = parentId
+        _name_ = name
+        _description_ = description
+        _tags_ = tags
+        _category_ = category
+        self._displayState = displayState
+        _entries_ = entries
+        _displayConfig_ = displayConfig
+        _photoId_ = photoId
+        self._width = width
+        self._height = height
+        _mapPins_ = mapPins
+        self._pinScale = pinScale
+        _hexMapScale_ = hexMapScale
+        self._scale = scale
+        self._degrees = degrees
+        self._parentId = parentId
     }
 
-    public init(from decoder: Decoder) throws {
+    nonisolated public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<MapModel.CodingKeys> = try decoder.container(keyedBy: MapModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: MapModel.CodingKeys._id)
+        self.id = try container.decode(UUID.self, forKey: MapModel.CodingKeys._id)
         self._name_ = try container.decode(CRDT<String>.self, forKey: MapModel.CodingKeys._name_)
         self._description_ = try container.decode(CRDT<String>.self, forKey: MapModel.CodingKeys._description_)
         self._tags_ = try container.decode(CRDT<[String]>.self, forKey: MapModel.CodingKeys._tags_)
@@ -73,7 +76,8 @@ public final class MapModel: Identifiable, @unchecked Sendable {
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: MapModel.CodingKeys._parentId)
     }
 
-    public var id: UUID
+    // `let`: nonisolated access (Identifiable, hashing) per SE-0434.
+    public let id: UUID
 
     public var name: String {
         get { name_.wrappedValue }
@@ -244,7 +248,9 @@ extension MapModel {
     }
 
     func resetEntries() {
-        if isHidden {
+        // Inline isHidden: the protocol convenience is @MainActor; this nonisolated
+        // model reads its concrete stored property directly (called from didSet).
+        if displayState == DisplayStateMask.totalHidden.rawValue {
             entries.enumerated().forEach { index, _ in
                 entries[index].isShown = false
             }
@@ -252,13 +258,16 @@ extension MapModel {
     }
 }
 
-extension MapModel: Comparable {
-    public static func < (lhs: MapModel, rhs: MapModel) -> Bool {
-        lhs.name < rhs.name
+extension MapModel: nonisolated Comparable {
+    nonisolated public static func < (lhs: MapModel, rhs: MapModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.name < rhs.name
+    
+        }
     }
 }
 
-extension MapModel: ItemLinkRegistable {
+extension MapModel: nonisolated ItemLinkRegistable {
     @MainActor public var linkRegisterModels: [LinkRegisterModel] {
         changedLinkRegisterModels(oldValue: .empty).0
     }
@@ -327,80 +336,89 @@ extension MapModel: ItemLinkRegistable {
     }
 }
 
-extension MapModel: ItemDiffComparable {
-    public func merge(_ other: MapModel) -> MapModel {
-        let mergedPhotoId = photoId_.merged(other: other.photoId_)
-        let mergedMapPins = mapPins_.merged(other: other.mapPins_)
-        let mergedCategory = category_.merged(other: other.category_)
-        let mergedEntries: CRDTDataUpdate<[MapEntryModel]>
-        if mergedCategory.wrappedValue == .folder {
-            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-            let combined = allIds
-                .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-            mergedEntries = CRDTDataUpdate(wrappedValue: combined)
-        } else {
-            mergedEntries = entries_.merged(other: other.entries_)
+extension MapModel: nonisolated ItemDiffComparable {
+    nonisolated public func merge(_ other: MapModel) -> MapModel {
+        return MainActor.assumeIsolated {
+            let mergedPhotoId = photoId_.merged(other: other.photoId_)
+            let mergedMapPins = mapPins_.merged(other: other.mapPins_)
+            let mergedCategory = category_.merged(other: other.category_)
+            let mergedEntries: CRDTDataUpdate<[MapEntryModel]>
+            if mergedCategory.wrappedValue == .folder {
+                let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
+                let combined = allIds
+                    .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
+                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+                mergedEntries = CRDTDataUpdate(wrappedValue: combined)
+            } else {
+                mergedEntries = entries_.merged(other: other.entries_)
+            }
+            return MapModel(
+                id: id,
+                name: name_.merged(other: other.name_),
+                description: description_.merged(other: other.description_),
+                tags: tags_.merged(other: other.tags_),
+                category: mergedCategory,
+                displayState: other.displayState,
+                entries: mergedEntries,
+                displayConfig: displayConfig_.merged(other: other.displayConfig_),
+                photoId: mergedPhotoId,
+                width: mergedPhotoId.update == photoId_.update ? width : other.width,
+                height: mergedPhotoId.update == photoId_.update ? height : other.height,
+                mapPins: mergedMapPins,
+                pinScale: pinScale,
+                hexMapScale: hexMapScale_.merged(other: other.hexMapScale_),
+                scale: other.scale,
+                degrees: other.degrees,
+                parentId: other.parentId
+            )
+    
         }
-        return MapModel(
-            id: id,
-            name: name_.merged(other: other.name_),
-            description: description_.merged(other: other.description_),
-            tags: tags_.merged(other: other.tags_),
-            category: mergedCategory,
-            displayState: other.displayState,
-            entries: mergedEntries,
-            displayConfig: displayConfig_.merged(other: other.displayConfig_),
-            photoId: mergedPhotoId,
-            width: mergedPhotoId.update == photoId_.update ? width : other.width,
-            height: mergedPhotoId.update == photoId_.update ? height : other.height,
-            mapPins: mergedMapPins,
-            pinScale: pinScale,
-            hexMapScale: hexMapScale_.merged(other: other.hexMapScale_),
-            scale: other.scale,
-            degrees: other.degrees,
-            parentId: other.parentId
-        )
     }
 
-    public func isSame(_ other: MapModel) -> Bool {
-        // Split comparison into typed chunks for faster type-checking
-        let basicFieldsMatch: Bool = (
-            name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category
-        )
-        guard basicFieldsMatch else { return false }
+    nonisolated public func isSame(_ other: MapModel) -> Bool {
+        return MainActor.assumeIsolated {
+            // Split comparison into typed chunks for faster type-checking
+            let basicFieldsMatch: Bool = (
+                name == other.name &&
+                description == other.description &&
+                tags == other.tags &&
+                category == other.category
+            )
+            guard basicFieldsMatch else { return false }
 
-        let configMatch: Bool = (
-            entries_.update == other.entries_.update &&
-            displayConfig == other.displayConfig &&
-            photoId_.update == other.photoId_.update &&
-            mapPins_.update == other.mapPins_.update &&
-            hexMapScale == other.hexMapScale &&
-            pinScale == other.pinScale &&
-            parentId == other.parentId
-        )
-        guard configMatch else { return false }
+            let configMatch: Bool = (
+                entries_.update == other.entries_.update &&
+                displayConfig == other.displayConfig &&
+                photoId_.update == other.photoId_.update &&
+                mapPins_.update == other.mapPins_.update &&
+                hexMapScale == other.hexMapScale &&
+                pinScale == other.pinScale &&
+                parentId == other.parentId
+            )
+            guard configMatch else { return false }
 
-        // Sanity checks
-        guard entries.count == other.entries.count else { return false }
-        let entriesMatch: Bool = entries.enumerated().allSatisfy { index, entry in
-            entry == other.entries[index]
+            // Sanity checks
+            guard entries.count == other.entries.count else { return false }
+            let entriesMatch: Bool = entries.enumerated().allSatisfy { index, entry in
+                entry == other.entries[index]
+            }
+            guard entriesMatch else { return false }
+
+            guard mapPins.count == other.mapPins.count else { return false }
+            let pinsMatch: Bool = mapPins.enumerated().allSatisfy { index, pin in
+                pin == other.mapPins[index]
+            }
+
+            return pinsMatch
+    
         }
-        guard entriesMatch else { return false }
-
-        guard mapPins.count == other.mapPins.count else { return false }
-        let pinsMatch: Bool = mapPins.enumerated().allSatisfy { index, pin in
-            pin == other.mapPins[index]
-        }
-
-        return pinsMatch
     }
     
-    public var version: Int {
-        (hexMapScale + pinScale).hashValue
+    nonisolated public var version: Int {
+        return MainActor.assumeIsolated {
+            (hexMapScale + pinScale).hashValue
+    
+        }
     }
 }
 
@@ -418,14 +436,17 @@ extension MapModel {
     }
 }
 
-extension MapModel: ItemDuplicatable {
-    public func duplicate() -> MapModel {
-        let copyName = duplicateName(from: name)
-        return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees, parentId: parentId)
+extension MapModel: nonisolated ItemDuplicatable {
+    nonisolated public func duplicate() -> MapModel {
+        return MainActor.assumeIsolated {
+            let copyName = duplicateName(from: name)
+            return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees, parentId: parentId)
+    
+        }
     }
 }
 
-extension MapModel: ItemReferencable {}
+extension MapModel: nonisolated ItemReferencable {}
 
 extension MapModel {
     static func decodeData(of data: Data?) -> MapModel? {
@@ -440,17 +461,17 @@ extension MapModel {
     }
 }
 
-extension MapModel: ItemDataAccessable {
+extension MapModel: nonisolated ItemDataAccessable {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}
     }
 
-    public static var empty: MapModel { empty(UUID()) }
-    public static func empty(_ id: UUID) -> MapModel {
+    nonisolated public static var empty: MapModel { empty(UUID()) }
+    nonisolated public static func empty(_ id: UUID) -> MapModel {
         MapModel(id: id, name: "")
     }
-    public static let typeId: NetworkModules = .map
+    nonisolated public static let typeId: NetworkModules = .map
 
     public func copy() -> MapModel {
         MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees, parentId: parentId)
@@ -513,7 +534,7 @@ extension MapModel: ItemDataAccessable {
     }
 }
 
-extension MapModel: Codable {
+extension MapModel: nonisolated Codable {
     enum CodingKeys: CodingKey {
         case _id
         case _name_
@@ -534,35 +555,42 @@ extension MapModel: Codable {
         case _parentId
     }
 
-    public final func encode(to encoder: Encoder) throws {
-        var container: KeyedEncodingContainer<MapModel.CodingKeys> = encoder.container(keyedBy: MapModel.CodingKeys.self)
+    nonisolated public final func encode(to encoder: Encoder) throws {
+        nonisolated(unsafe) let encoder = encoder
+        try MainActor.assumeIsolated {
+            var container: KeyedEncodingContainer<MapModel.CodingKeys> = encoder.container(keyedBy: MapModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: MapModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: MapModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: MapModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: MapModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: MapModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: MapModel.CodingKeys._displayState)
-        try container.encode(self._entries_, forKey: MapModel.CodingKeys._entries_)
-        try container.encode(self._displayConfig_, forKey: MapModel.CodingKeys._displayConfig_)
-        try container.encode(self._photoId_, forKey: MapModel.CodingKeys._photoId_)
-        try container.encode(self._width, forKey: MapModel.CodingKeys._width)
-        try container.encode(self._height, forKey: MapModel.CodingKeys._height)
-        try container.encode(self._mapPins_, forKey: MapModel.CodingKeys._mapPins_)
-        try container.encode(self._pinScale, forKey: MapModel.CodingKeys._pinScale)
-        try container.encode(self._hexMapScale_, forKey: MapModel.CodingKeys._hexMapScale_)
-        try container.encode(self._scale, forKey: MapModel.CodingKeys._scale)
-        try container.encode(self._degrees, forKey: MapModel.CodingKeys._degrees)
-        try container.encodeIfPresent(self._parentId, forKey: MapModel.CodingKeys._parentId)
+            try container.encode(self.id, forKey: MapModel.CodingKeys._id)
+            try container.encode(self._name_, forKey: MapModel.CodingKeys._name_)
+            try container.encode(self._description_, forKey: MapModel.CodingKeys._description_)
+            try container.encode(self._tags_, forKey: MapModel.CodingKeys._tags_)
+            try container.encode(self._category_, forKey: MapModel.CodingKeys._category_)
+            try container.encode(self._displayState, forKey: MapModel.CodingKeys._displayState)
+            try container.encode(self._entries_, forKey: MapModel.CodingKeys._entries_)
+            try container.encode(self._displayConfig_, forKey: MapModel.CodingKeys._displayConfig_)
+            try container.encode(self._photoId_, forKey: MapModel.CodingKeys._photoId_)
+            try container.encode(self._width, forKey: MapModel.CodingKeys._width)
+            try container.encode(self._height, forKey: MapModel.CodingKeys._height)
+            try container.encode(self._mapPins_, forKey: MapModel.CodingKeys._mapPins_)
+            try container.encode(self._pinScale, forKey: MapModel.CodingKeys._pinScale)
+            try container.encode(self._hexMapScale_, forKey: MapModel.CodingKeys._hexMapScale_)
+            try container.encode(self._scale, forKey: MapModel.CodingKeys._scale)
+            try container.encode(self._degrees, forKey: MapModel.CodingKeys._degrees)
+            try container.encodeIfPresent(self._parentId, forKey: MapModel.CodingKeys._parentId)
+    
+        }
     }
 }
 
-extension MapModel: Equatable, Hashable {
-    public static func == (lhs: MapModel, rhs: MapModel) -> Bool {
-        lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+extension MapModel: nonisolated Equatable, nonisolated Hashable {
+    nonisolated public static func == (lhs: MapModel, rhs: MapModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+    
+        }
     }
 
-    public func hash(into hasher: inout Hasher) {
+    nonisolated public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

@@ -150,8 +150,10 @@ extension LinkController {
 
 // MARK: Preview - Test
 extension DiceModel {
-    static let previewId = UUID(uuidString: "2201FBB7-0403-4A18-A361-CAD5A76A637D")!
-    static public let preview = DiceModel(
+    nonisolated static let previewId = UUID(uuidString: "2201FBB7-0403-4A18-A361-CAD5A76A637D")!
+    // nonisolated: consumed by the (nonisolated) widget configuration default.
+    nonisolated static public let preview = previewSnapshot.makeModel()
+    nonisolated static public let previewSnapshot = DiceSnapshot(
         id: previewId,
         name: "DS",
         description: "Here is a DungeonSlayer Dice. With Fumble of 20, Coup of 1 and exploding dice on 1. Every 20 values is 1 die. So values over 20 are 2d20.  Values over 40 are 3d20 and so on. On success the order of dice are highest to lowest.",

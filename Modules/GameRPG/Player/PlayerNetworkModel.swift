@@ -21,7 +21,7 @@ protocol PlayerNetworkControllable: Sendable & AnyObject {
 }
 
 @MainActor @Observable
-final class PlayerNetworkNodel: @unchecked Sendable {
+final class PlayerNetworkNodel {
     init(name: String = "Player Device", model: PlayerBrowserModel? = nil, playerConnectionId: UUID? = nil, isConnected: Bool = false, connectionState: PlayerNetworkNodel.ConnectionState = .notReady) {
         self.name = name
         self.model = model

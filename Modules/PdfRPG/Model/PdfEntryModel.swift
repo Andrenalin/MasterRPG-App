@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 import CoreGraphics
 
-public struct PdfEntryModel: Identifiable, Equatable, Hashable, Codable {
+public struct PdfEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     init(id: UUID, name: String, content: String, pageNumber: String, bounds: CGRect, displayState: Int = 0) {
         self.id = id
         self.name = name

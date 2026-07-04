@@ -205,7 +205,7 @@ extension AudioRootModel {
         }
     }
 
-    public func itemDataCleanup() async throws {
+    @MainActor public func itemDataCleanup() async throws {
         for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {

@@ -7,6 +7,8 @@ import Testing
 
 @testable import TableRPG
 
+// @MainActor: copy() and the other ItemDataAccessable members are MainActor-isolated.
+@MainActor
 struct TableModelTests {
     func setUp() async throws -> TableModel {
         TableModel(

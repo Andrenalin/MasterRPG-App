@@ -27,6 +27,7 @@ import Testing
 ///   Phase 2: parentId=<groupId>, groupId=nil, displayState=1  → decode shim moves parentId→groupId → repair leaves it hidden
 ///   Phase 3: parentId=nil, groupId=<groupId>, displayState=1  → already correct, repair leaves it hidden
 @Suite("Repair pipeline – CharacterRPG")
+@MainActor
 struct ConvertControllerRepairTests {
 
     // MARK: - checkFolders: Phase 1 repair (stamps groupId from entry scan)

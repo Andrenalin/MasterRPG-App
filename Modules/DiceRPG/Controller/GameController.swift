@@ -86,8 +86,7 @@ extension GameController: DiceGameStorable {
     @discardableResult @MainActor
     func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?) {
         guard let diceResult = DiceResultModel.decodeData(of: data.data) else { return (nil, nil) }
-        let dice = diceResult.diceModel
-        dice.id = UUID()
+        let dice = diceResult.diceModel.makeModel(withId: UUID())
         dice.name = name
         dice.applyResult(text: diceResult.values)
         
@@ -142,9 +141,8 @@ extension GameController: DiceGameStorable {
         if let gameDiceId, gameModel.itemData[gameDiceId] != nil {
             return gameDiceId
         }
-        let dice = itemController.itemOrEmpty(for: diceId).copy()
+        let dice = itemController.itemOrEmpty(for: diceId).copy(withId: gameDiceId ?? UUID())
         dice.category = .value
-        dice.id = gameDiceId ?? UUID()
         setGame(item: dice, itemId: dice.id)
         return dice.id
     }
@@ -173,7 +171,7 @@ extension GameController: DiceGameStorable {
             
             let favorite = FavoriteDiceItem(
                 name: favoriteName,
-                diceModel: diceModel
+                diceModel: DiceSnapshot(diceModel)
             )
             configuration.favoriteDice.append(favorite)
             Logger.widget.info("⭐ Added favorite: \(favoriteName) (\(itemId)), total: \(configuration.favoriteDice.count)")
@@ -309,10 +307,10 @@ extension GameController {
 extension GameController {
     @MainActor
     func resetCompareValue(of itemId: UUID, value: Int) async {
-        let item = gameItem(for: itemId).copy()
-        guard item.compareValue != Double(value) else { return }
+        let source = gameItem(for: itemId)
+        guard source.compareValue != Double(value) else { return }
+        let item = source.copy(withId: UUID())
         item.compareValue = Double(value)
-        item.id = UUID()
         setGame(item: item, itemId: item.id)
         await focus(on: [item.id])
     }
@@ -399,7 +397,7 @@ extension GameController {
     @MainActor
     func calculate(itemId: UUID) -> DiceResultModel {
         let item = gameItem(for: itemId)
-        var result = DiceResultModel(diceModel: item)
+        var result = DiceResultModel(diceModel: DiceSnapshot(item))
         guard item.dice.reduce(0, { $0 + $1.result.count }) > 0 else { return result }
         
         result.result = .rolled

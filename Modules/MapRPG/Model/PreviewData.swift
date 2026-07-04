@@ -90,7 +90,7 @@ extension MapRootModel: RootControllable {
 
 // MARK: Preview - Test
 extension MapModel {
-    static let previewId = UUID(uuidString: "50DFDB6F-E8B1-41A4-A409-911D888119E8")!
+    nonisolated static let previewId = UUID(uuidString: "50DFDB6F-E8B1-41A4-A409-911D888119E8")!
     @MainActor
     static let preview = MapModel(
         id: previewId,

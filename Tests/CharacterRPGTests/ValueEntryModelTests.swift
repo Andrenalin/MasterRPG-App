@@ -7,6 +7,7 @@ import Testing
 
 @testable import CharacterRPG
 
+@MainActor
 struct ValueEntryModelTests {
     func setUp() -> ValueEntryModel {
         ValueEntryModel(
