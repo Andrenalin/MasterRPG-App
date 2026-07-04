@@ -53,7 +53,7 @@ struct DestinationAdventureEditorRouteView: View {
                 .id(itemId)
 #else
             if let generatorRoot = root.generatorRoot, let rootManager = root.rootManager {
-                let sheetModel = root.sheetController.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: true)
+                let sheetModel = root.sheetController.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
                 generatorRoot.viewController.inlineChat(root: generatorRoot, sheetModel: sheetModel)
             }
 #endif

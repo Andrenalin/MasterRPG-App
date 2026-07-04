@@ -15,6 +15,9 @@ import SwiftUI
     var reviewItems: [ImportReviewItemModel]
 
     var name: String { id.title }
+    var addedItems: [ImportReviewItemModel] { reviewItems.filter { $0.kind == .added } }
+    var changedItems: [ImportReviewItemModel] { reviewItems.filter { $0.kind == .different } }
+    var blockedReferenceCount: Int { reviewItems.filter(\.hasBlockingReference).count }
 }
 
 @MainActor @Observable final class ImportReviewItemModel: Identifiable, Hashable {
@@ -34,6 +37,27 @@ import SwiftUI
     enum ChangeKind: String, CaseIterable, Hashable {
         case added = "Added"
         case different = "Different"
+
+        var title: String {
+            switch self {
+            case .added: String(localized: "Added", bundle: .module)
+            case .different: String(localized: "Changed", bundle: .module)
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .added: "plus.circle.fill"
+            case .different: "arrow.triangle.2.circlepath.circle.fill"
+            }
+        }
+
+        var tint: Color {
+            switch self {
+            case .added: .green
+            case .different: .orange
+            }
+        }
     }
 
     let id: UUID
@@ -157,4 +181,3 @@ import SwiftUI
         return nil
     }
 }
-

@@ -34,7 +34,9 @@ public extension ItemSwiftDataPersistable {
             return tag
         }
     }
-    
+}
+
+public extension ItemSwiftDataPersistable where DataType: Sendable {
     func fetch() async throws -> [DataType] {
         try await swiftDataController.fetch()
     }

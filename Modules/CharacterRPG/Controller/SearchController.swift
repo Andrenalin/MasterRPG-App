@@ -423,7 +423,7 @@ extension SearchController {
                 let entryNameMatch    = entry.name.localizedStandardContains(searchText)
                 let entryContentMatch = entry.content.localizedStandardContains(searchText)
                 var subValueNameMatch = false
-                var subEntryMatch     = false
+                var subEntryMatch = false
                 var subEntries: [SearchResult] = []
 
                 if let subValueId = entry.valueId,
@@ -434,10 +434,10 @@ extension SearchController {
                            subEntry.content.localizedStandardContains(searchText) {
                             subEntryMatch = true
                         }
-                    }
-                    // Use subValueId as itemId — see empty-search comment above.
-                    subEntries = subValue.entries.map {
-                        makeEntryResult(for: $0, characterId: subValueId, characterName: subValue.name)
+                        // Use subValueId as itemId — see empty-search comment above.
+                        subEntries.append(
+                            makeEntryResult(for: subEntry, characterId: subValueId, characterName: subValue.name)
+                        )
                     }
                 }
 
@@ -458,9 +458,9 @@ extension SearchController {
     }
 
     /// Always returns the character. If searchText is empty all entries are children.
-    /// If searchText is set, only entries that match (name, content, or sub-value name) are children.
-    /// For each included entry whose valueId points to a sub-value, the sub-value's own entries
-    /// are added as children of that entry result.
+    /// If searchText is set, matching entries are children. A group entry also matches
+    /// when its sub-value name or one of its sub-entries matches; included group entries
+    /// carry the sub-value's entries so API consumers can inspect the full group.
     @MainActor private func focusedCharacterInspector(characterId: UUID, searchText: String) async -> [SearchResult] {
         guard let character = await itemController.item(for: characterId) else { return [] }
 
@@ -484,7 +484,7 @@ extension SearchController {
                 let entryNameMatch    = entry.name.localizedStandardContains(searchText)
                 let entryContentMatch = entry.content.localizedStandardContains(searchText)
                 var subValueNameMatch = false
-                var subEntryMatch     = false   // bug fix: also search sub-entry names/content
+                var subEntryMatch = false
                 var subEntries: [SearchResult] = []
 
                 if let subValueId = entry.valueId,
@@ -495,10 +495,10 @@ extension SearchController {
                            subEntry.content.localizedStandardContains(searchText) {
                             subEntryMatch = true
                         }
-                    }
-                    // Use subValueId as itemId — see empty-search comment above.
-                    subEntries = subValue.entries.map {
-                        makeEntryResult(for: $0, characterId: subValueId, characterName: subValue.name)
+                        // Use subValueId as itemId — see empty-search comment above.
+                        subEntries.append(
+                            makeEntryResult(for: subEntry, characterId: subValueId, characterName: subValue.name)
+                        )
                     }
                 }
 
@@ -552,8 +552,7 @@ extension SearchController {
             return foundResults
         } else {
             // Unscoped common inspector: characters are items for linking only.
-            // Never return entry children and never set canOpen — the user links to a character,
-            // not to individual entries. Entry exploration requires the focused inspector.
+            // Do not return entry children or mark raw results as expandable.
             let itemIds = itemControllable.itemDataModel.items
             for itemId in itemIds {
                 guard let character = itemControllable.itemSync(for: itemId) as? ValueModel,
@@ -561,9 +560,8 @@ extension SearchController {
                       character.displayState == 0 else { continue }
                 if searchText.isEmpty {
                     foundResults.append(makeResult(item: character, searchText: "", displayMode: displayMode))
-                    // canOpen intentionally omitted (defaults false) — no entry expansion in common inspector
                 } else {
-                    // Match at item level only — entries are not shown in the common inspector
+                    // Match at item level only. Entry exploration happens on explicit toggle.
                     guard itemMatchesFilter(character, searchText: searchText, displayMode: displayMode, includeTags: false) else { continue }
                     foundResults.append(makeResult(item: character, searchText: searchText, displayMode: displayMode))
                 }
@@ -585,7 +583,7 @@ extension SearchController {
     /// Empty search is now handled properly (was `guard !searchText.isEmpty else { return [] }`
     /// which caused the inspector to show nothing on first appear):
     /// - `parentId != nil`, empty → delegates to `focusedCharacterInspector` (all entries shown)
-    /// - `parentId == nil`, empty → all root characters, A→Z, `canOpen = !entries.isEmpty`
+    /// - `parentId == nil`, empty → all root characters, A→Z, with raw results kept non-expandable
     @MainActor func inspectorSearchResults(searchText: String, parentId: UUID?, displayMode: ListDisplayModel.DisplayMode = .medium) async -> [SearchResult] {
         var foundResults: [SearchResult] = []
         if let parentId {
@@ -597,8 +595,7 @@ extension SearchController {
             return foundResults
         } else {
             // Unscoped common inspector: characters are items for linking only.
-            // Never return entry children and never set canOpen — the user links to a character,
-            // not to individual entries. Entry exploration requires the focused inspector.
+            // Do not return entry children or mark raw results as expandable.
             let itemIds = itemControllable.itemDataModel.items
             for itemId in itemIds {
                 guard !Task.isCancelled else { break }
@@ -607,9 +604,8 @@ extension SearchController {
                       character.displayState == 0 else { continue }
                 if searchText.isEmpty {
                     foundResults.append(makeResult(item: character, searchText: "", displayMode: displayMode))
-                    // canOpen intentionally omitted (defaults false) — no entry expansion in common inspector
                 } else {
-                    // Match at item level only — entries are not shown in the common inspector
+                    // Match at item level only. Entry exploration happens on explicit toggle.
                     guard itemMatchesFilter(character, searchText: searchText, displayMode: displayMode, includeTags: false) else { continue }
                     foundResults.append(makeResult(item: character, searchText: searchText, displayMode: displayMode))
                 }

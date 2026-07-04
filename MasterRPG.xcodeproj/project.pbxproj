@@ -1583,20 +1583,20 @@
 		8E79C4832E6AEDD500893928 /* MapRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = MapRPG; sourceTree = "<group>"; };
 		8E79C4A32E6AEE0400893928 /* AdventureRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AdventureRPG; sourceTree = "<group>"; };
 		8E8A403F2FC125460049C6B5 /* Tests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests; sourceTree = "<group>"; };
-		8E8A41002FC200000049C6B5 /* CoreRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/CoreRPGTests; sourceTree = "<group>"; };
-		8E8A41012FC200000049C6B5 /* AudioRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/AudioRPGTests; sourceTree = "<group>"; };
-		8E8A41022FC200000049C6B5 /* PdfRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/PdfRPGTests; sourceTree = "<group>"; };
-		8E8A41032FC200000049C6B5 /* PhotoRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/PhotoRPGTests; sourceTree = "<group>"; };
-		8E8A41042FC200000049C6B5 /* DiceRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/DiceRPGTests; sourceTree = "<group>"; };
-		8E8A41052FC200000049C6B5 /* SpaceRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/SpaceRPGTests; sourceTree = "<group>"; };
-		8E8A41062FC200000049C6B5 /* TableRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/TableRPGTests; sourceTree = "<group>"; };
-		8E8A41072FC200000049C6B5 /* CharacterRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/CharacterRPGTests; sourceTree = "<group>"; };
-		8E8A41082FC200000049C6B5 /* WeatherRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/WeatherRPGTests; sourceTree = "<group>"; };
-		8E8A41092FC200000049C6B5 /* AdventureRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/AdventureRPGTests; sourceTree = "<group>"; };
-		8E8A410A2FC200000049C6B5 /* GameRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/GameRPGTests; sourceTree = "<group>"; };
-		8E8A410B2FC200000049C6B5 /* MapRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/MapRPGTests; sourceTree = "<group>"; };
-		8E8A410C2FC200000049C6B5 /* GeneratorRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/GeneratorRPGTests; sourceTree = "<group>"; };
 		8E8A40C12FC131880049C6B5 /* TestPlans */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = TestPlans; sourceTree = "<group>"; };
+		8E8A41002FC200000049C6B5 /* Tests/CoreRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/CoreRPGTests; sourceTree = "<group>"; };
+		8E8A41012FC200000049C6B5 /* Tests/AudioRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/AudioRPGTests; sourceTree = "<group>"; };
+		8E8A41022FC200000049C6B5 /* Tests/PdfRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/PdfRPGTests; sourceTree = "<group>"; };
+		8E8A41032FC200000049C6B5 /* Tests/PhotoRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/PhotoRPGTests; sourceTree = "<group>"; };
+		8E8A41042FC200000049C6B5 /* Tests/DiceRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/DiceRPGTests; sourceTree = "<group>"; };
+		8E8A41052FC200000049C6B5 /* Tests/SpaceRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/SpaceRPGTests; sourceTree = "<group>"; };
+		8E8A41062FC200000049C6B5 /* Tests/TableRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/TableRPGTests; sourceTree = "<group>"; };
+		8E8A41072FC200000049C6B5 /* Tests/CharacterRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/CharacterRPGTests; sourceTree = "<group>"; };
+		8E8A41082FC200000049C6B5 /* Tests/WeatherRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/WeatherRPGTests; sourceTree = "<group>"; };
+		8E8A41092FC200000049C6B5 /* Tests/AdventureRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/AdventureRPGTests; sourceTree = "<group>"; };
+		8E8A410A2FC200000049C6B5 /* Tests/GameRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/GameRPGTests; sourceTree = "<group>"; };
+		8E8A410B2FC200000049C6B5 /* Tests/MapRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/MapRPGTests; sourceTree = "<group>"; };
+		8E8A410C2FC200000049C6B5 /* Tests/GeneratorRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tests/GeneratorRPGTests; sourceTree = "<group>"; };
 		8E8EE7012CD8E3E10010A25B /* RPGResourcesDebug */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResourcesDebug; sourceTree = "<group>"; };
 		8E983DA72E27D057002B25C2 /* SpaceRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SpaceRPG; sourceTree = "<group>"; };
 		8EA5A7D42E6A8EDB00E70E9C /* CharacterRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CharacterRPG; sourceTree = "<group>"; };
@@ -2008,6 +2008,26 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		593380962FF90C9D00742DF8 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				8E8A41002FC200000049C6B5 /* Tests/CoreRPGTests */,
+				8E8A41092FC200000049C6B5 /* Tests/AdventureRPGTests */,
+				8E8A41012FC200000049C6B5 /* Tests/AudioRPGTests */,
+				8E8A41072FC200000049C6B5 /* Tests/CharacterRPGTests */,
+				8E8A41042FC200000049C6B5 /* Tests/DiceRPGTests */,
+				8E8A410A2FC200000049C6B5 /* Tests/GameRPGTests */,
+				8E8A410C2FC200000049C6B5 /* Tests/GeneratorRPGTests */,
+				8E8A410B2FC200000049C6B5 /* Tests/MapRPGTests */,
+				8E8A41022FC200000049C6B5 /* Tests/PdfRPGTests */,
+				8E8A41032FC200000049C6B5 /* Tests/PhotoRPGTests */,
+				8E8A41052FC200000049C6B5 /* Tests/SpaceRPGTests */,
+				8E8A41062FC200000049C6B5 /* Tests/TableRPGTests */,
+				8E8A41082FC200000049C6B5 /* Tests/WeatherRPGTests */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		5978B4142F7E613F00818159 /* Menu */ = {
 			isa = PBXGroup;
 			children = (
@@ -2099,6 +2119,7 @@
 				8EC4E47C28DDAAF300D0279F /* Sources */,
 				8E8A40C12FC131880049C6B5 /* TestPlans */,
 				8E8A403F2FC125460049C6B5 /* Tests */,
+				593380962FF90C9D00742DF8 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -2402,7 +2423,7 @@
 				599DCADB2E8E30C00056E46C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A410C2FC200000049C6B5 /* GeneratorRPGTests */,
+				8E8A410C2FC200000049C6B5 /* Tests/GeneratorRPGTests */,
 			);
 			name = GeneratorRPGTests;
 			packageProductDependencies = (
@@ -2620,7 +2641,7 @@
 				8E4B21922CD78EF3009AB4D1 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41002FC200000049C6B5 /* CoreRPGTests */,
+				8E8A41002FC200000049C6B5 /* Tests/CoreRPGTests */,
 			);
 			name = CoreRPGTests;
 			packageProductDependencies = (
@@ -2790,7 +2811,7 @@
 				8E8EE8562CD8EA600010A25B /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41012FC200000049C6B5 /* AudioRPGTests */,
+				8E8A41012FC200000049C6B5 /* Tests/AudioRPGTests */,
 			);
 			name = AudioRPGTests;
 			packageProductDependencies = (
@@ -2814,7 +2835,7 @@
 				8E8EE8802CD8EB450010A25B /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41022FC200000049C6B5 /* PdfRPGTests */,
+				8E8A41022FC200000049C6B5 /* Tests/PdfRPGTests */,
 			);
 			name = PdfRPGTests;
 			packageProductDependencies = (
@@ -2838,7 +2859,7 @@
 				8E8EE8A12CD8EB650010A25B /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41032FC200000049C6B5 /* PhotoRPGTests */,
+				8E8A41032FC200000049C6B5 /* Tests/PhotoRPGTests */,
 			);
 			name = PhotoRPGTests;
 			packageProductDependencies = (
@@ -2968,7 +2989,7 @@
 				8EBECD9D2CD8EDED004E7103 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41042FC200000049C6B5 /* DiceRPGTests */,
+				8E8A41042FC200000049C6B5 /* Tests/DiceRPGTests */,
 			);
 			name = DiceRPGTests;
 			packageProductDependencies = (
@@ -2992,7 +3013,7 @@
 				8EBECE282CD8EE85004E7103 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41052FC200000049C6B5 /* SpaceRPGTests */,
+				8E8A41052FC200000049C6B5 /* Tests/SpaceRPGTests */,
 			);
 			name = SpaceRPGTests;
 			packageProductDependencies = (
@@ -3016,7 +3037,7 @@
 				8EBECE492CD8EE92004E7103 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41062FC200000049C6B5 /* TableRPGTests */,
+				8E8A41062FC200000049C6B5 /* Tests/TableRPGTests */,
 			);
 			name = TableRPGTests;
 			packageProductDependencies = (
@@ -3040,7 +3061,7 @@
 				8EBECE6A2CD8EE9E004E7103 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41072FC200000049C6B5 /* CharacterRPGTests */,
+				8E8A41072FC200000049C6B5 /* Tests/CharacterRPGTests */,
 			);
 			name = CharacterRPGTests;
 			packageProductDependencies = (
@@ -3064,7 +3085,7 @@
 				8EBECE8B2CD8EEA9004E7103 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41082FC200000049C6B5 /* WeatherRPGTests */,
+				8E8A41082FC200000049C6B5 /* Tests/WeatherRPGTests */,
 			);
 			name = WeatherRPGTests;
 			packageProductDependencies = (
@@ -3088,7 +3109,7 @@
 				8EBED09A2CD8EF69004E7103 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A41092FC200000049C6B5 /* AdventureRPGTests */,
+				8E8A41092FC200000049C6B5 /* Tests/AdventureRPGTests */,
 			);
 			name = AdventureRPGTests;
 			packageProductDependencies = (
@@ -3112,7 +3133,7 @@
 				8EBED0BB2CD8EF94004E7103 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A410A2FC200000049C6B5 /* GameRPGTests */,
+				8E8A410A2FC200000049C6B5 /* Tests/GameRPGTests */,
 			);
 			name = GameRPGTests;
 			packageProductDependencies = (
@@ -3136,7 +3157,7 @@
 				8EBED0DC2CD8EFA5004E7103 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				8E8A410B2FC200000049C6B5 /* MapRPGTests */,
+				8E8A410B2FC200000049C6B5 /* Tests/MapRPGTests */,
 			);
 			name = MapRPGTests;
 			packageProductDependencies = (

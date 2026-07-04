@@ -322,7 +322,8 @@ extension FolderListControllable {
 
     /// Appends one search-result node (and, when open, its children) to the flat list.
     ///
-    /// - When searching: auto-opens any item that has matched children.
+    /// - When searching: auto-opens matched children except lazy entry groups, which wait for
+    ///   an explicit toggle so a parent-name match does not flood the visible list.
     /// - When search is cleared: restores `lastIsOpen` so the user's explicit
     ///   open/close choices survive the round-trip through the search.
     /// - `cache`: when non-nil, all items are read/written to this model's cache instead of
@@ -342,7 +343,7 @@ extension FolderListControllable {
             item.lastIsOpen = true   // persist so the state survives a search round-trip
         } else if isSearching {
             // Search found children + user never explicitly closed → auto-open.
-            let autoOpen = !result.children.isEmpty && !item.wasExplicitlyClosed
+            let autoOpen = !isLazyExpandableEntryGroup(result) && !result.children.isEmpty && !item.wasExplicitlyClosed
             // User manually opened during search (item.children loaded, lastIsOpen=true) → stay open.
             let userOpenedDuringSearch = !item.children.isEmpty && item.lastIsOpen
             item.isOpen = autoOpen || userOpenedDuringSearch
@@ -381,9 +382,10 @@ extension FolderListControllable {
     private func mapResult(_ result: SearchResult, level: Int, cache: FolderListModel? = nil) -> FolderListItemModel {
         let target = cache ?? listModel
         let id = result.entryId ?? result.itemId
+        let canOpen = result.canOpen || (cache == nil && canExpandValueResult(result))
         if let cached = target.cacheListModels[id] {
             cached.level = level
-            cached.canOpen = result.canOpen
+            cached.canOpen = canOpen
             cached.childFocusId = result.childFocusId
             if cached.model == nil {
                 cached.model = itemControllable.itemSync(for: result.itemId)
@@ -397,11 +399,23 @@ extension FolderListControllable {
             level: level,
             isShown: false
         )
-        item.canOpen = result.canOpen
+        item.canOpen = canOpen
         item.childFocusId = result.childFocusId
         item.model = itemControllable.itemSync(for: result.itemId)
         target.cacheListModels[id] = item
         return item
+    }
+
+    private func isLazyExpandableEntryGroup(_ result: SearchResult) -> Bool {
+        result.entryId != nil && result.canOpen && result.childFocusId != nil
+    }
+
+    private func canExpandValueResult(_ result: SearchResult) -> Bool {
+        guard result.module == .value,
+              result.entryId == nil,
+              result.children.isEmpty,
+              let model = itemControllable.itemSync(for: result.itemId) else { return false }
+        return !model.entries.isEmpty
     }
 
     /// Expands open nodes in the cached children tree (lazy-loaded folder content).

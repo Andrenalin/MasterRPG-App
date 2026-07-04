@@ -449,9 +449,9 @@ struct EditControllerTests {
         #expect(entryIds.contains(item3))
 
         // Verify all items have the correct parentId
-        #expect(await root.itemController.itemOrEmpty(for: item1).parentId == folderModel.id)
-        #expect(await root.itemController.itemOrEmpty(for: item2).parentId == folderModel.id)
-        #expect(await root.itemController.itemOrEmpty(for: item3).parentId == folderModel.id)
+        #expect(root.itemController.itemOrEmpty(for: item1).parentId == folderModel.id)
+        #expect(root.itemController.itemOrEmpty(for: item2).parentId == folderModel.id)
+        #expect(root.itemController.itemOrEmpty(for: item3).parentId == folderModel.id)
     }
 
     @Test func addItemToFolderIgnoresSameId() async throws {
@@ -568,7 +568,7 @@ struct EditControllerTests {
         let newItem = await sut.addNew(type: .item)
 
         #expect(newItem != nil)
-        #expect(await root.itemController.itemDataModel.items.count == initialCount + 1)
+        #expect(root.itemController.itemDataModel.items.count == initialCount + 1)
 
         let item = newItem as? SpaceModel
         #expect(item?.category == .item)
@@ -585,7 +585,7 @@ struct EditControllerTests {
         let newFolder = await sut.addNew(type: .folder)
 
         #expect(newFolder != nil)
-        #expect(await root.itemController.itemDataModel.items.count == initialCount + 1)
+        #expect(root.itemController.itemDataModel.items.count == initialCount + 1)
 
         let folder = newFolder as? SpaceModel
         #expect(folder?.category == .folder)
@@ -602,7 +602,7 @@ struct EditControllerTests {
         let newCollection = await sut.addNew(type: .collection)
 
         #expect(newCollection != nil)
-        #expect(await root.itemController.itemDataModel.items.count == initialCount + 1)
+        #expect(root.itemController.itemDataModel.items.count == initialCount + 1)
 
         let collection = newCollection as? SpaceModel
         #expect(collection?.category == .album) // album is the collection category for spaces
@@ -650,8 +650,8 @@ struct EditControllerTests {
 
         let updatedParent = root.itemController.itemOrEmpty(for: parent.id)
         #expect(updatedParent.entries.count == 2)
-        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 1)
-        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 1)
+        #expect(root.itemController.itemOrEmpty(for: child1).displayState == 1)
+        #expect(root.itemController.itemOrEmpty(for: child2).displayState == 1)
 
         // Delete the parent
         await sut.delete(itemId: parent.id)
@@ -661,8 +661,8 @@ struct EditControllerTests {
         #expect(deletedParent.displayState == 0)
 
         // Verify children's displayState is reset to 0 (removed from group)
-        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 0)
-        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 0)
+        #expect(root.itemController.itemOrEmpty(for: child1).displayState == 0)
+        #expect(root.itemController.itemOrEmpty(for: child2).displayState == 0)
     }
 
     @Test func deleteFolderWithChildren() async throws {
@@ -683,8 +683,8 @@ struct EditControllerTests {
         sut.addItem(itemId: child1, parentId: folderModel.id)
         sut.addItem(itemId: child2, parentId: folderModel.id)
 
-        #expect(await root.itemController.itemOrEmpty(for: child1).parentId == folderModel.id)
-        #expect(await root.itemController.itemOrEmpty(for: child2).parentId == folderModel.id)
+        #expect(root.itemController.itemOrEmpty(for: child1).parentId == folderModel.id)
+        #expect(root.itemController.itemOrEmpty(for: child2).parentId == folderModel.id)
 
         // Delete the folder
         await sut.delete(itemId: folderModel.id)
@@ -694,12 +694,12 @@ struct EditControllerTests {
         #expect(deletedFolder.displayState == 0)
 
         // Verify children are moved to root (parentId = nil) and remain visible (displayState = 0)
-        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 0)
-        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 0)
+        #expect(root.itemController.itemOrEmpty(for: child1).displayState == 0)
+        #expect(root.itemController.itemOrEmpty(for: child2).displayState == 0)
 
         // Verify children's parentId is reset to nil (moved to parent's parent, which is nil)
-        #expect(await root.itemController.itemOrEmpty(for: child1).parentId == nil)
-        #expect(await root.itemController.itemOrEmpty(for: child2).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: child1).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: child2).parentId == nil)
     }
 
     @Test func collectItemsForRemovalWithFolder() async throws {
@@ -800,8 +800,8 @@ struct EditControllerTests {
 
         let collection = root.itemController.itemOrEmpty(for: collectionModel.id)
         #expect(collection.entries.count == 2)
-        #expect(await root.itemController.itemOrEmpty(for: item1).parentId == nil) // collections don't set parentId
-        #expect(await root.itemController.itemOrEmpty(for: item2).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: item1).parentId == nil) // collections don't set parentId
+        #expect(root.itemController.itemOrEmpty(for: item2).parentId == nil)
 
         // Delete the collection
         await sut.delete(itemId: collectionModel.id)
@@ -811,12 +811,12 @@ struct EditControllerTests {
         #expect(deletedCollection.displayState == 0)
 
         // Verify items remain visible (displayState = 0), not deleted
-        #expect(await root.itemController.itemOrEmpty(for: item1).displayState == 0)
-        #expect(await root.itemController.itemOrEmpty(for: item2).displayState == 0)
+        #expect(root.itemController.itemOrEmpty(for: item1).displayState == 0)
+        #expect(root.itemController.itemOrEmpty(for: item2).displayState == 0)
 
         // Verify items' parentId remains nil (collections don't set parentId)
-        #expect(await root.itemController.itemOrEmpty(for: item1).parentId == nil)
-        #expect(await root.itemController.itemOrEmpty(for: item2).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: item1).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: item2).parentId == nil)
     }
 
     @Test func duplicate() async throws {
@@ -873,7 +873,7 @@ struct EditControllerTests {
 
         // Mark for deletion
         sut.markForDeletion(itemId: item.id)
-        #expect(await root.itemController.itemOrEmpty(for: item.id).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: item.id).displayState == 2)
 
         // Restore the item
         sut.restore(itemId: item.id)
@@ -906,9 +906,9 @@ struct EditControllerTests {
         sut.markForDeletion(itemId: child1)
         sut.markForDeletion(itemId: child2)
         
-        #expect(await root.itemController.itemOrEmpty(for: folderModel.id).displayState == 2)
-        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 2)
-        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: folderModel.id).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: child1).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: child2).displayState == 2)
 
         // Restore the folder
         sut.restore(itemId: folderModel.id)
@@ -919,12 +919,12 @@ struct EditControllerTests {
 
         // After restore, children should remain at displayState 2 (still marked for deletion)
         // because restore only affects the single item, not its children
-        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 2)
-        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: child1).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: child2).displayState == 2)
         
         // ParentIds should remain nil after the folder was deleted
-        #expect(await root.itemController.itemOrEmpty(for: child1).parentId == nil)
-        #expect(await root.itemController.itemOrEmpty(for: child2).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: child1).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: child2).parentId == nil)
     }
 
     @Test func removeItem() async throws {
@@ -962,7 +962,7 @@ struct EditControllerTests {
         #expect(entryIds.contains(child3))
 
         // For collection, child should NOT be deleted (displayState still 0)
-        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 0)
+        #expect(root.itemController.itemOrEmpty(for: child2).displayState == 0)
     }
 
     @Test func removeItemFromFolder() async throws {
@@ -1096,9 +1096,9 @@ struct EditControllerTests {
         sut.addItem(itemId: child2, parentId: folderModel.id)
         sut.addItem(itemId: child3, parentId: folderModel.id)
 
-        #expect(await root.itemController.itemOrEmpty(for: child1).parentId == folderModel.id)
-        #expect(await root.itemController.itemOrEmpty(for: child2).parentId == folderModel.id)
-        #expect(await root.itemController.itemOrEmpty(for: child3).parentId == folderModel.id)
+        #expect(root.itemController.itemOrEmpty(for: child1).parentId == folderModel.id)
+        #expect(root.itemController.itemOrEmpty(for: child2).parentId == folderModel.id)
+        #expect(root.itemController.itemOrEmpty(for: child3).parentId == folderModel.id)
 
         // Simulate the actual UI workflow:
         // 1. Mark all for deletion (what markCollectionItemsForRemoval does)
@@ -1107,10 +1107,10 @@ struct EditControllerTests {
         sut.markForDeletion(itemId: child2)
         sut.markForDeletion(itemId: child3)
 
-        #expect(await root.itemController.itemOrEmpty(for: folderModel.id).displayState == 2)
-        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 2)
-        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 2)
-        #expect(await root.itemController.itemOrEmpty(for: child3).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: folderModel.id).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: child1).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: child2).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: child3).displayState == 2)
 
         // 2. User clicks Remove with only folder and child1 selected (child2 and child3 unchecked)
         //    Restore child2 and child3 (simulating unchecking them in UI)
@@ -1122,13 +1122,13 @@ struct EditControllerTests {
         #expect(deletedFolder.displayState == 2)
 
         // Child1 should remain deleted
-        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 2)
+        #expect(root.itemController.itemOrEmpty(for: child1).displayState == 2)
 
         // Child2 and child3 should be restored and moved to root level (parentId = nil)
-        #expect(await root.itemController.itemOrEmpty(for: child2).parentId == nil)
-        #expect(await root.itemController.itemOrEmpty(for: child3).parentId == nil)
-        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 0)
-        #expect(await root.itemController.itemOrEmpty(for: child3).displayState == 0)
+        #expect(root.itemController.itemOrEmpty(for: child2).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: child3).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: child2).displayState == 0)
+        #expect(root.itemController.itemOrEmpty(for: child3).displayState == 0)
     }
 
     @Test func moveMultipleItems() async throws {

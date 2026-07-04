@@ -5,10 +5,11 @@ import os.log
 import SwiftData
 import SwiftUI
 
-public protocol SwiftDataType: PersistentModel, Sendable {
+public protocol SwiftDataType: PersistentModel {
     var uuid: UUID? { get }
 }
 
+@preconcurrency
 @ModelActor
 public actor SwiftDataController<Model: ModelType, DataType: SwiftDataType> {
     func fetch() async throws -> [DataType] {
@@ -20,6 +21,14 @@ public actor SwiftDataController<Model: ModelType, DataType: SwiftDataType> {
         let predicate = #Predicate<DataType> { $0.uuid == uuid }
         let descriptor = FetchDescriptor<DataType>(predicate: predicate)
         return try modelContext.fetch(descriptor).first
+    }
+
+    func fetch<Snapshot: Sendable>(transform: @Sendable (DataType) -> Snapshot) async throws -> [Snapshot] {
+        try await fetch().map(transform)
+    }
+
+    func fetch<Snapshot: Sendable>(uuid: UUID, transform: @Sendable (DataType) -> Snapshot) async throws -> Snapshot? {
+        try await fetch(uuid: uuid).map(transform)
     }
 
     func add(data: DataType) async {

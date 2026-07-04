@@ -44,6 +44,7 @@ struct AdventureChatRootView: View {
     @State private var selectedBlocks: Set<String> = []
     @State private var focusedBlockID: String?
     @State private var didSendInitialContext = false
+    @State private var didGenerateSheetBlocks = false
     @State private var selectedVariation: AdventureChatInterfaceVariation
 
     @FocusState private var isTextFieldFocused: Bool
@@ -130,6 +131,7 @@ private extension AdventureChatRootView {
         .task {
             generatorController.generateExtractor()
             await generatorController.generate()
+            generateBlocksFromSheetIfNeeded()
             startConversationWithSheetContextIfNeeded()
             try? await Task.sleep(for: .seconds(0.5))
             isTextFieldFocused = true
@@ -225,6 +227,18 @@ private extension AdventureChatRootView {
             return
         }
         generatorController.request(message: message)
+    }
+
+    func generateBlocksFromSheetIfNeeded() {
+        guard !didGenerateSheetBlocks else { return }
+        didGenerateSheetBlocks = true
+
+        guard previewBlocks == nil, model.extracted.isEmpty,
+              let message = AdventureSheetContextBuilder.blockGenerationPrompt(for: sheetModel) else {
+            return
+        }
+
+        generatorController.extract(message: message)
     }
 
     var extractableMessage: String? {
@@ -1258,6 +1272,29 @@ enum AdventureSheetContextBuilder {
 
         Existing sheet:
         \(context)
+        """
+    }
+
+    @MainActor
+    static func blockGenerationPrompt(for sheetModel: SheetModel) -> String? {
+        let blocks = sourceBlocks(from: sheetModel)
+        guard !blocks.isEmpty else { return nil }
+
+        let sheetText = blocks
+            .prefix(20)
+            .map { block in
+                """
+                Title: \(block.titleForSheet(index: block.index))
+                Content: \(truncated(block.content, limit: 420))
+                """
+            }
+            .joined(separator: "\n\n")
+
+        return """
+        Generate adventure sheet blocks from the following SheetModel text. Preserve the existing meaning, but rewrite each result as a clear playable block with a concise title and useful content. Prefer scenes, story beats, secrets, NPC motives, complications, choices, and outcomes. Return structured blocks suitable for saving back into an adventure sheet.
+
+        SheetModel text:
+        \(sheetText)
         """
     }
 

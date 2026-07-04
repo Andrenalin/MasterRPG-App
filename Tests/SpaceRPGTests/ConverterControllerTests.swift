@@ -14,13 +14,13 @@ struct ConverterControllerTests {
         let root = try await MockRoot.importTestData()
         let sut = ConvertController(itemController: root.itemController, editController: root.editController)
 
-        #expect(await root.itemController.itemDataModel.items.count == 1)
+        #expect(root.itemController.itemDataModel.items.count == 1)
         let model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         model.fileUrl = FileUrl(fileId: model.id, url: URL(filePath: "/Rollenspiel/Example/3dmodel/3ditem.usdz"), location: .other, module: "Test", relativeUrl: nil)
         model.category = .item // allow the createFilpathFolders to work
         
         await sut.createFilepathFoldersAndCollections(reportModel: ValidateRepairModel())
-        try #require(await root.itemController.itemDataModel.items.count == 4)
+        try #require(root.itemController.itemDataModel.items.count == 4)
         
         let model1 = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         #expect(model1.name == "3D Item")
@@ -51,7 +51,7 @@ struct ConverterControllerTests {
         try #require(model1.entries.count == 0)
         
         await sut.createFilepathFoldersAndCollections(reportModel: ValidateRepairModel())
-        try #require(await root.itemController.itemDataModel.items.count == 4)
+        try #require(root.itemController.itemDataModel.items.count == 4)
 
         #expect(model4.parentId == nil)
         #expect(model4.entries[0].childId == model3.id)

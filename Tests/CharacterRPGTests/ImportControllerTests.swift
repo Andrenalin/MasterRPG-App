@@ -24,7 +24,7 @@ struct ImportControllerTests {
 
         let task = sut.importUrl(from: url)
         let _ = try await task.value
-        #expect(await root.itemController.itemDataModel.items.count == 15)
+        #expect(root.itemController.itemDataModel.items.count == 15)
     }
     
     @Test func importingItemInFolderWithExcludesSiblings() async throws {
@@ -62,9 +62,9 @@ struct ImportControllerTests {
         await edit.delete(itemId: siblingId)
         await root.itemController.delete(itemId: siblingId)
 
-        #expect(await root.itemController.itemDataModel.items.contains(itemId) == false)
-        #expect(await root.itemController.itemDataModel.items.contains(folderId) == false)
-        #expect(await root.itemController.itemDataModel.items.contains(siblingId) == false)
+        #expect(root.itemController.itemDataModel.items.contains(itemId) == false)
+        #expect(root.itemController.itemDataModel.items.contains(folderId) == false)
+        #expect(root.itemController.itemDataModel.items.contains(siblingId) == false)
 
         let importStream = InputStream(data: data!)
         importStream.open()
@@ -72,9 +72,9 @@ struct ImportControllerTests {
 
         try await sut.importStream(from: importStream, forceSave: false)
 
-        #expect(await root.itemController.itemDataModel.items.contains(itemId))
-        #expect(await root.itemController.itemDataModel.items.contains(folderId))
-        #expect(await root.itemController.itemDataModel.items.contains(siblingId) == false)
+        #expect(root.itemController.itemDataModel.items.contains(itemId))
+        #expect(root.itemController.itemDataModel.items.contains(folderId))
+        #expect(root.itemController.itemDataModel.items.contains(siblingId) == false)
     }
 
     @Test func importingPreservesNestedFolderHierarchy() async throws {
@@ -116,18 +116,18 @@ struct ImportControllerTests {
         await edit.delete(itemId: folder1Id)
         await root.itemController.delete(itemId: folder1Id)
 
-        #expect(await root.itemController.itemDataModel.items.contains(character1Id) == false)
-        #expect(await root.itemController.itemDataModel.items.contains(folder2Id) == false)
-        #expect(await root.itemController.itemDataModel.items.contains(folder1Id) == false)
+        #expect(root.itemController.itemDataModel.items.contains(character1Id) == false)
+        #expect(root.itemController.itemDataModel.items.contains(folder2Id) == false)
+        #expect(root.itemController.itemDataModel.items.contains(folder1Id) == false)
 
         let importStream = InputStream(data: data)
         importStream.open()
         defer { importStream.close() }
         try await sut.importStream(from: importStream, forceSave: false)
 
-        #expect(await root.itemController.itemDataModel.items.contains(character1Id))
-        #expect(await root.itemController.itemDataModel.items.contains(folder2Id))
-        #expect(await root.itemController.itemDataModel.items.contains(folder1Id))
+        #expect(root.itemController.itemDataModel.items.contains(character1Id))
+        #expect(root.itemController.itemDataModel.items.contains(folder2Id))
+        #expect(root.itemController.itemDataModel.items.contains(folder1Id))
         let importedCharacter = await root.itemController.item(for: character1Id)
         #expect(importedCharacter?.parentId == folder2Id)
     }
@@ -184,9 +184,9 @@ struct ImportControllerTests {
         importStream1.open()
         try await sut.importStream(from: importStream1, forceSave: false)
         importStream1.close()
-        #expect(await root.itemController.itemDataModel.items.contains(character1Id))
-        #expect(await root.itemController.itemDataModel.items.contains(folder2Id))
-        #expect(await root.itemController.itemDataModel.items.contains(character2Id) == false)
+        #expect(root.itemController.itemDataModel.items.contains(character1Id))
+        #expect(root.itemController.itemDataModel.items.contains(folder2Id))
+        #expect(root.itemController.itemDataModel.items.contains(character2Id) == false)
 
         // Second import: folder2 already exists — merge adds character2 alongside character1
         let importStream2 = InputStream(data: data2)
@@ -194,8 +194,8 @@ struct ImportControllerTests {
         defer { importStream2.close() }
         try await sut.importStream(from: importStream2, forceSave: false)
 
-        #expect(await root.itemController.itemDataModel.items.contains(character1Id))
-        #expect(await root.itemController.itemDataModel.items.contains(character2Id))
+        #expect(root.itemController.itemDataModel.items.contains(character1Id))
+        #expect(root.itemController.itemDataModel.items.contains(character2Id))
         let folder2Item = await root.itemController.item(for: folder2Id)
         let folder2Children = folder2Item?.entries.map(\.childId) ?? []
         #expect(folder2Children.contains(character1Id))
@@ -248,9 +248,9 @@ struct ImportControllerTests {
         importStream1.open()
         try await sut.importStream(from: importStream1, forceSave: false)
         importStream1.close()
-        #expect(await root.itemController.itemDataModel.items.contains(character1Id))
-        #expect(await root.itemController.itemDataModel.items.contains(folder1Id))
-        #expect(await root.itemController.itemDataModel.items.contains(character2Id) == false)
+        #expect(root.itemController.itemDataModel.items.contains(character1Id))
+        #expect(root.itemController.itemDataModel.items.contains(folder1Id))
+        #expect(root.itemController.itemDataModel.items.contains(character2Id) == false)
 
         // Second import: folder1 already exists — merge adds character2 alongside character1
         let importStream2 = InputStream(data: data2)
@@ -258,8 +258,8 @@ struct ImportControllerTests {
         defer { importStream2.close() }
         try await sut.importStream(from: importStream2, forceSave: false)
 
-        #expect(await root.itemController.itemDataModel.items.contains(character1Id))
-        #expect(await root.itemController.itemDataModel.items.contains(character2Id))
+        #expect(root.itemController.itemDataModel.items.contains(character1Id))
+        #expect(root.itemController.itemDataModel.items.contains(character2Id))
         let folder1Item = await root.itemController.item(for: folder1Id)
         let folder1Children = folder1Item?.entries.map(\.childId) ?? []
         #expect(folder1Children.contains(character1Id))

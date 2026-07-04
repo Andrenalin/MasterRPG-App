@@ -20,6 +20,6 @@ struct ImportControllerTests {
         let url = bundle.url(forResource: ResourcesDebug.spaceTestData, withExtension: "gmz").unsafelyUnwrapped
         let task = sut.importUrl(from: url)
         let _ = try await task.value
-        #expect(await root.itemController.itemDataModel.items.count == 1)
+        #expect(root.itemController.itemDataModel.items.count == 1)
     }
 }
