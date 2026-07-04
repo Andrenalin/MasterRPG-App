@@ -31,7 +31,8 @@ extension ItemController: ItemControllable {
 }
 
 extension ItemController: FileUrlAccessible {
-    func saveFileUrl(fileUrl: FileUrl) async {
+    // Isolated witness for the async requirement — callers already await.
+    @MainActor func saveFileUrl(fileUrl: FileUrl) async {
         guard let item = await item(for: fileUrl.fileId)?.copy() else { return }
         item.fileUrl = fileUrl
         await replace(model: item, isInsert: false)

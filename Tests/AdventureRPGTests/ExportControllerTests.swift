@@ -16,6 +16,7 @@ import WeatherRPG
 
 @testable import AdventureRPG
 
+@MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
         let root = try await MockRoot.importTestData()

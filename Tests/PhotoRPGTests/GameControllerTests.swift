@@ -8,6 +8,7 @@ import Testing
 
 @testable import PhotoRPG
 
+@MainActor
 struct GameControllerTests {
     @Test func HasItem() async throws {
         let root = try await GameControllerTests.setupPhoto()

@@ -7,6 +7,7 @@ import Testing
 
 @testable import MapRPG
 
+@MainActor
 struct MapModelTests {
     func setUp() async throws -> MapModel {
         MapModel(

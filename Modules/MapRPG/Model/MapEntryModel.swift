@@ -25,7 +25,7 @@ enum MapDisplayMode: Int, Identifiable, Equatable, Hashable, CaseIterable {
     }
 }
 
-public struct MapEntryModel: Identifiable, Equatable, Hashable, Codable {
+public struct MapEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     public init(id: UUID, name: String, content: String, coordinates: [CGPoint], isHexGrid: Bool = false, isShown: Bool = false, focused: Bool = false, displayState: Int = 0) {
         self.id = id
         self.name = name

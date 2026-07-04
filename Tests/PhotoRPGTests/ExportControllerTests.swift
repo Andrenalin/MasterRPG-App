@@ -7,6 +7,7 @@ import Testing
 
 @testable import PhotoRPG
 
+@MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
         let root = await PhotoRootModel.testRoot()

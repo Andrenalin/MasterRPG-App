@@ -469,7 +469,7 @@ extension SingleEntryImportModel {
 }
 
 private extension ItemDataAccessable {
-    func replaceEntries(with newEntries: [any EntryDataAccessable]) {
+    @MainActor func replaceEntries(with newEntries: [any EntryDataAccessable]) {
         entries = newEntries.compactMap { $0 as? Entry }
     }
 }
@@ -523,7 +523,7 @@ extension SingleEntryImportModel {
 // A minimal ItemDataAccessable conformance for SwiftUI previews only.
 // Uses EmtpyEntryViewModel (public) as Entry to avoid needing FakeItemModel (internal).
 @Observable
-private final class PreviewItemModel: ItemDataAccessable, @unchecked Sendable {
+private final class PreviewItemModel: @unchecked Sendable {
     typealias Entry = EmtpyEntryViewModel
 
     var id: UUID
@@ -599,7 +599,7 @@ extension SingleItemImportModel {
 }
 
 extension ItemDataAccessable {
-    var fileName: String {
+    @MainActor var fileName: String {
         guard let fileUrl else { return "No file set" }
         let name = fileUrl.rawUrl.lastPathComponent
         return name.isEmpty ? fileUrl.rawValue : name
@@ -608,12 +608,12 @@ extension ItemDataAccessable {
     /// Stable identity for change detection: the content hash when available, so the same
     /// binary at a different location compares equal and changed data at the same url does
     /// not. Falls back to the raw url representation for legacy items without a hash.
-    var fileIdentity: String {
+    @MainActor var fileIdentity: String {
         guard let fileUrl else { return "" }
         return fileUrl.contentHash ?? fileUrl.rawValue
     }
 
-    var tagLine: String {
+    @MainActor var tagLine: String {
         tags.joined(separator: ",")
     }
 }
@@ -1676,3 +1676,7 @@ private struct VC_EntryPropertyAccordion: View {
 #Preview("VC · Accordion") {
     NavigationStack { SingleItemReviewVC_Accordion(model: .previewConflictingEntries) }
 }
+
+
+// Conformance in an extension so witness inference does not isolate the members.
+extension PreviewItemModel: ItemDataAccessable {}

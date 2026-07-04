@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable {
+public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     public init(id: UUID, name: String, type: ValueEntryModel.ValueType, isGenerator: Bool = false, value: String, diceId: UUID? = nil, valueId: UUID? = nil, displayState: Int = 0) {
         self.id = id
         self.name = name

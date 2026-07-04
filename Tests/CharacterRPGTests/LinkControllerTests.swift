@@ -11,6 +11,7 @@ import Testing
 
 @testable import CharacterRPG
 
+@MainActor
 struct LinkControllerTests {
     @Test func createGroup() async throws {
         let root = try await MockRoot.importTestData()

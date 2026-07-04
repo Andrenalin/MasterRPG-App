@@ -14,11 +14,12 @@ struct DataController: DataPersistenceControllable {
         let token: String
 }
 
-extension DataController: CoreDataPersistable {
-    // MARK: model -> viewlmodel
+extension DataController: CoreDataSnapshotPersistable {
+    // MARK: managed object -> snapshot (context queue)
 
-    func mapViewModel(_ model: RPGWeather, token: String) -> WeatherModel {
-        WeatherModel(
+    @Sendable
+    func mapSnapshot(_ model: RPGWeather, token: String) -> WeatherSnapshot {
+        WeatherSnapshot(
             id: model.uuid ?? UUID(),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
@@ -40,28 +41,29 @@ extension DataController: CoreDataPersistable {
         )
     }
 
-    // MARK: viewmodel -> model
+    // MARK: snapshot -> managed object (context queue)
 
-    func mapModel(_ viewModel: WeatherModel, into model: RPGWeather) {
-        model.uuid <=> viewModel.id
-        model.name <=> viewModel.name_.rawValue
-        model.information <=> viewModel.description_.rawValue
-        model.tags <=> viewModel.tags_.rawValue
-        model.weatherCategory <=> viewModel.category_.rawValue
-        model.displayState <=> Int32(viewModel.displayState)
-        model.weatherUpdate <=> viewModel.weatherUpdate_.rawValue
-        model.time <=> Float(viewModel.time)
-        model.cloudThickness <=> Int16(viewModel.cloudThickness.rawValue)
-        model.stormType <=> Int16(viewModel.stormType.rawValue)
-        model.rainAngle <=> Float(viewModel.rainAngle)
-        model.rainIntensity <=> Float(viewModel.rainIntensity)
-        model.lightningFrequency <=> Float(viewModel.lightningFrequency)
-        model.lightningMaxBolts <=> Float(viewModel.lightningMaxBolts)
-        model.lightningForkProbability <=> Float(viewModel.lightningForkProbability)
-        model.photoUUID <=> viewModel.photoId
-        unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
+    @Sendable
+    func applySnapshot(_ snapshot: WeatherSnapshot, into model: RPGWeather) {
+        model.uuid <=> snapshot.id
+        model.name <=> snapshot.name.rawValue
+        model.information <=> snapshot.description.rawValue
+        model.tags <=> snapshot.tags.rawValue
+        model.weatherCategory <=> snapshot.category.rawValue
+        model.displayState <=> Int32(snapshot.displayState)
+        model.weatherUpdate <=> snapshot.weatherUpdate.rawValue
+        model.time <=> Float(snapshot.time)
+        model.cloudThickness <=> Int16(snapshot.cloudThickness.rawValue)
+        model.stormType <=> Int16(snapshot.stormType.rawValue)
+        model.rainAngle <=> Float(snapshot.rainAngle)
+        model.rainIntensity <=> Float(snapshot.rainIntensity)
+        model.lightningFrequency <=> Float(snapshot.lightningFrequency)
+        model.lightningMaxBolts <=> Float(snapshot.lightningMaxBolts)
+        model.lightningForkProbability <=> Float(snapshot.lightningForkProbability)
+        model.photoUUID <=> snapshot.photoId
+        unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
             let oldEntries = model.entriesModel
-            let newEntries = viewModel.entries.enumerated().map {
+            let newEntries = snapshot.entries.wrappedValue.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
@@ -74,9 +76,22 @@ extension DataController: CoreDataPersistable {
                 model.managedObjectContext?.delete(entry)
             }
         }
-        model.parentId <=> viewModel.parentId
+        model.parentId <=> snapshot.parentId
     }
     
+
+    // MARK: model <-> snapshot (MainActor)
+
+    @MainActor
+    func makeModel(from snapshot: WeatherSnapshot) -> WeatherModel {
+        snapshot.makeModel()
+    }
+
+    @MainActor
+    func makeSnapshot(from model: WeatherModel) -> WeatherSnapshot {
+        WeatherSnapshot(model)
+    }
+
     // MARK: - ChildEntryViewModel
 
     private func map(_ model: RPGWeatherEntry) -> ChildEntryModel {

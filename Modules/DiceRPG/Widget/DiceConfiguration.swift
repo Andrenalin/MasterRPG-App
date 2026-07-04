@@ -207,9 +207,9 @@ public struct DiceWidgetSnapshot: Codable, Equatable, Sendable {
 public struct FavoriteDiceItem: Codable, Identifiable, Equatable {
     public let id: UUID
     public var name: String
-    public var diceModel: DiceModel
+    public var diceModel: DiceSnapshot
     
-    public init(id: UUID = UUID(), name: String, diceModel: DiceModel) {
+    public init(id: UUID = UUID(), name: String, diceModel: DiceSnapshot) {
         self.id = id
         self.name = name
         self.diceModel = diceModel
@@ -219,7 +219,7 @@ public struct FavoriteDiceItem: Codable, Identifiable, Equatable {
 // MARK: - Dice Configuration
 
 public struct DiceConfiguration: Codable {
-    public init(selectedDice: DiceModel, lastRoll: DiceResultModel? = nil, availableDice: [DieModel], showHistory: Bool, favoriteDice: [FavoriteDiceItem] = []) {
+    public init(selectedDice: DiceSnapshot, lastRoll: DiceResultModel? = nil, availableDice: [DieModel], showHistory: Bool, favoriteDice: [FavoriteDiceItem] = []) {
         self.selectedDice = selectedDice
         self.lastRoll = lastRoll
         self.availableDice = availableDice
@@ -227,7 +227,7 @@ public struct DiceConfiguration: Codable {
         self.favoriteDice = favoriteDice
     }
     
-    public var selectedDice: DiceModel
+    public var selectedDice: DiceSnapshot
     public var lastRoll: DiceResultModel?
     public var availableDice: [DieModel]
     public var showHistory: Bool
@@ -235,7 +235,7 @@ public struct DiceConfiguration: Codable {
     
     public static var `default`: DiceConfiguration {
         DiceConfiguration(
-            selectedDice: DiceModel.preview,
+            selectedDice: DiceModel.previewSnapshot,
             lastRoll: nil,
             availableDice: [.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)],
             showHistory: true,

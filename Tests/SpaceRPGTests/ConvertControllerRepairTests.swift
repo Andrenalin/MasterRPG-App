@@ -10,6 +10,7 @@ import Testing
 /// Tests for ConvertController.repairHiddenAndFolders function
 /// Following Swift Testing best practices with Arrange-Act-Assert pattern
 @Suite("ConvertController repairHiddenAndFolders Tests")
+@MainActor
 struct ConvertControllerRepairTests {
 
     // MARK: - Folder Cleaning Tests

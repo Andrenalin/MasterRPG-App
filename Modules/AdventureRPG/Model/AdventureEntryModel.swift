@@ -3,7 +3,7 @@
 import CoreRPG
 import Foundation
 
-public struct AdventureEntryModel: Identifiable, Equatable, Hashable, Codable {
+public struct AdventureEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     public init(id: UUID, name: String, content: String, displayState: Int = 0) {
         self.id = id
         self.name = name

@@ -8,6 +8,7 @@ import Testing
 
 @testable import TableRPG
 
+@MainActor
 struct EditControllerTests {
     @Test @MainActor func mergeEntries() async throws {
         let root = try await MockRoot.importTestData()

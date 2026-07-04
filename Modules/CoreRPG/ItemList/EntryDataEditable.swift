@@ -15,7 +15,7 @@ public enum AdditionalEntryViewType: Hashable, Sendable {
 }
 
 public protocol EntryDataEditable: EditControllable {
-    func editEntries(for item: Model) -> [Model.Entry]
+    @MainActor func editEntries(for item: Model) -> [Model.Entry]
 
     // MARK: - EntryList editor
 
@@ -100,7 +100,7 @@ public extension EntryDataEditable {
         entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"
     }
     
-    func editEntries(for item: Model) -> [Model.Entry] {
+    @MainActor func editEntries(for item: Model) -> [Model.Entry] {
         item.entries
     }
     

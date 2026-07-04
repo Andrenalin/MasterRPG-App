@@ -14,6 +14,9 @@ public enum CompareMergeStrategy: Equatable, Hashable, CaseIterable {
     case own
 }
 
+// Nonisolated on purpose: every model's (nonisolated) Equatable `==` calls isSame,
+// so the requirements must be callable outside the main actor. @MainActor models
+// witness them with nonisolated shims.
 public protocol ItemDiffComparable {
     func isSame(_ other: Self) -> Bool
     func merge(_ other: Self) -> Self

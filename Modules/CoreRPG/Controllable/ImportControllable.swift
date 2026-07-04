@@ -126,7 +126,10 @@ public extension ImportControllable {
                 case ExportDataToken.item.rawValue:
                     counter += 1
                     do {
-                        let newItem = try itemControllable.decode(data: data, with: decoder, version: version)
+                        // decode constructs models, which may be @MainActor — hop for
+                        // the decode call; the wire format itself is unchanged.
+                        let itemVersion = version
+                        let newItem = try await MainActor.run { try itemControllable.decode(data: data, with: JSONDecoder(), version: itemVersion) }
                         if let currentFile {
                             try await addFile(data: currentFile, to: newItem, forceSave: forceSave)
                         }
@@ -420,7 +423,7 @@ private extension ImportControllable {
         }
     }
 
-    func addFile(data: Data, to item: any ItemDataAccessable, forceSave: Bool) async throws {
+    @MainActor func addFile(data: Data, to item: any ItemDataAccessable, forceSave: Bool) async throws {
         guard let fileUrlDataController, var fileUrl = item.fileUrl else { return }
         var item = item
 
@@ -444,7 +447,7 @@ private extension ImportControllable {
 
     /// The existing item's fileUrl with a content hash. Legacy items have no hash yet —
     /// eagerly calculate it from the file on disk once and persist it on the item.
-    func contentHashedExistingFileUrl(for itemId: UUID, forceSave: Bool) async -> FileUrl? {
+    @MainActor func contentHashedExistingFileUrl(for itemId: UUID, forceSave: Bool) async -> FileUrl? {
         guard let existing = await itemControllable.item(for: itemId), var existingFileUrl = existing.fileUrl else { return nil }
         guard existingFileUrl.contentHash == nil else { return existingFileUrl }
         guard let data = try? await fileUrlDataController?.loadData(for: existingFileUrl) else { return nil }

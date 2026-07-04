@@ -19,6 +19,7 @@ import AdventureRPG
 /// Test environment for multi-player game scenarios.
 ///
 /// Provides a master controller and 3 player controllers with shared network infrastructure.
+@MainActor
 struct MultiConnectionTestEnvironment {
     let master: MasterController
     let masterRoot: GameRoot
@@ -167,6 +168,7 @@ struct MultiConnectionTestEnvironment {
 // MARK: - Multi-Connection Audio Tests
 
 @Suite("Multi-player audio synchronization")
+@MainActor
 struct MultiConnectionAudioTests {
 
     @Test("Master broadcasts audio show command to all players")

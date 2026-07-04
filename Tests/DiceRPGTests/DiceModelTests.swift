@@ -7,6 +7,7 @@ import Testing
 
 @testable import DiceRPG
 
+@MainActor
 struct DiceModelTests {
     func setUp() async throws -> DiceModel {
         DiceModel(

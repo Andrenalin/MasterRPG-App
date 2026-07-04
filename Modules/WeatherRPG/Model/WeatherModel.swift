@@ -4,54 +4,57 @@ import CoreRPG
 import Foundation
 import Observation
 
-@Observable
-public final class WeatherModel: Identifiable, @unchecked Sendable {
-    public init(id: UUID, name: String, description: String, tags: [String], category: ItemListCategory = .scenario, displayState: Int = 0, weatherUpdate: UUID = UUID(), time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?, entries: [ChildEntryModel] = [], parentId: UUID? = nil) {
+// MainActor-owned model. Sendable via global-actor isolation (no @unchecked):
+// persistence crosses the Core Data boundary as WeatherSnapshot,
+// the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
+@MainActor @Observable
+public final class WeatherModel: nonisolated Identifiable {
+    nonisolated public init(id: UUID, name: String, description: String, tags: [String], category: ItemListCategory = .scenario, displayState: Int = 0, weatherUpdate: UUID = UUID(), time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?, entries: [ChildEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
-        name_ = CRDT(wrappedValue: name)
-        description_ = CRDT(wrappedValue: description)
-        tags_ = CRDT(wrappedValue: tags)
-        category_ = CRDT(wrappedValue: category)
-        self.displayState = displayState
-        weatherUpdate_ = CRDT(wrappedValue: weatherUpdate)
-        self.time = time
-        self.cloudThickness = cloudThickness
-        self.stormType = stormType
-        self.rainAngle = rainAngle
-        self.rainIntensity = rainIntensity
-        self.lightningFrequency = lightningFrequency
-        self.lightningMaxBolts = lightningMaxBolts
-        self.lightningForkProbability = lightningForkProbability
-        self.photoId = photoId
-        entries_ = CRDTDataUpdate(wrappedValue: entries)
-        self.parentId = parentId
+        _name_ = CRDT(wrappedValue: name)
+        _description_ = CRDT(wrappedValue: description)
+        _tags_ = CRDT(wrappedValue: tags)
+        _category_ = CRDT(wrappedValue: category)
+        self._displayState = displayState
+        _weatherUpdate_ = CRDT(wrappedValue: weatherUpdate)
+        self._time = time
+        self._cloudThickness = cloudThickness
+        self._stormType = stormType
+        self._rainAngle = rainAngle
+        self._rainIntensity = rainIntensity
+        self._lightningFrequency = lightningFrequency
+        self._lightningMaxBolts = lightningMaxBolts
+        self._lightningForkProbability = lightningForkProbability
+        self._photoId = photoId
+        _entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self._parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, weatherUpdate: CRDT<UUID>, time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?, entries: CRDTDataUpdate<[ChildEntryModel]>, parentId: UUID?) {
+    nonisolated init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, weatherUpdate: CRDT<UUID>, time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?, entries: CRDTDataUpdate<[ChildEntryModel]>, parentId: UUID?) {
         self.id = id
-        name_ = name
-        description_ = description
-        tags_ = tags
-        category_ = category
-        self.displayState = displayState
-        weatherUpdate_ = weatherUpdate
-        self.time = time
-        self.cloudThickness = cloudThickness
-        self.stormType = stormType
-        self.rainAngle = rainAngle
-        self.rainIntensity = rainIntensity
-        self.lightningFrequency = lightningFrequency
-        self.lightningMaxBolts = lightningMaxBolts
-        self.lightningForkProbability = lightningForkProbability
-        self.photoId = photoId
-        entries_ = entries
-        self.parentId = parentId
+        _name_ = name
+        _description_ = description
+        _tags_ = tags
+        _category_ = category
+        self._displayState = displayState
+        _weatherUpdate_ = weatherUpdate
+        self._time = time
+        self._cloudThickness = cloudThickness
+        self._stormType = stormType
+        self._rainAngle = rainAngle
+        self._rainIntensity = rainIntensity
+        self._lightningFrequency = lightningFrequency
+        self._lightningMaxBolts = lightningMaxBolts
+        self._lightningForkProbability = lightningForkProbability
+        self._photoId = photoId
+        _entries_ = entries
+        self._parentId = parentId
     }
 
-    public init(from decoder: Decoder) throws {
+    nonisolated public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<WeatherModel.CodingKeys> = try decoder.container(keyedBy: WeatherModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: WeatherModel.CodingKeys._id)
+        self.id = try container.decode(UUID.self, forKey: WeatherModel.CodingKeys._id)
         self._name_ = try container.decode(CRDT<String>.self, forKey: WeatherModel.CodingKeys._name_)
         self._description_ = try container.decode(CRDT<String>.self, forKey: WeatherModel.CodingKeys._description_)
         self._tags_ = try container.decode(CRDT<[String]>.self, forKey: WeatherModel.CodingKeys._tags_)
@@ -71,7 +74,8 @@ public final class WeatherModel: Identifiable, @unchecked Sendable {
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: WeatherModel.CodingKeys._parentId)
     }
 
-    public var id: UUID
+    // `let`: nonisolated access (Identifiable, hashing) per SE-0434.
+    public let id: UUID
     public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
@@ -133,13 +137,16 @@ extension WeatherModel {
     }
 }
 
-extension WeatherModel: Comparable {
-    public static func < (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
-        lhs.name < rhs.name
+extension WeatherModel: nonisolated Comparable {
+    nonisolated public static func < (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.name < rhs.name
+    
+        }
     }
 }
 
-extension WeatherModel: ItemLinkRegistable {
+extension WeatherModel: nonisolated ItemLinkRegistable {
     @MainActor public func changedLinkRegisterModels(oldValue: WeatherModel) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
         var added: [LinkRegisterModel] = []
         var removed: [LinkRegisterModel] = []
@@ -158,77 +165,83 @@ extension WeatherModel: ItemLinkRegistable {
     }
 }
 
-extension WeatherModel: ItemDiffComparable {
-    public func merge(_ other: WeatherModel) -> WeatherModel {
-        let merged = weatherUpdate_.merged(other: other.weatherUpdate_)
-        let shouldUpdate = merged.wrappedValue == weatherUpdate_.wrappedValue
-        let mergedCategory = category_.merged(other: other.category_)
-        let mergedEntries: CRDTDataUpdate<[ChildEntryModel]>
-        if mergedCategory.wrappedValue == .folder {
-            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-            let combined = allIds
-                .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-            mergedEntries = CRDTDataUpdate(wrappedValue: combined)
-        } else {
-            mergedEntries = entries_.merged(other: other.entries_)
+extension WeatherModel: nonisolated ItemDiffComparable {
+    nonisolated public func merge(_ other: WeatherModel) -> WeatherModel {
+        return MainActor.assumeIsolated {
+            let merged = weatherUpdate_.merged(other: other.weatherUpdate_)
+            let shouldUpdate = merged.wrappedValue == weatherUpdate_.wrappedValue
+            let mergedCategory = category_.merged(other: other.category_)
+            let mergedEntries: CRDTDataUpdate<[ChildEntryModel]>
+            if mergedCategory.wrappedValue == .folder {
+                let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
+                let combined = allIds
+                    .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
+                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+                mergedEntries = CRDTDataUpdate(wrappedValue: combined)
+            } else {
+                mergedEntries = entries_.merged(other: other.entries_)
+            }
+            return WeatherModel(
+                id: id,
+                name: name_.merged(other: other.name_),
+                description: description_.merged(other: other.description_),
+                tags: tags_.merged(other: other.tags_),
+                category: mergedCategory,
+                displayState: other.displayState,
+                weatherUpdate: merged,
+                time: shouldUpdate ? time : other.time,
+                cloudThickness: shouldUpdate ? cloudThickness : other.cloudThickness,
+                stormType: shouldUpdate ? stormType : other.stormType,
+                rainAngle: shouldUpdate ? rainAngle : other.rainAngle,
+                rainIntensity: shouldUpdate ? rainIntensity : other.rainIntensity,
+                lightningFrequency: shouldUpdate ? lightningFrequency : other.lightningFrequency,
+                lightningMaxBolts: shouldUpdate ? lightningMaxBolts : other.lightningMaxBolts,
+                lightningForkProbability: shouldUpdate ? lightningForkProbability : other.lightningForkProbability,
+                photoId: shouldUpdate ? photoId : other.photoId,
+                entries: mergedEntries,
+                parentId: other.parentId
+            )
+    
         }
-        return WeatherModel(
-            id: id,
-            name: name_.merged(other: other.name_),
-            description: description_.merged(other: other.description_),
-            tags: tags_.merged(other: other.tags_),
-            category: mergedCategory,
-            displayState: other.displayState,
-            weatherUpdate: merged,
-            time: shouldUpdate ? time : other.time,
-            cloudThickness: shouldUpdate ? cloudThickness : other.cloudThickness,
-            stormType: shouldUpdate ? stormType : other.stormType,
-            rainAngle: shouldUpdate ? rainAngle : other.rainAngle,
-            rainIntensity: shouldUpdate ? rainIntensity : other.rainIntensity,
-            lightningFrequency: shouldUpdate ? lightningFrequency : other.lightningFrequency,
-            lightningMaxBolts: shouldUpdate ? lightningMaxBolts : other.lightningMaxBolts,
-            lightningForkProbability: shouldUpdate ? lightningForkProbability : other.lightningForkProbability,
-            photoId: shouldUpdate ? photoId : other.photoId,
-            entries: mergedEntries,
-            parentId: other.parentId
-        )
     }
 
-    public func isSame(_ other: WeatherModel) -> Bool {
-        // Split comparison into typed chunks for faster type-checking
-        let basicFieldsMatch: Bool = (
-            name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category
-        )
-        guard basicFieldsMatch else { return false }
+    nonisolated public func isSame(_ other: WeatherModel) -> Bool {
+        return MainActor.assumeIsolated {
+            // Split comparison into typed chunks for faster type-checking
+            let basicFieldsMatch: Bool = (
+                name == other.name &&
+                description == other.description &&
+                tags == other.tags &&
+                category == other.category
+            )
+            guard basicFieldsMatch else { return false }
 
-        let weatherConfigMatch: Bool = (
-            weatherUpdate_.wrappedValue == other.weatherUpdate_.wrappedValue &&
-            time == other.time &&
-            cloudThickness == other.cloudThickness &&
-            stormType == other.stormType
-        )
-        guard weatherConfigMatch else { return false }
+            let weatherConfigMatch: Bool = (
+                weatherUpdate_.wrappedValue == other.weatherUpdate_.wrappedValue &&
+                time == other.time &&
+                cloudThickness == other.cloudThickness &&
+                stormType == other.stormType
+            )
+            guard weatherConfigMatch else { return false }
 
-        let rainConfigMatch: Bool = (
-            rainAngle == other.rainAngle &&
-            rainIntensity == other.rainIntensity
-        )
-        guard rainConfigMatch else { return false }
+            let rainConfigMatch: Bool = (
+                rainAngle == other.rainAngle &&
+                rainIntensity == other.rainIntensity
+            )
+            guard rainConfigMatch else { return false }
 
-        let lightningConfigMatch: Bool = (
-            lightningFrequency == other.lightningFrequency &&
-            lightningMaxBolts == other.lightningMaxBolts &&
-            lightningForkProbability == other.lightningForkProbability
-        )
-        guard lightningConfigMatch else { return false }
+            let lightningConfigMatch: Bool = (
+                lightningFrequency == other.lightningFrequency &&
+                lightningMaxBolts == other.lightningMaxBolts &&
+                lightningForkProbability == other.lightningForkProbability
+            )
+            guard lightningConfigMatch else { return false }
 
-        return photoId == other.photoId &&
-               entries_.update == other.entries_.update &&
-               parentId == other.parentId
+            return photoId == other.photoId &&
+                   entries_.update == other.entries_.update &&
+                   parentId == other.parentId
+    
+        }
     }
 }
 
@@ -250,24 +263,27 @@ extension WeatherModel {
     }
 }
 
-extension WeatherModel: ItemDuplicatable {
-    public func duplicate() -> WeatherModel {
-        let copyName = duplicateName(from: name)
-        return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId)
+extension WeatherModel: nonisolated ItemDuplicatable {
+    nonisolated public func duplicate() -> WeatherModel {
+        return MainActor.assumeIsolated {
+            let copyName = duplicateName(from: name)
+            return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId)
+    
+        }
     }
 }
 
-extension WeatherModel: ItemDataAccessable {
+extension WeatherModel: nonisolated ItemDataAccessable {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}
     }
 
-    public static var empty: WeatherModel { empty(UUID()) }
-    public static func empty(_ id: UUID) -> WeatherModel {
+    nonisolated public static var empty: WeatherModel { empty(UUID()) }
+    nonisolated public static func empty(_ id: UUID) -> WeatherModel {
         WeatherModel(id: id, name: "", description: "", tags: [], time: 0.0, cloudThickness: .none, stormType: .none, rainAngle: 0, rainIntensity: 0, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
     }
-    public static let typeId: NetworkModules = .weather
+    nonisolated public static let typeId: NetworkModules = .weather
 
     public func copy() -> WeatherModel {
         WeatherModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, weatherUpdate: weatherUpdate_, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries_, parentId: parentId)
@@ -336,7 +352,7 @@ extension WeatherModel: ItemDataAccessable {
     }
 }
 
-extension WeatherModel: Codable {
+extension WeatherModel: nonisolated Codable {
     public enum CodingKeys: CodingKey {
         case _id
         case _name_
@@ -358,37 +374,44 @@ extension WeatherModel: Codable {
         case _parentId
     }
 
-    public final func encode(to encoder: Encoder) throws {
-        var container: KeyedEncodingContainer<WeatherModel.CodingKeys> = encoder.container(keyedBy: WeatherModel.CodingKeys.self)
+    nonisolated public final func encode(to encoder: Encoder) throws {
+        nonisolated(unsafe) let encoder = encoder
+        try MainActor.assumeIsolated {
+            var container: KeyedEncodingContainer<WeatherModel.CodingKeys> = encoder.container(keyedBy: WeatherModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: WeatherModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: WeatherModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: WeatherModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: WeatherModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: WeatherModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: WeatherModel.CodingKeys._displayState)
-        try container.encode(self._weatherUpdate_, forKey: WeatherModel.CodingKeys._weatherUpdate_)
-        try container.encode(self._time, forKey: WeatherModel.CodingKeys._time)
-        try container.encode(self._cloudThickness, forKey: WeatherModel.CodingKeys._cloudThickness)
-        try container.encode(self._stormType, forKey: WeatherModel.CodingKeys._stormType)
-        try container.encode(self._rainAngle, forKey: WeatherModel.CodingKeys._rainAngle)
-        try container.encode(self._rainIntensity, forKey: WeatherModel.CodingKeys._rainIntensity)
-        try container.encode(self._lightningFrequency, forKey: WeatherModel.CodingKeys._lightningFrequency)
-        try container.encode(self._lightningMaxBolts, forKey: WeatherModel.CodingKeys._lightningMaxBolts)
-        try container.encode(self._lightningForkProbability, forKey: WeatherModel.CodingKeys._lightningForkProbability)
-        try container.encodeIfPresent(self._photoId, forKey: WeatherModel.CodingKeys._photoId)
-        try container.encode(self._entries_, forKey: WeatherModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self._parentId, forKey: WeatherModel.CodingKeys._parentId)
+            try container.encode(self.id, forKey: WeatherModel.CodingKeys._id)
+            try container.encode(self._name_, forKey: WeatherModel.CodingKeys._name_)
+            try container.encode(self._description_, forKey: WeatherModel.CodingKeys._description_)
+            try container.encode(self._tags_, forKey: WeatherModel.CodingKeys._tags_)
+            try container.encode(self._category_, forKey: WeatherModel.CodingKeys._category_)
+            try container.encode(self._displayState, forKey: WeatherModel.CodingKeys._displayState)
+            try container.encode(self._weatherUpdate_, forKey: WeatherModel.CodingKeys._weatherUpdate_)
+            try container.encode(self._time, forKey: WeatherModel.CodingKeys._time)
+            try container.encode(self._cloudThickness, forKey: WeatherModel.CodingKeys._cloudThickness)
+            try container.encode(self._stormType, forKey: WeatherModel.CodingKeys._stormType)
+            try container.encode(self._rainAngle, forKey: WeatherModel.CodingKeys._rainAngle)
+            try container.encode(self._rainIntensity, forKey: WeatherModel.CodingKeys._rainIntensity)
+            try container.encode(self._lightningFrequency, forKey: WeatherModel.CodingKeys._lightningFrequency)
+            try container.encode(self._lightningMaxBolts, forKey: WeatherModel.CodingKeys._lightningMaxBolts)
+            try container.encode(self._lightningForkProbability, forKey: WeatherModel.CodingKeys._lightningForkProbability)
+            try container.encodeIfPresent(self._photoId, forKey: WeatherModel.CodingKeys._photoId)
+            try container.encode(self._entries_, forKey: WeatherModel.CodingKeys._entries_)
+            try container.encodeIfPresent(self._parentId, forKey: WeatherModel.CodingKeys._parentId)
 
+    
+        }
     }
 }
 
-extension WeatherModel: Equatable, Hashable {
-    public static func == (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
-        lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+extension WeatherModel: nonisolated Equatable, nonisolated Hashable {
+    nonisolated public static func == (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+    
+        }
     }
 
-    public func hash(into hasher: inout Hasher) {
+    nonisolated public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

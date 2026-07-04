@@ -5,7 +5,7 @@ import CoreData
 import Observation
 
 public protocol SyncDataControllable: Sendable {
-    var dataControllable: any CoreDataPersistable { get }
+    var dataControllable: any DataPersistenceControllable { get }
     var itemControllable: any ItemControllable { get }
     var editControllable: any EditControllable { get }
 }
@@ -68,7 +68,7 @@ public extension SyncDataControllable {
     }
     
     private func fetchUpdates() async {
-        guard let newItems = try? await dataControllable.fetch() else { return }
+        guard let newItems = try? await dataControllable.fetchAll() else { return }
         await itemControllable.updates(newItems)
     }
 }

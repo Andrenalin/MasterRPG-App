@@ -8,6 +8,7 @@ import Testing
 
 @testable import SpaceRPG
 
+@MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
         let root = await SpaceRootModel.testRoot()

@@ -4,36 +4,41 @@ import CoreRPG
 import Foundation
 import Observation
 
-@Observable
-public final class AudioModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .music, displayState: Int = 0, fileUrl: FileUrl? = nil, entries: [AudioEntryModel] = [], parentId: UUID? = nil) {
+// MainActor-owned model. Sendable via global-actor isolation (no @unchecked):
+// persistence crosses the Core Data boundary as AudioSnapshot, the .gmz wire
+// format stays on this type's Codable (encode/decode run on the MainActor).
+// Inits and the factories are nonisolated (they only initialize stored state) so
+// decoding and generic factory requirements work off-main.
+@MainActor @Observable
+public final class AudioModel: nonisolated Identifiable {
+    nonisolated init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .music, displayState: Int = 0, fileUrl: FileUrl? = nil, entries: [AudioEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
-        name_ = CRDT(wrappedValue: name)
-        description_ = CRDT(wrappedValue: description)
-        tags_ = CRDT(wrappedValue: tags)
-        category_ = CRDT(wrappedValue: category)
-        self.displayState = displayState
-        fileUrl_ = CRDTDataUpdate(wrappedValue: fileUrl)
-        entries_ = CRDTDataUpdate(wrappedValue: entries)
-        self.parentId = parentId
+        _name_ = CRDT(wrappedValue: name)
+        _description_ = CRDT(wrappedValue: description)
+        _tags_ = CRDT(wrappedValue: tags)
+        _category_ = CRDT(wrappedValue: category)
+        self._displayState = displayState
+        _fileUrl_ = CRDTDataUpdate(wrappedValue: fileUrl)
+        _entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self._parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[AudioEntryModel]>, parentId: UUID?) {
+    nonisolated init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[AudioEntryModel]>, parentId: UUID?) {
         self.id = id
-        name_ = name
-        description_ = description
-        tags_ = tags
-        category_ = category
-        self.displayState = displayState
-        fileUrl_ = fileUrl
-        entries_ = entries
-        self.parentId = parentId
+        _name_ = name
+        _description_ = description
+        _tags_ = tags
+        _category_ = category
+        self._displayState = displayState
+        _fileUrl_ = fileUrl
+        _entries_ = entries
+        self._parentId = parentId
     }
 
-    public init(from decoder: Decoder) throws {
+    nonisolated public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<AudioModel.CodingKeys> = try decoder.container(keyedBy: AudioModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: AudioModel.CodingKeys._id)
+        self.id = try container.decode(UUID.self, forKey: AudioModel.CodingKeys._id)
         self._name_ = try container.decode(CRDT<String>.self, forKey: AudioModel.CodingKeys._name_)
         self._description_ = try container.decode(CRDT<String>.self, forKey: AudioModel.CodingKeys._description_)
         self._tags_ = try container.decode(CRDT<[String]>.self, forKey: AudioModel.CodingKeys._tags_)
@@ -44,7 +49,8 @@ public final class AudioModel: Identifiable, @unchecked Sendable {
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: AudioModel.CodingKeys._parentId)
     }
 
-    public var id: UUID
+    // `let`: gives nonisolated access (Identifiable, hashing, protocol id) per SE-0434.
+    public let id: UUID
 
     public var name: String {
         get { name_.wrappedValue }
@@ -96,17 +102,29 @@ extension AudioModel {
     }
 }
 
-extension AudioModel: Comparable {
-    public static func < (lhs: AudioModel, rhs: AudioModel) -> Bool {
-        lhs.name < rhs.name
+extension AudioModel: nonisolated Comparable {
+    // Nonisolated shim: Comparable is a nonisolated protocol; all real call sites
+    // are on the MainActor — assumeIsolated turns a violation into a trap.
+    nonisolated public static func < (lhs: AudioModel, rhs: AudioModel) -> Bool {
+        MainActor.assumeIsolated {
+            lhs.name < rhs.name
+        }
     }
 }
 
-extension AudioModel: ItemGameReportable {}
-extension AudioModel: ItemLinkRegistable {}
+extension AudioModel: nonisolated ItemGameReportable {}
+extension AudioModel: nonisolated ItemLinkRegistable {}
 
-extension AudioModel: ItemDiffComparable {
-    public func merge(_ other: AudioModel) -> AudioModel {
+extension AudioModel: nonisolated ItemDiffComparable {
+    // Nonisolated shims: ItemDiffComparable requirements must stay nonisolated
+    // (every model's == calls isSame). Bodies run isolated via assumeIsolated.
+    nonisolated public func merge(_ other: AudioModel) -> AudioModel {
+        MainActor.assumeIsolated {
+            mergeOnMain(other)
+        }
+    }
+
+    @MainActor private func mergeOnMain(_ other: AudioModel) -> AudioModel {
         let mergedCategory = category_.merged(other: other.category_)
         let mergedEntries: CRDTDataUpdate<[AudioEntryModel]>
         if mergedCategory.wrappedValue == .folder {
@@ -131,39 +149,49 @@ extension AudioModel: ItemDiffComparable {
         )
     }
 
-    public func isSame(_ other: AudioModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        fileUrl_.update == other.fileUrl_.update &&
-        entries_.update == other.entries_.update &&
-        parentId == other.parentId &&
-        // santity checks
-        entries.count == other.entries.count &&
-        entries.enumerated().allSatisfy { index, entry in
-            entry == other.entries[index]
+    nonisolated public func isSame(_ other: AudioModel) -> Bool {
+        MainActor.assumeIsolated {
+            name == other.name &&
+            description == other.description &&
+            tags == other.tags &&
+            category == other.category &&
+            fileUrl_.update == other.fileUrl_.update &&
+            entries_.update == other.entries_.update &&
+            parentId == other.parentId &&
+            // santity checks
+            entries.count == other.entries.count &&
+            entries.enumerated().allSatisfy { index, entry in
+                entry == other.entries[index]
+            }
         }
     }
-    
-    public var version: Int {
-        fileUrl?.contentVersion ?? fileUrl_.update.hashValue
+
+    nonisolated public var version: Int {
+        MainActor.assumeIsolated {
+            fileUrl?.contentVersion ?? fileUrl_.update.hashValue
+        }
     }
 }
 
-extension AudioModel: ItemDuplicatable {
-    public func duplicate() -> AudioModel {
-        let copyName = duplicateName(from: name)
-        return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: parentId)
+extension AudioModel: nonisolated ItemDuplicatable {
+    // Nonisolated shim: witnesses both nonisolated ItemDuplicatable.duplicate and
+    // @MainActor ItemDataAccessable.duplicate.
+    nonisolated public func duplicate() -> AudioModel {
+        MainActor.assumeIsolated {
+            let copyName = duplicateName(from: name)
+            return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: parentId)
+        }
     }
 }
 
-extension AudioModel: ItemDataAccessable {
-    public static var empty: AudioModel { empty(UUID()) }
-    public static func empty(_ id: UUID) -> AudioModel {
+extension AudioModel: nonisolated ItemDataAccessable {
+    // Nonisolated: satisfies the nonisolated factory requirements; the init only
+    // initializes stored state.
+    nonisolated public static var empty: AudioModel { empty(UUID()) }
+    nonisolated public static func empty(_ id: UUID) -> AudioModel {
         AudioModel(id: id, name: "")
     }
-    public static let typeId: NetworkModules = .audio
+    nonisolated public static let typeId: NetworkModules = .audio
 
     public func copy() -> AudioModel {
         AudioModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, fileUrl: fileUrl_, entries: entries_, parentId: parentId)
@@ -224,7 +252,7 @@ extension AudioModel: ItemDataAccessable {
     }
 }
 
-extension AudioModel: Codable {
+extension AudioModel: nonisolated Codable {
     enum CodingKeys: CodingKey {
         case _id
         case _name_
@@ -237,10 +265,21 @@ extension AudioModel: Codable {
         case _parentId
     }
 
-    public final func encode(to encoder: Encoder) throws {
+    // Nonisolated shim: Codable's encode is a nonisolated requirement; export hops
+    // to the MainActor before encoding (see ExportControllable.extract).
+    nonisolated public final func encode(to encoder: Encoder) throws {
+        // Safety: assumeIsolated runs synchronously on the current (main) thread
+        // and the encoder does not escape the closure.
+        nonisolated(unsafe) let encoder = encoder
+        try MainActor.assumeIsolated {
+            try encodeOnMain(to: encoder)
+        }
+    }
+
+    @MainActor private func encodeOnMain(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<AudioModel.CodingKeys> = encoder.container(keyedBy: AudioModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: AudioModel.CodingKeys._id)
+        try container.encode(self.id, forKey: AudioModel.CodingKeys._id)
         try container.encode(self._name_, forKey: AudioModel.CodingKeys._name_)
         try container.encode(self._description_, forKey: AudioModel.CodingKeys._description_)
         try container.encode(self._tags_, forKey: AudioModel.CodingKeys._tags_)
@@ -252,12 +291,17 @@ extension AudioModel: Codable {
     }
 }
 
-extension AudioModel: Equatable, Hashable {
-    public static func == (lhs: AudioModel, rhs: AudioModel) -> Bool {
-        lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+extension AudioModel: nonisolated Equatable, nonisolated Hashable {
+    // Nonisolated shim: Equatable is a nonisolated protocol; content comparison
+    // requires model state, so the body runs isolated via assumeIsolated.
+    nonisolated public static func == (lhs: AudioModel, rhs: AudioModel) -> Bool {
+        MainActor.assumeIsolated {
+            lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+        }
     }
 
-    public func hash(into hasher: inout Hasher) {
+    // id is an immutable let — hashing is safely nonisolated.
+    nonisolated public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

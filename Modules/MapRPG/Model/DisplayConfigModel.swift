@@ -4,7 +4,7 @@ import CoreRPG
 import CoreGraphics
 import SwiftUI
 
-public struct DisplayConfigModel: Identifiable, Equatable, Hashable {
+public struct DisplayConfigModel: Identifiable, Equatable, Hashable, Sendable {
     public init(id: UUID = UUID(), tileCoordinates: [CGPoint], color: Color = .black, border: DisplayBorderViewModel) {
         self.id = id
         self.tileCoordinates = tileCoordinates
@@ -80,7 +80,7 @@ extension DisplayConfigModel: Codable {
     }
 }
 
-public struct DisplayBorderViewModel: Identifiable, Equatable, Hashable {
+public struct DisplayBorderViewModel: Identifiable, Equatable, Hashable, Sendable {
     public init(id: UUID = UUID(), thickness: CGFloat = 0, color: Color = .red) {
         self.id = id
         self.thickness = thickness

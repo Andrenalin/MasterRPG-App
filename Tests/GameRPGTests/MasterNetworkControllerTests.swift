@@ -9,6 +9,7 @@ import Testing
 @testable import GameRPG
 
 /// Test environment for MasterNetworkController tests.
+@MainActor
 struct MasterNetworkControllerTestEnvironment {
     let controller: MasterNetworkController
     let delegateSpy: MasterNetworkControllerDelegateMock
@@ -34,6 +35,7 @@ struct MasterNetworkControllerTestEnvironment {
 }
 
 @Suite("Master network controller tests")
+@MainActor
 struct MasterNetworkControllerTests {
 
     @Test("Start streaming enables listener and browser")

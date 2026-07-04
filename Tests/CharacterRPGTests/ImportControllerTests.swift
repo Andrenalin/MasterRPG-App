@@ -11,6 +11,7 @@ import Testing
 
 @testable import CharacterRPG
 
+@MainActor
 struct ImportControllerTests {
     @Test func importing() async throws {
         let root = try await MockRoot.importTestData()

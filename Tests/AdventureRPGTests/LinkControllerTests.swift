@@ -13,6 +13,7 @@ import Testing
 @testable import TableRPG
 @testable import CharacterRPG
 
+@MainActor
 struct LinkControllerTests {
     @Test func validateLinksWithLinkReplace() async throws {
         let root = try await MockRoot.importTestData()

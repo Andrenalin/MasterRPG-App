@@ -18,6 +18,7 @@ import Testing
 import AdventureRPG
 
 /// Test environment for PlayerMasterController integration tests.
+@MainActor
 struct PlayerMasterControllerTestEnvironment {
     let master: MasterController
     let masterRoot: GameRoot
@@ -99,6 +100,7 @@ struct PlayerMasterControllerTestEnvironment {
 }
 
 @Suite("Player to master controller integration tests")
+@MainActor
 struct PlayerMasterControllerTests {
 
     @Test("Player sends audio to master and receives it back")

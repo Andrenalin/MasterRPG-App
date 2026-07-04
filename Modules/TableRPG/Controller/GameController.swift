@@ -64,9 +64,12 @@ extension GameController: TableGameStorable {
         let diceNum = await diceRoot.diceGameControllable.number(for: diceId, result: diceResult)
         guard let entryId = await entry(for: itemId, with: diceNum) else { return }
 
-        let model = await gameItem(for: itemId)
-        let value = "\(model[entryId].content) 🎲 \(diceResult)"
-        let result = valueActions.createEntryResult(model.name, value, ResultCategory(id: itemId, childId: entryId, module: itemController.config.module))
+        // Model access is MainActor-isolated; extract the Sendable strings there.
+        let (name, value) = await MainActor.run {
+            let model = gameItem(for: itemId)
+            return (model.name, "\(model[entryId].content) 🎲 \(diceResult)")
+        }
+        let result = valueActions.createEntryResult(name, value, ResultCategory(id: itemId, childId: entryId, module: itemController.config.module))
         await networkActions.game(result, .valueResult, nil)
     }
 

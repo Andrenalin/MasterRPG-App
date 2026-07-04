@@ -7,6 +7,7 @@ import Testing
 
 @testable import AdventureRPG
 
+@MainActor
 struct AdventureEntryModelTests {
     func setUp() async throws -> AdventureEntryModel {
         AdventureEntryModel(

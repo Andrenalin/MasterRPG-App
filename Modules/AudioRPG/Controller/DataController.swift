@@ -6,7 +6,7 @@ import Foundation
 
 struct DataController: DataPersistenceControllable {
     @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
-        // Prefetch entries: mapViewModel touches entriesModel on every fetched object,
+        // Prefetch entries: mapSnapshot touches entriesModel on every fetched object,
         // which fires one relationship fault per row without prefetching.
         self.dataController = CoreDataController<AudioModel, RPGAudio>(context: context, batchContext: batchContext, relationshipKeyPaths: ["entries"])
         self.token = token
@@ -16,11 +16,12 @@ struct DataController: DataPersistenceControllable {
     let token: String
 }
 
-extension DataController: CoreDataPersistable {
-    // MARK: model -> viewlmodel
+extension DataController: CoreDataSnapshotPersistable {
+    // MARK: managed object -> snapshot (context queue)
 
-    func mapViewModel(_ model: RPGAudio, token: String) -> AudioModel {
-        AudioModel(
+    @Sendable
+    func mapSnapshot(_ model: RPGAudio, token: String) -> AudioSnapshot {
+        AudioSnapshot(
             id: model.uuid ?? UUID(),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
@@ -33,21 +34,22 @@ extension DataController: CoreDataPersistable {
         )
     }
 
-    // MARK: viewmodel -> model
-    
-    func mapModel(_ viewModel: AudioModel, into model: RPGAudio) {
-        model.uuid <=> viewModel.id
-        model.name <=> viewModel.name_.rawValue
-        model.information <=> viewModel.description_.rawValue
-        model.tags <=> viewModel.tags_.rawValue
-        model.audioCategory <=> viewModel.category_.rawValue
-        model.displayState <=> Int32(viewModel.displayState)
-        unequalSet(lhs: &model.fileUrlUpdate, rhs: viewModel.fileUrl_.$update.rawValue) {
-            model.fileUrl = viewModel.fileUrl?.rawValue ?? ""
+    // MARK: snapshot -> managed object (context queue)
+
+    @Sendable
+    func applySnapshot(_ snapshot: AudioSnapshot, into model: RPGAudio) {
+        model.uuid <=> snapshot.id
+        model.name <=> snapshot.name.rawValue
+        model.information <=> snapshot.description.rawValue
+        model.tags <=> snapshot.tags.rawValue
+        model.audioCategory <=> snapshot.category.rawValue
+        model.displayState <=> Int32(snapshot.displayState)
+        unequalSet(lhs: &model.fileUrlUpdate, rhs: snapshot.fileUrl.$update.rawValue) {
+            model.fileUrl = snapshot.fileUrl.wrappedValue?.rawValue ?? ""
         }
-        unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
+        unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
             let oldEntries = model.entriesModel
-            let newEntries = viewModel.entries.enumerated().map {
+            let newEntries = snapshot.entries.wrappedValue.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
@@ -60,7 +62,19 @@ extension DataController: CoreDataPersistable {
                 model.managedObjectContext?.delete(entry)
             }
         }
-        model.parentId <=> viewModel.parentId
+        model.parentId <=> snapshot.parentId
+    }
+
+    // MARK: model <-> snapshot (MainActor)
+
+    @MainActor
+    func makeModel(from snapshot: AudioSnapshot) -> AudioModel {
+        snapshot.makeModel()
+    }
+
+    @MainActor
+    func makeSnapshot(from model: AudioModel) -> AudioSnapshot {
+        AudioSnapshot(model)
     }
 
     // MARK: - AudioEntryViewModel

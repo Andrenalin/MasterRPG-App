@@ -7,6 +7,7 @@ import Testing
 
 @testable import PdfRPG
 
+@MainActor
 struct ImportControllerTests {
     @Test func importing() async throws {
         let root = await PdfRootModel.testRoot()

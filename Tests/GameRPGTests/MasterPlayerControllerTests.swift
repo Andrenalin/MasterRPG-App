@@ -19,6 +19,7 @@ import Testing
 @testable import CharacterRPG
 @testable import WeatherRPG
 
+@MainActor
 final class MasterPlayerControllerTests {
     private var sut: MasterController!
     private var rootSut: GameRoot!

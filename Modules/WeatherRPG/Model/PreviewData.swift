@@ -107,7 +107,7 @@ extension WeatherModel {
 
 // MARK: Preview - Test
 extension WeatherModel {
-    static let previewId = UUID()
+    nonisolated static let previewId = UUID()
     
     @MainActor static let preview = WeatherRootModel.previewWithData.itemController.itemOrEmpty(for: WeatherRootModel.previewWithData.itemController.itemDataModel.items.first!)
 }

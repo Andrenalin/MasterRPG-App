@@ -15,12 +15,12 @@ public protocol ImageCacheControllable: Sendable {
     // Observable cache for SwiftUI views
     @MainActor var observableImageCache: ObservableImageCache { get }
 
-    func createImage(for itemId: UUID, item: any ItemDataAccessable) async
-    func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async
+    @MainActor func createImage(for itemId: UUID, item: any ItemDataAccessable) async
+    @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async
 }
 
 extension ImageCacheControllable {
-    public func createImage(for itemId: UUID, item: any ItemDataAccessable) async {}
+    @MainActor public func createImage(for itemId: UUID, item: any ItemDataAccessable) async {}
     
     public func photo(for itemId: UUID) async -> AKImage? {
         let image = await imageCacheController.object(for: itemId)
@@ -48,7 +48,7 @@ extension ImageCacheControllable {
     }
     
     @discardableResult
-    public func photoId(for itemId: UUID, item: any ItemDataAccessable, shouldDownload: Bool = false) async -> UUID? {
+    @MainActor public func photoId(for itemId: UUID, item: any ItemDataAccessable, shouldDownload: Bool = false) async -> UUID? {
         guard let fileUrlDataController, let fileUrl = item.fileUrl else { return nil }
         guard await !imageCacheController.hasObject(for: itemId) else { return itemId }
         let imageTask = Task(priority: .userInitiated) {

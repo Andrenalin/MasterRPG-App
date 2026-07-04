@@ -65,7 +65,7 @@ extension SpaceRootModel: RootControllable {
 
 // MARK: Preview - Test
 extension SpaceModel {
-    static let previewId = UUID(uuidString: "F5AC90DF-36F2-4151-B283-F0CF9D0BAC35")!
+    nonisolated static let previewId = UUID(uuidString: "F5AC90DF-36F2-4151-B283-F0CF9D0BAC35")!
     static let preview = SpaceModel(id: previewId, name: "ExodusAtlantisMap", description: "Imaginary map of Atlantis for Amber DRPG \"Exodus\", a tabletop roleplaying game. Author: Theresa Thomas. From Wikimedia: [Wikipedia](https://commons.wikimedia.org/wiki/File:ExodusAtlantisMap.jpg)", tags: ["Map", "Fanatasy"], displayState: 0, degrees: 0, entries: [])
 }
 

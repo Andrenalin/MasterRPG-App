@@ -60,7 +60,7 @@ public extension ItemControllable {
         self.itemOrEmpty(for: itemId).copy()
     }
     
-    func delete(itemId: UUID, withFileData: Bool = true, withDatabase: Bool = true) async {
+    @MainActor func delete(itemId: UUID, withFileData: Bool = true, withDatabase: Bool = true) async {
         
         guard let item = await self.item(for: itemId) else { return }
         let entries = item.entries
@@ -127,7 +127,7 @@ public extension ItemControllable {
 // MARK: - ImportControllable
 
 public extension ItemControllable {
-    func decode(data: Data, with decoder: JSONDecoder, version: Int) throws -> Model {
+    @MainActor func decode(data: Data, with decoder: JSONDecoder, version: Int) throws -> Model {
         // default ignore any version numbers. Later a module can handle older version differently.
         try decoder.decode(Model.self, from: data)
     }
@@ -141,7 +141,7 @@ public extension ItemControllable {
         return model.merge(current)
     }
     
-    func reset(fileUrl: FileUrl?, item: inout any ItemDataAccessable) async {
+    @MainActor func reset(fileUrl: FileUrl?, item: inout any ItemDataAccessable) async {
         if let oldFileUlr = item.fileUrl {
             await cacheControllable?.remove(itemId: oldFileUlr.fileId)
         }
@@ -152,7 +152,7 @@ public extension ItemControllable {
 // MARK: - SyncDataController
 
 public extension ItemControllable {
-    func resetData() async {
+    @MainActor func resetData() async {
         let allItemIds = await itemDataModel.items
 
         // Clean up cache and internal state for each item
@@ -189,7 +189,7 @@ public extension ItemControllable {
         try? await dataControllable?.flushPendingOperations()
     }
 
-    func updates(_ models: [ModelType]) async {
+    @MainActor func updates(_ models: [ModelType]) async {
         let sortedModels = models.compactMap { $0 as? Model }.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         let deletedIds = await itemDataModel.items.filter { id in !sortedModels.contains { $0.id == id } }
         for id in deletedIds {
@@ -226,7 +226,7 @@ public extension ItemControllable {
         await itemDataModel.item(for: itemId) as? Model
     }
 
-    func item(for itemId: UUID, fullIds: [UUID], partialIds: [UUID]) async -> Model? {
+    @MainActor func item(for itemId: UUID, fullIds: [UUID], partialIds: [UUID]) async -> Model? {
         guard let model = await itemDataModel.item(for: itemId) as? Model else { return nil }
         guard partialIds.contains(itemId) else { return model }
         let partial = model.copy()
@@ -236,7 +236,7 @@ public extension ItemControllable {
         return partial
     }
 
-    func item(for itemId: UUID, version: Int) async -> Model? {
+    @MainActor func item(for itemId: UUID, version: Int) async -> Model? {
         let item = await self.item(for: itemId)
         guard version != 0, let item else { return item }
         return item.version == version ? item : nil
@@ -256,7 +256,7 @@ public extension ItemControllable {
         return item.name
     }
     
-    func loadableUrl(itemId: UUID) async -> URL? {
+    @MainActor func loadableUrl(itemId: UUID) async -> URL? {
         guard let fileUrl = await self.item(for: itemId)?.fileUrl else { return nil }
         return await fileUrlDataController?.url(for: fileUrl, action: { $0 })
     }
@@ -275,7 +275,7 @@ public extension ItemControllable {
     /// - Returns `""` when the item is not found.
     ///
     /// Modules that need custom formatting (e.g. PdfRPG loading file content) can override this.
-    func compactText(for itemId: UUID) async -> String {
+    @MainActor func compactText(for itemId: UUID) async -> String {
         guard let item = await self.item(for: itemId) else { return "" }
         var lines: [String] = []
         if item.specialCategory {

@@ -9,6 +9,7 @@ import Testing
 @testable import PdfRPG
 import CoreGraphics
 
+@MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
         let root = await PdfRootModel.testRoot()

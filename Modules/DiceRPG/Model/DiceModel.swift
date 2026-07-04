@@ -5,62 +5,65 @@ import Foundation
 import Observation
 import SwiftUI
 
-@Observable
-public final class DiceModel: Identifiable, @unchecked Sendable {
-    public init(id: UUID, name: String = "", description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, dice: [DieModel], sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, reroleOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil, entries: [ChildEntryModel] = [], parentId: UUID? = nil) {
+// MainActor-owned model. Sendable via global-actor isolation (no @unchecked):
+// persistence crosses the Core Data boundary as DiceSnapshot,
+// the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
+@MainActor @Observable
+public final class DiceModel: nonisolated Identifiable {
+    nonisolated public init(id: UUID, name: String = "", description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, dice: [DieModel], sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, reroleOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil, entries: [ChildEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
-        name_ = CRDT(wrappedValue: name)
-        description_ = CRDT(wrappedValue: description)
-        tags_ = CRDT(wrappedValue: tags)
-        category_ = CRDT(wrappedValue: category)
-        self.displayState = displayState
-        dice_ = CRDTDataUpdate(wrappedValue: dice)
-        self.sumUp = sumUp
-        self.modifier = modifier
-        self.percentDice = percentDice
-        self.compareOption = compareOption
-        self.compareValue = compareValue
-        self.coupValues = coupValues
-        self.coupOnlyOnFirstDie = coupOnlyOnFirstDie
-        self.fumbleValues = fumbleValues
-        self.fumbleOnlyOnFirstDie = fumbleOnlyOnFirstDie
-        self.rerollOptions = reroleOptions
-        self.reorderDice = reorderDice
-        self.addDiceEvery = addDiceEvery
-        self.resultCategory = resultCategory
-        entries_ = CRDTDataUpdate(wrappedValue: entries)
-        self.parentId = parentId
+        _name_ = CRDT(wrappedValue: name)
+        _description_ = CRDT(wrappedValue: description)
+        _tags_ = CRDT(wrappedValue: tags)
+        _category_ = CRDT(wrappedValue: category)
+        self._displayState = displayState
+        _dice_ = CRDTDataUpdate(wrappedValue: dice)
+        self._sumUp = sumUp
+        self._modifier = modifier
+        self._percentDice = percentDice
+        self._compareOption = compareOption
+        self._compareValue = compareValue
+        self._coupValues = coupValues
+        self._coupOnlyOnFirstDie = coupOnlyOnFirstDie
+        self._fumbleValues = fumbleValues
+        self._fumbleOnlyOnFirstDie = fumbleOnlyOnFirstDie
+        self._rerollOptions = reroleOptions
+        self._reorderDice = reorderDice
+        self._addDiceEvery = addDiceEvery
+        self._resultCategory = resultCategory
+        _entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self._parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, dice: CRDTDataUpdate<[DieModel]>, sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil, entries: CRDTDataUpdate<[ChildEntryModel]>, parentId: UUID?) {
+    nonisolated init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, dice: CRDTDataUpdate<[DieModel]>, sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil, entries: CRDTDataUpdate<[ChildEntryModel]>, parentId: UUID?) {
         self.id = id
-        name_ = name
-        description_ = description
-        tags_ = tags
-        category_ = category
-        self.displayState = displayState
-        dice_ = dice
-        self.sumUp = sumUp
-        self.modifier = modifier
-        self.percentDice = percentDice
-        self.compareOption = compareOption
-        self.compareValue = compareValue
-        self.coupValues = coupValues
-        self.coupOnlyOnFirstDie = coupOnlyOnFirstDie
-        self.fumbleValues = fumbleValues
-        self.fumbleOnlyOnFirstDie = fumbleOnlyOnFirstDie
-        self.rerollOptions = rerollOptions
-        self.reorderDice = reorderDice
-        self.addDiceEvery = addDiceEvery
-        self.resultCategory = resultCategory
-        entries_ = entries
-        self.parentId = parentId
+        _name_ = name
+        _description_ = description
+        _tags_ = tags
+        _category_ = category
+        self._displayState = displayState
+        _dice_ = dice
+        self._sumUp = sumUp
+        self._modifier = modifier
+        self._percentDice = percentDice
+        self._compareOption = compareOption
+        self._compareValue = compareValue
+        self._coupValues = coupValues
+        self._coupOnlyOnFirstDie = coupOnlyOnFirstDie
+        self._fumbleValues = fumbleValues
+        self._fumbleOnlyOnFirstDie = fumbleOnlyOnFirstDie
+        self._rerollOptions = rerollOptions
+        self._reorderDice = reorderDice
+        self._addDiceEvery = addDiceEvery
+        self._resultCategory = resultCategory
+        _entries_ = entries
+        self._parentId = parentId
     }
 
-    public init(from decoder: Decoder) throws {
+    nonisolated public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<DiceModel.CodingKeys> = try decoder.container(keyedBy: DiceModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: DiceModel.CodingKeys._id)
+        self.id = try container.decode(UUID.self, forKey: DiceModel.CodingKeys._id)
         self._name_ = try container.decode(CRDT<String>.self, forKey: DiceModel.CodingKeys._name_)
         self._description_ = try container.decode(CRDT<String>.self, forKey: DiceModel.CodingKeys._description_)
         self._tags_ = try container.decode(CRDT<[String]>.self, forKey: DiceModel.CodingKeys._tags_)
@@ -84,7 +87,8 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: DiceModel.CodingKeys._parentId)
     }
     
-    public var id: UUID
+    // `let`: nonisolated access (Identifiable, hashing) per SE-0434.
+    public let id: UUID
     public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
@@ -121,7 +125,7 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
     public var modifier: Double = 0.0
     public var percentDice: Bool = false
 
-    public enum CompareValue: Int, Identifiable, Equatable, Hashable, Codable, CaseIterable {
+    public enum CompareValue: Int, Identifiable, Equatable, Hashable, Codable, CaseIterable, Sendable {
         case off
         case lower
         case lowerEqual
@@ -200,7 +204,7 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         }
     }
 
-    public enum CoupFumbleOption: Identifiable, Equatable, Hashable, Codable, RawRepresentable {
+    public enum CoupFumbleOption: Identifiable, Equatable, Hashable, Codable, RawRepresentable, Sendable {
         case result(Int)
         case diceValue(Int)
 
@@ -282,7 +286,7 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
     public var fumbleValues: [CoupFumbleOption] = []
     public var fumbleOnlyOnFirstDie: Bool = false
 
-    public struct RerollOption: Identifiable, Equatable, Hashable, Codable {
+    public struct RerollOption: Identifiable, Equatable, Hashable, Codable, Sendable {
         public let number: Int
         public let value: Int
         public let maxDiceValue: Bool
@@ -388,82 +392,91 @@ extension DiceModel {
     }
 }
 
-extension DiceModel: Comparable {
-    public static func < (lhs: DiceModel, rhs: DiceModel) -> Bool {
-        lhs.name < rhs.name
+extension DiceModel: nonisolated Comparable {
+    nonisolated public static func < (lhs: DiceModel, rhs: DiceModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.name < rhs.name
+    
+        }
     }
 }
 
-extension DiceModel: ItemLinkRegistable {}
+extension DiceModel: nonisolated ItemLinkRegistable {}
 
-extension DiceModel: ItemDiffComparable {
-    public func merge(_ other: DiceModel) -> DiceModel {
-        let mergedDice = dice_.merged(other: other.dice_)
-        let isLeftDice = mergedDice.update == dice_.update
-        return DiceModel(
-            id: id,
-            name: name_.merged(other: other.name_),
-            description: description_.merged(other: other.description_),
-            tags: tags_.merged(other: other.tags_),
-            category: category_.merged(other: other.category_),
-            displayState: displayState,
-            dice: mergedDice,
-            sumUp: isLeftDice ? sumUp : other.sumUp,
-            modifier: isLeftDice ? modifier : other.modifier,
-            percentDice: isLeftDice ? percentDice : other.percentDice,
-            compareOption: isLeftDice ? compareOption : other.compareOption,
-            compareValue: isLeftDice ? compareValue : other.compareValue,
-            coupValues: isLeftDice ? coupValues : other.coupValues,
-            coupOnlyOnFirstDie: isLeftDice ? coupOnlyOnFirstDie : other.coupOnlyOnFirstDie,
-            fumbleValues: isLeftDice ? fumbleValues : other.fumbleValues,
-            fumbleOnlyOnFirstDie: isLeftDice ? fumbleOnlyOnFirstDie : other.fumbleOnlyOnFirstDie,
-            rerollOptions: isLeftDice ? rerollOptions : other.rerollOptions,
-            reorderDice: isLeftDice ? reorderDice : other.reorderDice,
-            addDiceEvery: isLeftDice ? addDiceEvery : other.addDiceEvery,
-            resultCategory: resultCategory,
-            entries: entries_.merged(other: other.entries_),
-            parentId: other.parentId
-        )
+extension DiceModel: nonisolated ItemDiffComparable {
+    nonisolated public func merge(_ other: DiceModel) -> DiceModel {
+        return MainActor.assumeIsolated {
+            let mergedDice = dice_.merged(other: other.dice_)
+            let isLeftDice = mergedDice.update == dice_.update
+            return DiceModel(
+                id: id,
+                name: name_.merged(other: other.name_),
+                description: description_.merged(other: other.description_),
+                tags: tags_.merged(other: other.tags_),
+                category: category_.merged(other: other.category_),
+                displayState: displayState,
+                dice: mergedDice,
+                sumUp: isLeftDice ? sumUp : other.sumUp,
+                modifier: isLeftDice ? modifier : other.modifier,
+                percentDice: isLeftDice ? percentDice : other.percentDice,
+                compareOption: isLeftDice ? compareOption : other.compareOption,
+                compareValue: isLeftDice ? compareValue : other.compareValue,
+                coupValues: isLeftDice ? coupValues : other.coupValues,
+                coupOnlyOnFirstDie: isLeftDice ? coupOnlyOnFirstDie : other.coupOnlyOnFirstDie,
+                fumbleValues: isLeftDice ? fumbleValues : other.fumbleValues,
+                fumbleOnlyOnFirstDie: isLeftDice ? fumbleOnlyOnFirstDie : other.fumbleOnlyOnFirstDie,
+                rerollOptions: isLeftDice ? rerollOptions : other.rerollOptions,
+                reorderDice: isLeftDice ? reorderDice : other.reorderDice,
+                addDiceEvery: isLeftDice ? addDiceEvery : other.addDiceEvery,
+                resultCategory: resultCategory,
+                entries: entries_.merged(other: other.entries_),
+                parentId: other.parentId
+            )
+    
+        }
     }
 
-    public func isSame(_ other: DiceModel) -> Bool {
-        // Split comparison into typed chunks for faster type-checking
-        let basicFieldsMatch: Bool = (
-            name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category
-        )
-        guard basicFieldsMatch else { return false }
+    nonisolated public func isSame(_ other: DiceModel) -> Bool {
+        return MainActor.assumeIsolated {
+            // Split comparison into typed chunks for faster type-checking
+            let basicFieldsMatch: Bool = (
+                name == other.name &&
+                description == other.description &&
+                tags == other.tags &&
+                category == other.category
+            )
+            guard basicFieldsMatch else { return false }
 
-        let diceConfigMatch: Bool = (
-            dice_.update == other.dice_.update &&
-            sumUp == other.sumUp &&
-            modifier == other.modifier &&
-            percentDice == other.percentDice
-        )
-        guard diceConfigMatch else { return false }
+            let diceConfigMatch: Bool = (
+                dice_.update == other.dice_.update &&
+                sumUp == other.sumUp &&
+                modifier == other.modifier &&
+                percentDice == other.percentDice
+            )
+            guard diceConfigMatch else { return false }
 
-        let compareMatch: Bool = (
-            compareOption == other.compareOption &&
-            compareValue == other.compareValue
-        )
-        guard compareMatch else { return false }
+            let compareMatch: Bool = (
+                compareOption == other.compareOption &&
+                compareValue == other.compareValue
+            )
+            guard compareMatch else { return false }
 
-        let specialRollsMatch: Bool = (
-            coupValues == other.coupValues &&
-            coupOnlyOnFirstDie == other.coupOnlyOnFirstDie &&
-            fumbleValues == other.fumbleValues &&
-            fumbleOnlyOnFirstDie == other.fumbleOnlyOnFirstDie &&
-            rerollOptions == other.rerollOptions &&
-            reorderDice == other.reorderDice &&
-            addDiceEvery == other.addDiceEvery
-        )
-        guard specialRollsMatch else { return false }
+            let specialRollsMatch: Bool = (
+                coupValues == other.coupValues &&
+                coupOnlyOnFirstDie == other.coupOnlyOnFirstDie &&
+                fumbleValues == other.fumbleValues &&
+                fumbleOnlyOnFirstDie == other.fumbleOnlyOnFirstDie &&
+                rerollOptions == other.rerollOptions &&
+                reorderDice == other.reorderDice &&
+                addDiceEvery == other.addDiceEvery
+            )
+            guard specialRollsMatch else { return false }
 
-        return resultCategory == other.resultCategory &&
-               entries_.update == other.entries_.update &&
-               parentId == other.parentId
+            return resultCategory == other.resultCategory &&
+                   entries_.update == other.entries_.update &&
+                   parentId == other.parentId
+    
+        }
     }
 }
 
@@ -487,30 +500,39 @@ extension DiceModel {
     }
 }
 
-extension DiceModel: ItemDuplicatable {
-    public func duplicate() -> DiceModel {
-        let copyName = duplicateName(from: name)
-        let dupDice = dice.map { dieVM -> DieModel in
-            DieModel(id: UUID(), die: dieVM.die)
+extension DiceModel: nonisolated ItemDuplicatable {
+    nonisolated public func duplicate() -> DiceModel {
+        return MainActor.assumeIsolated {
+            let copyName = duplicateName(from: name)
+            let dupDice = dice.map { dieVM -> DieModel in
+                DieModel(id: UUID(), die: dieVM.die)
+            }
+            return DiceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, dice: dupDice, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, reroleOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, entries: entries.map { $0.duplicate() }, parentId: parentId)
+    
         }
-        return DiceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, dice: dupDice, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, reroleOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, entries: entries.map { $0.duplicate() }, parentId: parentId)
     }
 }
 
-extension DiceModel: ItemDataAccessable {
+extension DiceModel: nonisolated ItemDataAccessable {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}
     }
     
-    public static var empty: DiceModel { empty(UUID()) }
-    public static func empty(_ id: UUID) -> DiceModel {
+    nonisolated public static var empty: DiceModel { empty(UUID()) }
+    nonisolated public static func empty(_ id: UUID) -> DiceModel {
         DiceModel(id: id, name: "", dice: [])
     }
-    public static let typeId: NetworkModules = .dice
+    nonisolated public static let typeId: NetworkModules = .dice
 
     public func copy() -> DiceModel {
-        DiceModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, dice: dice_, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, rerollOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, resultCategory: resultCategory, entries: entries_, parentId: parentId)
+        copy(withId: id)
+    }
+
+    /// Clone with a different identity — `id` is immutable (nonisolated Identifiable),
+    /// so game flows that rebrand a dice make a fresh copy instead of mutating.
+    public func copy(withId newId: UUID) -> DiceModel {
+        DiceModel(id: newId, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, dice: dice_, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, rerollOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, resultCategory: resultCategory, entries: entries_, parentId: parentId)
     }
 
     public func filter(filter: String, includeEntries: Bool) -> Bool {
@@ -594,7 +616,7 @@ extension DiceModel: ItemDataAccessable {
     }
 }
 
-extension DiceModel: Codable {
+extension DiceModel: nonisolated Codable {
     enum CodingKeys: CodingKey {
         case _id
         case _name_
@@ -620,40 +642,47 @@ extension DiceModel: Codable {
         case _parentId
     }
 
-    public final func encode(to encoder: Encoder) throws {
-        var container: KeyedEncodingContainer<DiceModel.CodingKeys> = encoder.container(keyedBy: DiceModel.CodingKeys.self)
+    nonisolated public final func encode(to encoder: Encoder) throws {
+        nonisolated(unsafe) let encoder = encoder
+        try MainActor.assumeIsolated {
+            var container: KeyedEncodingContainer<DiceModel.CodingKeys> = encoder.container(keyedBy: DiceModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: DiceModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: DiceModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: DiceModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: DiceModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: DiceModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: DiceModel.CodingKeys._displayState)
-        try container.encode(self._dice_, forKey: DiceModel.CodingKeys._dice_)
-        try container.encode(self._sumUp, forKey: DiceModel.CodingKeys._sumUp)
-        try container.encode(self._modifier, forKey: DiceModel.CodingKeys._modifier)
-        try container.encode(self._percentDice, forKey: DiceModel.CodingKeys._percentDice)
-        try container.encode(self._compareOption, forKey: DiceModel.CodingKeys._compareOption)
-        try container.encode(self._compareValue, forKey: DiceModel.CodingKeys._compareValue)
-        try container.encode(self._coupValues, forKey: DiceModel.CodingKeys._coupValues)
-        try container.encode(self._coupOnlyOnFirstDie, forKey: DiceModel.CodingKeys._coupOnlyOnFirstDie)
-        try container.encode(self._fumbleValues, forKey: DiceModel.CodingKeys._fumbleValues)
-        try container.encode(self._fumbleOnlyOnFirstDie, forKey: DiceModel.CodingKeys._fumbleOnlyOnFirstDie)
-        try container.encode(self._rerollOptions, forKey: DiceModel.CodingKeys._rerollOptions)
-        try container.encode(self._reorderDice, forKey: DiceModel.CodingKeys._reorderDice)
-        try container.encode(self._addDiceEvery, forKey: DiceModel.CodingKeys._addDiceEvery)
-        try container.encodeIfPresent(self._resultCategory, forKey: DiceModel.CodingKeys._resultCategory)
-        try container.encode(self._entries_, forKey: DiceModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self._parentId, forKey: DiceModel.CodingKeys._parentId)
+            try container.encode(self.id, forKey: DiceModel.CodingKeys._id)
+            try container.encode(self._name_, forKey: DiceModel.CodingKeys._name_)
+            try container.encode(self._description_, forKey: DiceModel.CodingKeys._description_)
+            try container.encode(self._tags_, forKey: DiceModel.CodingKeys._tags_)
+            try container.encode(self._category_, forKey: DiceModel.CodingKeys._category_)
+            try container.encode(self._displayState, forKey: DiceModel.CodingKeys._displayState)
+            try container.encode(self._dice_, forKey: DiceModel.CodingKeys._dice_)
+            try container.encode(self._sumUp, forKey: DiceModel.CodingKeys._sumUp)
+            try container.encode(self._modifier, forKey: DiceModel.CodingKeys._modifier)
+            try container.encode(self._percentDice, forKey: DiceModel.CodingKeys._percentDice)
+            try container.encode(self._compareOption, forKey: DiceModel.CodingKeys._compareOption)
+            try container.encode(self._compareValue, forKey: DiceModel.CodingKeys._compareValue)
+            try container.encode(self._coupValues, forKey: DiceModel.CodingKeys._coupValues)
+            try container.encode(self._coupOnlyOnFirstDie, forKey: DiceModel.CodingKeys._coupOnlyOnFirstDie)
+            try container.encode(self._fumbleValues, forKey: DiceModel.CodingKeys._fumbleValues)
+            try container.encode(self._fumbleOnlyOnFirstDie, forKey: DiceModel.CodingKeys._fumbleOnlyOnFirstDie)
+            try container.encode(self._rerollOptions, forKey: DiceModel.CodingKeys._rerollOptions)
+            try container.encode(self._reorderDice, forKey: DiceModel.CodingKeys._reorderDice)
+            try container.encode(self._addDiceEvery, forKey: DiceModel.CodingKeys._addDiceEvery)
+            try container.encodeIfPresent(self._resultCategory, forKey: DiceModel.CodingKeys._resultCategory)
+            try container.encode(self._entries_, forKey: DiceModel.CodingKeys._entries_)
+            try container.encodeIfPresent(self._parentId, forKey: DiceModel.CodingKeys._parentId)
+    
+        }
     }
 }
 
-extension DiceModel: Equatable, Hashable {
-    public static func == (lhs: DiceModel, rhs: DiceModel) -> Bool {
-        lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState && lhs.resultCategory == rhs.resultCategory
+extension DiceModel: nonisolated Equatable, nonisolated Hashable {
+    nonisolated public static func == (lhs: DiceModel, rhs: DiceModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState && lhs.resultCategory == rhs.resultCategory
+    
+        }
     }
 
-    public func hash(into hasher: inout Hasher) {
+    nonisolated public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

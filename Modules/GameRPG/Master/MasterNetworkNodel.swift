@@ -24,7 +24,7 @@ protocol MasterNetworkControllable: Sendable & AnyObject {
 }
 
 @MainActor @Observable
-final class MasterNetworkNodel: @unchecked Sendable {
+final class MasterNetworkNodel {
     init(name: String = "Master Device") {
         self.name = name
     }

@@ -14,6 +14,7 @@ import Testing
 
 @testable import AdventureRPG
 
+@MainActor
 struct EditControllerTests {
     @Test func mergeEntries() async throws {
         let root = try await MockRoot.importTestData()

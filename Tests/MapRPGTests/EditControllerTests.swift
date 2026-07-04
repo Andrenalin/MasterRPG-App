@@ -13,6 +13,7 @@ import Testing
 
 @testable import MapRPG
 
+@MainActor
 struct EditControllerTests {
     @Test func addEntry() async throws {
         let root = try await MockRoot.importTestData()

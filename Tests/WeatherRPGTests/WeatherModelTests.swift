@@ -6,6 +6,7 @@ import Foundation
 import Testing
 @testable import WeatherRPG
 
+@MainActor
 struct WeatherModelTests {
     func setUp() async throws -> WeatherModel {
         WeatherModel(

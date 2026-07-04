@@ -7,6 +7,7 @@ import Testing
 
 @testable import DiceRPG
 
+@MainActor
 struct LinkControllerTests {
     @Test func toggleTextLink() async throws {
         let root = try await MockRoot.importTestData()

@@ -225,7 +225,7 @@ extension MapEditController {
         editorModel.pins.mapPins = copy.mapPins
     }
 
-    private func calculatePinLocations(in model: MapModel, for pins: [MapPinModel], entryId: UUID) -> [MapPinModel] {
+    @MainActor private func calculatePinLocations(in model: MapModel, for pins: [MapPinModel], entryId: UUID) -> [MapPinModel] {
         let entry = model[entryId]
         var leftCenter = CGPoint(x: entry.xOffset + entry.size.width / 4, y: entry.yOffset + entry.size.height / 2)
         return pins.map { pin in
@@ -279,14 +279,14 @@ extension MapEditController {
         editorModel.entries.resetEntries(mapId: copy.id, entries: displayEntries)
     }
 
-    private func initHexGridSize(model: MapModel, size: Double) -> Double {
+    @MainActor private func initHexGridSize(model: MapModel, size: Double) -> Double {
         guard size < 10 else { return size }
         let wScale = model.width / (12 * sqrt(3))
         let hScale = model.height / (12 * (3.0 / 2.0))
         return max(wScale, hScale)
     }
 
-    private func replaceHexGrid(entries: [MapEntryModel], in model: MapModel) {
+    @MainActor private func replaceHexGrid(entries: [MapEntryModel], in model: MapModel) {
         model.entries.removeAll { $0.isHexGrid }
         model.entries.append(contentsOf: entries)
     }

@@ -4,38 +4,41 @@ import CoreRPG
 import Foundation
 import Observation
 
-@Observable
-public final class AdventureModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, photoId: UUID? = nil, diceId: UUID? = nil, entries: [AdventureEntryModel] = [], parentId: UUID? = nil) {
+// MainActor-owned model. Sendable via global-actor isolation (no @unchecked):
+// persistence crosses the Core Data boundary as AdventureSnapshot,
+// the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
+@MainActor @Observable
+public final class AdventureModel: nonisolated Identifiable {
+    nonisolated init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, photoId: UUID? = nil, diceId: UUID? = nil, entries: [AdventureEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
-        name_ = CRDT(wrappedValue: name)
-        description_ = CRDT(wrappedValue: description)
-        tags_ = CRDT(wrappedValue: tags)
-        category_ = CRDT(wrappedValue: category)
-        self.displayState = displayState
-        photoId_ = CRDT(wrappedValue: photoId)
-        self.diceId = diceId
-        entries_ = CRDTDataUpdate(wrappedValue: entries)
-        self.parentId = parentId
+        _name_ = CRDT(wrappedValue: name)
+        _description_ = CRDT(wrappedValue: description)
+        _tags_ = CRDT(wrappedValue: tags)
+        _category_ = CRDT(wrappedValue: category)
+        self._displayState = displayState
+        _photoId_ = CRDT(wrappedValue: photoId)
+        self._diceId = diceId
+        _entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self._parentId = parentId
     }
 
-    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, diceId: UUID?, entries: CRDTDataUpdate<[AdventureEntryModel]>, parentId: UUID?) {
+    nonisolated public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, diceId: UUID?, entries: CRDTDataUpdate<[AdventureEntryModel]>, parentId: UUID?) {
         self.id = id
-        name_ = name
-        description_ = description
-        tags_ = tags
-        category_ = category
-        self.displayState = displayState
-        photoId_ = photoId
-        self.diceId = diceId
-        entries_ = entries
-        self.parentId = parentId
+        _name_ = name
+        _description_ = description
+        _tags_ = tags
+        _category_ = category
+        self._displayState = displayState
+        _photoId_ = photoId
+        self._diceId = diceId
+        _entries_ = entries
+        self._parentId = parentId
     }
 
-    public init(from decoder: Decoder) throws {
+    nonisolated public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<AdventureModel.CodingKeys> = try decoder.container(keyedBy: AdventureModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: AdventureModel.CodingKeys._id)
+        self.id = try container.decode(UUID.self, forKey: AdventureModel.CodingKeys._id)
         self._name_ = try container.decode(CRDT<String>.self, forKey: AdventureModel.CodingKeys._name_)
         self._description_ = try container.decode(CRDT<String>.self, forKey: AdventureModel.CodingKeys._description_)
         self._tags_ = try container.decode(CRDT<[String]>.self, forKey: AdventureModel.CodingKeys._tags_)
@@ -47,7 +50,8 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: AdventureModel.CodingKeys._parentId)
     }
 
-    public var id: UUID
+    // `let`: nonisolated access (Identifiable, hashing) per SE-0434.
+    public let id: UUID
 
     public var name: String {
         get { name_.wrappedValue }
@@ -92,7 +96,7 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
     public var parentId: UUID? = nil
 }
 
-extension AdventureModel: ItemLinkRegistable {
+extension AdventureModel: nonisolated ItemLinkRegistable {
     @MainActor public var linkRegisterModels: [LinkRegisterModel] {
         changedLinkRegisterModels(oldValue: .empty).0
     }
@@ -146,45 +150,51 @@ extension AdventureModel: ItemLinkRegistable {
     }
 }
 
-extension AdventureModel: ItemDiffComparable {
-    public func merge(_ other: AdventureModel) -> AdventureModel {
-        let mergedCategory = category_.merged(other: other.category_)
-        let mergedEntries: CRDTDataUpdate<[AdventureEntryModel]>
-        if mergedCategory.wrappedValue == .folder {
-            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-            let combined = allIds
-                .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-            mergedEntries = CRDTDataUpdate(wrappedValue: combined)
-        } else {
-            mergedEntries = entries_.merged(other: other.entries_)
+extension AdventureModel: nonisolated ItemDiffComparable {
+    nonisolated public func merge(_ other: AdventureModel) -> AdventureModel {
+        return MainActor.assumeIsolated {
+            let mergedCategory = category_.merged(other: other.category_)
+            let mergedEntries: CRDTDataUpdate<[AdventureEntryModel]>
+            if mergedCategory.wrappedValue == .folder {
+                let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
+                let combined = allIds
+                    .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
+                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+                mergedEntries = CRDTDataUpdate(wrappedValue: combined)
+            } else {
+                mergedEntries = entries_.merged(other: other.entries_)
+            }
+            return AdventureModel(
+                id: id,
+                name: name_.merged(other: other.name_),
+                description: description_.merged(other: other.description_),
+                tags: tags_.merged(other: other.tags_),
+                category: mergedCategory,
+                displayState: other.displayState,
+                photoId: photoId_.merged(other: other.photoId_),
+                diceId: other.diceId,
+                entries: mergedEntries,
+                parentId: other.parentId
+            )
+    
         }
-        return AdventureModel(
-            id: id,
-            name: name_.merged(other: other.name_),
-            description: description_.merged(other: other.description_),
-            tags: tags_.merged(other: other.tags_),
-            category: mergedCategory,
-            displayState: other.displayState,
-            photoId: photoId_.merged(other: other.photoId_),
-            diceId: other.diceId,
-            entries: mergedEntries,
-            parentId: other.parentId
-        )
     }
 
-    public func isSame(_ other: AdventureModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        photoId == other.photoId &&
-        entries_.update == other.entries_.update &&
-        parentId == other.parentId &&
-        // santity checks
-        entries.count == other.entries.count &&
-        entries.enumerated().allSatisfy { index, entry in
-            entry == other.entries[index]
+    nonisolated public func isSame(_ other: AdventureModel) -> Bool {
+        return MainActor.assumeIsolated {
+            name == other.name &&
+            description == other.description &&
+            tags == other.tags &&
+            category == other.category &&
+            photoId == other.photoId &&
+            entries_.update == other.entries_.update &&
+            parentId == other.parentId &&
+            // santity checks
+            entries.count == other.entries.count &&
+            entries.enumerated().allSatisfy { index, entry in
+                entry == other.entries[index]
+            }
+    
         }
     }
 }
@@ -200,26 +210,29 @@ extension AdventureModel {
     }
 }
 
-extension AdventureModel: ItemDuplicatable {
-    public func duplicate() -> AdventureModel {
-        let copyName = duplicateName(from: name)
-        return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId)
+extension AdventureModel: nonisolated ItemDuplicatable {
+    nonisolated public func duplicate() -> AdventureModel {
+        return MainActor.assumeIsolated {
+            let copyName = duplicateName(from: name)
+            return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId)
+    
+        }
     }
 }
 
-extension AdventureModel: ItemReferencable {}
+extension AdventureModel: nonisolated ItemReferencable {}
 
-extension AdventureModel: ItemDataAccessable {
+extension AdventureModel: nonisolated ItemDataAccessable {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}
     }
 
-    public static var empty: AdventureModel { empty(UUID()) }
-    public static func empty(_ id: UUID) -> AdventureModel {
+    nonisolated public static var empty: AdventureModel { empty(UUID()) }
+    nonisolated public static func empty(_ id: UUID) -> AdventureModel {
         AdventureModel(id: id, name: "", description: "")
     }
-    public static let typeId: NetworkModules = .adventure
+    nonisolated public static let typeId: NetworkModules = .adventure
 
     public func copy() -> AdventureModel {
         AdventureModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, diceId: diceId, entries: entries_, parentId: parentId)
@@ -275,13 +288,16 @@ extension AdventureModel: ItemDataAccessable {
     }
 }
 
-extension AdventureModel: Comparable {
-    public static func < (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
-        lhs.name < rhs.name
+extension AdventureModel: nonisolated Comparable {
+    nonisolated public static func < (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.name < rhs.name
+    
+        }
     }
 }
 
-extension AdventureModel: Codable {
+extension AdventureModel: nonisolated Codable {
     enum CodingKeys: CodingKey {
         case _id
         case _name_
@@ -295,28 +311,35 @@ extension AdventureModel: Codable {
         case _parentId
     }
 
-    public final func encode(to encoder: Encoder) throws {
-        var container: KeyedEncodingContainer<AdventureModel.CodingKeys> = encoder.container(keyedBy: AdventureModel.CodingKeys.self)
+    nonisolated public final func encode(to encoder: Encoder) throws {
+        nonisolated(unsafe) let encoder = encoder
+        try MainActor.assumeIsolated {
+            var container: KeyedEncodingContainer<AdventureModel.CodingKeys> = encoder.container(keyedBy: AdventureModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: AdventureModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: AdventureModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: AdventureModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: AdventureModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: AdventureModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: AdventureModel.CodingKeys._displayState)
-        try container.encode(self._photoId_, forKey: AdventureModel.CodingKeys._photoId_)
-        try container.encodeIfPresent(self._diceId, forKey: AdventureModel.CodingKeys._diceId)
-        try container.encode(self._entries_, forKey: AdventureModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self._parentId, forKey: AdventureModel.CodingKeys._parentId)
+            try container.encode(self.id, forKey: AdventureModel.CodingKeys._id)
+            try container.encode(self._name_, forKey: AdventureModel.CodingKeys._name_)
+            try container.encode(self._description_, forKey: AdventureModel.CodingKeys._description_)
+            try container.encode(self._tags_, forKey: AdventureModel.CodingKeys._tags_)
+            try container.encode(self._category_, forKey: AdventureModel.CodingKeys._category_)
+            try container.encode(self._displayState, forKey: AdventureModel.CodingKeys._displayState)
+            try container.encode(self._photoId_, forKey: AdventureModel.CodingKeys._photoId_)
+            try container.encodeIfPresent(self._diceId, forKey: AdventureModel.CodingKeys._diceId)
+            try container.encode(self._entries_, forKey: AdventureModel.CodingKeys._entries_)
+            try container.encodeIfPresent(self._parentId, forKey: AdventureModel.CodingKeys._parentId)
+    
+        }
     }
 }
 
-extension AdventureModel: Equatable, Hashable {
-    public static func == (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
-        lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+extension AdventureModel: nonisolated Equatable, nonisolated Hashable {
+    nonisolated public static func == (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+    
+        }
     }
 
-    public func hash(into hasher: inout Hasher) {
+    nonisolated public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

@@ -32,7 +32,7 @@ struct CacheController: Sendable {
 }
 
 extension CacheController: ImageCacheControllable {
-    func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
+    @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
         guard let item = item as? MapModel, await photoRoot.requestImageCache(for: item.photoId) else { return }
         guard !Task.isCancelled else { return }
         guard let result = await photoRoot.fetchPhotoImage(for: item.photoId, useGame: false) else { return }

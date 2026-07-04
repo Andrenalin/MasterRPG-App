@@ -14,11 +14,12 @@ struct DataController: DataPersistenceControllable {
         let token: String
 }
 
-extension DataController: CoreDataPersistable {
-    // MARK: model -> viewlmodel
+extension DataController: CoreDataSnapshotPersistable {
+    // MARK: managed object -> snapshot (context queue)
 
-    func mapViewModel(_ model: RPGDice, token: String) -> DiceModel {
-        DiceModel(
+    @Sendable
+    func mapSnapshot(_ model: RPGDice, token: String) -> DiceSnapshot {
+        DiceSnapshot(
             id: model.uuid ?? UUID(),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
@@ -43,33 +44,34 @@ extension DataController: CoreDataPersistable {
         )
     }
 
-    // MARK: viewmodel -> model
+    // MARK: snapshot -> managed object (context queue)
     
-    func mapModel(_ viewModel: DiceModel, into model: RPGDice) {
-        model.uuid <=> viewModel.id
-        model.name <=> viewModel.name_.rawValue
-        model.information <=> viewModel.description_.rawValue
-        model.tags <=> viewModel.tags_.rawValue
-        model.diceCategory <=> viewModel.category_.rawValue
-        model.displayState <=> Int32(viewModel.displayState)
-        unequalSet(lhs: &model.diceUpdate, rhs: viewModel.dice_.$update.rawValue) {
-            model.dice = viewModel.dice.map { $0.die.text }.joined(separator: ",")
+    @Sendable
+    func applySnapshot(_ snapshot: DiceSnapshot, into model: RPGDice) {
+        model.uuid <=> snapshot.id
+        model.name <=> snapshot.name_.rawValue
+        model.information <=> snapshot.description_.rawValue
+        model.tags <=> snapshot.tags_.rawValue
+        model.diceCategory <=> snapshot.category_.rawValue
+        model.displayState <=> Int32(snapshot.displayState)
+        unequalSet(lhs: &model.diceUpdate, rhs: snapshot.dice_.$update.rawValue) {
+            model.dice = snapshot.dice.map { $0.die.text }.joined(separator: ",")
         }
-        model.sumUp <=> viewModel.sumUp
-        model.modifier <=> Float(viewModel.modifier)
-        model.percentDice <=> viewModel.percentDice
-        model.compareOption <=> Int16(viewModel.compareOption.rawValue)
-        model.compareValue <=> Float(viewModel.compareValue)
-        model.coupValues <=> viewModel.coupValues.map { $0.rawValue }.joined(separator: ",")
-        model.coupOnlyOnFirstDie <=> viewModel.coupOnlyOnFirstDie
-        model.fumbleValues <=> viewModel.fumbleValues.map { $0.rawValue }.joined(separator: ",")
-        model.fumbleOnlyOnFirstDie <=> viewModel.fumbleOnlyOnFirstDie
-        model.rerollOptions <=> viewModel.rerollOptions.map { "\($0.number)/\($0.value)/\($0.maxDiceValue ? "1" : "0")" }.joined(separator: ",")
-        model.reorderDice <=> viewModel.reorderDice
-        model.addDiceEvery <=> Int16(viewModel.addDiceEvery)
-        unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
+        model.sumUp <=> snapshot.sumUp
+        model.modifier <=> Float(snapshot.modifier)
+        model.percentDice <=> snapshot.percentDice
+        model.compareOption <=> Int16(snapshot.compareOption.rawValue)
+        model.compareValue <=> Float(snapshot.compareValue)
+        model.coupValues <=> snapshot.coupValues.map { $0.rawValue }.joined(separator: ",")
+        model.coupOnlyOnFirstDie <=> snapshot.coupOnlyOnFirstDie
+        model.fumbleValues <=> snapshot.fumbleValues.map { $0.rawValue }.joined(separator: ",")
+        model.fumbleOnlyOnFirstDie <=> snapshot.fumbleOnlyOnFirstDie
+        model.rerollOptions <=> snapshot.rerollOptions.map { "\($0.number)/\($0.value)/\($0.maxDiceValue ? "1" : "0")" }.joined(separator: ",")
+        model.reorderDice <=> snapshot.reorderDice
+        model.addDiceEvery <=> Int16(snapshot.addDiceEvery)
+        unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries_.$update.rawValue) {
             let oldEntries = model.entriesModel
-            let newEntries = viewModel.entries.enumerated().map {
+            let newEntries = snapshot.entries.enumerated().map {
                 let entry = model.entryOrNew(for: $1.id)
                 self.map($1, into: entry, index: $0)
                 return entry
@@ -82,7 +84,20 @@ extension DataController: CoreDataPersistable {
                 model.managedObjectContext?.delete(entry)
             }
         }
-        model.parentId <=> viewModel.parentId
+        model.parentId <=> snapshot.parentId
+    }
+
+
+    // MARK: model <-> snapshot (MainActor)
+
+    @MainActor
+    func makeModel(from snapshot: DiceSnapshot) -> DiceModel {
+        snapshot.makeModel()
+    }
+
+    @MainActor
+    func makeSnapshot(from model: DiceModel) -> DiceSnapshot {
+        DiceSnapshot(model)
     }
 
     // MARK: - other mappers

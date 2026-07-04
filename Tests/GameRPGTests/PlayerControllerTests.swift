@@ -12,6 +12,7 @@ import PhotoRPG
 import AdventureRPG
 
 /// Test environment for PlayerController tests.
+@MainActor
 struct PlayerControllerTestEnvironment {
     let playerController: PlayerController
     let root: GameRoot
@@ -66,6 +67,7 @@ struct PlayerControllerTestEnvironment {
 }
 
 @Suite("Player controller tests")
+@MainActor
 struct PlayerControllerTests {
 
     @Test("Handle photo reveal with data and ID")

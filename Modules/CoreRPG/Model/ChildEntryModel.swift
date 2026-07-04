@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct ChildEntryModel: Identifiable, Equatable, Hashable, Codable {
+public struct ChildEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     public init(id: UUID, childId: UUID, displayState: Int = 0) {
         self.id = id
         self.childId = childId

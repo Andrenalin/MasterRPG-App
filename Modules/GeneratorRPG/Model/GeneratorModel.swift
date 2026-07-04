@@ -4,38 +4,40 @@ import CoreRPG
 import Foundation
 import SwiftUI
 
-@Observable
-final class GeneratorModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .item, displayState: Int, entries: [ChildEntryModel] = [], parentId: UUID? = nil, genType: GenType = .adventure, referenceId: UUID? = nil) {
+// MainActor-owned model. Sendable via global-actor isolation (no @unchecked):
+// persistence crosses the Core Data boundary as GeneratorSnapshot.
+@MainActor @Observable
+final class GeneratorModel: nonisolated Identifiable {
+    nonisolated init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .item, displayState: Int, entries: [ChildEntryModel] = [], parentId: UUID? = nil, genType: GenType = .adventure, referenceId: UUID? = nil) {
         self.id = id
-        name_ = CRDT(wrappedValue: name)
-        description_ = CRDT(wrappedValue: description)
-        tags_ = CRDT(wrappedValue: tags)
-        category_ = CRDT(wrappedValue: category)
-        self.displayState = displayState
-        entries_ = CRDTDataUpdate(wrappedValue: entries)
-        self.parentId = parentId
-        self.genType = genType
-        self.referenceId = referenceId
+        _name_ = CRDT(wrappedValue: name)
+        _description_ = CRDT(wrappedValue: description)
+        _tags_ = CRDT(wrappedValue: tags)
+        _category_ = CRDT(wrappedValue: category)
+        self._displayState = displayState
+        _entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self._parentId = parentId
+        self._genType = genType
+        self._referenceId = referenceId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[ChildEntryModel]>, parentId: UUID?, genType: GenType, referenceId: UUID?) {
+    nonisolated init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[ChildEntryModel]>, parentId: UUID?, genType: GenType, referenceId: UUID?) {
         self.id = id
-        name_ = name
-        description_ = description
-        tags_ = tags
-        category_ = category
-        self.displayState = displayState
-        entries_ = entries
-        self.parentId = parentId
-        self.genType = genType
-        self.referenceId = referenceId
+        _name_ = name
+        _description_ = description
+        _tags_ = tags
+        _category_ = category
+        self._displayState = displayState
+        _entries_ = entries
+        self._parentId = parentId
+        self._genType = genType
+        self._referenceId = referenceId
     }
 
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<GeneratorModel.CodingKeys> = try decoder.container(keyedBy: GeneratorModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: GeneratorModel.CodingKeys._id)
+        self.id = try container.decode(UUID.self, forKey: GeneratorModel.CodingKeys._id)
         self._name_ = try container.decode(CRDT<String>.self, forKey: GeneratorModel.CodingKeys._name_)
         self._description_ = try container.decode(CRDT<String>.self, forKey: GeneratorModel.CodingKeys._description_)
         self._tags_ = try container.decode(CRDT<[String]>.self, forKey: GeneratorModel.CodingKeys._tags_)
@@ -47,7 +49,8 @@ final class GeneratorModel: Identifiable, @unchecked Sendable {
         self._referenceId = try container.decodeIfPresent(UUID.self, forKey: GeneratorModel.CodingKeys._referenceId)
     }
 
-    var id: UUID
+    // `let`: nonisolated access (Identifiable, hashing) per SE-0434.
+    let id: UUID
 
     var name: String {
         get { name_.wrappedValue }
@@ -108,65 +111,74 @@ extension GeneratorModel {
     }
 }
 
-extension GeneratorModel: ItemLinkRegistable {}
+extension GeneratorModel: nonisolated ItemLinkRegistable {}
 
-extension GeneratorModel: ItemDiffComparable {
-    func merge(_ other: GeneratorModel) -> GeneratorModel {
-        let mergedCategory = category_.merged(other: other.category_)
-        let mergedEntries: CRDTDataUpdate<[ChildEntryModel]>
-        if mergedCategory.wrappedValue == .folder {
-            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-            let combined = allIds
-                .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-            mergedEntries = CRDTDataUpdate(wrappedValue: combined)
-        } else {
-            mergedEntries = entries_.merged(other: other.entries_)
+extension GeneratorModel: nonisolated ItemDiffComparable {
+    nonisolated func merge(_ other: GeneratorModel) -> GeneratorModel {
+        return MainActor.assumeIsolated {
+            let mergedCategory = category_.merged(other: other.category_)
+            let mergedEntries: CRDTDataUpdate<[ChildEntryModel]>
+            if mergedCategory.wrappedValue == .folder {
+                let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
+                let combined = allIds
+                    .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
+                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+                mergedEntries = CRDTDataUpdate(wrappedValue: combined)
+            } else {
+                mergedEntries = entries_.merged(other: other.entries_)
+            }
+            return GeneratorModel(
+                id: id,
+                name: name_.merged(other: other.name_),
+                description: description_.merged(other: other.description_),
+                tags: tags_.merged(other: other.tags_),
+                category: mergedCategory,
+                displayState: other.displayState,
+                entries: mergedEntries,
+                parentId: other.parentId,
+                genType: other.genType,
+                referenceId: other.referenceId
+            )
+    
         }
-        return GeneratorModel(
-            id: id,
-            name: name_.merged(other: other.name_),
-            description: description_.merged(other: other.description_),
-            tags: tags_.merged(other: other.tags_),
-            category: mergedCategory,
-            displayState: other.displayState,
-            entries: mergedEntries,
-            parentId: other.parentId,
-            genType: other.genType,
-            referenceId: other.referenceId
-        )
     }
 
-    func isSame(_ other: GeneratorModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        entries_.update == other.entries_.update &&
-        parentId == other.parentId &&
-        genType == other.genType &&
-        referenceId == other.referenceId
+    nonisolated func isSame(_ other: GeneratorModel) -> Bool {
+        return MainActor.assumeIsolated {
+            name == other.name &&
+            description == other.description &&
+            tags == other.tags &&
+            category == other.category &&
+            entries_.update == other.entries_.update &&
+            parentId == other.parentId &&
+            genType == other.genType &&
+            referenceId == other.referenceId
+    
+        }
     }
 }
 
-extension GeneratorModel: ItemDuplicatable {
-    func duplicate() -> GeneratorModel {
-        let copyName = duplicateName(from: name)
-        return GeneratorModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, parentId: parentId, genType: genType, referenceId: referenceId)
+extension GeneratorModel: nonisolated ItemDuplicatable {
+    nonisolated func duplicate() -> GeneratorModel {
+        return MainActor.assumeIsolated {
+            let copyName = duplicateName(from: name)
+            return GeneratorModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, parentId: parentId, genType: genType, referenceId: referenceId)
+    
+        }
     }
 }
 
-extension GeneratorModel: ItemDataAccessable {
+extension GeneratorModel: nonisolated ItemDataAccessable {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}
     }
 
-    public static var empty: GeneratorModel { empty(UUID()) }
-    public static func empty(_ id: UUID) -> GeneratorModel {
+    nonisolated public static var empty: GeneratorModel { empty(UUID()) }
+    nonisolated public static func empty(_ id: UUID) -> GeneratorModel {
         GeneratorModel(id: id, name: "", displayState: 0)
     }
-    public static let typeId: NetworkModules = .generator
+    nonisolated public static let typeId: NetworkModules = .generator
 
     public func copy() -> GeneratorModel {
         GeneratorModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, parentId: parentId, genType: genType, referenceId: referenceId)
@@ -221,16 +233,22 @@ extension GeneratorModel: ItemDataAccessable {
     }
 }
 
-extension GeneratorModel: Equatable, Hashable, Comparable, Codable {
-    static func == (lhs: GeneratorModel, rhs: GeneratorModel) -> Bool {
-        lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+extension GeneratorModel: nonisolated Equatable, nonisolated Hashable, nonisolated Comparable, nonisolated Codable {
+    nonisolated static func == (lhs: GeneratorModel, rhs: GeneratorModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
+    
+        }
     }
     
-    static func < (lhs: GeneratorModel, rhs: GeneratorModel) -> Bool {
-        lhs.name < rhs.name
+    nonisolated static func < (lhs: GeneratorModel, rhs: GeneratorModel) -> Bool {
+        return MainActor.assumeIsolated {
+            lhs.name < rhs.name
+    
+        }
     }
     
-    func hash(into hasher: inout Hasher) {
+    nonisolated func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
     
@@ -247,18 +265,22 @@ extension GeneratorModel: Equatable, Hashable, Comparable, Codable {
         case _referenceId
     }
 
-    final func encode(to encoder: Encoder) throws {
-        var container: KeyedEncodingContainer<GeneratorModel.CodingKeys> = encoder.container(keyedBy: GeneratorModel.CodingKeys.self)
+    nonisolated final func encode(to encoder: Encoder) throws {
+        nonisolated(unsafe) let encoder = encoder
+        try MainActor.assumeIsolated {
+            var container: KeyedEncodingContainer<GeneratorModel.CodingKeys> = encoder.container(keyedBy: GeneratorModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: GeneratorModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: GeneratorModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: GeneratorModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: GeneratorModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: GeneratorModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: GeneratorModel.CodingKeys._displayState)
-        try container.encode(self._entries_, forKey: GeneratorModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self._parentId, forKey: GeneratorModel.CodingKeys._parentId)
-        try container.encode(self._genType, forKey: GeneratorModel.CodingKeys._genType)
-        try container.encodeIfPresent(self._referenceId, forKey: GeneratorModel.CodingKeys._referenceId)
+            try container.encode(self.id, forKey: GeneratorModel.CodingKeys._id)
+            try container.encode(self._name_, forKey: GeneratorModel.CodingKeys._name_)
+            try container.encode(self._description_, forKey: GeneratorModel.CodingKeys._description_)
+            try container.encode(self._tags_, forKey: GeneratorModel.CodingKeys._tags_)
+            try container.encode(self._category_, forKey: GeneratorModel.CodingKeys._category_)
+            try container.encode(self._displayState, forKey: GeneratorModel.CodingKeys._displayState)
+            try container.encode(self._entries_, forKey: GeneratorModel.CodingKeys._entries_)
+            try container.encodeIfPresent(self._parentId, forKey: GeneratorModel.CodingKeys._parentId)
+            try container.encode(self._genType, forKey: GeneratorModel.CodingKeys._genType)
+            try container.encodeIfPresent(self._referenceId, forKey: GeneratorModel.CodingKeys._referenceId)
+    
+        }
     }
 }

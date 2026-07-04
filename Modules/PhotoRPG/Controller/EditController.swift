@@ -42,7 +42,7 @@ extension EditController: EditControllable {
 }
 
 extension EditController {
-    func convert(itemId: UUID) async throws {
+    @MainActor func convert(itemId: UUID) async throws {
         guard let item = await editModel(for: itemId), let fileUrl = item.fileUrl else { return }
         await cacheController?.photoId(for: item.id, item: item, shouldDownload: true)
         guard let image = await cacheController?.photo(for: item.id), let data = image.jpegData(compressionQuality: 0.9) else { return }

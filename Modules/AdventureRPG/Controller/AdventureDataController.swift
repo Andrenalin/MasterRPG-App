@@ -19,9 +19,11 @@ import Foundation
         let entry = AdventureEntryModel(id: UUID(), name: String(localized: "Photos", bundle: .module).localizedString, content: photoLinks.joined(separator: ", "))
         model.entries.append(entry)
 
+        // Snapshot on the MainActor; only the Sendable value crosses into the context.
+        let snapshot = dataController.makeSnapshot(from: model)
         context.performAndWait {
             let dbmodel = RPGAdventure(context: context)
-            dataController.mapModel(model, into: dbmodel)
+            dataController.applySnapshot(snapshot, into: dbmodel)
         }
     }
 }

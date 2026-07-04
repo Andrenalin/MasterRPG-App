@@ -34,7 +34,11 @@ private enum DiceIntentPerformer {
         let die = diceType.toDieModel()
         let rolledDie = die.role(resetResults: true, reroleOptions: [])
         let result = rolledDie.result.first ?? die.die.max
-        let diceModel = DiceModel(id: UUID(), name: diceType.rawValue, dice: [rolledDie])
+
+        // Create dice model with the rolled die
+        let diceModel = DiceSnapshot(id: UUID(), name: diceType.rawValue, dice: [rolledDie])
+
+        // Create result model
         let rollResult = DiceResultModel(
             diceModel: diceModel,
             result: .rolled,

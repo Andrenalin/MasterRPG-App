@@ -208,7 +208,7 @@ extension GameController: ValueGameStorable {
         return NetworkCodableDataType(id: UUID(), type: itemController.config.module, version: 0, data: result.encodeData())
     }
 
-    func add(result: NetworkCodableDataType, for characterId: UUID?) async {
+    @MainActor func add(result: NetworkCodableDataType, for characterId: UUID?) async {
         guard let valueResult = ValueResultModel.decodeData(of: result.data) else { return }
 
         let adventureValue: ValueModel?
@@ -231,7 +231,7 @@ extension GameController: ValueGameStorable {
         }
     }
 
-    private func adventureModel(for character: ValueModel) async -> ValueModel {
+    @MainActor private func adventureModel(for character: ValueModel) async -> ValueModel {
         let name = String(localized: "Adventure", bundle: .module).localizedString
         if let adventureEntry = character.entries.first(where: { $0.name == name }), let adventureValueId = adventureEntry.valueId {
             return await itemController.itemOrEmpty(for: adventureValueId)

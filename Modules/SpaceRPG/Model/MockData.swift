@@ -6,9 +6,9 @@ import SwiftUI
 import SwiftData
 
 struct MockData: PreviewModifier {
-    static let previewId = UUID()
-    static let previewId2 = UUID()
-    static let previewId3 = UUID()
+    nonisolated static let previewId = UUID()
+    nonisolated static let previewId2 = UUID()
+    nonisolated static let previewId3 = UUID()
     
     static var previewRoot: SpaceRootModel?
 

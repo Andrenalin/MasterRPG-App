@@ -7,6 +7,7 @@ import Testing
 
 @testable import DiceRPG
 
+@MainActor
 struct DiceRootTests {
     @Test func importer() async throws {
         let sut = await DiceRootModel.testRoot()

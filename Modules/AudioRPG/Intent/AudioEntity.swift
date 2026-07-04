@@ -28,23 +28,29 @@ struct AudioEntity: IndexedEntity {
     let id: UUID
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { displayName }
+    var name: String { storedName }
 
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { contentDescription }
+    var description: String { storedDescription }
 
-    var icon: String { symbolName }
+    let icon: String
+    private let storedName: String
+    private let storedDescription: String
 
-    private let displayName: String
-    private let contentDescription: String
-    private let symbolName: String
-    
+    var root: AudioRootModel
+    var model: AudioModel
+
+    // Display fields are captured eagerly: entity properties are nonisolated, the
+    // @MainActor model must not be read from them. All queries are @MainActor.
     @MainActor
     init(root: AudioRootModel, model: AudioModel) {
-        id = model.id
-        displayName = model.name
-        contentDescription = model.description
-        symbolName = model.specialCategory ? model.category.icon : root.config.module.icon
+        self.root = root
+        self.model = model
+        self.id = model.id
+        self.storedName = model.name
+        self.storedDescription = model.description
+        let isSpecial = model.category == .folder || model.category.isCollection
+        self.icon = isSpecial ? model.category.icon : root.config.module.icon
     }
 }
 

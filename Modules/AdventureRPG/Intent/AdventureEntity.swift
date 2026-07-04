@@ -26,25 +26,32 @@ public struct AdventureEntity: IndexedEntity {
 
     public static let defaultQuery = AdventureEntityQuery()
 
-    public var id: UUID { model.id }
-
+    public let id: UUID
 
     @ComputedProperty(indexingKey: \.displayName)
-    public var name: String { model.name }
+    public var name: String { storedName }
 
     @ComputedProperty(indexingKey: \.contentDescription)
-    public var description: String { model.description }
+    public var description: String { storedDescription }
 
-    public var icon: String {
-        model.specialCategory ? model.category.icon : root.config.module.icon
-    }
+    public let icon: String
+    private let storedName: String
+    private let storedDescription: String
 
     var root: AdventureRootModel
     var model: AdventureModel
-    
+
+    // Display fields are captured eagerly: entity properties are nonisolated, the
+    // @MainActor model must not be read from them. All queries are @MainActor.
+    @MainActor
     init(root: AdventureRootModel, model: AdventureModel) {
         self.root = root
         self.model = model
+        self.id = model.id
+        self.storedName = model.name
+        self.storedDescription = model.description
+        let isSpecial = model.category == .folder || model.category.isCollection
+        self.icon = isSpecial ? model.category.icon : root.config.module.icon
     }
 }
 

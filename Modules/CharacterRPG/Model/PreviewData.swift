@@ -121,7 +121,7 @@ extension LinkController {
 }
 
 extension ValueModel {
-    static let previewId = UUID(uuidString: "1527140F-0101-46C3-912E-B02FE0FF7696")!
+    nonisolated static let previewId = UUID(uuidString: "1527140F-0101-46C3-912E-B02FE0FF7696")!
     @MainActor
     static let preview = ValueModel(id: previewId, name: "Andrenalin", description: "GameMaster forever", tags: ["Master", "Guide", "Coder"], category: .gameMaster, displayState: 0, photoId: PhotoRootModel.previewPhotoId, photos: [], entries: [.testEntryText, .testEntryNumber])
 }

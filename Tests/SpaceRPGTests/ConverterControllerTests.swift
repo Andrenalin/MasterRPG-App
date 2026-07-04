@@ -7,6 +7,7 @@ import Testing
 
 @testable import SpaceRPG
 
+@MainActor
 struct ConverterControllerTests {
 
     @Test func checkFolders_generate_entries_and_links() async throws {

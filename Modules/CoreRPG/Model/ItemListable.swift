@@ -32,27 +32,29 @@ public enum DisplayStateMask: Int {
 public extension ItemDataAccessable {
     static var typeId: NetworkModules { .none }
 
-    var isHidden: Bool {
+    @MainActor var isHidden: Bool {
         displayState == DisplayStateMask.totalHidden.rawValue
     }
 
-    var isGroupHidden: Bool {
+    @MainActor var isGroupHidden: Bool {
         (displayState & DisplayStateMask.groupHidden.rawValue) > 0
     }
 
-    var hideName: Bool {
+    @MainActor var hideName: Bool {
         (displayState & DisplayStateMask.nameHidden.rawValue) > 0
     }
 
-    var hideDescription: Bool {
+    @MainActor var hideDescription: Bool {
         (displayState & DisplayStateMask.descriptionHidden.rawValue) > 0
     }
 
-    var hideOther: Bool {
+    @MainActor var hideOther: Bool {
         (displayState & DisplayStateMask.otherHidden.rawValue) > 0
     }
 }
 
+// Nonisolated on purpose: entry value types (structs) share this protocol with
+// domain models. @MainActor models witness it with a nonisolated shim.
 public protocol ItemDuplicatable {
     func duplicate() -> Self
 }

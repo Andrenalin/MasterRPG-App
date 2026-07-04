@@ -67,9 +67,12 @@ actor GameModelMessage {
 }
 
 final class PlayerController: Sendable {
-    // unowned (not strong) to break the cycle GameRoot → GameModel → PlayerController → GameRoot;
-    // GameModel always drops its controllers before GameRoot can go away (stopGame()).
-    unowned let root: GameRoot
+    // Strong on purpose: an intentional, temporary cycle GameRoot → GameModel →
+    // PlayerController → GameRoot that stopGame() breaks by dropping the controllers.
+    // `unowned` crashed here: delayed tasks (e.g. sendCharacter's 5s sleep) can
+    // outlive stopGame()/teardown and would read a destroyed GameRoot. A strong
+    // reference keeps GameRoot alive until the last in-flight task finishes.
+    let root: GameRoot
     let gameModel: PlayerControllerModel
     let proxyMasterController: MasterController?
     

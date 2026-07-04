@@ -14,6 +14,7 @@ import Testing
 /// Tests for the scenario where a sub-item lives inside a folder AND belongs to a group owner.
 /// The sub-item has both parentId (folder) and groupId (owner) set simultaneously.
 /// checkFolders / repairHiddenAndFolders must preserve both and not corrupt either.
+@MainActor
 struct ConverterControllerTests {
 
     // MARK: - Baseline: folder + group memberships coexist

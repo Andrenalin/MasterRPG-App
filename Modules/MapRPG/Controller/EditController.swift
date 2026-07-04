@@ -294,7 +294,7 @@ extension EditController {
         }
     }
     
-    private func calculateLocations(model: MapModel, for pins: [MapPinModel], entryId: UUID) -> [MapPinModel] {
+    @MainActor private func calculateLocations(model: MapModel, for pins: [MapPinModel], entryId: UUID) -> [MapPinModel] {
         let pinScale = model.pinScale
         let entry = model[entryId]
         var leftCenter = CGPoint(x: entry.xOffset + entry.size.width / 4, y: entry.yOffset + entry.size.height / 2)
