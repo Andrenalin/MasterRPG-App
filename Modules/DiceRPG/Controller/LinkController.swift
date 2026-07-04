@@ -9,10 +9,9 @@ import WidgetKit
 #endif
 
 struct LinkController: Sendable {
-    let rootManager: RootManager
     let itemController: ItemController
     let gameController: GameController
-    
+
     public var itemControllable: any ItemControllable { itemController }
 }
 

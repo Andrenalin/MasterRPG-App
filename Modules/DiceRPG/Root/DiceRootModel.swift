@@ -19,7 +19,8 @@ public final class DiceRootModel {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+        self.rootManager = rootManager
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         let listDisplayModel = ListDisplayModel()
 
@@ -28,18 +29,18 @@ public final class DiceRootModel {
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
 
-        let exportController = ExportController(rootManager: rootManager, itemController: itemController)
+        let exportController = ExportController(rootController: adventureRootControllable, itemController: itemController)
         _exportController = exportController
         let gameController = GameController(itemController: itemController, exportController: exportController)
         _gameController = gameController
 
-        let linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
+        let linkController = LinkController(itemController: itemController, gameController: gameController)
         _linkController = linkController
-        
+
         let sheetController = SheetController(itemController: itemController)
         _sheetController = sheetController
 
-        _editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        _editController = EditController(rootManager: rootManager, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         
         _importController = ImportController(itemController: itemController, editController: editController)
         let searchController = SearchController(itemController: itemController)
@@ -51,6 +52,7 @@ public final class DiceRootModel {
         _folderLinkController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
 
         _rootController = ItemRootController(
+            rootManager: rootManager,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
@@ -82,6 +84,12 @@ public final class DiceRootModel {
 #if os(visionOS)
     let diceSpaceModel = DiceSpaceModel()
 #endif
+
+    private var _rootManager: RootManager?
+    public var rootManager: RootManager {
+        get { _rootManager! }
+        set { _rootManager = newValue }
+    }
 
     public let config: ModuleConfiguration
     let tagController: TagController

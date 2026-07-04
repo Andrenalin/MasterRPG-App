@@ -12,9 +12,13 @@ import CharacterRPG
 
 struct LinkController: Sendable {
     let root: MapRootModel
-    let rootManager: RootManager
+    let audioRoot: AudioRootModel
+    let diceRoot: DiceRootModel
+    let photoRoot: PhotoRootModel
+    let tableRoot: TableRootModel
+    let characterRoot: CharacterRootModel
     let itemController: ItemController
-    
+
     public var itemControllable: any ItemControllable { itemController }
 }
 
@@ -61,11 +65,11 @@ extension LinkController: LinkControllable {
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
         var result = content
         for link in links {
-            result = rootManager.audioRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = rootManager.diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .table, .value])
-            result = rootManager.photoRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = rootManager.tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = rootManager.characterRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = audioRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .table, .value])
+            result = photoRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = characterRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
@@ -92,7 +96,7 @@ extension LinkController: LinkControllable {
         defer { resetLinkRegister(replacedItem) }
 
         guard let photoId = inspectedItem.photoId, let replacedItem = itemController.copy(of: itemId) else { return }
-        if rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
+        if photoRoot.linkControllable.validateLink(itemId: photoId) {
             Task {
                 await root.editController.resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
             }
@@ -134,7 +138,7 @@ extension LinkController {
                 case .photo:
                     photoIds.append($0.itemId)
                 case .value:
-                    photoIds.append(contentsOf: rootManager.characterRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                    photoIds.append(contentsOf: characterRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                 default:
                     break
                 }

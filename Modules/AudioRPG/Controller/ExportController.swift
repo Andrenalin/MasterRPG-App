@@ -5,12 +5,12 @@ import Foundation
 import Observation
 
 struct ExportController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController) {
-        self.rootManager = rootManager
+    @MainActor init(rootController: any RootControllable, itemController: ItemController) {
+        self.rootController = rootController
         self.itemController = itemController
     }
 
-    let rootManager: RootManager
+    let rootController: any RootControllable
     let itemController: ItemController
 }
 

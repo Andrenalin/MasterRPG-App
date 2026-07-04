@@ -10,7 +10,7 @@ public protocol TableGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, diceRoot: DiceRootModel, itemController: ItemController, exportController: ExportController) {
+    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, exportController: ExportController) {
         self.diceRoot = diceRoot
         self.itemController = itemController
         self.exportController = exportController

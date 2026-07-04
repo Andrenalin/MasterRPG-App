@@ -9,9 +9,16 @@ import DiceRPG
 import PhotoRPG
 
 struct LinkController: Sendable {
+    // `rootManager` is stored only to satisfy `LinkControllable.rootManager`, which
+    // `SheetRootModel`'s cross-module dispatch relies on. Every other link path below
+    // uses the narrow root/diceRoot/photoRoot/tableRoot refs instead.
     let rootManager: RootManager
+    let root: CharacterRootModel
+    let diceRoot: DiceRootModel
+    let photoRoot: PhotoRootModel
+    let tableRoot: TableRootModel
     let itemController: ItemController
-    
+
     public var itemControllable: any ItemControllable { itemController }
 }
 
@@ -29,7 +36,7 @@ extension LinkController: LinkControllable {
                 return text
             }
             Task { @MainActor in
-                await shareResult?.networkActions?.shareId(rootManager.characterRoot.gameControllable.share(id: itemId))
+                await shareResult?.networkActions?.shareId(root.gameControllable.share(id: itemId))
             }
             return text
         } else {
@@ -59,8 +66,8 @@ extension LinkController: LinkControllable {
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
         var result = content
         for link in links {
-            result = rootManager.diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .value])
-            result = rootManager.tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .value])
+            result = tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
@@ -81,16 +88,16 @@ extension LinkController: LinkControllable {
         guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
         
         replacedItem.photos = replacedItem.photos.compactMap { photoId in
-            if rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
+            if photoRoot.linkControllable.validateLink(itemId: photoId) {
                 return photoId
             } else {
                 Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 return nil
             }
         }
-        
+
         if let photoId = replacedItem.photoId {
-            if !rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
+            if !photoRoot.linkControllable.validateLink(itemId: photoId) {
                 Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }
@@ -100,7 +107,7 @@ extension LinkController: LinkControllable {
             var validatedEntry = entry
             
             if let diceId = validatedEntry.diceId {
-                if !rootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
+                if !diceRoot.linkControllable.validateLink(itemId: diceId) {
                     Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
                     validatedEntry.diceId = nil
                 }

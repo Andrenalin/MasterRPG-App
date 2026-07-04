@@ -47,5 +47,6 @@ extension FakeEditController: EntryDataEditable {
 }
 
 extension SheetRootModel {
-    static let fake: SheetRootModel = SheetRootModel(linkControllable: FakeLinkController.fake, sheetControllable: FakeSheetController.fake, sheetModel: .empty, isEditor: true)
+    @MainActor
+    static let fake: SheetRootModel = SheetRootModel(rootManager: RootManager.preview(fake: ItemRootController.fake), linkControllable: FakeLinkController.fake, sheetControllable: FakeSheetController.fake, sheetModel: .empty, isEditor: true)
 }

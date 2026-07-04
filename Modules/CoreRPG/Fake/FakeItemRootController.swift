@@ -28,9 +28,9 @@ public extension ItemRootController {
             sheetControllable: FakeSheetController.fake,
             viewControllable: FakeViewController()
         )
-        exportFake._rootManager = RootManager.preview(fake: root)
-        linkFake._rootManager = RootManager.preview(fake: root)
-        
+        root.rootManager = RootManager.preview(fake: root)
+        exportFake.rootController = FakeRootController.fake
+
         return root
     }()
 }

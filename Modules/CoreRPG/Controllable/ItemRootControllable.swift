@@ -5,6 +5,7 @@ import SwiftData
 
 @MainActor
 public protocol ItemRootControllable: Sendable {
+    var rootManager: RootManager { get }
     var configurable: ModuleConfigurable { get }
     var navigationModel: ModuleNavigationModel { get }
     var inspectorEditorLinkModel: EditorLinkModel? { get }
@@ -37,6 +38,7 @@ public extension ItemRootControllable {
 @MainActor @Observable
 public final class ItemRootController: ItemRootControllable {
     public init(
+        rootManager: RootManager? = nil,
         config: ModuleConfigurable,
         navigationModel: ModuleNavigationModel,
         inspectorEditorLinkModel: EditorLinkModel?,
@@ -56,6 +58,7 @@ public final class ItemRootController: ItemRootControllable {
         sheetControllable: any SheetControllable,
         viewControllable: any ViewControllable
     ) {
+        self._rootManager = rootManager
         self.configurable = config
         self.navigationModel = navigationModel
         self.inspectorEditorLinkModel = inspectorEditorLinkModel
@@ -76,6 +79,13 @@ public final class ItemRootController: ItemRootControllable {
         self.viewControllable = viewControllable
     }
 
+    // Backed by an optional because the fake/preview root must exist before `RootManager.preview(fake:)`
+    // can be built from it — see `ItemRootController.fake`, which fixes this up right after construction.
+    private var _rootManager: RootManager?
+    public var rootManager: RootManager {
+        get { _rootManager! }
+        set { _rootManager = newValue }
+    }
     public let configurable: ModuleConfigurable
     public let navigationModel: ModuleNavigationModel
     public let inspectorEditorLinkModel: EditorLinkModel?

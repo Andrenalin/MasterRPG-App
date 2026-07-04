@@ -20,9 +20,8 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let model = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
+        let model = sut.sheet(root: root.rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.isShown == true)
         #expect(model.level == 0)
@@ -37,10 +36,9 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
         let item = root.itemController.itemOrEmpty(for: itemId!)
 
-        let model = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
+        let model = sut.sheet(root: root.rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         if item.photoId != nil {
             let photoEntry = model.inlineEntries.first(where: { $0.sheetType == SheetModelType.photo })
@@ -55,9 +53,8 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let model = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
+        let model = sut.sheet(root: root.rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
 
         #expect(model.entries.count >= 0)
         for entry in model.entries where entry.sheetType != SheetModelType.photo {
@@ -72,9 +69,8 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let entries = sut.sheetEntries(root: root.rootManager!, itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
+        let entries = sut.sheetEntries(root: root.rootManager, itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         for entry in entries {
             for linkedSheet in entry.entries {
@@ -90,9 +86,8 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let entries = sut.sheetEntries(root: root.rootManager!, itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
+        let entries = sut.sheetEntries(root: root.rootManager, itemId: itemId!, level: 0, moduleDepth: 0, isEditor: false)
 
         for entry in entries {
             for link in entry.entries where link.source.typeId == NetworkModules.adventure {
@@ -108,12 +103,11 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let modelShown = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
+        let modelShown = sut.sheet(root: root.rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, isEditor: false)
         #expect(modelShown.isShown == true)
 
-        let modelHidden = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 0, isShown: false, isEditor: false)
+        let modelHidden = sut.sheet(root: root.rootManager, itemId: itemId!, destination: nil, level: 0, isShown: false, isEditor: false)
         #expect(modelHidden.isShown == false)
     }
 
@@ -123,18 +117,17 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
         // Test isFolded at moduleDepth >= 4
-        let modelFolded = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 4, isEditor: false)
+        let modelFolded = sut.sheet(root: root.rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 4, isEditor: false)
         #expect(modelFolded.isFolded == true)
         #expect(modelFolded.entries.isEmpty)
 
-        let modelNotFolded = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 3, isEditor: false)
+        let modelNotFolded = sut.sheet(root: root.rootManager, itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 3, isEditor: false)
         #expect(modelNotFolded.isFolded == false)
 
         // Test isFolded in editor mode at level > 0
-        let modelFoldedEditor = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: nil, level: 1, isShown: true, moduleDepth: 0, isEditor: true)
+        let modelFoldedEditor = sut.sheet(root: root.rootManager, itemId: itemId!, destination: nil, level: 1, isShown: true, moduleDepth: 0, isEditor: true)
         #expect(modelFoldedEditor.isFolded == true)
         #expect(modelFoldedEditor.entries.isEmpty)
     }
@@ -145,10 +138,9 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
         let destination = ItemRowModel(itemId: Foundation.UUID(), typeId: NetworkModules.adventure)
-        let model = sut.sheet(root: root.rootManager!, itemId: itemId!, destination: destination, level: 0, isShown: true, isEditor: false)
+        let model = sut.sheet(root: root.rootManager, itemId: itemId!, destination: destination, level: 0, isShown: true, isEditor: false)
 
         #expect(model.destination.itemId == destination.itemId)
     }
@@ -159,9 +151,8 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let rootModel = SheetRootModel(linkControllable: root.rootManager!.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
+        let rootModel = SheetRootModel(rootManager: root.rootManager, linkControllable: root.rootManager.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
 
         // Set initial isShown states
         if rootModel.sheetModel.entries.count > 0 {
@@ -196,10 +187,9 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
         // Create model - searchText is "" by default
-        let rootModel = SheetRootModel(linkControllable: root.rootManager!.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
+        let rootModel = SheetRootModel(rootManager: root.rootManager, linkControllable: root.rootManager.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
 
         // Verify that initial states are preserved (not overwritten by empty search)
         for entry in rootModel.sheetModel.entries {
@@ -214,9 +204,8 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let rootModel = SheetRootModel(linkControllable: root.rootManager!.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
+        let rootModel = SheetRootModel(rootManager: root.rootManager, linkControllable: root.rootManager.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
 
         // Set initial states
         if rootModel.sheetModel.entries.count > 0 {
@@ -252,9 +241,8 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let rootModel = SheetRootModel(linkControllable: root.rootManager!.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
+        let rootModel = SheetRootModel(rootManager: root.rootManager, linkControllable: root.rootManager.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
 
         guard rootModel.sheetModel.entries.count >= 2 else {
             return // Skip test if not enough entries
@@ -281,9 +269,8 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let rootModel = SheetRootModel(linkControllable: root.rootManager!.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
+        let rootModel = SheetRootModel(rootManager: root.rootManager, linkControllable: root.rootManager.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
 
         // Find an entry with children
         var parentEntry: SheetModel?
@@ -325,9 +312,8 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
-        try #require(root.rootManager != nil)
 
-        let rootModel = SheetRootModel(linkControllable: root.rootManager!.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
+        let rootModel = SheetRootModel(rootManager: root.rootManager, linkControllable: root.rootManager.itemRootController(for: .adventure)!.linkControllable, sheetControllable: sut, itemId: itemId!, isEditor: false)
 
         // Find an entry with children
         var parentEntry: SheetModel?

@@ -10,32 +10,35 @@ enum LinkHighlightTextModelId: Hashable {
 
 @MainActor @Observable
 public final class SheetRootModel: Sendable {
-    public init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool) {
+    public init(rootManager: RootManager, linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool) {
+        self.rootManager = rootManager
         self.linkControllable = linkControllable
         self.sheetControllable = sheetControllable
         self.isEditor = isEditor
-        let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
+        let sheetModel = sheetControllable.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         self.sheetModel = sheetModel
         self.editorModel = SheetEditorModel(itemId: itemId, module: sheetModel.source.typeId)
         // Initialize lastIsShown to match isShown so first search clear works correctly
         initializeLastIsShownState(sheetModel: sheetModel)
     }
 
-    public init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool, editorModel: SheetEditorModel) {
+    public init(rootManager: RootManager, linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool, editorModel: SheetEditorModel) {
+        self.rootManager = rootManager
         self.linkControllable = linkControllable
         self.sheetControllable = sheetControllable
         self.isEditor = isEditor
-        let sheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
+        let sheetModel = sheetControllable.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         self.sheetModel = sheetModel
         self.editorModel = editorModel
         // Initialize lastIsShown to match isShown so first search clear works correctly
         initializeLastIsShownState(sheetModel: sheetModel)
     }
 
-    // Use this init in fake/testing contexts where rootManager is not yet available.
+    // Use this init in fake/testing contexts where a real SheetModel tree is already built.
     // FakeSheetController.sheet ignores the root parameter anyway, so passing
-    // the SheetModel directly avoids the force-unwrap in FakeLinkController.rootManager.
-    public init(linkControllable: any LinkControllable, sheetControllable: SheetControllable, sheetModel: SheetModel, isEditor: Bool) {
+    // the SheetModel directly avoids needing a real cross-module sheet() call.
+    public init(rootManager: RootManager, linkControllable: any LinkControllable, sheetControllable: SheetControllable, sheetModel: SheetModel, isEditor: Bool) {
+        self.rootManager = rootManager
         self.linkControllable = linkControllable
         self.sheetControllable = sheetControllable
         self.isEditor = isEditor
@@ -72,6 +75,7 @@ public final class SheetRootModel: Sendable {
         }
     }
     
+    @ObservationIgnored let rootManager: RootManager
     @ObservationIgnored let sheetControllable: SheetControllable
     @ObservationIgnored let linkControllable: any LinkControllable
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
@@ -86,7 +90,7 @@ public final class SheetRootModel: Sendable {
         guard sheetModel.source.itemId != itemId else { return }
         // Load the sheet model for the new item first so any search filter
         // that runs afterward operates on the correct data.
-        let newSheetModel = sheetControllable.sheet(root: linkControllable.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
+        let newSheetModel = sheetControllable.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         self.sheetModel = newSheetModel
         self.editorModel.setEdit(source: newSheetModel.source)
         // Clear stale per-item caches so new views build fresh link text models.
@@ -98,7 +102,7 @@ public final class SheetRootModel: Sendable {
     }
     
     func rootController(for module: NetworkModules) -> ItemRootController? {
-        linkControllable.rootManager.itemRootController(for: module)
+        rootManager.itemRootController(for: module)
     }
 
     var linkRootController: LinkControllable? {
@@ -153,9 +157,9 @@ public final class SheetRootModel: Sendable {
                     return true
                 } else {
                     // Link doesn't exist - add it using SheetController
-                    if let rootModel = linkControllable.rootManager.rootModel(for: module) {
+                    if let rootModel = rootManager.rootModel(for: module) {
                         let newSheet = rootModel.sheetControllable.sheet(
-                            root: linkControllable.rootManager,
+                            root: rootManager,
                             itemId: linkId,
                             destination: entrySheetModel.destination,
                             level: entrySheetModel.level + 1,
@@ -178,8 +182,8 @@ public final class SheetRootModel: Sendable {
     }
     
     func unfold(sheetModel: SheetModel) {
-        guard let sheetController = linkControllable.rootManager.rootModel(for: sheetModel.source.typeId)?.sheetControllable else { return }
-        sheetController.unfold(root: linkControllable.rootManager, sheetModel: sheetModel)
+        guard let sheetController = rootManager.rootModel(for: sheetModel.source.typeId)?.sheetControllable else { return }
+        sheetController.unfold(root: rootManager, sheetModel: sheetModel)
     }
     
     // MARK: - Search
@@ -447,7 +451,7 @@ public final class SheetRootModel: Sendable {
             updateFromRoot()
             return
         }
-        rootController(for: parentModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: parentModel, isEditor: isEditor)
+        rootController(for: parentModel.source.typeId)?.sheetControllable.update(root: rootManager, sheetModel: parentModel, isEditor: isEditor)
         resetChangedLinkModels(in: parentModel)
         if !searchText.isEmpty {
             updateFilteredEntries()
@@ -456,7 +460,7 @@ public final class SheetRootModel: Sendable {
 
     /// Updates from the root SheetModel down - use when changes may affect calculated values throughout the tree
     func updateFromRoot() {
-        rootController(for: sheetModel.source.typeId)?.sheetControllable.update(root: linkControllable.rootManager, sheetModel: sheetModel, isEditor: isEditor)
+        rootController(for: sheetModel.source.typeId)?.sheetControllable.update(root: rootManager, sheetModel: sheetModel, isEditor: isEditor)
         resetChangedLinkModels(in: sheetModel)
         if !searchText.isEmpty {
             updateFilteredEntries()

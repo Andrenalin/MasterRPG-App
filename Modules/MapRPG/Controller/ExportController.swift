@@ -10,12 +10,26 @@ import TableRPG
 import CharacterRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController) {
-        self.rootManager = rootManager
+    @MainActor init(rootController: any RootControllable, root: MapRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, itemController: ItemController) {
+        self.rootController = rootController
+        self.root = root
+        self.audioRoot = audioRoot
+        self.diceRoot = diceRoot
+        self.pdfRoot = pdfRoot
+        self.photoRoot = photoRoot
+        self.tableRoot = tableRoot
+        self.characterRoot = characterRoot
         self.itemController = itemController
     }
 
-    let rootManager: RootManager
+    let rootController: any RootControllable
+    let root: MapRootModel
+    let audioRoot: AudioRootModel
+    let diceRoot: DiceRootModel
+    let pdfRoot: PdfRootModel
+    let photoRoot: PhotoRootModel
+    let tableRoot: TableRootModel
+    let characterRoot: CharacterRootModel
     let itemController: ItemController
 }
 
@@ -26,12 +40,12 @@ extension ExportController: ExportControllable {
         var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }])
 
         if !itemControllable.itemDataModel.isGameMode {
-            itemIds.merge(other: rootManager.audioRoot.exportControllable.exportingAll())
-            itemIds.merge(other: rootManager.diceRoot.exportControllable.exportingAll())
-            itemIds.merge(other: rootManager.pdfRoot.exportControllable.exportingAll())
-            itemIds.merge(other: rootManager.photoRoot.exportControllable.exportingAll())
-            itemIds.merge(other: rootManager.tableRoot.exportControllable.exportingAll())
-            itemIds.merge(other: rootManager.characterRoot.exportControllable.exportingAll())
+            itemIds.merge(other: audioRoot.exportControllable.exportingAll())
+            itemIds.merge(other: diceRoot.exportControllable.exportingAll())
+            itemIds.merge(other: pdfRoot.exportControllable.exportingAll())
+            itemIds.merge(other: photoRoot.exportControllable.exportingAll())
+            itemIds.merge(other: tableRoot.exportControllable.exportingAll())
+            itemIds.merge(other: characterRoot.exportControllable.exportingAll())
         }
         return itemIds
     }
@@ -55,8 +69,8 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
 
-            photoIds.formUnion(item.mapPins.compactMap { $0.photoId }.compactMap { rootManager.photoRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
-            if let photoId = item.photoId, rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
+            photoIds.formUnion(item.mapPins.compactMap { $0.photoId }.compactMap { photoRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
+            if let photoId = item.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
             }
 
@@ -79,27 +93,27 @@ extension ExportController: ExportControllable {
                 links.forEach {
                     switch $0.module {
                     case .audio:
-                        if rootManager.audioRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if audioRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             audioIds.insert($0.itemId)
                         }
                     case .dice:
-                        if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             diceIds.insert($0.itemId)
                         }
                     case .map:
-                        if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && rootManager.mapRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && root.linkControllable.validateLink(itemId: $0.itemId) {
                             checkIds.append($0.itemId)
                         }
                     case .photo:
-                        if rootManager.photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             photoIds.insert($0.itemId)
                         }
                     case .table:
-                        if rootManager.tableRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if tableRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             tableIds.insert($0.itemId)
                         }
                     case .value:
-                        if rootManager.characterRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if characterRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             valueIds.insert($0.itemId)
                         }
                     default:
@@ -112,15 +126,15 @@ extension ExportController: ExportControllable {
         var allIds = itemIds
         allIds.ids[itemController.config.module] = Array(results)
         allIds.mergePartial(ids: Array(partialFolderIds), for: itemController.config.module)
-        let newAudioIds = rootManager.audioRoot.exportControllable.exporting(ids: audioIds)
+        let newAudioIds = audioRoot.exportControllable.exporting(ids: audioIds)
         allIds.merge(other: newAudioIds)
-        let newDiceIds = rootManager.diceRoot.exportControllable.exporting(ids: diceIds)
+        let newDiceIds = diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
-        let newPhotoIds = rootManager.photoRoot.exportControllable.exporting(ids: photoIds)
+        let newPhotoIds = photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
-        let newTableIds = rootManager.tableRoot.exportControllable.exporting(ids: tableIds)
+        let newTableIds = tableRoot.exportControllable.exporting(ids: tableIds)
         allIds.merge(other: newTableIds)
-        let newValueIds = rootManager.characterRoot.exportControllable.exporting(ids: valueIds)
+        let newValueIds = characterRoot.exportControllable.exporting(ids: valueIds)
         allIds.merge(other: newValueIds)
         return allIds
     }

@@ -4,15 +4,17 @@ import Foundation
 import SwiftUI
 
 final class FakeExportController: ExportControllable, @unchecked Sendable {
-    init(itemControllable: any ItemControllable, _rootManager: RootManager? = nil) {
+    init(itemControllable: any ItemControllable, rootController: (any RootControllable)? = nil) {
         self.itemControllable = itemControllable
-        self._rootManager = _rootManager
+        self._rootController = rootController
     }
 
     var itemControllable: any ItemControllable
-    var _rootManager: RootManager? = nil
-
-    var rootManager: RootManager { _rootManager! }
+    private var _rootController: (any RootControllable)?
+    var rootController: any RootControllable {
+        get { _rootController! }
+        set { _rootController = newValue }
+    }
 
     @MainActor static let fake: FakeExportController = {
         FakeExportController(itemControllable: FakeItemController.fake)

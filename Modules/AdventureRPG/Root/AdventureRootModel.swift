@@ -61,24 +61,24 @@ public final class AdventureRootModel {
         _sheetController = sheetController
         
         _editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
-        _exportController = ExportController(rootManager: root, itemController: itemController)
+        _exportController = ExportController(rootManager: root, root: self, itemController: itemController)
         _importController = ImportController(root: self, itemController: itemController)
         _gameController = GameController(rootManager: root, root: self, itemController: itemController, exportController: exportController)
         _searchController = SearchController(itemController: itemController)
         _sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
         _linkRegisterController = linkRegisterController
         
-        audioRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
-        diceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
-        pdfRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
-        photoRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
-        spaceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
-        weatherRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
-        tableRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
-        characterRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
-        mapRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        audioRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        diceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        pdfRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        photoRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        spaceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        weatherRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        tableRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        characterRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        mapRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
 #if !os(tvOS)
-        generatorRoot?.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        generatorRoot?.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
 #endif
         
         if let dataController, let context {
@@ -100,7 +100,11 @@ public final class AdventureRootModel {
     let characterRoot: CharacterRootModel
     let weatherRoot: WeatherRootModel
 
-    var rootManager: RootManager?
+    private var _rootManager: RootManager?
+    public var rootManager: RootManager {
+        get { _rootManager! }
+        set { _rootManager = newValue }
+    }
     
     public let config: ModuleConfiguration
     
@@ -115,7 +119,7 @@ public final class AdventureRootModel {
     
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
         EditorLinkModel(
-            rootManager: rootManager!,
+            rootManager: rootManager,
             folderListController: folderLinkController,
             adventureSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -135,7 +139,7 @@ public final class AdventureRootModel {
 
     @MainActor @ObservationIgnored lazy var playerLinkModel: EditorLinkModel = {
         EditorLinkModel(
-            rootManager: rootManager!,
+            rootManager: rootManager,
             folderListController: folderLinkController,
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -193,6 +197,7 @@ public final class AdventureRootModel {
 
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
+            rootManager: rootManager,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,

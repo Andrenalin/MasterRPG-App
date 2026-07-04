@@ -10,7 +10,7 @@ import UIKit
 #endif
 
 public protocol ExportControllable: Sendable {
-    var rootManager: RootManager { get }
+    var rootController: any RootControllable { get }
     var itemControllable: any ItemControllable { get }
 
     @MainActor func exportingAll() -> ItemModuleIds
@@ -35,7 +35,7 @@ public extension ExportControllable {
     // MARK: - Utilities
 
     @MainActor var rootExportController: ExportControllable {
-        rootManager.adventureRoot.exportControllable
+        rootController.exportControllable
     }
 
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }

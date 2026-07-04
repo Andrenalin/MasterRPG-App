@@ -54,9 +54,8 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
 }
 
 public protocol LinkControllable: Sendable {
-    var rootManager: RootManager { get }
     var itemControllable: any ItemControllable { get }
-    
+
 
     // MARK: - Handle Link
     @MainActor func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String
@@ -93,10 +92,6 @@ public protocol LinkControllable: Sendable {
 // MARK: - generate Links
 
 public extension LinkControllable {
-    @MainActor var rootLinkControllable: LinkControllable {
-        rootManager.adventureRoot.linkControllable
-    }
-    
     @MainActor
     func generateLink(item: ItemRowTreeModel) -> String {
         generateLink(linkNumber: 0, itemId: item.model.itemId, entryId: item.model.entryId)

@@ -7,10 +7,10 @@ import SwiftUI
 import os.log
 
 struct LinkController: Sendable {
-    let rootManager: RootManager
+    let photoRoot: PhotoRootModel
     let itemController: ItemController
     let gameController: GameController
-    
+
     public var itemControllable: any ItemControllable { itemController }
 }
 
@@ -52,7 +52,7 @@ extension LinkController: LinkControllable {
         guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
         
         if let photoId = replacedItem.photoId {
-            if !rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
+            if !photoRoot.linkControllable.validateLink(itemId: photoId) {
                 Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }

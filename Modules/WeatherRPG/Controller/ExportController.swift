@@ -5,12 +5,14 @@ import Foundation
 import PhotoRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController) {
-        self.rootManager = rootManager
+    @MainActor init(rootController: any RootControllable, photoRoot: PhotoRootModel, itemController: ItemController) {
+        self.rootController = rootController
+        self.photoRoot = photoRoot
         self.itemController = itemController
     }
 
-    let rootManager: RootManager
+    let rootController: any RootControllable
+    let photoRoot: PhotoRootModel
     let itemController: ItemController
 }
 
@@ -18,7 +20,7 @@ extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable { itemController }
 
     @MainActor public func exportingAll() -> ItemModuleIds {
-        var allIds = rootManager.photoRoot.exportControllable.exportingAll()
+        var allIds = photoRoot.exportControllable.exportingAll()
         allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }]))
         return allIds
     }
@@ -38,7 +40,7 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
     
-            if let photoId = item.photoId, rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
+            if let photoId = item.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
             }
     
@@ -58,7 +60,7 @@ extension ExportController: ExportControllable {
         allIds.ids[itemController.config.module] = Array(results)
         allIds.mergePartial(ids: Array(partialFolderIds), for: itemController.config.module)
 
-        let newPhotoIds = rootManager.photoRoot.exportControllable.exporting(ids: photoIds)
+        let newPhotoIds = photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
         return allIds
     }

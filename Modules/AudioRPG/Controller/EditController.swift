@@ -4,13 +4,14 @@ import CoreRPG
 import Foundation
 
 struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
         self.linkRegisterController = linkRegisterController
         self.tagController = tagController
         self.itemController = itemController
         self.editorModel = ItemEditorModel()
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
         self.sheetRootModel = SheetRootModel(
+            rootManager: rootManager,
             linkControllable: linkController,
             sheetControllable: sheetController,
             itemId: UUID(),

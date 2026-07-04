@@ -106,15 +106,6 @@ public final class LinkReplaceController: Sendable {
         return list
     }
     
-    private static func currentName(linkController: LinkControllable?, itemId: UUID, entryId: UUID?, module: NetworkModules) -> (String, String)? {
-        guard let itemControllable = linkController?.rootManager.itemRootController(for: module)?.itemControllable, let item = itemControllable.itemSync(for: itemId) else { return nil }
-        if let entryId {
-            return (item.urlName(entryId: entryId), item.url(linkNumber: 0, entryId: entryId))
-        } else {
-            return (item.urlName(), item.url(linkNumber: 0))
-        }
-    }
-
     public static func removeLinks(for text: String) -> String {
         let list = links(for: text)
         var result = text

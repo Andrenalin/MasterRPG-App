@@ -5,13 +5,14 @@ import Foundation
 import SwiftData
 
 struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
         self.linkRegisterController = linkRegisterController
         self.itemController = itemController
         self.tagController = tagController
         self.editorModel = ItemEditorModel()
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
         self.sheetRootModel = SheetRootModel(
+            rootManager: rootManager,
             linkControllable: linkController,
             sheetControllable: sheetController,
             itemId: UUID(),

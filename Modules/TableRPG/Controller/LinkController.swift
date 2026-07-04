@@ -7,10 +7,10 @@ import SwiftUI
 import os.log
 
 struct LinkController: Sendable {
-    let rootManager: RootManager
+    let diceRoot: DiceRootModel
     let itemController: ItemController
     let gameController: GameController
-    
+
     public var itemControllable: any ItemControllable { itemController }
 }
 
@@ -56,7 +56,7 @@ extension LinkController: LinkControllable {
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
         var result = content
         for link in links {
-            result = rootManager.diceRoot.linkControllable.repairLink(link, for: result, for: [.table])
+            result = diceRoot.linkControllable.repairLink(link, for: result, for: [.table])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
@@ -66,7 +66,7 @@ extension LinkController: LinkControllable {
         guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
         
         if let diceId = replacedItem.diceId {
-            if !rootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
+            if !diceRoot.linkControllable.validateLink(itemId: diceId) {
                 Logger.linkController.warning("Table: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
                 replacedItem.diceId = nil
             }

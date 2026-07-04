@@ -21,7 +21,7 @@ public protocol AudioGameStoreable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController, audioController: AudioController, exportController: ExportController) {
+    @MainActor init(itemController: ItemController, audioController: AudioController, exportController: ExportController) {
         self.itemController = itemController
         self.exportController = exportController
         

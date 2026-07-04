@@ -85,10 +85,9 @@ struct GameControllerTests {
     
     @Test func CreateGameData() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let rootManager = RootManager.preview(fake: root.rootController)
-        let itemController = root.itemController
-        let exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        let sut = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
+        let itemController = await root.itemController
+        let exportController = await ExportController(rootController: root, itemController: itemController)
+        let sut = await GameController(itemController: itemController, exportController: exportController)
 
         root.itemController.itemDataModel.resetGame(start: true)
         let itemId = root.itemController.itemDataModel.items[0]
@@ -114,15 +113,14 @@ struct GameControllerTests {
     
     @Test func UpdateGame() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let rootManager = RootManager.preview(fake: root.rootController)
-        let itemController = root.itemController
-        let exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        let sut = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
+        let itemController = await root.itemController
+        let exportController = await ExportController(rootController: root, itemController: itemController)
+        let sut = await GameController(itemController: itemController, exportController: exportController)
 
-        root.itemController.itemDataModel.resetGame(start: true)
+        await root.itemController.itemDataModel.resetGame(start: true)
 
-        let itemId = root.itemController.itemDataModel.items[0]
-        let version = root.itemController.itemOrEmpty(for: itemId).version
+        let itemId = await root.itemController.itemDataModel.items[0]
+        let version = await root.itemController.itemOrEmpty(for: itemId).version
         let netdata = try await sut.createGameData(for: itemId)
         #expect(netdata.id == itemId)
         #expect(netdata.type == NetworkModules.photo)

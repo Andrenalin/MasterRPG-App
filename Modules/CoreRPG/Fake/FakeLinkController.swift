@@ -3,15 +3,12 @@
 import SwiftUI
 
 final class FakeLinkController: LinkControllable, @unchecked Sendable {
-    init(itemControllable: any ItemControllable, _rootManager: RootManager? = nil) {
+    init(itemControllable: any ItemControllable) {
         self.itemControllable = itemControllable
-        self._rootManager = _rootManager
     }
-    
+
     var itemControllable: any ItemControllable
-    var _rootManager: RootManager? = nil
-    var rootManager: RootManager { _rootManager! }
-    
+
     func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         text
     }

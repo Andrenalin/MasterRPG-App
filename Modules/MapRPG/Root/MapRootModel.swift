@@ -44,21 +44,23 @@ public final class MapRootModel {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+        self.rootManager = rootManager
+
         let dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         _dataController = dataController
         let itemController = ItemController(config: config, photoRoot: photoRoot, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        let linkController = LinkController(root: self, rootManager: rootManager, itemController: itemController)
+        let linkController = LinkController(root: self, audioRoot: audioRoot, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
         _linkController = linkController
         let sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
         _sheetController = sheetController
-        
+
         let editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _editController = editController
-        _exportController = ExportController(rootManager: rootManager, itemController: itemController)
+        _exportController = ExportController(rootController: adventureRootControllable, root: self, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
         _importController = ImportController(itemController: itemController, editController: editController)
-        let gameController = GameController(rootManager: rootManager, root: self, itemController: itemController, exportController: exportController)
+        let gameController = GameController(root: self, itemController: itemController, exportController: exportController)
         _gameController = gameController
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
@@ -69,6 +71,7 @@ public final class MapRootModel {
         _folderLinkController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
 
         _rootController = ItemRootController(
+            rootManager: rootManager,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
@@ -105,6 +108,13 @@ public final class MapRootModel {
     let characterRoot: CharacterRootModel
 
     public let rootModel: RootModel
+
+    private var _rootManager: RootManager?
+    public var rootManager: RootManager {
+        get { _rootManager! }
+        set { _rootManager = newValue }
+    }
+
     public let config: ModuleConfiguration
     
     public let listDisplayModel: ListDisplayModel

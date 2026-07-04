@@ -45,6 +45,7 @@ struct EditController: Sendable {
         self.editorModel = ItemEditorModel()
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
         self.sheetRootModel = SheetRootModel(
+            rootManager: root.rootManager,
             linkControllable: linkController,
             sheetControllable: sheetController,
             itemId: UUID(),

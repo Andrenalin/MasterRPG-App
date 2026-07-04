@@ -23,8 +23,9 @@ public final class TableRootModel {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
-        
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+        self.rootManager = rootManager
+
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         let listDisplayModel = ListDisplayModel()
 
@@ -32,18 +33,17 @@ public final class TableRootModel {
         _dataController = dataController
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        let exportController = ExportController(rootManager: rootManager, itemController: itemController)
+        let exportController = ExportController(rootController: adventureRootControllable, diceRoot: diceRoot, itemController: itemController)
         _exportController = exportController
-        let gameController = GameController(rootManager: rootManager, diceRoot: diceRoot, itemController: itemController, exportController: exportController)
+        let gameController = GameController(diceRoot: diceRoot, itemController: itemController, exportController: exportController)
         _gameController = gameController
-        let linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
+        let linkController = LinkController(diceRoot: diceRoot, itemController: itemController, gameController: gameController)
         _linkController = linkController
         let sheetController = SheetController(itemController: itemController, linkRegisterController: linkRegisterController)
         _sheetController = sheetController
 
-        _editController = EditController(diceRoot: diceRoot, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        _editController = EditController(rootManager: rootManager, diceRoot: diceRoot, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _importController = ImportController(itemController: itemController, editController: editController)
-        _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
         
@@ -53,6 +53,7 @@ public final class TableRootModel {
         _folderLinkController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
 
         _rootController = ItemRootController(
+            rootManager: rootManager,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
@@ -85,6 +86,12 @@ public final class TableRootModel {
 
     let diceRoot: DiceRootModel
     let pdfRoot: PdfRootModel
+
+    private var _rootManager: RootManager?
+    public var rootManager: RootManager {
+        get { _rootManager! }
+        set { _rootManager = newValue }
+    }
 
     public let config: ModuleConfiguration
     let tagController: TagController

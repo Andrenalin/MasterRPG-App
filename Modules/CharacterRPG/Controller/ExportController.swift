@@ -2,17 +2,28 @@
 
 import CoreRPG
 import Foundation
+import PdfRPG
 import TableRPG
 import PhotoRPG
 import DiceRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController) {
-        self.rootManager = rootManager
+    // `rootController` reaches Adventure's hub exporter (ExportControllable.rootController).
+    // Every other export path below uses the narrow diceRoot/pdfRoot/photoRoot/tableRoot refs instead.
+    @MainActor init(rootController: any RootControllable, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController) {
+        self.rootController = rootController
+        self.diceRoot = diceRoot
+        self.pdfRoot = pdfRoot
+        self.photoRoot = photoRoot
+        self.tableRoot = tableRoot
         self.itemController = itemController
     }
 
-    let rootManager: RootManager
+    let rootController: any RootControllable
+    let diceRoot: DiceRootModel
+    let pdfRoot: PdfRootModel
+    let photoRoot: PhotoRootModel
+    let tableRoot: TableRootModel
     let itemController: ItemController
 }
 
@@ -20,8 +31,8 @@ extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable { itemController }
 
     public func exportingAll() -> ItemModuleIds {
-        var allIds = rootManager.photoRoot.exportControllable.exportingAll()
-        allIds.merge(other: rootManager.tableRoot.exportControllable.exportingAll())
+        var allIds = photoRoot.exportControllable.exportingAll()
+        allIds.merge(other: tableRoot.exportControllable.exportingAll())
         allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }]))
         return allIds
     }
@@ -44,14 +55,14 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
             
-            if let diceId = item.diceId, rootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
+            if let diceId = item.diceId, diceRoot.linkControllable.validateLink(itemId: diceId) {
                 diceIds.insert(diceId)
             }
-            
-            if let photoId = item.photoId, rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
+
+            if let photoId = item.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
             }
-            photoIds.formUnion(item.photos.filter { rootManager.photoRoot.linkControllable.validateLink(itemId: $0) })
+            photoIds.formUnion(item.photos.filter { photoRoot.linkControllable.validateLink(itemId: $0) })
             
             if item.specialCategory {
                 let ids = item.entries.compactMap { entryId -> UUID? in
@@ -79,19 +90,19 @@ extension ExportController: ExportControllable {
                 links.forEach {
                     switch $0.module {
                     case .dice:
-                        if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             diceIds.insert($0.itemId)
                         }
                     case .pdf:
-                        if rootManager.pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             pdfIds.insert($0.itemId)
                         }
                     case .photo:
-                        if rootManager.photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             photoIds.insert($0.itemId)
                         }
                     case .table:
-                        if rootManager.tableRoot.linkControllable.validateLink(itemId: $0.itemId, entryId: nil) {
+                        if tableRoot.linkControllable.validateLink(itemId: $0.itemId, entryId: nil) {
                             tableIds.insert($0.itemId)
                         }
                     case .value:
@@ -109,16 +120,16 @@ extension ExportController: ExportControllable {
         allIds.ids[itemController.config.module] = Array(results)
         allIds.mergePartial(ids: Array(partialFolderIds), for: itemController.config.module)
 
-        let newDiceIds = rootManager.diceRoot.exportControllable.exporting(ids: diceIds)
+        let newDiceIds = diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
 
-        let newPdfIds = rootManager.pdfRoot.exportControllable.exporting(ids: pdfIds)
+        let newPdfIds = pdfRoot.exportControllable.exporting(ids: pdfIds)
         allIds.merge(other: newPdfIds)
 
-        let newPhotoIds = rootManager.photoRoot.exportControllable.exporting(ids: photoIds)
+        let newPhotoIds = photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
 
-        let newTableIds =  rootManager.tableRoot.exportControllable.exporting(ids: tableIds)
+        let newTableIds = tableRoot.exportControllable.exporting(ids: tableIds)
         allIds.merge(other: newTableIds)
 
         return allIds

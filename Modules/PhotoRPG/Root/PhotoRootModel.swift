@@ -23,8 +23,9 @@ public final class PhotoRootModel {
 #endif
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
-        
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+        self.rootManager = rootManager
+
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         let listDisplayModel = ListDisplayModel()
 
@@ -32,13 +33,13 @@ public final class PhotoRootModel {
         _dataController = dataController
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        
-        _exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        _gameController = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
-        _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
+
+        _exportController = ExportController(rootController: adventureRootControllable, itemController: itemController)
+        _gameController = GameController(itemController: itemController, exportController: exportController)
+        _linkController = LinkController(itemController: itemController, gameController: gameController)
         _sheetController = SheetController(itemController: itemController)
 
-        _editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        _editController = EditController(rootManager: rootManager, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _importController = ImportController(itemController: itemController, editController: editController)
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
@@ -49,6 +50,7 @@ public final class PhotoRootModel {
         _folderLinkController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
 
         _rootController = ItemRootController(
+            rootManager: rootManager,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
@@ -77,12 +79,18 @@ public final class PhotoRootModel {
         }
     }
 
+    private var _rootManager: RootManager?
+    public var rootManager: RootManager {
+        get { _rootManager! }
+        set { _rootManager = newValue }
+    }
+
     public let config: ModuleConfiguration
     let tagController: TagController
-    
+
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
-    
+
     @MainActor public var navigationModel: ModuleNavigationModel
 
     #if os(visionOS)

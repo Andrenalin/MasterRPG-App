@@ -5,11 +5,10 @@ import Foundation
 import SwiftUI
 
 struct LinkController: Sendable {
-    let rootManager: RootManager
     let itemController: ItemController
     let audioController: AudioController
     let gameController: GameController
-    
+
     public var itemControllable: any ItemControllable { itemController }
 }
 

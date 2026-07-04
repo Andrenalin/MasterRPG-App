@@ -22,8 +22,9 @@ public final class AudioRootModel {
         self.audioPlayerModel = audioPlayerModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
-        
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+        self.rootManager = rootManager
+
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         let listDisplayModel = ListDisplayModel()
 
@@ -32,22 +33,22 @@ public final class AudioRootModel {
 
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        
+
         let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
         _audioController = audioController
-        
-        let exportController = ExportController(rootManager: rootManager, itemController: itemController)
+
+        let exportController = ExportController(rootController: adventureRootControllable, itemController: itemController)
         _exportController = exportController
-        let gameController = GameController(rootManager: rootManager, itemController: itemController, audioController: audioController, exportController: exportController)
+        let gameController = GameController(itemController: itemController, audioController: audioController, exportController: exportController)
         _gameController = gameController
 
-        let linkController = LinkController(rootManager: rootManager, itemController: itemController, audioController: audioController, gameController: gameController)
+        let linkController = LinkController(itemController: itemController, audioController: audioController, gameController: gameController)
         _linkController = linkController
-        
+
         let sheetController = SheetController(itemController: itemController)
         _sheetController = sheetController
-        
-        _editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: tagController)
+
+        _editController = EditController(rootManager: rootManager, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: tagController)
         _importController = ImportController(itemController: itemController, editController: editController)
 
 
@@ -64,6 +65,7 @@ public final class AudioRootModel {
         _folderLinkController = FolderListController(listModel: folderLinkModel, listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
 
         _rootController = ItemRootController(
+            rootManager: rootManager,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
@@ -96,16 +98,22 @@ public final class AudioRootModel {
         OpenFileWindowModel()
     }()
 
+    private var _rootManager: RootManager?
+    public var rootManager: RootManager {
+        get { _rootManager! }
+        set { _rootManager = newValue }
+    }
+
     public let config: ModuleConfiguration
     let tagController: TagController
-    
+
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
-    
+
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
-    
+
     public let audioPlayerModel: AudioPlayerModel
     
     @ObservationIgnored private(set) var _audioController: AudioController?

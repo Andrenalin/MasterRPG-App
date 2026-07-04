@@ -56,7 +56,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
 
 private extension SheetEntryView {
     func viewController(for source: ItemRowModel) -> ViewControllable? {
-        rootModel.linkControllable.rootManager.rootModel(for: source.typeId)?.viewControllable
+        rootModel.rootManager.rootModel(for: source.typeId)?.viewControllable
     }
     
     var beforeInline: some View {

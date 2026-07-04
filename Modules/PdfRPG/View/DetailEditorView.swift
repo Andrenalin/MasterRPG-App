@@ -25,6 +25,7 @@ struct DetailEditorView: View {
         .onChange(of: model.id, initial: true) {
             if sheetRootModel == nil {
                 sheetRootModel = SheetRootModel(
+                    rootManager: root.rootController.rootManager,
                     linkControllable: root.rootController.linkControllable,
                     sheetControllable: root.rootController.sheetControllable,
                     itemId: model.id,

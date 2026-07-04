@@ -19,7 +19,7 @@ public protocol PhotoGameControllable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController, exportController: ExportController) {
+    @MainActor init(itemController: ItemController, exportController: ExportController) {
         self.itemController = itemController
         self.exportController = exportController
         

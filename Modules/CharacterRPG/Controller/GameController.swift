@@ -32,7 +32,7 @@ public protocol ValueGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, exportController: ExportController) {
+    @MainActor init(root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, exportController: ExportController) {
         self.root = root
         self.diceRoot = diceRoot
         self.photoRoot = photoRoot

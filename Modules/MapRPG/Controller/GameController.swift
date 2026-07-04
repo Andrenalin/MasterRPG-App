@@ -35,8 +35,7 @@ public protocol MapGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, root: MapRootModel, itemController: ItemController, exportController: ExportController) {
-        self.rootManager = rootManager
+    @MainActor init(root: MapRootModel, itemController: ItemController, exportController: ExportController) {
         self.root = root
         self.itemController = itemController
         self.exportController = exportController
@@ -45,7 +44,6 @@ struct GameController: Sendable {
         self.mapGameModel = MapGameModel()
     }
 
-    let rootManager: RootManager
     let root: MapRootModel
     let itemController: ItemController
     let exportController: ExportController
@@ -185,7 +183,7 @@ extension GameController: MapGameStorable {
     
     @MainActor
     func saveAll() -> ItemModuleIds {
-        let gameExportController = ExportController(rootManager: rootManager, itemController: itemController)
+        let gameExportController = ExportController(rootController: exportController.rootController, root: root, audioRoot: root.audioRoot, diceRoot: root.diceRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, tableRoot: root.tableRoot, characterRoot: root.characterRoot, itemController: itemController)
         for itemId in gameModel.items {
             gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins.filter { !$0.isPlayer }
         }

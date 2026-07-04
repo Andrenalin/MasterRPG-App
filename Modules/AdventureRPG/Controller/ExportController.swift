@@ -13,16 +13,21 @@ import TableRPG
 import CharacterRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController) {
+    @MainActor init(rootManager: RootManager, root: AdventureRootModel, itemController: ItemController) {
         self.rootManager = rootManager
+        self.root = root
         self.itemController = itemController
     }
 
+    // Adventure is the hub itself, so its own rootController (for ExportControllable's
+    // hub requirement) is just a lazy reference back to itself, not the whole RootManager.
     let rootManager: RootManager
+    let root: AdventureRootModel
     let itemController: ItemController
 }
 
 extension ExportController: ExportControllable {
+    var rootController: any RootControllable { root }
     var itemControllable: any ItemControllable { itemController }
     
     @MainActor public func exportingAll() -> ItemModuleIds {

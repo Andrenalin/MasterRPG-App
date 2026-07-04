@@ -18,8 +18,9 @@ public final class SpaceRootModel {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
-        
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+        self.rootManager = rootManager
+
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         let listDisplayModel = ListDisplayModel()
 
@@ -28,12 +29,12 @@ public final class SpaceRootModel {
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
 
-        _exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        _gameController = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
-        _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
+        _exportController = ExportController(rootController: adventureRootControllable, itemController: itemController)
+        _gameController = GameController(itemController: itemController, exportController: exportController)
+        _linkController = LinkController(itemController: itemController, gameController: gameController)
         _sheetController = SheetController(itemController: itemController)
 
-        _editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        _editController = EditController(rootManager: rootManager, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _importController = ImportController(itemController: itemController, editController: editController)
         let searchController = SearchController(itemController: itemController)
         _searchController = searchController
@@ -44,6 +45,7 @@ public final class SpaceRootModel {
         _folderLinkController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
 
         _rootController = ItemRootController(
+            rootManager: rootManager,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
@@ -72,16 +74,22 @@ public final class SpaceRootModel {
         }
     }
 
+    private var _rootManager: RootManager?
+    public var rootManager: RootManager {
+        get { _rootManager! }
+        set { _rootManager = newValue }
+    }
+
     public let config: ModuleConfiguration
     let tagController: TagController
-    
+
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
-    
+
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
-    
+
     var cacheController: CacheController? { itemController.cacheController }
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }
