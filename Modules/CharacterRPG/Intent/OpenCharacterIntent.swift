@@ -42,7 +42,7 @@ extension CharacterRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenCharacterIntent()
+        let intent = OpenCharacterIntent()
         intent.target = CharacterEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)

@@ -42,7 +42,7 @@ extension GeneratorRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenGeneratorIntent()
+        let intent = OpenGeneratorIntent()
         intent.target = GeneratorEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)

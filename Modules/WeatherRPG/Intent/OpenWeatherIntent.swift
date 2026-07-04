@@ -42,7 +42,7 @@ extension WeatherRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenWeatherIntent()
+        let intent = OpenWeatherIntent()
         intent.target = WeatherEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)

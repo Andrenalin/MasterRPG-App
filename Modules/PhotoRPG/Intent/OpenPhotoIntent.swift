@@ -41,7 +41,7 @@ extension PhotoRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenPhotoIntent()
+        let intent = OpenPhotoIntent()
         intent.target = PhotoEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)

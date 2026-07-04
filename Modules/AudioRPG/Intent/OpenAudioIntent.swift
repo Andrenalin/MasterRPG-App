@@ -42,7 +42,7 @@ extension AudioRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenAudioIntent()
+        let intent = OpenAudioIntent()
         intent.target = AudioEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)

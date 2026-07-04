@@ -42,7 +42,7 @@ extension SpaceRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenSpaceIntent()
+        let intent = OpenSpaceIntent()
         intent.target = SpaceEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)

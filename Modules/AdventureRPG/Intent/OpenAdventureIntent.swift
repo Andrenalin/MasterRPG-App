@@ -44,7 +44,7 @@ extension AdventureRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenAdventureIntent()
+        let intent = OpenAdventureIntent()
         intent.target = AdventureEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)

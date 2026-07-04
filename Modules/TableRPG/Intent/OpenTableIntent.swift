@@ -42,7 +42,7 @@ extension TableRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenTableIntent()
+        let intent = OpenTableIntent()
         intent.target = TableEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)

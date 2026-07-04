@@ -153,12 +153,12 @@ public struct AdventureEntityQuery: @preconcurrency EntityQuery, @preconcurrency
 #if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension AdventureEntity: SyncableEntity, OwnershipProvidingEntity {
-    var ownership: EntityOwnership { .unknown }
+    public var ownership: EntityOwnership { .unknown }
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
-    func reindexEntities(
+extension AdventureEntityQuery: IndexedEntityQuery {
+    public func reindexEntities(
         for identifiers: [AdventureEntity.ID],
         indexDescription: CSSearchableIndexDescription
     ) async throws {
@@ -167,7 +167,7 @@ extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
     }
 
     @available(iOS 27, macOS 27, visionOS 27, *)
-    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
+    public func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
         let all = try await allEntities()
         try await CSSearchableIndex.default().indexAppEntities(all)
     }

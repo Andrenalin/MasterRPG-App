@@ -41,7 +41,7 @@ extension DiceRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenDiceIntent()
+        let intent = OpenDiceIntent()
         intent.target = DiceEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)

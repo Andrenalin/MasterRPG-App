@@ -41,7 +41,7 @@ extension PdfRootModel {
               let model = itemController.itemSync(for: itemId)
         else { return }
 
-        var intent = OpenPdfIntent()
+        let intent = OpenPdfIntent()
         intent.target = PdfEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)
