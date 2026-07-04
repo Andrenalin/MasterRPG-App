@@ -30,7 +30,7 @@ extension SearchController {
     @MainActor func globalSearchResults(searchText: String) async -> [SearchResult] {
         guard !searchText.isEmpty else { return [] }
         
-        let itemIds = await itemControllable.itemDataModel.items
+        let itemIds = itemControllable.itemDataModel.items
         var foundResults: [SearchResult] = []
         
         for itemId in itemIds {
@@ -134,7 +134,7 @@ extension SearchController {
     /// Flat list: root characters only (`groupId == nil`).
     /// Excludes specialCategory items (groups/folders) — they only appear in folder mode.
     @MainActor private func listModeCharacterResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
-        let itemIds = await itemControllable.itemDataModel.items
+        let itemIds = itemControllable.itemDataModel.items
         var foundResults: [SearchResult] = []
         for itemId in itemIds {
             guard !Task.isCancelled else { break }
@@ -171,7 +171,7 @@ extension SearchController {
             }
             return results
         } else {
-            let allIds = await itemControllable.itemDataModel.items
+            let allIds = itemControllable.itemDataModel.items
             var results: [SearchResult] = []
             for itemId in allIds {
                 guard !Task.isCancelled else { break }
@@ -599,7 +599,7 @@ extension SearchController {
             // Unscoped common inspector: characters are items for linking only.
             // Never return entry children and never set canOpen — the user links to a character,
             // not to individual entries. Entry exploration requires the focused inspector.
-            let itemIds = await itemControllable.itemDataModel.items
+            let itemIds = itemControllable.itemDataModel.items
             for itemId in itemIds {
                 guard !Task.isCancelled else { break }
                 guard let character = await itemController.item(for: itemId),

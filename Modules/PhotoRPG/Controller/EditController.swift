@@ -43,7 +43,7 @@ extension EditController: EditControllable {
 
 extension EditController {
     @MainActor func convert(itemId: UUID) async throws {
-        guard let item = await editModel(for: itemId), let fileUrl = item.fileUrl else { return }
+        guard let item = editModel(for: itemId), let fileUrl = item.fileUrl else { return }
         await cacheController?.photoId(for: item.id, item: item, shouldDownload: true)
         guard let image = await cacheController?.photo(for: item.id), let data = image.jpegData(compressionQuality: 0.9) else { return }
 
@@ -52,7 +52,7 @@ extension EditController {
 
         let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataUrl, pathExtension: itemController.config.filenameExtension)
         await itemControllable.cacheControllable?.remove(itemId: itemId)
-        await reset(fileUrl: newFileUrl, itemId: item.id)
+        reset(fileUrl: newFileUrl, itemId: item.id)
     }
     
     @MainActor func isNotJpegPhoto(itemId: UUID) -> Bool {

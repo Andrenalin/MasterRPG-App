@@ -82,7 +82,7 @@ public extension ItemControllable {
             }
         }
         
-        await itemDataModel.resetModel(id: item.id)
+        itemDataModel.resetModel(id: item.id)
     }
     
     @MainActor func isEqual(with other: ModelType) -> Bool {
@@ -153,7 +153,7 @@ public extension ItemControllable {
 
 public extension ItemControllable {
     @MainActor func resetData() async {
-        let allItemIds = await itemDataModel.items
+        let allItemIds = itemDataModel.items
 
         // Clean up cache and internal state for each item
         for id in allItemIds {
@@ -173,7 +173,7 @@ public extension ItemControllable {
             }
 
             // Reset internal state
-            await itemDataModel.resetModel(id: item.id)
+            itemDataModel.resetModel(id: item.id)
         }
 
         // Batch delete all items from Core Data for better performance
@@ -191,16 +191,16 @@ public extension ItemControllable {
 
     @MainActor func updates(_ models: [ModelType]) async {
         let sortedModels = models.compactMap { $0 as? Model }.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-        let deletedIds = await itemDataModel.items.filter { id in !sortedModels.contains { $0.id == id } }
+        let deletedIds = itemDataModel.items.filter { id in !sortedModels.contains { $0.id == id } }
         for id in deletedIds {
             await delete(itemId: id)
         }
         var updatedItems: [UUID] = []
         for item in sortedModels {
-            await setModel(with: item)
+            setModel(with: item)
             updatedItems.append(item.id)
         }
-        await itemDataModel.resetItems(updatedItems)
+        itemDataModel.resetItems(updatedItems)
     }
     
     @MainActor func resetModel(with model: ModelType?) {
@@ -227,7 +227,7 @@ public extension ItemControllable {
     }
 
     @MainActor func item(for itemId: UUID, fullIds: [UUID], partialIds: [UUID]) async -> Model? {
-        guard let model = await itemDataModel.item(for: itemId) as? Model else { return nil }
+        guard let model = itemDataModel.item(for: itemId) as? Model else { return nil }
         guard partialIds.contains(itemId) else { return model }
         let partial = model.copy()
         partial.entries = model.entries.filter {

@@ -134,22 +134,28 @@ extension GameController: ValueGameStorable {
     public func addItem(id: UUID, data: NetworkCodableDataType, for characterId: UUID) async {
         let adventureValue: ValueModel?
 
-        if let characterId = await root.linkController.validate(id: characterId) {
-            let character = await itemController.itemOrEmpty(for: characterId)
+        if let character = await MainActor.run(body: { () -> ValueModel? in
+            guard let characterId = root.linkController.validate(id: characterId) else { return nil }
+            return itemController.itemOrEmpty(for: characterId)
+        }) {
             adventureValue = await adventureModel(for: character)
         } else {
             adventureValue = nil
         }
         guard let adventureValue else { return }
         
-        let hasItem = await itemController.itemDataModel.items.contains { $0 == id }
+        let hasItem = await MainActor.run {
+            itemController.itemDataModel.items.contains { $0 == id }
+        }
         try? await updateGame(data: data, hide: false, deep: true)
         let valueId = await root.editController.duplicate(itemId: id, withCopy: false)
         if !hasItem {
             await root.editController.delete(itemId: id)
         }
         let entry = ValueEntryModel(id: UUID(), name: "", type: .text, value: "", valueId: valueId)
-        await root.editController.add(entry: entry, into: adventureValue.id)
+        await MainActor.run {
+            root.editController.add(entry: entry, into: adventureValue.id)
+        }
     }
 
     @MainActor
@@ -213,36 +219,36 @@ extension GameController: ValueGameStorable {
 
         let adventureValue: ValueModel?
 
-        if let characterId = await root.linkController.validate(id: characterId) {
-            let character = await itemController.itemOrEmpty(for: characterId)
+        if let characterId = root.linkController.validate(id: characterId) {
+            let character = itemController.itemOrEmpty(for: characterId)
             adventureValue = await adventureModel(for: character)
         } else {
             adventureValue = nil
         }
         for valueModel in valueResult.valueModels {
             let model = valueModel.duplicateWithoutCopy()
-            await root.itemController.replace(model: model, isInsert: true)
-            await root.editController.add(model: model, into: adventureValue?.id)
+            root.itemController.replace(model: model, isInsert: true)
+            root.editController.add(model: model, into: adventureValue?.id)
         }
         guard let adventureValue else { return }
         for entryModel in valueResult.valueEntryModels {
             let entry = entryModel.duplicate()
-            await root.editController.add(entry: entry, into: adventureValue.id)
+            root.editController.add(entry: entry, into: adventureValue.id)
         }
     }
 
     @MainActor private func adventureModel(for character: ValueModel) async -> ValueModel {
         let name = String(localized: "Adventure", bundle: .module).localizedString
         if let adventureEntry = character.entries.first(where: { $0.name == name }), let adventureValueId = adventureEntry.valueId {
-            return await itemController.itemOrEmpty(for: adventureValueId)
+            return itemController.itemOrEmpty(for: adventureValueId)
         }
         let description = String(localized: "Items sent from the gamemaster", bundle: .module).localizedString
         let adventureValue = ValueModel(id: UUID(), name: name, description: description, tags: [name], category: .item, photoId: character.photoId, photos: character.photos)
         adventureValue.isGroupHiddenToggle.toggle()
         
-        await itemController.replace(model: adventureValue, isInsert: true)
+        itemController.replace(model: adventureValue, isInsert: true)
         let entry = ValueEntryModel(id: UUID(), name: name, type: .text, isGenerator: false, value: description, diceId: nil, valueId: adventureValue.id)
-        await root.editController.add(entry: entry, into: character.id)
+        root.editController.add(entry: entry, into: character.id)
         return adventureValue
     }
 }

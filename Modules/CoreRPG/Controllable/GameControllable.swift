@@ -136,15 +136,17 @@ public extension GameControllable {
 
     var currentId: UUID {
         get async {
-            await gameModel.currentItemId ?? UUID()
+            await MainActor.run {
+                gameModel.currentItemId ?? UUID()
+            }
         }
     }
 
     @MainActor func hasItem(id: UUID, version: Int) async -> Bool {
-        guard await gameModel.itemData[id] != nil, let localItem = await itemControllable.item(for: id) else {
+        guard gameModel.itemData[id] != nil, let localItem = await itemControllable.item(for: id) else {
             guard let item = await itemControllable.item(for: id, version: version) else { return false }
             let gameItem = item.copy()
-            await gameModel.insert(itemId: item.id, item: gameItem)
+            gameModel.insert(itemId: item.id, item: gameItem)
             return true
         }
         return version == 0 || version == localItem.version

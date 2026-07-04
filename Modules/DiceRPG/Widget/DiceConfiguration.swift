@@ -35,12 +35,12 @@ public struct DiceWidgetDice: Codable, Identifiable, Equatable, Hashable, Sendab
         self.face = face
     }
 
-    public init(_ diceModel: DiceModel) {
-        let firstDie = diceModel.dice.first
+    public init(_ diceSnapshot: DiceSnapshot) {
+        let firstDie = diceSnapshot.dice.first
         let sides = firstDie?.die.max ?? 20
         self.init(
-            id: diceModel.id,
-            name: diceModel.name.isEmpty ? "D\(sides)" : diceModel.name,
+            id: diceSnapshot.id,
+            name: diceSnapshot.name.isEmpty ? "D\(sides)" : diceSnapshot.name,
             sides: sides,
             face: firstDie?.result.last
         )
@@ -168,10 +168,10 @@ public struct DiceWidgetSnapshot: Codable, Equatable, Sendable {
 
     public static var preview: DiceWidgetSnapshot {
         DiceWidgetSnapshot(
-            selectedDice: DiceWidgetDice(DiceModel.preview),
+            selectedDice: DiceWidgetDice(DiceModel.previewSnapshot),
             lastRoll: DiceWidgetRoll(
                 DiceResultModel(
-                    diceModel: DiceModel.preview,
+                    diceModel: DiceModel.previewSnapshot,
                     result: .rolled,
                     values: "18",
                     sum: 18,

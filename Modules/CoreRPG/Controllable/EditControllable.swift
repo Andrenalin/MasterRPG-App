@@ -519,7 +519,7 @@ public extension EditControllable {
 
 public extension EditControllable {
     @MainActor func folderPath(itemId: UUID?) async -> String {
-        guard let itemId, let item = await editModel(for: itemId) else { return "" }
+        guard let itemId, let item = editModel(for: itemId) else { return "" }
         var name = ""
         if let parentId = item.parentId {
             name = await folderPath(itemId: parentId) + "/"
@@ -530,17 +530,17 @@ public extension EditControllable {
     
     @MainActor func movedFile(itemId: UUID) {
         Task {
-            guard let fileUrlDataController, let item = await editModel(for: itemId), let oldFileUrl = item.fileUrl, item.displayState != 2 else { return }
+            guard let fileUrlDataController, let item = editModel(for: itemId), let oldFileUrl = item.fileUrl, item.displayState != 2 else { return }
             let path = await folderPath(itemId: itemId)
             let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, to: path)
             if let newFileUrl {
-                await reset(fileUrl: newFileUrl, itemId: item.id)
+                reset(fileUrl: newFileUrl, itemId: item.id)
             }
         }
     }
     
     @MainActor func resetFile(url: URL?, itemId: UUID) async {
-        guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
+        guard let fileUrlDataController, let item = editModel(for: itemId) else { return }
 
         // Check if we have an existing file
         var isSameFilePath: Bool = false
@@ -553,7 +553,7 @@ public extension EditControllable {
             if !isSameFilePath {
                 // Different file - delete old file and clear reference
                 fileUrlDataController.delete(existingFileUrl)
-                await reset(fileUrl: nil, itemId: itemId)
+                reset(fileUrl: nil, itemId: itemId)
             }
         }
 
@@ -565,15 +565,15 @@ public extension EditControllable {
         if item.name.isEmpty {
             let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
-            await reset(name: name, itemId: itemId)
+            reset(name: name, itemId: itemId)
         }
 
         let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: itemId, url: url, module: itemControllable.config.module.token, category: folderPath(itemId: item.parentId))
-        await reset(fileUrl: updatedFileUrl, itemId: itemId)
+        reset(fileUrl: updatedFileUrl, itemId: itemId)
     }
     
     @MainActor func resetFile(data: Data?, itemId: UUID, path: String) async throws {
-        guard let item = await editModel(for: itemId) else { return }
+        guard let item = editModel(for: itemId) else { return }
         if item.fileUrl != nil {
             await resetFile(url: nil, itemId: itemId)
         }
@@ -589,7 +589,7 @@ public extension EditControllable {
         dataFileUrl.resetData(data)
         
         let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataFileUrl, pathExtension: itemControllable.config.filenameExtension)
-        await reset(fileUrl: fileUrl, itemId: itemId)
+        reset(fileUrl: fileUrl, itemId: itemId)
     }
 }
 

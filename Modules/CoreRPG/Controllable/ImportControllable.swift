@@ -108,7 +108,6 @@ public extension ImportControllable {
 
         await logImport(title: "importStream", count: itemCount, importModel: importModel)
 
-        let decoder = JSONDecoder()
         var currentFile: Data?
         var importedIds: Set<UUID> = []
 
@@ -452,7 +451,7 @@ private extension ImportControllable {
         guard existingFileUrl.contentHash == nil else { return existingFileUrl }
         guard let data = try? await fileUrlDataController?.loadData(for: existingFileUrl) else { return nil }
         existingFileUrl.resetContentHash(of: data)
-        await persist(fileUrl: existingFileUrl, itemId: itemId, forceSave: forceSave)
+        persist(fileUrl: existingFileUrl, itemId: itemId, forceSave: forceSave)
         return existingFileUrl
     }
 

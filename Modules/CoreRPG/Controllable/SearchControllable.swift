@@ -21,7 +21,7 @@ public extension SearchControllable {
     @MainActor func globalSearchResults(searchText: String) async -> [SearchResult] {
         guard searchText.isEmpty == false else { return [] }
         
-        let itemIds = await itemControllable.itemDataModel.items
+        let itemIds = itemControllable.itemDataModel.items
         var foundResults: [SearchResult] = []
         
         for itemId in itemIds {
@@ -116,7 +116,7 @@ public extension SearchControllable {
             }
             return results
         } else {
-            let allIds = await itemControllable.itemDataModel.items
+            let allIds = itemControllable.itemDataModel.items
             var results: [SearchResult] = []
             for itemId in allIds {
                 guard !Task.isCancelled else { break }
@@ -759,4 +759,3 @@ public extension SearchControllable {
         }
     }
 }
-

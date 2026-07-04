@@ -164,7 +164,6 @@ public extension ExportControllable {
 
         await logExport(title: "extract", count: allIds.count, exportModel: exportModel)
 
-        let encoder = JSONEncoder()
         let indexModel = ExportIndexModel(index: allIds.startIndex)
 
         let dataStream = AsyncThrowingStream<ExportStream, Error> { () async throws -> ExportStream? in
