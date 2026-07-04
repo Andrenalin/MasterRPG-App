@@ -10,8 +10,8 @@ import PhotoRPG
 import UIKit
 import os.log
 
-@Observable
-final class GameTableModel {
+@Observable @MainActor
+final class GameTableModel: Sendable {
     let tabletopGame: TabletopGame
     let renderer: GameRenderer
     let observer: GameObserver
@@ -154,7 +154,7 @@ final class GameTableModel {
         print("✅ Fog of war updated - \(mapModel.entries.filter { !$0.isShown }.count) hidden areas (GM: \(isGameMaster))")
     }
     
-    deinit {
+    isolated deinit {
         tabletopGame.removeObserver(observer)
         tabletopGame.removeRenderDelegate(renderer)
     }
