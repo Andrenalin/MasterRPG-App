@@ -303,7 +303,7 @@ final class SingleItemImportModel {
 @Observable @MainActor
 final class SingleEntryImportModel: Identifiable {
     init(entry: SingleReviewEntry, properties: [SingleReviewEntryProperty], references: [SingleReviewReference], decision: SingleReviewDecision = .merge) {
-        self.id = entry.existing?.id ?? UUID()
+        self.id = entry.existing?.id ?? entry.imported?.id ?? entry.merged?.id ?? UUID()
         self.entry = entry
         self.properties = properties
         self.references = references
@@ -347,18 +347,26 @@ final class SingleEntryImportModel: Identifiable {
     private func seek(in props: [SingleReviewEntryProperty], id: UUID, to newDecision: SingleReviewDecision) {
         properties.first(where: { $0.id == id })?.decision = newDecision
     }
+
+    var isRemovalSummary: Bool {
+        guard let firstProperty = properties.first else { return false }
+        return entry.item(for: firstProperty.decision) == nil
+    }
     
     var name: String {
-        guard let firstProperty = properties.first, let item = entry.item(for: firstProperty.decision) else { return "No name found" }
+        guard let firstProperty = properties.first else { return "No name found" }
+        guard let item = entry.item(for: firstProperty.decision) else { return Self.removalSummaryText }
         return item[keyPath: firstProperty.valueKeyPath]
     }
     
     var content: String {
         guard properties.count > 1 else { return "No content found" }
         let firstProperty = properties[1]
-        let item = entry.item(for: firstProperty.decision)
-        return item?[keyPath: firstProperty.valueKeyPath] ?? "No content found"
+        guard let item = entry.item(for: firstProperty.decision) else { return "" }
+        return item[keyPath: firstProperty.valueKeyPath]
     }
+
+    private static let removalSummaryText = String(localized: "Will be removed", bundle: .module)
     
 }
 // MARK: - Preview Data
@@ -919,6 +927,7 @@ extension SingleItemImportModel {
 // Static row — no conflict: all three values identical, no interaction.
 private struct VC_StaticPropertyRow: View {
     let displayName: String
+    var kind: SingleReviewKind = .text
     let value: String?
 
     var body: some View {
@@ -927,7 +936,9 @@ private struct VC_StaticPropertyRow: View {
                 .font(.caption2).foregroundStyle(Color.secondary.opacity(0.4))
             VStack(alignment: .leading, spacing: 2) {
                 Text(displayName).font(.subheadline).bold()
-                Text(value ?? "—").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                VC_ReviewValue(kind: kind, value: value, lineLimit: 1)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
         }
@@ -1048,20 +1059,20 @@ private struct VC_ReadOnlyPropertyRow: View {
                 Text(property.displayName).font(.subheadline).bold()
                 Spacer()
             }
-            Text(model.effectiveValue(for: property) ?? "—")
+            VC_ReviewValue(kind: property.kind, value: model.effectiveValue(for: property))
                 .font(.callout)
                 .foregroundStyle(.primary)
                 .contentTransition(.opacity)
                 .animation(.easeInOut(duration: 0.2), value: property.decision)
             HStack(spacing: 4) {
                 Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
-                Text(model.existingValue(for: property) ?? "—")
-                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                VC_ReviewValue(kind: property.kind, value: model.existingValue(for: property), lineLimit: 1)
+                    .font(.caption2).foregroundStyle(.secondary)
             }
             HStack(spacing: 4) {
                 Text("New:").font(.caption2).bold().foregroundStyle(.green)
-                Text(model.importedValue(for: property) ?? "—")
-                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                VC_ReviewValue(kind: property.kind, value: model.importedValue(for: property), lineLimit: 1)
+                    .font(.caption2).foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
@@ -1095,6 +1106,7 @@ private struct VC_AccordionRow: View {
     var body: some View {
         if !model.isChanged(prop: property) {
             VC_StaticPropertyRow(displayName: property.displayName,
+                                 kind: property.kind,
                                  value: model.effectiveValue(for: property))
         } else if property.isReadOnly {
             VC_ReadOnlyPropertyRow(model: model, property: property)
@@ -1115,7 +1127,7 @@ private struct VC_AccordionRow: View {
                                 .font(.caption).foregroundStyle(.tertiary)
                         }
                         // Effective value — cross-fades when decision changes
-                        Text(model.effectiveValue(for: property) ?? "—")
+                        VC_ReviewValue(kind: property.kind, value: model.effectiveValue(for: property))
                             .font(.callout)
                             .foregroundStyle(.primary)
                             .contentTransition(.opacity)
@@ -1123,13 +1135,13 @@ private struct VC_AccordionRow: View {
                         // Was / New — each on its own line
                         HStack(spacing: 4) {
                             Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
-                            Text(model.existingValue(for: property) ?? "—")
-                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            VC_ReviewValue(kind: property.kind, value: model.existingValue(for: property), lineLimit: 1)
+                                .font(.caption2).foregroundStyle(.secondary)
                         }
                         HStack(spacing: 4) {
                             Text("New:").font(.caption2).bold().foregroundStyle(.green)
-                            Text(model.importedValue(for: property) ?? "—")
-                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            VC_ReviewValue(kind: property.kind, value: model.importedValue(for: property), lineLimit: 1)
+                                .font(.caption2).foregroundStyle(.secondary)
                         }
                     }
                     .padding(.horizontal, 14).padding(.vertical, 12)
@@ -1140,7 +1152,7 @@ private struct VC_AccordionRow: View {
                     Divider()
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(alternatives) { d in
-                            VC_AlternativeBlock(decision: d, value: value(for: d)) {
+                            VC_AlternativeBlock(decision: d, kind: property.kind, value: value(for: d)) {
                                 withAnimation(.spring(duration: 0.3)) {
                                     model.setPropertyDecision(d, propertyID: property.id)
                                     isExpanded = false
@@ -1159,6 +1171,7 @@ private struct VC_AccordionRow: View {
 
 private struct VC_AlternativeBlock: View {
     let decision: SingleReviewDecision
+    var kind: SingleReviewKind = .text
     let value: String?
     let onSelect: () -> Void
 
@@ -1167,7 +1180,7 @@ private struct VC_AlternativeBlock: View {
             VStack(alignment: .leading, spacing: 5) {
                 Label(decision.rawValue, systemImage: decision.systemImage)
                     .font(.caption2).bold().foregroundStyle(decision.tint)
-                Text(value ?? "—")
+                VC_ReviewValue(kind: kind, value: value)
                     .font(.callout)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .foregroundStyle(.primary)
@@ -1429,6 +1442,60 @@ private struct VC_LinkText: View {
     }
 }
 
+private struct VC_ReviewValue: View {
+    let kind: SingleReviewKind
+    let value: String?
+    var lineLimit: Int? = nil
+
+    var body: some View {
+        switch kind {
+        case .tags:
+            VC_TagValue(tags: value.reviewTags)
+        case .text, .sublist:
+            VC_LinkText(text: value ?? "—")
+                .lineLimit(lineLimit)
+        case .picker(options: _), .binary, .link:
+            Text(value ?? "—")
+                .lineLimit(lineLimit)
+        }
+    }
+}
+
+private struct VC_TagValue: View {
+    let tags: [String]
+
+    var body: some View {
+        if tags.isEmpty {
+            Text("—")
+        } else if tags.count > 4 {
+            let half = tags.count / 2
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    TagItemRow(tags: Array(tags[..<half]))
+                }
+                HStack(spacing: 4) {
+                    TagItemRow(tags: Array(tags[half...]))
+                }
+            }
+        } else {
+            HStack(spacing: 4) {
+                TagItemRow(tags: tags)
+            }
+        }
+    }
+}
+
+private extension Optional where Wrapped == String {
+    var reviewTags: [String] {
+        guard let value = self else { return [] }
+        return value
+            .split(separator: ",")
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+}
+
 private struct VC_EntryAccordion: View {
     let entry: SingleEntryImportModel
     @State private var isExpanded = false
@@ -1473,23 +1540,27 @@ private struct VC_EntryAccordion: View {
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                             .font(.caption).foregroundStyle(.tertiary)
                     }
-                    VC_LinkText(text: entry.content)
-                        .font(.callout).foregroundStyle(.primary)
-                    if anyPropertyChanged {
-                        HStack(spacing: 4) {
-                            Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
-                            Text(summary(from: entry.entry.existing) ?? "—")
-                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    if !entry.isRemovalSummary && !entry.content.isEmpty {
+                        VC_LinkText(text: entry.content)
+                            .font(.callout).foregroundStyle(.primary)
+                    }
+                    if !entry.isRemovalSummary {
+                        if anyPropertyChanged {
+                            HStack(spacing: 4) {
+                                Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
+                                VC_LinkText(text: summary(from: entry.entry.existing) ?? "—")
+                                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            HStack(spacing: 4) {
+                                Text("New:").font(.caption2).bold().foregroundStyle(.green)
+                                VC_LinkText(text: summary(from: entry.entry.imported) ?? "—")
+                                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                        } else if hasExisting && !hasImported {
+                            Text("Only in existing version").font(.caption2).foregroundStyle(.orange)
+                        } else if hasImported && !hasExisting {
+                            Text("Only in imported version").font(.caption2).foregroundStyle(.green)
                         }
-                        HStack(spacing: 4) {
-                            Text("New:").font(.caption2).bold().foregroundStyle(.green)
-                            Text(summary(from: entry.entry.imported) ?? "—")
-                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                        }
-                    } else if hasExisting && !hasImported {
-                        Text("Only in existing version").font(.caption2).foregroundStyle(.orange)
-                    } else if hasImported && !hasExisting {
-                        Text("Only in imported version").font(.caption2).foregroundStyle(.green)
                     }
                 }
                 .padding(.horizontal, 14).padding(.vertical, 12)
@@ -1537,8 +1608,8 @@ private struct VC_EntryPropertyAccordion: View {
                     .font(.subheadline).foregroundStyle(Color.secondary.opacity(0.4))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(property.displayName).font(.caption).bold().foregroundStyle(.secondary)
-                    Text(entry.effectiveValue(for: property) ?? "—")
-                        .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    VC_ReviewValue(kind: property.kind, value: entry.effectiveValue(for: property), lineLimit: 1)
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
             }
@@ -1562,19 +1633,19 @@ private struct VC_EntryPropertyAccordion: View {
                             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                                 .font(.caption2).foregroundStyle(.tertiary)
                         }
-                        Text(entry.effectiveValue(for: property) ?? "—")
+                        VC_ReviewValue(kind: property.kind, value: entry.effectiveValue(for: property))
                             .font(.callout).foregroundStyle(.primary)
                             .contentTransition(.opacity)
                             .animation(.easeInOut(duration: 0.2), value: property.decision)
                         HStack(spacing: 4) {
                             Text("Was:").font(.caption2).bold().foregroundStyle(.orange)
-                            Text(entry.existingValue(for: property) ?? "—")
-                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            VC_ReviewValue(kind: property.kind, value: entry.existingValue(for: property), lineLimit: 1)
+                                .font(.caption2).foregroundStyle(.secondary)
                         }
                         HStack(spacing: 4) {
                             Text("New:").font(.caption2).bold().foregroundStyle(.green)
-                            Text(entry.importedValue(for: property) ?? "—")
-                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            VC_ReviewValue(kind: property.kind, value: entry.importedValue(for: property), lineLimit: 1)
+                                .font(.caption2).foregroundStyle(.secondary)
                         }
                     }
                     .padding(8)
@@ -1585,7 +1656,7 @@ private struct VC_EntryPropertyAccordion: View {
                     Divider()
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(alternatives) { d in
-                            VC_AlternativeBlock(decision: d, value: value(for: d)) {
+                            VC_AlternativeBlock(decision: d, kind: property.kind, value: value(for: d)) {
                                 withAnimation(.spring(duration: 0.3)) {
                                     entry.setPropertyDecision(d, propertyID: property.id)
                                     isExpanded = false
@@ -1605,4 +1676,3 @@ private struct VC_EntryPropertyAccordion: View {
 #Preview("VC · Accordion") {
     NavigationStack { SingleItemReviewVC_Accordion(model: .previewConflictingEntries) }
 }
-

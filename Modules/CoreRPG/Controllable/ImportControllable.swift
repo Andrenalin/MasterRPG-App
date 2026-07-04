@@ -248,10 +248,25 @@ private extension ImportControllable {
             await MainActor.run {
                 guard let imported = importedItem as? any ItemDataAccessable else { return }
                 let existing = itemController.itemSync(for: id)
-                let kind: ImportReviewItemModel.ChangeKind = merged == nil ? .added : .different
                 let module = itemController.config.module
+
+                if existing != nil && merged == nil {
+                    logManualReviewUnchangedSkipped(module: module, id: id, imported: imported)
+                    return
+                }
+
+                let kind: ImportReviewItemModel.ChangeKind = existing == nil ? .added : .different
                 let reviewItem = SingleReviewItem(existing: existing, imported: imported, merged: merged ?? imported)
                 let itemModel = SingleItemImportModel.from(item: reviewItem)
+                if kind == .different {
+                    logManualReviewDifference(
+                        module: module,
+                        id: id,
+                        existing: existing,
+                        imported: imported,
+                        itemModel: itemModel
+                    )
+                }
                 let reviewItemModel = ImportReviewItemModel(
                     id: id,
                     kind: kind,
@@ -266,6 +281,127 @@ private extension ImportControllable {
 
         await MainActor.run { importModel.importedItems += 1 }
         try Task.checkCancellation()
+    }
+
+    @MainActor
+    func logManualReviewDifference(
+        module: NetworkModules,
+        id: UUID,
+        existing: (any ItemDataAccessable)?,
+        imported: any ItemDataAccessable,
+        itemModel: SingleItemImportModel
+    ) {
+        guard let existing else {
+            Logger.importController.info("Manual import review added \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .public)'")
+            return
+        }
+
+        let reviewDifferences = reviewPropertyDifferences(in: itemModel) + reviewEntryDifferences(in: itemModel)
+        let commonDifferences = commonItemDifferences(existing: existing, imported: imported)
+        let reviewSummary = reviewDifferences.importLogSummary
+        let commonSummary = commonDifferences.importLogSummary
+
+        if reviewDifferences.isEmpty && commonDifferences.isEmpty {
+            Logger.importController.warning("Manual import review different \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .public)' but review/common fields match. model.isSame returned false; likely CRDT update metadata or module-specific fields not exposed in reviewProperties.")
+        } else {
+            Logger.importController.info("Manual import review different \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .public)' reviewRows=\(reviewSummary, privacy: .public) commonFields=\(commonSummary, privacy: .public)")
+        }
+    }
+
+    @MainActor
+    func logManualReviewUnchangedSkipped(module: NetworkModules, id: UUID, imported: any ItemDataAccessable) {
+        Logger.importController.info("Manual import review unchanged skipped \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .public)' because merge returned nil (model.isSame == true).")
+    }
+
+    @MainActor
+    func reviewPropertyDifferences(in itemModel: SingleItemImportModel) -> [String] {
+        itemModel.properties.compactMap { property in
+            guard itemModel.isChanged(prop: property) else { return nil }
+            return "property '\(property.displayName)': existing='\((itemModel.existingValue(for: property) ?? "nil").importLogPreview)' imported='\((itemModel.importedValue(for: property) ?? "nil").importLogPreview)' merged='\((itemModel.mergedValue(for: property) ?? "nil").importLogPreview)'"
+        }
+    }
+
+    @MainActor
+    func reviewEntryDifferences(in itemModel: SingleItemImportModel) -> [String] {
+        itemModel.entries.flatMap { entryModel in
+            let entryLabel = "\(entryModel.name.importLogPreview) (\(entryModel.id.uuidString))"
+
+            if entryModel.entry.existing == nil {
+                return ["entry added '\(entryLabel)'"]
+            }
+            if entryModel.entry.imported == nil {
+                return ["entry missing from import '\(entryLabel)'"]
+            }
+
+            return entryModel.properties.compactMap { property in
+                guard entryModel.isChanged(prop: property) else { return nil }
+                return "entry '\(entryLabel)' property '\(property.displayName)': existing='\((entryModel.existingValue(for: property) ?? "nil").importLogPreview)' imported='\((entryModel.importedValue(for: property) ?? "nil").importLogPreview)' merged='\((entryModel.mergedValue(for: property) ?? "nil").importLogPreview)'"
+            }
+        }
+    }
+
+    @MainActor
+    func commonItemDifferences(existing: any ItemDataAccessable, imported: any ItemDataAccessable) -> [String] {
+        var differences: [String] = []
+
+        appendImportDifference("id", existing.id.uuidString, imported.id.uuidString, to: &differences)
+        appendImportDifference("name", existing.name, imported.name, to: &differences)
+        appendImportDifference("description", existing.description, imported.description, to: &differences)
+        appendImportDifference("tags", existing.tags.joined(separator: ","), imported.tags.joined(separator: ","), to: &differences)
+        appendImportDifference("category", "\(existing.category.rawValue)", "\(imported.category.rawValue)", to: &differences)
+        appendImportDifference("displayState", "\(existing.displayState)", "\(imported.displayState)", to: &differences)
+        appendImportDifference("isGroupHiddenToggle", "\(existing.isGroupHiddenToggle)", "\(imported.isGroupHiddenToggle)", to: &differences)
+        appendImportDifference("parentId", existing.parentId?.uuidString ?? "nil", imported.parentId?.uuidString ?? "nil", to: &differences)
+        differences += fileDifferences(existing: existing.fileUrl, imported: imported.fileUrl)
+        differences += entryDifferences(existing: existing.entries, imported: imported.entries)
+
+        return differences
+    }
+
+    func fileDifferences(existing: FileUrl?, imported: FileUrl?) -> [String] {
+        var differences: [String] = []
+        appendImportDifference("file.id", existing?.fileId.uuidString ?? "nil", imported?.fileId.uuidString ?? "nil", to: &differences)
+        appendImportDifference("file.url", existing?.rawUrl.absoluteString ?? "nil", imported?.rawUrl.absoluteString ?? "nil", to: &differences)
+        appendImportDifference("file.location", existing.map { "\($0.location)" } ?? "nil", imported.map { "\($0.location)" } ?? "nil", to: &differences)
+        appendImportDifference("file.module", existing?.module ?? "nil", imported?.module ?? "nil", to: &differences)
+        appendImportDifference("file.contentHash", existing?.contentHash ?? "nil", imported?.contentHash ?? "nil", to: &differences)
+        return differences
+    }
+
+    func entryDifferences(existing: [any EntryDataAccessable], imported: [any EntryDataAccessable]) -> [String] {
+        var differences: [String] = []
+        let existingIds = existing.map(\.id)
+        let importedIds = imported.map(\.id)
+        appendImportDifference("entry.ids", existingIds.map(\.uuidString).joined(separator: ","), importedIds.map(\.uuidString).joined(separator: ","), to: &differences)
+
+        let allIds = (existingIds + importedIds).reduce(into: [UUID]()) { result, id in
+            if !result.contains(id) {
+                result.append(id)
+            }
+        }
+
+        for id in allIds {
+            let existingEntry = existing.first { $0.id == id }
+            let importedEntry = imported.first { $0.id == id }
+            let entryPrefix = "entry \(id.uuidString)"
+
+            guard let existingEntry, let importedEntry else {
+                appendImportDifference("\(entryPrefix).presence", existingEntry == nil ? "missing" : "present", importedEntry == nil ? "missing" : "present", to: &differences)
+                continue
+            }
+
+            appendImportDifference("\(entryPrefix).childId", existingEntry.childId.uuidString, importedEntry.childId.uuidString, to: &differences)
+            appendImportDifference("\(entryPrefix).name", existingEntry.name, importedEntry.name, to: &differences)
+            appendImportDifference("\(entryPrefix).content", existingEntry.content, importedEntry.content, to: &differences)
+            appendImportDifference("\(entryPrefix).displayState", "\(existingEntry.displayState)", "\(importedEntry.displayState)", to: &differences)
+        }
+
+        return differences
+    }
+
+    func appendImportDifference(_ label: String, _ existing: String, _ imported: String, to differences: inout [String]) {
+        guard existing != imported else { return }
+        differences.append("\(label): existing='\(existing.importLogPreview)' imported='\(imported.importLogPreview)'")
     }
 
     func skip(itemCount: Int, from inputStream: InputStream, importModel: ItemDataImportModel) async throws {
@@ -322,6 +458,29 @@ private extension ImportControllable {
         guard var copy = itemControllable.copy(of: itemId) else { return }
         copy.fileUrl = fileUrl
         itemControllable.replace(model: copy, isInsert: false, forceSave: forceSave)
+    }
+}
+
+private extension Array where Element == String {
+    var importLogSummary: String {
+        guard !isEmpty else { return "none" }
+        let maxItems = 16
+        let visibleItems = prefix(maxItems)
+        let summary = visibleItems.joined(separator: " | ")
+        let remainingCount = count - visibleItems.count
+        guard remainingCount > 0 else { return summary }
+        return "\(summary) | +\(remainingCount) more"
+    }
+}
+
+private extension String {
+    var importLogPreview: String {
+        let maxLength = 240
+        let flattened = trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacing("\n", with: "\\n")
+            .replacing("\r", with: "\\r")
+        guard flattened.count > maxLength else { return flattened }
+        return "\(String(flattened.prefix(maxLength)))..."
     }
 }
 
