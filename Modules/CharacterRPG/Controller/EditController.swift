@@ -625,7 +625,24 @@ extension EditController {
         var entriesChanged = false
         let cleanedEntries: [ValueEntryModel] = item.entries.map { entry in
             guard let valueId = entry.valueId else { return entry }
-            guard itemControllable.itemSync(for: valueId)?.displayState == 1 else {
+            guard let target = itemControllable.itemSync(for: valueId) as? ValueModel else {
+                let targetName = itemControllable.nameSync(itemId: valueId)
+                Logger.editController.warning("[Repair] Character '\(item.name, privacy: .public)': entry '\(entry.name, privacy: .public)' had non-GroupItem valueId pointing to '\(targetName, privacy: .public)' — cleared")
+                entriesChanged = true
+                return ValueEntryModel(
+                    id: entry.id, name: entry.name, type: entry.type,
+                    isGenerator: entry.isGenerator, value: entry.value,
+                    diceId: entry.diceId, valueId: nil, displayState: entry.displayState
+                )
+            }
+            guard target.displayState == 1 else {
+                if target.groupId == itemId, let groupItem = editModel(for: valueId) {
+                    groupItem.parentId = nil
+                    groupItem.displayState = 1
+                    save(updated: groupItem, message: String(localized: "Repair group item", bundle: .module).localizedString)
+                    return entry
+                }
+
                 let targetName = itemControllable.nameSync(itemId: valueId)
                 Logger.editController.warning("[Repair] Character '\(item.name, privacy: .public)': entry '\(entry.name, privacy: .public)' had non-GroupItem valueId pointing to '\(targetName, privacy: .public)' — cleared")
                 entriesChanged = true

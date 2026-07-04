@@ -5,7 +5,7 @@ import SwiftUI
 struct FoundationBasicView<Content: View>: View {
     @ViewBuilder let content: () -> Content
     
-    private let manager = FoundationManager()
+    @State private var manager = FoundationManager()
     
     @Environment(\.scenePhase) var scenePhase
     

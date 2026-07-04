@@ -13,8 +13,8 @@ struct CampaignGenModel: Equatable {
     @Guide(description: "Tags to describe the campaign.", .maximumCount(4))
     var tags: [String]
         
-    @Guide(description: "The collction of adventure.")
-    @Guide(.maximumCount(5))
+    @Guide(description: "The collection of adventures.")
+    @Guide(.count(1...3))
     var entries: [AdventureGenModel]
 }
 
@@ -26,8 +26,8 @@ struct AdventureGenModel: Equatable {
     @Guide(description: "Tags to describe the adventure.", .maximumCount(4))
     var tags: [String]
         
-    @Guide(description: "The content of the table. Each entry represents one row.")
-    @Guide(.minimumCount(5))
+    @Guide(description: "The scenarios or quests in the adventure.")
+    @Guide(.count(2...4))
     var entries: [ScenarioGenModel]
 }
 
@@ -39,8 +39,8 @@ struct ScenarioGenModel: Equatable {
     @Guide(description: "Tags to describe the scenario.", .maximumCount(4))
     var tags: [String]
         
-    @Guide(description: "The content of the table. Each entry represents one row.")
-    @Guide(.minimumCount(10))
+    @Guide(description: "Short actionable beats, clues, encounters, or rewards for the scenario.")
+    @Guide(.count(3...6))
     var entries: [EntryGenModel]
 }
 

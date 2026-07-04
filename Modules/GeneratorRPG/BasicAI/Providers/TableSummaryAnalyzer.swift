@@ -4,13 +4,12 @@ import Foundation
 import FoundationModels
 
 /// Analyzes table entry text and extracts structured metadata using on-device AI.
-@MainActor
 struct TableSummaryAnalyzer {
 
     private let maxCharacters: Int
     private let instructions: String
 
-    init(maxCharacters: Int = 8000, instructions: String? = nil) {
+    init(maxCharacters: Int = 7000, instructions: String? = nil) {
         self.maxCharacters = maxCharacters
         self.instructions = instructions ?? Self.defaultInstructions
     }
@@ -20,12 +19,7 @@ struct TableSummaryAnalyzer {
             throw PdfSummaryAnalysisError.modelUnavailable
         }
 
-        let truncated: String
-        if entriesText.count > maxCharacters {
-            truncated = String(entriesText.prefix(maxCharacters)) + "\n[Content truncated...]"
-        } else {
-            truncated = entriesText
-        }
+        let truncated = FoundationModelInputLimiter.limitedText(entriesText, maxCharacters: maxCharacters)
 
         let activeInstructions = instructions + "\nIMPORTANT: All output must be written in \(outputLanguage), regardless of the input language."
         let session = LanguageModelSession(instructions: activeInstructions)
@@ -40,8 +34,12 @@ struct TableSummaryAnalyzer {
 
         do {
             for try await snapshot in stream {
-                latestContent = snapshot.content
-                resultModel.analysisProgress = snapshot.content
+                let content = snapshot.content
+                latestContent = content
+                let progress = TableSummaryAnalysisProgress(content)
+                await MainActor.run {
+                    resultModel.analysisProgress = progress
+                }
             }
         } catch let error as LanguageModelSession.GenerationError {
             throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))

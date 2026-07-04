@@ -163,7 +163,7 @@ public struct BatchTextSummaryExtractionView: View {
     }
 
     @ViewBuilder
-    private func analysisProgressSection(_ progress: TableSummaryAnalysis.PartiallyGenerated) -> some View {
+    private func analysisProgressSection(_ progress: TableSummaryAnalysisProgress) -> some View {
         Section {
             progressRow(ready: progress.title != nil, label: "Title: \(progress.title ?? "...")")
             progressRow(

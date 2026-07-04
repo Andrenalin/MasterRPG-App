@@ -10,8 +10,43 @@ import Testing
 
 struct GeneratorRPGTests {
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+    @Test func limitedTextAddsMarkerWithinBudget() {
+        let result = FoundationModelInputLimiter.limitedText(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            maxCharacters: 32
+        )
+
+        #expect(result.count == 32)
+        #expect(result.hasSuffix(FoundationModelInputLimiter.truncationMarker))
+    }
+
+    @Test func combinedTextHonorsPageAndCharacterLimits() {
+        let result = FoundationModelInputLimiter.limitedCombinedText(
+            pages: ["first", "second", "third"],
+            maxPages: 2,
+            maxCharacters: 1_000
+        )
+
+        #expect(result.contains("--- Page 1 ---"))
+        #expect(result.contains("--- Page 2 ---"))
+        #expect(!result.contains("--- Page 3 ---"))
+        #expect(result.contains("first"))
+        #expect(result.contains("second"))
+    }
+
+    @Test func pageTextsHonorPerPageLimit() {
+        let result = FoundationModelInputLimiter.limitedPageTexts(
+            pages: ["abcdefghijklmno", "", "pqrstuvwxyz"],
+            maxPages: 3,
+            maxCharactersPerPage: 10
+        )
+
+        #expect(result.count == 2)
+        #expect(result[0].pageNumber == 1)
+        #expect(result[0].text.count == 10)
+        #expect(result[0].wasTruncated)
+        #expect(result[1].pageNumber == 3)
+        #expect(result[1].wasTruncated)
     }
 
 }

@@ -5,148 +5,157 @@ import Foundation
 extension FileManager {
 
     func fileExists(coordinatingAccessAt fileURL: URL) async throws -> (exists: Bool, isDirectory: Bool) {
-        var isDir: ObjCBool = false
-        var exists: Bool = false
-        try coordinate(readingItemAt: fileURL) { url in
-            exists = fileExists(atPath: url.path, isDirectory: &isDir)
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(readingItemAt: fileURL) { url in
+                var isDir: ObjCBool = false
+                let coordinatedExists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
+                return (coordinatedExists, isDir.boolValue)
+            }
         }
-        return (exists, isDir.boolValue)
     }
     
     func createDirectory(coordinatingAccessAt dirURL: URL, withIntermediateDirectories: Bool) async throws {
-        try coordinate(writingItemAt: dirURL, options: .forMerging) { url in
-            try createDirectory(at: url, withIntermediateDirectories: withIntermediateDirectories)
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(writingItemAt: dirURL, options: .forMerging) { url in
+                try FileManager.default.createDirectory(at: url, withIntermediateDirectories: withIntermediateDirectories)
+            }
         }
     }
     
     func removeItem(coordinatingAccessAt dirURL: URL) async throws {
-        try coordinate(writingItemAt: dirURL, options: .forDeleting) { url in
-            try removeItem(at: url)
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(writingItemAt: dirURL, options: .forDeleting) { url in
+                try FileManager.default.removeItem(at: url)
+            }
         }
     }
     
     func copyItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
-        try coordinate(readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
-            try copyItem(at: readURL, to: writeURL)
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
+                try FileManager.default.copyItem(at: readURL, to: writeURL)
+            }
         }
     }
 
     func moveItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
-        try coordinate(writingItemAt: fromURL, writingItemAt: toURL) { readURL, writeURL in
-            try moveItem(at: readURL, to: writeURL)
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(writingItemAt: fromURL, writingItemAt: toURL) { readURL, writeURL in
+                try FileManager.default.moveItem(at: readURL, to: writeURL)
+            }
         }
     }
 
     func contentsOfDirectory(coordinatingAccessAt dirURL: URL) async throws -> [URL] {
-        var contentsURLs: [URL] = []
         let keys: [URLResourceKey] = [.nameKey, .isDirectoryKey, .isReadableKey, .ubiquitousItemIsDownloadingKey]
-        try coordinate(readingItemAt: dirURL) { url in
-            contentsURLs = try contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])
+        return try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(readingItemAt: dirURL) { url in
+                try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])
+            }
         }
-        return contentsURLs
     }
     
     func contentsOfFile(coordinatingAccessAt url: URL) async throws -> Data {
-        var data: Data = .init()
-        try coordinate(readingItemAt: url) { url in
-            data = try Data(contentsOf: url)
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(readingItemAt: url) { url in
+                try Data(contentsOf: url)
+            }
         }
-        return data
     }
 
     func download(coordinatingAccessAt url: URL) async throws {
-        try coordinate(writingItemAt: url) { newUrl in
-            try FileManager.default.startDownloadingUbiquitousItem(at: newUrl)
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(writingItemAt: url) { newUrl in
+                try FileManager.default.startDownloadingUbiquitousItem(at: newUrl)
+            }
         }
     }
 
     func write(_ data: Data, coordinatingAccessTo url: URL) async throws {
-        try coordinate(writingItemAt: url) { url in
-            try data.write(to: url)
-        }
-    }
-    
-    func updateFile(coordinatingAccessTo url: URL, in block: (URL) throws -> Void) async throws {
-        try coordinate(writingItemAt: url) { url in
-            try block(url)
-        }
-    }
-    
-    private func execute(_ block: (URL) throws -> Void, onSecurityScopedResource url: URL) throws {
-        _ = url.startAccessingSecurityScopedResource()
-        defer { url.stopAccessingSecurityScopedResource() }
-        try block(url)
-    }
-    
-    private func coordinate(readingItemAt url: URL, options: NSFileCoordinator.ReadingOptions = [], with block: (URL) throws -> Void) throws {
-        var coordinatorError: NSError?
-        var managerError: Swift.Error?
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        coordinator.coordinate(readingItemAt: url, options: options, error: &coordinatorError) { url in
-            do {
-                try execute(block, onSecurityScopedResource: url)
-            } catch {
-                managerError = error
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(writingItemAt: url) { url in
+                try data.write(to: url)
             }
         }
-        guard coordinatorError == nil else { throw coordinatorError! }
-        guard managerError == nil else { throw managerError! }
     }
     
-    private func coordinate(writingItemAt url: URL, options: NSFileCoordinator.WritingOptions = [], with block: (URL) throws -> Void) throws {
-        var coordinatorError: NSError?
-        var managerError: Swift.Error?
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        coordinator.coordinate(writingItemAt: url, options: options, error: &coordinatorError) { url in
-            do {
-                try execute(block, onSecurityScopedResource: url)
-            } catch {
-                managerError = error
+    func updateFile<T: Sendable>(coordinatingAccessTo url: URL, in block: @escaping @Sendable (URL) throws -> T) async throws -> T {
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(writingItemAt: url) { url in
+                try block(url)
             }
         }
-        guard coordinatorError == nil else { throw coordinatorError! }
-        guard managerError == nil else { throw managerError! }
     }
     
-    private func coordinate(readingItemAt readURL: URL, readOptions: NSFileCoordinator.ReadingOptions = [], writingItemAt writeURL: URL, writeOptions: NSFileCoordinator.WritingOptions = [], with block: (_ readURL: URL, _ writeURL: URL) throws -> Void) throws {
-        var coordinatorError: NSError?
-        var managerError: Swift.Error?
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        coordinator.coordinate(readingItemAt: readURL, options: readOptions, writingItemAt: writeURL, options: writeOptions, error: &coordinatorError) { (read: URL, write: URL) in
-            do {
-                _ = read.startAccessingSecurityScopedResource()
-                _ = write.startAccessingSecurityScopedResource()
-                defer {
-                    read.stopAccessingSecurityScopedResource()
-                    write.stopAccessingSecurityScopedResource()
-                }
-                try block(read, write)
-            } catch {
-                managerError = error
-            }
-        }
-        guard coordinatorError == nil else { throw coordinatorError! }
-        guard managerError == nil else { throw managerError! }
+    private static func performCoordinatedFileAccess<T: Sendable>(_ operation: @escaping @Sendable () throws -> T) async throws -> T {
+        // NSFileCoordinator is synchronous and can block while waiting on file presenters.
+        // Run it away from caller tasks so user-initiated work suspends instead of blocking its thread.
+        try await Task.detached(priority: .utility) {
+            try operation()
+        }.value
     }
 
-    private func coordinate(writingItemAt sourceURL: URL, writingItemAt destinationURL: URL, with block: (_ sourceURL: URL, _ destinationURL: URL) throws -> Void) throws {
+    private static func execute<T>(_ block: (URL) throws -> T, onSecurityScopedResource url: URL) throws -> T {
+        _ = url.startAccessingSecurityScopedResource()
+        defer { url.stopAccessingSecurityScopedResource() }
+        return try block(url)
+    }
+    
+    private static func coordinate<T>(readingItemAt url: URL, options: NSFileCoordinator.ReadingOptions = [], with block: (URL) throws -> T) throws -> T {
         var coordinatorError: NSError?
-        var managerError: Swift.Error?
+        var result: Result<T, Swift.Error>?
         let coordinator = NSFileCoordinator(filePresenter: nil)
-        coordinator.coordinate(writingItemAt: sourceURL, options: .forMoving, writingItemAt: destinationURL, options: .forReplacing, error: &coordinatorError) { (read: URL, write: URL) in
-            do {
-                _ = read.startAccessingSecurityScopedResource()
-                _ = write.startAccessingSecurityScopedResource()
-                defer {
-                    read.stopAccessingSecurityScopedResource()
-                    write.stopAccessingSecurityScopedResource()
-                }
-                try block(read, write)
-            } catch {
-                managerError = error
+        coordinator.coordinate(readingItemAt: url, options: options, error: &coordinatorError) { url in
+            result = Result { try execute(block, onSecurityScopedResource: url) }
+        }
+        guard coordinatorError == nil else { throw coordinatorError! }
+        return try result!.get()
+    }
+    
+    private static func coordinate<T>(writingItemAt url: URL, options: NSFileCoordinator.WritingOptions = [], with block: (URL) throws -> T) throws -> T {
+        var coordinatorError: NSError?
+        var result: Result<T, Swift.Error>?
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        coordinator.coordinate(writingItemAt: url, options: options, error: &coordinatorError) { url in
+            result = Result { try execute(block, onSecurityScopedResource: url) }
+        }
+        guard coordinatorError == nil else { throw coordinatorError! }
+        return try result!.get()
+    }
+    
+    private static func coordinate<T>(readingItemAt readURL: URL, readOptions: NSFileCoordinator.ReadingOptions = [], writingItemAt writeURL: URL, writeOptions: NSFileCoordinator.WritingOptions = [], with block: (_ readURL: URL, _ writeURL: URL) throws -> T) throws -> T {
+        var coordinatorError: NSError?
+        var result: Result<T, Swift.Error>?
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        coordinator.coordinate(readingItemAt: readURL, options: readOptions, writingItemAt: writeURL, options: writeOptions, error: &coordinatorError) { (read: URL, write: URL) in
+            result = Result {
+                try execute(onSecurityScopedResource: read, and: write, with: block)
             }
         }
         guard coordinatorError == nil else { throw coordinatorError! }
-        guard managerError == nil else { throw managerError! }
+        return try result!.get()
+    }
+
+    private static func coordinate<T>(writingItemAt sourceURL: URL, writingItemAt destinationURL: URL, with block: (_ sourceURL: URL, _ destinationURL: URL) throws -> T) throws -> T {
+        var coordinatorError: NSError?
+        var result: Result<T, Swift.Error>?
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        coordinator.coordinate(writingItemAt: sourceURL, options: .forMoving, writingItemAt: destinationURL, options: .forReplacing, error: &coordinatorError) { (read: URL, write: URL) in
+            result = Result {
+                try execute(onSecurityScopedResource: read, and: write, with: block)
+            }
+        }
+        guard coordinatorError == nil else { throw coordinatorError! }
+        return try result!.get()
+    }
+
+    private static func execute<T>(onSecurityScopedResource firstURL: URL, and secondURL: URL, with block: (_ firstURL: URL, _ secondURL: URL) throws -> T) throws -> T {
+        _ = firstURL.startAccessingSecurityScopedResource()
+        _ = secondURL.startAccessingSecurityScopedResource()
+        defer {
+            firstURL.stopAccessingSecurityScopedResource()
+            secondURL.stopAccessingSecurityScopedResource()
+        }
+        return try block(firstURL, secondURL)
     }
 }

@@ -7,7 +7,6 @@ import FoundationModels
 import PDFKit
 
 /// Foundation Models-based PDF block extractor for table/adventure content
-@MainActor
 struct PdfContentExtractor: Sendable {
 
     // MARK: - Configuration
@@ -25,7 +24,7 @@ struct PdfContentExtractor: Sendable {
 
     public init(
         maxPages: Int = 20,
-        maxCharacters: Int = 12000,
+        maxCharacters: Int = 7000,
         instructions: String? = nil
     ) {
         self.maxPages = maxPages
@@ -47,22 +46,24 @@ struct PdfContentExtractor: Sendable {
             throw PdfSummaryAnalysisError.emptyDocument
         }
 
+        let pageLimit = min(maxPages, pdfDocument.pageCount)
+
         // Extract text from PDF
-        let extractedText = try extractText(from: pdfDocument)
+        let extractedText = try extractText(from: pdfDocument, pageLimit: pageLimit)
 
         guard !extractedText.isEmpty else {
             throw PdfSummaryAnalysisError.textExtractionFailed
         }
 
-        let pageLimit = min(maxPages, pdfDocument.pageCount)
-
         // Generate without streaming for array types
         // Note: Foundation Models streaming for arrays doesn't provide complete objects incrementally
         do {
             var blocks: [BlockEntryGenModel] = []
-            for (index, text) in extractedText.enumerated() {
+            for page in extractedText {
                 // Report progress for current page
-                resultModel.pageProgress = PdfAnalysisProgress(currentPage: index + 1, totalPages: pageLimit)
+                await MainActor.run {
+                    resultModel.pageProgress = PdfAnalysisProgress(currentPage: page.pageNumber, totalPages: pageLimit)
+                }
 
                 let session = LanguageModelSession(instructions: instructions)
 
@@ -70,14 +71,16 @@ struct PdfContentExtractor: Sendable {
                 session.prewarm()
 
                 let response = try await session.respond(
-                    to: buildPrompt(with: text, pageNumber: index + 1, pageCount: pdfDocument.pageCount),
+                    to: buildPrompt(with: page.text, pageNumber: page.pageNumber, pageCount: pdfDocument.pageCount),
                     generating: [BlockEntryGenModel].self,
                     includeSchemaInPrompt: false
                 )
 
                 // Update extraction progress with accumulated blocks
                 blocks.append(contentsOf: response.content)
-                resultModel.extractionProgress = blocks
+                await MainActor.run {
+                    resultModel.extractionProgress = blocks
+                }
             }
             return blocks
         } catch let error as LanguageModelSession.GenerationError {
@@ -89,16 +92,25 @@ struct PdfContentExtractor: Sendable {
 
     // MARK: - Private Methods
 
-    private func extractText(from pdfDocument: PDFDocument) throws -> [String] {
-        var result: [String] = []
+    private func extractText(from pdfDocument: PDFDocument, pageLimit: Int) throws -> [FoundationModelInputLimiter.PageText] {
+        var result: [FoundationModelInputLimiter.PageText] = []
+        result.reserveCapacity(pageLimit)
 
-        for pageIndex in 0..<pdfDocument.pageCount {
+        for pageIndex in 0..<pageLimit {
             guard let page = pdfDocument.page(at: pageIndex),
-                  let pageText = page.string else {
+                  let pageText = page.string,
+                  !pageText.isEmpty else {
                 continue
             }
 
-            result.append(pageText)
+            let limited = FoundationModelInputLimiter.limitedText(pageText, maxCharacters: maxCharacters)
+            result.append(
+                FoundationModelInputLimiter.PageText(
+                    pageNumber: pageIndex + 1,
+                    text: limited,
+                    wasTruncated: limited != pageText
+                )
+            )
         }
 
         return result

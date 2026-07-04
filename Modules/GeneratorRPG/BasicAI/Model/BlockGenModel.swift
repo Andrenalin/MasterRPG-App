@@ -20,6 +20,10 @@ public struct BlockGenModel: Equatable, Identifiable, Sendable {
 
     @Guide(description: "Each category has usually several smaller chunks.")
     public var entries: [BlockEntryGenModel]
+
+    public var stableID: String {
+        "\(blockCategory.rawValue)-\(name)-\(information)"
+    }
 }
 
 @Generable()
@@ -36,6 +40,20 @@ public struct BlockEntryGenModel: Equatable, Identifiable, Sendable {
     @Guide(description: "A short title of this particular section, usually the section title.")
     public let title: String
     public let content: String
+
+    public var stableID: String {
+        "\(title)-\(content)"
+    }
+}
+
+extension BlockEntryGenModel.PartiallyGenerated {
+    var stableID: String {
+        let value = [title, content]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "-")
+        return value.isEmpty ? "pending" : value
+    }
 }
 
 #endif

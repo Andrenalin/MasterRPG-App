@@ -161,7 +161,7 @@ private extension ExtractorGenRootView {
             Button {
                 let message = prompt
                 Task {
-                    await root.generatorController.requestAdventure(message: message)
+                    await root.generatorController.requestExtraction(message: message)
                 }
                 prompt = ""
             } label: {
@@ -183,7 +183,7 @@ private extension ExtractorGenRootView {
     
     NavigationStack {
         if let model = root.itemController.itemSync(for: MockData.previewId) {
-            AdventureGenRootView(model: model, dismissAction: nil)
+            ExtractorGenRootView(model: model, dismissAction: nil)
         }
     }
 }
@@ -222,8 +222,8 @@ struct BlockGenView: View {
             }
             
             if let adventures = campaign.entries {
-                ForEach(adventures, id: \.id) { adventure in
-                    BlockEntryGenView(entry: adventure)
+                ForEach(adventures.indices, id: \.self) { index in
+                    BlockEntryGenView(entry: adventures[index])
                         .padding(.leading)
                         .background(.tint.opacity(0.3))
                 }

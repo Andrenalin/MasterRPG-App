@@ -218,12 +218,19 @@ struct AdventureGeneratorController: Sendable {
     }
 
     @MainActor func extract(message: String) {
+        guard !model.extractSession.isResponding else { return }
+
         Task {
             do {
                 let prompt = Prompt {
                     "\(message)"
                 }
-                let stream = model.extractSession.streamResponse(to: prompt, generating: [BlockEntryGenModel].self, includeSchemaInPrompt: false, options: GenerationOptions())
+                let stream = model.extractSession.streamResponse(
+                    to: prompt,
+                    generating: [BlockEntryGenModel].self,
+                    includeSchemaInPrompt: false,
+                    options: GenerationOptions(maximumResponseTokens: 1200)
+                )
 
                 for try await partialResponse in stream {
                     self.model.extracted = partialResponse.content

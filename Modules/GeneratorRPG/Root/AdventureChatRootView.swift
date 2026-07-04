@@ -27,7 +27,7 @@ struct AdventureChatRootView: View {
     
     @FocusState private var isTextFieldFocused: Bool
     
-    @State private var selectedBlocks: Set<GenerationID> = []
+    @State private var selectedBlocks: Set<String> = []
     
     var body: some View {
         FoundationBasicView {
@@ -119,16 +119,18 @@ private extension AdventureChatRootView {
                         case .prompt:
                             EmptyView()
                         case .response(_):
-                            ForEach(model.extracted) { entryBlock in
+                            ForEach(model.extracted.indices, id: \.self) { index in
+                                let entryBlock = model.extracted[index]
+                                let stableID = "\(index)-\(entryBlock.stableID)"
                                 BlockEntryGenView(entry: entryBlock)
                                     .selectListItem {
-                                        if selectedBlocks.contains(entryBlock.id) {
-                                            selectedBlocks.remove(entryBlock.id)
+                                        if selectedBlocks.contains(stableID) {
+                                            selectedBlocks.remove(stableID)
                                         } else {
-                                            selectedBlocks.insert(entryBlock.id)
+                                            selectedBlocks.insert(stableID)
                                         }
                                     } isSelected: {
-                                        selectedBlocks.contains(entryBlock.id)
+                                        selectedBlocks.contains(stableID)
                                     }
                                 
                             }

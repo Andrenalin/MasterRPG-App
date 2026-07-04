@@ -86,7 +86,7 @@ public struct PdfContentExtractionView: View {
                             .font(.subheadline)
                     }
 
-                    ForEach(model.resultModel.extractionProgress.prefix(3)) { block in
+                    ForEach(model.resultModel.extractionProgress.prefix(3), id: \.stableID) { block in
                         HStack {
                             Image(systemName: "doc.text.fill")
                                 .foregroundStyle(.blue)

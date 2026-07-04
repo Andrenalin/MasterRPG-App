@@ -5,6 +5,7 @@ import FoundationModels
 import SwiftUI
 
 @Observable
+@MainActor
 final class FoundationManager {
     private(set) var notAvailableReason: LocalizedStringKey = "Checking model availability..."
     
@@ -27,7 +28,7 @@ final class FoundationManager {
         case .unavailable(.appleIntelligenceNotEnabled):
             notAvailableReason = "Enable Apple Intelligence in System Settings."
         case .unavailable(.modelNotReady):
-            notAvailableReason = "Model not ready. Downloding or temporarily unavailable. Please wait, ensure sufficient battery and Wi-Fi."
+            notAvailableReason = "Model not ready. Downloading or temporarily unavailable. Please wait, ensure sufficient battery and Wi-Fi."
         case.unavailable(let unknownReason):
             notAvailableReason = "Model unavailable: \(String(describing: unknownReason))"
         }

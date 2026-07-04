@@ -146,7 +146,7 @@ public final class DiceRollerLiveActivityManager {
     }
 }
 
-#else
+#elseif !os(tVOS)
 // MARK: - macOS Stub Implementation
 
 import Foundation
@@ -195,4 +195,4 @@ public final class DiceRollerLiveActivityManager {
     }
 }
 
-#endif // os(iOS)
+#endif

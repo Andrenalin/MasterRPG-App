@@ -62,8 +62,7 @@ struct CloudDocumentController: Sendable {
         let url = fullUrl(filePath: filePath)
         
         // Batch download check and read into single coordinated access
-        var data: Data?
-        try await FileManager.default.updateFile(coordinatingAccessTo: url) { coordUrl in
+        return try await FileManager.default.updateFile(coordinatingAccessTo: url) { coordUrl in
             // Check if file needs to be downloaded first
             if let values = try? coordUrl.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]),
                values.ubiquitousItemDownloadingStatus != .current {
@@ -71,10 +70,8 @@ struct CloudDocumentController: Sendable {
                 // Note: This starts async download, but doesn't wait for completion
             }
             
-            data = try Data(contentsOf: coordUrl)
+            return try Data(contentsOf: coordUrl)
         }
-        
-        return data
     }
 
     func write(data: Data, to filePath: String) async throws {

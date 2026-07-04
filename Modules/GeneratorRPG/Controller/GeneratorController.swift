@@ -111,12 +111,18 @@ struct GeneratorController: Sendable {
     }
     
     @MainActor func requestAdventure(message: String) async {
+        guard !model.session.isResponding else { return }
+
         do {
             let prompt = Prompt {
                 "\(message)"
             }
 
-            let stream = model.session.streamResponse(to: prompt, generating: CampaignGenModel.self)
+            let stream = model.session.streamResponse(
+                to: prompt,
+                generating: CampaignGenModel.self,
+                options: GenerationOptions(maximumResponseTokens: 1600)
+            )
 
             for try await partialResponse in stream {
                 // Check for cancellation
@@ -150,12 +156,18 @@ struct GeneratorController: Sendable {
     }
     
     @MainActor func requestExtraction(message: String) async {
+        guard !model.session.isResponding else { return }
+
         do {
             let prompt = Prompt {
                             "\(message)"
                         }
 
-            let stream = model.session.streamResponse(to: prompt, generating: BlockGenModel.self)
+            let stream = model.session.streamResponse(
+                to: prompt,
+                generating: BlockGenModel.self,
+                options: GenerationOptions(maximumResponseTokens: 1200)
+            )
 
             for try await partialResponse in stream {
                 // Check for cancellation

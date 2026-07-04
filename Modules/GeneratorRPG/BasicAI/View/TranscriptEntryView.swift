@@ -90,11 +90,11 @@ struct TranscriptEntryView: View {
 
     private func waitForStreamingToFinish() async {
         while generatorController.model.session.isResponding, !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: 150_000_000)
+            try? await Task.sleep(for: .milliseconds(150))
         }
 
         // Give the transcript a moment to publish its final segment.
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        try? await Task.sleep(for: .milliseconds(50))
     }
 
     private func tokenCount(for entry: Transcript.Entry) async -> Int? {

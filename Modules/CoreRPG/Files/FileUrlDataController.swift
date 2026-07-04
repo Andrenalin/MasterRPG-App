@@ -177,8 +177,11 @@ public extension FileUrlDataController {
             // try to get access to the old location (single coordinated check)
             let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
             if exists && !isDir {
-                // File already exists on disk - return FileUrl without data in memory
-                return FileUrl(fileId: unconvertedFileUrl.fileId, url: unconvertedFileUrl.rawUrl, location: unconvertedFileUrl.location, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
+                if let existingData = try? await FileManager.default.contentsOfFile(coordinatingAccessAt: oldUrl),
+                   FileUrl.contentHash(of: existingData) == contentHash {
+                    // File already exists on disk - return FileUrl without data in memory
+                    return FileUrl(fileId: fileId, url: unconvertedFileUrl.rawUrl, location: unconvertedFileUrl.location, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
+                }
             }
         } catch {
             Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
@@ -294,9 +297,18 @@ public extension FileUrlDataController {
     func duplicate(fileUrl: FileUrl?, for fileId: UUID) async throws -> FileUrl? {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.duplicate(fileUrl:for:)", file: "FileUrlDataController.swift")
         
-        guard var unconverted = fileUrl, let data = try await loadData(for: unconverted) else { return nil }
-        unconverted.resetData(data)
-        return try await createNewFileUrl(fileId: fileId, unconvertedFileUrl: unconverted, pathExtension: filenameExtension)
+        do {
+            guard var unconverted = fileUrl, let data = try await loadData(for: unconverted) else { return nil }
+            unconverted.resetData(data)
+            return try await createNewFileUrl(fileId: fileId, unconvertedFileUrl: unconverted, pathExtension: filenameExtension)
+        } catch {
+            let nsError = error as NSError
+            let missingFileCodes = [NSFileNoSuchFileError, NSFileReadNoSuchFileError]
+            guard nsError.domain == NSCocoaErrorDomain && missingFileCodes.contains(nsError.code) else {
+                throw error
+            }
+            return nil
+        }
     }
 }
 
