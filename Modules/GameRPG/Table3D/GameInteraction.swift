@@ -4,7 +4,7 @@
 import TabletopKit
 import RealityKit
 
-struct GameInteraction: TabletopInteraction.Delegate {
+struct GameInteraction: @MainActor TabletopInteraction.Delegate {
     let game: GameTableModel
     
     @MainActor
@@ -12,6 +12,7 @@ struct GameInteraction: TabletopInteraction.Delegate {
         game.renderer.cursorTransform = nil
     }
 
+    @MainActor
     mutating func update(interaction: TabletopKit.TabletopInteraction) {
         var destination = interaction.value.proposedDestination?.equipmentID
         
@@ -31,6 +32,7 @@ struct GameInteraction: TabletopInteraction.Delegate {
         game.renderer.updateCursor(destination)
     }
     
+    @MainActor
     func onPhaseStarted(interaction: TabletopInteraction) {
         if game.tabletopGame.equipment(of: PlayerPawn.self, matching: interaction.value.startingEquipmentID) != nil {
         }
@@ -42,6 +44,7 @@ struct GameInteraction: TabletopInteraction.Delegate {
         
     }
     
+    @MainActor
     func onGesturePhaseEnded(interaction: TabletopInteraction) {
         if let die = game.tabletopGame.equipment(of: Die.self, matching: interaction.value.startingEquipmentID) {
             // Play a sound when a player tosses a die.
@@ -78,6 +81,7 @@ struct GameInteraction: TabletopInteraction.Delegate {
         }
     }
     
+    @MainActor
     func onPhaseEnded(interaction: TabletopInteraction) {
         /* If there isn't a proposed destination, there's nothing to do here.
          Objects moving back to their original group animate there smoothly by default. */
