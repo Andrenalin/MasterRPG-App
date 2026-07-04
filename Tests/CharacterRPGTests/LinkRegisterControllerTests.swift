@@ -17,46 +17,46 @@ struct LinkRegisterControllerTests {
     func setUp() async throws -> CharacterRootModel {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let _ = await root.editController.linkRegisterController
+        let _ = root.editController.linkRegisterController
         return root
     }
 
     @Test func addModelWithLinks() async throws {
         let root = try await setUp()
-        let sut = await root.editController.linkRegisterController
+        let sut = root.editController.linkRegisterController
 
         let diceId = UUID()
-        let diceLink = await root.diceRoot.linkControllable.generateLink(itemId: diceId)
+        let diceLink = root.diceRoot.linkControllable.generateLink(itemId: diceId)
         let photoId = UUID()
-        let photoLink = await root.photoRoot.linkControllable.generateLink(itemId: photoId)
+        let photoLink = root.photoRoot.linkControllable.generateLink(itemId: photoId)
         let item = await root.editController.addNew(type: .item)
         try #require(item != nil)
         
-        await #expect(sut.model.items.count == 0)
+        #expect(sut.model.items.count == 0)
         let itemID = item!.id
         let entryID = UUID()
         let model = ValueModel(id: itemID, name: "Super", description: "Nix", entries: [ValueEntryModel(id: entryID, name: "Good \(photoLink)", type: .text, value: diceLink)])
-        await root.editController.save(updated: model, message: "Test")
+        root.editController.save(updated: model, message: "Test")
 
-        await #expect(sut.model.items.count == 2)
-        var itemLinks = await sut.model.items[diceId]
+        #expect(sut.model.items.count == 2)
+        var itemLinks = sut.model.items[diceId]
         try #require(nil != itemLinks)
         #expect(itemLinks!.count == 1)
         #expect(itemLinks![0].source == ItemRowModel(itemId: itemID, entryId: entryID, typeId: .value))
 
-        var itemLinks2 = await sut.model.items[photoId]
+        var itemLinks2 = sut.model.items[photoId]
         #expect(nil != itemLinks2)
         #expect(itemLinks2!.count == 1)
         #expect(itemLinks2![0].source == ItemRowModel(itemId: itemID, entryId: entryID, typeId: .value))
 
-        await root.itemController.replace(model: model, isInsert: false)
+        root.itemController.replace(model: model, isInsert: false)
 
-        itemLinks = await sut.model.items[diceId]
+        itemLinks = sut.model.items[diceId]
         #expect(nil != itemLinks)
         #expect(itemLinks!.count == 1)
         #expect(itemLinks![0].source == ItemRowModel(itemId: itemID, entryId: entryID, typeId: .value))
 
-        itemLinks2 = await sut.model.items[photoId]
+        itemLinks2 = sut.model.items[photoId]
         #expect(nil != itemLinks2)
         #expect(itemLinks2!.count == 1)
         #expect(itemLinks2![0].source == ItemRowModel(itemId: itemID, entryId: entryID, typeId: .value))
@@ -66,12 +66,12 @@ struct LinkRegisterControllerTests {
 
     func isUsed() async throws {
         let root = try await setUp()
-        let sut = await root.editController.linkRegisterController
+        let sut = root.editController.linkRegisterController
 
         let diceId = UUID()
-        let diceLink = await root.diceRoot.linkControllable.generateLink(itemId: diceId)
+        let diceLink = root.diceRoot.linkControllable.generateLink(itemId: diceId)
         let photoId = UUID()
-        let photoLink = await root.photoRoot.linkControllable.generateLink(itemId: photoId)
+        let photoLink = root.photoRoot.linkControllable.generateLink(itemId: photoId)
         let itemID = UUID()
         let entryID = UUID()
 
@@ -79,7 +79,7 @@ struct LinkRegisterControllerTests {
         #expect(await sut.isUsed(link: ItemRowModel(itemId: photoId, typeId: .photo)) == false)
 
         let model = ValueModel(id: itemID, name: "Super", description: "Nix", entries: [ValueEntryModel(id: entryID, name: "Good \(photoLink)", type: .text, value: diceLink)])
-        await root.editController.save(updated: model, message: "Test")
+        root.editController.save(updated: model, message: "Test")
 
         #expect(await sut.isUsed(link: ItemRowModel(itemId: diceId, typeId: .dice)))
         #expect(await sut.isUsed(link: ItemRowModel(itemId: photoId, typeId: .photo)))

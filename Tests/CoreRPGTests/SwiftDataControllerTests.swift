@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import CoreData
-import SwiftData
+@preconcurrency import SwiftData
 import Foundation
 import Testing
 
@@ -13,24 +13,27 @@ struct SwiftDataControllerTests {
         let modelContainer = try ModelContainer(for: TestDataModel.self, configurations: .init(for: TestDataModel.self, isStoredInMemoryOnly: true))
         
         let sut = SwiftDataController<TestModel, TestDataModel>(modelContainer: modelContainer)
-        #expect(try await sut.fetch().isEmpty)
+        #expect(try await sut.fetch(transform: TestDataSnapshot.init(data:)).isEmpty)
         
         let testId = UUID()
-        let newModel = TestDataModel(uuid: testId, testName: "Mega")
-        await sut.add(data: newModel)
+        let newModel = TestModel(id: testId, testName: "Mega")
+        try await sut.replace(uuid: newModel.id, with: newModel) { model in
+            TestDataModel(uuid: model.id, testName: model.testName)
+        } updater: { model, data in
+            data.uuid = model.id
+            data.testName = model.testName
+        }
         
-        let updated = try await sut.fetch()
+        let updated = try await sut.fetch(transform: TestDataSnapshot.init(data:))
         try #require(updated.count == 1)
         #expect(updated[0].testName == "Mega")
         
-        let fetched = try await sut.fetch(uuid: testId)
+        let fetched = try await sut.fetch(uuid: testId, transform: TestDataSnapshot.init(data:))
         try #require(fetched != nil)
         #expect(fetched!.testName == "Mega")
         
         try await sut.delete(uuid: testId)
-        #expect(try await sut.fetch().isEmpty)
-        
-        await sut.delete(data: newModel)
+        #expect(try await sut.fetch(transform: TestDataSnapshot.init(data:)).isEmpty)
     }
     
     @Test func fetchWithController() async throws {
@@ -38,7 +41,7 @@ struct SwiftDataControllerTests {
         
         let sut = SwiftDataController<TestModel, TestDataModel>(modelContainer: modelContainer)
         
-        #expect(try await sut.fetch().isEmpty)
+        #expect(try await sut.fetch(transform: TestDataSnapshot.init(data:)).isEmpty)
         
         let newModel = TestModel(id: UUID(), testName: "Mega")
         try await sut.replace(uuid: newModel.id, with: newModel) { model in
@@ -48,7 +51,7 @@ struct SwiftDataControllerTests {
             data.testName = model.testName
         }
 
-        let result = try await sut.fetch()
+        let result = try await sut.fetch(transform: TestDataSnapshot.init(data:))
         try #require(result.count == 1)
         #expect(result[0].testName == newModel.testName)
 
@@ -60,17 +63,17 @@ struct SwiftDataControllerTests {
             data.testName = model.testName
         }
 
-        let updatedResult = try await sut.fetch()
+        let updatedResult = try await sut.fetch(transform: TestDataSnapshot.init(data:))
         try #require(updatedResult.count == 1)
         #expect(updatedResult[0].testName == newModel.testName)
 
         try await sut.delete(uuid: newModel.id)
-        #expect(try await sut.fetch().isEmpty)
+        #expect(try await sut.fetch(transform: TestDataSnapshot.init(data:)).isEmpty)
     }
 }
 
 @Model
-fileprivate final class TestDataModel: SwiftDataType, @unchecked Sendable {
+fileprivate final class TestDataModel: SwiftDataType {
     init(uuid: UUID, testName: String) {
         self.uuid = uuid
         self.testName = testName
@@ -78,6 +81,16 @@ fileprivate final class TestDataModel: SwiftDataType, @unchecked Sendable {
     
     var uuid: UUID?
     var testName: String
+}
+
+private struct TestDataSnapshot: Sendable {
+    init(data: TestDataModel) {
+        self.uuid = data.uuid
+        self.testName = data.testName
+    }
+
+    let uuid: UUID?
+    let testName: String
 }
 
 @Observable

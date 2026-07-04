@@ -15,22 +15,22 @@ import Testing
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = await root.exportController
+        let sut = root.exportController
 
-        var ids = await sut.exportingAll()
+        var ids = sut.exportingAll()
         try #require(ids.ids[.value] != nil)
         #expect(ids.ids[.value]!.count == 15)
 
         let itemId = await root.itemController.addNew(type: .item)
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.value] != nil)
         #expect(ids.ids[.value]!.contains(itemId))
 
         let newId = await root.itemController.addNew(type: .item)
-        let entry = await ValueEntryModel(id: UUID(), name: "Nothing", type: .text, value: root.linkController.generateLink(itemId: newId))
-        await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
+        let entry = ValueEntryModel(id: UUID(), name: "Nothing", type: .text, value: root.linkController.generateLink(itemId: newId))
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.value] != nil)
         #expect(ids.ids[.value]!.count == 17)
     }
@@ -39,19 +39,19 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
-        let edit = await root.editController
+        let sut = root.exportController
+        let edit = root.editController
 
         let item = await edit.addNew(type: .item)
         let deleted = await edit.addNew(type: .item)
         try #require(item != nil)
         try #require(deleted != nil)
-        await edit.reset(name: "keep", itemId: item!.id)
-        await edit.reset(name: "delete", itemId: deleted!.id)
+        edit.reset(name: "keep", itemId: item!.id)
+        edit.reset(name: "delete", itemId: deleted!.id)
 
         await edit.delete(itemId: deleted!.id)
 
-        let ids = await sut.exportingAll()
+        let ids = sut.exportingAll()
         try #require(ids.ids[.value] != nil)
         #expect(ids.ids[.value]!.contains(item!.id))
         #expect(!ids.ids[.value]!.contains(deleted!.id))
@@ -62,17 +62,17 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
-        let edit = await root.editController
+        let sut = root.exportController
+        let edit = root.editController
 
         let folder = await edit.addNew(type: .folder)
         try #require(folder != nil)
         let folderId = folder!.id
 
         let itemId = await root.itemController.addNew(type: .item)
-        await edit.addItem(itemId: itemId, parentId: folderId)
+        edit.addItem(itemId: itemId, parentId: folderId)
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
         let valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.contains(itemId))
@@ -84,8 +84,8 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
-        let edit = await root.editController
+        let sut = root.exportController
+        let edit = root.editController
 
         let folder = await edit.addNew(type: .folder)
         try #require(folder != nil)
@@ -93,10 +93,10 @@ struct ExportControllerTests {
 
         let itemId = await root.itemController.addNew(type: .item)
         let siblingId = await root.itemController.addNew(type: .item)
-        await edit.addItem(itemId: itemId, parentId: folderId)
-        await edit.addItem(itemId: siblingId, parentId: folderId)
+        edit.addItem(itemId: itemId, parentId: folderId)
+        edit.addItem(itemId: siblingId, parentId: folderId)
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
         let valueIds = ids.ids[.value]
         let partialIds = ids.partialIds[.value]
         try #require(valueIds != nil)
@@ -111,8 +111,8 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
-        let edit = await root.editController
+        let sut = root.exportController
+        let edit = root.editController
 
         let folder = await edit.addNew(type: .folder)
         try #require(folder != nil)
@@ -121,10 +121,10 @@ struct ExportControllerTests {
         let otherItemId = await root.itemController.addNew(type: .item)
         let itemId = await root.itemController.addNew(type: .item)
         let siblingId = await root.itemController.addNew(type: .item)
-        await edit.addItem(itemId: itemId, parentId: folderId)
-        await edit.addItem(itemId: siblingId, parentId: folderId)
+        edit.addItem(itemId: itemId, parentId: folderId)
+        edit.addItem(itemId: siblingId, parentId: folderId)
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, folderId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, folderId]), module: .value))
         let valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.contains(itemId))
@@ -138,8 +138,8 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
-        let edit = await root.editController
+        let sut = root.exportController
+        let edit = root.editController
 
         let outerFolder = await edit.addNew(type: .folder)
         let innerFolder = await edit.addNew(type: .folder)
@@ -150,11 +150,11 @@ struct ExportControllerTests {
 
         let itemId = await root.itemController.addNew(type: .item)
         let siblingId = await root.itemController.addNew(type: .item)
-        await edit.addItem(itemId: itemId, parentId: innerFolderId)
-        await edit.addItem(itemId: innerFolderId, parentId: outerFolderId)
-        await edit.addItem(itemId: siblingId, parentId: outerFolderId)
+        edit.addItem(itemId: itemId, parentId: innerFolderId)
+        edit.addItem(itemId: innerFolderId, parentId: outerFolderId)
+        edit.addItem(itemId: siblingId, parentId: outerFolderId)
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
         let valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.contains(itemId))
@@ -170,15 +170,15 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
         let characterId = await root.itemController.addNew(type: .item)
         let childId = await root.itemController.addNew(type: .item)
-        await root.itemController.itemOrEmpty(for: characterId).entries.append(
+        root.itemController.itemOrEmpty(for: characterId).entries.append(
             ValueEntryModel.fixture(valueId: childId)
         )
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
         let valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.contains(characterId))
@@ -189,19 +189,19 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
         let characterId = await root.itemController.addNew(type: .character)
         let childId = await root.itemController.addNew(type: .item)
         let grandchildId = await root.itemController.addNew(type: .item)
-        await root.itemController.itemOrEmpty(for: characterId).entries.append(
+        root.itemController.itemOrEmpty(for: characterId).entries.append(
             ValueEntryModel.fixture(valueId: childId)
         )
-        await root.itemController.itemOrEmpty(for: childId).entries.append(
+        root.itemController.itemOrEmpty(for: childId).entries.append(
             ValueEntryModel.fixture(valueId: grandchildId)
         )
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
         let valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.contains(characterId))
@@ -212,15 +212,15 @@ struct ExportControllerTests {
     @Test func exportingCharacterWithEntryDiceIdExportsDice() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = await root.exportController
-        let diceId = try #require(await root.diceRoot.exportControllable.exportingAll().ids[.dice]?.first)
+        let sut = root.exportController
+        let diceId = try #require(root.diceRoot.exportControllable.exportingAll().ids[.dice]?.first)
 
         let characterId = await root.itemController.addNew(type: .item)
-        await root.itemController.itemOrEmpty(for: characterId).entries.append(
+        root.itemController.itemOrEmpty(for: characterId).entries.append(
             ValueEntryModel.fixture(diceId: diceId)
         )
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
         let valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.contains(characterId))
@@ -230,13 +230,13 @@ struct ExportControllerTests {
     @Test func exportingCharacterWithPhotoIdExportsPhoto() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = await root.exportController
-        let photoId = try #require(await root.photoRoot.exportControllable.exportingAll().ids[.photo]?.first)
+        let sut = root.exportController
+        let photoId = try #require(root.photoRoot.exportControllable.exportingAll().ids[.photo]?.first)
 
         let characterId = await root.itemController.addNew(type: .item)
-        await root.itemController.itemOrEmpty(for: characterId).photoId = photoId
+        root.itemController.itemOrEmpty(for: characterId).photoId = photoId
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
         let valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.contains(characterId))
@@ -246,22 +246,22 @@ struct ExportControllerTests {
     @Test func exportingCharacterWithEntryTextLinksExportsCrossModuleItems() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = await root.exportController
-        let diceId = try #require(await root.diceRoot.exportControllable.exportingAll().ids[.dice]?.first)
+        let sut = root.exportController
+        let diceId = try #require(root.diceRoot.exportControllable.exportingAll().ids[.dice]?.first)
         let pdfId = await root.pdfRoot.itemControllable.addNew(type: .item)
-        let tableId = try #require(await root.tableRoot.exportControllable.exportingAll().ids[.table]?.first)
+        let tableId = try #require(root.tableRoot.exportControllable.exportingAll().ids[.table]?.first)
 
-        let diceLink = await root.diceRoot.linkControllable.generateLink(linkNumber: 0, itemId: diceId, entryId: nil)
-        let pdfLink = await root.pdfRoot.linkControllable.generateLink(linkNumber: 0, itemId: pdfId, entryId: nil)
-        let tableLink = await root.tableRoot.linkControllable.generateLink(linkNumber: 0, itemId: tableId, entryId: nil)
+        let diceLink = root.diceRoot.linkControllable.generateLink(linkNumber: 0, itemId: diceId, entryId: nil)
+        let pdfLink = root.pdfRoot.linkControllable.generateLink(linkNumber: 0, itemId: pdfId, entryId: nil)
+        let tableLink = root.tableRoot.linkControllable.generateLink(linkNumber: 0, itemId: tableId, entryId: nil)
 
         let characterId = await root.itemController.addNew(type: .item)
-        let character = await root.itemController.itemOrEmpty(for: characterId)
+        let character = root.itemController.itemOrEmpty(for: characterId)
         character.entries.append(ValueEntryModel.fixture(name: "With Dice Link", value: diceLink))
         character.entries.append(ValueEntryModel.fixture(name: "With Pdf Link", value: pdfLink))
         character.entries.append(ValueEntryModel.fixture(name: tableLink, value: "With Table Link"))
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([characterId]), module: .value))
         let valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.contains(characterId))
@@ -274,17 +274,17 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
-        let edit = await root.editController
+        let sut = root.exportController
+        let edit = root.editController
 
         let collection = await edit.addNew(type: .collection)
         try #require(collection != nil)
         let collectionId = collection!.id
 
         let itemId = await root.itemController.addNew(type: .item)
-        await edit.addItem(itemId: itemId, parentId: collectionId)
+        edit.addItem(itemId: itemId, parentId: collectionId)
 
-        let ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
         let valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.contains(itemId))
@@ -295,16 +295,16 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
         let itemId = await root.itemController.addNew(type: .item)
 
         let newId = await root.itemController.addNew(type: .item)
-        let url = await root.itemController.itemOrEmpty(for: newId).url(linkNumber: 0)
+        let url = root.itemController.itemOrEmpty(for: newId).url(linkNumber: 0)
         let entry = ValueEntryModel(id: UUID(), name: "Nothing", type: .text, value: "\(url)")
-        await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
-        var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .value))
+        var ids = sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .value))
         var valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.count == 2)
@@ -312,7 +312,7 @@ struct ExportControllerTests {
         #expect(valueIds!.contains(newId))
 
         let notConnected = await root.itemController.addNew(type: .item)
-        ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
+        ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
         valueIds = ids.ids[.value]
         try #require(valueIds != nil)
         #expect(valueIds!.count == 2)

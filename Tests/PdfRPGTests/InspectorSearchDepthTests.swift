@@ -84,7 +84,7 @@ struct InspectorSearchDepthTests {
 
         let res = await results(root: root, text: "Dra")
 
-        let itemResult = try? res.first(where: { $0.itemId == itemId })
+        let itemResult = res.first(where: { $0.itemId == itemId })
         #expect(itemResult != nil, "Item must appear via entry name match at 3 chars")
         #expect(itemResult?.children.contains(where: { $0.entryId == entryId }) == true,
                 "Matching entry must be a child at 3-char threshold")
@@ -113,7 +113,7 @@ struct InspectorSearchDepthTests {
         // 2 item-level matches → wide mode → item3 pulled in by content match
         #expect(res.map(\.itemId).contains(item3),
                 "Item3 must be pulled in by entry content match when < 10 item-level matches")
-        let item3Result = try? res.first(where: { $0.itemId == item3 })
+        let item3Result = res.first(where: { $0.itemId == item3 })
         #expect(item3Result?.children.contains(where: { $0.entryId == contentEntryId }) == true,
                 "Content-matching entry must be a child of item3")
     }
@@ -131,7 +131,7 @@ struct InspectorSearchDepthTests {
 
         let res = await results(root: root, text: "Dragon")
 
-        let item1Result = try? res.first(where: { $0.itemId == item1 })
+        let item1Result = res.first(where: { $0.itemId == item1 })
         #expect(item1Result?.children.contains(where: { $0.entryId == nameEntryId }) == true,
                 "Entry matching by name must appear as child in wide mode")
     }
@@ -161,7 +161,7 @@ struct InspectorSearchDepthTests {
 
         let res = await results(root: root, text: "Dragon")
 
-        let first = try? res.first(where: { $0.itemId == topItemIds[0] })
+        let first = res.first(where: { $0.itemId == topItemIds[0] })
         #expect(first?.children.contains(where: { $0.entryId == contentOnlyEntry }) == false,
                 "Content-only entry must NOT appear when ≥ 10 item matches and > 5 name hits")
     }
@@ -189,7 +189,7 @@ struct InspectorSearchDepthTests {
 
         let res = await results(root: root, text: "Dragon")
 
-        let item4Result = try? res.first(where: { $0.itemId == topItemIds[3] })
+        let item4Result = res.first(where: { $0.itemId == topItemIds[3] })
         #expect(item4Result?.children.contains(where: { $0.entryId == contentEntry }) == true,
                 "Content entry must appear when total entry-name hits ≤ 5 (expand-to-content)")
     }
@@ -215,7 +215,7 @@ struct InspectorSearchDepthTests {
 
         let res = await results(root: root, text: "Dragon")
 
-        let item6Result = try? res.first(where: { $0.itemId == topItemIds[5] })
+        let item6Result = res.first(where: { $0.itemId == topItemIds[5] })
         #expect(item6Result?.children.contains(where: { $0.entryId == contentEntry }) == true,
                 "5 name hits is the boundary — content must still be included (≤ 5)")
     }
@@ -241,7 +241,7 @@ struct InspectorSearchDepthTests {
 
         let res = await results(root: root, text: "Dragon")
 
-        let item7Result = try? res.first(where: { $0.itemId == topItemIds[6] })
+        let item7Result = res.first(where: { $0.itemId == topItemIds[6] })
         #expect(item7Result?.children.contains(where: { $0.entryId == contentEntry }) == false,
                 "6 name hits exceeds threshold — content-only entry must be excluded")
     }
@@ -278,9 +278,9 @@ struct InspectorSearchDepthTests {
         #expect(ids.contains(entryNameMatch), "Entry name match must appear")
         #expect(ids.contains(contentOnly), "Content match must appear (wide mode, < 10 items)")
 
-        let nameIdx    = try? ids.firstIndex(of: itemNameMatch)
-        let entryIdx   = try? ids.firstIndex(of: entryNameMatch)
-        let contentIdx = try? ids.firstIndex(of: contentOnly)
+        let nameIdx    = ids.firstIndex(of: itemNameMatch)
+        let entryIdx   = ids.firstIndex(of: entryNameMatch)
+        let contentIdx = ids.firstIndex(of: contentOnly)
 
         if let n = nameIdx, let e = entryIdx {
             #expect(n <= e, "Item name match must rank at or above entry name match")
@@ -305,7 +305,7 @@ struct InspectorSearchDepthTests {
 
         let res = await results(root: root, text: "Dragon")
 
-        let itemResult = try? res.first(where: { $0.itemId == itemId })
+        let itemResult = res.first(where: { $0.itemId == itemId })
         let children = itemResult?.children ?? []
         #expect(children.count >= 2, "Both entries must appear")
 

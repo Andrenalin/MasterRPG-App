@@ -22,22 +22,22 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
-        var ids = await sut.exportingAll()
+        var ids = sut.exportingAll()
         try #require(ids.ids[.adventure] != nil)
         #expect(ids.ids[.adventure]!.isEmpty)
 
         let itemId = await root.itemController.addNew(type: .item)
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.adventure] != nil)
         #expect(ids.ids[.adventure]! == [itemId])
 
         let newId = await root.itemController.addNew(type: .item)
-        let entry = await AdventureEntryModel(id: UUID(), name: "Nothing", content: root.linkController.generateLink(itemId: newId))
-        await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
+        let entry = AdventureEntryModel(id: UUID(), name: "Nothing", content: root.linkController.generateLink(itemId: newId))
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.adventure] != nil)
         #expect(ids.ids[.adventure]!.count == 2)
     }
@@ -46,20 +46,20 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
-        let edit = await root.editController
+        let sut = root.exportController
+        let edit = root.editController
 
         
         let item = await edit.addNew(type: .item)
         let deleted = await edit.addNew(type: .item)
         try #require(item != nil)
         try #require(deleted != nil)
-        await edit.reset(name: "keep", itemId: item!.id)
-        await edit.reset(name: "delete", itemId: deleted!.id)
+        edit.reset(name: "keep", itemId: item!.id)
+        edit.reset(name: "delete", itemId: deleted!.id)
 
         await edit.delete(itemId: deleted!.id)
 
-        let ids = await sut.exportingAll()
+        let ids = sut.exportingAll()
         try #require(ids.ids[.adventure] != nil)
         #expect(ids.ids[.adventure]!.contains(item!.id))
         #expect(!ids.ids[.adventure]!.contains(deleted!.id))
@@ -70,16 +70,16 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
         let itemId = await root.itemController.addNew(type: .item)
 
         let newId = await root.itemController.addNew(type: .item)
-        let url = await root.itemController.itemOrEmpty(for: newId).url(linkNumber: 0)
+        let url = root.itemController.itemOrEmpty(for: newId).url(linkNumber: 0)
         let entry = AdventureEntryModel(id: UUID(), name: "Nothing", content: "\(url)")
-        await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
-        var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .adventure))
+        var ids = sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .adventure))
         var adventureIds = ids.ids[.adventure]
         try #require(adventureIds != nil)
         #expect(adventureIds!.count == 2)
@@ -87,7 +87,7 @@ struct ExportControllerTests {
         #expect(adventureIds!.contains(newId))
 
         let notConnected = await root.itemController.addNew(type: .item)
-        ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .adventure))
+        ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .adventure))
         adventureIds = ids.ids[.adventure]
         try #require(adventureIds != nil)
         #expect(adventureIds!.count == 2)

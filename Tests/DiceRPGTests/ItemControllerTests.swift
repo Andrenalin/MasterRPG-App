@@ -12,7 +12,7 @@ struct ItemControllerTests {
     @Test func addNewItem() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = await root.itemController
+        let sut = root.itemController
         
         // Act
         let itemId = await sut.addNew(type: .item)
@@ -28,14 +28,14 @@ struct ItemControllerTests {
         }
         
         // Check that the item was added to the data model
-        let items = await sut.itemDataModel.items
+        let items = sut.itemDataModel.items
         #expect(items.contains(itemId), "Item should be in the data model")
     }
     
     @Test func addNewFolder() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = await root.itemController
+        let sut = root.itemController
         
         // Act
         let itemId = await sut.addNew(type: .folder)
@@ -54,13 +54,13 @@ struct ItemControllerTests {
     @Test func copyOfItem() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = await root.itemController
+        let sut = root.itemController
         
         // Create a test item
         let itemId = await sut.addNew(type: .item)
         
         // Act
-        let copiedItem = await sut.copy(of: itemId)
+        let copiedItem = sut.copy(of: itemId)
         
         // Assert
         #expect(copiedItem != nil, "Copy should return a non-nil item")
@@ -80,11 +80,11 @@ struct ItemControllerTests {
     @Test func deleteItem() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = await root.itemController
+        let sut = root.itemController
         
         // Create a test item
         let itemId = await sut.addNew(type: .item)
-        let initialItemCount = await sut.itemDataModel.items.count
+        let initialItemCount = sut.itemDataModel.items.count
         
         // Verify item exists before deletion
         let itemBeforeDelete = await sut.item(for: itemId)
@@ -99,27 +99,27 @@ struct ItemControllerTests {
         #expect(itemAfterDelete == nil, "Item should not exist after deletion")
         
         // Check that item was removed from data model
-        let finalItemCount = await sut.itemDataModel.items.count
+        let finalItemCount = sut.itemDataModel.items.count
         #expect(finalItemCount == initialItemCount - 1, "Item count should be decreased by 1")
     }
     
     @Test func isEqualWithSameItem() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = await root.itemController
+        let sut = root.itemController
         
         // Create a test item
         let itemId = await sut.addNew(type: .item)
         
         // Get the item and a copy of it
         let item = await sut.item(for: itemId)
-        let copy = await sut.copy(of: itemId)
+        let copy = sut.copy(of: itemId)
         
         #expect(item != nil && copy != nil, "Both item and copy should exist")
         
         // Act
         if let copy {
-            let isEqual = await sut.isEqual(with: copy)
+            let isEqual = sut.isEqual(with: copy)
             
             // Assert
             #expect(isEqual == true, "Item should be equal to its copy")
@@ -129,7 +129,7 @@ struct ItemControllerTests {
     @Test func isEqualWithDifferentItems() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = await root.itemController
+        let sut = root.itemController
         
         // Create two different items
         let itemId1 = await sut.addNew(type: .item)
@@ -144,7 +144,7 @@ struct ItemControllerTests {
             // Create a modified copy with the first item's ID to test isEqual
             let modifiedCopy = secondItem.copy(withId: itemId1)
             
-            let isEqual = await sut.isEqual(with: modifiedCopy)
+            let isEqual = sut.isEqual(with: modifiedCopy)
             
             // Assert
             #expect(isEqual == false, "Different items should not be equal")

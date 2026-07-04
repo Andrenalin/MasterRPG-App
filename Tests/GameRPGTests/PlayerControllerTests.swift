@@ -27,17 +27,17 @@ struct PlayerControllerTestEnvironment {
     static func create() async throws -> PlayerControllerTestEnvironment {
         let masterDelegateSpy = MasterNetworkStoreDelegateMock()
         let playerDelegateSpy = PlayerNetworkStoreDelegateMock()
-        let masterNetworkSpy = await MasterNetworkControllableMock()
-        let playerNetworkSpy = await PlayerStoreAbstractionMock()
+        let masterNetworkSpy = MasterNetworkControllableMock()
+        let playerNetworkSpy = PlayerStoreAbstractionMock()
 
-        let networkController = await GameNetworkController(
+        let networkController = GameNetworkController(
             name: "Hello Test",
             proxy: false,
             masterBuilder: { _, _ in masterNetworkSpy },
             playerBuilder: { _, _ in playerNetworkSpy }
         )
-        await networkController.model.setMasterDelegate(masterDelegateSpy)
-        await networkController.model.setPlayerDelegate(playerDelegateSpy)
+        networkController.model.setMasterDelegate(masterDelegateSpy)
+        networkController.model.setPlayerDelegate(playerDelegateSpy)
 
         let root = try await MockRoot.createGameRoot()
         try await MockRoot.resetTestData(for: root.adventureRoot)
@@ -49,9 +49,9 @@ struct PlayerControllerTestEnvironment {
         let playerId = UUID()
         let gameConfig = GameConfigModel(id: playerId, state: .started, master: .empty)
         let gameRoster = GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")])
-        await root.gameModel.reset(gameConfig: gameConfig, gameRoster: gameRoster)
+        root.gameModel.reset(gameConfig: gameConfig, gameRoster: gameRoster)
 
-        let playerController = await PlayerController(root: root, asGameMaster: false)
+        let playerController = PlayerController(root: root, asGameMaster: false)
 
         return PlayerControllerTestEnvironment(
             playerController: playerController,
@@ -75,10 +75,10 @@ struct PlayerControllerTests {
         // Arrange
         let env = try await PlayerControllerTestEnvironment.create()
         try await MockRoot.importTestData(into: env.root.adventureRoot)
-        await env.root.adventureRoot.startGame()
+        env.root.adventureRoot.startGame()
 
-        await #expect(env.root.photoRoot.itemControllable.itemDataModel.items.count == 32)
-        let itemId = await env.root.photoRoot.itemControllable.itemDataModel.items[0]
+        #expect(env.root.photoRoot.itemControllable.itemDataModel.items.count == 32)
+        let itemId = env.root.photoRoot.itemControllable.itemDataModel.items[0]
         let netData = try await env.root.photoRoot.gameControllable.createGameData(for: itemId)
         let netId = await env.root.photoRoot.gameControllable.share(id: itemId)
 
@@ -95,13 +95,13 @@ struct PlayerControllerTests {
 
         var result = try await env.playerController.handle(gameNetworkModel)
         #expect(result?.subType == .ok)
-        await #expect(env.root.photoRoot.gameControllable.currentId == itemId)
+        #expect(await env.root.photoRoot.gameControllable.currentId == itemId)
 
         // Act & Assert - Reset and handle with ID only
         await env.root.photoRoot.gameControllable.reset()
-        await #expect(env.root.photoRoot.gameControllable.currentId != itemId)
+        #expect(await env.root.photoRoot.gameControllable.currentId != itemId)
         let item = await env.root.photoRoot.itemControllable.item(for: itemId)
-        await env.root.photoRoot.itemControllable.itemDataModel.resetModel(id: itemId)
+        env.root.photoRoot.itemControllable.itemDataModel.resetModel(id: itemId)
 
         gameNetworkModel = GameNetworkModel(
             version: 1,
@@ -114,7 +114,7 @@ struct PlayerControllerTests {
         )
         result = try await env.playerController.handle(gameNetworkModel)
         #expect(result?.subType == .show)
-        await #expect(env.root.photoRoot.gameControllable.currentId != itemId)
+        #expect(await env.root.photoRoot.gameControllable.currentId != itemId)
 
         // Act & Assert - Handle with data again
         gameNetworkModel = GameNetworkModel(
@@ -128,9 +128,10 @@ struct PlayerControllerTests {
         )
         result = try await env.playerController.handle(gameNetworkModel)
         #expect(result?.subType == .ok)
-        await #expect(env.root.photoRoot.gameControllable.currentId == itemId)
-        await #expect(env.root.photoRoot.itemControllable.item(for: itemId) != nil)
-        await #expect(env.root.photoRoot.itemControllable.item(for: itemId)?.name == item?.name)
+        #expect(await env.root.photoRoot.gameControllable.currentId == itemId)
+        let restoredItem = await env.root.photoRoot.itemControllable.item(for: itemId)
+        #expect(restoredItem != nil)
+        #expect(restoredItem?.name == item?.name)
     }
 }
 #endif

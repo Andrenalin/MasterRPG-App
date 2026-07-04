@@ -16,27 +16,27 @@ import Testing
 struct ItemControllerTests {
     @Test func duplicate() async throws {
         let root = try await MockRoot.importTestData()
-        let _ = await root.itemController
+        let _ = root.itemController
         
-        await root.linkController.validateParentId()
-        let originalId = await root.itemController.itemDataModel.items[0]
+        root.linkController.validateParentId()
+        let originalId = root.itemController.itemDataModel.items[0]
         #expect(originalId == UUID(uuidString: "E8AB89DA-4BB7-4C6E-BD6F-88A5AC5A8358")!)
-        let beforeItemIds = await root.itemController.itemDataModel.items
+        let beforeItemIds = root.itemController.itemDataModel.items
         #expect(beforeItemIds.count == 15)
-        let item = await root.itemController.itemOrEmpty(for: originalId)
+        let item = root.itemController.itemOrEmpty(for: originalId)
         #expect(item.entries.count == 11)
         #expect(nil == item.parentId)
         
         for subitemId in item.entries.compactMap({ $0.valueId }) {
-            let subitem = await root.itemController.itemOrEmpty(for: subitemId)
+            let subitem = root.itemController.itemOrEmpty(for: subitemId)
             #expect(subitem.groupId == originalId)
         }
 
         let _ = await root.editController.duplicate(itemId: originalId, withCopy: true)
-        await #expect(root.itemController.itemDataModel.items.count == 30)
+        #expect(root.itemController.itemDataModel.items.count == 30)
 
-        let newItemIds = await root.itemController.itemDataModel.items.filter { !beforeItemIds.contains($0) }
-        let copiedItem = await root.itemController.itemOrEmpty(for: newItemIds[0])
+        let newItemIds = root.itemController.itemDataModel.items.filter { !beforeItemIds.contains($0) }
+        let copiedItem = root.itemController.itemOrEmpty(for: newItemIds[0])
         #expect(copiedItem.name.hasPrefix(item.name))
         #expect(copiedItem.entries.count == 11)
         #expect(nil == copiedItem.parentId)
@@ -44,8 +44,8 @@ struct ItemControllerTests {
         for (index, entry) in copiedItem.entries.enumerated() {
             guard let valueId = entry.valueId else { continue }
             #expect(item.entries[index].valueId != valueId)
-            let subCopy = await root.itemController.itemOrEmpty(for: valueId)
-            let subOrig = await root.itemController.itemOrEmpty(for: item.entries[index].valueId!)
+            let subCopy = root.itemController.itemOrEmpty(for: valueId)
+            let subOrig = root.itemController.itemOrEmpty(for: item.entries[index].valueId!)
             #expect(!subCopy.isSame(subOrig))
             #expect(subCopy.groupId == copiedItem.id)
             #expect(subOrig.groupId == item.id)

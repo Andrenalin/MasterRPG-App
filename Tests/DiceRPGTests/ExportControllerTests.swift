@@ -9,36 +9,36 @@ import Testing
 @MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
-        let root = await DiceRootModel.testRoot()
+        let root = DiceRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = await root.exportController
+        let sut = root.exportController
         
-        var ids = await sut.exportingAll()
+        var ids = sut.exportingAll()
         try #require(ids.ids[.dice] != nil)
         #expect(ids.ids[.dice]!.isEmpty)
         
         let itemId = await root.itemController.addNew(type: .item)
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.dice] != nil)
         #expect(ids.ids[.dice]! == [itemId])
         
         let _ = await root.itemController.addNew(type: .item)
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.dice] != nil)
         #expect(ids.ids[.dice]!.count == 2)
     }
     
     @Test func exporting() async throws {
-        let root = await DiceRootModel.testRoot()
+        let root = DiceRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = await root.exportController
+        let sut = root.exportController
         
         let itemId = await root.itemController.addNew(type: .item)
 
         let newId = await root.itemController.addNew(type: .item)
-        var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .dice))
+        var ids = sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .dice))
         var diceIds = ids.ids[.dice]
         try #require(diceIds != nil)
         #expect(diceIds!.count == 1)
@@ -46,7 +46,7 @@ struct ExportControllerTests {
         #expect(!diceIds!.contains(newId))
 
         let notConnected = await root.itemController.addNew(type: .item)
-        ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .dice))
+        ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .dice))
         diceIds = ids.ids[.dice]
         try #require(diceIds != nil)
         #expect(diceIds!.count == 2)

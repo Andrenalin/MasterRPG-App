@@ -10,7 +10,7 @@ import Testing
 @MainActor
 struct DiceRootTests {
     @Test func importer() async throws {
-        let sut = await DiceRootModel.testRoot()
+        let sut = DiceRootModel.testRoot()
         await sut.itemController.resetData()
         
         let dice = DiceModel(
@@ -36,14 +36,14 @@ struct DiceRootTests {
             resultCategory: ResultCategory(id: UUID(), module: .table)
         )
 
-        await sut.itemController.replace(model: dice, isInsert: true)
+        sut.itemController.replace(model: dice, isInsert: true)
 
-        #expect(await sut.itemController.itemDataModel.items.count == 1)
+        #expect(sut.itemController.itemDataModel.items.count == 1)
         
         await sut.gameController.focus(on: dice.id)
-        #expect(await sut.gameController.isFocusedDice(itemId: dice.id))
+        #expect(sut.gameController.isFocusedDice(itemId: dice.id))
         
-        await sut.editController.remove(die: dice.dice[0], itemId: dice.id)
+        sut.editController.remove(die: dice.dice[0], itemId: dice.id)
         #expect(await sut.itemController.item(for: dice.id)?.dice.count == 0)
     }
 }

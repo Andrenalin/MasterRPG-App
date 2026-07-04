@@ -12,43 +12,43 @@ import Testing
 @MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
-        let root = await WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
+        let root = WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
         await root.itemController.resetData()
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
-        var ids = await sut.exportingAll()
+        var ids = sut.exportingAll()
         try #require(ids.ids[.weather] != nil)
         #expect(ids.ids[.weather]!.isEmpty)
 
         let itemId = await root.itemController.addNew(type: .item)
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.weather] != nil)
         #expect(ids.ids[.weather]! == [itemId])
 
         let _ = await root.itemController.addNew(type: .item)
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.weather] != nil)
         #expect(ids.ids[.weather]!.count == 2)
     }
 
     @Test func exportingAllAfterDeletion() async throws {
-        let root = await WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
+        let root = WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
         await root.itemController.resetData()
 
-        let sut = await root.exportController
-        let edit = await root.editController
+        let sut = root.exportController
+        let edit = root.editController
 
         let item = await edit.addNew(type: .item)
         let deleted = await edit.addNew(type: .item)
         try #require(item != nil)
         try #require(deleted != nil)
-        await edit.reset(name: "keep", itemId: item!.id)
-        await edit.reset(name: "delete", itemId: deleted!.id)
+        edit.reset(name: "keep", itemId: item!.id)
+        edit.reset(name: "delete", itemId: deleted!.id)
 
         await edit.delete(itemId: deleted!.id)
 
-        let ids = await sut.exportingAll()
+        let ids = sut.exportingAll()
         try #require(ids.ids[.weather] != nil)
         #expect(ids.ids[.weather]!.contains(item!.id))
         #expect(!ids.ids[.weather]!.contains(deleted!.id))
@@ -56,16 +56,16 @@ struct ExportControllerTests {
     }
 
     @Test func exporting() async throws {
-        let root = await WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
+        let root = WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
         await root.itemController.resetData()
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
         let itemId = await root.itemController.addNew(type: .item)
 
         let newId = await root.itemController.addNew(type: .item)
 
-        var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .weather))
+        var ids = sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .weather))
         var weatherIds = ids.ids[.weather]
         try #require(weatherIds != nil)
         #expect(weatherIds!.count == 1)
@@ -73,7 +73,7 @@ struct ExportControllerTests {
         #expect(!weatherIds!.contains(newId))
 
         let notConnected = await root.itemController.addNew(type: .item)
-        ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .weather))
+        ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .weather))
         weatherIds = ids.ids[.weather]
         try #require(weatherIds != nil)
         #expect(weatherIds!.count == 2)

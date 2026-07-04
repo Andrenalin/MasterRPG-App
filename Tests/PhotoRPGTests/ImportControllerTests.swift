@@ -10,10 +10,10 @@ import Testing
 @MainActor
 struct ImportControllerTests {
     @Test func importing() async throws {
-        let root = await PhotoRootModel.testRoot()
+        let root = PhotoRootModel.testRoot()
         await root.itemController.resetData()
 
-        let sut = await root.importController
+        let sut = root.importController
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.photoTestData, withExtension: "gmz").unsafelyUnwrapped

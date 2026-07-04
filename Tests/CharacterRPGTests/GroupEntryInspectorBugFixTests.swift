@@ -94,7 +94,7 @@ struct GroupEntryInspectorBugFixTests {
 
         // Toggle opens the group entry and loads sub-entries via loadChildrenViaSearch.
         // resetFilter() must then rebuild detailListModel.list (Bug 1 fix).
-        await root.folderLinkController.toggleFolder(item: groupItem)
+        root.folderLinkController.toggleFolder(item: groupItem)
 
         let updatedList = root.folderLinkController.listModel.detailListModel?.list ?? []
         #expect(updatedList.contains(where: { $0.source.entryId == subEntryId }),
@@ -118,7 +118,7 @@ struct GroupEntryInspectorBugFixTests {
         )
 
         // Open then close
-        await root.folderLinkController.toggleFolder(item: groupItem)
+        root.folderLinkController.toggleFolder(item: groupItem)
         #expect(root.folderLinkController.listModel.detailListModel?.list
             .contains(where: { $0.source.entryId == subEntryId }) == true,
                 "Sub-entry visible after open")
@@ -127,7 +127,7 @@ struct GroupEntryInspectorBugFixTests {
             root.folderLinkController.listModel.detailListModel?.list
                 .first(where: { $0.source.entryId == groupEntryId })
         )
-        await root.folderLinkController.toggleFolder(item: openedItem)
+        root.folderLinkController.toggleFolder(item: openedItem)
 
         #expect(!root.folderLinkController.listModel.detailListModel!.list
             .contains(where: { $0.source.entryId == subEntryId }),
@@ -180,7 +180,7 @@ struct GroupEntryInspectorBugFixTests {
             root.folderLinkController.listModel.detailListModel?.list
                 .first(where: { $0.source.entryId == groupEntryId })
         )
-        await root.folderLinkController.toggleFolder(item: groupItem)
+        root.folderLinkController.toggleFolder(item: groupItem)
 
         let subEntryItem = try #require(
             root.folderLinkController.listModel.detailListModel?.list
@@ -442,7 +442,7 @@ struct CharacterInspectorToggleAllContentTests {
         #expect(groupItem.isOpen == false,  "Starts closed (sub-entries don't match 'Combat')")
 
         // Toggle → ALL sub-entries must appear (not just 'Combat' matches)
-        await root.folderLinkController.toggleFolder(item: groupItem)
+        root.folderLinkController.toggleFolder(item: groupItem)
 
         let detailList = root.folderLinkController.listModel.detailListModel?.list ?? []
         #expect(detailList.contains(where: { $0.source.entryId == subE1 }),
@@ -480,7 +480,7 @@ struct CharacterInspectorToggleAllContentTests {
         #expect(charItem.isOpen == false,  "Starts closed")
 
         // Toggle → ALL entries must appear (none match "Aragorn" by entry name)
-        await root.folderLinkController.toggleFolder(item: charItem)
+        root.folderLinkController.toggleFolder(item: charItem)
 
         let flat = root.folderLinkController.listModel.list
         #expect(flat.contains(where: { $0.source.entryId == e1 }), "Sword Skill must appear")

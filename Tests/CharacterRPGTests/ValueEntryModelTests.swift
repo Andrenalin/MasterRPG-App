@@ -109,63 +109,63 @@ struct ValueEntryModelTests {
 
         var start = "12+601"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 613.0)
+        #expect(Calculator.calculate(start) == 613.0)
 
         start = "2"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 2.0)
+        #expect(Calculator.calculate(start) == 2.0)
         start = " 2"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 2.0)
+        #expect(Calculator.calculate(start) == 2.0)
 
         start = "2-"
         sut.value = start
-        await #expect(Calculator.calculate(start) == nil)
+        #expect(Calculator.calculate(start) == nil)
 
         start = "2+"
         sut.value = start
-        await #expect(Calculator.calculate(start) == nil)
+        #expect(Calculator.calculate(start) == nil)
 
         start = "2-6"
         sut.value = start
-        await #expect(Calculator.calculate(start) == -4.0)
+        #expect(Calculator.calculate(start) == -4.0)
 
         start = "2*6"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 12.0)
+        #expect(Calculator.calculate(start) == 12.0)
 
         sut.reset(valueType: .decimal)
         start = "7/2 + 1+2*3"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 10.5)
+        #expect(Calculator.calculate(start) == 10.5)
 
         sut.reset(valueType: .number)
         start = "4 +6 -4* 2+4 *  3"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 14.0)
+        #expect(Calculator.calculate(start) == 14.0)
         start = "4+6-4*2+4*3"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 14.0)
+        #expect(Calculator.calculate(start) == 14.0)
 
         sut.reset(valueType: .decimal)
         start = "4/2 +6/2 -4/2* 2+4 *  3"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 13.0)
+        #expect(Calculator.calculate(start) == 13.0)
         start = "4/2+6/2-4/2*2+4*3"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 13.0)
+        #expect(Calculator.calculate(start) == 13.0)
 
         start = "4+0+10+2+2 +2+ 10"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 30.0)
+        #expect(Calculator.calculate(start) == 30.0)
 
         start = "4+0+1+2+ 2"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 9.0)
+        #expect(Calculator.calculate(start) == 9.0)
 
         start = "252+4+1400-140+1"
         sut.value = start
-        await #expect(Calculator.calculate(start) == 1517.0)
+        #expect(Calculator.calculate(start) == 1517.0)
     }
     
     @Test func valueNumber() async throws {

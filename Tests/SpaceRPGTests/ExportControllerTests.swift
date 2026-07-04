@@ -11,41 +11,41 @@ import Testing
 @MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
-        let root = await SpaceRootModel.testRoot()
+        let root = SpaceRootModel.testRoot()
         await root.itemController.resetData()
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
-        var ids = await sut.exportingAll()
+        var ids = sut.exportingAll()
         try #require(ids.ids[.space] != nil)
         #expect(ids.ids[.space]!.isEmpty)
 
         let itemId = await root.itemController.addNew(type: .item)
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.space] != nil)
         #expect(ids.ids[.space]! == [itemId])
 
         let newId = await root.itemController.addNew(type: .item)
         let entry = SpaceEntryModel(id: UUID(), spaceId: newId)
-        await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.space] != nil)
         #expect(ids.ids[.space]!.count == 2)
     }
 
     @Test func exporting() async throws {
-        let root = await SpaceRootModel.testRoot()
+        let root = SpaceRootModel.testRoot()
         await root.itemController.resetData()
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
         let itemId = await root.itemController.addNew(type: .item)
 
         let newId = await root.itemController.addNew(type: .item)
 
         let _ = SpaceEntryModel(id: UUID(), spaceId: newId)
-        var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .space))
+        var ids = sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .space))
         var spaceIds = ids.ids[.space]
         try #require(spaceIds != nil)
         #expect(spaceIds!.count == 1)
@@ -53,7 +53,7 @@ struct ExportControllerTests {
         #expect(!spaceIds!.contains(newId))
 
         let notConnected = await root.itemController.addNew(type: .item)
-        ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .space))
+        ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .space))
         spaceIds = ids.ids[.space]
         try #require(spaceIds != nil)
         #expect(spaceIds!.count == 2)

@@ -23,13 +23,13 @@ struct ImportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.importController
+        let sut = root.importController
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.adventureTestData, withExtension: "gmz").unsafelyUnwrapped
         let task = sut.importUrl(from: url)
         let _ = try await task.value
-        await #expect(root.itemController.itemDataModel.items.count == 3)
+        #expect(root.itemController.itemDataModel.items.count == 3)
     }
 }
 #endif

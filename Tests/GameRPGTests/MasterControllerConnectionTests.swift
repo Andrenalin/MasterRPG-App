@@ -15,7 +15,7 @@ struct MasterControllerModelConnectionTests {
 
     @Test("add registers a new connectionId for a player")
     func addRegistersNewPlayer() async {
-        let model = await MasterControllerModel()
+        let model = MasterControllerModel()
         let connId = UUID()
         let playerId = UUID()
 
@@ -27,7 +27,7 @@ struct MasterControllerModelConnectionTests {
 
     @Test("add evicts the stale connectionId when the same player reconnects")
     func addEvictsStaleConnectionOnReconnect() async {
-        let model = await MasterControllerModel()
+        let model = MasterControllerModel()
         let oldConnId = UUID()
         let newConnId = UUID()
         let playerId = UUID()
@@ -43,7 +43,7 @@ struct MasterControllerModelConnectionTests {
 
     @Test("add preserves unrelated players when one player reconnects")
     func addPreservesOtherPlayersOnReconnect() async {
-        let model = await MasterControllerModel()
+        let model = MasterControllerModel()
         let connA = UUID(); let playerA = UUID()
         let connBOld = UUID(); let connBNew = UUID(); let playerB = UUID()
 
@@ -138,7 +138,7 @@ struct MasterControllerLostPlayerTests {
 
         await env.master.lostPlayer(for: UUID())
 
-        await #expect(env.root.gameModel.gameRoster.players.isEmpty)
+        #expect(env.root.gameModel.gameRoster.players.isEmpty)
     }
 
     @Test("lostPlayer removes the player from the roster when their connectionId is known")
@@ -147,11 +147,11 @@ struct MasterControllerLostPlayerTests {
         let connId = UUID()
 
         await env.master.receivedProcess(env.playerMessage, connectionId: connId)
-        try #require(await env.root.gameModel.gameRoster.players.count == 1)
+        try #require(env.root.gameModel.gameRoster.players.count == 1)
 
         await env.master.lostPlayer(for: connId)
 
-        await #expect(env.root.gameModel.gameRoster.players.isEmpty)
+        #expect(env.root.gameModel.gameRoster.players.isEmpty)
     }
 
     @Test("lostPlayer for the old connectionId does not remove a player who has already reconnected")
@@ -162,16 +162,16 @@ struct MasterControllerLostPlayerTests {
 
         // Initial connection
         await env.master.receivedProcess(env.playerMessage, connectionId: oldConnId)
-        try #require(await env.root.gameModel.gameRoster.players.count == 1)
+        try #require(env.root.gameModel.gameRoster.players.count == 1)
 
         // Player reconnects on a new connectionId before the old one fires lostPlayer
         await env.master.receivedProcess(env.playerMessage, connectionId: newConnId)
-        try #require(await env.root.gameModel.gameRoster.players.count == 1)
+        try #require(env.root.gameModel.gameRoster.players.count == 1)
 
         // Old connection close event fires — must not evict the still-live player
         await env.master.lostPlayer(for: oldConnId)
 
-        await #expect(
+        #expect(
             env.root.gameModel.gameRoster.players.count == 1,
             "reconnected player must stay in the roster when the old connectionId fires lostPlayer"
         )
@@ -185,12 +185,12 @@ struct MasterControllerLostPlayerTests {
 
         await env.master.receivedProcess(env.playerMessage, connectionId: oldConnId)
         await env.master.receivedProcess(env.playerMessage, connectionId: newConnId)
-        try #require(await env.root.gameModel.gameRoster.players.count == 1)
+        try #require(env.root.gameModel.gameRoster.players.count == 1)
 
         // New connection also drops — player must be removed
         await env.master.lostPlayer(for: newConnId)
 
-        await #expect(env.root.gameModel.gameRoster.players.isEmpty)
+        #expect(env.root.gameModel.gameRoster.players.isEmpty)
     }
 }
 

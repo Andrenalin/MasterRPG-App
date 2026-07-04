@@ -12,141 +12,141 @@ import Testing
 struct GameControllerTests {
     @Test func HasItem() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let sut = await root.gameController
+        let sut = root.gameController
 
         // random id must be false
         let randomId = UUID()
         var result = await sut.hasItem(id: randomId, version: 0)
         #expect(!result)
-        await #expect(sut.gameModel.itemData[randomId] == nil)
+        #expect(sut.gameModel.itemData[randomId] == nil)
 
-        let itemId = await root.itemController.itemDataModel.items[0]
-        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let itemId = root.itemController.itemDataModel.items[0]
+        let item = root.itemController.itemOrEmpty(for: itemId)
         let version = item.version
         result = await sut.hasItem(id: itemId, version: version + 1)
         #expect(!result)
-        await #expect(sut.gameModel.itemData[itemId] == nil)
+        #expect(sut.gameModel.itemData[itemId] == nil)
 
         result = await sut.hasItem(id: root.itemController.itemDataModel.items[0], version: version)
         #expect(result)
-        await #expect(sut.gameModel.itemData[itemId] != nil)
+        #expect(sut.gameModel.itemData[itemId] != nil)
 
         result = await sut.hasItem(id: root.itemController.itemDataModel.items[0], version: version + 1)
         #expect(!result)
-        await #expect(sut.gameModel.itemData[itemId] != nil)
+        #expect(sut.gameModel.itemData[itemId] != nil)
     }
     
     @Test func SetCurrent() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let sut = await root.gameController
+        let sut = root.gameController
 
         // random id must be false
         let randomId = UUID()
         #expect(await sut.setCurrent(itemId: randomId) == false)
-        await #expect(sut.currentId != randomId)
+        #expect(await sut.currentId != randomId)
 
-        let itemId = await root.itemController.itemDataModel.items[0]
+        let itemId = root.itemController.itemDataModel.items[0]
         #expect(await sut.setCurrent(itemId: itemId))
-        await #expect(sut.currentId == itemId)
-        await #expect(sut.gameModel.items[0] == itemId)
+        #expect(await sut.currentId == itemId)
+        #expect(sut.gameModel.items[0] == itemId)
 
-        let secondId = await root.itemController.itemDataModel.items[1]
+        let secondId = root.itemController.itemDataModel.items[1]
         #expect(await sut.setCurrent(itemId: secondId))
-        await #expect(sut.currentId == secondId)
-        await #expect(sut.gameModel.items[0] == secondId)
-        await #expect(sut.gameModel.items[1] == itemId)
+        #expect(await sut.currentId == secondId)
+        #expect(sut.gameModel.items[0] == secondId)
+        #expect(sut.gameModel.items[1] == itemId)
 
         #expect(await sut.setCurrent(itemId: itemId))
-        await #expect(sut.currentId == itemId)
-        await #expect(sut.gameModel.items[0] == itemId)
-        await #expect(sut.gameModel.items[1] == secondId)
+        #expect(await sut.currentId == itemId)
+        #expect(sut.gameModel.items[0] == itemId)
+        #expect(sut.gameModel.items[1] == secondId)
 
         await sut.reset()
-        await #expect(sut.gameModel.items.isEmpty)
-        await #expect(sut.gameModel.itemData.isEmpty)
-        await #expect(sut.currentId != itemId)
+        #expect(sut.gameModel.items.isEmpty)
+        #expect(sut.gameModel.itemData.isEmpty)
+        #expect(await sut.currentId != itemId)
     }
     
     @Test func Report() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let sut = await root.gameController
+        let sut = root.gameController
 
-        let itemId = await root.itemController.itemDataModel.items[0]
+        let itemId = root.itemController.itemDataModel.items[0]
         let playerId = UUID()
-        await sut.report(itemId: itemId, for: playerId)
-        await #expect(sut.gameModel.playerReport(for: itemId) == [playerId])
+        sut.report(itemId: itemId, for: playerId)
+        #expect(sut.gameModel.playerReport(for: itemId) == [playerId])
 
         #expect(await sut.setCurrent(itemId: itemId))
-        await sut.report(itemId: itemId, for: playerId)
-        await #expect(sut.gameModel.playerReport(for: itemId) == [playerId])
-        await sut.report(itemId: itemId, for: playerId)
-        await #expect(sut.gameModel.playerReport(for: itemId).count == 1)
+        sut.report(itemId: itemId, for: playerId)
+        #expect(sut.gameModel.playerReport(for: itemId) == [playerId])
+        sut.report(itemId: itemId, for: playerId)
+        #expect(sut.gameModel.playerReport(for: itemId).count == 1)
     }
     
     @Test func CreateGameData() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let rootManager = await RootManager.preview(fake: root.rootController)
-        let itemController = await root.itemController
-        let exportController = await ExportController(rootManager: rootManager, itemController: itemController)
-        let sut = await GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
+        let rootManager = RootManager.preview(fake: root.rootController)
+        let itemController = root.itemController
+        let exportController = ExportController(rootManager: rootManager, itemController: itemController)
+        let sut = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
 
-        await root.itemController.itemDataModel.resetGame(start: true)
-        let itemId = await root.itemController.itemDataModel.items[0]
-        let version = await root.itemController.itemOrEmpty(for: itemId).version
+        root.itemController.itemDataModel.resetGame(start: true)
+        let itemId = root.itemController.itemDataModel.items[0]
+        let version = root.itemController.itemOrEmpty(for: itemId).version
         let netdata = try await sut.createGameData(for: itemId)
         #expect(netdata.id == itemId)
         #expect(netdata.type == NetworkModules.photo)
         #expect(netdata.version == version)
 
         await root.itemController.delete(itemId: itemId)
-        await #expect(root.itemController.itemDataModel.itemData[itemId] == nil)
+        #expect(root.itemController.itemDataModel.itemData[itemId] == nil)
 
         let success = try await sut.reveal(itemId: itemId, data: netdata, save: false)
         #expect(success)
         // this will be fixed if we use the new game / no game itemController switch
-        await #expect(root.itemController.itemDataModel.itemData[itemId] == nil)
-        await #expect(sut.gameModel.itemData[itemId] != nil)
+        #expect(root.itemController.itemDataModel.itemData[itemId] == nil)
+        #expect(sut.gameModel.itemData[itemId] != nil)
 
         let success2 = try await sut.reveal(itemId: itemId, data: netdata, save: true)
         #expect(success2)
-        await #expect(root.itemController.itemDataModel.itemData[itemId] != nil)
+        #expect(root.itemController.itemDataModel.itemData[itemId] != nil)
     }
     
     @Test func UpdateGame() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let rootManager = await RootManager.preview(fake: root.rootController)
-        let itemController = await root.itemController
-        let exportController = await ExportController(rootManager: rootManager, itemController: itemController)
-        let sut = await GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
+        let rootManager = RootManager.preview(fake: root.rootController)
+        let itemController = root.itemController
+        let exportController = ExportController(rootManager: rootManager, itemController: itemController)
+        let sut = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
 
-        await root.itemController.itemDataModel.resetGame(start: true)
+        root.itemController.itemDataModel.resetGame(start: true)
 
-        let itemId = await root.itemController.itemDataModel.items[0]
-        let version = await root.itemController.itemOrEmpty(for: itemId).version
+        let itemId = root.itemController.itemDataModel.items[0]
+        let version = root.itemController.itemOrEmpty(for: itemId).version
         let netdata = try await sut.createGameData(for: itemId)
         #expect(netdata.id == itemId)
         #expect(netdata.type == NetworkModules.photo)
         #expect(netdata.version == version)
-        let fileUrl = await root.itemController.itemOrEmpty(for: itemId).fileUrl
-        await root.itemController.itemOrEmpty(for: itemId).fileUrl = nil
-        let updatedVersion = await root.itemController.itemOrEmpty(for: itemId).version
+        let fileUrl = root.itemController.itemOrEmpty(for: itemId).fileUrl
+        root.itemController.itemOrEmpty(for: itemId).fileUrl = nil
+        let updatedVersion = root.itemController.itemOrEmpty(for: itemId).version
         #expect(updatedVersion != version)
 
         try await sut.updateGame(data: netdata, hide: false, deep: true)
         // check again if we use the new game / no game itemController switch will fix it
-        await #expect(root.itemController.itemOrEmpty(for: itemId).fileUrl == fileUrl)
+        #expect(root.itemController.itemOrEmpty(for: itemId).fileUrl == fileUrl)
     }
 }
 
 private extension GameControllerTests {
     static func setupPhoto() async throws -> PhotoRootModel {
-        let root = await PhotoRootModel.testRoot()
+        let root = PhotoRootModel.testRoot()
         await root.itemController.resetData()
         await root.gameController.reset()
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.photoTestData, withExtension: "gmz").unsafelyUnwrapped
-        let task = await root.importController.importUrl(from: url)
+        let task = root.importController.importUrl(from: url)
         let _ = try await task.value
 
         #expect(await root.itemController.itemDataModel.items.count == 6)

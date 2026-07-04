@@ -12,41 +12,41 @@ import CoreGraphics
 @MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
-        let root = await PdfRootModel.testRoot()
+        let root = PdfRootModel.testRoot()
         await root.itemController.resetData()
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
-        var ids = await sut.exportingAll()
+        var ids = sut.exportingAll()
         try #require(ids.ids[.pdf] != nil)
         #expect(ids.ids[.pdf]!.isEmpty)
 
         let itemId = await root.itemController.addNew(type: .item)
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.pdf] != nil)
         #expect(ids.ids[.pdf]! == [itemId])
 
         let _ = await root.itemController.addNew(type: .item)
         let entry = PdfEntryModel(id: UUID(), name: "Hello", content: "Mega", pageNumber: "2", bounds: .zero)
-        await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.pdf] != nil)
         #expect(ids.ids[.pdf]!.count == 2)
     }
 
 
     @Test func exporting() async throws {
-        let root = await PdfRootModel.testRoot()
+        let root = PdfRootModel.testRoot()
         await root.itemController.resetData()
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
         let itemId = await root.itemController.addNew(type: .item)
 
         let newId = await root.itemController.addNew(type: .item)
         let _ = PdfEntryModel(id: UUID(), name: "Hello", content: "Mega", pageNumber: "2", bounds: .zero)
-        var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .pdf))
+        var ids = sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .pdf))
         var pdfIds = ids.ids[.pdf]
         try #require(pdfIds != nil)
         #expect(pdfIds!.count == 1)
@@ -54,7 +54,7 @@ struct ExportControllerTests {
         #expect(!pdfIds!.contains(newId))
 
         let notConnected = await root.itemController.addNew(type: .item)
-        ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .pdf))
+        ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .pdf))
         pdfIds = ids.ids[.pdf]
         try #require(pdfIds != nil)
         #expect(pdfIds!.count == 2)

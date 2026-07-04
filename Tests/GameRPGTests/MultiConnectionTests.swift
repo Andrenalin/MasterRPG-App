@@ -54,19 +54,19 @@ struct MultiConnectionTestEnvironment {
 
         let masterDelegateSpy = MasterNetworkStoreDelegateMock()
         let playerDelegateSpy = PlayerNetworkStoreDelegateMock()
-        let masterNetworkSpy = await MasterNetworkControllableMock()
-        let playerNetworkSpy = await PlayerStoreAbstractionMock()
+        let masterNetworkSpy = MasterNetworkControllableMock()
+        let playerNetworkSpy = PlayerStoreAbstractionMock()
 
-        let networkController = await GameNetworkController(
+        let networkController = GameNetworkController(
             name: "Hello Test",
             proxy: false,
             masterBuilder: { _, _ in masterNetworkSpy },
             playerBuilder: { _, _ in playerNetworkSpy }
         )
-        await networkController.model.setMasterDelegate(masterDelegateSpy)
-        await networkController.model.setPlayerDelegate(playerDelegateSpy)
+        networkController.model.setMasterDelegate(masterDelegateSpy)
+        networkController.model.setPlayerDelegate(playerDelegateSpy)
 
-        let networkProxyController = await GameNetworkController(
+        let networkProxyController = GameNetworkController(
             name: "Hello Test",
             proxy: true,
             masterBuilder: { _, _ in masterNetworkSpy },
@@ -90,8 +90,8 @@ struct MultiConnectionTestEnvironment {
             master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin")
         )
         let masterRoster = GameRosterModel()
-        await masterRoot.gameModel.reset(gameConfig: masterConfig, gameRoster: masterRoster)
-        let master = await MasterController(root: masterRoot, asProxy: false)
+        masterRoot.gameModel.reset(gameConfig: masterConfig, gameRoster: masterRoster)
+        let master = MasterController(root: masterRoot, asProxy: false)
 
         // MARK: - Player 1 Setup
 
@@ -105,8 +105,8 @@ struct MultiConnectionTestEnvironment {
         let player1Id = UUID()
         let player1Config = GameConfigModel(id: player1Id, state: .started, master: .empty)
         let player1Roster = GameRosterModel(players: [PlayerGameModel(id: player1Id, type: .player, name: "Player - 1")])
-        await player1Root.gameModel.reset(gameConfig: player1Config, gameRoster: player1Roster)
-        let player1 = await PlayerController(root: player1Root, asGameMaster: false)
+        player1Root.gameModel.reset(gameConfig: player1Config, gameRoster: player1Roster)
+        let player1 = PlayerController(root: player1Root, asGameMaster: false)
 
         // MARK: - Player 2 Setup
 
@@ -120,8 +120,8 @@ struct MultiConnectionTestEnvironment {
         let player2Id = UUID()
         let player2Config = GameConfigModel(id: player2Id, state: .started, master: .empty)
         let player2Roster = GameRosterModel(players: [PlayerGameModel(id: player2Id, type: .player, name: "Player - 2")])
-        await player2Root.gameModel.reset(gameConfig: player2Config, gameRoster: player2Roster)
-        let player2 = await PlayerController(root: player2Root, asGameMaster: false)
+        player2Root.gameModel.reset(gameConfig: player2Config, gameRoster: player2Roster)
+        let player2 = PlayerController(root: player2Root, asGameMaster: false)
 
         // MARK: - Player 3 Setup
 
@@ -135,8 +135,8 @@ struct MultiConnectionTestEnvironment {
         let player3Id = UUID()
         let player3Config = GameConfigModel(id: player3Id, state: .started, master: .empty)
         let player3Roster = GameRosterModel(players: [PlayerGameModel(id: player3Id, type: .player, name: "Player - 3")])
-        await player3Root.gameModel.reset(gameConfig: player3Config, gameRoster: player3Roster)
-        let player3 = await PlayerController(root: player3Root, asGameMaster: false)
+        player3Root.gameModel.reset(gameConfig: player3Config, gameRoster: player3Roster)
+        let player3 = PlayerController(root: player3Root, asGameMaster: false)
 
         return MultiConnectionTestEnvironment(
             master: master,
@@ -177,14 +177,14 @@ struct MultiConnectionAudioTests {
         let env = try await MultiConnectionTestEnvironment.create()
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
-        try await #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.count == 12)
+        try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.count == 12)
 
-        await env.masterRoot.adventureRoot.startGame()
-        await env.player1Root.adventureRoot.startGame()
+        env.masterRoot.adventureRoot.startGame()
+        env.player1Root.adventureRoot.startGame()
 
-        let audioId = await env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
-        let version = await env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId).version
-        await #expect(env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId).entries.isEmpty)
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let version = env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId).version
+        #expect(env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId).entries.isEmpty)
 
         // Act
         let audioShareData = await env.masterRoot.audioRoot.gameController.share(id: audioId)
@@ -205,10 +205,10 @@ struct MultiConnectionAudioTests {
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
 
-        await env.masterRoot.adventureRoot.startGame()
-        await env.player1Root.adventureRoot.startGame()
+        env.masterRoot.adventureRoot.startGame()
+        env.player1Root.adventureRoot.startGame()
 
-        let audioId = await env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
         let audioShareData = await env.masterRoot.audioRoot.gameController.share(id: audioId)
         await env.master.show(for: audioShareData)
         let showCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
@@ -220,9 +220,9 @@ struct MultiConnectionAudioTests {
         // Assert - Player 1 acknowledges
         let player1Response = env.playerNetworkSpy.requestData as? GameNetworkModel
         #expect(player1Response?.subType == .show)
-        await #expect(env.player1Root.audioRoot.gameController.currentId != audioId)
-        await #expect(env.player1Root.gameModel.gameConfig.master == env.masterConfig.master)
-        await #expect(env.player1Root.gameModel.gameRoster.players == env.player1Roster.players)
+        #expect(await env.player1Root.audioRoot.gameController.currentId != audioId)
+        #expect(env.player1Root.gameModel.gameConfig.master == env.masterConfig.master)
+        #expect(env.player1Root.gameModel.gameRoster.players == env.player1Roster.players)
     }
 
     @Test("All three players independently acknowledge audio show")
@@ -232,9 +232,9 @@ struct MultiConnectionAudioTests {
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
 
-        await env.masterRoot.adventureRoot.startGame()
+        env.masterRoot.adventureRoot.startGame()
 
-        let audioId = await env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
         let audioShareData = await env.masterRoot.audioRoot.gameController.share(id: audioId)
         await env.master.show(for: audioShareData)
         let showCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
@@ -255,9 +255,9 @@ struct MultiConnectionAudioTests {
         #expect(response2?.subType == .show)
         #expect(response3?.subType == .show)
 
-        await #expect(env.player1Root.audioRoot.gameController.currentId != audioId)
-        await #expect(env.player2Root.audioRoot.gameController.currentId != audioId)
-        await #expect(env.player3Root.audioRoot.gameController.currentId != audioId)
+        #expect(await env.player1Root.audioRoot.gameController.currentId != audioId)
+        #expect(await env.player2Root.audioRoot.gameController.currentId != audioId)
+        #expect(await env.player3Root.audioRoot.gameController.currentId != audioId)
     }
 
     @Test("Master aggregates player acknowledgments and broadcasts audio data")
@@ -267,10 +267,10 @@ struct MultiConnectionAudioTests {
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
 
-        await env.masterRoot.adventureRoot.startGame()
+        env.masterRoot.adventureRoot.startGame()
 
-        let audioId = await env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
-        let version = await env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId).version
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let version = env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId).version
         let audioShareData = await env.masterRoot.audioRoot.gameController.share(id: audioId)
         await env.master.show(for: audioShareData)
         let showCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
@@ -292,7 +292,7 @@ struct MultiConnectionAudioTests {
         #expect(audioData1?.data.id == audioId)
         #expect(audioData1?.data.type == .audio)
         #expect(audioData1?.data.version == version)
-        await #expect(env.masterRoot.gameModel.gameRoster.controls == [
+        #expect(env.masterRoot.gameModel.gameRoster.controls == [
             SharingControlModel(id: env.player1Config.id, name: env.player1Roster.players[0].name, show: true)
         ])
 
@@ -302,7 +302,7 @@ struct MultiConnectionAudioTests {
         // Assert - Master updates controls
         let audioData3 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         #expect(audioData3?.data.id == audioId)
-        await #expect(env.masterRoot.gameModel.gameRoster.controls == [
+        #expect(env.masterRoot.gameModel.gameRoster.controls == [
             SharingControlModel(id: env.player1Config.id, name: env.player1Roster.players[0].name, show: true),
             SharingControlModel(id: env.player3Config.id, name: env.player3Roster.players[0].name, show: true)
         ])
@@ -315,10 +315,10 @@ struct MultiConnectionAudioTests {
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
 
-        await env.masterRoot.adventureRoot.startGame()
+        env.masterRoot.adventureRoot.startGame()
 
-        let audioId = await env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
-        let version = await env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId).version
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let version = env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId).version
         let audioShareData = await env.masterRoot.audioRoot.gameController.share(id: audioId)
         await env.master.show(for: audioShareData)
         let showCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
@@ -338,9 +338,9 @@ struct MultiConnectionAudioTests {
         // Assert - Player 1 confirms with OK
         let confirmResponse = env.playerNetworkSpy.requestData as? GameNetworkModel
         #expect(confirmResponse?.subType == .ok)
-        await #expect(env.player1Root.audioRoot.gameController.currentId == audioId)
-        await #expect(env.player1Root.audioRoot.gameController.gameItem(for: audioId).version == version)
-        await #expect(env.player1Root.audioRoot.itemController.itemDataModel.items.count == 10)
+        #expect(await env.player1Root.audioRoot.gameController.currentId == audioId)
+        #expect(env.player1Root.audioRoot.gameController.gameItem(for: audioId).version == version)
+        #expect(env.player1Root.audioRoot.itemController.itemDataModel.items.count == 10)
     }
 
     @Test("Master detects all players reported after receiving all confirmations")
@@ -350,9 +350,9 @@ struct MultiConnectionAudioTests {
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
 
-        await env.masterRoot.adventureRoot.startGame()
+        env.masterRoot.adventureRoot.startGame()
 
-        let audioId = await env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
         let audioShareData = await env.masterRoot.audioRoot.gameController.share(id: audioId)
         await env.master.show(for: audioShareData)
         let showCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
@@ -384,20 +384,20 @@ struct MultiConnectionAudioTests {
 
         // Act - Master receives confirmations
         await env.master.receivedProcess(ok3!, connectionId: nil)
-        var allReported = await env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
+        var allReported = env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
         #expect(allReported == false) // Not all yet
 
         await env.master.receivedProcess(ok2!, connectionId: nil)
-        allReported = await env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
+        allReported = env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
         #expect(allReported == false) // Still not all
 
         await env.master.receivedProcess(ok1!, connectionId: nil)
 
         // Assert - All players reported
-        allReported = await env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
+        allReported = env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
         #expect(allReported == true)
 
-        await #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).sorted() == [
+        #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).sorted() == [
             env.player1Config.id,
             env.player2Config.id,
             env.player3Config.id,
@@ -412,9 +412,9 @@ struct MultiConnectionAudioTests {
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
 
-        await env.masterRoot.adventureRoot.startGame()
+        env.masterRoot.adventureRoot.startGame()
 
-        let audioId = await env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
 
         // Complete show/acknowledge/data/confirm cycle (abbreviated for brevity)
         let audioShareData = await env.masterRoot.audioRoot.gameController.share(id: audioId)
@@ -431,7 +431,7 @@ struct MultiConnectionAudioTests {
         await env.master.receivedProcess(ok1!, connectionId: nil)
 
         // Act - Master sends play command
-        let playData = await env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
+        let playData = env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
         await env.master.game(message: playData, actionType: .playAudio)
 
         // Assert - Play command broadcast
@@ -446,9 +446,9 @@ struct MultiConnectionAudioTests {
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
 
-        await env.masterRoot.adventureRoot.startGame()
+        env.masterRoot.adventureRoot.startGame()
 
-        let audioId = await env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
 
         // Complete show/data cycle
         let audioShareData = await env.masterRoot.audioRoot.gameController.share(id: audioId)
@@ -465,7 +465,7 @@ struct MultiConnectionAudioTests {
         await env.master.receivedProcess(ok1!, connectionId: nil)
 
         // Master sends play
-        let playData = await env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
+        let playData = env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
         await env.master.game(message: playData, actionType: .playAudio)
         let playCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         try #require(playCommand != nil)
@@ -478,9 +478,9 @@ struct MultiConnectionAudioTests {
         // Assert - Player starts playback, no response expected
         let noResponse = env.playerNetworkSpy.requestData
         #expect(noResponse == nil)
-        await #expect(env.player1Root.audioRoot.audioController.model.playList.count == 1)
-        await #expect(env.player1Root.audioRoot.audioController.model.playList[0].id == audioId)
-        await #expect(env.player1Root.audioRoot.audioController.model.currentId == audioId)
+        #expect(env.player1Root.audioRoot.audioController.model.playList.count == 1)
+        #expect(env.player1Root.audioRoot.audioController.model.playList[0].id == audioId)
+        #expect(env.player1Root.audioRoot.audioController.model.currentId == audioId)
     }
 
     @Test("All three players start synchronized audio playback")
@@ -490,9 +490,9 @@ struct MultiConnectionAudioTests {
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
 
-        await env.masterRoot.adventureRoot.startGame()
+        env.masterRoot.adventureRoot.startGame()
 
-        let audioId = await env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
 
         // Complete distribution to all players (abbreviated)
         let audioShareData = await env.masterRoot.audioRoot.gameController.share(id: audioId)
@@ -520,7 +520,7 @@ struct MultiConnectionAudioTests {
         await env.player3.receivedProcess(data3!)
 
         // Master sends play
-        let playData = await env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
+        let playData = env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
         await env.master.game(message: playData, actionType: .playAudio)
         let playCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         try #require(playCommand != nil)
@@ -531,13 +531,13 @@ struct MultiConnectionAudioTests {
         await env.player3.receivedProcess(playCommand!)
 
         // Assert - All three players playing
-        await #expect(env.player1Root.audioRoot.audioController.model.currentId == audioId)
-        await #expect(env.player2Root.audioRoot.audioController.model.currentId == audioId)
-        await #expect(env.player3Root.audioRoot.audioController.model.currentId == audioId)
+        #expect(env.player1Root.audioRoot.audioController.model.currentId == audioId)
+        #expect(env.player2Root.audioRoot.audioController.model.currentId == audioId)
+        #expect(env.player3Root.audioRoot.audioController.model.currentId == audioId)
 
-        await #expect(env.player1Root.audioRoot.audioController.model.playList.count == 1)
-        await #expect(env.player2Root.audioRoot.audioController.model.playList.count == 1)
-        await #expect(env.player3Root.audioRoot.audioController.model.playList.count == 1)
+        #expect(env.player1Root.audioRoot.audioController.model.playList.count == 1)
+        #expect(env.player2Root.audioRoot.audioController.model.playList.count == 1)
+        #expect(env.player3Root.audioRoot.audioController.model.playList.count == 1)
 
     }
 }

@@ -10,42 +10,42 @@ import Testing
 @MainActor
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
-        let root = await AudioRootModel.testRoot()
+        let root = AudioRootModel.testRoot()
         await root.itemController.resetData()
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
-        var ids = await sut.exportingAll()
+        var ids = sut.exportingAll()
         try #require(ids.ids[.audio] != nil)
         #expect(ids.ids[.audio]!.isEmpty)
 
         let itemId = await root.itemController.addNew(type: .item)
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.audio] != nil)
         #expect(ids.ids[.audio]! == [itemId])
 
         let newId = await root.itemController.addNew(type: .item)
         let entry = AudioEntryModel(id: UUID(), audioId: newId)
-        await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
-        ids = await sut.exportingAll()
+        ids = sut.exportingAll()
         try #require(ids.ids[.audio] != nil)
         #expect(ids.ids[.audio]!.count == 2)
     }
 
     @Test func exporting() async throws {
-        let root = await AudioRootModel.testRoot()
+        let root = AudioRootModel.testRoot()
         await root.itemController.resetData()
 
-        let sut = await root.exportController
+        let sut = root.exportController
 
         let itemId = await root.itemController.addNew(type: .item)
 
         let newId = await root.itemController.addNew(type: .item)
         let entry = AudioEntryModel(id: UUID(), audioId: newId)
-        await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
-        var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .audio))
+        var ids = sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .audio))
         var audioIds = ids.ids[.audio]
         try #require(audioIds != nil)
         #expect(audioIds!.count == 2)
@@ -53,7 +53,7 @@ struct ExportControllerTests {
         #expect(audioIds!.contains(newId))
 
         let notConnected = await root.itemController.addNew(type: .item)
-        ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .audio))
+        ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .audio))
         audioIds = ids.ids[.audio]
         try #require(audioIds != nil)
         #expect(audioIds!.count == 2)

@@ -132,7 +132,7 @@ struct InspectorToggleBugFixTests {
         #expect(listItem.isOpen  == false, "Item must start closed")
 
         // Before the fix this caused infinite recursion in flattenCachedChildren → crash
-        await root.folderLinkController.toggleFolder(item: listItem)
+        root.folderLinkController.toggleFolder(item: listItem)
 
         let children = root.folderLinkController.listModel.list.filter {
             $0.source.entryId != nil && $0.source.itemId == itemId
@@ -158,7 +158,7 @@ struct InspectorToggleBugFixTests {
         let listItem = try #require(
             root.folderLinkController.listModel.list.first(where: { $0.source.itemId == itemId })
         )
-        await root.folderLinkController.toggleFolder(item: listItem)
+        root.folderLinkController.toggleFolder(item: listItem)
 
         let childIds    = listItem.children.map(\.id)
         let entryIdSet  = Set([e1, e2])
@@ -270,7 +270,7 @@ struct InspectorToggleShowsAllContentTests {
         #expect(listItem.isOpen == false,  "Starts closed")
 
         // Toggle → ALL entries must appear (not just "Dragon Lore")
-        await root.folderLinkController.toggleFolder(item: listItem)
+        root.folderLinkController.toggleFolder(item: listItem)
 
         let flat = root.folderLinkController.listModel.list
         #expect(flat.contains(where: { $0.source.entryId == e1 }), "Dragon Lore must appear")
@@ -300,7 +300,7 @@ struct InspectorToggleShowsAllContentTests {
         #expect(folderNode.canOpen == true,  "Folder found by name, canOpen=true")
         #expect(folderNode.isOpen == false,  "Starts closed (no children match)")
 
-        await root.folderLinkController.toggleFolder(item: folderNode)
+        root.folderLinkController.toggleFolder(item: folderNode)
 
         let flat = root.folderLinkController.listModel.list
         #expect(flat.contains(where: { $0.source.itemId == child1 }),
@@ -324,7 +324,7 @@ struct InspectorToggleShowsAllContentTests {
             root.folderLinkController.listModel.list.first(where: { $0.source.itemId == itemId })
         )
         // Open it
-        await root.folderLinkController.toggleFolder(item: listItem)
+        root.folderLinkController.toggleFolder(item: listItem)
         #expect(root.folderLinkController.listModel.list.contains(where: { $0.source.entryId == e1 }),
                 "All entries visible after toggle")
         #expect(root.folderLinkController.listModel.list.contains(where: { $0.source.entryId == e2 }),

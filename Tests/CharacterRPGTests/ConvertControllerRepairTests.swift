@@ -42,23 +42,23 @@ struct ConvertControllerRepairTests {
         let childId = await root.itemController.addNew(type: .item)
 
         // Build entry with valueId → childId directly (bypass addNewGroup to simulate old data)
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
         let entry = ValueEntryModel(id: UUID(), name: "OldGroupEntry", type: .text, value: "", valueId: childId)
         owner.entries.append(entry)
-        await root.itemController.replace(model: owner, isInsert: false)
+        root.itemController.replace(model: owner, isInsert: false)
 
         // Child in Phase 1 state: hidden, no parentId, no groupId
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = root.itemController.itemOrEmpty(for: childId)
         child.displayState = 1
         child.parentId = nil
         child.groupId = nil
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
         // When – checkFolders scans entries and stamps groupId
         await root.checkFolders(reportModel: ValidateRepairModel())
 
         // Then – child now has groupId pointing to owner
-        let childAfter = await root.itemController.itemOrEmpty(for: childId)
+        let childAfter = root.itemController.itemOrEmpty(for: childId)
         #expect(childAfter.groupId == ownerId)
         #expect(childAfter.parentId == nil)
         #expect(childAfter.displayState == 1)
@@ -73,21 +73,21 @@ struct ConvertControllerRepairTests {
         let ownerId = await root.itemController.addNew(type: .item)
         let childId = await root.itemController.addNew(type: .item)
 
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
         owner.entries.append(ValueEntryModel(id: UUID(), name: "Entry", type: .text, value: "", valueId: childId))
-        await root.itemController.replace(model: owner, isInsert: false)
+        root.itemController.replace(model: owner, isInsert: false)
 
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = root.itemController.itemOrEmpty(for: childId)
         child.displayState = 1
         child.parentId = ownerId  // Phase 2 state
         child.groupId = nil
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
         // When
         await root.checkFolders(reportModel: ValidateRepairModel())
 
         // Then – parentId cleared, groupId set
-        let childAfter = await root.itemController.itemOrEmpty(for: childId)
+        let childAfter = root.itemController.itemOrEmpty(for: childId)
         #expect(childAfter.groupId == ownerId)
         #expect(childAfter.parentId == nil)
     }
@@ -99,23 +99,23 @@ struct ConvertControllerRepairTests {
         // Given – a hidden item with no parentId, no groupId, and no root entry pointing to it
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await ConvertController(
+        let sut = ConvertController(
             itemController: root.itemController,
             editController: root.editController
         )
 
         let itemId = await root.itemController.addNew(type: .item)
-        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let item = root.itemController.itemOrEmpty(for: itemId)
         item.displayState = 1
         item.parentId = nil
         item.groupId = nil
-        await root.itemController.replace(model: item, isInsert: false)
+        root.itemController.replace(model: item, isInsert: false)
 
         // When – repair runs after checkFolders would have already set groupId on any claimed sub-items
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
 
         // Then – no entry claimed this item, so it's truly orphaned → made visible
-        let after = await root.itemController.itemOrEmpty(for: itemId)
+        let after = root.itemController.itemOrEmpty(for: itemId)
         #expect(after.isGroupHiddenToggle == false)
     }
 
@@ -126,14 +126,14 @@ struct ConvertControllerRepairTests {
         // Given – a properly created group child (Phase 3)
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await ConvertController(
+        let sut = ConvertController(
             itemController: root.itemController,
             editController: root.editController
         )
 
         let ownerId = await root.itemController.addNew(type: .item)
         let entryId = await root.editController.addNewGroup(itemId: ownerId)
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
         let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
         let childId = try #require(groupEntry.valueId)
 
@@ -141,7 +141,7 @@ struct ConvertControllerRepairTests {
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
 
         // Then – group child untouched
-        let after = await root.itemController.itemOrEmpty(for: childId)
+        let after = root.itemController.itemOrEmpty(for: childId)
         #expect(after.displayState == 1)
         #expect(after.groupId == ownerId)
     }
@@ -152,28 +152,28 @@ struct ConvertControllerRepairTests {
     func repairHiddenAndFolders_brokenGroupId_deletedParent_isResetToVisible() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await ConvertController(
+        let sut = ConvertController(
             itemController: root.itemController,
             editController: root.editController
         )
 
         let ownerId = await root.itemController.addNew(type: .item)
         let childId = await root.itemController.addNew(type: .item)
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = root.itemController.itemOrEmpty(for: childId)
         child.displayState = 1
         child.groupId = ownerId
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
         // Delete the parent
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
         owner.displayState = 2
-        await root.itemController.replace(model: owner, isInsert: false)
+        root.itemController.replace(model: owner, isInsert: false)
 
         // When
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
 
         // Then – child freed and groupId cleared
-        let after = await root.itemController.itemOrEmpty(for: childId)
+        let after = root.itemController.itemOrEmpty(for: childId)
         #expect(after.isGroupHiddenToggle == false)
         #expect(after.groupId == nil)
     }
@@ -182,23 +182,23 @@ struct ConvertControllerRepairTests {
     func repairHiddenAndFolders_brokenGroupId_missingParent_isResetToVisible() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await ConvertController(
+        let sut = ConvertController(
             itemController: root.itemController,
             editController: root.editController
         )
 
         let childId = await root.itemController.addNew(type: .item)
         let phantomId = UUID()
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = root.itemController.itemOrEmpty(for: childId)
         child.displayState = 1
         child.groupId = phantomId
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
         // When
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
 
         // Then
-        let after = await root.itemController.itemOrEmpty(for: childId)
+        let after = root.itemController.itemOrEmpty(for: childId)
         #expect(after.isGroupHiddenToggle == false)
         #expect(after.groupId == nil)
     }
@@ -214,21 +214,21 @@ struct ConvertControllerRepairTests {
         let ownerId = await root.itemController.addNew(type: .item)
         let childId = await root.itemController.addNew(type: .item)
 
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
         owner.entries.append(ValueEntryModel(id: UUID(), name: "Entry", type: .text, value: "", valueId: childId))
-        await root.itemController.replace(model: owner, isInsert: false)
+        root.itemController.replace(model: owner, isInsert: false)
 
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = root.itemController.itemOrEmpty(for: childId)
         child.displayState = 1
         child.parentId = nil
         child.groupId = nil
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
         // When – full pipeline (same order as after import)
         await root.checkFolders(reportModel: ValidateRepairModel())
 
         // Then – checkFolders stamped groupId, child stays hidden (not treated as orphan)
-        let afterCheck = await root.itemController.itemOrEmpty(for: childId)
+        let afterCheck = root.itemController.itemOrEmpty(for: childId)
         #expect(afterCheck.groupId == ownerId)
         #expect(afterCheck.displayState == 1)
     }
@@ -240,17 +240,17 @@ struct ConvertControllerRepairTests {
         try await MockRoot.resetTestData(for: root)
 
         let itemId = await root.itemController.addNew(type: .item)
-        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let item = root.itemController.itemOrEmpty(for: itemId)
         item.displayState = 1
         item.parentId = nil
         item.groupId = nil
-        await root.itemController.replace(model: item, isInsert: false)
+        root.itemController.replace(model: item, isInsert: false)
 
         // When – full pipeline
         await root.checkFolders(reportModel: ValidateRepairModel())
 
         // Then – no entry claimed it; checkFolders calls repairHiddenAndFolders internally
-        let after = await root.itemController.itemOrEmpty(for: itemId)
+        let after = root.itemController.itemOrEmpty(for: itemId)
         #expect(after.isGroupHiddenToggle == false)
     }
 
@@ -260,7 +260,7 @@ struct ConvertControllerRepairTests {
     func folderCleaning_removesEntryWithMismatchedParentId() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await ConvertController(
+        let sut = ConvertController(
             itemController: root.itemController,
             editController: root.editController
         )
@@ -268,19 +268,19 @@ struct ConvertControllerRepairTests {
         let folderId = await root.itemController.addNew(type: .folder)
         let child1Id = await root.itemController.addNew(type: .item)
         let child2Id = await root.itemController.addNew(type: .item)
-        await root.editController.addItem(itemId: child1Id, parentId: folderId)
-        await root.editController.addItem(itemId: child2Id, parentId: folderId)
+        root.editController.addItem(itemId: child1Id, parentId: folderId)
+        root.editController.addItem(itemId: child2Id, parentId: folderId)
 
         // Corrupt child2: clear parentId without removing from folder entries
-        let child2 = await root.itemController.itemOrEmpty(for: child2Id)
+        let child2 = root.itemController.itemOrEmpty(for: child2Id)
         child2.parentId = nil
-        await root.itemController.replace(model: child2, isInsert: false)
+        root.itemController.replace(model: child2, isInsert: false)
 
         // When
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
 
         // Then
-        let folder = await root.itemController.itemOrEmpty(for: folderId)
+        let folder = root.itemController.itemOrEmpty(for: folderId)
         #expect(folder.entries.count == 1)
         #expect(folder.entries[0].childId == child1Id)
     }
@@ -293,22 +293,22 @@ struct ConvertControllerRepairTests {
         // to avoid interfering with real folder children (which legitimately use parentId).
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await ConvertController(
+        let sut = ConvertController(
             itemController: root.itemController,
             editController: root.editController
         )
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = root.itemController.itemOrEmpty(for: childId)
         child.parentId = folderId   // set parentId but NOT added to folder entries
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
         // When
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
 
         // Then – parentId preserved (generic orphan repair skipped for .value module)
-        let after = await root.itemController.itemOrEmpty(for: childId)
+        let after = root.itemController.itemOrEmpty(for: childId)
         #expect(after.parentId == folderId)
     }
 
@@ -318,20 +318,20 @@ struct ConvertControllerRepairTests {
     func categoryNormalization_convertsCategoryToEntry() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await ConvertController(
+        let sut = ConvertController(
             itemController: root.itemController,
             editController: root.editController
         )
 
         let itemId = await root.itemController.addNew(type: .item)
-        await root.editController.reset(category: .character, itemId: itemId)
-        await root.editController.reset(tags: ["ExistingTag"], itemId: itemId)
+        root.editController.reset(category: .character, itemId: itemId)
+        root.editController.reset(tags: ["ExistingTag"], itemId: itemId)
 
         // When
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
 
         // Then
-        let after = await root.itemController.itemOrEmpty(for: itemId)
+        let after = root.itemController.itemOrEmpty(for: itemId)
         #expect(after.category == .entry)
         #expect(after.tags.contains("Character"))
         #expect(after.tags.contains("ExistingTag"))
@@ -341,7 +341,7 @@ struct ConvertControllerRepairTests {
     func categoryNormalization_skipsSpecialCategories() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await ConvertController(
+        let sut = ConvertController(
             itemController: root.itemController,
             editController: root.editController
         )
@@ -352,7 +352,7 @@ struct ConvertControllerRepairTests {
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
 
         // Then
-        let after = await root.itemController.itemOrEmpty(for: folderId)
+        let after = root.itemController.itemOrEmpty(for: folderId)
         #expect(after.category == .folder)
     }
 
@@ -362,21 +362,21 @@ struct ConvertControllerRepairTests {
     func validFolderChild_repairIsNoop() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await ConvertController(
+        let sut = ConvertController(
             itemController: root.itemController,
             editController: root.editController
         )
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        await root.editController.addItem(itemId: childId, parentId: folderId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
 
         // When
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
 
         // Then
-        let childAfter = await root.itemController.itemOrEmpty(for: childId)
-        let folderAfter = await root.itemController.itemOrEmpty(for: folderId)
+        let childAfter = root.itemController.itemOrEmpty(for: childId)
+        let folderAfter = root.itemController.itemOrEmpty(for: folderId)
         #expect(childAfter.parentId == folderId)
         #expect(folderAfter.entries.contains(where: { $0.childId == childId }))
     }
@@ -397,15 +397,15 @@ extension ConvertControllerRepairTests {
         let itemId   = await root.itemController.addNew(type: .item)
 
         // Set parentId without adding to the folder's entry list
-        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let item = root.itemController.itemOrEmpty(for: itemId)
         item.parentId = folderId
-        await root.itemController.replace(model: item, isInsert: false)
+        root.itemController.replace(model: item, isInsert: false)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – orphaned parentId cleared
-        let after = await root.itemController.itemOrEmpty(for: itemId)
+        let after = root.itemController.itemOrEmpty(for: itemId)
         #expect(after.parentId == nil)
     }
 
@@ -416,13 +416,13 @@ extension ConvertControllerRepairTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId   = await root.itemController.addNew(type: .item)
-        await root.editController.addItem(itemId: itemId, parentId: folderId)
+        root.editController.addItem(itemId: itemId, parentId: folderId)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – valid parentId preserved
-        let after = await root.itemController.itemOrEmpty(for: itemId)
+        let after = root.itemController.itemOrEmpty(for: itemId)
         #expect(after.parentId == folderId)
     }
 
@@ -436,15 +436,15 @@ extension ConvertControllerRepairTests {
         let ownerId  = await root.itemController.addNew(type: .item)
         let targetId = await root.itemController.addNew(type: .item) // displayState=0, not a GroupItem
 
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
         owner.entries.append(ValueEntryModel(id: UUID(), name: "BadRef", type: .text, value: "", valueId: targetId))
-        await root.itemController.replace(model: owner, isInsert: false)
+        root.itemController.replace(model: owner, isInsert: false)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – no entry may still reference targetId as valueId
-        let after = await root.itemController.itemOrEmpty(for: ownerId)
+        let after = root.itemController.itemOrEmpty(for: ownerId)
         #expect(after.entries.allSatisfy { $0.valueId != targetId })
     }
 
@@ -456,15 +456,15 @@ extension ConvertControllerRepairTests {
         let ownerId = await root.itemController.addNew(type: .item)
         let entryId = await root.editController.addNewGroup(itemId: ownerId)
 
-        let owner     = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner     = root.itemController.itemOrEmpty(for: ownerId)
         let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
         let groupItemId = try #require(groupEntry.valueId)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – GroupItem reference untouched
-        let afterOwner = await root.itemController.itemOrEmpty(for: ownerId)
+        let afterOwner = root.itemController.itemOrEmpty(for: ownerId)
         let preserved  = afterOwner.entries.first(where: { $0.id == entryId })
         #expect(preserved?.valueId == groupItemId)
     }
@@ -480,15 +480,15 @@ extension ConvertControllerRepairTests {
         let charId   = await root.itemController.addNew(type: .item)
 
         // Add entry to folder but do NOT set charId.parentId = folderId
-        let folder = await root.itemController.itemOrEmpty(for: folderId)
+        let folder = root.itemController.itemOrEmpty(for: folderId)
         folder.entries = [ValueEntryModel.newChild(id: charId)]
-        await root.itemController.replace(model: folder, isInsert: false)
+        root.itemController.replace(model: folder, isInsert: false)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – entry removed (child.parentId != folderId)
-        let afterFolder = await root.itemController.itemOrEmpty(for: folderId)
+        let afterFolder = root.itemController.itemOrEmpty(for: folderId)
         #expect(afterFolder.entries.isEmpty)
     }
 
@@ -499,13 +499,13 @@ extension ConvertControllerRepairTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let charId   = await root.itemController.addNew(type: .item)
-        await root.editController.addItem(itemId: charId, parentId: folderId)
+        root.editController.addItem(itemId: charId, parentId: folderId)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – entry preserved
-        let afterFolder = await root.itemController.itemOrEmpty(for: folderId)
+        let afterFolder = root.itemController.itemOrEmpty(for: folderId)
         #expect(afterFolder.entries.contains(where: { $0.childId == charId }))
     }
 
@@ -519,31 +519,31 @@ extension ConvertControllerRepairTests {
         let alphaId   = await root.itemController.addNew(type: .item)
         let bravoId   = await root.itemController.addNew(type: .item)
 
-        await root.editController.reset(name: "Charlie", itemId: charlieId)
-        await root.editController.reset(name: "Alpha",   itemId: alphaId)
-        await root.editController.reset(name: "Bravo",   itemId: bravoId)
+        root.editController.reset(name: "Charlie", itemId: charlieId)
+        root.editController.reset(name: "Alpha",   itemId: alphaId)
+        root.editController.reset(name: "Bravo",   itemId: bravoId)
 
         // Set parentId on each child without going through addItem (which already sorts)
         for id in [charlieId, alphaId, bravoId] {
-            let child = await root.itemController.itemOrEmpty(for: id)
+            let child = root.itemController.itemOrEmpty(for: id)
             child.parentId = folderId
-            await root.itemController.replace(model: child, isInsert: false)
+            root.itemController.replace(model: child, isInsert: false)
         }
 
         // Manually place folder entries in wrong order: Charlie, Alpha, Bravo
-        let folder = await root.itemController.itemOrEmpty(for: folderId)
+        let folder = root.itemController.itemOrEmpty(for: folderId)
         folder.entries = [
             ValueEntryModel.newChild(id: charlieId),
             ValueEntryModel.newChild(id: alphaId),
             ValueEntryModel.newChild(id: bravoId),
         ]
-        await root.itemController.replace(model: folder, isInsert: false)
+        root.itemController.replace(model: folder, isInsert: false)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – entries in alphabetical order: Alpha, Bravo, Charlie
-        let afterFolder = await root.itemController.itemOrEmpty(for: folderId)
+        let afterFolder = root.itemController.itemOrEmpty(for: folderId)
         #expect(afterFolder.entries.map(\.childId) == [alphaId, bravoId, charlieId])
     }
 
@@ -558,20 +558,20 @@ extension ConvertControllerRepairTests {
         let ownerId      = await root.itemController.addNew(type: .item)
         let entryId      = await root.editController.addNewGroup(itemId: ownerId)
 
-        let owner      = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner      = root.itemController.itemOrEmpty(for: ownerId)
         let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
         let groupItemId = try #require(groupEntry.valueId)
 
         // Add the hidden GroupItem as a collection child (invalid)
-        let collection = await root.itemController.itemOrEmpty(for: collectionId)
+        let collection = root.itemController.itemOrEmpty(for: collectionId)
         collection.entries = [ValueEntryModel.newChild(id: groupItemId)]
-        await root.itemController.replace(model: collection, isInsert: false)
+        root.itemController.replace(model: collection, isInsert: false)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – GroupItem entry removed from collection
-        let afterCollection = await root.itemController.itemOrEmpty(for: collectionId)
+        let afterCollection = root.itemController.itemOrEmpty(for: collectionId)
         #expect(afterCollection.entries.isEmpty)
     }
 
@@ -583,15 +583,15 @@ extension ConvertControllerRepairTests {
         let collectionId = await root.itemController.addNew(type: .collection)
         let charId       = await root.itemController.addNew(type: .item)
 
-        let collection = await root.itemController.itemOrEmpty(for: collectionId)
+        let collection = root.itemController.itemOrEmpty(for: collectionId)
         collection.entries = [ValueEntryModel.newChild(id: charId)]
-        await root.itemController.replace(model: collection, isInsert: false)
+        root.itemController.replace(model: collection, isInsert: false)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – valid entry preserved
-        let afterCollection = await root.itemController.itemOrEmpty(for: collectionId)
+        let afterCollection = root.itemController.itemOrEmpty(for: collectionId)
         #expect(afterCollection.entries.count == 1)
         #expect(afterCollection.entries[0].childId == charId)
     }
@@ -608,21 +608,21 @@ extension ConvertControllerRepairTests {
 
         // Create GroupItem under owner1
         let entryId   = await root.editController.addNewGroup(itemId: owner1Id)
-        let owner1    = await root.itemController.itemOrEmpty(for: owner1Id)
+        let owner1    = root.itemController.itemOrEmpty(for: owner1Id)
         let groupEntry = try #require(owner1.entries.first(where: { $0.id == entryId }))
         let groupItemId = try #require(groupEntry.valueId)
 
         // Illegitimately reference the same GroupItem from owner2
-        let owner2 = await root.itemController.itemOrEmpty(for: owner2Id)
+        let owner2 = root.itemController.itemOrEmpty(for: owner2Id)
         owner2.entries.append(ValueEntryModel(id: UUID(), name: "DuplicateRef", type: .text, value: "", valueId: groupItemId))
-        await root.itemController.replace(model: owner2, isInsert: false)
+        root.itemController.replace(model: owner2, isInsert: false)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – owner1 still references the GroupItem; owner2 does not
-        let afterOwner1 = await root.itemController.itemOrEmpty(for: owner1Id)
-        let afterOwner2 = await root.itemController.itemOrEmpty(for: owner2Id)
+        let afterOwner1 = root.itemController.itemOrEmpty(for: owner1Id)
+        let afterOwner2 = root.itemController.itemOrEmpty(for: owner2Id)
         #expect(afterOwner1.entries.contains { $0.valueId == groupItemId })
         #expect(afterOwner2.entries.allSatisfy { $0.valueId != groupItemId })
     }
@@ -635,15 +635,15 @@ extension ConvertControllerRepairTests {
         let ownerId = await root.itemController.addNew(type: .item)
         let entryId = await root.editController.addNewGroup(itemId: ownerId)
 
-        let owner      = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner      = root.itemController.itemOrEmpty(for: ownerId)
         let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
         let groupItemId = try #require(groupEntry.valueId)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – single-owner reference untouched
-        let afterOwner = await root.itemController.itemOrEmpty(for: ownerId)
+        let afterOwner = root.itemController.itemOrEmpty(for: ownerId)
         #expect(afterOwner.entries.contains { $0.valueId == groupItemId })
     }
 
@@ -658,16 +658,16 @@ extension ConvertControllerRepairTests {
         let phantomParent = UUID()
 
         // Mark as deleted with a broken parentId that would normally be cleared
-        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let item = root.itemController.itemOrEmpty(for: itemId)
         item.displayState = 2
         item.parentId = phantomParent
-        await root.itemController.replace(model: item, isInsert: false)
+        root.itemController.replace(model: item, isInsert: false)
 
         // When
-        await root.editController.repairCharacterContrains()
+        root.editController.repairCharacterContrains()
 
         // Then – deleted item is untouched (displayState==2 skips all checks)
-        let after = await root.itemController.itemOrEmpty(for: itemId)
+        let after = root.itemController.itemOrEmpty(for: itemId)
         #expect(after.displayState == 2)
         #expect(after.parentId == phantomParent)
     }

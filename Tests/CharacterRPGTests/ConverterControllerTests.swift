@@ -32,32 +32,32 @@ struct ConverterControllerTests {
         let childId  = await root.itemController.addNew(type: .item)
 
         // Place owner inside folder
-        await root.editController.addItem(itemId: ownerId, parentId: folderId)
+        root.editController.addItem(itemId: ownerId, parentId: folderId)
 
         // Build sub-item: belongs to owner (groupId) AND is inside folder (parentId)
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = root.itemController.itemOrEmpty(for: childId)
         child.displayState = 1
         child.groupId  = ownerId
         child.parentId = folderId
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
         // Add entry on owner that references child via valueId
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
         owner.entries.append(ValueEntryModel(id: UUID(), name: "SubEntry", type: .text, value: "", valueId: childId))
-        await root.itemController.replace(model: owner, isInsert: false)
+        root.itemController.replace(model: owner, isInsert: false)
 
         // When
         await root.checkFolders(reportModel: ValidateRepairModel())
 
         // Then – checkFolders clears parentId for group items (they're always at root level)
         // This matches the behavior in EditController.repairGroupItemConstraints (line 534)
-        let childAfter = await root.itemController.itemOrEmpty(for: childId)
+        let childAfter = root.itemController.itemOrEmpty(for: childId)
         #expect(childAfter.groupId  == ownerId)
         #expect(childAfter.parentId == nil)  // parentId cleared - groups on root level
         #expect(childAfter.displayState == 1)
 
         // Folder still contains the owner
-        let folderAfter = await root.itemController.itemOrEmpty(for: folderId)
+        let folderAfter = root.itemController.itemOrEmpty(for: folderId)
         #expect(folderAfter.entries.contains(where: { $0.childId == ownerId }))
     }
 
@@ -75,24 +75,24 @@ struct ConverterControllerTests {
         let ownerId  = await root.itemController.addNew(type: .item)
         let childId  = await root.itemController.addNew(type: .item)
 
-        await root.editController.addItem(itemId: ownerId, parentId: folderId)
+        root.editController.addItem(itemId: ownerId, parentId: folderId)
 
         // Sub-item has parentId (folder) but groupId is nil (corrupted / old export)
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = root.itemController.itemOrEmpty(for: childId)
         child.displayState = 1
         child.groupId  = nil      // missing
         child.parentId = folderId
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
         owner.entries.append(ValueEntryModel(id: UUID(), name: "SubEntry", type: .text, value: "", valueId: childId))
-        await root.itemController.replace(model: owner, isInsert: false)
+        root.itemController.replace(model: owner, isInsert: false)
 
         // When
         await root.checkFolders(reportModel: ValidateRepairModel())
 
         // Then – groupId restored, parentId cleared (groups always on root level)
-        let childAfter = await root.itemController.itemOrEmpty(for: childId)
+        let childAfter = root.itemController.itemOrEmpty(for: childId)
         #expect(childAfter.groupId  == ownerId)
         #expect(childAfter.parentId == nil)  // cleared - groups always on root level
         #expect(childAfter.displayState == 1)
@@ -112,22 +112,22 @@ struct ConverterControllerTests {
         let childId = await root.itemController.addNew(type: .item)
 
         // Phase 2 state: parentId == ownerId, groupId == nil
-        let child = await root.itemController.itemOrEmpty(for: childId)
+        let child = root.itemController.itemOrEmpty(for: childId)
         child.displayState = 1
         child.groupId  = nil
         child.parentId = ownerId   // wrongly used as group reference
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
-        let owner = await root.itemController.itemOrEmpty(for: ownerId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
         owner.entries.append(ValueEntryModel(id: UUID(), name: "SubEntry", type: .text, value: "", valueId: childId))
-        await root.itemController.replace(model: owner, isInsert: false)
+        root.itemController.replace(model: owner, isInsert: false)
 
         // When
         await root.checkFolders(reportModel: ValidateRepairModel())
 
         // Then – parentId cleared (it was the group reference, not a real folder),
         //         groupId set to ownerId → identical to Phase 3 baseline
-        let childAfter = await root.itemController.itemOrEmpty(for: childId)
+        let childAfter = root.itemController.itemOrEmpty(for: childId)
         #expect(childAfter.groupId  == ownerId)
         #expect(childAfter.parentId == nil)
         #expect(childAfter.displayState == 1)
@@ -143,17 +143,17 @@ struct ConverterControllerTests {
         try await MockRoot.resetTestData(for: root)
 
         let itemId = await root.itemController.addNew(type: .item)
-        let item = await root.itemController.itemOrEmpty(for: itemId)
+        let item = root.itemController.itemOrEmpty(for: itemId)
         item.displayState = 1
         item.parentId = nil
         item.groupId  = nil
-        await root.itemController.replace(model: item, isInsert: false)
+        root.itemController.replace(model: item, isInsert: false)
 
         // When – full pipeline (checkFolders → repairHiddenAndFolders)
         await root.checkFolders(reportModel: ValidateRepairModel())
 
         // Then – no entry claimed this item, so it is truly orphaned → made visible
-        let after = await root.itemController.itemOrEmpty(for: itemId)
+        let after = root.itemController.itemOrEmpty(for: itemId)
         #expect(after.isGroupHiddenToggle == false)
         #expect(after.groupId  == nil)
         #expect(after.parentId == nil)
@@ -173,21 +173,21 @@ struct ConverterControllerTests {
         let childId = await root.itemController.addNew(type: .item)
 
         // Sub-item has correct groupId but displayState was reset to 0 (visible)
-        let child = await root.itemController.itemOrEmpty(for: childId).copy()
+        let child = root.itemController.itemOrEmpty(for: childId).copy()
         child.displayState = 0     // should be 1
         child.groupId  = ownerId
         child.parentId = nil
-        await root.itemController.replace(model: child, isInsert: false)
+        root.itemController.replace(model: child, isInsert: false)
 
-        let owner = await root.itemController.itemOrEmpty(for: ownerId).copy()
+        let owner = root.itemController.itemOrEmpty(for: ownerId).copy()
         owner.entries.append(ValueEntryModel(id: UUID(), name: "SubEntry", type: .text, value: "", valueId: childId))
-        await root.itemController.replace(model: owner, isInsert: false)
+        root.itemController.replace(model: owner, isInsert: false)
 
         // When
         await root.checkFolders(reportModel: ValidateRepairModel())
 
         // Then – checkFolders sets displayState=1 on sub-items referenced via entry.valueId
-        let childAfter = await root.itemController.itemOrEmpty(for: childId)
+        let childAfter = root.itemController.itemOrEmpty(for: childId)
         #expect(childAfter.displayState == 1)
         #expect(childAfter.groupId == ownerId)
     }

@@ -12,26 +12,26 @@ struct ConverterControllerTests {
 
     @Test func checkFolders_generate_entries_and_links() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = await ConvertController(itemController: root.itemController, editController: root.editController)
+        let sut = ConvertController(itemController: root.itemController, editController: root.editController)
 
         #expect(await root.itemController.itemDataModel.items.count == 1)
-        let model = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
+        let model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         model.fileUrl = FileUrl(fileId: model.id, url: URL(filePath: "/Rollenspiel/Example/3dmodel/3ditem.usdz"), location: .other, module: "Test", relativeUrl: nil)
         model.category = .item // allow the createFilpathFolders to work
         
         await sut.createFilepathFoldersAndCollections(reportModel: ValidateRepairModel())
         try #require(await root.itemController.itemDataModel.items.count == 4)
         
-        let model1 = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
+        let model1 = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         #expect(model1.name == "3D Item")
 
-        let model2 = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[1])
+        let model2 = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[1])
         #expect(model2.name == "3dmodel")
 
-        let model3 = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[2])
+        let model3 = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[2])
         #expect(model3.name == "Example")
 
-        let model4 = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[3])
+        let model4 = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[3])
         #expect(model4.name == "Rollenspiel")
         
         #expect(model4.parentId == nil)

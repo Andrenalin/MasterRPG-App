@@ -17,7 +17,7 @@ struct ImportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
         
-        let sut = await root.importController
+        let sut = root.importController
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.valueTestData, withExtension: "gmz").unsafelyUnwrapped
@@ -31,10 +31,10 @@ struct ImportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.importController
+        let sut = root.importController
 
-        let exportController = await root.exportController
-        let edit = await root.editController
+        let exportController = root.exportController
+        let edit = root.editController
 
         let folder = await edit.addNew(type: .folder)
         try #require(folder != nil)
@@ -42,10 +42,10 @@ struct ImportControllerTests {
 
         let itemId = await root.itemController.addNew(type: .item)
         let siblingId = await root.itemController.addNew(type: .item)
-        await edit.addItem(itemId: itemId, parentId: folderId)
-        await edit.addItem(itemId: siblingId, parentId: folderId)
+        edit.addItem(itemId: itemId, parentId: folderId)
+        edit.addItem(itemId: siblingId, parentId: folderId)
 
-        let ids = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
+        let ids = exportController.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .value))
         let stream = OutputStream.toMemory()
         stream.open()
         defer { stream.close() }
@@ -81,9 +81,9 @@ struct ImportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.importController
-        let exportController = await root.exportController
-        let edit = await root.editController
+        let sut = root.importController
+        let exportController = root.exportController
+        let edit = root.editController
 
         // Setup: folder1 → folder2 → character1, no siblings at either level
         let folder1 = await edit.addNew(type: .folder)
@@ -93,11 +93,11 @@ struct ImportControllerTests {
         let folder1Id = folder1!.id
         let folder2Id = folder2!.id
         let character1Id = await root.itemController.addNew(type: .item)
-        await edit.addItem(itemId: character1Id, parentId: folder2Id)
-        await edit.addItem(itemId: folder2Id, parentId: folder1Id)
+        edit.addItem(itemId: character1Id, parentId: folder2Id)
+        edit.addItem(itemId: folder2Id, parentId: folder1Id)
 
         // No siblings → folder2 and folder1 are fully promoted into ids, not partial
-        let ids = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([character1Id]), module: .value))
+        let ids = exportController.exporting(itemIds: ItemModuleIds(ids: Set([character1Id]), module: .value))
         #expect(ids.ids[.value]?.contains(character1Id) == true)
         #expect(ids.ids[.value]?.contains(folder2Id) == true)
         #expect(ids.ids[.value]?.contains(folder1Id) == true)
@@ -136,9 +136,9 @@ struct ImportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.importController
-        let exportController = await root.exportController
-        let edit = await root.editController
+        let sut = root.importController
+        let exportController = root.exportController
+        let edit = root.editController
 
         // Setup: folder1 → folder2 → [character1, character2]
         let folder1 = await edit.addNew(type: .folder)
@@ -149,12 +149,12 @@ struct ImportControllerTests {
         let folder2Id = folder2!.id
         let character1Id = await root.itemController.addNew(type: .item)
         let character2Id = await root.itemController.addNew(type: .item)
-        await edit.addItem(itemId: character1Id, parentId: folder2Id)
-        await edit.addItem(itemId: character2Id, parentId: folder2Id)
-        await edit.addItem(itemId: folder2Id, parentId: folder1Id)
+        edit.addItem(itemId: character1Id, parentId: folder2Id)
+        edit.addItem(itemId: character2Id, parentId: folder2Id)
+        edit.addItem(itemId: folder2Id, parentId: folder1Id)
 
         // Export character1 only — folder2/folder1 are partial since character2 is an unexported sibling
-        let ids1 = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([character1Id]), module: .value))
+        let ids1 = exportController.exporting(itemIds: ItemModuleIds(ids: Set([character1Id]), module: .value))
         #expect(ids1.partialIds[.value]?.contains(folder2Id) == true)
         let stream1 = OutputStream.toMemory()
         stream1.open()
@@ -163,7 +163,7 @@ struct ImportControllerTests {
         stream1.close()
 
         // Export character2 only — same partial folder pattern
-        let ids2 = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([character2Id]), module: .value))
+        let ids2 = exportController.exporting(itemIds: ItemModuleIds(ids: Set([character2Id]), module: .value))
         let stream2 = OutputStream.toMemory()
         stream2.open()
         _ = try await exportController.export(itemIds: ids2, into: stream2)
@@ -206,9 +206,9 @@ struct ImportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.importController
-        let exportController = await root.exportController
-        let edit = await root.editController
+        let sut = root.importController
+        let exportController = root.exportController
+        let edit = root.editController
 
         // Setup: folder1 → [character1, character2]
         let folder1 = await edit.addNew(type: .folder)
@@ -216,11 +216,11 @@ struct ImportControllerTests {
         let folder1Id = folder1!.id
         let character1Id = await root.itemController.addNew(type: .item)
         let character2Id = await root.itemController.addNew(type: .item)
-        await edit.addItem(itemId: character1Id, parentId: folder1Id)
-        await edit.addItem(itemId: character2Id, parentId: folder1Id)
+        edit.addItem(itemId: character1Id, parentId: folder1Id)
+        edit.addItem(itemId: character2Id, parentId: folder1Id)
 
         // Export character1 only — folder1 is partial since character2 is an unexported sibling
-        let ids1 = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([character1Id]), module: .value))
+        let ids1 = exportController.exporting(itemIds: ItemModuleIds(ids: Set([character1Id]), module: .value))
         #expect(ids1.partialIds[.value]?.contains(folder1Id) == true)
         let stream1 = OutputStream.toMemory()
         stream1.open()
@@ -229,7 +229,7 @@ struct ImportControllerTests {
         stream1.close()
 
         // Export character2 only — same partial pattern
-        let ids2 = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([character2Id]), module: .value))
+        let ids2 = exportController.exporting(itemIds: ItemModuleIds(ids: Set([character2Id]), module: .value))
         let stream2 = OutputStream.toMemory()
         stream2.open()
         _ = try await exportController.export(itemIds: ids2, into: stream2)
@@ -270,15 +270,15 @@ struct ImportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.importController
-        let exportController = await root.exportController
-        let edit = await root.editController
+        let sut = root.importController
+        let exportController = root.exportController
+        let edit = root.editController
 
         // Create character1 at root — parentId is nil at this point
         let character1Id = await root.itemController.addNew(type: .item)
 
         // Export character1 standalone — the serialised data carries parentId = nil
-        let standaloneIds = await exportController.exporting(itemIds: ItemModuleIds(ids: Set([character1Id]), module: .value))
+        let standaloneIds = exportController.exporting(itemIds: ItemModuleIds(ids: Set([character1Id]), module: .value))
         let standaloneStream = OutputStream.toMemory()
         standaloneStream.open()
         _ = try await exportController.export(itemIds: standaloneIds, into: standaloneStream)
@@ -289,7 +289,7 @@ struct ImportControllerTests {
         let folder2 = await edit.addNew(type: .folder)
         try #require(folder2 != nil)
         let folder2Id = folder2!.id
-        await edit.addItem(itemId: character1Id, parentId: folder2Id)
+        edit.addItem(itemId: character1Id, parentId: folder2Id)
 
         // Precondition: character1 is now inside folder2
         let characterBefore = await root.itemController.item(for: character1Id)

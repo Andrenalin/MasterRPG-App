@@ -11,10 +11,10 @@ import Testing
 struct ImportControllerTests {
 
     @Test func importing() async throws {
-        let root = await SpaceRootModel.testRoot()
+        let root = SpaceRootModel.testRoot()
         await root.itemController.resetData()
 
-        let sut = await root.importController
+        let sut = root.importController
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.spaceTestData, withExtension: "gmz").unsafelyUnwrapped

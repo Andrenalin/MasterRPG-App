@@ -14,7 +14,7 @@ struct FileUrlDataControllerTests {
         let fake = FakeFileUrAccessible()
         let sut = await FileUrlDataController(moduleFolder: uniqueModuleName("MegaModules"), fileTypes: [.rpgDocument], filenameExtension: ".rpg", fileUrlAccess: fake)
 
-        await #expect(sut.model.folders.isEmpty)
+        #expect(await sut.model.folders.isEmpty)
     }
 }
 

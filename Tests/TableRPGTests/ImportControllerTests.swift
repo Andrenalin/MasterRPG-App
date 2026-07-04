@@ -15,13 +15,13 @@ struct ImportControllerTests {
         try await MockRoot.resetTestData(for: root)
 
 
-        let sut = await root.importController
+        let sut = root.importController
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.tableTestData, withExtension: "gmz").unsafelyUnwrapped
 
         let task = sut.importUrl(from: url)
         let _ = try await task.value
-        #expect(await root.itemController.itemDataModel.items.count == 16)
+        #expect(root.itemController.itemDataModel.items.count == 16)
     }
 }

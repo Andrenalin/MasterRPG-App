@@ -21,17 +21,17 @@ struct NetworkStoreTestEnvironment {
     static func create() async throws -> NetworkStoreTestEnvironment {
         let masterDelegateSpy = MasterNetworkStoreDelegateMock()
         let playerDelegateSpy = PlayerNetworkStoreDelegateMock()
-        let masterNetworkSpy = await MasterNetworkControllableMock()
-        let playerNetworkSpy = await PlayerStoreAbstractionMock()
+        let masterNetworkSpy = MasterNetworkControllableMock()
+        let playerNetworkSpy = PlayerStoreAbstractionMock()
 
-        let networkController = await GameNetworkController(
+        let networkController = GameNetworkController(
             name: "Hello Test",
             proxy: false,
             masterBuilder: { _, _ in masterNetworkSpy },
             playerBuilder: { _, _ in playerNetworkSpy }
         )
-        await networkController.model.setMasterDelegate(masterDelegateSpy)
-        await networkController.model.setPlayerDelegate(playerDelegateSpy)
+        networkController.model.setMasterDelegate(masterDelegateSpy)
+        networkController.model.setPlayerDelegate(playerDelegateSpy)
 
         return NetworkStoreTestEnvironment(
             masterDelegateSpy: masterDelegateSpy,
@@ -101,7 +101,7 @@ struct NetworkStoreTests {
         #expect(env.masterNetworkSpy.calledStopStreaming == 0)
 
         // Act & Assert - Stop game when streaming
-        await env.masterNetworkSpy.networkModel.reset(isStreaming: true)
+        env.masterNetworkSpy.networkModel.reset(isStreaming: true)
         await env.networkController.stopGame()
         #expect(env.masterNetworkSpy.calledStopStreaming == 1)
     }
@@ -118,7 +118,7 @@ struct NetworkStoreTests {
 
         // Act & Assert - Start player game with device (should succeed)
         let connectResult = await env.networkController.startPlayerGame(
-            to: await BrowserGameModel(id: UUID(), endpointName: "MasterTestDevice", connectionMode: .observer)
+            to: BrowserGameModel(id: UUID(), endpointName: "MasterTestDevice", connectionMode: .observer)
         )
         #expect(connectResult)
         #expect(env.playerNetworkSpy.calledToggleConnection == 1)

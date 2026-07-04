@@ -127,10 +127,10 @@ struct SearchListResultsTests {
         let results = await listResults(root: root, text: "Dragon", displayMode: .medium)
         let ids = results.map(\.itemId)
 
-        let eIdx = try? ids.firstIndex(of: exactId)
-        let pIdx = try? ids.firstIndex(of: prefixId)
-        let cIdx = try? ids.firstIndex(of: containsId)
-        let dIdx = try? ids.firstIndex(of: descId)
+        let eIdx = ids.firstIndex(of: exactId)
+        let pIdx = ids.firstIndex(of: prefixId)
+        let cIdx = ids.firstIndex(of: containsId)
+        let dIdx = ids.firstIndex(of: descId)
 
         #expect(eIdx != nil && pIdx != nil && cIdx != nil && dIdx != nil,
                 "All four items must appear")
@@ -214,7 +214,7 @@ struct SearchListResultsTests {
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let results = await listResults(root: root, text: "", listMode: .folder)
-        let folder  = try? results.first(where: { $0.itemId == folderId })
+        let folder  = results.first(where: { $0.itemId == folderId })
 
         #expect(folder?.canOpen == true,
                 "Empty search must set canOpen=true so FolderListControllable can lazy-load on tap")
@@ -233,7 +233,7 @@ struct SearchListResultsTests {
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let results = await listResults(root: root, text: "Dragon", listMode: .folder)
-        let folder  = try? results.first(where: { $0.itemId == folderId })
+        let folder  = results.first(where: { $0.itemId == folderId })
 
         #expect(folder?.children.map(\.itemId).contains(childId) == true,
                 "Matching child must appear inside the folder")
@@ -252,7 +252,7 @@ struct SearchListResultsTests {
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let results = await listResults(root: root, text: "Dragon", listMode: .folder)
-        let folder  = try? results.first(where: { $0.itemId == folderId })
+        let folder  = results.first(where: { $0.itemId == folderId })
 
         #expect(folder != nil,           "Folder whose name matches must be included")
         #expect(folder?.children.isEmpty == true, "Non-matching child must not appear")
@@ -294,9 +294,9 @@ struct SearchListResultsTests {
 
         let results = await listResults(root: root, text: "Dragon", listMode: .folder)
 
-        let outerResult = try? results.first(where: { $0.itemId == outerFolderId })
-        let innerResult = try? outerResult?.children.first(where: { $0.itemId == innerFolderId })
-        let deepResult  = try? innerResult?.children.first(where: { $0.itemId == deepItemId })
+        let outerResult = results.first(where: { $0.itemId == outerFolderId })
+        let innerResult = outerResult?.children.first(where: { $0.itemId == innerFolderId })
+        let deepResult  = innerResult?.children.first(where: { $0.itemId == deepItemId })
 
         #expect(outerResult != nil, "Outer folder must appear (path to matching descendant)")
         #expect(innerResult != nil, "Inner folder must be a child of outer (path to match)")
@@ -371,7 +371,7 @@ struct SearchListResultsTests {
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let results = await listResults(root: root, text: "", listMode: .folder, focusId: folderId)
-        let child = try? results.first(where: { $0.itemId == childId })
+        let child = results.first(where: { $0.itemId == childId })
 
         // entryId is the folder's membership entry UUID — used as FolderListItemModel.id so the
         // same item appearing in multiple collections gets independent SwiftUI identities.
@@ -412,8 +412,8 @@ struct SearchListResultsTests {
 
         let results = await inspectorFolderResults(root: root, text: "Space")
 
-        let folderResult = try? results.first(where: { $0.itemId == folderId })
-        let itemResult   = try? folderResult?.children.first(where: { $0.itemId == itemId })
+        let folderResult = results.first(where: { $0.itemId == folderId })
+        let itemResult   = folderResult?.children.first(where: { $0.itemId == itemId })
 
         #expect(folderResult != nil,   "Folder must appear (path to matching item)")
         #expect(itemResult   != nil,   "Item must be a child of the folder")
@@ -437,8 +437,8 @@ struct SearchListResultsTests {
 
         let results = await inspectorFolderResults(root: root, text: "Space")
 
-        let folderResult = try? results.first(where: { $0.itemId == folderId })
-        let itemResult   = try? folderResult?.children.first(where: { $0.itemId == itemId })
+        let folderResult = results.first(where: { $0.itemId == folderId })
+        let itemResult   = folderResult?.children.first(where: { $0.itemId == itemId })
 
         #expect(itemResult != nil,
                 "Item must appear when its entry matches, even if item name does not")
@@ -463,8 +463,8 @@ struct SearchListResultsTests {
 
         let results = await inspectorFolderResults(root: root, text: "Dragon")
 
-        let folderResult = try? results.first(where: { $0.itemId == folderId })
-        let itemResult   = try? folderResult?.children.first(where: { $0.itemId == itemId })
+        let folderResult = results.first(where: { $0.itemId == folderId })
+        let itemResult   = folderResult?.children.first(where: { $0.itemId == itemId })
 
         #expect(itemResult != nil,                       "Item must appear (name matches)")
         #expect(itemResult?.children.isEmpty == true,    "No entry children — none matched")
@@ -503,8 +503,8 @@ struct SearchListResultsTests {
 
         let results = await inspectorFolderResults(root: root, text: "")
 
-        let folderResult = try? results.first(where: { $0.itemId == folderId })
-        let itemResult   = try? folderResult?.children.first(where: { $0.itemId == itemId })
+        let folderResult = results.first(where: { $0.itemId == folderId })
+        let itemResult   = folderResult?.children.first(where: { $0.itemId == itemId })
 
         // Empty search: folder shows lazy (canOpen), item has no entry children returned
         // but canOpen reflects whether entries exist
@@ -560,9 +560,9 @@ struct SearchListResultsTests {
 
         let results = await inspectorFolderResults(root: root, text: "Dragon")
 
-        let outerResult = try? results.first(where: { $0.itemId == outerFolderId })
-        let innerResult = try? outerResult?.children.first(where: { $0.itemId == innerFolderId })
-        let item2Result = try? innerResult?.children.first(where: { $0.itemId == item2Id })
+        let outerResult = results.first(where: { $0.itemId == outerFolderId })
+        let innerResult = outerResult?.children.first(where: { $0.itemId == innerFolderId })
+        let item2Result = innerResult?.children.first(where: { $0.itemId == item2Id })
 
         #expect(outerResult != nil, "Outer folder must appear (path to Dragon Cruiser)")
         #expect(innerResult != nil, "Inner folder must appear as child of outer")

@@ -20,7 +20,7 @@ struct MasterNetworkControllerTestEnvironment {
         let delegateSpy = MasterNetworkControllerDelegateMock()
         let listenerSpy = GameListnerAbstractionMock()
 
-        let controller = await MasterNetworkController(
+        let controller = MasterNetworkController(
             name: name,
             delegate: delegateSpy,
             listnerBuilder: { _, _, _ in listenerSpy as any ListenerManaging }
@@ -44,63 +44,63 @@ struct MasterNetworkControllerTests {
         let env = await MasterNetworkControllerTestEnvironment.create()
 
         // Act
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
 
         // Assert
-        await #expect(env.controller.networkModel.name == "TestMasterTest")
-        let isStreaming = await env.controller.networkModel.isStreaming
+        #expect(env.controller.networkModel.name == "TestMasterTest")
+        let isStreaming = env.controller.networkModel.isStreaming
         #expect(isStreaming)
-        await #expect(env.controller.networkModel.connections.isEmpty)
+        #expect(env.controller.networkModel.connections.isEmpty)
         #expect(env.listenerSpy.calledStartListening == 1)
-        await #expect(env.controller.networkModel.browserManager?.isBrowsing ?? false)
+        #expect(env.controller.networkModel.browserManager?.isBrowsing ?? false)
     }
 
     @Test("Toggle streaming stops and restarts services")
     func toggleStreaming() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
 
         // Act - Toggle off
-        await env.controller.toggleStreaming()
+        env.controller.toggleStreaming()
 
         // Assert - Streaming stopped
-        var isStreaming = await env.controller.networkModel.isStreaming
+        var isStreaming = env.controller.networkModel.isStreaming
         #expect(!isStreaming)
-        await #expect(env.controller.networkModel.connections.isEmpty)
-        await #expect((env.controller.networkModel.browserManager?.isBrowsing ?? false) == false)
+        #expect(env.controller.networkModel.connections.isEmpty)
+        #expect((env.controller.networkModel.browserManager?.isBrowsing ?? false) == false)
 
         // Act - Toggle back on
-        await env.controller.toggleStreaming()
+        env.controller.toggleStreaming()
 
         // Assert - Streaming restarted
-        isStreaming = await env.controller.networkModel.isStreaming
+        isStreaming = env.controller.networkModel.isStreaming
         #expect(isStreaming)
-        await #expect(env.controller.networkModel.connections.isEmpty)
+        #expect(env.controller.networkModel.connections.isEmpty)
         #expect(env.listenerSpy.calledStartListening == 2)
-        await #expect(env.controller.networkModel.browserManager?.isBrowsing ?? false)
+        #expect(env.controller.networkModel.browserManager?.isBrowsing ?? false)
     }
 
     @Test("New connection adds to connections list")
     func newConnection() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
 
         // Act
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
 
         // Assert
-        await #expect(env.controller.networkModel.connections.count == 1)
+        #expect(env.controller.networkModel.connections.count == 1)
     }
 
     @Test("Ready connection triggers delegate callback")
     func readyConnection() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
-        let connectionId = await env.controller.networkModel.connections.first!.id
+        let connectionId = env.controller.networkModel.connections.first!.id
 
         // Act
         await env.controller.readyConnection(for: connectionId)
@@ -113,9 +113,9 @@ struct MasterNetworkControllerTests {
     func receivedData() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
-        let connectionId = await env.controller.networkModel.connections.first!.id
+        let connectionId = env.controller.networkModel.connections.first!.id
 
         // Act
         await env.controller.received(data: nil, for: connectionId)
@@ -128,9 +128,9 @@ struct MasterNetworkControllerTests {
     func sendResponse() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
-        let connectionId = await env.controller.networkModel.connections.first!.id
+        let connectionId = env.controller.networkModel.connections.first!.id
 
         // Act & Assert - All send methods execute without error
         await env.controller.sendResponse(data: nil)
@@ -143,14 +143,14 @@ struct MasterNetworkControllerTests {
     func lostConnectionUnknownId() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
 
         // Act
         await env.controller.lostConnection(for: UUID())
 
         // Assert
-        await #expect(env.controller.networkModel.connections.count == 1)
+        #expect(env.controller.networkModel.connections.count == 1)
         #expect(env.delegateSpy.calledLostPlayer == 0)
     }
 
@@ -158,14 +158,14 @@ struct MasterNetworkControllerTests {
     func failedConnectionUnknownId() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
 
         // Act
         await env.controller.failed(with: "Error", for: UUID())
 
         // Assert
-        await #expect(env.controller.networkModel.connections.count == 1)
+        #expect(env.controller.networkModel.connections.count == 1)
         #expect(env.delegateSpy.calledLostPlayer == 0)
     }
 
@@ -173,15 +173,15 @@ struct MasterNetworkControllerTests {
     func failedConnectionValidId() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
-        let connectionId = await env.controller.networkModel.connections.first!.id
+        let connectionId = env.controller.networkModel.connections.first!.id
 
         // Act
         await env.controller.failed(with: "Error", for: connectionId)
 
         // Assert
-        await #expect(env.controller.networkModel.connections.isEmpty)
+        #expect(env.controller.networkModel.connections.isEmpty)
         #expect(env.delegateSpy.calledLostPlayer == 1)
     }
 
@@ -189,15 +189,15 @@ struct MasterNetworkControllerTests {
     func cancelled() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        await env.controller.startStreaming()
+        env.controller.startStreaming()
 
         // Act
         await env.controller.listenerCancelled()
 
         // Assert
-        let isStreaming = await env.controller.networkModel.isStreaming
+        let isStreaming = env.controller.networkModel.isStreaming
         #expect(!isStreaming)
-        await #expect(env.controller.networkModel.connections.isEmpty)
+        #expect(env.controller.networkModel.connections.isEmpty)
     }
 }
 #endif
