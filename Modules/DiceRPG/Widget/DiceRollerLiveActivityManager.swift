@@ -142,7 +142,7 @@ public final class DiceRollerLiveActivityManager {
     }
 }
 
-#elseif !os(tVOS)
+#elseif !os(tvOS)
 // MARK: - macOS Stub Implementation
 
 import Foundation
