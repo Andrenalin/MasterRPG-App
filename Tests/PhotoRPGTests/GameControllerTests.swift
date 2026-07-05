@@ -86,7 +86,7 @@ struct GameControllerTests {
     @Test func CreateGameData() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let itemController = root.itemController
-        let exportController = ExportController(rootController: root, itemController: itemController)
+        let exportController = ExportController(hubControllable: root, itemController: itemController)
         let sut = GameController(itemController: itemController, exportController: exportController)
 
         root.itemController.itemDataModel.resetGame(start: true)
@@ -114,7 +114,7 @@ struct GameControllerTests {
     @Test func UpdateGame() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let itemController = root.itemController
-        let exportController = ExportController(rootController: root, itemController: itemController)
+        let exportController = ExportController(hubControllable: root, itemController: itemController)
         let sut = GameController(itemController: itemController, exportController: exportController)
 
         root.itemController.itemDataModel.resetGame(start: true)

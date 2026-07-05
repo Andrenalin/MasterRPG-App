@@ -17,7 +17,7 @@ struct SheetControllerTests {
     @Test func adventureSheetBasic() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -33,7 +33,7 @@ struct SheetControllerTests {
     @Test func adventureSheetWithPhoto() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
         let item = root.itemController.itemOrEmpty(for: itemId!)
@@ -50,7 +50,7 @@ struct SheetControllerTests {
     @Test func adventureSheetEntries() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -66,7 +66,7 @@ struct SheetControllerTests {
     @Test func adventureSheetWithLinks() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -83,7 +83,7 @@ struct SheetControllerTests {
     @Test func adventureSheetLinkToAdventureModule() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -100,7 +100,7 @@ struct SheetControllerTests {
     @Test func adventureSheetIsShownPropagation() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -114,7 +114,7 @@ struct SheetControllerTests {
     @Test func adventureSheetLevelLimit() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -135,7 +135,7 @@ struct SheetControllerTests {
     @Test func adventureSheetDestination() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -148,7 +148,7 @@ struct SheetControllerTests {
     @Test func searchPreservesIsShownState() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -184,7 +184,7 @@ struct SheetControllerTests {
     @Test func searchDoesNotRestoreOnInitialization() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -201,7 +201,7 @@ struct SheetControllerTests {
     @Test func searchRestoresStateOnlyAfterActiveSearch() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -238,7 +238,7 @@ struct SheetControllerTests {
     @Test func moveEntryPreservesIsShownState() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -266,7 +266,7 @@ struct SheetControllerTests {
     @Test func searchExpandsParentWhenChildMatches() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -309,7 +309,7 @@ struct SheetControllerTests {
     @Test func searchPreservesOriginalStateAcrossMultipleSearches() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 

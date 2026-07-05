@@ -5,17 +5,15 @@ import Foundation
 import CoreData
 
 struct SyncDataController: Sendable {
-    @MainActor init(context: NSManagedObjectContext, dataController: DataController, editController: EditController) {
-        self.dataControllable = dataController
-        self.editControllable = editController
-        self.itemControllable = editController.itemControllable
+    @MainActor init(context: NSManagedObjectContext, dataControllable: any DataPersistenceControllable, itemController: ItemController) {
+        self.dataControllable = dataControllable
+        self.itemControllable = itemController
         self.changeObserver = CoreDataChangeObserver()
 
         changeObserver.observeCoreDataChanges(from: context, entity: RPGTable.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
     }
-    
+
     let dataControllable: any DataPersistenceControllable
-    let editControllable: any EditControllable
     let itemControllable: any ItemControllable
     let changeObserver: CoreDataChangeObserver
 }

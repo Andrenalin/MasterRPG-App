@@ -5,8 +5,7 @@ import Foundation
 import Observation
 
 struct EditController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
-        self.linkRegisterController = linkRegisterController
+    @MainActor init(rootManager: RootManager, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
         self.tagController = tagController
         self.itemController = itemController
         self.editorModel = ItemEditorModel()
@@ -23,7 +22,6 @@ struct EditController: Sendable {
     }
 
     let itemController: ItemController
-    let linkRegisterController: LinkRegisterController
     let tagController: TagController
     let editorModel: ItemEditorModel
     let sheetRootModel: SheetRootModel
@@ -40,6 +38,8 @@ extension EditController: EditControllable {
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
+
+    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 }
 
 extension EditController {

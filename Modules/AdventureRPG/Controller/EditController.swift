@@ -53,10 +53,9 @@ struct LinkAdventureModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: AdventureRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
+    @MainActor init(root: AdventureRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
         self.root = root
         self.itemController = itemController
-        self.linkRegisterController = linkRegisterController
         self.tagController = tagController
         self.editorModel = ItemEditorModel()
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
@@ -75,7 +74,6 @@ struct EditController: Sendable {
     let root: AdventureRootModel
 
     let itemController: ItemController
-    let linkRegisterController: LinkRegisterController
     let tagController: TagController
     let editorModel: ItemEditorModel
     let sheetRootModel: SheetRootModel
@@ -93,6 +91,8 @@ extension EditController: EntryDataEditable {
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
+
+    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 }
     
 // MARK: - EntryList editor

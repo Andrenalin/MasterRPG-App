@@ -32,11 +32,10 @@ struct LinkTableModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(rootManager: RootManager, diceRoot: DiceRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController,  linkRegisterController: LinkRegisterController, tagController: TagController) {
+    @MainActor init(rootManager: RootManager, diceRoot: DiceRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
         self.diceRoot = diceRoot
 
         self.itemController = itemController
-        self.linkRegisterController = linkRegisterController
         self.tagController = tagController
 
         self.editorModel = ItemEditorModel()
@@ -56,7 +55,6 @@ struct EditController: Sendable {
     let diceRoot: DiceRootModel
 
     let itemController: ItemController
-    let linkRegisterController: LinkRegisterController
     let tagController: TagController
 
     let editorModel: ItemEditorModel
@@ -70,6 +68,7 @@ extension EditController: EntryDataEditable {
     
     var itemControllable: any ItemControllable { itemController }
     var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
+    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 }
     
 // MARK: - EntryList editor

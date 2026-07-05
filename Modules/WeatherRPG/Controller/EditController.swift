@@ -11,9 +11,8 @@ final class WeatherEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
         self.itemController = itemController
-        self.linkRegisterController = linkRegisterController
         self.tagController = tagController
         self.editorModel = ItemEditorModel()
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
@@ -30,7 +29,6 @@ struct EditController: Sendable {
     }
 
     let itemController: ItemController
-    let linkRegisterController: LinkRegisterController
     let tagController: TagController
     let editorModel: ItemEditorModel
     let sheetRootModel: SheetRootModel
@@ -42,6 +40,7 @@ extension EditController: EditControllable {
     typealias Model = WeatherModel
     
     var itemControllable: any ItemControllable { itemController }
+    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 }
 
 // MARK: - Module Editor

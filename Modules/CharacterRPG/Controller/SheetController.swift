@@ -7,7 +7,6 @@ import os
 struct SheetController {
     let itemController: ItemController
     let linkController: LinkController
-    let linkRegisterController: LinkRegisterController
 
     // Timing accumulators for performance comparison
     @MainActor private static var parseDurationTotal: Duration = .zero
@@ -15,6 +14,8 @@ struct SheetController {
 }
 
 extension SheetController: SheetControllable {
+    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
+
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let startTime = ContinuousClock.now
 

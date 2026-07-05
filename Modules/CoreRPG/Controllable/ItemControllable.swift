@@ -14,7 +14,7 @@ public protocol ItemControllable: Sendable  {
     var cacheControllable: ImageCacheControllable? { get }
     var config: ModuleConfigurable { get }
     var collectionCategory: ItemListCategory { get }
-    var dataControllable: (any DataPersistenceControllable)? { get }
+    @MainActor var dataControllable: (any DataPersistenceControllable)? { get }
     var fileUrlDataController: FileUrlDataController? { get }
     
     @MainActor var linkRegisterController: LinkRegisterController { get }

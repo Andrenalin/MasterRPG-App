@@ -7,13 +7,14 @@ import Observation
 public protocol SyncDataControllable: Sendable {
     var dataControllable: any DataPersistenceControllable { get }
     var itemControllable: any ItemControllable { get }
-    var editControllable: any EditControllable { get }
 }
 
 // MARK: Core Data --> CloudKit Sync
 
 public extension SyncDataControllable {
-    func start() {
+    /// Returns the running sync task so the caller can store/cancel it — this itself stays
+    /// non-actor-isolated so the task keeps running off the main actor, same as before.
+    nonisolated func start() -> Task<Void, Never> {
         Task(priority: .userInitiated) {
             await fetchUpdates()
         }
@@ -25,7 +26,7 @@ public extension SyncDataControllable {
             do {
                 await CloudKitOperationCounter.shared.recordOperation(
                     function: "SyncDataControllable.updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count))",
-                    file: "ItemSyncable.swift"
+                    file: "SyncDataControllable.swift"
                 )
 
                 // Process deletions

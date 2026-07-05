@@ -20,11 +20,10 @@ final class MapEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: MapRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
+    @MainActor init(root: MapRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
         self.root = root
-        
+
         self.itemController = itemController
-        self.linkRegisterController = linkRegisterController
         self.tagController = tagController
         
         self.editorModel = ItemEditorModel()
@@ -44,7 +43,6 @@ struct EditController: Sendable {
     let root: MapRootModel
 
     let itemController: ItemController
-    let linkRegisterController: LinkRegisterController
     let tagController: TagController
 
     let editorModel: ItemEditorModel
@@ -81,7 +79,9 @@ extension EditController: EntryDataEditable {
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
-    
+
+    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
+
     public var linkModules: [NetworkModules] { [.audio, .value, .dice, .map, .pdf, .photo, .table] }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {

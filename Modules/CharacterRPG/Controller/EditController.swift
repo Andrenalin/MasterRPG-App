@@ -35,11 +35,10 @@ public struct LinkCharacterModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: CharacterRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, linkRegisterController: LinkRegisterController, tagController: TagController) {
+    @MainActor init(root: CharacterRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
         self.root = root
-                
+
         self.itemController = itemController
-        self.linkRegisterController = linkRegisterController
         self.tagController = tagController
         
         self.editorModel = ItemEditorModel()
@@ -59,7 +58,6 @@ struct EditController: Sendable {
     let root: CharacterRootModel
 
     let itemController: ItemController
-    let linkRegisterController: LinkRegisterController
     let tagController: TagController
 
     let editorModel: ItemEditorModel
@@ -73,6 +71,7 @@ extension EditController: EntryDataEditable {
 
     var itemControllable: any ItemControllable { itemController }
     var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
+    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 
     var canAddGroups: Bool { true }
 }

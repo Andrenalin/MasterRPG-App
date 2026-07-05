@@ -12,6 +12,11 @@ public final class ItemDataModel: Sendable {
         self.version = version
     }
 
+    // Injected after construction, once the async Core Data context becomes available —
+    // lets ItemController be built eagerly without waiting on it.
+    @ObservationIgnored public var dataController: (any DataPersistenceControllable)?
+    @ObservationIgnored public var linkRegisterController: LinkRegisterController?
+
     public var items: [UUID] = []
     public var itemData: [UUID: ModelType] = [:]
     

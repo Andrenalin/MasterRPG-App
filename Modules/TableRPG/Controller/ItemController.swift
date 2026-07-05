@@ -6,11 +6,8 @@ import Observation
 import CoreData
 
 struct ItemController: Sendable {
-    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterController: LinkRegisterController) {
+    @MainActor init(config: ModuleConfiguration) {
         self.config = config
-
-        self.dataControllable = dataController
-        self.linkRegisterController = linkRegisterController
 
         self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         self.collectionCategory = config.collectionCategory
@@ -18,11 +15,12 @@ struct ItemController: Sendable {
 
     let config: ModuleConfigurable
     let collectionCategory: ItemListCategory
-    let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
-    let linkRegisterController: LinkRegisterController
 }
 
 extension ItemController: ItemControllable {
     typealias Model = TableModel
+
+    @MainActor var dataControllable: (any DataPersistenceControllable)? { itemDataModel.dataController }
+    @MainActor var linkRegisterController: LinkRegisterController { itemDataModel.linkRegisterController! }
 }

@@ -17,7 +17,7 @@ struct SheetControllerTests {
     @Test func tableSheetBasic() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -35,7 +35,7 @@ struct SheetControllerTests {
     @Test func tableSheetWithDice() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
         let item = root.itemController.itemOrEmpty(for: itemId!)
@@ -53,7 +53,7 @@ struct SheetControllerTests {
     @Test func tableSheetEntries() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -71,7 +71,7 @@ struct SheetControllerTests {
     @Test func tableSheetWithLinks() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -92,7 +92,7 @@ struct SheetControllerTests {
     @Test func tableSheetLinkToTableModule() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
 
         let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
 
@@ -110,7 +110,7 @@ struct SheetControllerTests {
     @Test func tableSheetIsShownPropagation() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -126,7 +126,7 @@ struct SheetControllerTests {
     @Test func tableSheetLevelLimit() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
@@ -149,7 +149,7 @@ struct SheetControllerTests {
     @Test func tableSheetDestination() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = SheetController(itemController: root.itemController, linkRegisterController: linkRegisterController(for: root))
+        let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
