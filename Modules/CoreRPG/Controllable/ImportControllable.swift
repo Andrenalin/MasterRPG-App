@@ -49,14 +49,9 @@ public final class ItemDataImportModel {
 public protocol ImportControllable: Sendable {
     var itemControllable: any ItemControllable { get }
     var editControllable: any EditControllable { get }
-    //var rootManager: RootManager? { get }
 
     func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws
 }
-
-//public extension ImportControllable {
-//    var rootManager: RootManager? { nil }
-//}
 
 public enum ItemDataImportableError: Error {
     case openError
