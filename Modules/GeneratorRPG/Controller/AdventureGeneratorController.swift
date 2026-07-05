@@ -254,8 +254,10 @@ struct AdventureGeneratorController: Sendable {
                 if let recoverySuggestion = error.recoverySuggestion {
                     model.responseErrorContent += "\n\(recoverySuggestion)"
                 }
+                model.showError = true
             } catch {
                 model.responseErrorContent = error.localizedDescription
+                model.showError = true
             }
         }
     }

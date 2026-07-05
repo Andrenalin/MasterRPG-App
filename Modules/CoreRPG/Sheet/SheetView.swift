@@ -2,13 +2,23 @@
 
 import SwiftUI
 
-struct SheetView<LinkType: LinkDataTransferable>: View {
-    init(root: ItemRootController, rootModel: SheetRootModel, sheetModel: SheetModel, isEditor: Bool = false, linkTypes: LinkType.Type = LinkDiceData.self) {
+struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
+    init(
+        root: ItemRootController,
+        rootModel: SheetRootModel,
+        sheetModel: SheetModel,
+        isEditor: Bool = false,
+        linkTypes: LinkType.Type = LinkDiceData.self,
+        detailAction: ((SheetModel) -> Void)? = nil,
+        @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
+    ) {
         self.root = root
         self.rootModel = rootModel
         self.sheetModel = sheetModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
+        self.detailAction = detailAction
+        self.detailContent = detailContent
     }
     
     let root: ItemRootController
@@ -16,6 +26,8 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     let sheetModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
+    let detailAction: ((SheetModel) -> Void)?
+    let detailContent: (SheetModel) -> DetailContent
     
     @State private var dropTargetEntryId: String?
     
@@ -58,6 +70,16 @@ private extension SheetView {
             LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.source.itemId), text: sheetModel.name))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.title)
+
+            if let detailAction {
+                Button("Next Question", systemImage: "questionmark.bubble") {
+                    detailAction(sheetModel)
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .disabled(!sheetModel.hasDetailContent)
+                .help("Next question")
+            }
         }
         .applyIf(isEditor && sheetModel.canAdd) {
             $0.contextMenuAll {
@@ -97,32 +119,54 @@ private extension SheetView {
     }
     
     @ViewBuilder var entryRows: some View {
-        ForEach(sheetModel.entries) { entry in
-            if !entry.isHidden {
-                SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-#if !os(tvOS)
-                    .applyIf(isEditor) {
-                        $0
-                            .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
-                            .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)
-                            .dropDestination(for: linkTypes) { items, location in
-                                handleDrop(items: items, targetEntry: entry)
-                            } isTargeted: { isTargeted in
-                                dropTargetEntryId = isTargeted ? entry.id : nil
-                            }
-                    }
-#endif
-                
-                ForEach(entry.entries) { subEntry in
-                    if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
-                        SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes)
-                            .padding(.leading, 2)
-                    }
-                }
+        entryRows(for: regularEntries(in: sheetModel.entries))
 
+        detailContent(sheetModel)
+
+        entryRows(for: generatedEntries(in: sheetModel.entries))
+    }
+
+    @ViewBuilder func entryRows(for entries: [SheetModel]) -> some View {
+        ForEach(entries) { entry in
+            SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, detailAction: detailAction, detailContent: detailContent)
+                .frame(maxWidth: .infinity, alignment: .leading)
+#if !os(tvOS)
+                .applyIf(isEditor) {
+                    $0
+                        .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
+                        .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)
+                        .dropDestination(for: linkTypes) { items, location in
+                            handleDrop(items: items, targetEntry: entry)
+                        } isTargeted: { isTargeted in
+                            dropTargetEntryId = isTargeted ? entry.id : nil
+                        }
+                }
+#endif
+
+            let visibleSubEntries = visibleEntries(in: entry.entries)
+            ForEach(visibleSubEntries) { subEntry in
+                if subEntry.isGeneratedAnswer {
+                    GeneratedSheetEntryTreeView(rootModel: rootModel, parentModel: entry, entryModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, detailAction: detailAction, detailContent: detailContent)
+                        .padding(.leading, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
+                    SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, detailAction: detailAction, detailContent: detailContent)
+                        .padding(.leading, 2)
+                }
             }
         }
+    }
+
+    func visibleEntries(in entries: [SheetModel]) -> [SheetModel] {
+        entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
+    }
+
+    func regularEntries(in entries: [SheetModel]) -> [SheetModel] {
+        visibleEntries(in: entries).filter { !$0.isGeneratedAnswer }
+    }
+
+    func generatedEntries(in entries: [SheetModel]) -> [SheetModel] {
+        visibleEntries(in: entries).filter(\.isGeneratedAnswer)
     }
 
     func handleDrop(items: [LinkType], targetEntry: SheetModel) -> Bool {
@@ -132,5 +176,84 @@ private extension SheetView {
     var endRow: some View {
         Color.accentColor.opacity(0.3)
             .frame(height: 8)
+    }
+}
+
+private struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, DetailContent: View>: View {
+    init(
+        rootModel: SheetRootModel,
+        parentModel: SheetModel,
+        entryModel: SheetModel,
+        isEditor: Bool,
+        linkTypes: LinkType.Type,
+        detailAction: ((SheetModel) -> Void)?,
+        @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
+    ) {
+        self.rootModel = rootModel
+        self.parentModel = parentModel
+        self.entryModel = entryModel
+        self.isEditor = isEditor
+        self.linkTypes = linkTypes
+        self.detailAction = detailAction
+        self.detailContent = detailContent
+    }
+
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+    let isEditor: Bool
+    let linkTypes: LinkType.Type
+    let detailAction: ((SheetModel) -> Void)?
+    let detailContent: (SheetModel) -> DetailContent
+
+    var body: some View {
+        SheetEntryView(
+            rootModel: rootModel,
+            parentModel: parentModel,
+            entryModel: entryModel,
+            isEditor: isEditor,
+            linkTypes: linkTypes,
+            detailAction: detailAction,
+            detailContent: detailContent
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
+
+        ForEach(visibleChildEntries) { childEntry in
+            if childEntry.isGeneratedAnswer {
+                GeneratedSheetEntryTreeView(
+                    rootModel: rootModel,
+                    parentModel: entryModel,
+                    entryModel: childEntry,
+                    isEditor: isEditor,
+                    linkTypes: linkTypes,
+                    detailAction: detailAction,
+                    detailContent: detailContent
+                )
+                .padding(.leading, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else if let root = rootModel.rootController(for: childEntry.source.typeId), childEntry.isShown {
+                SheetView(
+                    root: root,
+                    rootModel: rootModel,
+                    sheetModel: childEntry,
+                    isEditor: isEditor,
+                    linkTypes: linkTypes,
+                    detailAction: detailAction,
+                    detailContent: detailContent
+                )
+                .padding(.leading, 2)
+            }
+        }
+    }
+
+    private var visibleChildEntries: [SheetModel] {
+        entryModel.entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
+    }
+}
+
+private extension SheetModel {
+    var hasDetailContent: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

@@ -2,13 +2,23 @@
 
 import SwiftUI
 
-struct SheetEntryView<LinkType: LinkDataTransferable>: View {
-    init(rootModel: SheetRootModel, parentModel: SheetModel, entryModel: SheetModel, isEditor: Bool, linkTypes: LinkType.Type) {
+struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View {
+    init(
+        rootModel: SheetRootModel,
+        parentModel: SheetModel,
+        entryModel: SheetModel,
+        isEditor: Bool,
+        linkTypes: LinkType.Type,
+        detailAction: ((SheetModel) -> Void)? = nil,
+        @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
+    ) {
         self.rootModel = rootModel
         self.parentModel = parentModel
         self.entryModel = entryModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
+        self.detailAction = detailAction
+        self.detailContent = detailContent
     }
 
     let rootModel: SheetRootModel
@@ -16,6 +26,8 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     let entryModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
+    let detailAction: ((SheetModel) -> Void)?
+    let detailContent: (SheetModel) -> DetailContent
     
     @Environment(\.networkActions) private var networkActions
     @Environment(AppGameStateModel.self) private var appGameStateModel
@@ -30,13 +42,19 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
 
             contentRow
 
+            detailContent(entryModel)
+
             inlineEditorRow
 
             afterInline
         }
         .id(entryModel.source.entryId)
         .sheetBorderColor(level: parentModel.level)
+        .overlay {
+            generatedSelectionBorder
+        }
         .contentShape(.rect)
+        .animation(.easeInOut(duration: 0.2), value: entryModel.isGeneratedSelected)
         .onChange(of: entryModel.name) {
             rootModel.updateParent(parentModel)
         }
@@ -75,15 +93,34 @@ private extension SheetEntryView {
 
     var mainRow: some View {
         HStack {
+            if entryModel.isGeneratedAnswer {
+                Button("Select answer", systemImage: entryModel.isGeneratedSelected ? "checkmark.circle.fill" : "circle") {
+                    toggleGeneratedSelection()
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .foregroundStyle(entryModel.isGeneratedSelected ? .green : .secondary)
+                .help("Select answer")
+            }
+
             if (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, isEditor: isEditor, onlyIcon: true)
             }
             
             switch entryModel.sheetType {
             case .item, .group:
-                LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.name, shareResults: shareResult))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .font(.headline)
+                if entryModel.isGeneratedAnswer {
+                    Button(action: toggleGeneratedSelection) {
+                        LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.name, shareResults: shareResult))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .font(.headline)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.name, shareResults: shareResult))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.headline)
+                }
                 
             case .dice:
                 viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
@@ -101,6 +138,16 @@ private extension SheetEntryView {
                             
             if isEditor && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
+            }
+
+            if let detailAction, canGoDeeper {
+                Button("Next Question", systemImage: "questionmark.bubble") {
+                    detailAction(entryModel)
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .disabled(!hasDetailContent)
+                .help("Next question")
             }
         }
     }
@@ -172,6 +219,31 @@ private extension SheetEntryView {
             entryModel.description
         } else {
             "**\(entryModel.name)**: \(entryModel.description)"
+        }
+    }
+
+    var canGoDeeper: Bool {
+        entryModel.sheetType == .item || entryModel.sheetType == .group
+    }
+    
+    var hasDetailContent: Bool {
+        !entryModel.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        !entryModel.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    @ViewBuilder var generatedSelectionBorder: some View {
+        if entryModel.isGeneratedAnswer {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(
+                    entryModel.isGeneratedSelected ? Color.green : Color.secondary.opacity(0.25),
+                    lineWidth: entryModel.isGeneratedSelected ? 2 : 1
+                )
+        }
+    }
+
+    func toggleGeneratedSelection() {
+        withAnimation {
+            entryModel.isGeneratedSelected.toggle()
         }
     }
 }

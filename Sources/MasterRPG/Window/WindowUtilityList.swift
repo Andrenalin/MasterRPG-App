@@ -16,10 +16,10 @@ struct WindowUtilityList: Scene {
         Group {
             WindowGroup("Generator Adventure", id: SceneId.generateAdventure.rawValue, for: WindowItemSelection.self) { $selection in
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.adventureRoot.viewController.generatorView(root: appModel.adventureRoot, selection: selection ?? WindowItemSelection(itemId: UUID()))
-                        .sceneTracker(for: SceneId.generateAdventure)
-                        .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .adventure))
+                    GeneratorAdventureWindowContent(appModel: appModel, selection: selection)
                 }
+                .sceneTracker(for: SceneId.generateAdventure)
+                .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .adventure))
                 .environment(appModel.scenesManager)
                 .environment(appModel)
             }
@@ -96,6 +96,28 @@ struct WindowUtilityList: Scene {
 #endif
         }
         .defaultSize(CGSize(width: 600, height: 800))
+    }
+}
+
+private struct GeneratorAdventureWindowContent: View {
+    let appModel: AppModel
+    let selection: WindowItemSelection?
+
+    private var windowSelection: WindowItemSelection? {
+        selection ?? appModel.adventureRoot.currentSelectedItemId.map { WindowItemSelection(itemId: $0) }
+    }
+
+    var body: some View {
+        switch windowSelection {
+        case .some(let windowSelection):
+            appModel.adventureRoot.viewController.generatorView(root: appModel.adventureRoot, selection: windowSelection)
+        case .none:
+            ContentUnavailableView {
+                Label("No Adventure Selected", systemImage: NetworkModules.adventure.icon)
+            } description: {
+                Text("Select an adventure before opening the AI Assistant.")
+            }
+        }
     }
 }
 

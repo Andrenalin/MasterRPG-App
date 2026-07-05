@@ -78,6 +78,13 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     public var editType: SheetModelEditType
     public var isEditing: Bool = false
     public var hasChanged: Bool = false
+
+    // MARK: Generated answer preview
+    public var isGeneratedAnswer: Bool = false
+    public var isGeneratedSelected: Bool = false
+    public var isGeneratedAccepted: Bool = false
+    public var isGeneratedHidden: Bool = false
+    public var generatedBatchID: String?
     
     public var canAdd: Bool
     public var showHeader: Bool
@@ -130,6 +137,11 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         editType <=> otherSheetModel.editType
         isEditing <=> otherSheetModel.isEditing
         hasChanged <=> otherSheetModel.hasChanged
+        isGeneratedAnswer <=> otherSheetModel.isGeneratedAnswer
+        isGeneratedSelected <=> otherSheetModel.isGeneratedSelected
+        isGeneratedAccepted <=> otherSheetModel.isGeneratedAccepted
+        isGeneratedHidden <=> otherSheetModel.isGeneratedHidden
+        generatedBatchID <=> otherSheetModel.generatedBatchID
         
         canAdd <=> otherSheetModel.canAdd
         showHeader <=> otherSheetModel.showHeader
@@ -155,6 +167,11 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         lhs._editType == rhs._editType &&
         lhs._isEditing == rhs._isEditing &&
         lhs._hasChanged == rhs._hasChanged &&
+        lhs._isGeneratedAnswer == rhs._isGeneratedAnswer &&
+        lhs._isGeneratedSelected == rhs._isGeneratedSelected &&
+        lhs._isGeneratedAccepted == rhs._isGeneratedAccepted &&
+        lhs._isGeneratedHidden == rhs._isGeneratedHidden &&
+        lhs._generatedBatchID == rhs._generatedBatchID &&
         lhs._canAdd == rhs._canAdd &&
         lhs._showHeader == rhs._showHeader
     }

@@ -78,7 +78,7 @@ struct AdventureAIAssistantButton: View {
     var body: some View {
         Button {
 #if os(visionOS) || os(macOS)
-            scenesManager.openWindow(.generateAdventure)
+            scenesManager.openWindow(.generateAdventure, selection: WindowItemSelection(itemId: model.id))
 #else
             navigator.navigate(to: AdventureEditorRoute.generator(model.id))
 #endif
