@@ -2,12 +2,10 @@
 
 import Foundation
 
+// Narrow surface for reaching the Adventure hub's export/import from a leaf module,
+// without pulling in concerns that leaf modules never use.
 @MainActor
-public protocol RootControllable: Sendable {
+public protocol RootExportControllable: Sendable {
     var exportControllable: any ExportControllable { get }
     var importControllable: any ImportControllable { get }
-    var linkControllable: any LinkControllable { get }
-    var gameExportControllable: any ExportControllable { get }
-    var gameImportControllable: any ImportControllable { get }
-
 }

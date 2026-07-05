@@ -57,16 +57,9 @@ public extension PdfRootModel {
 }
 
 @MainActor
-extension PdfRootModel: RootControllable {
+extension PdfRootModel: RootExportControllable {
     public var linkControllable: LinkControllable {
         linkController
-    }
-
-    public var gameExportControllable: any ExportControllable {
-        exportController
-    }
-    public var gameImportControllable: any ImportControllable {
-        importController
     }
 }
 

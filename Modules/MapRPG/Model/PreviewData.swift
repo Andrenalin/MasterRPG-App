@@ -75,16 +75,9 @@ public extension MapRootModel {
 }
 
 @MainActor
-extension MapRootModel: RootControllable {
+extension MapRootModel: RootExportControllable {
     public var linkControllable: LinkControllable {
         linkController
-    }
-
-    public var gameExportControllable: any ExportControllable {
-        exportController
-    }
-    public var gameImportControllable: any ImportControllable {
-        importController
     }
 }
 

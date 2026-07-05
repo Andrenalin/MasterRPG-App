@@ -5,7 +5,6 @@ import Foundation
 
 struct LinkController: Sendable {
     let itemController: ItemController
-    let gameController: GameController
 
     public var itemControllable: any ItemControllable { itemController }
 }

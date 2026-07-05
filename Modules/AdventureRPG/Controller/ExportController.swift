@@ -19,7 +19,7 @@ struct ExportController: Sendable {
         self.itemController = itemController
     }
 
-    // Adventure is the hub itself, so its own rootController (for ExportControllable's
+    // Adventure is the hub itself, so its own hubControllable (for ExportControllable's
     // hub requirement) is just a lazy reference back to itself, not the whole RootManager.
     let rootManager: RootManager
     let root: AdventureRootModel
@@ -27,7 +27,7 @@ struct ExportController: Sendable {
 }
 
 extension ExportController: ExportControllable {
-    var rootController: any RootControllable { root }
+    var hubControllable: any RootExportControllable { root }
     var itemControllable: any ItemControllable { itemController }
     
     @MainActor public func exportingAll() -> ItemModuleIds {

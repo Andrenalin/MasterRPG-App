@@ -22,7 +22,7 @@ public final class AudioRootModel {
         self.audioPlayerModel = audioPlayerModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
         self.rootManager = rootManager
 
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
@@ -37,7 +37,7 @@ public final class AudioRootModel {
         let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
         _audioController = audioController
 
-        let exportController = ExportController(rootController: adventureRootControllable, itemController: itemController)
+        let exportController = ExportController(hubControllable: adventureRootControllable, itemController: itemController)
         _exportController = exportController
         let gameController = GameController(itemController: itemController, audioController: audioController, exportController: exportController)
         _gameController = gameController

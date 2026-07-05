@@ -296,7 +296,7 @@ public extension GameControllable {
         let stream = InputStream(data: data)
         stream.open()
         defer { stream.close() }
-        let importController = await exportControllable.rootController.importControllable
+        let importController = await exportControllable.rootImportController
         try await importController.importStream(from: stream, forceSave: forceSave)
     }
 }

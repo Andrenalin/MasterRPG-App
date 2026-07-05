@@ -56,16 +56,9 @@ public extension WeatherRootModel {
 }
 
 @MainActor
-extension WeatherRootModel: RootControllable {
+extension WeatherRootModel: RootExportControllable {
     public var linkControllable: LinkControllable {
         linkController
-    }
-
-    public var gameExportControllable: any ExportControllable {
-        exportController
-    }
-    public var gameImportControllable: any ImportControllable {
-        importController
     }
 }
 

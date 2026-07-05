@@ -18,7 +18,7 @@ public final class SpaceRootModel {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
         self.rootManager = rootManager
 
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
@@ -29,7 +29,7 @@ public final class SpaceRootModel {
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
 
-        _exportController = ExportController(rootController: adventureRootControllable, itemController: itemController)
+        _exportController = ExportController(hubControllable: adventureRootControllable, itemController: itemController)
         _gameController = GameController(itemController: itemController, exportController: exportController)
         _linkController = LinkController(itemController: itemController, gameController: gameController)
         _sheetController = SheetController(itemController: itemController)

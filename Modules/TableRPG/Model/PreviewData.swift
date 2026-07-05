@@ -66,16 +66,9 @@ public extension TableRootModel {
 }
 
 @MainActor
-extension TableRootModel: RootControllable {
+extension TableRootModel: RootExportControllable {
     public var linkControllable: LinkControllable {
         linkController
-    }
-
-    public var gameExportControllable: any ExportControllable {
-        exportController
-    }
-    public var gameImportControllable: any ImportControllable {
-        importController
     }
 }
 

@@ -19,7 +19,7 @@ public final class DiceRootModel {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
         self.rootManager = rootManager
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         let listDisplayModel = ListDisplayModel()
@@ -29,7 +29,7 @@ public final class DiceRootModel {
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
 
-        let exportController = ExportController(rootController: adventureRootControllable, itemController: itemController)
+        let exportController = ExportController(hubControllable: adventureRootControllable, itemController: itemController)
         _exportController = exportController
         let gameController = GameController(itemController: itemController, exportController: exportController)
         _gameController = gameController

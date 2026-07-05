@@ -5,13 +5,13 @@ import Foundation
 import PhotoRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootController: any RootControllable, photoRoot: PhotoRootModel, itemController: ItemController) {
-        self.rootController = rootController
+    @MainActor init(hubControllable: any RootExportControllable, photoRoot: PhotoRootModel, itemController: ItemController) {
+        self.hubControllable = hubControllable
         self.photoRoot = photoRoot
         self.itemController = itemController
     }
 
-    let rootController: any RootControllable
+    let hubControllable: any RootExportControllable
     let photoRoot: PhotoRootModel
     let itemController: ItemController
 }

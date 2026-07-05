@@ -54,16 +54,9 @@ public extension PhotoRootModel {
 }
 
 @MainActor
-extension PhotoRootModel: RootControllable {
+extension PhotoRootModel: RootExportControllable {
     public var linkControllable: LinkControllable {
         linkController
-    }
-
-    public var gameExportControllable: any ExportControllable {
-        exportController
-    }
-    public var gameImportControllable: any ImportControllable {
-        importController
     }
 }
 

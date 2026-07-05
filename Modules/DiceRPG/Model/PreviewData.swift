@@ -77,16 +77,9 @@ public extension DiceRootModel {
 }
 
 @MainActor
-extension DiceRootModel: RootControllable {
+extension DiceRootModel: RootExportControllable {
     public var linkControllable: LinkControllable {
         linkController
-    }
-
-    public var gameExportControllable: any ExportControllable {
-        exportController
-    }
-    public var gameImportControllable: any ImportControllable {
-        importController
     }
 }
 

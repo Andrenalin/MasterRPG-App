@@ -183,11 +183,10 @@ extension GameController: MapGameStorable {
     
     @MainActor
     func saveAll() -> ItemModuleIds {
-        let gameExportController = ExportController(rootController: exportController.rootController, root: root, audioRoot: root.audioRoot, diceRoot: root.diceRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, tableRoot: root.tableRoot, characterRoot: root.characterRoot, itemController: itemController)
         for itemId in gameModel.items {
             gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins.filter { !$0.isPlayer }
         }
-        return gameExportController.exportingAll()
+        return exportController.exportingAll()
     }
     
     @MainActor

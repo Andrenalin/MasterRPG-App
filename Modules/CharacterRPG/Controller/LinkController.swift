@@ -9,10 +9,6 @@ import DiceRPG
 import PhotoRPG
 
 struct LinkController: Sendable {
-    // `rootManager` is stored only to satisfy `LinkControllable.rootManager`, which
-    // `SheetRootModel`'s cross-module dispatch relies on. Every other link path below
-    // uses the narrow root/diceRoot/photoRoot/tableRoot refs instead.
-    let rootManager: RootManager
     let root: CharacterRootModel
     let diceRoot: DiceRootModel
     let photoRoot: PhotoRootModel

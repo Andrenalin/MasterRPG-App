@@ -233,7 +233,7 @@ extension AdventureRootModel: ItemRootControllable {
 }
 
 @MainActor
-extension AdventureRootModel: RootControllable {
+extension AdventureRootModel: RootExportControllable {
     public var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
@@ -255,12 +255,6 @@ extension AdventureRootModel: RootControllable {
     }
     public var searchControllable: any SearchControllable {
         searchController
-    }
-    public var gameImportControllable: any ImportControllable {
-        importController as ImportControllable
-    }
-    public var gameExportControllable: any ExportControllable {
-        exportController
     }
 }
 

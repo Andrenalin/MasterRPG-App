@@ -29,7 +29,7 @@ public extension ItemRootController {
             viewControllable: FakeViewController()
         )
         root.rootManager = RootManager.preview(fake: root)
-        exportFake.rootController = FakeRootController.fake
+        exportFake.hubControllable = FakeRootController.fake
 
         return root
     }()

@@ -44,7 +44,7 @@ public final class MapRootModel {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
         self.rootManager = rootManager
 
         let dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
@@ -58,7 +58,7 @@ public final class MapRootModel {
 
         let editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _editController = editController
-        _exportController = ExportController(rootController: adventureRootControllable, root: self, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
+        _exportController = ExportController(hubControllable: adventureRootControllable, root: self, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
         _importController = ImportController(itemController: itemController, editController: editController)
         let gameController = GameController(root: self, itemController: itemController, exportController: exportController)
         _gameController = gameController

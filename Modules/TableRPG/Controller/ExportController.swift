@@ -6,13 +6,13 @@ import os.log
 import DiceRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootController: any RootControllable, diceRoot: DiceRootModel, itemController: ItemController) {
-        self.rootController = rootController
+    @MainActor init(hubControllable: any RootExportControllable, diceRoot: DiceRootModel, itemController: ItemController) {
+        self.hubControllable = hubControllable
         self.diceRoot = diceRoot
         self.itemController = itemController
     }
 
-    let rootController: any RootControllable
+    let hubControllable: any RootExportControllable
     let diceRoot: DiceRootModel
     let itemController: ItemController
 }

@@ -21,7 +21,7 @@ public final class GeneratorRootModel {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootControllable, linkRegisterController: LinkRegisterController) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
         self.rootManager = rootManager
 
         let dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
@@ -29,9 +29,9 @@ public final class GeneratorRootModel {
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
 
-        _exportController = ExportController(rootController: adventureRootControllable, itemController: itemController)
+        _exportController = ExportController(hubControllable: adventureRootControllable, itemController: itemController)
         _gameController = GameController(itemController: itemController, exportController: exportController)
-        _linkController = LinkController(itemController: itemController, gameController: gameController)
+        _linkController = LinkController(itemController: itemController)
         _sheetController = SheetController(itemController: itemController)
 
         _editController = EditController(rootManager: rootManager, itemController: itemController, linkController: linkController, sheetController: sheetController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
@@ -125,9 +125,6 @@ public final class GeneratorRootModel {
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()
-    
-    @ObservationIgnored private(set) var _rootControllable: RootControllable?
-    var rootControllable: RootControllable { _rootControllable! }
     
     @MainActor @ObservationIgnored private(set) var _rootController: ItemRootController?
     @MainActor public var rootController: ItemRootController { _rootController!}

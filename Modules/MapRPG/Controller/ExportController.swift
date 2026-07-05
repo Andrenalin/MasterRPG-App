@@ -10,8 +10,8 @@ import TableRPG
 import CharacterRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootController: any RootControllable, root: MapRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, itemController: ItemController) {
-        self.rootController = rootController
+    @MainActor init(hubControllable: any RootExportControllable, root: MapRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, itemController: ItemController) {
+        self.hubControllable = hubControllable
         self.root = root
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
@@ -22,7 +22,7 @@ struct ExportController: Sendable {
         self.itemController = itemController
     }
 
-    let rootController: any RootControllable
+    let hubControllable: any RootExportControllable
     let root: MapRootModel
     let audioRoot: AudioRootModel
     let diceRoot: DiceRootModel

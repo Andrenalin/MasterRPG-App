@@ -4,12 +4,12 @@ import CoreRPG
 import Foundation
 
 struct ExportController: Sendable {
-    @MainActor init(rootController: any RootControllable, itemController: ItemController) {
-        self.rootController = rootController
+    @MainActor init(hubControllable: any RootExportControllable, itemController: ItemController) {
+        self.hubControllable = hubControllable
         self.itemController = itemController
     }
 
-    let rootController: any RootControllable
+    let hubControllable: any RootExportControllable
     let itemController: ItemController
 }
 

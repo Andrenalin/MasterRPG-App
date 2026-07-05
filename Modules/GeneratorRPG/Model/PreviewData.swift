@@ -54,13 +54,7 @@ public extension GeneratorRootModel {
 #endif
 }
 
-extension GeneratorRootModel: RootControllable {
-    public var gameExportControllable: any ExportControllable {
-        exportController
-    }
-    public var gameImportControllable: any ImportControllable {
-        importController
-    }
+extension GeneratorRootModel: RootExportControllable {
 }
 
 // MARK: Preview - Test

@@ -50,16 +50,9 @@ public extension SpaceRootModel {
 }
 
 @MainActor
-extension SpaceRootModel: RootControllable {
+extension SpaceRootModel: RootExportControllable {
     public var linkControllable: LinkControllable {
         linkController
-    }
-
-    public var gameExportControllable: any ExportControllable {
-        exportController
-    }
-    public var gameImportControllable: any ImportControllable {
-        importController
     }
 }
 
