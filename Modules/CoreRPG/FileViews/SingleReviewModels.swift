@@ -495,6 +495,12 @@ extension SingleItemImportModel {
         hasPropertyOverrides || entries.contains { $0.decision != decision || $0.hasPropertyOverrides }
     }
 
+    var decisionSignature: String {
+        let propertySignature = properties.map { "\($0.id.uuidString):\($0.decision.rawValue)" }.joined(separator: "|")
+        let entrySignature = entries.map(\.decisionSignature).joined(separator: "|")
+        return "\(decision.rawValue)|\(propertySignature)|\(entrySignature)"
+    }
+
     func materializedItem() -> any ItemDataAccessable {
         var result = item.item(for: decision).copy()
         for property in properties {
@@ -506,6 +512,11 @@ extension SingleItemImportModel {
 }
 
 extension SingleEntryImportModel {
+    var decisionSignature: String {
+        let propertySignature = properties.map { "\($0.id.uuidString):\($0.decision.rawValue)" }.joined(separator: "|")
+        return "\(id.uuidString):\(decision.rawValue)|\(propertySignature)"
+    }
+
     func materializedEntry() -> (any EntryDataAccessable)? {
         guard var result = entry.item(for: decision) else { return nil }
         for property in properties {

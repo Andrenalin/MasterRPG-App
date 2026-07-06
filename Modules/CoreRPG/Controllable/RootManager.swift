@@ -14,7 +14,8 @@ public struct RootManager: Sendable {
         photoRoot: any ItemRootControllable,
         spaceRoot: any ItemRootControllable,
         tableRoot: any ItemRootControllable,
-        weatherRoot: any ItemRootControllable
+        weatherRoot: any ItemRootControllable,
+        reviewSheetMemory: ReviewSheetMemory? = nil
     ) {
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
@@ -27,6 +28,7 @@ public struct RootManager: Sendable {
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
         self.weatherRoot = weatherRoot
+        self.reviewSheetMemory = reviewSheetMemory
     }
 
     public init(
@@ -34,11 +36,13 @@ public struct RootManager: Sendable {
         generatorRoot: any ItemRootControllable,
         pdfRoot: any ItemRootControllable,
         tableRoot: any ItemRootControllable,
+        reviewSheetMemory: ReviewSheetMemory? = nil
     ) {
         self.diceRoot = diceRoot
         self.generatorRoot = generatorRoot
         self.pdfRoot = pdfRoot
         self.tableRoot = tableRoot
+        self.reviewSheetMemory = reviewSheetMemory
         
         self.adventureRoot = tableRoot
         self.audioRoot = tableRoot
@@ -51,11 +55,13 @@ public struct RootManager: Sendable {
 
     public init(
         anyRoot: any ItemRootControllable,
+        reviewSheetMemory: ReviewSheetMemory? = nil
     ) {
         self.diceRoot = anyRoot
         self.generatorRoot = anyRoot
         self.pdfRoot = anyRoot
         self.tableRoot = anyRoot
+        self.reviewSheetMemory = reviewSheetMemory
         
         self.adventureRoot = anyRoot
         self.audioRoot = anyRoot
@@ -78,6 +84,7 @@ public struct RootManager: Sendable {
     public let spaceRoot: ItemRootControllable
     public let tableRoot: ItemRootControllable
     public let weatherRoot: ItemRootControllable
+    public let reviewSheetMemory: ReviewSheetMemory?
     
     public func rootModel(for module: NetworkModules) -> (any ItemRootControllable)? {
         switch module {
@@ -106,6 +113,23 @@ public struct RootManager: Sendable {
     
     public subscript(_ module: NetworkModules) -> (any ItemRootControllable)? {
         rootModel(for: module)
+    }
+
+    public func with(reviewSheetMemory: ReviewSheetMemory?) -> RootManager {
+        RootManager(
+            adventureRoot: adventureRoot,
+            audioRoot: audioRoot,
+            characterRoot: characterRoot,
+            diceRoot: diceRoot,
+            generatorRoot: generatorRoot,
+            mapRoot: mapRoot,
+            pdfRoot: pdfRoot,
+            photoRoot: photoRoot,
+            spaceRoot: spaceRoot,
+            tableRoot: tableRoot,
+            weatherRoot: weatherRoot,
+            reviewSheetMemory: reviewSheetMemory
+        )
     }
         
     static public func preview(fake: ItemRootControllable) -> RootManager {

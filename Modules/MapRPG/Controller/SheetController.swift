@@ -25,7 +25,7 @@ extension SheetController: SheetControllable {
             Logger.sheetController.info("🚀 [Sheet] Starting sheet creation \(itemController.config.module.token) - itemId: \(itemId.uuidString)")
         }
 
-        let model = itemController.itemOrEmpty(for: itemId)
+        let model = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         var inlineEntries: [SheetModel] = []
         var totalSheetCount = 1 // Count this sheet
 
@@ -53,7 +53,7 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
-        let item = itemController.itemOrEmpty(for: itemId)
+        let item = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         let sheets = item.entries.compactMap{ entry -> SheetModel? in
             guard !entry.isHexGrid else { return nil }
             return sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
@@ -113,7 +113,7 @@ extension SheetController: SheetControllable {
         let startTime = ContinuousClock.now
         Logger.sheetController.info("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
         
-        let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+        let model = itemController.reviewAwareItemOrEmpty(root: root, for: sheetModel.source.itemId)
 
         var changeCount = 0
         unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in

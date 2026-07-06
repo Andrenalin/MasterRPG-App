@@ -100,6 +100,15 @@ import SwiftUI
         selectedModule?.reviewItems.first { $0.id == selectedItemID }
     }
 
+    var sheetMemorySignature: String {
+        modules.flatMap { module in
+            module.reviewItems.map { item in
+                "\(module.id.rawValue):\(item.id.uuidString):\(item.itemModel.decisionSignature)"
+            }
+        }
+        .joined(separator: "|")
+    }
+
     func select(moduleID: ImportReviewModule.ID) {
         selectedModuleID = moduleID
         selectedItemID = modules.first { $0.id == moduleID }?.reviewItems.first?.id
@@ -128,6 +137,24 @@ import SwiftUI
             return preferImported ? (item.imported ?? item.merged) : (item.existing ?? item.merged)
         }
         return rootManager?.rootModel(for: destination.typeId)?.itemControllable.itemSync(for: destination.itemId)
+    }
+
+    func sheetMemory() -> ReviewSheetMemory {
+        var items: [NetworkModules: [UUID: any ItemDataAccessable]] = [:]
+        var hiddenItemIds: [NetworkModules: Set<UUID>] = [:]
+
+        for module in modules {
+            for item in module.reviewItems {
+                if item.isDeletion && item.itemModel.decision == .imported {
+                    hiddenItemIds[module.id, default: []].insert(item.id)
+                    continue
+                }
+
+                items[module.id, default: [:]][item.id] = item.itemModel.materializedItem()
+            }
+        }
+
+        return ReviewSheetMemory(items: items, hiddenItemIds: hiddenItemIds)
     }
 
     /// Builds the reference list for every review item once all items are imported.
