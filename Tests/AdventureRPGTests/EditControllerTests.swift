@@ -4,6 +4,7 @@ import CoreRPG
 import DiceRPG
 import Foundation
 import AudioRPG
+import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -58,5 +59,70 @@ struct EditControllerTests {
                 #expect(savedItem.entries[index + 1].id == entry.id)
             }
         }
+    }
+
+    @Test func routesMediaExtractionAndPhotoCollection() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+        let itemId = UUID()
+        let entryId = UUID()
+        let diceId = UUID()
+        let photoId = UUID()
+        let entry = AdventureEntryModel(id: entryId, name: "Scene", content: "Old content")
+        let adventure = AdventureModel(id: itemId, name: "Old Adventure", description: "Old description", tags: ["old"], entries: [entry])
+        root.itemController.replace(model: adventure, isInsert: true)
+
+        _ = sut.itemControllable
+        _ = sut.fileUrlDataController
+        _ = sut.linkRegisterController
+        _ = sut.adventureEditModel
+        _ = sut.linkSelectionDestination(itemRowModel: ItemRowModel(itemId: itemId, typeId: .adventure))
+        _ = sut.quickEditorDestination(itemRowModel: ItemRowModel(itemId: itemId, typeId: .adventure))
+
+        #expect(sut.canAddLink(module: .photo, entryId: entryId))
+        #expect(sut.linkModules == [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather])
+
+        sut.add(diceId: diceId, itemId: itemId)
+        sut.add(photoId: photoId, itemId: itemId)
+        var updated = root.itemController.itemOrEmpty(for: itemId)
+        #expect(updated.photoId == photoId)
+
+        sut.collectPhotos(itemId: itemId, entryId: entryId)
+        #expect(root.itemController.itemOrEmpty(for: itemId)[entryId].name == "Collection")
+
+        let created = sut.create(name: "Created", content: "Created content")
+        #expect(created.name == "Created")
+        #expect(created.content == "Created content")
+
+        let merged = sut.merge(itemId: itemId, entries: [
+            AdventureEntryModel(id: UUID(), name: "Scene", content: "Updated content"),
+            created
+        ])
+        #expect(merged.map(\.name) == ["Scene", "Created"])
+        #expect(merged.first?.content == "Updated content")
+
+        #expect(sut.merge(itemId: UUID(), entries: [created]).map(\.name) == ["Created"])
+        #expect(sut.merge(itemId: UUID(), entries: [created], recoverEntries: nil).isEmpty)
+        #expect(sut.merge(itemId: itemId, entries: [created], recoverEntries: []).isEmpty)
+
+        sut.applyExtractedContent(
+            TableSummaryAnalysis(title: "Extracted Adventure", description: "Extracted description", tags: ["dungeon", "mystery"]),
+            to: itemId,
+            selection: TextSummaryPropertySelection()
+        )
+
+        updated = root.itemController.itemOrEmpty(for: itemId)
+        #expect(updated.name == "Extracted Adventure")
+        #expect(updated.description == "Extracted description")
+        #expect(updated.tags.sorted() == ["dungeon", "mystery"])
+
+        sut.applyExtractedContent(
+            TableSummaryAnalysis(title: "Skipped", description: "Skipped", tags: ["skip"]),
+            to: itemId,
+            selection: TextSummaryPropertySelection(applyTitle: false, applyDescription: false, applyTags: false)
+        )
+        #expect(root.itemController.itemOrEmpty(for: itemId).name == "Extracted Adventure")
+
     }
 }

@@ -232,5 +232,106 @@ struct SheetControllerTests {
         #expect(modelFoldedEditor.isFolded == true)
         #expect(modelFoldedEditor.entries.isEmpty)
     }
+
+    @Test func characterUpdateRefreshesInlineLinksAndEntries() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let itemId = UUID()
+        let originalDiceId = UUID()
+        let updatedDiceId = UUID()
+        let originalPhotoId = UUID()
+        let updatedPhotoId = UUID()
+        let keptEntry = ValueEntryModel(id: UUID(), name: "Old Value", type: .text, value: "Old text", diceId: originalDiceId)
+        let removedEntry = ValueEntryModel(id: UUID(), name: "Removed Value", type: .text, value: "Gone")
+        let rootManager = RootManager(
+            adventureRoot: root,
+            audioRoot: root,
+            characterRoot: root,
+            diceRoot: root.diceRoot,
+            generatorRoot: root,
+            mapRoot: root,
+            pdfRoot: root.pdfRoot,
+            photoRoot: root.photoRoot,
+            spaceRoot: root,
+            tableRoot: root.tableRoot,
+            weatherRoot: root
+        )
+
+        root.itemController.replace(
+            model: ValueModel(
+                id: itemId,
+                name: "Old Character",
+                description: "Old description",
+                category: .character,
+                photoId: originalPhotoId,
+                entries: [keptEntry, removedEntry],
+                diceId: originalDiceId
+            ),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
+
+        let updatedEntry = ValueEntryModel(id: keptEntry.id, name: "Updated Value", type: .text, value: "Updated text", diceId: updatedDiceId)
+        let newEntry = ValueEntryModel(id: UUID(), name: "New Value", type: .number, value: "0|7")
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        item.name = "Updated Character"
+        item.description = "Updated description"
+        item.photoId = updatedPhotoId
+        item.diceId = updatedDiceId
+        item.entries = [updatedEntry, newEntry]
+
+        sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
+
+        #expect(sheetModel.name == "Updated Character")
+        #expect(sheetModel.description == "Updated description")
+        #expect(sheetModel.inlineEntries.map(\.source.itemId).contains(updatedDiceId))
+        #expect(sheetModel.inlineEntries.map(\.source.itemId).contains(updatedPhotoId))
+        #expect(sheetModel.entries.map(\.source.entryId).contains(keptEntry.id))
+        #expect(!sheetModel.entries.map(\.source.entryId).contains(removedEntry.id))
+        #expect(sheetModel.entries.map(\.source.entryId).contains(newEntry.id))
+        #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.name == "Updated Value")
+        #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.description == "Updated text")
+        #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.inlineEntries.map(\.source.itemId) == [updatedDiceId])
+    }
+
+    @Test func characterUpdateLeavesFoldedEntriesCollapsed() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let itemId = UUID()
+        let rootManager = RootManager(
+            adventureRoot: root,
+            audioRoot: root,
+            characterRoot: root,
+            diceRoot: root.diceRoot,
+            generatorRoot: root,
+            mapRoot: root,
+            pdfRoot: root.pdfRoot,
+            photoRoot: root.photoRoot,
+            spaceRoot: root,
+            tableRoot: root.tableRoot,
+            weatherRoot: root
+        )
+
+        root.itemController.replace(
+            model: ValueModel(
+                id: itemId,
+                name: "Folded Character",
+                description: "Folded description",
+                category: .character,
+                entries: [ValueEntryModel(id: UUID(), name: "Hidden", type: .text, value: "Hidden text")]
+            ),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 1, isEditor: false)
+        root.itemController.itemOrEmpty(for: itemId).name = "Folded Updated"
+
+        sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
+
+        #expect(sheetModel.name == "Folded Updated")
+        #expect(sheetModel.isFolded)
+        #expect(sheetModel.entries.isEmpty)
+    }
 }
 #endif

@@ -8,9 +8,10 @@ import PdfRPG
 import PhotoRPG
 import RPGResourcesDebug
 import TableRPG
-import CharacterRPG
+import SwiftUI
 import Testing
 
+@testable import CharacterRPG
 @testable import MapRPG
 
 @MainActor
@@ -41,6 +42,178 @@ struct EditControllerTests {
         #expect(item.entries[13].id == entryId)
         #expect(item.entries[13].name == "Name Eingang")
         #expect(item.entries[13].content == "Was ist in 7a")
+    }
+
+    @Test func editControllerRoutesAndLinkRules() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let itemId = await root.itemController.addNew(type: .item)
+        let entryId = UUID()
+        let sut = root.editController
+        let row = ItemRowModel(itemId: itemId, entryId: entryId, typeId: .map)
+
+        #expect(sut.linkModules == [.audio, .value, .dice, .map, .pdf, .photo, .table])
+        #expect(sut.canAddLink(module: .audio, entryId: entryId))
+        #expect(sut.canAddLink(module: .dice, entryId: nil))
+        #expect(sut.canAddLink(module: .value, entryId: nil))
+        #expect(sut.canAddLink(module: .table, entryId: nil))
+        #expect(!sut.canAddLink(module: .value, entryId: entryId))
+        #expect(!sut.canAddLink(module: .table, entryId: entryId))
+        #expect(!sut.canAddLink(module: .weather, entryId: nil))
+
+        let linkRoute = try #require(sut.linkSelectionDestination(itemRowModel: row) as? MapEditorRoute)
+        let quickRoute = try #require(sut.quickEditorDestination(itemRowModel: row) as? MapEditorRoute)
+
+        #expect(linkRoute == .linkSelection(row))
+        #expect(quickRoute == .quickEditor(itemId))
+        #expect(sut.thumbnailEntryViewType == .photo)
+        #expect(sut.additioanlEnrtryViewType == .custom)
+        #expect(sut.create(name: "Hall", content: "North").name == "Hall")
+        _ = sut.fileUrlDataController
+        _ = sut.additionalRowView(for: row, entry: MapEntryModel.empty(entryId), textModel: nil)
+    }
+
+    @Test func resetDisplayPropertiesAndPhoto() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let itemId = await root.itemController.addNew(type: .item)
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        let sut = root.editController
+        let photoId = UUID()
+        let tileCoordinates = [CGPoint(x: 1, y: 2), CGPoint(x: 3, y: 4)]
+
+        sut.add(photoId: photoId, itemId: itemId)
+        sut.reset(borderThickness: 7, itemId: itemId)
+        sut.reset(hasBorder: false, itemId: itemId)
+        sut.reset(hasBorder: true, itemId: itemId)
+        sut.reset(borderColor: .blue, itemId: itemId)
+        sut.reset(coverColor: .green, itemId: itemId)
+        sut.reset(tileCoordinates: tileCoordinates, itemId: itemId)
+
+        #expect(item.photoId == photoId)
+        #expect(item.displayConfig.borderThickness == 4)
+        #expect(item.displayConfig.hasBorder)
+        #expect(item.displayConfig.border.color == .blue)
+        #expect(item.displayConfig.color == .green)
+        #expect(item.displayConfig.tileCoordinates == tileCoordinates)
+    }
+
+    @Test func pinsAndMonsterPlacementUseValidatedLocations() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+        let model = MapModel(id: UUID(), name: "Arena")
+        let firstPin = MapPinModel(id: UUID(), name: "First")
+        let secondPin = MapPinModel(id: UUID(), name: "Second")
+        let thirdPin = MapPinModel(id: UUID(), name: "Third")
+
+        sut.add(pin: firstPin, at: -3, to: model)
+        sut.add(pin: secondPin, at: 99, to: model)
+        sut.add(pin: thirdPin, to: model)
+
+        #expect(model.mapPins.map(\.id) == [firstPin.id, secondPin.id, thirdPin.id])
+
+        let roomEntry = MapEntryModel(
+            id: UUID(),
+            name: "Room",
+            content: "",
+            coordinates: [
+                CGPoint(x: 0, y: 0),
+                CGPoint(x: 100, y: 0),
+                CGPoint(x: 100, y: 80),
+                CGPoint(x: 0, y: 80)
+            ]
+        )
+        let monsterMap = MapModel(id: UUID(), name: "Monster Room", entries: [roomEntry], pinScale: 1)
+        let valueId = await root.characterRoot.itemController.addNew(type: .item)
+        root.characterRoot.editController.reset(name: "Sentinel", itemId: valueId)
+
+        sut.addMonsters(
+            map: monsterMap,
+            entryId: roomEntry.id,
+            location: nil,
+            monsters: [ItemRowModel(itemId: valueId, typeId: .value)],
+            number: 2
+        )
+
+        #expect(monsterMap.mapPins.count == 2)
+        #expect(monsterMap.mapPins.allSatisfy { $0.name == "Sentinel" })
+        #expect(monsterMap.mapPins.map(\.location) == [CGPoint(x: 25, y: 40), CGPoint(x: 74, y: 89)])
+    }
+
+    @Test func mergeAndReplaceEntriesUpdateExistingMapData() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+        let keepId = UUID()
+        let removeId = UUID()
+        let newId = UUID()
+        let map = MapModel(
+            id: UUID(),
+            name: "Merge Map",
+            entries: [
+                MapEntryModel(id: keepId, name: "Keep", content: "old", coordinates: []),
+                MapEntryModel(id: removeId, name: "Recover", content: "saved", coordinates: [])
+            ]
+        )
+        root.itemController.replace(model: map, isInsert: true)
+
+        let incoming = [
+            MapEntryModel(id: UUID(), name: "Keep", content: "updated", coordinates: []),
+            MapEntryModel(id: newId, name: "New", content: "fresh", coordinates: [])
+        ]
+        let preview = sut.merge(itemId: map.id, entries: incoming)
+
+        #expect(preview.map(\.id) == [keepId, newId])
+        #expect(preview.first?.content == "updated")
+
+        let recoverRows = [ItemRowModel(itemId: map.id, entryId: removeId, typeId: .map)]
+        let blockedRows = sut.merge(itemId: map.id, entries: [incoming[0]], recoverEntries: recoverRows)
+
+        #expect(blockedRows.isEmpty)
+        #expect(map.entries.map(\.id) == [keepId, removeId])
+        #expect(map.entries.first?.content == "updated")
+
+        sut.replace(
+            itemId: map.id,
+            with: [
+                MapEntryModel(id: keepId, name: "Ignored", content: "replaced", coordinates: []),
+                MapEntryModel(id: removeId, name: "Ignored", content: "saved", coordinates: [])
+            ]
+        )
+
+        #expect(map.entries.first?.id == keepId)
+        #expect(map.entries.first?.content == "replaced")
+        #expect(map.entries.last?.content == "saved")
+    }
+
+    @Test func addLinkAppendsSimpleModuleMarkdownToDestinationEntry() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+        let sourceItemId = UUID()
+        let destinationEntryId = UUID()
+        let destination = MapModel(
+            id: UUID(),
+            name: "Linked Map",
+            entries: [
+                MapEntryModel(id: destinationEntryId, name: "Room", content: "Start", coordinates: [])
+            ]
+        )
+        root.itemController.replace(model: destination, isInsert: true)
+
+        sut.add(
+            link: "Theme",
+            module: .audio,
+            itemId: sourceItemId,
+            entryId: nil,
+            destinationItemId: destination.id,
+            destinationEntryId: destinationEntryId
+        )
+
+        let content = destination[destinationEntryId].content
+        #expect(content.localizedStandardContains("[Theme]"))
+        #expect(content.localizedStandardContains("RPG://AUDIOS/0/\(sourceItemId.uuidString)"))
     }
 }
 #endif

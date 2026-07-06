@@ -44,6 +44,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.adventureCategory <=> snapshot.category.rawValue
         model.displayState <=> Int32(snapshot.displayState)
         model.photoUUID <=> snapshot.photoId.rawValue
+        model.diceId <=> snapshot.diceId
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
             let oldEntries = model.entriesModel
             let newEntries = snapshot.entries.wrappedValue.enumerated().map {

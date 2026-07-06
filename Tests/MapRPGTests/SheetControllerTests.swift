@@ -187,5 +187,76 @@ struct SheetControllerTests {
 
         #expect(model.destination.itemId == destination.itemId)
     }
+
+    @Test func mapUpdateRefreshesChangedFieldsAndEntries() async throws {
+        let root = try await MockRoot.importTestData()
+        let rootManager = RootManager(anyRoot: root)
+        let sut = SheetController(itemController: root.itemController)
+        let itemId = UUID()
+        let originalPhotoId = UUID()
+        let updatedPhotoId = UUID()
+        let keptEntry = MapEntryModel.fixture(name: "Old Room", content: "Old notes")
+        let removedEntry = MapEntryModel.fixture(name: "Removed Room", content: "Gone")
+
+        root.itemController.replace(
+            model: MapModel(
+                id: itemId,
+                name: "Old Map",
+                description: "Old description",
+                entries: [keptEntry, removedEntry],
+                photoId: originalPhotoId
+            ),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
+
+        var updatedEntry = keptEntry
+        updatedEntry.name = "Updated Room"
+        updatedEntry.content = "Updated notes"
+        let newEntry = MapEntryModel.fixture(name: "New Room", content: "Fresh notes")
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        item.name = "Updated Map"
+        item.description = "Updated description"
+        item.photoId = updatedPhotoId
+        item.entries = [updatedEntry, newEntry]
+
+        sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
+
+        #expect(sheetModel.name == "Updated Map")
+        #expect(sheetModel.description == "Updated description")
+        #expect(sheetModel.inlineEntries.map(\.source.itemId) == [updatedPhotoId])
+        #expect(sheetModel.entries.map(\.source.entryId).contains(keptEntry.id))
+        #expect(!sheetModel.entries.map(\.source.entryId).contains(removedEntry.id))
+        #expect(sheetModel.entries.map(\.source.entryId).contains(newEntry.id))
+        #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.name == "Updated Room")
+        #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.description == "Updated notes")
+    }
+
+    @Test func mapUpdateLeavesFoldedEntriesCollapsed() async throws {
+        let root = try await MockRoot.importTestData()
+        let rootManager = RootManager(anyRoot: root)
+        let sut = SheetController(itemController: root.itemController)
+        let itemId = UUID()
+
+        root.itemController.replace(
+            model: MapModel(
+                id: itemId,
+                name: "Folded Map",
+                description: "Folded description",
+                entries: [MapEntryModel.fixture(name: "Hidden", content: "Hidden notes")]
+            ),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 1, isEditor: false)
+        root.itemController.itemOrEmpty(for: itemId).name = "Folded Updated"
+
+        sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
+
+        #expect(sheetModel.name == "Folded Updated")
+        #expect(sheetModel.isFolded)
+        #expect(sheetModel.entries.isEmpty)
+    }
 }
 #endif

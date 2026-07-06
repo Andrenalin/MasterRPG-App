@@ -6,6 +6,8 @@ import RPGResourcesDebug
 import Testing
 
 @testable import GameRPG
+@testable import CharacterRPG
+@testable import WeatherRPG
 
 // MARK: - MasterControllerModel unit tests
 
@@ -194,6 +196,160 @@ struct MasterControllerLostPlayerTests {
     }
 }
 
+@Suite("MasterController direct and proxy paths")
+@MainActor
+struct MasterControllerDirectProxyTests {
+
+    @Test("start, stop, and send use the injected network stores")
+    func startStopAndSendUseNetworkStores() async throws {
+        let env = try await MasterControllerHarness.make(asProxy: false, directStreaming: true)
+        let playerId = UUID()
+        let hiddenPlayerId = UUID()
+        env.root.gameModel.gameRoster = GameRosterModel(
+            players: [
+                PlayerGameModel(id: playerId, type: .player, name: "Visible"),
+                PlayerGameModel(id: hiddenPlayerId, type: .observer, name: "Hidden")
+            ],
+            controls: [
+                SharingControlModel(id: playerId, name: "Visible", show: true),
+                SharingControlModel(id: hiddenPlayerId, name: "Hidden", show: false)
+            ]
+        )
+        let data = NetworkCodableDataType(id: UUID(), type: .photo, version: 1, data: nil)
+
+        await env.master.start()
+        await env.master.send(updated: data)
+        await env.master.game(message: data, actionType: .generic, playerId: playerId)
+        await env.master.stop()
+
+        #expect(env.directMasterSpy.calledStartStreaming == 1)
+        #expect(env.proxyMasterSpy.calledStartProxyStreaming == 1)
+        #expect(env.directMasterSpy.calledSendResponseAll == 2)
+        #expect(env.directMasterSpy.calledStopStreaming == 1)
+        #expect(env.directPlayerSpy.calledStop == 1)
+        #expect(env.root.gameModel.gameRoster.players.isEmpty)
+        #expect(env.root.gameModel.gameRoster.controls.isEmpty)
+
+        let filteredMessage = try #require(env.directMasterSpy.sendResponseData as? GameNetworkModel)
+        #expect(filteredMessage.gameRoster.controls.map(\.id) == [playerId])
+    }
+
+    @Test("direct receive, ready, and file receive process messages")
+    func directReceiveAndFileReceiveProcessMessages() async throws {
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let connectionId = UUID()
+        let playerId = UUID()
+        let playerConfig = GameConfigModel(id: playerId, state: .started, master: .empty)
+        let playerRoster = GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "Player")])
+        let data = NetworkCodableDataType(id: UUID(), type: .setting, version: 0, data: nil)
+        let message = GameNetworkModel(
+            counter: 5,
+            proxyCounter: 0,
+            type: .store,
+            subType: .store,
+            gameConfig: playerConfig,
+            gameRoster: playerRoster,
+            data: data
+        )
+
+        await env.master.ready(for: connectionId)
+        await env.master.received(message, connectionId: connectionId)
+        await env.master.receivedFile(GameNetworkModel(
+            counter: 6,
+            proxyCounter: 0,
+            type: .store,
+            subType: .store,
+            gameConfig: playerConfig,
+            gameRoster: playerRoster,
+            data: data
+        ))
+        await env.master.receivedFile(GameNetworkModel(
+            counter: 7,
+            proxyCounter: 0,
+            type: .store,
+            subType: .store,
+            gameConfig: env.root.gameModel.gameConfig,
+            gameRoster: playerRoster,
+            data: data
+        ))
+
+        #expect(env.root.gameModel.gameRoster.players.map(\.id) == [playerId])
+        #expect(env.master.gameModel.connectIDPlayers[connectionId] == playerId)
+    }
+
+    @Test("proxy ready sends the selected character to a connection")
+    func proxyReadySendsSelectedCharacter() async throws {
+        let env = try await MasterControllerHarness.make(asProxy: true)
+        let characterId = await env.root.characterRoot.itemController.addNew(type: .character)
+        env.root.characterRoot.editController.reset(name: "Proxy Hero", itemId: characterId)
+        let playerId = env.root.gameModel.gameConfig.id
+        env.root.gameModel.gameRoster = GameRosterModel(players: [
+            PlayerGameModel(id: playerId, type: .proxy, name: "Proxy", characterId: characterId)
+        ])
+
+        await env.master.readyProxy(for: UUID())
+
+        let sent = try #require(env.proxyMasterSpy.sendResponseData as? GameNetworkModel)
+        #expect(env.proxyMasterSpy.calledSendResponseId == 1)
+        #expect(sent.data.type == .value)
+        #expect(sent.data.id == characterId)
+    }
+
+    @Test("proxy received messages are forwarded to the master network")
+    func proxyReceivedServerMessageForwardsToMaster() async throws {
+        let env = try await MasterControllerHarness.make(asProxy: true)
+        let playerId = UUID()
+        let playerConfig = GameConfigModel(id: playerId, state: .started, master: .empty)
+        let message = GameNetworkModel(
+            counter: 9,
+            proxyCounter: 1,
+            type: .store,
+            subType: .store,
+            gameConfig: playerConfig,
+            gameRoster: GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "Remote")]),
+            data: NetworkCodableDataType(id: UUID(), type: .photo, version: 1, data: nil)
+        )
+
+        await env.master.receivedServerProxy(message)
+
+        #expect(env.directPlayerSpy.calledRequest == 1)
+        let forwarded = try #require(env.directPlayerSpy.requestData as? GameNetworkModel)
+        #expect(forwarded.counter == 9)
+        #expect(forwarded.proxyCounter == 1)
+    }
+
+    @Test("weather and game handlers cover report, reveal, and screen updates")
+    func weatherAndGameHandlers() async throws {
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let weatherId = await env.root.weatherRoot.itemController.addNew(type: .scenario)
+        env.root.weatherRoot.editController.reset(name: "Storm", itemId: weatherId)
+        let playerConfig = GameConfigModel(id: UUID(), state: .started, master: .empty)
+        let weatherData = try await env.root.weatherRoot.gameControllable.createGameData(for: weatherId)
+
+        let reveal = GameNetworkModel(counter: 11, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: playerConfig, data: weatherData)
+        let revealed = try await env.master.handle(reveal)
+        #expect(revealed?.id == weatherId)
+        #expect(revealed?.type == .weather)
+
+        let ok = GameNetworkModel(counter: 12, proxyCounter: 0, type: .update, subType: .ok, gameConfig: playerConfig, data: weatherData)
+        let okResult = try await env.master.handle(ok)
+        #expect(okResult == nil)
+
+        let screenData = Data("screen".utf8)
+        let gameMessage = GameNetworkModel(
+            counter: 13,
+            proxyCounter: 0,
+            type: .update,
+            subType: .generic,
+            gameConfig: playerConfig,
+            data: NetworkCodableDataType(id: UUID(), type: .game, version: 1, data: screenData)
+        )
+        let gameResult = try await env.master.handle(gameMessage)
+        #expect(gameResult == nil)
+        #expect(env.root.gameModel.playerScreens[playerConfig.id] == screenData)
+    }
+}
+
 // MARK: - Test environment
 
 private struct ConnectionTestEnvironment {
@@ -231,5 +387,59 @@ private struct ConnectionTestEnvironment {
         )
 
         return ConnectionTestEnvironment(master: master, root: root, playerMessage: playerMessage)
+    }
+}
+
+@MainActor
+private struct MasterControllerHarness {
+    let root: GameRoot
+    let master: MasterController
+    let directMasterSpy: MasterNetworkControllableMock
+    let proxyMasterSpy: MasterNetworkControllableMock
+    let directPlayerSpy: PlayerStoreAbstractionMock
+    let proxyPlayerSpy: PlayerStoreAbstractionMock
+
+    static func make(asProxy: Bool, directStreaming: Bool = false) async throws -> MasterControllerHarness {
+        let root = try await MockRoot.createGameRoot()
+        try await MockRoot.resetTestData(for: root.adventureRoot)
+        try await MockRoot.resetGameController(for: root)
+
+        let directMasterModel = MasterNetworkNodel(name: "DirectMaster")
+        directMasterModel.isStreaming = directStreaming
+        let proxyMasterModel = MasterNetworkNodel(name: "ProxyMaster")
+        let directMasterSpy = MasterNetworkControllableMock(networkModel: directMasterModel)
+        let proxyMasterSpy = MasterNetworkControllableMock(networkModel: proxyMasterModel)
+        let directPlayerSpy = PlayerStoreAbstractionMock()
+        let proxyPlayerSpy = PlayerStoreAbstractionMock()
+
+        let directNetwork = GameNetworkController(
+            name: "Direct",
+            proxy: false,
+            masterBuilder: { _, _ in directMasterSpy },
+            playerBuilder: { _, _ in directPlayerSpy }
+        )
+        let proxyNetwork = GameNetworkController(
+            name: "Proxy",
+            proxy: true,
+            masterBuilder: { _, _ in proxyMasterSpy },
+            playerBuilder: { _, _ in proxyPlayerSpy }
+        )
+
+        root.networkStore = directNetwork
+        root.networkProxyStore = proxyNetwork
+
+        let masterId = UUID()
+        let masterModel = MasterGameModel(id: masterId, type: .master, name: "Master", adventureId: UUID(), adventureTitle: "Adventure")
+        root.gameModel.reset(gameConfig: GameConfigModel(id: masterId, state: .started, master: masterModel))
+        let master = MasterController(root: root, asProxy: asProxy)
+
+        return MasterControllerHarness(
+            root: root,
+            master: master,
+            directMasterSpy: directMasterSpy,
+            proxyMasterSpy: proxyMasterSpy,
+            directPlayerSpy: directPlayerSpy,
+            proxyPlayerSpy: proxyPlayerSpy
+        )
     }
 }

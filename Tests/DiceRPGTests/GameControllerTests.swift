@@ -16,6 +16,101 @@ struct GameControllerTests {
         #expect(sut.gameModel.items.count == 1)
         #expect(sut.gameModel.items.first == dice.id)
     }
+
+    @Test func gameSessionStateAndPlayerDice() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+
+        sut.clearAllFavoriteDice()
+        defer { sut.clearAllFavoriteDice() }
+
+        let renamed = dice.copy()
+        renamed.name = "Renamed"
+        sut.setGame(item: renamed, itemId: dice.id)
+        #expect(sut.gameItem(for: dice.id).name == "Renamed")
+
+        let gameDiceId = sut.createGameDice(for: dice.id, gameDiceId: nil)
+        #expect(sut.gameItem(for: gameDiceId).category == .value)
+        let reusedGameDiceId = sut.createGameDice(for: dice.id, gameDiceId: gameDiceId)
+        #expect(reusedGameDiceId == gameDiceId)
+
+        await sut.setFocusDice(on: dice.id)
+        #expect(sut.isFocusedDice(itemId: dice.id))
+        await sut.setFocusDice(on: nil)
+        #expect(!sut.gameModel.focusItemIds.isEmpty)
+
+        #expect(sut.canEditDice(itemId: dice.id, isGameMode: false))
+        #expect(!sut.canEditDice(itemId: dice.id, isGameMode: true))
+
+        let activeDice = sut.gameItem(for: dice.id)
+        activeDice.dice = GameControllerTests.diceResult(values: [[3], [4], [5]])
+        #expect(sut.hasResults(itemId: dice.id))
+        sut.gameModel.focusItemIds = []
+        #expect(sut.isPlayerDice(itemId: dice.id))
+
+        await sut.toggleHidden(playerId: dice.id)
+        #expect(sut.isPlayerHidden(playerId: dice.id))
+        await sut.toggleHidden(playerId: dice.id)
+        #expect(!sut.isPlayerHidden(playerId: dice.id))
+
+        #expect(sut.number(for: dice.id, result: "3|4|5") == 12)
+        sut.validateForValue(diceId: gameDiceId, compareValue: 12)
+        #expect(sut.gameItem(for: gameDiceId).compareValue == 12)
+        sut.validateForValue(diceId: gameDiceId, compareValue: nil)
+        #expect(sut.gameItem(for: gameDiceId).compareValue == 12)
+
+        let playerDiceA = DiceModel(id: UUID(), name: "A", dice: [])
+        let playerDiceB = DiceModel(id: UUID(), name: "B", dice: [])
+        sut.diceGameModel.playerDice = [playerDiceA, playerDiceB]
+        sut.resetPlayerDice(to: ["B"])
+        #expect(sut.diceGameModel.playerDice.map(\.name) == ["B"])
+
+        await sut.resetCompareValue(of: dice.id, value: 9)
+        let focusedId = try #require(sut.gameModel.focusItemIds.first)
+        #expect(sut.gameItem(for: focusedId).compareValue == 9)
+
+        let removableDie = activeDice.dice[0]
+        let count = activeDice.dice.count
+        sut.remove(die: removableDie, from: dice.id)
+        #expect(activeDice.dice.count == count - 1)
+
+        #expect(!sut.isFavoriteDice(itemId: dice.id))
+        sut.toggleFavoriteDice(itemId: dice.id, diceName: "Favorite")
+        #expect(sut.isFavoriteDice(itemId: dice.id))
+        sut.toggleFavoriteDice(itemId: dice.id)
+        #expect(!sut.isFavoriteDice(itemId: dice.id))
+    }
+
+    @Test func gameNetworkResultPayloads() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        let resultCategory = ResultCategory(id: UUID(), module: .table)
+        dice.dice = GameControllerTests.diceResult(values: [[2], [3], [4]])
+
+        let resultData = await sut.createDiceResult(for: dice.id, resultCategory: resultCategory)
+        #expect(resultData.type == .dice)
+        let decoded = try #require(DiceResultModel.decodeData(of: resultData.data))
+        #expect(decoded.diceModel.resultCategory == resultCategory)
+
+        let playerResult = sut.addGameDiceResult(data: resultData, name: "Player One", isGameMaster: true)
+        #expect(playerResult.0 == decoded.values)
+        #expect(playerResult.1 == resultCategory)
+        #expect(sut.diceGameModel.masterDiceName == "Player One")
+        #expect(sut.diceGameModel.playerDice.count == 1)
+
+        _ = sut.addGameDiceResult(data: resultData, name: "Player One", isGameMaster: false)
+        #expect(sut.diceGameModel.playerDice.count == 1)
+
+        let invalidResult = sut.addGameDiceResult(data: NetworkCodableDataType(id: UUID(), type: .dice, version: 0), name: "Nobody", isGameMaster: false)
+        #expect(invalidResult.0 == nil)
+        #expect(invalidResult.1 == nil)
+
+        let oldResultCategory = dice.resultCategory
+        let gameData = try await sut.createGameData(for: dice.id, resultCategory: resultCategory)
+        #expect(dice.resultCategory == oldResultCategory)
+        try await sut.updateGame(data: gameData, hide: false, focus: true)
+        #expect(sut.gameModel.focusItemIds.first == dice.id)
+    }
     
     @Test func fumble() async throws {
         let (root, dice) = await GameControllerTests.setupDice()

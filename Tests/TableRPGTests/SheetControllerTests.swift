@@ -160,4 +160,75 @@ struct SheetControllerTests {
 
         #expect(model.destination.itemId == destination.itemId)
     }
+
+    @Test func tableUpdateRefreshesChangedFieldsEntriesAndDiceInline() async throws {
+        let root = try await MockRoot.importTestData()
+        let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
+        let sut = SheetController(itemController: root.itemController)
+        let itemId = UUID()
+        let originalDiceId = UUID()
+        let updatedDiceId = UUID()
+        let keptEntry = TableEntryModel.fixture(name: "Old Result", content: "Old text")
+        let removedEntry = TableEntryModel.fixture(name: "Removed Result", content: "Gone")
+
+        root.itemController.replace(
+            model: TableModel(
+                id: itemId,
+                name: "Old Table",
+                description: "Old description",
+                diceId: originalDiceId,
+                entries: [keptEntry, removedEntry]
+            ),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
+
+        var updatedEntry = keptEntry
+        updatedEntry.name = "Updated Result"
+        updatedEntry.content = "Updated text"
+        let newEntry = TableEntryModel.fixture(name: "New Result", content: "Fresh text")
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        item.name = "Updated Table"
+        item.description = "Updated description"
+        item.diceId = updatedDiceId
+        item.entries = [updatedEntry, newEntry]
+
+        sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
+
+        #expect(sheetModel.name == "Updated Table")
+        #expect(sheetModel.description == "Updated description")
+        #expect(sheetModel.inlineEntries.map(\.source.itemId) == [updatedDiceId])
+        #expect(sheetModel.entries.map(\.source.entryId).contains(keptEntry.id))
+        #expect(!sheetModel.entries.map(\.source.entryId).contains(removedEntry.id))
+        #expect(sheetModel.entries.map(\.source.entryId).contains(newEntry.id))
+        #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.name == "Updated Result")
+        #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.description == "Updated text")
+    }
+
+    @Test func tableUpdateLeavesFoldedEntriesCollapsed() async throws {
+        let root = try await MockRoot.importTestData()
+        let rootManager = RootManager(diceRoot: root.diceRoot, generatorRoot: root, pdfRoot: root.pdfRoot, tableRoot: root)
+        let sut = SheetController(itemController: root.itemController)
+        let itemId = UUID()
+
+        root.itemController.replace(
+            model: TableModel(
+                id: itemId,
+                name: "Folded Table",
+                description: "Folded description",
+                entries: [TableEntryModel.fixture(name: "Hidden", content: "Hidden text")]
+            ),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 1, isEditor: false)
+        root.itemController.itemOrEmpty(for: itemId).name = "Folded Updated"
+
+        sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
+
+        #expect(sheetModel.name == "Folded Updated")
+        #expect(sheetModel.isFolded)
+        #expect(sheetModel.entries.isEmpty)
+    }
 }

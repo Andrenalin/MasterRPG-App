@@ -25,6 +25,15 @@ struct EditControllerTests {
     }
 
     @MainActor
+    private static func makeRoot() -> CharacterRootModel {
+        let diceRoot = DiceRootModel.testRoot()
+        let pdfRoot = PdfRootModel.testRoot()
+        let photoRoot = PhotoRootModel.testRoot()
+        let tableRoot = TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
+        return CharacterRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+    }
+
+    @MainActor
     private func firstId(in ids: Set<UUID>, of root: CharacterRootModel, where predicate: (ValueModel) -> Bool) -> UUID? {
         ids.first { predicate(root.itemController.itemOrEmpty(for: $0)) }
     }
@@ -46,6 +55,133 @@ struct EditControllerTests {
         #expect(groupItem.groupId == itemId)
         #expect(groupItem.parentId == nil)
         #expect(groupItem.displayState == 1)
+    }
+
+    @Test func inlineValueEditingAndMergeHelpers() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        let textEntry = ValueEntryModel(id: UUID(), name: "Text", type: .text, value: "old")
+        let decimalEntry = ValueEntryModel(id: UUID(), name: "Decimal", type: .decimal, value: "0|1.5")
+        let numberEntry = ValueEntryModel(id: UUID(), name: "Number", type: .number, value: "0|2")
+        let selectedEntry = ValueEntryModel(id: UUID(), name: "Selected", type: .selection, value: "")
+        sut.add(entry: textEntry, itemId: itemId)
+        sut.add(entry: decimalEntry, itemId: itemId)
+        sut.add(entry: numberEntry, itemId: itemId)
+        sut.add(entry: selectedEntry, itemId: itemId)
+
+        #expect(sut.entryValue(itemId: itemId, entryId: textEntry.id) == "old")
+        #expect(sut.entryValue(itemId: itemId, entryId: nil).isEmpty)
+        #expect(sut.entryValueAsDecimal(itemId: itemId, entryId: decimalEntry.id) == 1.5)
+        #expect(sut.entryValueAsDecimal(itemId: itemId, entryId: nil) == 0)
+        #expect(sut.entryValueAsNumber(itemId: itemId, entryId: numberEntry.id) == 2)
+        #expect(sut.entryValueAsNumber(itemId: itemId, entryId: nil) == 0)
+        #expect(!sut.entryValueAsSelected(itemId: itemId, entryId: selectedEntry.id))
+        #expect(!sut.entryValueAsSelected(itemId: itemId, entryId: nil))
+
+        sut.updateValue(itemId: itemId, entryId: textEntry.id, value: "new")
+        sut.updateValue(itemId: itemId, entryId: decimalEntry.id, decimal: 2.75)
+        sut.updateValue(itemId: itemId, entryId: numberEntry.id, number: 7)
+        sut.updateValue(itemId: itemId, entryId: selectedEntry.id, selected: true)
+        sut.updateValue(itemId: itemId, entryId: nil, value: "ignored")
+        sut.updateValue(itemId: itemId, entryId: nil, decimal: 5)
+        sut.updateValue(itemId: itemId, entryId: nil, number: 5)
+        sut.updateValue(itemId: itemId, entryId: nil, selected: false)
+
+        #expect(sut.entryValue(itemId: itemId, entryId: textEntry.id) == "new")
+        #expect(sut.entryValueAsDecimal(itemId: itemId, entryId: decimalEntry.id) == 2.75)
+        #expect(sut.entryValueAsNumber(itemId: itemId, entryId: numberEntry.id) == 7)
+        #expect(sut.entryValueAsSelected(itemId: itemId, entryId: selectedEntry.id))
+
+        #expect(sut.create(name: "Count", content: "42").type == .number)
+        #expect(sut.create(name: "Ratio", content: "3.5").type == .decimal)
+        #expect(sut.create(name: "Note", content: "hello").type == .text)
+
+        let merged = sut.merge(itemId: itemId, entries: [
+            ValueEntryModel(id: UUID(), name: "Text", type: .text, value: "merged"),
+            ValueEntryModel(id: UUID(), name: "Fresh", type: .text, value: "added")
+        ])
+        #expect(merged.first { $0.name == "Text" }?.id == textEntry.id)
+        #expect(merged.first { $0.name == "Text" }?.value == "merged")
+        #expect(merged.contains { $0.name == "Fresh" })
+
+        let unresolved = sut.merge(itemId: UUID(), entries: [textEntry])
+        #expect(unresolved == [textEntry])
+
+        let recovery = sut.merge(
+            itemId: itemId,
+            entries: [ValueEntryModel(id: UUID(), name: "Text", type: .text, value: "only")],
+            recoverEntries: [ItemRowModel(itemId: itemId, entryId: numberEntry.id, typeId: .value)]
+        )
+        #expect(recovery.isEmpty)
+        #expect(root.itemController.itemOrEmpty(for: itemId).entries.contains { $0.id == numberEntry.id })
+    }
+
+    @Test func linkHelpersAndSelectionEditing() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Linked Child", itemId: childId)
+        let targetEntry = ValueEntryModel(id: UUID(), name: "Target", type: .text, value: "body")
+        let groupEntry = ValueEntryModel(id: UUID(), name: "Group", type: .text, value: "", valueId: childId)
+        sut.add(entry: targetEntry, itemId: itemId)
+        sut.add(entry: groupEntry, itemId: itemId)
+
+        #expect(sut.canAddGroups)
+        #expect(sut.linkModules == [.value, .dice, .pdf, .table])
+        #expect(sut.additioanlEnrtryViewType == .inline)
+        _ = sut.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: targetEntry.id, typeId: .value), entry: targetEntry, textModel: nil)
+        _ = sut.linkSelectionDestination(itemRowModel: ItemRowModel(itemId: itemId, entryId: targetEntry.id, typeId: .value))
+        _ = sut.quickEditorDestination(itemRowModel: ItemRowModel(itemId: itemId, typeId: .value))
+
+        #expect(sut.canAddLink(module: .dice, entryId: nil))
+        #expect(sut.canAddLink(module: .pdf, entryId: nil))
+        #expect(sut.canAddLink(module: .value, entryId: UUID()))
+        #expect(sut.canAddLink(module: .table, entryId: UUID()))
+        #expect(!sut.canAddLink(module: .value, entryId: nil))
+        #expect(!sut.canAddLink(module: .table, entryId: nil))
+
+        let folders = sut.groupFolders(itemId: itemId, sourceEntryId: targetEntry.id)
+        #expect(folders.map(\.id) == [childId])
+        #expect(folders.map(\.name) == ["Group"])
+
+        let photoA = UUID()
+        let photoB = UUID()
+        sut.add(selection: [WindowItemSelection(itemId: photoA), WindowItemSelection(itemId: photoB)], itemId: itemId)
+        let itemAfterPhotos = root.itemController.itemOrEmpty(for: itemId)
+        #expect(itemAfterPhotos.photos == [photoA, photoB])
+        #expect(itemAfterPhotos.photoId == photoA)
+
+        let diceId = UUID()
+        sut.add(link: "Dice", module: .dice, itemId: diceId, entryId: nil, destinationItemId: itemId, destinationEntryId: targetEntry.id)
+        var target = root.itemController.itemOrEmpty(for: itemId)[targetEntry.id]
+        #expect(target.diceId == diceId)
+        #expect(target.type == .number)
+
+        let pdfId = UUID()
+        sut.add(link: "PDF", module: .pdf, itemId: pdfId, entryId: nil, destinationItemId: itemId, destinationEntryId: targetEntry.id)
+        target = root.itemController.itemOrEmpty(for: itemId)[targetEntry.id]
+        #expect(target.type == .text)
+        #expect(target.value.contains("PDF"))
+
+        let valueId = UUID()
+        let valueEntryId = UUID()
+        sut.add(link: "Value", module: .value, itemId: valueId, entryId: valueEntryId, destinationItemId: itemId, destinationEntryId: targetEntry.id)
+        target = root.itemController.itemOrEmpty(for: itemId)[targetEntry.id]
+        #expect(target.type == .number)
+        #expect(target.value.contains("Value"))
+
+        let tableId = UUID()
+        let tableEntryId = UUID()
+        sut.add(link: "Table", module: .table, itemId: tableId, entryId: tableEntryId, destinationItemId: itemId, destinationEntryId: targetEntry.id)
+        target = root.itemController.itemOrEmpty(for: itemId)[targetEntry.id]
+        #expect(target.name.contains("Table"))
+
+        let previousName = target.name
+        sut.add(link: "Ignored", module: .table, itemId: UUID(), entryId: nil, destinationItemId: itemId, destinationEntryId: targetEntry.id)
+        target = root.itemController.itemOrEmpty(for: itemId)[targetEntry.id]
+        #expect(target.name == previousName)
     }
 
     // MARK: - willDeleteChildren (called from delete)

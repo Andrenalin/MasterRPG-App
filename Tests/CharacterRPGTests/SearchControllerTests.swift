@@ -766,3 +766,256 @@ struct InspectorSearchFixTests {
                 "Folder children must not be pre-fetched on empty search")
     }
 }
+
+// MARK: - Synchronous search paths
+
+@MainActor
+struct SyncSearchControllerTests {
+
+    private func makeRoot() async throws -> CharacterRootModel {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        return root
+    }
+
+    @Test("Global search delegates special category folders through recursive result builder")
+    func globalSearchIncludesMatchingFolderResult() async throws {
+        let root = try await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        root.editController.reset(name: "Archive Vault", itemId: folderId)
+
+        let results = await root.searchController.globalSearchResults(searchText: "Archive")
+        let folderResult = try #require(results.first(where: { $0.itemId == folderId }))
+
+        #expect(folderResult.itemName == "Archive Vault")
+        #expect(folderResult.children.isEmpty)
+    }
+
+    @Test("Sync list search filters hidden, folders, and sub-values in list mode")
+    func syncListSearchFiltersListMode() async throws {
+        let root = try await makeRoot()
+
+        let visibleId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Aldric Scout", itemId: visibleId)
+
+        let hiddenId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Aldric Hidden", itemId: hiddenId)
+        root.editController.reset(displayState: 1, itemId: hiddenId)
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        root.editController.reset(name: "Aldric Folder", itemId: folderId)
+
+        let groupEntryId = await root.editController.addNewGroup(itemId: visibleId)
+        let visible = root.itemController.itemOrEmpty(for: visibleId)
+        let groupEntry = try #require(visible.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+        root.editController.reset(name: "Aldric Subvalue", itemId: subValueId)
+
+        let results = root.searchController.syncListSearchResults(
+            searchText: "Aldric",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let ids = results.map(\.itemId)
+
+        #expect(ids.contains(visibleId))
+        #expect(!ids.contains(hiddenId))
+        #expect(!ids.contains(folderId))
+        #expect(!ids.contains(subValueId))
+    }
+
+    @Test("Sync folder search builds a focused child tree and sorts empty results")
+    func syncFolderSearchBuildsFocusedTree() async throws {
+        let root = try await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        root.editController.reset(name: "Party", itemId: folderId)
+
+        let zedId = await root.itemController.addNew(type: .item)
+        let ariId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Zed", itemId: zedId)
+        root.editController.reset(name: "Ari", itemId: ariId)
+        root.editController.addItem(itemId: zedId, parentId: folderId)
+        root.editController.addItem(itemId: ariId, parentId: folderId)
+
+        let emptyResults = root.searchController.syncListSearchResults(
+            searchText: "",
+            listMode: .folder,
+            displayMode: .medium,
+            focusId: folderId
+        )
+
+        #expect(emptyResults.map(\.itemId) == [ariId, zedId])
+
+        let matchingResults = root.searchController.syncListSearchResults(
+            searchText: "Ari",
+            listMode: .folder,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let folderResult = try #require(matchingResults.first(where: { $0.itemId == folderId }))
+
+        #expect(folderResult.children.map(\.itemId) == [ariId])
+        #expect(folderResult.canOpen == false)
+    }
+
+    @Test("Sync focused inspector returns group entries with sub-entry children")
+    func syncFocusedInspectorReturnsNestedEntries() async throws {
+        let root = try await makeRoot()
+
+        let characterId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Thorin", itemId: characterId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: characterId)
+        let character = root.itemController.itemOrEmpty(for: characterId)
+        let groupEntry = try #require(character.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+        let subEntryId = await root.editController.addNewGroup(itemId: subValueId)
+        root.editController.update(itemId: subValueId, entryId: subEntryId, name: "Sub Strength", content: "Strong")
+
+        let results = root.searchController.syncInspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: characterId
+        )
+
+        let characterResult = try #require(results.first)
+        let groupResult = try #require(characterResult.children.first(where: { $0.entryId == groupEntryId }))
+
+        #expect(characterResult.itemId == characterId)
+        #expect(characterResult.shouldOpen == true)
+        #expect(groupResult.canOpen == true)
+        #expect(groupResult.childFocusId == subValueId)
+        #expect(groupResult.children.contains(where: { $0.itemId == subValueId && $0.entryId == subEntryId }))
+    }
+
+    @Test("Sync inspector returns sub-value entries as sorted flat rows")
+    func syncInspectorFocusedSubValueReturnsSortedFlatRows() async throws {
+        let root = try await makeRoot()
+
+        let characterId = await root.itemController.addNew(type: .item)
+        let groupEntryId = await root.editController.addNewGroup(itemId: characterId)
+        let character = root.itemController.itemOrEmpty(for: characterId)
+        let groupEntry = try #require(character.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+
+        let zetaId = await root.editController.addNewGroup(itemId: subValueId)
+        let alphaId = await root.editController.addNewGroup(itemId: subValueId)
+        root.editController.update(itemId: subValueId, entryId: zetaId, name: "Zeta", content: "")
+        root.editController.update(itemId: subValueId, entryId: alphaId, name: "Alpha", content: "")
+
+        let results = root.searchController.syncInspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: subValueId
+        )
+
+        #expect(results.map(\.entryId) == [alphaId, zetaId])
+        #expect(results.allSatisfy { $0.itemId == subValueId })
+        #expect(results.allSatisfy { $0.children.isEmpty })
+    }
+
+    @Test("Sync common inspector delegates to sync item-level helper")
+    func syncCommonInspectorSearchesVisibleRootCharacters() async throws {
+        let root = try await makeRoot()
+
+        let visibleId = await root.itemController.addNew(type: .item)
+        let hiddenId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Moon Knight", itemId: visibleId)
+        root.editController.reset(name: "Moon Hidden", itemId: hiddenId)
+        root.editController.reset(displayState: 1, itemId: hiddenId)
+
+        let results = root.searchController.syncInspectorSearchResults(
+            searchText: "Moon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+        let visibleResult = try #require(results.first(where: { $0.itemId == visibleId }))
+
+        #expect(visibleResult.children.isEmpty)
+        #expect(!results.contains { $0.itemId == hiddenId })
+    }
+
+    @Test("Async inspector focused on sub-value filters and sorts entries")
+    func asyncInspectorFocusedSubValueFiltersRows() async throws {
+        let root = try await makeRoot()
+
+        let characterId = await root.itemController.addNew(type: .item)
+        let groupEntryId = await root.editController.addNewGroup(itemId: characterId)
+        let character = root.itemController.itemOrEmpty(for: characterId)
+        let groupEntry = try #require(character.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+
+        let zetaId = await root.editController.addNewGroup(itemId: subValueId)
+        let alphaId = await root.editController.addNewGroup(itemId: subValueId)
+        let ignoredId = await root.editController.addNewGroup(itemId: subValueId)
+        root.editController.update(itemId: subValueId, entryId: zetaId, name: "Moon Zeta", content: "")
+        root.editController.update(itemId: subValueId, entryId: alphaId, name: "Alpha", content: "moon light")
+        root.editController.update(itemId: subValueId, entryId: ignoredId, name: "Solar", content: "bright")
+
+        let results = await root.searchController.inspectorSearchResults(
+            searchText: "Moon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: subValueId
+        )
+
+        #expect(results.map(\.entryId) == [alphaId, zetaId])
+        #expect(results.allSatisfy { $0.itemId == subValueId })
+    }
+
+    @Test("Sync focused inspector non-empty search includes matching sub-value entries")
+    func syncFocusedInspectorSearchIncludesMatchingSubEntries() async throws {
+        let root = try await makeRoot()
+
+        let characterId = await root.itemController.addNew(type: .item)
+        let groupEntryId = await root.editController.addNewGroup(itemId: characterId)
+        let character = root.itemController.itemOrEmpty(for: characterId)
+        let groupEntry = try #require(character.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+        root.editController.reset(name: "Moon Discipline", itemId: subValueId)
+
+        let subEntryId = await root.editController.addNewGroup(itemId: subValueId)
+        root.editController.update(itemId: subValueId, entryId: subEntryId, name: "Lunar Strike", content: "Moon attack")
+
+        let results = root.searchController.syncInspectorSearchResults(
+            searchText: "Moon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: characterId
+        )
+
+        let characterResult = try #require(results.first(where: { $0.itemId == characterId }))
+        let groupResult = try #require(characterResult.children.first(where: { $0.entryId == groupEntryId }))
+
+        #expect(groupResult.children.contains { $0.itemId == subValueId && $0.entryId == subEntryId })
+    }
+
+    @Test("Legacy character inspector helper returns matching nested entries")
+    func legacyCharacterInspectorSearchCollectsNestedEntries() async throws {
+        let root = try await makeRoot()
+
+        let characterId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Mira", itemId: characterId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: characterId)
+        let character = root.itemController.itemOrEmpty(for: characterId)
+        let groupEntry = try #require(character.entries.first(where: { $0.id == groupEntryId }))
+        let subValueId = try #require(groupEntry.valueId)
+        let subEntryId = await root.editController.addNewGroup(itemId: subValueId)
+        root.editController.update(itemId: subValueId, entryId: subEntryId, name: "Moon Sigil", content: "glows")
+
+        let results = await root.searchController.inspectorSearchResults(
+            searchText: "Moon",
+            characterId: characterId
+        )
+
+        let characterResult = try #require(results.first(where: { $0.itemId == characterId }))
+
+        #expect(characterResult.children.contains(where: { $0.entryId == subEntryId }))
+        #expect(characterResult.children.allSatisfy { $0.itemId == characterId })
+    }
+}

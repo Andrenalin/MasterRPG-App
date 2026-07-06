@@ -2,14 +2,14 @@
 
 import CoreRPG
 import Foundation
-import DiceRPG
-import PdfRPG
-import PhotoRPG
-import TableRPG
 import RPGResourcesDebug
 import Testing
 
 @testable import CharacterRPG
+@testable import DiceRPG
+@testable import PdfRPG
+@testable import PhotoRPG
+@testable import TableRPG
 
 @MainActor
 struct LinkControllerTests {
@@ -256,6 +256,184 @@ struct LinkControllerTests {
         #expect(groupAfter.parentId == targetItemId)
         #expect(groupAfter.groupId == nil)
         #expect(groupAfter.displayState == 1)
+    }
+
+    @Test func quickLinksFilterCharactersAndSortEntries() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let longEntry = ValueEntryModel(id: UUID(), name: "Long Strength Score", type: .number, value: "18")
+        let shortEntry = ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "9")
+        let character = ValueModel(
+            id: UUID(),
+            name: "Alaric the Far Traveler",
+            category: .character,
+            entries: [shortEntry, longEntry]
+        )
+        let monster = ValueModel(id: UUID(), name: "Cave Horror", category: .monster)
+        root.itemController.replace(model: character, isInsert: true)
+        root.itemController.replace(model: monster, isInsert: true)
+
+        let characterLinks = root.linkController.link(for: .value)
+        let allLinks = root.linkController.link(for: .photo)
+        let entryLinks = root.linkController.linkEntries(for: character.id)
+
+        #expect(characterLinks.map(\.reference) == ["Alaric the Far Traveler"])
+        #expect(allLinks.map(\.reference).contains("Cave Horror"))
+        #expect(entryLinks.map(\.reference) == ["Long Strength Score", "HP"])
+        #expect(entryLinks.first?.markdownUrl.localizedStandardContains(longEntry.id.uuidString) == true)
+    }
+
+    @Test func toggleTextLinkCommandsExpandEntryValuesAndRemoveLinks() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let entry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "18")
+        let character = ValueModel(
+            id: UUID(),
+            name: "Command Character",
+            description: "Ready for action",
+            entries: [entry]
+        )
+        root.itemController.replace(model: character, isInsert: true)
+
+        let itemText = root.linkController.generateLinks(itemId: character.id, entryId: nil, into: "See ")
+        let entryText = root.linkController.generateLinks(itemId: character.id, entryId: entry.id, into: "Value ")
+
+        let expandedItem = root.linkController.toggleTextLink(
+            linkNumber: 0,
+            itemId: character.id,
+            entryId: nil,
+            command: nil,
+            in: itemText,
+            shareResult: nil,
+            toggler: nil,
+            editAction: { row in row.itemId == character.id }
+        )
+        let expandedEntry = root.linkController.toggleTextLink(
+            linkNumber: 0,
+            itemId: character.id,
+            entryId: entry.id,
+            command: nil,
+            in: entryText,
+            shareResult: nil,
+            toggler: nil,
+            editAction: nil
+        )
+        let removedItem = root.linkController.toggleTextLink(
+            linkNumber: LinkType.remove.linkNumberAddition,
+            itemId: character.id,
+            entryId: nil,
+            command: LinkType.remove.rawValue,
+            in: itemText,
+            shareResult: nil,
+            toggler: nil,
+            editAction: nil
+        )
+        let showCommand = root.linkController.toggleTextLink(
+            linkNumber: 0,
+            itemId: character.id,
+            entryId: nil,
+            command: LinkType.show.rawValue,
+            in: itemText,
+            shareResult: nil,
+            toggler: nil,
+            editAction: nil
+        )
+        let shareCommand = root.linkController.toggleTextLink(
+            linkNumber: 0,
+            itemId: character.id,
+            entryId: nil,
+            command: LinkType.share.rawValue,
+            in: itemText,
+            shareResult: nil,
+            toggler: nil,
+            editAction: nil
+        )
+
+        #expect(expandedItem.localizedStandardContains("Ready for action"))
+        #expect(expandedItem.localizedStandardContains("Remove"))
+        #expect(expandedEntry.localizedStandardContains("18"))
+        #expect(removedItem.localizedStandardContains("Command Character"))
+        #expect(showCommand == itemText)
+        #expect(shareCommand == itemText)
+    }
+
+    @Test func validateLinksRemovesMissingPhotosDiceAndValueReferences() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let validPhotoId = await root.photoRoot.itemController.addNew(type: .item)
+        let missingPhotoId = UUID()
+        let missingInlinePhotoId = UUID()
+        let missingDiceId = UUID()
+        let missingValueId = UUID()
+        let entry = ValueEntryModel(
+            id: UUID(),
+            name: "Linked Stat",
+            type: .number,
+            value: "12",
+            diceId: missingDiceId,
+            valueId: missingValueId
+        )
+        let character = ValueModel(
+            id: UUID(),
+            name: "Broken Links",
+            photoId: missingPhotoId,
+            photos: [validPhotoId, missingInlinePhotoId],
+            entries: [entry]
+        )
+        root.itemController.replace(model: character, isInsert: true)
+
+        root.linkController.validateLinks(on: character.id)
+
+        let repaired = try #require(root.itemController.itemSync(for: character.id))
+        let repairedEntry = repaired[entry.id]
+
+        #expect(repaired.photoId == nil)
+        #expect(repaired.photos == [validPhotoId])
+        #expect(repairedEntry.diceId == nil)
+        #expect(repairedEntry.valueId == nil)
+    }
+
+    @Test func repairDuplicateLinksRewritesValueLinksToDuplicateModels() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let originalEntry = ValueEntryModel(id: UUID(), name: "Power", type: .number, value: "7")
+        let original = ValueModel(id: UUID(), name: "Original", entries: [originalEntry])
+        root.itemController.replace(model: original, isInsert: true)
+
+        let duplicateEntry = ValueEntryModel(id: UUID(), name: "Power", type: .number, value: "7")
+        let duplicate = ValueModel(id: UUID(), name: "Duplicate", entries: [duplicateEntry])
+        let mapper = [original.id: duplicate.id]
+        let linkedText = root.linkController.generateLinks(itemId: original.id, entryId: originalEntry.id, into: "Use ")
+
+        let repaired = root.linkController.repairValueLinks(models: [duplicate], mapper: mapper, text: linkedText)
+
+        #expect(repaired.localizedStandardContains(duplicate.id.uuidString))
+        #expect(repaired.localizedStandardContains(duplicateEntry.id.uuidString))
+        #expect(!repaired.localizedStandardContains(original.id.uuidString))
+        #expect(!repaired.localizedStandardContains(originalEntry.id.uuidString))
+
+        let holderEntry = ValueEntryModel(id: UUID(), name: linkedText, type: .text, value: linkedText)
+        let holder = ValueModel(id: UUID(), name: "Holder", entries: [holderEntry])
+        root.linkController.repairDuplicateLinks(models: [holder, duplicate], mapper: mapper)
+
+        #expect(holder.entries[0].name.localizedStandardContains(duplicate.id.uuidString))
+        #expect(holder.entries[0].value.localizedStandardContains(duplicateEntry.id.uuidString))
+    }
+
+    @Test func collectLinksReturnsInlinePhotoListAndValidateFindsExistingItems() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let photoA = UUID()
+        let photoB = UUID()
+        let character = ValueModel(id: UUID(), name: "Photo List", photos: [photoA, photoB])
+        root.itemController.replace(model: character, isInsert: true)
+
+        #expect(Set(root.linkController.collectLinks(of: .photo, from: character.id)) == Set([photoA, photoB]))
+        #expect(root.linkController.collectLinks(of: .photo, from: UUID()).isEmpty)
+        #expect(root.linkController.validate(id: character.id) == character.id)
+        #expect(root.linkController.validate(id: UUID()) == nil)
     }
 
     @MainActor

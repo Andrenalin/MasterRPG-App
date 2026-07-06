@@ -11,6 +11,81 @@ import Testing
 @Suite("Weather link validation — photo links")
 @MainActor
 struct LinkControllerTests {
+    @Test("toggleTextLink adds share, show, remove actions and handles commands")
+    func toggleTextLinkActions() async throws {
+        let root = WeatherRootModel.testRoot(photoRoot: PhotoFactory.root(tagController: .preview))
+        let sut = root.linkController
+        let weatherId = await root.itemController.addNew(type: .scenario)
+        let weather = try #require(root.itemController.itemSync(for: weatherId))
+        weather.name = "Storm Watch"
+        weather.description = "Heavy rain in the valley"
+
+        let link = sut.generateLink(linkNumber: 4, itemId: weatherId, entryId: nil)
+        #expect(link.contains("[Storm Watch]"))
+        #expect(link.contains(weatherId.uuidString))
+
+        let entryLink = sut.generateLink(linkNumber: 5, itemId: weatherId, entryId: UUID())
+        #expect(entryLink.contains("RPG://WEATHERS/5/"))
+
+        let shareResult = ShareValueResult.preview()
+        var text = sut.toggleTextLink(
+            linkNumber: 4,
+            itemId: weatherId,
+            entryId: nil,
+            command: nil,
+            in: link,
+            shareResult: shareResult,
+            toggler: toggler(),
+            editAction: editAction()
+        )
+        #expect(text.contains("[Share]"))
+        #expect(text.contains("[Show]"))
+        #expect(text.contains("[Remove]"))
+        #expect(text.contains("Heavy rain in the valley"))
+
+        let showText = sut.toggleTextLink(
+            linkNumber: LinkType.show.linkNumberAddition + 4,
+            itemId: weatherId,
+            entryId: nil,
+            command: LinkType.show.rawValue,
+            in: text,
+            shareResult: shareResult,
+            toggler: toggler(),
+            editAction: editAction()
+        )
+        #expect(showText == text)
+
+        let shareText = sut.toggleTextLink(
+            linkNumber: LinkType.share.linkNumberAddition + 4,
+            itemId: weatherId,
+            entryId: nil,
+            command: LinkType.share.rawValue,
+            in: text,
+            shareResult: shareResult,
+            toggler: toggler(),
+            editAction: editAction()
+        )
+        #expect(shareText == text)
+
+        text = sut.toggleTextLink(
+            linkNumber: LinkType.remove.linkNumberAddition + 4,
+            itemId: weatherId,
+            entryId: nil,
+            command: LinkType.remove.rawValue,
+            in: text,
+            shareResult: shareResult,
+            toggler: toggler(),
+            editAction: editAction()
+        )
+        #expect(text == "Storm Watch")
+
+        #expect(sut.collectLinks(of: .photo, from: weatherId).isEmpty)
+        let photoId = await root.photoRoot.itemController.addNew(type: .item)
+        weather.photoId = photoId
+        #expect(sut.collectLinks(of: .photo, from: weatherId) == [photoId])
+
+        try await Task.sleep(for: .milliseconds(1))
+    }
 
     // MARK: - Stale link
 
@@ -89,5 +164,13 @@ struct LinkControllerTests {
         // The link must be absent from the in-memory register (DB is nil in test, so in-memory is the full store).
         #expect(!root.itemControllable.linkRegisterController.isUsed(link: photoDestination))
         #expect(root.itemControllable.linkRegisterController.model.items[photoId, default: []].isEmpty)
+    }
+
+    private func toggler() -> ((UUID, NetworkModules) async -> Void) {
+        { _, _ in }
+    }
+
+    private func editAction() -> ((ItemRowModel) -> Bool) {
+        { _ in true }
     }
 }
