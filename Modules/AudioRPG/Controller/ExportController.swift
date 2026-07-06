@@ -5,12 +5,16 @@ import Foundation
 import Observation
 
 struct ExportController: Sendable {
-    @MainActor init(hubControllable: any RootExportControllable, itemController: ItemController) {
-        self.hubControllable = hubControllable
+    @MainActor init(itemController: ItemController) {
         self.itemController = itemController
+        self.exportModel = ExportModel()
     }
 
-    let hubControllable: any RootExportControllable
+    let exportModel: ExportModel
+    var hubControllable: any RootExportControllable {
+        get { exportModel.hubControllable! }
+        set { exportModel.hubControllable = newValue }
+    }
     let itemController: ItemController
 }
 

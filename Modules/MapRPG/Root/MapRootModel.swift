@@ -64,10 +64,8 @@ public final class MapRootModel {
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
 
-        _linkController = LinkController(root: self, audioRoot: audioRoot, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
         _editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
-        _exportController = ExportController(hubControllable: adventureRootControllable, root: self, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
-        _gameController = GameController(root: self, itemController: itemController, exportController: exportController)
+        exportController.hubControllable = adventureRootControllable
 
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
@@ -136,12 +134,14 @@ public final class MapRootModel {
     let sheetController: SheetController
 
 
-    @ObservationIgnored private var _linkController: LinkController?
-    var linkController: LinkController { _linkController! }
+    @ObservationIgnored lazy var linkController: LinkController = {
+        LinkController(root: self, audioRoot: audioRoot, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
+    }()
     @ObservationIgnored private var _editController: EditController?
     var editController: EditController { _editController! }
-    @ObservationIgnored private var _exportController: ExportController?
-    var exportController: ExportController { _exportController! }
+    @ObservationIgnored lazy var exportController: ExportController = {
+        ExportController(root: self, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
+    }()
     @ObservationIgnored private var _importController: ImportController?
     var importController: ImportController {
         if let controller = _importController { return controller }
@@ -149,8 +149,9 @@ public final class MapRootModel {
         _importController = controller
         return controller
     }
-    @ObservationIgnored private var _gameController: GameController?
-    var gameController: GameController { _gameController! }
+    @ObservationIgnored lazy var gameController: GameController = {
+        GameController(root: self, itemController: itemController, exportController: exportController)
+    }()
     @ObservationIgnored private var _searchController: SearchController?
     var searchController: SearchController {
         if let controller = _searchController { return controller }

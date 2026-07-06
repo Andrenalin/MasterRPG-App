@@ -26,6 +26,10 @@ public final class WeatherRootModel {
         let itemController = ItemController(config: config)
         self.itemController = itemController
         self.sheetController = SheetController(itemController: itemController)
+        let exportController = ExportController(photoRoot: photoRoot, itemController: itemController)
+        self.exportController = exportController
+        self.gameController = GameController(itemController: itemController, exportController: exportController)
+        self.linkController = LinkController(photoRoot: photoRoot, itemController: itemController, gameController: gameController)
     }
 
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
@@ -44,9 +48,7 @@ public final class WeatherRootModel {
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
 
-        _exportController = ExportController(hubControllable: adventureRootControllable, photoRoot: photoRoot, itemController: itemController)
-        _gameController = GameController(itemController: itemController, exportController: exportController)
-        _linkController = LinkController(photoRoot: photoRoot, itemController: itemController, gameController: gameController)
+        exportController.hubControllable = adventureRootControllable
         _editController = EditController(rootManager: rootManager, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
 
         syncTask?.cancel()
@@ -89,12 +91,9 @@ public final class WeatherRootModel {
     let itemController: ItemController
     let sheetController: SheetController
     
-    @ObservationIgnored private var _exportController: ExportController?
-    var exportController: ExportController { _exportController! }
-    @ObservationIgnored private var _gameController: GameController?
-    var gameController: GameController { _gameController! }
-    @ObservationIgnored private var _linkController: LinkController?
-    var linkController: LinkController { _linkController! }
+    @ObservationIgnored var exportController: ExportController
+    @ObservationIgnored var gameController: GameController
+    @ObservationIgnored var linkController: LinkController
     @ObservationIgnored private var _editController: EditController?
     var editController: EditController { _editController! }
     @ObservationIgnored private var _importController: ImportController?

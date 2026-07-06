@@ -29,7 +29,9 @@ public final class CharacterRootModel {
         self.navigationModel = ModuleNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
 
-        self.itemController = ItemController(config: config, tableRoot: tableRoot)
+        let itemController = ItemController(config: config, tableRoot: tableRoot)
+        self.itemController = itemController
+        self.exportController = ExportController(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController)
     }
 
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
@@ -48,11 +50,9 @@ public final class CharacterRootModel {
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
 
-        _linkController = LinkController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController)
         _sheetController = SheetController(itemController: itemController, linkController: linkController)
         _editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
-        _exportController = ExportController(hubControllable: adventureRootControllable, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController)
-        _gameController = GameController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, exportController: exportController)
+        exportController.hubControllable = adventureRootControllable
 
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
@@ -111,14 +111,17 @@ public final class CharacterRootModel {
     @ObservationIgnored var syncTask: Task<Void, Never>?
 
     let itemController: ItemController
-    @ObservationIgnored private var _linkController: LinkController?
-    var linkController: LinkController { _linkController! }
+    @ObservationIgnored lazy var linkController: LinkController = {
+        LinkController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController)
+    }()
     @ObservationIgnored private var _sheetController: SheetController?
     var sheetController: SheetController { _sheetController! }
     @ObservationIgnored private var _editController: EditController?
     var editController: EditController { _editController! }
-    @ObservationIgnored private var _exportController: ExportController?
-    var exportController: ExportController { _exportController! }
+    @ObservationIgnored var exportController: ExportController
+    @ObservationIgnored lazy var gameController: GameController = {
+        GameController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, exportController: exportController)
+    }()
     @ObservationIgnored private var _importController: ImportController?
     var importController: ImportController {
         if let controller = _importController { return controller }
@@ -126,8 +129,6 @@ public final class CharacterRootModel {
         _importController = controller
         return controller
     }
-    @ObservationIgnored private var _gameController: GameController?
-    var gameController: GameController { _gameController! }
     @ObservationIgnored private var _searchController: SearchController?
     var searchController: SearchController {
         if let controller = _searchController { return controller }

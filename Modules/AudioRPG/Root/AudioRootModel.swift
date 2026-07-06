@@ -26,8 +26,13 @@ public final class AudioRootModel {
 
         let itemController = ItemController(config: config)
         self.itemController = itemController
-        self.audioController = AudioController(itemController: itemController, model: audioPlayerModel)
+        let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
+        self.audioController = audioController
         self.sheetController = SheetController(itemController: itemController)
+        let exportController = ExportController(itemController: itemController)
+        self.exportController = exportController
+        self.gameController = GameController(itemController: itemController, audioController: audioController, exportController: exportController)
+        self.linkController = LinkController(itemController: itemController, audioController: audioController, gameController: gameController)
     }
 
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
@@ -46,9 +51,7 @@ public final class AudioRootModel {
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
 
-        _exportController = ExportController(hubControllable: adventureRootControllable, itemController: itemController)
-        _gameController = GameController(itemController: itemController, audioController: audioController, exportController: exportController)
-        _linkController = LinkController(itemController: itemController, audioController: audioController, gameController: gameController)
+        exportController.hubControllable = adventureRootControllable
         _editController = EditController(rootManager: rootManager, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: tagController)
 
         syncTask?.cancel()
@@ -98,8 +101,7 @@ public final class AudioRootModel {
     let itemController: ItemController
     @ObservationIgnored private var _editController: EditController?
     var editController: EditController { _editController! }
-    @ObservationIgnored private var _exportController: ExportController?
-    var exportController: ExportController { _exportController! }
+    @ObservationIgnored var exportController: ExportController
     @ObservationIgnored private var _importController: ImportController?
     var importController: ImportController {
         if let controller = _importController { return controller }
@@ -107,10 +109,8 @@ public final class AudioRootModel {
         _importController = controller
         return controller
     }
-    @ObservationIgnored private var _gameController: GameController?
-    var gameController: GameController { _gameController! }
-    @ObservationIgnored private var _linkController: LinkController?
-    var linkController: LinkController { _linkController! }
+    @ObservationIgnored var gameController: GameController
+    @ObservationIgnored var linkController: LinkController
     @ObservationIgnored private var _searchController: SearchController?
     var searchController: SearchController {
         if let controller = _searchController { return controller }
