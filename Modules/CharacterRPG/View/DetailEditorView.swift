@@ -16,15 +16,17 @@ struct DetailEditorView: View {
             // task is swallowing the updates later, this causes a 2 double creation on start / that is acceptable
             .onChange(of: model.id, initial: true) {
                 root.editorLinkModel.characterSelectionModel.onlyChildrenFrom <=> model.id
-                root.editController.sheetRootModel.reset(itemId: model.id)
+                root.editController.editorModel.sheetRootModel?.reset(itemId: model.id)
             }
 
-        SheetRootEditorView(
-            root: root.rootController,
-            sheetRootModel: root.editController.sheetRootModel,
-            headerTitle: String(localized: "Values", bundle: .module).localizedString,
-            linkTypes: LinkCharacterModuleTransferable.self
-        )
+        if let rootModel = root.editController.editorModel.sheetRootModel {
+            SheetRootEditorView(
+                root: root.rootController,
+                sheetRootModel: rootModel,
+                headerTitle: String(localized: "Values", bundle: .module).localizedString,
+                linkTypes: LinkCharacterModuleTransferable.self
+            )
+        }
     }
 }
 

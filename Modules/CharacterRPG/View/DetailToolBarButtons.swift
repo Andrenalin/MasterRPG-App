@@ -31,10 +31,10 @@ struct AddEntryButton: View {
             withAnimation {
                 root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                 let entryId = root.editController.addNewEntry(itemId: model.id)
-                root.editController.sheetEditorModel.entryId = entryId
+                root.editController.editorModel.sheetEditorModel.entryId = entryId
                 Task {
                     try? await Task.sleep(for: .seconds(0.25))
-                    root.editController.sheetEditorModel.scrollEntryId = entryId
+                    root.editController.editorModel.sheetEditorModel.scrollEntryId = entryId
                 }
             }
         } label: {
@@ -58,10 +58,10 @@ struct AddGroupButton: View {
             Task {
                 let entryId = await root.editController.addNewGroup(itemId: itemId)
                 withAnimation {
-                    root.editController.sheetEditorModel.entryId = entryId
+                    root.editController.editorModel.sheetEditorModel.entryId = entryId
                 }
                 try? await Task.sleep(for: .seconds(0.25))
-                root.editController.sheetEditorModel.scrollEntryId = entryId
+                root.editController.editorModel.sheetEditorModel.scrollEntryId = entryId
             }
         } label: {
             Label {

@@ -20,7 +20,7 @@ struct DetailEditorView: View {
                         sheetControllable: root.rootController.sheetControllable,
                         itemId: model.id,
                         isEditor: true,
-                        editorModel: root.editController.sheetEditorModel
+                        editorModel: root.editController.editorModel.sheetEditorModel
                     )
                 } else {
                     sheetRootModel?.reset(itemId: model.id)

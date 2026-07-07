@@ -296,7 +296,7 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
         if root.editControllable as? (any EntryDataEditable) != nil {
             EntryEditorView(
                 rootManager: root.rootManager,
-                editorModel: root.editControllable.sheetEditorModel,
+                editorModel: root.editControllable.editorModel.sheetEditorModel,
                 linkTypes: LinkTypes.self
             )
         }
@@ -488,10 +488,10 @@ private struct ItemEditorForegroundView<Editor: View>: View {
                     }
                     
                     editor
-                        .onChange(of: root.editControllable.sheetEditorModel.scrollEntryId) {
-                            guard let scrollEntryId = root.editControllable.sheetEditorModel.scrollEntryId else { return }
+                        .onChange(of: root.editControllable.editorModel.sheetEditorModel.scrollEntryId) {
+                            guard let scrollEntryId = root.editControllable.editorModel.sheetEditorModel.scrollEntryId else { return }
                             scrollProxy.scrollTo(scrollEntryId, anchor: .center)
-                            root.editControllable.sheetEditorModel.scrollEntryId = nil
+                            root.editControllable.editorModel.sheetEditorModel.scrollEntryId = nil
                         }
                 }
                 .padding()

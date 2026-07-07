@@ -254,7 +254,7 @@ public final class SheetRootModel: Sendable {
 
     func setScrollEntryId(source: ItemRowModel, entryId: UUID?) {
         guard let editController = editControllable(for: source) else { return }
-        editController.sheetEditorModel.scrollEntryId = entryId
+        editController.editorModel.sheetEditorModel.scrollEntryId = entryId
     }
 
     private func addNewEntry(to source: ItemRowModel) -> UUID? {

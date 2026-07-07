@@ -83,14 +83,14 @@ struct MapEditor: View {
 #if !os(tvOS)
             .dragTapGesture(isActive: viewModel.mapMode != .viewer, pressAction: pressAction(_:), releaseAction: releaseAction(_:), longPressAction: longPressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
-            .onChange(of: editController.sheetEditorModel.itemId) {
+            .onChange(of: editController.editorModel.sheetEditorModel.itemId) {
                 viewModel.changeImage(map: map)
             }
-            .onChange(of: editController.sheetEditorModel.entryId, initial: true) {
+            .onChange(of: editController.editorModel.sheetEditorModel.entryId, initial: true) {
                 guard viewModel.mapMode == .edit else { return }
                 mapEditController.changeMap(
                     map: map,
-                    currentEntryId: editController.sheetEditorModel.entryId,
+                    currentEntryId: editController.editorModel.sheetEditorModel.entryId,
                     editorModel: viewModel
                 )
             }

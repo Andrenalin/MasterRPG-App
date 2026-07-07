@@ -24,9 +24,10 @@ struct EditController: Sendable {
     @MainActor init(rootManager: RootManager, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
         self.tagController = tagController
         self.itemController = itemController
-        self.editorModel = ItemEditorModel()
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
-        self.sheetRootModel = SheetRootModel(
+        let editorModel = ItemEditorModel(sheetEditorModel: sheetEditorModel)
+        self.editorModel = editorModel
+        let sheetRootModel = SheetRootModel(
             rootManager: rootManager,
             linkControllable: linkController,
             sheetControllable: sheetController,
@@ -34,14 +35,12 @@ struct EditController: Sendable {
             isEditor: true,
             editorModel: sheetEditorModel
         )
-        self.sheetEditorModel = sheetEditorModel
+        editorModel.sheetRootModel = sheetRootModel
     }
 
     let itemController: ItemController
     let tagController: TagController
     let editorModel: ItemEditorModel
-    let sheetRootModel: SheetRootModel
-    let sheetEditorModel: SheetEditorModel
 }
 
 extension EditController: EntryDataEditable {
