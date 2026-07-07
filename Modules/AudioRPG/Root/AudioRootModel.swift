@@ -3,28 +3,24 @@
 import AVFoundation
 import CoreRPG
 import CoreData
-import SwiftData
 import SwiftUI
 
-@MainActor @Observable
-public final class AudioRootModel {
+@MainActor @Observable public final class AudioRootModel {
     @MainActor init(tagController: TagController) {
-        self.tagController = tagController
-
         let config = ModuleConfiguration()
         self.config = config
 
-        self.itemSelectionModel = ItemSelectionModel()
         let navigationModel = ModuleNavigationModel()
         self.navigationModel = navigationModel
-        
+        self.itemSelectionModel = ItemSelectionModel()
         self.linkSelectionModel = config.linkSelectionModel
+        self.removeEntryListModel = RemoveEntryListModel()
 
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-
+        
         let audioPlayerModel = AudioPlayerModel()
         self.audioPlayerModel = audioPlayerModel
 
@@ -56,6 +52,13 @@ public final class AudioRootModel {
         let linkDisplayModel = listDisplayModel.newListDisplayModel
         let folderLinkController = FolderListController(listModel: folderLinkModel, listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
         self.folderLinkController = folderLinkController
+
+        self.editorLinkModel = EditorLinkModel(
+            folderListController: folderLinkController,
+            firstRow: [],
+            selection: .none
+        )
+        self.openFileWindowModel = OpenFileWindowModel()
     }
 
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
@@ -75,6 +78,7 @@ public final class AudioRootModel {
             isEditor: true,
             editorModel: editController.editorModel.sheetEditorModel
         )
+        editorLinkModel.rootManager = rootManager
         
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
@@ -84,10 +88,6 @@ public final class AudioRootModel {
         }
     }
 
-    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = {
-        OpenFileWindowModel()
-    }()
-
     private var _rootManager: RootManager?
     public var rootManager: RootManager {
         get { _rootManager! }
@@ -95,15 +95,14 @@ public final class AudioRootModel {
     }
 
     public let config: ModuleConfiguration
-    let tagController: TagController
-    let searchModel: SearchModel
-    let listDisplayModel: ListDisplayModel
+    @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: ModuleNavigationModel
-    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
-    public let removeEntryListModel = RemoveEntryListModel()
+    public let removeEntryListModel: RemoveEntryListModel
 
+    let searchModel: SearchModel
+    let listDisplayModel: ListDisplayModel
+    
     public let audioPlayerModel: AudioPlayerModel
 
     @ObservationIgnored let audioController: AudioController
@@ -122,6 +121,9 @@ public final class AudioRootModel {
 
     @ObservationIgnored var syncDataController: SyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
+
+    @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
+    @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel
 
     @MainActor @ObservationIgnored private var _rootController: ItemRootController?
     @MainActor public var rootController: ItemRootController {
@@ -150,19 +152,11 @@ public final class AudioRootModel {
         _rootController = controller
         return controller
     }
-
-    @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
-        EditorLinkModel(
-            rootManager: RootManager(anyRoot: self),
-            folderListController: folderLinkController,
-            firstRow: [],
-            selection: .none
-        )
-    }()
 }
 
-@MainActor
-extension AudioRootModel: ItemRootControllable {
+@MainActor extension AudioRootModel: ItemRootControllable {
+    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
+
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }

@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor @Observable
 public final class EditorLinkModel {
-    public init(rootManager: RootManager,
+    public init(
         folderListController: any FolderListControllable,
         adventureSelectionModel: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
         audioSelectionModel: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -20,7 +20,6 @@ public final class EditorLinkModel {
         secondRow: [NetworkModules] = [],
         selection: NetworkModules
     ) {
-        self.rootManager = rootManager
         self.folderListController = folderListController
         self.adventureSelectionModel = adventureSelectionModel
         self.audioSelectionModel = audioSelectionModel
@@ -41,8 +40,8 @@ public final class EditorLinkModel {
         update(selection: selection)
     }
     
-    let rootManager: RootManager
-    let folderListController: FolderListControllable
+    @ObservationIgnored public var rootManager: RootManager?
+    public var folderListController: FolderListControllable
     
     public let adventureSelectionModel: ItemSelectionModel
     public let audioSelectionModel: ItemSelectionModel
@@ -81,6 +80,8 @@ public final class EditorLinkModel {
     }
     
     func updateListController() {
+        guard let moduleListController else { return }
+
         folderListController.listDisplayModel.displayMode = moduleListController.listDisplayModel.displayMode
         folderListController.listDisplayModel.listMode = moduleListController.listDisplayModel.listMode
         folderListController.searchModel.searchText = moduleListController.searchModel.searchText
@@ -89,6 +90,8 @@ public final class EditorLinkModel {
     }
     
     func update() {
+        guard let moduleListController else { return }
+
         moduleListController.listDisplayModel.displayMode <=> folderListController.listDisplayModel.displayMode
         moduleListController.listDisplayModel.listMode <=> folderListController.listDisplayModel.listMode
         moduleListController.searchModel.searchText <=> folderListController.searchModel.searchText
@@ -96,19 +99,21 @@ public final class EditorLinkModel {
         moduleListController.searchModel.searchTags <=> folderListController.searchModel.searchTags
     }
     
-    private var moduleListController: FolderListControllable {
+    private var moduleListController: FolderListControllable? {
+        guard let rootManager else { return nil }
+
         switch selection {
-        case .adventure: rootManager.adventureRoot.folderLinkControllable
-        case .audio: rootManager.audioRoot.folderLinkControllable
-        case .dice: rootManager.diceRoot.folderLinkControllable
-        case .map: rootManager.mapRoot.folderLinkControllable
-        case .pdf: rootManager.pdfRoot.folderLinkControllable
-        case .photo: rootManager.photoRoot.folderLinkControllable
-        case .space: rootManager.spaceRoot.folderLinkControllable
-        case .table: rootManager.tableRoot.folderLinkControllable
-        case .value: rootManager.characterRoot.folderLinkControllable
-        case .weather: rootManager.weatherRoot.folderLinkControllable
-        default: rootManager.adventureRoot.folderLinkControllable
+        case .adventure: return rootManager.adventureRoot.folderLinkControllable
+        case .audio: return rootManager.audioRoot.folderLinkControllable
+        case .dice: return rootManager.diceRoot.folderLinkControllable
+        case .map: return rootManager.mapRoot.folderLinkControllable
+        case .pdf: return rootManager.pdfRoot.folderLinkControllable
+        case .photo: return rootManager.photoRoot.folderLinkControllable
+        case .space: return rootManager.spaceRoot.folderLinkControllable
+        case .table: return rootManager.tableRoot.folderLinkControllable
+        case .value: return rootManager.characterRoot.folderLinkControllable
+        case .weather: return rootManager.weatherRoot.folderLinkControllable
+        default: return rootManager.adventureRoot.folderLinkControllable
         }
     }
     
@@ -138,9 +143,9 @@ public final class EditorLinkModel {
             addLinkAndReset(editController: editController, destiantionItemId: destiantionItemId, destinationEntryId: destinationEntryId, module: module)
         }
     }
-
+    
     private func addLinkAndReset(editController: any EntryDataEditable, destiantionItemId: UUID, destinationEntryId: UUID, module: NetworkModules) {
-        guard let rootController = rootManager.itemRootController(for: module) else { return }
+        guard let rootController = rootManager?.itemRootController(for: module) else { return }
 
         let selection = selectionModel(for: module)
         for itemSelection in selection.selection {

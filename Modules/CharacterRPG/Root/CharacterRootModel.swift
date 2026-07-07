@@ -53,6 +53,8 @@ public final class CharacterRootModel {
         _sheetController = SheetController(itemController: itemController, linkController: linkController)
         _editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
         exportController.hubControllable = adventureRootControllable
+        editorLinkModel.rootManager = rootManager
+        editorLinkModel.folderListController = folderLinkController
 
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
@@ -92,7 +94,6 @@ public final class CharacterRootModel {
 
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
         EditorLinkModel(
-            rootManager: RootManager(adventureRoot: self, audioRoot: self, characterRoot: self, diceRoot: diceRoot, generatorRoot: self, mapRoot: self, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: self, tableRoot: tableRoot, weatherRoot: self),
             folderListController: folderLinkController,
             characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: false, allowEntrySelection: true, onlyEntrySelection: true),
             diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -104,8 +105,8 @@ public final class CharacterRootModel {
         )
     }()
 
-    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
-    }()
+    @MainActor @ObservationIgnored private let _openFileWindowModel: OpenFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
+    @MainActor public var openFileWindowModel: OpenFileWindowModel { _openFileWindowModel }
 
     @ObservationIgnored var syncDataController: SyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
@@ -154,9 +155,8 @@ public final class CharacterRootModel {
         return controller
     }
 
-    @ObservationIgnored public lazy var viewController: ViewController = {
-        ViewController()
-    }()
+    @ObservationIgnored private let _viewController: ViewController = ViewController()
+    public var viewController: ViewController { _viewController }
 
     @MainActor @ObservationIgnored private var _rootController: ItemRootController?
     @MainActor public var rootController: ItemRootController {

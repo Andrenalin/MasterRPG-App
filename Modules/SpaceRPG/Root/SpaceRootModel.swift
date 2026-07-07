@@ -47,6 +47,8 @@ public final class SpaceRootModel {
 
         exportController.hubControllable = adventureRootControllable
         _editController = EditController(rootManager: rootManager, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
+        editorLinkModel.rootManager = rootManager
+        editorLinkModel.folderListController = folderLinkController
 
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
@@ -126,9 +128,8 @@ public final class SpaceRootModel {
         return controller
     }
 
-    @ObservationIgnored public lazy var viewController: ViewController = {
-        ViewController()
-    }()
+    @ObservationIgnored private let _viewController: ViewController = ViewController()
+    public var viewController: ViewController { _viewController }
 
     @MainActor @ObservationIgnored private var _rootController: ItemRootController?
     @MainActor public var rootController: ItemRootController {
@@ -160,15 +161,14 @@ public final class SpaceRootModel {
 
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
         EditorLinkModel(
-            rootManager: RootManager(anyRoot: self),
             folderListController: folderLinkController,
             firstRow: [],
             selection: .none
         )
     }()
 
-    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
-    }()
+    @MainActor @ObservationIgnored private let _openFileWindowModel: OpenFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
+    @MainActor public var openFileWindowModel: OpenFileWindowModel { _openFileWindowModel }
 }
 
 @MainActor

@@ -71,6 +71,10 @@ public final class AdventureRootModel {
         _editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: rootManager, root: self, itemController: itemController)
         _gameController = GameController(rootManager: rootManager, root: self, itemController: itemController, exportController: exportController)
+        editorLinkModel.rootManager = root
+        editorLinkModel.folderListController = folderLinkController
+        playerLinkModel.rootManager = root
+        playerLinkModel.folderListController = folderLinkController
 
         audioRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
         diceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
@@ -124,7 +128,6 @@ public final class AdventureRootModel {
 
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
         EditorLinkModel(
-            rootManager: rootManager,
             folderListController: folderLinkController,
             adventureSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -144,7 +147,6 @@ public final class AdventureRootModel {
 
     @MainActor @ObservationIgnored lazy var playerLinkModel: EditorLinkModel = {
         EditorLinkModel(
-            rootManager: rootManager,
             folderListController: folderLinkController,
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -159,8 +161,8 @@ public final class AdventureRootModel {
         )
     }()
 
-    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
-    }()
+    @MainActor @ObservationIgnored private let _openFileWindowModel: OpenFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
+    @MainActor public var openFileWindowModel: OpenFileWindowModel { _openFileWindowModel }
 
     @ObservationIgnored var syncDataController: SyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
@@ -209,9 +211,8 @@ public final class AdventureRootModel {
         _folderLinkController = controller
         return controller
     }
-    @ObservationIgnored public lazy var viewController: ViewController = {
-        ViewController()
-    }()
+    @ObservationIgnored private let _viewController: ViewController = ViewController()
+    public var viewController: ViewController { _viewController }
 
     @MainActor @ObservationIgnored private var _rootController: ItemRootController?
     @MainActor public var rootController: ItemRootController {

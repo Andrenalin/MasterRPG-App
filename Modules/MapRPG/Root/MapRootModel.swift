@@ -66,6 +66,8 @@ public final class MapRootModel {
 
         _editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
         exportController.hubControllable = adventureRootControllable
+        editorLinkModel.rootManager = rootManager
+        editorLinkModel.folderListController = folderLinkController
 
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
@@ -109,7 +111,6 @@ public final class MapRootModel {
 
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
         EditorLinkModel(
-            rootManager: RootManager(adventureRoot: self, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, generatorRoot: self, mapRoot: self, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: self, tableRoot: tableRoot, weatherRoot: self),
             folderListController: folderLinkController,
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -123,8 +124,8 @@ public final class MapRootModel {
         )
     }()
 
-    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.map.viewerWindowId, route: { DetailRoute.viewer($0) })
-    }()
+    @MainActor @ObservationIgnored private let _openFileWindowModel: OpenFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.map.viewerWindowId, route: { DetailRoute.viewer($0) })
+    @MainActor public var openFileWindowModel: OpenFileWindowModel { _openFileWindowModel }
 
     var cacheController: CacheController? { itemController.cacheController }
     @ObservationIgnored var syncDataController: SyncDataController?
@@ -177,9 +178,8 @@ public final class MapRootModel {
         return controller
     }
 
-    @ObservationIgnored public lazy var viewController: ViewController = {
-        ViewController()
-    }()
+    @ObservationIgnored private let _viewController: ViewController = ViewController()
+    public var viewController: ViewController { _viewController }
 
     @MainActor @ObservationIgnored private var _rootController: ItemRootController?
     @MainActor public var rootController: ItemRootController {
