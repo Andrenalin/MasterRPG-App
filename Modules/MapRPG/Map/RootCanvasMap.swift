@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 import PhotoRPG
 
-@Observable
+@MainActor @Observable
 final class DropPinModel {
     var items: [ItemRowModel] = []
     var point: CGPoint = .zero

@@ -32,7 +32,7 @@ struct LinkTableModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(rootManager: RootManager, diceRoot: DiceRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
+    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
         self.diceRoot = diceRoot
 
         self.tagController = tagController
@@ -40,15 +40,6 @@ struct EditController: Sendable {
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
         let editorModel = ItemEditorModel(sheetEditorModel: sheetEditorModel)
         self.editorModel = editorModel
-        let sheetRootModel = SheetRootModel(
-            rootManager: rootManager,
-            linkControllable: linkController,
-            sheetControllable: sheetController,
-            itemId: UUID(),
-            isEditor: true,
-            editorModel: sheetEditorModel
-        )
-        editorModel.sheetRootModel = sheetRootModel
         self.tableEditModel = TableEditModel()
     }
 

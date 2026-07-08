@@ -18,9 +18,9 @@ public enum CloudKitSyncState: Sendable, Equatable {
     case failed(String)
 }
 
-@Observable
+@MainActor @Observable
 public final class CoreDataInitModel: @unchecked Sendable {
-    init(inMemory: Bool, currentActor: AppPersistentActor) {
+    nonisolated init(inMemory: Bool, currentActor: AppPersistentActor) {
         self.inMemory = inMemory
         self.currentActor = currentActor
     }

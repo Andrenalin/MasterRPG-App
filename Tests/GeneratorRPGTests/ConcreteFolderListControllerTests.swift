@@ -11,7 +11,7 @@ import Testing
 struct ConcreteFolderListControllerTests {
     @Test func routesAndCopy() async throws {
         let root = GeneratorRootModel.testRoot()
-        let sut = try #require(root.folderListController as? FolderListController)
+        let sut = root.folderListController
         let itemId = UUID()
 
         #expect((sut.detailDestination(for: itemId) as? GeneratorRoute) == .detail(itemId))

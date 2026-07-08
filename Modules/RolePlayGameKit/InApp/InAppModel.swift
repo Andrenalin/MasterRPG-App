@@ -3,7 +3,7 @@
 import Foundation
 import StoreKit
 
-@Observable
+@MainActor @Observable
 final class InAppModel {
     var products: [Product] = []
     var activeTransactions: Set<StoreKit.Transaction> = []
@@ -73,4 +73,3 @@ public struct InAppController {
     }
     #endif
 }
-

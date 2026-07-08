@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import Testing
@@ -12,7 +11,7 @@ import Testing
 struct ConcreteFolderListControllerTests {
     @Test func routesAndCopy() async throws {
         let root = WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
-        let sut = try #require(root.folderListController as? WeatherRPG.FolderListController)
+        let sut = root.folderListController
         let itemId = UUID()
 
         #expect((sut.detailDestination(for: itemId) as? WeatherRoute) == .detail(itemId))
@@ -26,4 +25,3 @@ struct ConcreteFolderListControllerTests {
         #expect(copied.listDisplayModel !== sut.listDisplayModel)
     }
 }
-#endif

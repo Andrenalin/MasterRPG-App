@@ -144,13 +144,13 @@ private extension AdventureChatRootView {
     }
 
     var sheetRootController: ItemRootController? {
-        root.rootManager.itemRootController(for: sheetModule)
+        root.rootManager?.itemRootController(for: sheetModule)
     }
 
     func prepareChatSheetRootModelIfNeeded() {
-        guard chatSheetRootModel == nil, let sheetRootController else { return }
+        guard chatSheetRootModel == nil, let sheetRootController, let rootManager = sheetRootController.rootManager else { return }
         chatSheetRootModel = SheetRootModel(
-            rootManager: sheetRootController.rootManager,
+            rootManager: rootManager,
             linkControllable: sheetRootController.linkControllable,
             sheetControllable: sheetRootController.sheetControllable,
             sheetModel: sheetModel,
@@ -355,7 +355,7 @@ private extension AdventureChatRootView {
     }
 
     func entryDataEditable(for source: ItemRowModel) -> (any EntryDataEditable)? {
-        root.rootManager.itemRootController(for: source.typeId)?.editControllable as? any EntryDataEditable
+        root.rootManager?.itemRootController(for: source.typeId)?.editControllable as? any EntryDataEditable
     }
 
     func cleaned(_ value: String) -> String {

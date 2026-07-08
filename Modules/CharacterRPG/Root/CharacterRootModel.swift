@@ -12,49 +12,71 @@ import SwiftUI
 @MainActor @Observable
 public final class CharacterRootModel {
     @MainActor init(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
+        let config = ModuleConfiguration()
+        self.config = config
+
+        let navigationModel = ModuleNavigationModel()
+        self.navigationModel = navigationModel
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+        self.linkSelectionModel = config.linkSelectionModel
+        self.removeEntryListModel = RemoveEntryListModel()
+
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
+        self.searchModel = searchModel
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
 
-        let config = ModuleConfiguration()
-        self.config = config
-
-        let listDisplayModel = ListDisplayModel()
-        self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
-        self.searchModel = searchModel
-
-        self.itemSelectionModel = ItemSelectionModel()
-        self.navigationModel = ModuleNavigationModel()
-        self.linkSelectionModel = config.linkSelectionModel
-
         let itemController = ItemController(config: config, tableRoot: tableRoot)
         self.itemController = itemController
         self.exportController = ExportController(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController)
+        let searchController = SearchController(itemController: itemController)
+        self.searchController = searchController
+        self._viewController = ViewController()
+
+        let folderListModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
+        let folderListController = FolderListController(listModel: folderListModel, listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))
+        self.folderListController = folderListController
+
+        let folderLinkModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
+        let linkDisplayModel = listDisplayModel.newListDisplayModel
+        let folderLinkController = FolderListController(listModel: folderLinkModel, listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
+        self.folderLinkController = folderLinkController
+
+        self.editorLinkModel = EditorLinkModel(
+            folderListController: folderLinkController,
+            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: false, allowEntrySelection: true, onlyEntrySelection: true),
+            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: false, allowEntrySelection: true, onlyEntrySelection: true),
+            firstRow: [.value, .dice, .pdf, .photo, .table],
+            selection: .value
+        )
+        self.openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
     }
 
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
-        self.context = context
-        self.batchContext = batchContext
-        self.rootManager = rootManager
-        self._adventureRootControllable = adventureRootControllable
-        self._linkRegisterController = linkRegisterController
-
-        _importController = nil
-        _searchController = nil
-        _folderListController = nil
-        _folderLinkController = nil
-        _rootController = nil
+        rootController.rootManager = rootManager
 
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
 
-        _sheetController = SheetController(itemController: itemController, linkController: linkController)
-        _editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
         exportController.hubControllable = adventureRootControllable
+        editController.editorModel.sheetRootModel = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: linkController,
+            sheetControllable: sheetController,
+            itemId: UUID(),
+            isEditor: true,
+            editorModel: editController.editorModel.sheetEditorModel
+        )
         editorLinkModel.rootManager = rootManager
-        editorLinkModel.folderListController = folderLinkController
 
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
@@ -69,100 +91,37 @@ public final class CharacterRootModel {
     let photoRoot: PhotoRootModel
     let tableRoot: TableRootModel
 
-    private var _rootManager: RootManager?
-    public var rootManager: RootManager {
-        get { _rootManager! }
-        set { _rootManager = newValue }
-    }
-    private(set) var context: NSManagedObjectContext?
-    private(set) var batchContext: NSManagedObjectContext?
-    private var _adventureRootControllable: (any RootExportControllable)?
-    var adventureRootControllable: any RootExportControllable { _adventureRootControllable! }
-    private var _linkRegisterController: LinkRegisterController?
-    var linkRegisterController: LinkRegisterController { _linkRegisterController! }
-
     public let config: ModuleConfiguration
+    @MainActor public var navigationModel: ModuleNavigationModel
+    @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
+    @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
+    public let removeEntryListModel: RemoveEntryListModel
 
     public let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
-    @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: ModuleNavigationModel
-    @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
-
-    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
-    public let removeEntryListModel = RemoveEntryListModel()
-
-    @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
-        EditorLinkModel(
-            folderListController: folderLinkController,
-            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: false, allowEntrySelection: true, onlyEntrySelection: true),
-            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: false, allowEntrySelection: true, onlyEntrySelection: true),
-            firstRow: [.value, .dice, .pdf, .photo, .table],
-            selection: .value
-        )
-    }()
-
-    @MainActor @ObservationIgnored private let _openFileWindowModel: OpenFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
-    @MainActor public var openFileWindowModel: OpenFileWindowModel { _openFileWindowModel }
-
-    @ObservationIgnored var syncDataController: SyncDataController?
-    @ObservationIgnored var syncTask: Task<Void, Never>?
 
     let itemController: ItemController
     @ObservationIgnored lazy var linkController: LinkController = {
         LinkController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController)
     }()
-    @ObservationIgnored private var _sheetController: SheetController?
-    var sheetController: SheetController { _sheetController! }
-    @ObservationIgnored private var _editController: EditController?
-    var editController: EditController { _editController! }
+    @ObservationIgnored lazy var sheetController: SheetController = {
+        SheetController(itemController: itemController, linkController: linkController)
+    }()
+    @ObservationIgnored lazy var editController: EditController = {
+        EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
+    }()
     @ObservationIgnored var exportController: ExportController
     @ObservationIgnored lazy var gameController: GameController = {
         GameController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, exportController: exportController)
     }()
-    @ObservationIgnored private var _importController: ImportController?
-    var importController: ImportController {
-        if let controller = _importController { return controller }
-        let controller = ImportController(itemController: itemController, editController: editController)
-        _importController = controller
-        return controller
-    }
-    @ObservationIgnored private var _searchController: SearchController?
-    var searchController: SearchController {
-        if let controller = _searchController { return controller }
-        let controller = SearchController(itemController: itemController)
-        _searchController = controller
-        return controller
-    }
+    @ObservationIgnored lazy var importController: ImportController = {
+        ImportController(itemController: itemController, editController: editController)
+    }()
+    @ObservationIgnored var searchController: SearchController
 
-    @ObservationIgnored private var _folderListController: FolderListControllable?
-    var folderListController: FolderListControllable {
-        if let controller = _folderListController { return controller }
-        let controller = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))
-        _folderListController = controller
-        return controller
-    }
-
-    @ObservationIgnored private var _folderLinkController: FolderListControllable?
-    var folderLinkController: FolderListControllable {
-        if let controller = _folderLinkController { return controller }
-        let linkDisplayModel = listDisplayModel.newListDisplayModel
-        let controller = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
-        _folderLinkController = controller
-        return controller
-    }
-
-    @ObservationIgnored private let _viewController: ViewController = ViewController()
-    public var viewController: ViewController { _viewController }
-
-    @MainActor @ObservationIgnored private var _rootController: ItemRootController?
-    @MainActor public var rootController: ItemRootController {
-        if let controller = _rootController { return controller }
-        let controller = ItemRootController(
-            rootManager: rootManager,
+    @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
+        ItemRootController(
+            rootManager: nil,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
@@ -180,15 +139,27 @@ public final class CharacterRootModel {
             folderLinkControllable: folderLinkController,
             searchControllable: searchController,
             sheetControllable: sheetController,
-            viewControllable: viewController
+            viewControllable: _viewController
         )
-        _rootController = controller
-        return controller
-    }
+    }()
+    @ObservationIgnored private let _viewController: ViewController
+    public var viewController: ViewController { _viewController }
+
+    @ObservationIgnored let folderListController: FolderListController
+    @ObservationIgnored let folderLinkController: FolderListController
+
+    @ObservationIgnored var syncDataController: SyncDataController?
+    @ObservationIgnored var syncTask: Task<Void, Never>?
+
+    @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
+    @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel
 }
 
 @MainActor
 extension CharacterRootModel: ItemRootControllable {
+    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
+
+    public var rootManager: RootManager? { rootController.rootManager }
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }

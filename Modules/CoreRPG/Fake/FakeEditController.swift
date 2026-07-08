@@ -57,7 +57,10 @@ extension SheetRootModel {
 
 // Breaks the static fake cycle: ItemRootController.fake -> FakeEditController.fake -> SheetRootModel.fake.
 private struct FakeSheetItemRoot: ItemRootControllable {
-    var rootManager: RootManager { RootManager(anyRoot: self) }
+    var rootManager: RootManager? {
+        get { RootManager(anyRoot: self) }
+        set {}
+    }
     var configurable: ModuleConfigurable { FakeModuleConfiguration() }
     var navigationModel: ModuleNavigationModel { ModuleNavigationModel() }
     var inspectorEditorLinkModel: EditorLinkModel? { nil }

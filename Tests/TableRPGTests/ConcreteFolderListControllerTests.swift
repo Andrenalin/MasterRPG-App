@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import Testing
@@ -15,7 +14,7 @@ struct ConcreteFolderListControllerTests {
         let diceRoot = DiceRootModel.testRoot()
         let pdfRoot = PdfRootModel.testRoot()
         let root = TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let sut = try #require(root.folderListController as? TableRPG.FolderListController)
+        let sut = root.folderListController
         let itemId = UUID()
 
         #expect((sut.detailDestination(for: itemId) as? TableRoute) == .detail(itemId))
@@ -29,4 +28,3 @@ struct ConcreteFolderListControllerTests {
         #expect(copied.listDisplayModel !== sut.listDisplayModel)
     }
 }
-#endif

@@ -376,7 +376,7 @@ extension SIMD4 {
     }
 }
 
-@Observable
+@MainActor @Observable
 final class AttachmentsProvider {
 
     var attachments: [ObjectIdentifier: AnyView] = [:]

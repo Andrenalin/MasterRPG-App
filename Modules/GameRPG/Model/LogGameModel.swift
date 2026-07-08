@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 import Observation
 
-@Observable
+@MainActor @Observable
 final class LogGameModel: Identifiable {
     init(id: Int, type: RPGMessageType, subType: RPGMessageActionType, module: NetworkModules, itemId: UUID, players: [UUID] = []) {
         self.id = id

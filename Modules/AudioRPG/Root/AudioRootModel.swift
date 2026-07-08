@@ -59,13 +59,33 @@ import SwiftUI
             selection: .none
         )
         self.openFileWindowModel = OpenFileWindowModel()
+        
+        self.rootController = ItemRootController(
+            rootManager: nil,
+            config: config,
+            navigationModel: navigationModel,
+            inspectorEditorLinkModel: editorLinkModel,
+            openFileWindowModel: openFileWindowModel,
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
+            cacheControllable: nil,
+            editControllable: editController,
+            exportControllable: exportController,
+            gameControllable: gameController,
+            importControllable: importController,
+            itemControllable: itemController,
+            linkControllable: linkController,
+            folderListControllable: folderListController,
+            folderLinkControllable: folderLinkController,
+            searchControllable: searchController,
+            sheetControllable: sheetController,
+            viewControllable: viewController
+        )
     }
 
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
-        self.rootManager = rootManager
-
-        _rootController = nil
-
+        rootController.rootManager = rootManager
+        
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
 
@@ -88,12 +108,6 @@ import SwiftUI
         }
     }
 
-    private var _rootManager: RootManager?
-    public var rootManager: RootManager {
-        get { _rootManager! }
-        set { _rootManager = newValue }
-    }
-
     public let config: ModuleConfiguration
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
@@ -114,6 +128,7 @@ import SwiftUI
     @ObservationIgnored let linkController: LinkController
     @ObservationIgnored let searchController: SearchController
     @ObservationIgnored let sheetController: SheetController
+    @MainActor @ObservationIgnored public let rootController: ItemRootController
     @ObservationIgnored public let viewController: ViewController
 
     @ObservationIgnored let folderListController: FolderListController
@@ -124,39 +139,12 @@ import SwiftUI
 
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
     @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel
-
-    @MainActor @ObservationIgnored private var _rootController: ItemRootController?
-    @MainActor public var rootController: ItemRootController {
-        if let controller = _rootController { return controller }
-        let controller = ItemRootController(
-            rootManager: rootManager,
-            config: config,
-            navigationModel: navigationModel,
-            inspectorEditorLinkModel: editorLinkModel,
-            openFileWindowModel: openFileWindowModel,
-            itemSelectionModel: itemSelectionModel,
-            removeEntryListModel: removeEntryListModel,
-            cacheControllable: nil,
-            editControllable: editController,
-            exportControllable: exportController,
-            gameControllable: gameController,
-            importControllable: importController,
-            itemControllable: itemController,
-            linkControllable: linkController,
-            folderListControllable: folderListController,
-            folderLinkControllable: folderLinkController,
-            searchControllable: searchController,
-            sheetControllable: sheetController,
-            viewControllable: viewController
-        )
-        _rootController = controller
-        return controller
-    }
 }
 
 @MainActor extension AudioRootModel: ItemRootControllable {
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
 
+    public var rootManager: RootManager? { rootController.rootManager }
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }

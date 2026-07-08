@@ -19,7 +19,7 @@ struct ConcreteFolderListControllerTests {
         let photoRoot = PhotoRootModel.testRoot()
         let tableRoot = TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
         let root = CharacterRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-        let sut = try #require(root.folderListController as? CharacterRPG.FolderListController)
+        let sut = root.folderListController
         let itemId = UUID()
 
         #expect((sut.detailDestination(for: itemId) as? CharacterRoute) == .detail(itemId))

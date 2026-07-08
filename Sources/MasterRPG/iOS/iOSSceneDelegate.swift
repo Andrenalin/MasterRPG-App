@@ -8,7 +8,7 @@ import SwiftUI
 import UIKit
 import Observation
 
-@Observable
+@MainActor @Observable
 final class IosSceneDelegate: NSObject, UIWindowSceneDelegate {
     var originalDelegate: (any UIWindowSceneDelegate)?
 

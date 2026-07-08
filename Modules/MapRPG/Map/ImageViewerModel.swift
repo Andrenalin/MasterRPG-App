@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 final class ImageViewerModel {
     init(offset: CGPoint = .zero, scale: CGFloat = 1) {
         self.offset = offset

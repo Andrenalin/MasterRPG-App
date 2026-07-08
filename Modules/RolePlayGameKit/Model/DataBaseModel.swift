@@ -20,7 +20,7 @@ import TableRPG
 import WeatherRPG
 
 
-@Observable
+@MainActor @Observable
 public final class DataBaseModel {
 
 #if os(tvOS)

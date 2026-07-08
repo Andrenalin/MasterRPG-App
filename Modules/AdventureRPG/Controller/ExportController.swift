@@ -13,7 +13,7 @@ import TableRPG
 import CharacterRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootManager: RootManager, root: AdventureRootModel, itemController: ItemController) {
+    @MainActor init(rootManager: RootManager? = nil, root: AdventureRootModel, itemController: ItemController) {
         self.rootManager = rootManager
         self.root = root
         self.itemController = itemController
@@ -21,9 +21,16 @@ struct ExportController: Sendable {
 
     // Adventure is the hub itself, so its own hubControllable (for ExportControllable's
     // hub requirement) is just a lazy reference back to itself, not the whole RootManager.
-    let rootManager: RootManager
+    var rootManager: RootManager?
     let root: AdventureRootModel
     let itemController: ItemController
+
+    private var resolvedRootManager: RootManager {
+        guard let rootManager else {
+            preconditionFailure("Adventure ExportController requires rootManager to be set before use.")
+        }
+        return rootManager
+    }
 }
 
 extension ExportController: ExportControllable {
@@ -31,15 +38,15 @@ extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable { itemController }
     
     @MainActor public func exportingAll() -> ItemModuleIds {
-        var itemIds = rootManager.audioRoot.exportControllable.exportingAll()
-        itemIds.merge(other: rootManager.diceRoot.exportControllable.exportingAll())
-        itemIds.merge(other: rootManager.mapRoot.exportControllable.exportingAll())
-        itemIds.merge(other: rootManager.pdfRoot.exportControllable.exportingAll())
-        itemIds.merge(other: rootManager.photoRoot.exportControllable.exportingAll())
-        itemIds.merge(other: rootManager.spaceRoot.exportControllable.exportingAll())
-        itemIds.merge(other: rootManager.tableRoot.exportControllable.exportingAll())
-        itemIds.merge(other: rootManager.characterRoot.exportControllable.exportingAll())
-        itemIds.merge(other: rootManager.weatherRoot.exportControllable.exportingAll())
+        var itemIds = resolvedRootManager.audioRoot.exportControllable.exportingAll()
+        itemIds.merge(other: resolvedRootManager.diceRoot.exportControllable.exportingAll())
+        itemIds.merge(other: resolvedRootManager.mapRoot.exportControllable.exportingAll())
+        itemIds.merge(other: resolvedRootManager.pdfRoot.exportControllable.exportingAll())
+        itemIds.merge(other: resolvedRootManager.photoRoot.exportControllable.exportingAll())
+        itemIds.merge(other: resolvedRootManager.spaceRoot.exportControllable.exportingAll())
+        itemIds.merge(other: resolvedRootManager.tableRoot.exportControllable.exportingAll())
+        itemIds.merge(other: resolvedRootManager.characterRoot.exportControllable.exportingAll())
+        itemIds.merge(other: resolvedRootManager.weatherRoot.exportControllable.exportingAll())
         itemIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }]))
         return itemIds
     }
@@ -67,7 +74,7 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
             
-            if let photoId = item.photoId, rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
+            if let photoId = item.photoId, resolvedRootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
             }
             
@@ -91,39 +98,39 @@ extension ExportController: ExportControllable {
                             checkIds.append($0.itemId)
                         }
                     case .audio:
-                        if rootManager.audioRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if resolvedRootManager.audioRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             audioIds.insert($0.itemId)
                         }
                     case .dice:
-                        if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if resolvedRootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             diceIds.insert($0.itemId)
                         }
                     case .map:
-                        if rootManager.mapRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if resolvedRootManager.mapRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             mapIds.insert($0.itemId)
                         }
                     case .pdf:
-                        if rootManager.pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if resolvedRootManager.pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             pdfIds.insert($0.itemId)
                         }
                     case .photo:
-                        if rootManager.photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if resolvedRootManager.photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             photoIds.insert($0.itemId)
                         }
                     case .space:
-                        if rootManager.spaceRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if resolvedRootManager.spaceRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             spaceIds.insert($0.itemId)
                         }
                     case .table:
-                        if rootManager.tableRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if resolvedRootManager.tableRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             tableIds.insert($0.itemId)
                         }
                     case .value:
-                        if rootManager.characterRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if resolvedRootManager.characterRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             valueIds.insert($0.itemId)
                         }
                     case .weather:
-                        if rootManager.weatherRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if resolvedRootManager.weatherRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             weatherIds.insert($0.itemId)
                         }
                     default:
@@ -136,37 +143,37 @@ extension ExportController: ExportControllable {
         var allIds = itemIds
         allIds.ids[itemController.config.module] = Array(results)
         allIds.mergePartial(ids: Array(partialFolderIds), for: itemController.config.module)
-        let newAudioIds = rootManager.audioRoot.exportControllable.exporting(ids: audioIds)
+        let newAudioIds = resolvedRootManager.audioRoot.exportControllable.exporting(ids: audioIds)
         allIds.merge(other: newAudioIds)
-        let newDiceIds = rootManager.diceRoot.exportControllable.exporting(ids: diceIds)
+        let newDiceIds = resolvedRootManager.diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
-        let newMapIds = rootManager.mapRoot.exportControllable.exporting(ids: mapIds)
+        let newMapIds = resolvedRootManager.mapRoot.exportControllable.exporting(ids: mapIds)
         allIds.merge(other: newMapIds)
-        let newPdfIds = rootManager.pdfRoot.exportControllable.exporting(ids: pdfIds)
+        let newPdfIds = resolvedRootManager.pdfRoot.exportControllable.exporting(ids: pdfIds)
         allIds.merge(other: newPdfIds)
-        let newPhotoIds = rootManager.photoRoot.exportControllable.exporting(ids: photoIds)
+        let newPhotoIds = resolvedRootManager.photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
-        let newSpaceIds = rootManager.spaceRoot.exportControllable.exporting(ids: spaceIds)
+        let newSpaceIds = resolvedRootManager.spaceRoot.exportControllable.exporting(ids: spaceIds)
         allIds.merge(other: newSpaceIds)
-        let newTableIds = rootManager.tableRoot.exportControllable.exporting(ids: tableIds)
+        let newTableIds = resolvedRootManager.tableRoot.exportControllable.exporting(ids: tableIds)
         allIds.merge(other: newTableIds)
-        let newValueIds = rootManager.characterRoot.exportControllable.exporting(ids: valueIds)
+        let newValueIds = resolvedRootManager.characterRoot.exportControllable.exporting(ids: valueIds)
         allIds.merge(other: newValueIds)
-        let newWeatherIds = rootManager.weatherRoot.exportControllable.exporting(ids: weatherIds)
+        let newWeatherIds = resolvedRootManager.weatherRoot.exportControllable.exporting(ids: weatherIds)
         allIds.merge(other: newWeatherIds)
         return allIds
     }
     
     public func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds {
-        let ids1 = try await rootManager.audioRoot.exportControllable.export(itemIds: itemIds, into: outputStream, exportModel: exportModel)
-        let ids2 = try await rootManager.diceRoot.exportControllable.export(itemIds: ids1, into: outputStream, exportModel: exportModel)
-        let ids3 = try await rootManager.mapRoot.exportControllable.export(itemIds: ids2, into: outputStream, exportModel: exportModel)
-        let ids4 = try await rootManager.pdfRoot.exportControllable.export(itemIds: ids3, into: outputStream, exportModel: exportModel)
-        let ids5 = try await rootManager.photoRoot.exportControllable.export(itemIds: ids4, into: outputStream, exportModel: exportModel)
-        let ids6 = try await rootManager.spaceRoot.exportControllable.export(itemIds: ids5, into: outputStream, exportModel: exportModel)
-        let ids7 = try await rootManager.tableRoot.exportControllable.export(itemIds: ids6, into: outputStream, exportModel: exportModel)
-        let ids8 = try await rootManager.characterRoot.exportControllable.export(itemIds: ids7, into: outputStream, exportModel: exportModel)
-        let ids9 = try await rootManager.weatherRoot.exportControllable.export(itemIds: ids8, into: outputStream, exportModel: exportModel)
+        let ids1 = try await resolvedRootManager.audioRoot.exportControllable.export(itemIds: itemIds, into: outputStream, exportModel: exportModel)
+        let ids2 = try await resolvedRootManager.diceRoot.exportControllable.export(itemIds: ids1, into: outputStream, exportModel: exportModel)
+        let ids3 = try await resolvedRootManager.mapRoot.exportControllable.export(itemIds: ids2, into: outputStream, exportModel: exportModel)
+        let ids4 = try await resolvedRootManager.pdfRoot.exportControllable.export(itemIds: ids3, into: outputStream, exportModel: exportModel)
+        let ids5 = try await resolvedRootManager.photoRoot.exportControllable.export(itemIds: ids4, into: outputStream, exportModel: exportModel)
+        let ids6 = try await resolvedRootManager.spaceRoot.exportControllable.export(itemIds: ids5, into: outputStream, exportModel: exportModel)
+        let ids7 = try await resolvedRootManager.tableRoot.exportControllable.export(itemIds: ids6, into: outputStream, exportModel: exportModel)
+        let ids8 = try await resolvedRootManager.characterRoot.exportControllable.export(itemIds: ids7, into: outputStream, exportModel: exportModel)
+        let ids9 = try await resolvedRootManager.weatherRoot.exportControllable.export(itemIds: ids8, into: outputStream, exportModel: exportModel)
         return ids9
     }
 }

@@ -293,9 +293,9 @@ private struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferab
     
     @ViewBuilder
     private var entryEditor: some View {
-        if root.editControllable as? (any EntryDataEditable) != nil {
+        if root.editControllable as? (any EntryDataEditable) != nil, let rootManager = root.rootManager {
             EntryEditorView(
-                rootManager: root.rootManager,
+                rootManager: rootManager,
                 editorModel: root.editControllable.editorModel.sheetEditorModel,
                 linkTypes: LinkTypes.self
             )

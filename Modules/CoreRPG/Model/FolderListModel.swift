@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 public final class FolderListModel {
     public init(isSelectionMode: Bool = false, selection: [UUID] = [], navigationModel: ModuleNavigationModel) {
         self.isSelectionMode = isSelectionMode

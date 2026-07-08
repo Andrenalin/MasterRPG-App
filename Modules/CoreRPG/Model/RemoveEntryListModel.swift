@@ -3,7 +3,7 @@
 import SwiftUI
 import SwiftData
 
-@Observable
+@MainActor @Observable
 public final class RemoveEntryListModel {
     public init(removeItems: [ItemRowModel] = []) {
         self.removeItems = removeItems

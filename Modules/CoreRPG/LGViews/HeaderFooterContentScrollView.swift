@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 final class HeaderFooterScrollModel {
     var headerOffset: CGFloat = 0
     var footerOffset: CGFloat = 0

@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 public final class DiceDisplayModel {
     public init(isEditing: Bool = false, showPlayerDice: Bool = false, showDiceValueEditor: Bool = false) {
         self.isEditing = isEditing
@@ -60,4 +60,3 @@ struct DiceFocusResult: View {
     DiceFocusRoll()
         .environment(DiceRootModel.previewWithData)
 }
-

@@ -4,10 +4,14 @@ import SwiftUI
 
 public struct TableRootSheet: View {
     public init(root: ItemRootController, itemId: UUID, module: NetworkModules, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) {
+        guard let rootManager = root.rootManager else {
+            preconditionFailure("TableRootSheet requires ItemRootController.rootManager to be set before presentation.")
+        }
+
         self.root = root
         self.configuration = configuration
         self.dismissAction = dismissAction
-        self._sheetRootModel = State(wrappedValue: SheetRootModel(rootManager: root.rootManager, linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: itemId, isEditor: false))
+        self._sheetRootModel = State(wrappedValue: SheetRootModel(rootManager: rootManager, linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: itemId, isEditor: false))
     }
         
     let root: ItemRootController

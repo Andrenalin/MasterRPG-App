@@ -2,11 +2,11 @@
 
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 private final class PreviewItemModel: @unchecked Sendable {
     typealias Entry = EmtpyEntryViewModel
 
-    var id: UUID
+    nonisolated let id: UUID
     var name: String
     var category: ItemListCategory
     var description: String
@@ -19,7 +19,7 @@ private final class PreviewItemModel: @unchecked Sendable {
 
     var isGroupHidden: Bool { isGroupHiddenToggle }
 
-    init(
+    nonisolated init(
         id: UUID = UUID(),
         name: String,
         category: ItemListCategory = .photo,
@@ -29,15 +29,15 @@ private final class PreviewItemModel: @unchecked Sendable {
         entries: [EmtpyEntryViewModel] = []
     ) {
         self.id = id
-        self.name = name
-        self.category = category
-        self.description = description
-        self.tags = tags
-        self.displayState = 0
-        self.isGroupHiddenToggle = false
-        self.entries = entries
-        self.fileUrl = fileUrl
-        self.parentId = nil
+        self._name = name
+        self._category = category
+        self._description = description
+        self._tags = tags
+        self._displayState = 0
+        self._isGroupHiddenToggle = false
+        self._entries = entries
+        self._fileUrl = fileUrl
+        self._parentId = nil
     }
 
     subscript(entryId: UUID) -> EmtpyEntryViewModel {
@@ -45,9 +45,9 @@ private final class PreviewItemModel: @unchecked Sendable {
         set { entries = entries.map { $0.id == entryId ? newValue : $0 } }
     }
 
-    static var empty: PreviewItemModel { PreviewItemModel(name: "") }
-    static func empty(_ id: UUID) -> PreviewItemModel { PreviewItemModel(id: id, name: "") }
-    static var typeId: NetworkModules { .none }
+    nonisolated static var empty: PreviewItemModel { PreviewItemModel(name: "") }
+    nonisolated static func empty(_ id: UUID) -> PreviewItemModel { PreviewItemModel(id: id, name: "") }
+    nonisolated static var typeId: NetworkModules { .none }
 
     func copy() -> PreviewItemModel {
         PreviewItemModel(id: id, name: name, category: category, description: description, tags: tags, fileUrl: fileUrl, entries: entries)
@@ -57,7 +57,7 @@ private final class PreviewItemModel: @unchecked Sendable {
     func filter(filter: String, includeEntries: Bool) -> Bool { true }
     func isEqual(other: PreviewItemModel) -> Bool { id == other.id }
     @MainActor func replace(with model: PreviewItemModel) -> Bool { false }
-    static func == (lhs: PreviewItemModel, rhs: PreviewItemModel) -> Bool { lhs.id == rhs.id }
+    nonisolated static func == (lhs: PreviewItemModel, rhs: PreviewItemModel) -> Bool { lhs.id == rhs.id }
 }
 
 extension SingleItemImportModel {
@@ -218,4 +218,5 @@ extension SingleItemImportModel {
     NavigationStack { SingleItemReviewAccordionView(model: .previewConflictingEntries) }
 }
 
-extension PreviewItemModel: ItemDataAccessable {}
+extension PreviewItemModel: nonisolated Equatable {}
+extension PreviewItemModel: nonisolated ItemDataAccessable {}

@@ -23,7 +23,7 @@ public protocol AdventureStoreGameable {
 
 struct GameController: Sendable {
     @MainActor
-    init(rootManager: RootManager, root: AdventureRootModel, itemController: ItemController, exportController: ExportController) {
+    init(root: AdventureRootModel, itemController: ItemController, exportController: ExportController) {
         self.root = root
         self.itemController = itemController
         self.exportController = exportController

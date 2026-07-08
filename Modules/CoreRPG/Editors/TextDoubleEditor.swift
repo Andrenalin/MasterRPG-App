@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 public final class EditIdentifierModel<Value: Equatable> {
     public init(value: Binding<Value>) {
         self.valueId = UUID()
