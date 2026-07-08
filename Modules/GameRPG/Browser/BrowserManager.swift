@@ -39,6 +39,10 @@ final class BrowserManager {
         self.serviceType = serviceType
     }
 
+    isolated deinit {
+        cancelTasks()
+    }
+
     var isBrowsing: Bool {
         connectionState == .waitingForConnection || connectionState == .connecting
     }
@@ -144,6 +148,10 @@ actor BrowserClientController {
     }
 
     func startBrowser() async throws {
+        defer {
+            networkUpdateContinuation.finish()
+        }
+
         try await NetworkBrowser(
             for: .bonjour(serviceType.serviceName, includeTxtRecord: true),
             using: .tls)

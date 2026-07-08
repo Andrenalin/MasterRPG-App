@@ -40,7 +40,8 @@ final class ListenerManager: ListenerManaging {
         Logger.listenerController.debug("ListenerManager: Init \(name, privacy: .public)")
     }
 
-    deinit {
+    isolated deinit {
+        cancelTasks()
         let listenerName = name
         Logger.listenerController.debug("ListenerManager: Deinit \(listenerName, privacy: .public)")
     }
@@ -114,6 +115,10 @@ actor ListenerServerController {
     func run() async throws {
         let listener = try NWListener(using: NWParameters(passcode: GameSecurity.passcode))
         listener.service = NWListener.Service(name: name, type: serviceType.serviceName)
+        defer {
+            listener.cancel()
+            continuation.finish()
+        }
 
         listener.stateUpdateHandler = { [weak self] state in
             guard let self else { return }

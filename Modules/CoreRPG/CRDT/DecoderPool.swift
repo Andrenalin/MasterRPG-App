@@ -2,23 +2,18 @@
 
 import Foundation
 
-/// Thread-safe JSONDecoder pool to avoid creating new decoder instances on every CRDT operation
+/// JSONDecoder factory for CRDT operations.
+///
+/// JSONDecoder has mutable configuration, so callers get a fresh decoder instead
+/// of sharing one mutable instance across tasks.
 public actor DecoderPool: Sendable {
     public static let shared = DecoderPool()
 
-    // JSONDecoder is thread-safe for decoding operations
-    nonisolated(unsafe) private var decoder: JSONDecoder?
-
     private init() {}
 
-    /// Get a decoder from the pool (creates one if none available)
-    /// JSONDecoder is thread-safe for concurrent reads, so this is safe
+    /// Returns a new decoder. Kept as an actor method so old call sites can still
+    /// await `DecoderPool.shared.getDecoder()` without sharing mutable state.
     public func getDecoder() -> JSONDecoder {
-        if let decoder = decoder {
-            return decoder
-        }
-        let newDecoder = JSONDecoder()
-        decoder = newDecoder
-        return newDecoder
+        JSONDecoder()
     }
 }

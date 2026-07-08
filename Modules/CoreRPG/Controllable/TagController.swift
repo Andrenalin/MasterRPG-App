@@ -11,7 +11,7 @@ struct TagModel: Sendable, Codable {
 }
 
 @MainActor @Observable
-final class TagInternalControllerModel: @unchecked Sendable {
+final class TagInternalControllerModel {
     @ObservationIgnored var context: NSManagedObjectContext?
 
     var tags: [NetworkModules: [String: TagModel]] = [:]
@@ -28,25 +28,32 @@ public struct TagController: Sendable {
     @MainActor public func setup(context: NSManagedObjectContext?) {
         guard let context else { return }
         model.context = context
+        let missingTagTitle = String(localized: "Not set", bundle: .module).localizedString
         
-        Task(priority: .userInitiated) {
-            await context.perform {
+        Task(priority: .userInitiated) { [model] in
+            let groupedTags = await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
-                    guard let tagModels = try context.fetch(request) as? [TagDataModel] else { return }
-                    for tagModel in tagModels {
+                    guard let tagModels = try context.fetch(request) as? [TagDataModel] else { return [NetworkModules: [String: TagModel]]() }
+                    return tagModels.reduce(into: [NetworkModules: [String: TagModel]]()) { result, tagModel in
                         let module = NetworkModules(rawValue: Int(tagModel.module)) ?? .none
-                        let tag = tagModel.title ?? String(localized: "Not set", bundle: .module).localizedString
-                        let count = Int(tagModel.count)
-                        update(tag: tag, count: count, module: module)
+                        let tag = tagModel.title ?? missingTagTitle
+                        result[module, default: [:]][tag] = TagModel(module: module, title: tag, count: Int(tagModel.count))
                     }
                 } catch {
                     Logger.coreDataController.error("tagdata error \(error.localizedDescription, privacy: .public)")
+                    return [:]
+                }
+            }
+
+            await MainActor.run {
+                for (module, tags) in groupedTags {
+                    model.tags[module, default: [:]].merge(tags) { _, new in new }
                 }
             }
         }
     }
-    
+
     @MainActor public func add(tags: [String], module: NetworkModules) {
         var storedTags = model.tags[module, default: [:]]
         for tag in tags {
@@ -71,14 +78,6 @@ public struct TagController: Sendable {
         }
         model.tags[module] = storedTags
         model.pendingAffectedModules.insert(module)
-    }
-    
-    private func update(tag: String, count: Int, module: NetworkModules) {
-        Task { @MainActor in
-            var tags = model.tags[module, default: [:]]
-            tags[tag] = TagModel(module: module, title: tag, count: count)
-            model.tags[module] = tags
-        }
     }
     
     @MainActor public func reset(tag: String, count: Int, module: NetworkModules) {
