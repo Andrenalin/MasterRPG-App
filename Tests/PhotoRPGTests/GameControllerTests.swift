@@ -149,7 +149,7 @@ private extension GameControllerTests {
         let task = root.importController.importUrl(from: url)
         let _ = try await task.value
 
-        #expect(root.itemController.itemDataModel.items.count == 6)
+        #expect(root.itemController.itemDataModel.items.count == 3)
         return root
     }
 }

@@ -23,7 +23,7 @@ struct ItemControllerTests {
         let sut = root.itemController
 
         #expect(sut.itemDataModel.items.count == 3)
-        #expect(root.photoRoot.itemController.itemDataModel.items.count == 32)
+        #expect(root.photoRoot.itemController.itemDataModel.items.count == 27)
         let model = sut.itemOrEmpty(for: sut.itemDataModel.items[0])
         #expect(model.name == "1. Kinder der Ratten")
         let photoId = model.photoId
@@ -46,13 +46,10 @@ struct ItemControllerTests {
     @Test func itemRegisterLinksIsUsedReturnsAlsoEntries() async throws {
         let root = try await MockRoot.importTestData()
         let sut = root.itemController
-
-        let cc = ConvertController(itemController: sut, editController: root.editController)
-        await cc.createFoldersAndCollections(reportModel: ValidateRepairModel(), overwriteEntryCheck: true)
         
-        #expect(sut.itemDataModel.items.count == 4)
         let item = sut.itemOrEmpty(for: sut.itemDataModel.items[0])
         try #require(item.photoId != nil)
+        sut.linkRegisterController.register(links: item.linkRegisterModels)
         
         let isUsed = sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: item.photoId!, typeId: .photo))
         #expect(isUsed)

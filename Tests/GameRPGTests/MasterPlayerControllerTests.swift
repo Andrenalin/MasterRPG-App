@@ -92,7 +92,7 @@ final class MasterPlayerControllerTests {
         try await setUp()
         try await MockRoot.importTestData(into: rootSut.adventureRoot)
         try await MockRoot.importTestData(into: rootSut.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
-        try #require(rootSut.audioRoot.itemController.itemDataModel.items.count == 12)
+        try #require(rootSut.audioRoot.itemController.itemDataModel.items.count == 2)
 
         rootSut.adventureRoot.startGame()
         rootPlayer.adventureRoot.startGame()
@@ -134,7 +134,7 @@ final class MasterPlayerControllerTests {
         try await setUp()
         try await MockRoot.importTestData(into: rootSut.adventureRoot)
         try await MockRoot.importTestData(into: rootSut.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
-        try #require(rootSut.audioRoot.itemController.itemDataModel.items.count == 12)
+        try #require(rootSut.audioRoot.itemController.itemDataModel.items.count == 2)
 
         rootSut.adventureRoot.startGame()
         rootPlayer.adventureRoot.startGame()
@@ -359,7 +359,7 @@ final class MasterPlayerControllerTests {
         try await setUp()
         try await importTestData(into: rootSut)
         try await importPhotoTestData(into: rootSut)
-        try #require(rootSut.photoRoot.itemController.itemDataModel.items.count == 35)
+        try #require(rootSut.photoRoot.itemController.itemDataModel.items.count == 30)
 
         rootSut.adventureRoot.startGame()
         rootPlayer.adventureRoot.startGame()

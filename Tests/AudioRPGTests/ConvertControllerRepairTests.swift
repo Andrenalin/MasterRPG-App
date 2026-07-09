@@ -7,102 +7,6 @@ import Testing
 
 @testable import AudioRPG
 
-/// Tests for ConvertController.extractFolderAndCreate function
-@Suite("ConvertController extractFolderAndCreate Tests")
-@MainActor
-struct ConvertControllerExtractFolderTests {
-
-    // Finds the UUID of a folder matching name + parentId, or fails the test.
-    private func requireFolder(named name: String, parentId: UUID?, in root: AudioRootModel) throws -> UUID {
-        try #require(root.itemController.itemDataModel.items.first {
-            let m = root.itemController.itemOrEmpty(for: $0)
-            return m.category == .folder && m.name == name && m.parentId == parentId
-        })
-    }
-
-    @Test("url Maps/DS/Something.txt with no parentId creates Maps→DS hierarchy and places item in DS")
-    func itemWithNestedUrlAndNoParentIdCreatesHierarchy() async throws {
-        let root = AudioRootModel.testRoot()
-        await root.itemController.resetData()
-        let cc = ConvertController(itemController: root.itemController, editController: root.editController)
-
-        let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Something", itemId: itemId)
-
-        let url = URL(string: "/Maps/DS/Something.txt")!
-        let item = root.itemController.itemOrEmpty(for: itemId)
-        await cc.extractFolderAndCreate(url: url, item: item)
-
-        let mapsId = try requireFolder(named: "Maps", parentId: nil, in: root)
-        let dsId   = try requireFolder(named: "DS",   parentId: mapsId, in: root)
-
-        let maps = root.itemController.itemOrEmpty(for: mapsId)
-        #expect(maps.entries.contains(where: { $0.childId == dsId }))
-
-        let ds = root.itemController.itemOrEmpty(for: dsId)
-        #expect(ds.entries.contains(where: { $0.childId == itemId }))
-        #expect(root.itemController.itemOrEmpty(for: itemId).parentId == dsId)
-    }
-
-    @Test("url B/Something.txt when item already has a valid parentId — extractFolderAndCreate is a no-op")
-    func itemWithExistingValidParentIsNotMoved() async throws {
-        let root = AudioRootModel.testRoot()
-        await root.itemController.resetData()
-        let cc = ConvertController(itemController: root.itemController, editController: root.editController)
-
-        // Item is already in a valid parent folder
-        let otherId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Other", itemId: otherId)
-        let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Something", itemId: itemId)
-        root.editController.addItem(itemId: itemId, parentId: otherId)
-        #expect(root.itemController.itemOrEmpty(for: itemId).parentId == otherId)
-
-        let url = URL(string: "/B/Something.txt")!
-        let item = root.itemController.itemOrEmpty(for: itemId)
-        await cc.extractFolderAndCreate(url: url, item: item)
-
-        // extractFolderAndCreate exits early when item already has a valid parent — item stays in "Other"
-        #expect(root.itemController.itemOrEmpty(for: itemId).parentId == otherId)
-        // Folder B is not created either
-        let folderB = root.itemController.itemDataModel.items.first {
-            let m = root.itemController.itemOrEmpty(for: $0)
-            return m.category == .folder && m.name == "B" && m.parentId == nil
-        }
-        #expect(folderB == nil)
-    }
-
-    @Test("url Maps/DS/Something.txt when item is already in DS — item is not moved again")
-    func itemAlreadyInCorrectFolderIsNotDuplicated() async throws {
-        let root = AudioRootModel.testRoot()
-        await root.itemController.resetData()
-        let cc = ConvertController(itemController: root.itemController, editController: root.editController)
-
-        // Pre-create Maps→DS hierarchy and place the item in DS
-        let mapsId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Maps", itemId: mapsId)
-        let dsId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "DS", itemId: dsId)
-        root.editController.addItem(itemId: dsId, parentId: mapsId)
-
-        let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Something", itemId: itemId)
-        root.editController.addItem(itemId: itemId, parentId: dsId)
-
-        let item = root.itemController.itemOrEmpty(for: itemId)
-        #expect(item.parentId == dsId)
-
-        let url = URL(string: "/Maps/DS/Something.txt")!
-        await cc.extractFolderAndCreate(url: url, item: item)
-
-        // parentId unchanged and item appears exactly once in DS
-        #expect(root.itemController.itemOrEmpty(for: itemId).parentId == dsId)
-        let ds = root.itemController.itemOrEmpty(for: dsId)
-        #expect(ds.parentId == mapsId)
-        #expect(ds.entries.filter({ $0.childId == itemId }).count == 1)
-    }
-}
-
 /// Tests for ConvertController.repairHiddenAndFolders function
 /// Following Swift Testing best practices with Arrange-Act-Assert pattern
 @Suite("ConvertController repairHiddenAndFolders Tests")
@@ -167,7 +71,7 @@ struct ConvertControllerRepairTests {
 
         #expect(root.itemController.itemOrEmpty(for: folderID).entries.count == 2)
 
-        // Import C back — repairHiddenAndFolders merges the partial folder entry, restoring C
+        // Import C back — import-scoped repair keeps the partial folder entry and restores C.
         let importTask = root.importController.importUrl(from: exportURL)
         try await importTask.value
 
@@ -183,5 +87,40 @@ struct ConvertControllerRepairTests {
             root.itemController.itemOrEmpty(for: id).category != .folder
         }.count
         #expect(nonFolderCount == 3)
+    }
+
+    @Test("Import repair normalizes item data without creating file path folders")
+    func repairImportedItemsDoesNotCreateFoldersFromFileURL() async throws {
+        let root = AudioRootModel.testRoot()
+        await root.itemController.resetData()
+        let sut = ConvertController(itemController: root.itemController, editController: root.editController)
+
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Something", itemId: itemId)
+        root.editController.reset(category: .music, itemId: itemId)
+
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        item.fileUrl = FileUrl(
+            fileId: itemId,
+            url: URL(filePath: "/Maps/DS/Something.mp3"),
+            location: .other,
+            module: "Audio",
+            relativeUrl: nil
+        )
+        root.itemController.replace(model: item, isInsert: false)
+
+        let initialItemCount = root.itemController.itemDataModel.items.count
+
+        await sut.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: [itemId])
+
+        let repairedItem = root.itemController.itemOrEmpty(for: itemId)
+        #expect(root.itemController.itemDataModel.items.count == initialItemCount)
+        #expect(repairedItem.category == .entry)
+        #expect(repairedItem.tags.contains("Music"))
+        #expect(repairedItem.parentId == nil)
+        #expect(root.itemController.itemDataModel.items.contains { id in
+            let item = root.itemController.itemOrEmpty(for: id)
+            return item.category == .folder && (item.name == "Maps" || item.name == "DS")
+        } == false)
     }
 }

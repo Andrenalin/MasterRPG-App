@@ -169,7 +169,7 @@ public extension ImportControllable {
             }
         } else {
             let cc = ConvertController(itemController: itemControllable, editController: editControllable)
-            await cc.repairHiddenAndFolders(reportModel: ValidateRepairModel(), importedIds: importedIds)
+            await cc.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: importedIds)
         }
     }
 
@@ -227,23 +227,24 @@ private extension ImportControllable {
         let mode = await importModel.importMode
         let itemController = itemControllable
         let editCtrl = editControllable
+        let normalizedImportedItem = await itemController.normalizedImportedItem(from: importedItem)
 
         switch mode {
         case .merge:
-            let finalItem = await itemController.merge(with: importedItem, forceMerge: forceSave)
+            let finalItem = await itemController.merge(with: normalizedImportedItem, forceMerge: forceSave)
             if let finalItem {
                 await itemController.replace(model: finalItem, isInsert: true, forceSave: forceSave)
                 await editCtrl.repairFolder(itemId: id)
             }
 
         case .overwrite:
-            await itemController.replace(model: importedItem, isInsert: true, forceSave: forceSave)
+            await itemController.replace(model: normalizedImportedItem, isInsert: true, forceSave: forceSave)
             await editCtrl.repairFolder(itemId: id)
 
         case .manual:
-            let merged = await itemController.merge(with: importedItem) as? any ItemDataAccessable
+            let merged = await itemController.merge(with: normalizedImportedItem) as? any ItemDataAccessable
             await MainActor.run {
-                guard let imported = importedItem as? any ItemDataAccessable else { return }
+                guard let imported = normalizedImportedItem as? any ItemDataAccessable else { return }
                 let existing = itemController.itemSync(for: id)
                 let module = itemController.config.module
 
@@ -470,6 +471,24 @@ private extension ImportControllable {
         guard var copy = itemControllable.itemSync(for: itemId, noGame: true)?.copy() else { return }
         copy.fileUrl = fileUrl
         itemControllable.replace(model: copy, isInsert: false, forceSave: true)
+    }
+}
+
+private extension ItemControllable {
+    @MainActor
+    func normalizedImportedItem(from item: ModelType) -> ModelType {
+        guard var imported = (item as? Model)?.copy() else { return item }
+        normalizeImportedItemForMerge(in: &imported)
+        return imported
+    }
+
+    @MainActor
+    func normalizeImportedItemForMerge(in item: inout Model) {
+        ImportItemRepair.normalizeLegacyCategory(in: &item)
+
+        if config.module == .photo && item.category == .entry {
+            item.entries = []
+        }
     }
 }
 

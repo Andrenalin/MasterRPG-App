@@ -9,7 +9,7 @@ import Testing
 @testable import AudioRPG
 
 struct MockRoot {
-    static func importTestData(_ name: String = ResourcesDebug.audioTestData, itemCounter: Int = 12) async throws -> AudioRootModel {
+    static func importTestData(_ name: String = ResourcesDebug.audioTestData, itemCounter: Int = 2) async throws -> AudioRootModel {
         let root = await AudioRootModel.testRoot()
 
         try await resetTestData(for: root)

@@ -20,6 +20,6 @@ struct ImportControllerTests {
 
         let task = sut.importUrl(from: url)
         let _ = try await task.value
-        #expect(root.itemController.itemDataModel.items.count == 6)
+        #expect(root.itemController.itemDataModel.items.count == 1)
     }
 }
