@@ -12,7 +12,7 @@ struct SplitNavigation: View {
     @Environment(AppModel.self) private var appModel
     
     @State private var column: NavigationSplitViewVisibility = .all
-    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
+    @State private var preferredCompactColumn: NavigationSplitViewColumn = .content
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
