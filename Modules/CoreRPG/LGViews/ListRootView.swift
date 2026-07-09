@@ -42,11 +42,21 @@ struct ListRootView: View {
                     deleteItems(offsets: IndexSet(integer: index))
                 }
                 .onKeyPress(.leftArrow, phases: .down) { _ in
-                    withAnimation { listController.closeParentFolder() }
+                    if let sheetRootModel = root.editControllable.editorModel.sheetRootModel, sheetRootModel.selectedEntryId != nil {
+                        sheetRootModel.clearSelection()
+                    } else {
+                        withAnimation { listController.closeParentFolder() }
+                    }
                     return .handled
                 }
                 .onKeyPress(.rightArrow, phases: .down) { _ in
-                    withAnimation { listController.openSelectedFolder() }
+                    if listController.canOpenFolder(itemId: listModel.selected) {
+                        withAnimation { listController.openSelectedFolder() }
+                    } else if let sheetRootModel = root.editControllable.editorModel.sheetRootModel,
+                              sheetRootModel.sheetModel.source.itemId == listModel.selected,
+                              let firstEntry = sheetRootModel.firstSelectableEntry {
+                        sheetRootModel.setSelected(firstEntry, parent: sheetRootModel.sheetModel)
+                    }
                     return .handled
                 }
 #endif

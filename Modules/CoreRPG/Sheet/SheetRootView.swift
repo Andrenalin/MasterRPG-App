@@ -48,5 +48,6 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
 
         SheetView(root: root, rootModel: rootModel, sheetModel: rootModel.sheetModel, isEditor: isEditor, linkTypes: linkTypes, detailAction: detailAction, detailContent: detailContent)
             .id(rootModel.sheetModel.id)
+            .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)
     }
 }

@@ -85,7 +85,13 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     public var isGeneratedAccepted: Bool = false
     public var isGeneratedHidden: Bool = false
     public var generatedBatchID: String?
-    
+
+    // MARK: Selection
+    /// Exclusive row selection across the SheetModel tree, managed by SheetRootModel.setSelected(_:parent:).
+    /// Drives the selection border and feeds the FocusedValues-based menu-bar wiring.
+    /// Distinct from `isGeneratedAnswer`/`isGeneratedSelected` — do not conflate.
+    public var isSelected: Bool = false
+
     public var canAdd: Bool
     public var showHeader: Bool
 
@@ -142,7 +148,8 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         isGeneratedAccepted <=> otherSheetModel.isGeneratedAccepted
         isGeneratedHidden <=> otherSheetModel.isGeneratedHidden
         generatedBatchID <=> otherSheetModel.generatedBatchID
-        
+        isSelected <=> otherSheetModel.isSelected
+
         canAdd <=> otherSheetModel.canAdd
         showHeader <=> otherSheetModel.showHeader
     }
@@ -172,6 +179,7 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         lhs._isGeneratedAccepted == rhs._isGeneratedAccepted &&
         lhs._isGeneratedHidden == rhs._isGeneratedHidden &&
         lhs._generatedBatchID == rhs._generatedBatchID &&
+        lhs._isSelected == rhs._isSelected &&
         lhs._canAdd == rhs._canAdd &&
         lhs._showHeader == rhs._showHeader
     }

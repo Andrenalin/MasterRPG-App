@@ -43,7 +43,7 @@ struct AdventureChatRootView: View {
     }
 
     private var generatorController: AdventureGeneratorController {
-        root.adventureGeneratorController
+        root.generatorController(for: sheetModule, itemId: sheetModel.source.itemId)
     }
 
     var body: some View {

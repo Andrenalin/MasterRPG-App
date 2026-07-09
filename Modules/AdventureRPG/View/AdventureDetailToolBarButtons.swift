@@ -69,29 +69,6 @@ struct AdventureAddEntryButton: View {
     }
 }
 
-struct AdventureAIAssistantButton: View {
-    let root: AdventureRootModel
-    let model: AdventureModel
-    @Environment(\.navigator) private var navigator
-    @Environment(ScenesManager.self) private var scenesManager
-
-    var body: some View {
-        Button {
-#if os(visionOS) || os(macOS)
-            scenesManager.openWindow(.generateAdventure, selection: WindowItemSelection(itemId: model.id))
-#else
-            navigator.navigate(to: AdventureEditorRoute.generator(model.id))
-#endif
-        } label: {
-            Label {
-                Text("AI Assistant", bundle: .module)
-            } icon: {
-                Image(systemName: NetworkModules.generator.icon)
-            }
-        }
-    }
-}
-
 struct AdventureAddLinkButton: View {
     let root: AdventureRootModel
     let model: AdventureModel
