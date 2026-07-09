@@ -81,14 +81,15 @@ extension MasterController {
         await root.networkProxyStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
         root.gameModel.gameRoster.players = []
-        root.gameModel.gameRoster.controls = []
+        root.gameModel.gameControl.controls = []
     }
     
     func resetPlayers() async {
         let gameConfig = await root.gameModel.gameConfig
         let gameRoster = await root.gameModel.gameRoster
+        let gameControl = await root.gameModel.gameControl
 
-        var players = gameRoster.controls.compactMap { $0.show ? $0.id : nil }.sorted()
+        var players = gameControl.controls.compactMap { $0.show ? $0.id : nil }.sorted()
         if asProxy {
             players.append(gameConfig.master.id)
             players.sort()
@@ -127,11 +128,12 @@ extension MasterController {
         Logger.networking.debug("MasterController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subtype.debugDescription, privacy: .public) for \(updated.type.token, privacy: .public) -> \(updated.id, privacy: .public)")
 
         let game = await root.gameModel.gameConfig
-        var roster = await root.gameModel.gameRoster
+        let roster = await root.gameModel.gameRoster
+        var control = await root.gameModel.gameControl
         if let playerId {
-            roster.controls = roster.controls.filter { $0.id == playerId }
+            control.controls = control.controls.filter { $0.id == playerId }
         }
-        let networtData = GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subtype, gameConfig: game, gameRoster: roster, data: updated)
+        let networtData = GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subtype, gameConfig: game, gameRoster: roster, gameControl: control, data: updated)
 
         await root.logGameController.addMessage(counter: counter, type: type, subType: subtype, module: updated.type, itemId: updated.id)
         await gameModel.increaseMessageCounter()
@@ -200,7 +202,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         if asProxy {
             if model.data.type == .dice && model.type == .update {
                 _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: root.gameModel.gameName, isGameMaster: model.gameConfig.isMaster)
-                let sendData = await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: root.gameModel.gameConfig, gameRoster: root.gameModel.gameRoster, data: model.data)
+                let sendData = await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: root.gameModel.gameConfig, gameRoster: root.gameModel.gameRoster, gameControl: root.gameModel.gameControl, data: model.data)
                 await root.networkStore.sendMaster(data: sendData, fileJournal: false)
             } else {
                 await root.networkStore.sendMaster(data: model, fileJournal: false)

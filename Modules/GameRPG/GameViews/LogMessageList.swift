@@ -11,15 +11,13 @@ struct LogMessageList: View {
     var body: some View {
         @Bindable var gameModel = logController.gameModel
         VStack {
-            SendControlView(controls: $gameModel.gameRoster.controls)
+            SendControlView(controls: $gameModel.gameControl.controls)
                 .padding()
             
             List {
-                
-                sharingView
-                attachmentView
-                
-                logsView
+                SharingOptionsSection(features: $gameModel.gameControl.features)
+                AttachmentSection(logController: logController, isExpanded: $showAttachments)
+                LogRowsSection(logController: logController)
             }
 #if os(tvOS)
             .listStyle(.grouped)
@@ -28,33 +26,14 @@ struct LogMessageList: View {
 #endif
         }
     }
-    
-    private func rowColor(message: LogGameModel) -> Color {
-        guard message.type == .reveal else { return .blue }
-        if logController.maxPlayers > 0 && message.players.isEmpty {
-            return .red.opacity(0.7)
-        }
-        if message.players.count < logController.maxPlayers {
-            return .yellow
-        }
-        return .green
-    }
-    
-    private func playerNames(message: LogGameModel) -> String {
-        let players = message.players
-        if players.isEmpty {
-            return String(localized: "No Players", bundle: .module).localizedString
-        } else {
-            return logController.playerNames(for: message.players)
-        }
-    }
-    
-    @ViewBuilder
-    private var sharingView: some View {
-        @Bindable var gameModel = logController.gameModel
-        
+}
+
+private struct SharingOptionsSection: View {
+    @Binding var features: GameFeatureModel
+
+    var body: some View {
         DisclosureGroupTV {
-            Toggle(isOn: $gameModel.gameRoster.features.diceMaster) {
+            Toggle(isOn: $features.diceMaster) {
                 Label {
                     Text("Share master dice with other players", bundle: .module)
                 } icon: {
@@ -62,7 +41,7 @@ struct LogMessageList: View {
                 }
             }
             
-            Toggle(isOn: $gameModel.gameRoster.features.dicePlayers) {
+            Toggle(isOn: $features.dicePlayers) {
                 Label {
                     Text("Share player dice with other players", bundle: .module)
                 } icon: {
@@ -70,21 +49,21 @@ struct LogMessageList: View {
                 }
             }
             
-            Toggle(isOn: $gameModel.gameRoster.features.audioSharing) {
+            Toggle(isOn: $features.audioSharing) {
                 Label {
                     Text(NetworkModules.audio.localizedTitle)
                 } icon: {
                     Image(systemName: NetworkModules.audio.icon)
                 }
             }
-            Toggle(isOn: $gameModel.gameRoster.features.photoSharing) {
+            Toggle(isOn: $features.photoSharing) {
                 Label {
                     Text(NetworkModules.photo.localizedTitle)
                 } icon: {
                     Image(systemName: NetworkModules.photo.icon)
                 }
             }
-            Toggle(isOn: $gameModel.gameRoster.features.spaceSharing) {
+            Toggle(isOn: $features.spaceSharing) {
                 Label {
                     Text(NetworkModules.space.localizedTitle)
                 } icon: {
@@ -95,9 +74,14 @@ struct LogMessageList: View {
             Text("Player Sharing Optionen", bundle: .module)
         }
     }
-    
-    private var attachmentView: some View {
-        DisclosureGroupTV(isExpanded: $showAttachments) {
+}
+
+private struct AttachmentSection: View {
+    let logController: LogGameController
+    @Binding var isExpanded: Bool
+
+    var body: some View {
+        DisclosureGroupTV(isExpanded: $isExpanded) {
             ForEach(logController.attachments) { attachment in
                 Text("**\(attachment.id)**: \(attachment.itemId)", bundle: .module)
             }
@@ -105,34 +89,49 @@ struct LogMessageList: View {
             Text("Attachments in Shareplay", bundle: .module)
         }
     }
+}
 
-    private var logsView: some View {
+private struct LogRowsSection: View {
+    let logController: LogGameController
+
+    var body: some View {
         Section {
-            ForEach(logController.logModels.reversed()) { message in
-                VStack(alignment: .leading) {
-                    Text("\(message.id): \(message.type.debugDescription) -  \(message.subType.debugDescription) - \(message.module.token) \(logController.name(for: message.module, itemId: message.itemId))")
-                        .lineLimit(1)
-                        .font(.caption)
-                    Text(playerNames(message:message))
-                }
-                .foregroundStyle(Color.black)
-                .listRowBackground(rowColor(message: message))
+            ForEach(logController.logRows) { row in
+                LogMessageRow(row: row)
+                    .equatable()
             }
         } header: {
             Text("Message Logs", bundle: .module)
         }
     }
+}
 
-    private var playerImagesView: some View {
-        HStack {
-            ForEach(logController.players) {
-                if let data = $0.data, let image = AKImage(data: data) {
-                    Image(akImage: image)
-                        .resizable()
-                        .frame(width: 320, height: 256)
-                }
-                Text($0.name)
-            }
+private struct LogMessageRow: View, Equatable {
+    let row: LogMessageRowModel
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(row.title)
+                .lineLimit(1)
+                .font(.caption)
+            Text(row.playerNames)
+        }
+        .foregroundStyle(.black)
+        .listRowBackground(row.deliveryState.rowBackground)
+    }
+}
+
+private extension LogMessageDeliveryState {
+    var rowBackground: Color {
+        switch self {
+        case .notTracked:
+            return .blue
+        case .missingPlayers:
+            return .red.opacity(0.7)
+        case .partialPlayers:
+            return .yellow
+        case .allPlayers:
+            return .green
         }
     }
 }

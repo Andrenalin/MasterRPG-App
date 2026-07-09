@@ -110,9 +110,9 @@ extension PlayerController {
     
     @MainActor
     func resetPlayers() {
-        let players = root.gameModel.gameRoster.controls.compactMap { $0.show ? $0.id : nil }
+        let players = root.gameModel.gameControl.controls.compactMap { $0.show ? $0.id : nil }
         root.audioRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
-        let playerNames = root.gameModel.gameRoster.controls.map { $0.name }.sorted()
+        let playerNames = root.gameModel.gameControl.controls.map { $0.name }.sorted()
         root.diceRoot.diceGameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
     }
 }
@@ -135,7 +135,7 @@ extension PlayerController {
     
     func send(counter: Int, type: RPGMessageType, subType: RPGMessageActionType = .show, updated: NetworkCodableDataType, useJournal: Bool = false) async {
         Logger.networking.debug("PlayerController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
-        let networtData = await GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subType, gameConfig: root.gameModel.gameConfig, gameRoster: root.gameModel.gameRoster, data: updated)
+        let networtData = await GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subType, gameConfig: root.gameModel.gameConfig, gameRoster: root.gameModel.gameRoster, gameControl: root.gameModel.gameControl, data: updated)
         
         let useOnTypeJournal = useJournal || updated.type == .audio || updated.type == .photo || updated.type == .space
         await send(model: networtData, useJournal: useOnTypeJournal)
@@ -195,12 +195,12 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         let model = event.model
 
         if await !gameModel.asGameMaster {
-            let controls = model.gameRoster.controls
+            let controls = model.gameControl.controls
             if model.gameConfig.isMaster {
                 await root.gameModel.reset(controls: controls)
                 await root.gameModel.reset(master: model.gameConfig.master)
                 await root.gameModel.reset(playerId: root.gameModel.gameConfig.id, player: root.gameModel.gamePlayer, players: model.gameRoster.players)
-                await root.gameModel.reset(features: model.gameRoster.features)
+                await root.gameModel.reset(features: model.gameControl.features)
                 await resetPlayers()
             }
 
@@ -319,7 +319,7 @@ extension PlayerController {
             case .audioList:
                 await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
             case .playAudio:
-                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: model.gameRoster.controls.map { $0.id } + [model.gameConfig.master.id])
+                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: model.gameControl.controls.map { $0.id } + [model.gameConfig.master.id])
                 let isSharePlayActive = await MainActor.run { root.networkStore.sharePlayStore.isActive }
                 if isSharePlayActive && !model.gameConfig.isMaster {
                     // SharePlay: AVPlayerPlaybackCoordinator propagates play() from the initiator.
@@ -336,7 +336,7 @@ extension PlayerController {
     }
 
     func handleDice(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        let features = await root.gameModel.gameRoster.features
+        let features = await root.gameModel.gameControl.features
         guard await (root.gameModel.gameName != model.senderName) &&
                 (features.diceMaster || !model.gameConfig.isMaster) &&
                 (features.dicePlayers || model.gameConfig.isMaster)
@@ -404,7 +404,7 @@ extension PlayerController {
                     }
                     #endif
                 } else {
-                    return await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: .reveal, subType: .ok, gameConfig: root.gameModel.gameConfig, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
+                    return await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: .reveal, subType: .ok, gameConfig: root.gameModel.gameConfig, gameRoster: root.gameModel.gameRoster, gameControl: root.gameModel.gameControl, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
                 }
             case .mapPin:
                 // master will never send mapPin updates, they come only from players.
@@ -617,10 +617,11 @@ extension PlayerController {
     nonisolated func response(for model: GameNetworkModel, isSuccess: Bool, requestData: Bool) async -> GameNetworkModel {
         let gameConfig = await root.gameModel.gameConfig
         let gameRoster = await root.gameModel.gameRoster
+        let gameControl = await root.gameModel.gameControl
         if requestData {
-            return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: gameConfig, gameRoster: gameRoster, data: model.data)
+            return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: gameConfig, gameRoster: gameRoster, gameControl: gameControl, data: model.data)
         }
-        return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: isSuccess ? .ok : .failed, gameConfig: gameConfig, gameRoster: gameRoster, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
+        return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: isSuccess ? .ok : .failed, gameConfig: gameConfig, gameRoster: gameRoster, gameControl: gameControl, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
     }
 
     func scheduleSendCharacter() async {

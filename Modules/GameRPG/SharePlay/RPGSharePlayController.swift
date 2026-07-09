@@ -39,7 +39,7 @@ final class RPGSharePlayController {
     var canActivateSharePlay: Bool = false
     var stateText: String = "Not Active"
 
-    var gameModel: GameModel?
+    var gameModel: GameRootModel?
     var packageSender: SharePlaySingleQueuePackageSender?
     var packageReceiver = SharePlayPackageReceiver()
 
@@ -85,7 +85,7 @@ final class RPGSharePlayController {
         Logger.sharePlay.debug("SharePlay: deinit")
     }
 
-    func setup(gameModel: GameModel) {
+    func setup(gameModel: GameRootModel) {
         Logger.sharePlay.debug("SharePlay: setup")
         self.gameModel = gameModel
         packageSender = SharePlaySingleQueuePackageSender { [weak self] package in

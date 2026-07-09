@@ -11,7 +11,77 @@ struct GameNetworkModel: Codable, Sendable {
     var subType: RPGMessageActionType
     var gameConfig: GameConfigModel
     var gameRoster: GameRosterModel = .empty
+    var gameControl: GameControlModel = .empty
     var data: NetworkCodableDataType
+
+    init(
+        version: Int = 1,
+        counter: Int,
+        proxyCounter: Int,
+        type: RPGMessageType,
+        subType: RPGMessageActionType,
+        gameConfig: GameConfigModel,
+        gameRoster: GameRosterModel = .empty,
+        gameControl: GameControlModel = .empty,
+        data: NetworkCodableDataType
+    ) {
+        self.version = version
+        self.counter = counter
+        self.proxyCounter = proxyCounter
+        self.type = type
+        self.subType = subType
+        self.gameConfig = gameConfig
+        self.gameRoster = gameRoster
+        self.gameControl = gameControl
+        self.data = data
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case version
+        case counter
+        case proxyCounter
+        case type
+        case subType
+        case gameConfig
+        case gameRoster
+        case gameControl
+        case data
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        counter = try container.decode(Int.self, forKey: .counter)
+        proxyCounter = try container.decode(Int.self, forKey: .proxyCounter)
+        type = try container.decode(RPGMessageType.self, forKey: .type)
+        subType = try container.decode(RPGMessageActionType.self, forKey: .subType)
+        gameConfig = try container.decode(GameConfigModel.self, forKey: .gameConfig)
+        gameRoster = try container.decodeIfPresent(GameRosterModel.self, forKey: .gameRoster) ?? .empty
+        gameControl = try container.decodeIfPresent(GameControlModel.self, forKey: .gameControl)
+            ?? container.decodeIfPresent(LegacyGameControlModel.self, forKey: .gameRoster)?.gameControl
+            ?? .empty
+        data = try container.decode(NetworkCodableDataType.self, forKey: .data)
+    }
+}
+
+private struct LegacyGameControlModel: Decodable {
+    var controls: [SharingControlModel] = []
+    var features: GameFeatureModel = GameFeatureModel()
+
+    var gameControl: GameControlModel {
+        GameControlModel(controls: controls, features: features)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case controls
+        case features
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        controls = try container.decodeIfPresent([SharingControlModel].self, forKey: .controls) ?? []
+        features = try container.decodeIfPresent(GameFeatureModel.self, forKey: .features) ?? GameFeatureModel()
+    }
 }
 
 enum GameMessageOrigin: Hashable, Sendable {

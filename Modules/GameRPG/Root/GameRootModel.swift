@@ -18,9 +18,10 @@ import WeatherRPG
 
 
 @MainActor @Observable
-final class GameModel: Sendable {
+final class GameRootModel: Sendable {
     var gameConfig: GameConfigModel = .empty
     var gameRoster: GameRosterModel = .empty
+    var gameControl: GameControlModel = .empty
 
     var startGameTime = Date()
 
@@ -48,38 +49,39 @@ final class GameModel: Sendable {
         if let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) {
             gameRoster.players[index] = playerModel
             var model = sharingModel
-            model.show = gameRoster.controls[index].show
-            gameRoster.controls[index] = model
+            model.show = gameControl.controls[index].show
+            gameControl.controls[index] = model
             return false
         } else {
             gameRoster.players.append(playerModel)
-            gameRoster.controls.append(sharingModel)
+            gameControl.controls.append(sharingModel)
             return true
         }
     }
 
     func add(playerId: UUID, sharingModel: SharingControlModel) {
         if let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) {
-            gameRoster.controls[index] = sharingModel
+            gameControl.controls[index] = sharingModel
         } else {
-            gameRoster.controls.append(sharingModel)
+            gameControl.controls.append(sharingModel)
         }
     }
 
     func remove(playerId: UUID) -> Bool {
         guard let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) else { return false }
         gameRoster.players.remove(at: index)
-        gameRoster.controls.remove(at: index)
+        gameControl.controls.remove(at: index)
         return true
     }
 
-    func reset(gameConfig: GameConfigModel, gameRoster: GameRosterModel = .empty) {
+    func reset(gameConfig: GameConfigModel, gameRoster: GameRosterModel = .empty, gameControl: GameControlModel = .empty) {
         self.gameConfig = gameConfig
         self.gameRoster = gameRoster
+        self.gameControl = gameControl
     }
 
     func reset(controls: [SharingControlModel]) {
-        gameRoster.controls = controls
+        gameControl.controls = controls
     }
 
     func reset(master: MasterGameModel) {
@@ -95,7 +97,7 @@ final class GameModel: Sendable {
     }
 
     func reset(features: GameFeatureModel) {
-        gameRoster.features = features
+        gameControl.features = features
     }
 
     var gameType: GameType { gameConfig.type(in: gameRoster) }
@@ -119,7 +121,7 @@ public final class GameRoot {
     let characterRoot: CharacterRootModel
     let weatherRoot: WeatherRootModel
 
-    let gameModel: GameModel
+    let gameModel: GameRootModel
     private var networkActionTasks: [UUID: Task<Void, Never>] = [:]
     private var demoTask: Task<Void, Never>?
 
@@ -138,7 +140,7 @@ public final class GameRoot {
         self.networkStore = GameNetworkController(name: "Init")
         self.networkProxyStore = GameNetworkController(proxyName: "Proxy")
         
-        self.gameModel = GameModel()
+        self.gameModel = GameRootModel()
         
         _viewController = ViewController(root: self)
         _logGameController = LogGameController(root: self, gameModel: gameModel)
@@ -186,10 +188,10 @@ public final class GameRoot {
     }
 
     public lazy var sharingControlActions: SharingControlActions = SharingControlActions { [weak self] in
-        self?.gameModel.gameRoster.controls ?? []
+        self?.gameModel.gameControl.controls ?? []
     } update: { [weak self] newControls in
-        if self?.gameModel.gameRoster.controls != newControls {
-            self?.gameModel.gameRoster.controls = newControls
+        if self?.gameModel.gameControl.controls != newControls {
+            self?.gameModel.gameControl.controls = newControls
         }
         self?.scheduleNetworkAction {
             await self?.gameModel.masterController?.resetPlayers()
@@ -197,7 +199,7 @@ public final class GameRoot {
     }
 
     public lazy var sharingFeatureActions: SharingFeatureActions = SharingFeatureActions { [weak self] in
-        self?.gameModel.gameRoster.features ?? GameFeatureModel()
+        self?.gameModel.gameControl.features ?? GameFeatureModel()
     }
     
     var characterName: String {
@@ -324,6 +326,7 @@ extension GameRoot {
         }
         let playerGameModel = PlayerGameModel(id: UUID(), type: mode, name: name(for: mode), characterId: gameModel.selectedCharacter)
         gameModel.gameRoster = GameRosterModel(players: [playerGameModel])
+        gameModel.gameControl = .empty
         var newConfig = gameModel.gameConfig
         newConfig.id = playerGameModel.id
         newConfig.state = .prepare
@@ -418,7 +421,7 @@ extension GameRoot {
                         }
                         guard !Task.isCancelled else { return }
                         let data = await photoRoot.gameControllable.share(id: photo)
-                        let gameNetworkModel = GameNetworkModel(counter: 1, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
+                        let gameNetworkModel = GameNetworkModel(counter: 1, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, gameControl: gameModel.gameControl, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
                     }
                     
@@ -431,7 +434,7 @@ extension GameRoot {
                         }
                         guard !Task.isCancelled else { return }
                         let data = await weatherRoot.gameControllable.share(id: weather)
-                        let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
+                        let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, gameControl: gameModel.gameControl, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
                     }
                     
@@ -444,7 +447,7 @@ extension GameRoot {
                         }
                         guard !Task.isCancelled else { return }
                         let data = await mapRoot.gameControllable.share(id: map)
-                        let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
+                        let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, gameControl: gameModel.gameControl, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
                         
                         var showMap = true
@@ -463,7 +466,7 @@ extension GameRoot {
                             }
                             guard !Task.isCancelled else { return }
                             
-                            let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .update, subType: .mapState, gameConfig: gameModel.gameConfig, data: data)
+                            let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .update, subType: .mapState, gameConfig: gameModel.gameConfig, gameControl: gameModel.gameControl, data: data)
                             await playerController.receivedProcess(gameNetworkModel)
                         }
                     }

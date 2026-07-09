@@ -292,7 +292,7 @@ struct MultiConnectionAudioTests {
         #expect(audioData1?.data.id == audioId)
         #expect(audioData1?.data.type == .audio)
         #expect(audioData1?.data.version == version)
-        #expect(env.masterRoot.gameModel.gameRoster.controls == [
+        #expect(env.masterRoot.gameModel.gameControl.controls == [
             SharingControlModel(id: env.player1Config.id, name: env.player1Roster.players[0].name, show: true)
         ])
 
@@ -302,7 +302,7 @@ struct MultiConnectionAudioTests {
         // Assert - Master updates controls
         let audioData3 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         #expect(audioData3?.data.id == audioId)
-        #expect(env.masterRoot.gameModel.gameRoster.controls == [
+        #expect(env.masterRoot.gameModel.gameControl.controls == [
             SharingControlModel(id: env.player1Config.id, name: env.player1Roster.players[0].name, show: true),
             SharingControlModel(id: env.player3Config.id, name: env.player3Roster.players[0].name, show: true)
         ])
