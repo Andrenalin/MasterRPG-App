@@ -46,21 +46,34 @@ final class GameRootModel: Sendable {
     #endif
 
     func add(playerId: UUID, playerModel: PlayerGameModel, sharingModel: SharingControlModel) -> Bool {
+        // A claimed player model whose id doesn't match the sender is a failed
+        // roster lookup (PlayerGameModel.empty carries a random id) — writing it
+        // would orphan the roster entry and lose the player's name for good.
+        guard playerModel.id == playerId else { return false }
+
+        let isNewPlayer: Bool
         if let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) {
             gameRoster.players[index] = playerModel
-            var model = sharingModel
-            model.show = gameControl.controls[index].show
-            gameControl.controls[index] = model
-            return false
+            isNewPlayer = false
         } else {
             gameRoster.players.append(playerModel)
-            gameControl.controls.append(sharingModel)
-            return true
+            isNewPlayer = true
         }
+
+        // Controls are matched by id, never by roster index — the sharing UI can
+        // reorder or replace the controls list independently of the roster.
+        var model = sharingModel
+        if let index = gameControl.controls.firstIndex(where: { $0.id == playerId }) {
+            model.show = gameControl.controls[index].show
+            gameControl.controls[index] = model
+        } else {
+            gameControl.controls.append(model)
+        }
+        return isNewPlayer
     }
 
     func add(playerId: UUID, sharingModel: SharingControlModel) {
-        if let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) {
+        if let index = gameControl.controls.firstIndex(where: { $0.id == playerId }) {
             gameControl.controls[index] = sharingModel
         } else {
             gameControl.controls.append(sharingModel)
@@ -70,7 +83,9 @@ final class GameRootModel: Sendable {
     func remove(playerId: UUID) -> Bool {
         guard let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) else { return false }
         gameRoster.players.remove(at: index)
-        gameControl.controls.remove(at: index)
+        if let controlIndex = gameControl.controls.firstIndex(where: { $0.id == playerId }) {
+            gameControl.controls.remove(at: controlIndex)
+        }
         return true
     }
 
@@ -80,24 +95,27 @@ final class GameRootModel: Sendable {
         self.gameControl = gameControl
     }
 
-    func reset(controls: [SharingControlModel]) {
-        gameControl.controls = controls
-    }
-
     func reset(master: MasterGameModel) {
         gameConfig.master = master
     }
 
-    func reset(playerId: UUID, player: PlayerGameModel, players: [PlayerGameModel]) {
+    /// Applies a master broadcast in one atomic step so concurrent readers
+    /// (message building, sendCharacter) never observe a half-updated state.
+    func applyMasterBroadcast(master: MasterGameModel, players: [PlayerGameModel], controls: [SharingControlModel], features: GameFeatureModel) {
+        gameConfig.master = master
+        gameControl.controls = controls
+        gameControl.features = features
+
         var updatedPlayers = players
-        if !updatedPlayers.contains(where: { $0.id == playerId }) {
-            updatedPlayers.append(player)
+        if !updatedPlayers.contains(where: { $0.id == gameConfig.id }) {
+            // Keep the local player in the roster, but never append the `.empty`
+            // fallback — its random id would poison every later lookup.
+            let localPlayer = gamePlayer
+            if localPlayer.id == gameConfig.id {
+                updatedPlayers.append(localPlayer)
+            }
         }
         gameRoster.players = updatedPlayers
-    }
-
-    func reset(features: GameFeatureModel) {
-        gameControl.features = features
     }
 
     var gameType: GameType { gameConfig.type(in: gameRoster) }
@@ -367,8 +385,15 @@ extension GameRoot {
         var newConfig = gameModel.gameConfig
         newConfig.state = .started
         gameModel.gameConfig = newConfig
-        gameModel.gameRoster.players[0].type = type
-        gameModel.gameRoster.players[0].name = name(for: type)
+        // Update the local player by id, not by index: a master broadcast
+        // processed during connect can already have replaced the roster, and
+        // index 0 may then be another player's entry.
+        if let index = gameModel.gameRoster.players.firstIndex(where: { $0.id == gameModel.gameConfig.id }) {
+            gameModel.gameRoster.players[index].type = type
+            gameModel.gameRoster.players[index].name = name(for: type)
+        } else {
+            gameModel.gameRoster.players.append(PlayerGameModel(id: gameModel.gameConfig.id, type: type, name: name(for: type), characterId: gameModel.selectedCharacter))
+        }
         adventureRoot.startGame()
         if type != .observer {
             await characterRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)

@@ -119,13 +119,17 @@ public extension ImportControllable {
                     currentFile = data
                 case ExportDataToken.item.rawValue:
                     counter += 1
+                    // A file token belongs to the item that immediately follows it —
+                    // consume it here so a later file-less item cannot inherit it.
+                    let itemFile = currentFile
+                    currentFile = nil
                     do {
                         // decode constructs models, which may be @MainActor — hop for
                         // the decode call; the wire format itself is unchanged.
                         let itemVersion = version
                         let newItem = try await MainActor.run { try itemControllable.decode(data: data, with: JSONDecoder(), version: itemVersion) }
-                        if let currentFile {
-                            try await addFile(data: currentFile, to: newItem, forceSave: forceSave)
+                        if let itemFile {
+                            try await addFile(data: itemFile, to: newItem, forceSave: forceSave)
                         }
                         try await addItem(importedItem: newItem, id: newItem.id, forceSave: forceSave, importModel: importModel)
                         importedIds.insert(newItem.id)
@@ -455,7 +459,11 @@ private extension ImportControllable {
     @MainActor func reusableExistingFileUrl(for itemId: UUID, importedHash: String, forceSave: Bool) async -> FileUrl? {
         guard let existing = itemControllable.itemSync(for: itemId, noGame: true), var existingFileUrl = existing.fileUrl else { return nil }
         if let contentHash = existingFileUrl.contentHash {
-            return contentHash == importedHash ? existingFileUrl : nil
+            guard contentHash == importedHash else { return nil }
+            // A matching hash is not enough: a metadata-only import carries the
+            // hash without the binary. Only reuse when the file really exists.
+            guard await fileUrlDataController?.hasLocalData(for: existingFileUrl) == true else { return nil }
+            return existingFileUrl
         }
         guard let data = try? await fileUrlDataController?.loadData(for: existingFileUrl) else { return nil }
         guard FileUrl.contentHash(of: data) == importedHash else { return nil }

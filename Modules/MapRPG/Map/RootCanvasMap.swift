@@ -46,6 +46,11 @@ struct RootCanvasMap: View {
             guard image == nil else { return }
             Task { await reloadImage() }
         }
+        .onChange(of: photoFileUrl, initial: false) {
+            // The background photo can arrive after the map (game re-request) —
+            // reload when its file lands or changes, or the map stays black.
+            Task { await reloadImage() }
+        }
 #if !os(tvOS)
         .dropDestination(for: LinkData.self) { items, point in
             let dropItems = items.filter { $0.module == .value && $0.entryId == nil }.map { ItemRowModel(itemId: $0.itemId, typeId: $0.module )}
@@ -63,6 +68,11 @@ struct RootCanvasMap: View {
 private extension RootCanvasMap {
     var mapModel: MapModel {
         root.gameController.gameItem(for: itemId)
+    }
+
+    var photoFileUrl: FileUrl? {
+        guard let photoId = mapModel.photoId else { return nil }
+        return root.photoRoot.itemControllable.itemSync(for: photoId)?.fileUrl
     }
 
     func reloadImage() async {

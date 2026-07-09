@@ -377,6 +377,12 @@ extension RPGSharePlayController {
                     delegate?.handleFileUpdate(metadata)
                 } catch let error {
                     Logger.sharePlay.error("Exception in load attachment data \(error.localizedDescription, privacy: .public)")
+                    // The load fails when the master replaced the attachment while
+                    // this participant was still transferring it. Deliver the
+                    // data-less metadata anyway: a reveal without data makes the
+                    // player controller request the payload again from the master,
+                    // instead of silently missing it while everyone else has it.
+                    delegate?.handleFileUpdate(metadata)
                 }
             } catch let error {
                 Logger.sharePlay.error("Exception in load attachment metaData \(error.localizedDescription, privacy: .public)")
