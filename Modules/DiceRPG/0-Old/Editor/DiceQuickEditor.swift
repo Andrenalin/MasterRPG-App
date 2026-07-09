@@ -66,7 +66,7 @@ struct DiceQuickEditor: View {
             value = String("\(Int(root.gameController.gameItem(for: itemId).compareValue))")
         }
         .onAppear {
-#if !os(visionOS)
+#if os(iOS) || os(macOS)
             isFocused = true
 #endif
         }

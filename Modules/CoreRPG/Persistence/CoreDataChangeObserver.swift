@@ -5,8 +5,13 @@ import Combine
 import Foundation
 import os.log
 
-@MainActor
-public final class CoreDataChangeObserver {
+/// Do NOT mark this `@MainActor`. `context` is frequently a private-queue background
+/// context (see `CloudKitCoreDataPersistenceController`'s "background_context"), and Core
+/// Data posts `didMergeChangesObjectIDsNotification` synchronously on that context's own
+/// queue — not necessarily the main thread. `@MainActor` here makes the Combine closures
+/// below inferred main-actor-isolated while Combine still invokes them off-thread, which
+/// broke Core Data's thread confinement in practice (see git history for this file).
+public final class CoreDataChangeObserver: @unchecked Sendable {
     typealias DataType = (NSManagedObject & CoreDataId)
 
     private var observer: AnyCancellable?
@@ -58,7 +63,7 @@ private extension CoreDataChangeObserver {
     }
 
     /// Must run on the context's queue.
-    nonisolated static func uuids(for objectIDs: Set<NSManagedObjectID>?, type: ChangeType, context: NSManagedObjectContext, entity: NSEntityDescription) -> [UUID] {
+    static func uuids(for objectIDs: Set<NSManagedObjectID>?, type: ChangeType, context: NSManagedObjectContext, entity: NSEntityDescription) -> [UUID] {
         guard let objectIDs else { return [] }
         return objectIDs.filter { $0.entity == entity }.map { objectID in
             if let registered = context.registeredObject(for: objectID), !registered.isFault,
