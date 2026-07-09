@@ -35,15 +35,19 @@ struct LogGameControllerTests {
             .map: UUID(),
             .photo: UUID()
         ]
+        let mapAttachmentId = try #require(root.gameModel.metaDataAttachments[.map])
+        let photoAttachmentId = try #require(root.gameModel.metaDataAttachments[.photo])
 
-        sut.addMessage(counter: 7, type: .store, subType: .show, module: .photo, itemId: root.gameModel.metaDataAttachments[.photo]!)
+        sut.addMessage(counter: 7, type: .store, subType: .show, module: .photo, itemId: photoAttachmentId)
         sut.updateMessage(counter: 7, player: playerA)
+        sut.addMessage(counter: 8, type: .reveal, subType: .show, module: .map, itemId: mapAttachmentId)
         sut.updateScreen(counter: 0, player: playerB, data: nil)
         sut.updateScreen(counter: 1, player: playerB, data: screenData)
 
         let log = try #require(sut.logModels.first)
         let players = sut.players
         let attachments = sut.attachments
+        let missingRow = try #require(sut.logRows.first)
 
         #expect(log.id == 7)
         #expect(log.players == [playerA])
@@ -51,9 +55,27 @@ struct LogGameControllerTests {
         #expect(players.map(\.name) == ["Arin", "Zara"])
         #expect(players.first?.data == nil)
         #expect(players.last?.data == screenData)
-        #expect(Set(attachments.map(\.id)) == Set(["MAPS", "PHOTOS"]))
+        #expect(attachments.map(\.id) == ["MAPS", "PHOTOS"])
         #expect(attachments.count == 2)
         #expect(sut.playerNames(for: [playerA, UUID(), playerB]) == "Arin, Unknown Player, Zara")
+        #expect(missingRow.id == 8)
+        #expect(missingRow.playerNames == LogGameController.noPlayersText)
+        #expect(missingRow.deliveryState == .missingPlayers)
+
+        sut.updateMessage(counter: 8, player: playerA)
+        let partialRow = try #require(sut.logRows.first)
+        #expect(partialRow.playerNames == "Arin")
+        #expect(partialRow.deliveryState == .partialPlayers)
+
+        sut.updateMessage(counter: 8, player: playerB)
+        let rows = sut.logRows
+        let completeRow = try #require(rows.first)
+        let storeRow = try #require(rows.last)
+        #expect(rows.map(\.id) == [8, 7])
+        #expect(completeRow.playerNames == "Arin, Zara")
+        #expect(completeRow.deliveryState == .allPlayers)
+        #expect(storeRow.playerNames == "Arin")
+        #expect(storeRow.deliveryState == .notTracked)
     }
 
     @Test func nameResolvesKnownModuleItemsAndFallsBackForUnresolvedModules() async throws {

@@ -36,9 +36,6 @@ struct SelectListItemViewModifier: ViewModifier {
                 .borderLessTVBottonStyle()
                 .padding(.horizontal, 8)
                 .contentShape(.rect)
-                #if os(macOS)
-                    .focusable(false)
-                #endif
                     .disabled(hide)
             }
 

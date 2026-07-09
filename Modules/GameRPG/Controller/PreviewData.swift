@@ -42,9 +42,9 @@ extension LogGameController {
     static let preview = LogGameController(gameModel: .preview)
 }
 
-extension GameModel {
-    @MainActor static let preview: GameModel = {
-        let model = GameModel()
+extension GameRootModel {
+    @MainActor static let preview: GameRootModel = {
+        let model = GameRootModel()
         model.gameConfig = .master
         model.logs = [0, 1, 2, 3, 4, 5, 6, 7, 8]
         model.logData = [0: .preview, 1: .preview2, 2: .preview3, 3: .preview, 4: .preview2, 5: .preview3, 6: .preview, 7: .preview2, 8: .preview3]
@@ -75,8 +75,11 @@ extension GameRosterModel {
         players: [
             PlayerGameModel(id: GameConfigModel.playerId, type: .player, name: "Player", characterId: UUID(uuidString: "21EF7536-956B-4746-A731-FF15D7FE5850")!),
             PlayerGameModel(id: GameConfigModel.playerId2, type: .player, name: "Player2", characterId: UUID())
-        ],
-        controls: [.previewPlayer1, .previewPlayer2])
+        ])
+}
+
+extension GameControlModel {
+    static let master = GameControlModel(controls: [.previewPlayer1, .previewPlayer2])
 }
 
 extension SharingControlModel {

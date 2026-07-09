@@ -83,7 +83,7 @@ final class GameNetworkController: Sendable {
 
     /// Sets up SharePlay integration. Only meaningful in direct (non-proxy) mode.
     @MainActor
-    func setup(gameModel: GameModel) {
+    func setup(gameModel: GameRootModel) {
         guard !model.isSetup else { return }
         sharePlayStore.setup(gameModel: gameModel)
         sharePlayStore.delegate = self

@@ -32,7 +32,7 @@ public struct EditorLinkView: View {
         .applyIf(selectionMode) {
             $0
                 .toolbarItemListModifier(root: root, listControllable: editorLinkModel.folderListController, parentModel: nil, modal: true) {
-                    let resolvedRoot = destinationModule.flatMap { editorLinkModel.rootManager.itemRootController(for: $0) } ?? root
+                    let resolvedRoot = destinationModule.flatMap { editorLinkModel.rootManager?.itemRootController(for: $0) } ?? root
                     guard let editControllable = resolvedRoot.editControllable as? (any EntryDataEditable) else { return }
                     editorLinkModel.addLinkAndReset(editController: editControllable, destiantionItemId: model.id, destinationEntryId: selectedEntryId)
                 }
@@ -81,7 +81,7 @@ private extension EditorLinkView {
     }
     
     @ViewBuilder func linkLinkView(module: NetworkModules) -> some View {
-        if let itemRootController = editorLinkModel.rootManager.itemRootController(for: module) {
+        if let itemRootController = editorLinkModel.rootManager?.itemRootController(for: module) {
             itemRootController.viewControllable.linkListView(rootController: itemRootController, type: selectionMode ? .selectionInline : .inspector, itemSelectionModel: editorLinkModel.selectionModel(for: module))
         }
     }

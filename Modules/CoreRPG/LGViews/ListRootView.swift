@@ -42,11 +42,21 @@ struct ListRootView: View {
                     deleteItems(offsets: IndexSet(integer: index))
                 }
                 .onKeyPress(.leftArrow, phases: .down) { _ in
-                    withAnimation { listController.closeParentFolder() }
+                    if let sheetRootModel = root.editControllable.editorModel.sheetRootModel, sheetRootModel.selectedEntryId != nil {
+                        sheetRootModel.clearSelection()
+                    } else {
+                        withAnimation { listController.closeParentFolder() }
+                    }
                     return .handled
                 }
                 .onKeyPress(.rightArrow, phases: .down) { _ in
-                    withAnimation { listController.openSelectedFolder() }
+                    if listController.canOpenFolder(itemId: listModel.selected) {
+                        withAnimation { listController.openSelectedFolder() }
+                    } else if let sheetRootModel = root.editControllable.editorModel.sheetRootModel,
+                              sheetRootModel.sheetModel.source.itemId == listModel.selected,
+                              let firstEntry = sheetRootModel.firstSelectableEntry {
+                        sheetRootModel.setSelected(firstEntry, parent: sheetRootModel.sheetModel)
+                    }
                     return .handled
                 }
 #endif
@@ -135,37 +145,32 @@ private extension ListRootView {
     
     @ViewBuilder
     var listView: some View {
-        ScrollViewReader { proxy in
-            Group {
-                @Bindable var listModel = listModel
+        @Bindable var listModel = listModel
+        Group {
 #if os(macOS)
-                Group {
-                    if listController.listDisplayModel.isSelectionMode {
-                        List(selection: $listModel.listSelection) {
-                            ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
-                        }
-                        .frame(minHeight: 300, maxHeight: .infinity)
-                    } else {
-                        List(selection: $listModel.selected) {
-                            ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
-                        }
-                        .frame(minHeight: 300, maxHeight: .infinity)
+            Group {
+                if listController.listDisplayModel.isSelectionMode {
+                    List(selection: $listModel.listSelection) {
+                        ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
                     }
+                    .frame(minHeight: 300, maxHeight: .infinity)
+                } else {
+                    List(selection: $listModel.selected) {
+                        ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
+                    }
+                    .frame(minHeight: 300, maxHeight: .infinity)
                 }
-                .applyIf(parentModel != nil) {
-                    $0.listStyle(.bordered)
-                }
+            }
+            .applyIf(parentModel != nil) {
+                $0.listStyle(.bordered)
+            }
 #else
-                List(selection: $listModel.listSelection) {
-                    ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
-                }
+            List(selection: $listModel.listSelection) {
+                ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
+            }
 #endif
-            }
-            .onChange(of: listModel.scrollId) {
-                guard let id = listModel.scrollId else { return }
-                proxy.scrollTo(id, anchor: .center)
-            }
         }
+        .scrollPosition(id: $listModel.scrollId, anchor: .center)
     }
     
     /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.

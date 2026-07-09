@@ -53,10 +53,10 @@ struct AdventureAddEntryButton: View {
             withAnimation {
                 let entryId = root.editController.addNewEntry(itemId: model.id)
                 root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, entryId: entryId, typeId: root.config.module))
-                root.editController.sheetEditorModel.entryId = entryId
+                root.editController.editorModel.sheetEditorModel.entryId = entryId
                 Task {
                     try? await Task.sleep(for: .seconds(0.25))
-                    root.editController.sheetEditorModel.scrollEntryId = entryId
+                    root.editController.editorModel.sheetEditorModel.scrollEntryId = entryId
                 }
             }
         } label: {
@@ -64,29 +64,6 @@ struct AdventureAddEntryButton: View {
                 Text("Add new Entry", bundle: .module)
             } icon: {
                 Image(systemName: "note.text.badge.plus")
-            }
-        }
-    }
-}
-
-struct AdventureAIAssistantButton: View {
-    let root: AdventureRootModel
-    let model: AdventureModel
-    @Environment(\.navigator) private var navigator
-    @Environment(ScenesManager.self) private var scenesManager
-
-    var body: some View {
-        Button {
-#if os(visionOS) || os(macOS)
-            scenesManager.openWindow(.generateAdventure, selection: WindowItemSelection(itemId: model.id))
-#else
-            navigator.navigate(to: AdventureEditorRoute.generator(model.id))
-#endif
-        } label: {
-            Label {
-                Text("AI Assistant", bundle: .module)
-            } icon: {
-                Image(systemName: NetworkModules.generator.icon)
             }
         }
     }

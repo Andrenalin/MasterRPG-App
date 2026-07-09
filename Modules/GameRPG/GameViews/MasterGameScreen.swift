@@ -30,6 +30,7 @@ struct MasterGameScreen: View {
                 .environment(diceShowOptionModel)
                 .environment(gameScreenModel)
         }
+        .focusSectionAll()
         .sheet(isPresented: $gameScreenModel.showExport) {
             if gameScreenModel.showExport {
                 ExportProgressPanelView(exportController: root.adventureRoot.exportControllable, isSaveGame: true) {

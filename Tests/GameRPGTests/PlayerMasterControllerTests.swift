@@ -109,7 +109,7 @@ struct PlayerMasterControllerTests {
         // Arrange
         let env = try await PlayerMasterControllerTestEnvironment.create()
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 0)
-        #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 12)
+        #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 2)
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
 
@@ -152,7 +152,7 @@ struct PlayerMasterControllerTests {
         #expect(playerResponse.subType == .ok)
         #expect(await env.playerRoot.audioRoot.gameController.currentId == audioId)
         #expect(env.playerRoot.audioRoot.gameController.gameItem(for: audioId).version == version)
-        #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 12)
+        #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 2)
     }
 
     @Test("Player sends photo to master and receives it back")
@@ -160,7 +160,7 @@ struct PlayerMasterControllerTests {
         // Arrange
         let env = try await PlayerMasterControllerTestEnvironment.create()
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
-        #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 6)
+        #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
 
@@ -203,7 +203,7 @@ struct PlayerMasterControllerTests {
         #expect(playerResponse.subType == .ok)
         #expect(await env.playerRoot.photoRoot.gameController.currentId == photoId)
         #expect(env.playerRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
-        #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 6)
+        #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
     }
 
     @Test("Player sends pdf to master, master saves it, and player receives it back")
@@ -211,7 +211,7 @@ struct PlayerMasterControllerTests {
         // Arrange
         let env = try await PlayerMasterControllerTestEnvironment.create()
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.pdfTestData, itemCounter: 0)
-        #expect(env.playerRoot.pdfRoot.itemController.itemDataModel.items.count == 6)
+        #expect(env.playerRoot.pdfRoot.itemController.itemDataModel.items.count == 1)
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
 
@@ -254,7 +254,7 @@ struct PlayerMasterControllerTests {
         #expect(playerResponse.subType == .ok)
         #expect(await env.playerRoot.pdfRoot.gameController.currentId == pdfId)
         #expect(env.playerRoot.pdfRoot.gameController.gameItem(for: pdfId).version == version)
-        #expect(env.playerRoot.pdfRoot.itemController.itemDataModel.items.count == 6)
+        #expect(env.playerRoot.pdfRoot.itemController.itemDataModel.items.count == 1)
     }
 
     @Test("Player sends multiple photos to master and master saves each one")
@@ -262,7 +262,7 @@ struct PlayerMasterControllerTests {
         // Arrange
         let env = try await PlayerMasterControllerTestEnvironment.create()
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
-        #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 6)
+        #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
 

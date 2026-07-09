@@ -5,7 +5,8 @@ import SwiftUI
 
 @MainActor @Observable
 public final class ItemEditorModel: Sendable {
-    public init() {
+    public init(sheetEditorModel: SheetEditorModel) {
+        self.sheetEditorModel = sheetEditorModel
         self.undoManaged = UndoManaged(initialValue: nil)
     }
 
@@ -19,6 +20,10 @@ public final class ItemEditorModel: Sendable {
     
     public var cacheItemListModel: CacheItemListModel = CacheItemListModel()
 
+    public var sheetRootModel: SheetRootModel?
+    public let sheetEditorModel: SheetEditorModel
+
+    
     @ObservationIgnored public var undoManaged: UndoManaged<ModelType?>
 
     func reset() {

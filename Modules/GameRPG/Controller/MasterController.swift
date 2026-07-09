@@ -20,10 +20,14 @@ final class MasterControllerModel: Sendable {
     var connectIDPlayers: [ConnectionController.ID: UUID] = [:]
     var asProxy = false
     
-    func increaseMessageCounter() {
-        messageCounter += 1
+    /// Reserves the next counter atomically. Reading and incrementing in separate
+    /// calls lets concurrent sends stamp the same counter, which the receivers'
+    /// deduplication then treats as one message.
+    func nextMessageCounter() -> Int {
+        defer { messageCounter += 1 }
+        return messageCounter
     }
-    
+
     func add(connectionId: ConnectionController.ID, playerId: UUID) {
         // Evict any stale entry for this player from a previous connection,
         // so lostPlayer(oldConnectionId) doesn't remove a player who has already reconnected.
@@ -81,14 +85,15 @@ extension MasterController {
         await root.networkProxyStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
         root.gameModel.gameRoster.players = []
-        root.gameModel.gameRoster.controls = []
+        root.gameModel.gameControl.controls = []
     }
     
     func resetPlayers() async {
-        let gameConfig = await root.gameModel.gameConfig
-        let gameRoster = await root.gameModel.gameRoster
+        let (gameConfig, gameRoster, gameControl) = await MainActor.run {
+            (root.gameModel.gameConfig, root.gameModel.gameRoster, root.gameModel.gameControl)
+        }
 
-        var players = gameRoster.controls.compactMap { $0.show ? $0.id : nil }.sorted()
+        var players = gameControl.controls.compactMap { $0.show ? $0.id : nil }.sorted()
         if asProxy {
             players.append(gameConfig.master.id)
             players.sort()
@@ -123,18 +128,21 @@ extension MasterController {
     }
     
     func send(type: RPGMessageType, subtype: RPGMessageActionType, updated: NetworkCodableDataType, connectionId: ConnectionController.ID? = nil, playerId: UUID? = nil) async {
-        let counter = await gameModel.messageCounter
+        let counter = await gameModel.nextMessageCounter()
         Logger.networking.debug("MasterController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subtype.debugDescription, privacy: .public) for \(updated.type.token, privacy: .public) -> \(updated.id, privacy: .public)")
 
-        let game = await root.gameModel.gameConfig
-        var roster = await root.gameModel.gameRoster
-        if let playerId {
-            roster.controls = roster.controls.filter { $0.id == playerId }
+        // Snapshot in one MainActor hop so the message never carries a torn
+        // combination of config, roster and controls from a concurrent update.
+        let (game, roster, currentControl) = await MainActor.run {
+            (root.gameModel.gameConfig, root.gameModel.gameRoster, root.gameModel.gameControl)
         }
-        let networtData = GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subtype, gameConfig: game, gameRoster: roster, data: updated)
+        var control = currentControl
+        if let playerId {
+            control.controls = control.controls.filter { $0.id == playerId }
+        }
+        let networtData = GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subtype, gameConfig: game, gameRoster: roster, gameControl: control, data: updated)
 
         await root.logGameController.addMessage(counter: counter, type: type, subType: subtype, module: updated.type, itemId: updated.id)
-        await gameModel.increaseMessageCounter()
 
         if asProxy {
             if let connectionId {
@@ -200,7 +208,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         if asProxy {
             if model.data.type == .dice && model.type == .update {
                 _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: root.gameModel.gameName, isGameMaster: model.gameConfig.isMaster)
-                let sendData = await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: root.gameModel.gameConfig, gameRoster: root.gameModel.gameRoster, data: model.data)
+                let sendData = await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: root.gameModel.gameConfig, gameRoster: root.gameModel.gameRoster, gameControl: root.gameModel.gameControl, data: model.data)
                 await root.networkStore.sendMaster(data: sendData, fileJournal: false)
             } else {
                 await root.networkStore.sendMaster(data: model, fileJournal: false)
@@ -312,7 +320,10 @@ extension MasterController {
             let mapData = try await root.mapRoot.gameControllable.createGameData(for: model.data.id)
             if model.subType == .mapState {
                 await send(type: .reveal, subtype: .store, updated: mapData)
-                await send(type: .update, subtype: .mapState, updated: model.data)
+                // Send the live map state (not the request echo, whose data is
+                // nil) so the recovering player syncs room visibility and pins.
+                // Targeted: the other players are already up to date.
+                await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id), playerId: model.gameConfig.id)
             } else {
                 return mapData
             }

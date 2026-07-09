@@ -132,7 +132,7 @@ struct DisplayConfigEditor: View {
                 
                 Button {
 #if os(visionOS) || os(macOS)
-                    root.editController.sheetEditorModel.itemId = model.id
+                    root.editController.editorModel.sheetEditorModel.itemId = model.id
                     scenesManager.openWindow(.mapTileEditor)
 #else
                     navigator.navigate(to: MapEditorRoute.mapTileEditor(model.id))

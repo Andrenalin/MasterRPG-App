@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 public final class GroupItemSelectionModel {
     public init(selectedItem: UUID? = nil) {
         self.selectedItem = selectedItem

@@ -150,9 +150,17 @@ extension GameController: MapGameStorable {
 
     @MainActor func missingPlayerImages(itemId: UUID) async -> [NetworkCodableDataType] {
         let model = gameItem(for: itemId)
+        var photoIds = model.mapPins.filter { $0.isPlayer }.compactMap { $0.photoId }
+        if let backgroundPhotoId = model.photoId {
+            photoIds.append(backgroundPhotoId)
+        }
         var result: [NetworkCodableDataType] = []
-        for pin in model.mapPins.filter({ $0.isPlayer }) {
-            if let photoId = pin.photoId, await !root.photoRoot.gameControllable.hasItem(id: photoId, version: 0) {
+        for photoId in photoIds {
+            // hasItem alone is true for a metadata-only photo whose binary never
+            // arrived — the file check catches those so the map can self-heal.
+            let hasItem = await root.photoRoot.gameControllable.hasItem(id: photoId, version: 0)
+            let hasFile = await root.photoRoot.gameControllable.hasLocalFileData(for: photoId)
+            if !hasItem || !hasFile {
                 await result.append(root.photoRoot.gameControllable.share(id: photoId))
             }
         }

@@ -211,10 +211,10 @@ struct ConvertControllerRepairTests {
         #expect(itemAfter.category == .entry)
     }
 
-    // MARK: - Folder Path Extraction Tests
+    // MARK: - File Path Tests
 
-    @Test("Extract folder path and create folder hierarchy")
-    func extractFolderPath_createsFolderHierarchy() async throws {
+    @Test("Repair ignores file paths and does not create folder hierarchy")
+    func repairHiddenAndFolders_ignoresFilePathFolderHierarchy() async throws {
         // Given - An item with a file URL containing folder structure
         let root = try await MockRoot.importTestData()
         let sut = ConvertController(
@@ -245,34 +245,14 @@ struct ConvertControllerRepairTests {
         // When - Run repairHiddenAndFolders
         await sut.repairHiddenAndFolders(reportModel: reportModel)
 
-        // Then - Folder hierarchy should be created
         let finalItemCount = root.itemController.itemDataModel.items.count
-        #expect(finalItemCount > initialItemCount)
-
-        // Find the created folders
-        var rootFolder: SpaceModel?
-        var subFolder: SpaceModel?
-
-        for itemId in root.itemController.itemDataModel.items {
-            let model = root.itemController.itemOrEmpty(for: itemId)
-            if model.name == "RootFolder" && model.category == .folder {
-                rootFolder = model
-            }
-            if model.name == "SubFolder" && model.category == .folder {
-                subFolder = model
-            }
-        }
-
-        try #require(rootFolder != nil)
-        try #require(subFolder != nil)
-
-        // Verify folder hierarchy
-        #expect(rootFolder?.parentId == nil)
-        #expect(subFolder?.parentId == rootFolder?.id)
-
-        // Verify the item is now in the subfolder
+        #expect(finalItemCount == initialItemCount)
         let finalItem = root.itemController.itemOrEmpty(for: item.id)
-        #expect(finalItem.parentId == subFolder?.id)
+        #expect(finalItem.parentId == nil)
+        #expect(root.itemController.itemDataModel.items.contains { id in
+            let item = root.itemController.itemOrEmpty(for: id)
+            return item.category == .folder && (item.name == "RootFolder" || item.name == "SubFolder")
+        } == false)
     }
 
     @Test("Skip folder extraction for items without URLs")

@@ -209,7 +209,9 @@ struct MasterControllerDirectProxyTests {
             players: [
                 PlayerGameModel(id: playerId, type: .player, name: "Visible"),
                 PlayerGameModel(id: hiddenPlayerId, type: .observer, name: "Hidden")
-            ],
+            ]
+        )
+        env.root.gameModel.gameControl = GameControlModel(
             controls: [
                 SharingControlModel(id: playerId, name: "Visible", show: true),
                 SharingControlModel(id: hiddenPlayerId, name: "Hidden", show: false)
@@ -228,10 +230,10 @@ struct MasterControllerDirectProxyTests {
         #expect(env.directMasterSpy.calledStopStreaming == 1)
         #expect(env.directPlayerSpy.calledStop == 1)
         #expect(env.root.gameModel.gameRoster.players.isEmpty)
-        #expect(env.root.gameModel.gameRoster.controls.isEmpty)
+        #expect(env.root.gameModel.gameControl.controls.isEmpty)
 
         let filteredMessage = try #require(env.directMasterSpy.sendResponseData as? GameNetworkModel)
-        #expect(filteredMessage.gameRoster.controls.map(\.id) == [playerId])
+        #expect(filteredMessage.gameControl.controls.map(\.id) == [playerId])
     }
 
     @Test("direct receive, ready, and file receive process messages")

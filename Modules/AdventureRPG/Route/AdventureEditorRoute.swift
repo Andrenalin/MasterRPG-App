@@ -46,14 +46,14 @@ struct DestinationAdventureEditorRouteView: View {
         case .linkSelection(let itemRowModel):
             EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedEntryId: itemRowModel.entryId, destinationModule: itemRowModel.typeId)
         case .addLink(let itemRowModel):
-            EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedModule: itemRowModel.typeId, selectedEntryId: root.editController.sheetEditorModel.entryId, destinationModule: root.editController.sheetEditorModel.module)
+            EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedModule: itemRowModel.typeId, selectedEntryId: root.editController.editorModel.sheetEditorModel.entryId, destinationModule: root.editController.editorModel.sheetEditorModel.module)
         case .generator(let itemId):
 #if os(tvOS)
             EmptyView()
                 .id(itemId)
 #else
-            if let generatorRoot = root.generatorRoot {
-                let sheetModel = root.sheetController.sheet(root: root.rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: true)
+            if let generatorRoot = root.generatorRoot, let rootManager = root.rootManager {
+                let sheetModel = root.sheetController.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: true)
                 generatorRoot.viewController.inlineChat(root: generatorRoot, sheetModel: sheetModel)
             }
 #endif

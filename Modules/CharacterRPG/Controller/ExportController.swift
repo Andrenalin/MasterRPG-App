@@ -10,16 +10,20 @@ import DiceRPG
 struct ExportController: Sendable {
     // `hubControllable` reaches Adventure's hub exporter (ExportControllable.hubControllable).
     // Every other export path below uses the narrow diceRoot/pdfRoot/photoRoot/tableRoot refs instead.
-    @MainActor init(hubControllable: any RootExportControllable, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController) {
-        self.hubControllable = hubControllable
+    @MainActor init(diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController) {
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
         self.itemController = itemController
+        self.exportModel = ExportModel()
     }
 
-    let hubControllable: any RootExportControllable
+    let exportModel: ExportModel
+    var hubControllable: any RootExportControllable {
+        get { exportModel.hubControllable! }
+        set { exportModel.hubControllable = newValue }
+    }
     let diceRoot: DiceRootModel
     let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel

@@ -3,7 +3,7 @@
 import Observation
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 final class LinkHighLightLocations {
     var locations: [LinkHighLightLocation] = []
 

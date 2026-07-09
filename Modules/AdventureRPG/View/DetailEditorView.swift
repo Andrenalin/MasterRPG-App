@@ -12,15 +12,17 @@ struct DetailEditorView: View {
     var body: some View {
         DetailSelectionEditorView(root: root, model: model)
             .onChange(of: model.id, initial: true) {
-                root.editController.sheetRootModel.reset(itemId: model.id)
+                root.editController.editorModel.sheetRootModel?.reset(itemId: model.id)
             }
 
-        SheetRootEditorView(
-            root: root.rootController,
-            sheetRootModel: root.editController.sheetRootModel,
-            headerTitle: String(localized: "Sections", bundle: .module).localizedString,
-            linkTypes: LinkAdventureModuleTransferable.self
-        )
+        if let rootModel = root.editController.editorModel.sheetRootModel {            
+            SheetRootEditorView(
+                root: root.rootController,
+                sheetRootModel: rootModel,
+                headerTitle: String(localized: "Sections", bundle: .module).localizedString,
+                linkTypes: LinkAdventureModuleTransferable.self
+            )
+        }
     }
 }
 

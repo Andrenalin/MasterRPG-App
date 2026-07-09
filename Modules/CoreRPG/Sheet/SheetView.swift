@@ -62,29 +62,70 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
 
 private extension SheetView {
     var nameRow: some View {
-        HStack {
-            if isEditor && sheetModel.canAdd {
-                SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
-            }
-            
-            LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.source.itemId), text: sheetModel.name))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .font(.title)
+        ZStack(alignment: .topLeading) {
+            selectionBackgroundButton
 
-            if let detailAction {
-                Button("Next Question", systemImage: "questionmark.bubble") {
-                    detailAction(sheetModel)
+            HStack {
+                if isEditor && sheetModel.canAdd {
+                    SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
                 }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .disabled(!sheetModel.hasDetailContent)
-                .help("Next question")
+
+                LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.source.itemId), text: sheetModel.name))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.title)
+
+                if let detailAction {
+                    Button("Next Question", systemImage: "questionmark.bubble") {
+                        detailAction(sheetModel)
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .disabled(!sheetModel.hasDetailContent)
+                    .help("Next question")
+                }
             }
         }
-        .applyIf(isEditor && sheetModel.canAdd) {
+        .overlay {
+            selectionBorder
+        }
+        .contentShape(.rect)
+        .animation(.easeInOut(duration: 0.2), value: sheetModel.isSelected)
+        .applyIf((isEditor && sheetModel.canAdd) || sheetModel.isSelected) {
             $0.contextMenuAll {
                 SheetContextMenuView(rootModel: rootModel, parentModel: sheetModel, entryModel: sheetModel, isEditor: isEditor)
             }
+        }
+    }
+
+    /// Fills the name row so a plain tap anywhere that isn't already an interactive
+    /// element (add button, links inside LinkHighlightTextView, "Next Question") selects it.
+    /// The explicit frame + contentShape guarantee the whole row is tappable, independent
+    /// of how the sibling row content happens to size the surrounding ZStack.
+    var selectionBackgroundButton: some View {
+        Button {
+            rootModel.setSelected(sheetModel, parent: sheetModel)
+        } label: {
+            Rectangle().fill(.clear)
+        }
+        .buttonStyle(.plain)
+        .contentShape(.rect)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityLabel(Text("Select \(sheetModel.name.withoutLink())", bundle: .module))
+    }
+
+    @ViewBuilder var selectionBorder: some View {
+        if sheetModel.isSelected {
+            let tint = sheetModel.source.typeId.tint
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(tint.opacity(0.08))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(colors: [tint, tint.opacity(0.5)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                        lineWidth: 2
+                    )
+            }
+            .shadow(color: tint.opacity(0.35), radius: 6)
         }
     }
     
@@ -130,6 +171,17 @@ private extension SheetView {
         ForEach(entries) { entry in
             SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, detailAction: detailAction, detailContent: detailContent)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                // .draggable() below installs its own gesture recognizer that can win
+                // arbitration over the nested selection Button in editor mode, so taps
+                // silently stop reaching it. simultaneousGesture is guaranteed to coexist
+                // with .draggable's gesture rather than compete with it.
+                .simultaneousGesture(TapGesture().onEnded {
+                    if entry.isGeneratedAnswer {
+                        rootModel.commitGeneratedEntry(entry, parent: sheetModel)
+                    } else {
+                        rootModel.setSelected(entry, parent: sheetModel)
+                    }
+                })
 #if !os(tvOS)
                 .applyIf(isEditor) {
                     $0

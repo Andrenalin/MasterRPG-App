@@ -228,7 +228,7 @@ private extension ImageViewer {
 }
 #endif
 
-@Observable
+@MainActor @Observable
 fileprivate final class ImageViewerModel {
     init(offset: CGPoint = .zero, scale: CGFloat = 1, degrees: Double = 0, imageSize: CGSize = .zero) {
         self.offset = offset

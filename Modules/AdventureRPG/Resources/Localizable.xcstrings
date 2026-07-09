@@ -67,6 +67,7 @@
 
     },
     "AI Assistant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

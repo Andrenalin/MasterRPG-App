@@ -12,7 +12,7 @@ public enum AppPersistentActor: String, CaseIterable, Sendable {
     case rpgWidget
 }
 
-public struct PersistentHistoryCleaner: @unchecked Sendable {
+public struct PersistentHistoryCleaner {
     @MainActor public init(container: NSPersistentContainer) {
         self.container = container
         userDefault = UserDefaults.appGroup
@@ -40,11 +40,8 @@ public struct PersistentHistoryCleaner: @unchecked Sendable {
                 try context.execute(deleteHistoryRequest)
                 Logger.persistentHistory.info("Cleaned history before \(cleanupTimestamp, privacy: .public)")
 
-                // Coordinate timestamp updates on MainActor
-                Task { @MainActor in
-                    allActors.forEach { actor in
-                        self.updateTimeStamp(actor: actor, to: cleanupTimestamp)
-                    }
+                Task {
+                    await PersistentHistoryTimestampUpdater.shared.advanceTimestamps(for: allActors, to: cleanupTimestamp)
                     Logger.persistentHistory.info("Updated timestamps for \(allActors.count) actors to \(cleanupTimestamp, privacy: .public)")
                 }
             } catch {
@@ -52,69 +49,131 @@ public struct PersistentHistoryCleaner: @unchecked Sendable {
             }
         }
     }
-
-    @MainActor func updateTimeStamp(actor: AppPersistentActor, to timestamp: Date) {
-        // Never rewind an actor's position — that would make it reprocess history
-        // it has already merged. Only advance actors that lag behind the cleanup point.
-        if let current = userDefault.lastHistoryTransactionTimestamp(for: actor), current >= timestamp { return }
-        userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: timestamp)
-    }
 }
 
-final class PersistentHistoryTrackerManager: @unchecked Sendable {
-    init(container: NSPersistentContainer, currentActor: AppPersistentActor, viewBackupContext: NSManagedObjectContext?) {
-        self.container = container
-        self.currentActor = currentActor
-        self.viewBackupContext = viewBackupContext
-        self.userDefaults = UserDefaults(suiteName: UserDefaults.appGroupString)!
+private actor PersistentHistoryTimestampUpdater {
+    static let shared = PersistentHistoryTimestampUpdater()
 
-        NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange, object: container.persistentStoreCoordinator)
-            .debounce(for: .seconds(1), scheduler: DispatchQueue.global(qos: .utility))
-            .sink { [weak self] _ in
-                self?.processor()
-            }
-            .store(in: &cancellables)
-    }
+    private let userDefault = UserDefaults(suiteName: UserDefaults.appGroupString)!
 
-    let container: NSPersistentContainer
-    let currentActor: AppPersistentActor
-    let viewBackupContext: NSManagedObjectContext?
-    let userDefaults: UserDefaults
-
-    lazy var backgroundContext = { container.newBackgroundContext() }()
-
-    private var cancellables: Set<AnyCancellable> = []
-
-    private func processor() {
-        let fromDate = loadDate()
-
-        backgroundContext.performAndWait {
-            do {
-                let transactions = try fetcher(date: fromDate)
-                if transactions.isEmpty {
-                    // Update timestamp to now even when empty, so we don't keep checking from distantPast
-                    if fromDate == Date.distantPast {
-                        self.userDefaults.updateLastHistoryTransactionTimestamp(for: self.currentActor, to: Date())
-                        Logger.persistentHistory.info("Initialized history timestamp for \(self.currentActor.rawValue)")
-                    }
-                    // Don't log when empty - reduces noise
-                } else {
-                    merger(transaction: transactions)
-                    Logger.persistentHistory.info("Processed \(transactions.count, privacy: .public) transactions")
-                }
-            } catch {
-                Logger.persistentHistory.error("Failed to fetch history: \(error.localizedDescription, privacy: .public)")
-            }
+    func advanceTimestamps(for actors: [AppPersistentActor], to timestamp: Date) {
+        for actor in actors {
+            // Never rewind an actor's position — that would make it reprocess history
+            // it has already merged. Only advance actors that lag behind the cleanup point.
+            if let current = userDefault.lastHistoryTransactionTimestamp(for: actor), current >= timestamp { continue }
+            userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: timestamp)
         }
     }
 }
 
-extension PersistentHistoryTrackerManager {
+final class PersistentHistoryTrackerManager {
+    init(container: NSPersistentContainer, currentActor: AppPersistentActor, viewBackupContext: NSManagedObjectContext?) {
+        let processor = PersistentHistoryProcessor(
+            container: container,
+            currentActor: currentActor,
+            viewBackupContext: viewBackupContext,
+            userDefaults: UserDefaults(suiteName: UserDefaults.appGroupString)!
+        )
+        self.processor = processor
+
+        NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange, object: container.persistentStoreCoordinator)
+            .sink { _ in
+                Task {
+                    await processor.schedule()
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    deinit {
+        cancellables.removeAll()
+        let processor = processor
+        Task {
+            await processor.cancel()
+        }
+    }
+
+    private let processor: PersistentHistoryProcessor
+    private var cancellables: Set<AnyCancellable> = []
+}
+
+private actor PersistentHistoryProcessor {
+    init(
+        container: NSPersistentContainer,
+        currentActor: AppPersistentActor,
+        viewBackupContext: NSManagedObjectContext?,
+        userDefaults: UserDefaults
+    ) {
+        self.currentActor = currentActor
+        self.viewBackupContext = viewBackupContext
+        self.userDefaults = userDefaults
+        self.backgroundContext = container.newBackgroundContext()
+    }
+
+    deinit {
+        debounceTask?.cancel()
+    }
+
+    private let currentActor: AppPersistentActor
+    private let viewBackupContext: NSManagedObjectContext?
+    private let userDefaults: UserDefaults
+    private let backgroundContext: NSManagedObjectContext
+    private var debounceTask: Task<Void, Never>?
+
+    func schedule() {
+        debounceTask?.cancel()
+        debounceTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(1))
+                await self?.process()
+            } catch is CancellationError {
+            } catch {
+                Logger.persistentHistory.error("Persistent history debounce failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    func cancel() {
+        debounceTask?.cancel()
+        debounceTask = nil
+    }
+
+    private func process() {
+        let fromDate = loadDate()
+        let currentActor = currentActor
+        let userDefaults = userDefaults
+        let viewContext = viewBackupContext
+        let backgroundContext = backgroundContext
+
+        do {
+            let transactions = try backgroundContext.performAndWait {
+                try Self.fetcher(date: fromDate, currentActor: currentActor, backgroundContext: backgroundContext)
+            }
+            if transactions.isEmpty {
+                // Update timestamp to now even when empty, so we don't keep checking from distantPast
+                if fromDate == Date.distantPast {
+                    userDefaults.updateLastHistoryTransactionTimestamp(for: currentActor, to: Date())
+                    Logger.persistentHistory.info("Initialized history timestamp for \(currentActor.rawValue)")
+                }
+                // Don't log when empty - reduces noise
+            } else {
+                Self.merge(transactions: transactions, into: viewContext, userDefaults: userDefaults, currentActor: currentActor)
+                Logger.persistentHistory.info("Processed \(transactions.count, privacy: .public) transactions")
+            }
+        } catch {
+            Logger.persistentHistory.error("Failed to fetch history: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+    
     enum Error: String, Swift.Error {
         case historyTransactionConvertionFailed
     }
 
-    func fetcher(date fromDate: Date) throws -> [NSPersistentHistoryTransaction] {
+    private static func fetcher(
+        date fromDate: Date,
+        currentActor: AppPersistentActor,
+        backgroundContext: NSManagedObjectContext
+    ) throws -> [NSPersistentHistoryTransaction] {
         let historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: fromDate)
         if let fetchRequest = NSPersistentHistoryTransaction.fetchRequest {
             var predicates: [NSPredicate] = []
@@ -141,22 +200,25 @@ extension PersistentHistoryTrackerManager {
         return history
     }
     
-    func loadDate() -> Date {
+    private func loadDate() -> Date {
         userDefaults.lastHistoryTransactionTimestamp(for: currentActor) ?? Date.distantPast
     }
-}
 
-extension PersistentHistoryTrackerManager {
-    func merger(transaction: [NSPersistentHistoryTransaction]) {
+    private static func merge(
+        transactions: [NSPersistentHistoryTransaction],
+        into viewBackupContext: NSManagedObjectContext?,
+        userDefaults: UserDefaults,
+        currentActor: AppPersistentActor
+    ) {
         guard let viewContext = viewBackupContext else { return }
-        viewContext.perform {
-            transaction.forEach { transaction in
+        viewContext.performAndWait {
+            transactions.forEach { transaction in
                 let userInfo = transaction.objectIDNotification().userInfo ?? [:]
                 NSManagedObjectContext.mergeChanges(fromRemoteContextSave: userInfo, into: [viewContext])
             }
         }
 
-        guard let lastTimestamp = transaction.last?.timestamp else { return }
+        guard let lastTimestamp = transactions.last?.timestamp else { return }
         userDefaults.updateLastHistoryTransactionTimestamp(for: currentActor, to: lastTimestamp)
     }
 }

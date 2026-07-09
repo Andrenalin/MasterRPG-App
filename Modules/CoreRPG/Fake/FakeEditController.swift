@@ -11,13 +11,11 @@ struct FakeEditController: EditControllable {
     var linkRegisterController: LinkRegisterController
 
     var editorModel: ItemEditorModel
-    var sheetRootModel: SheetRootModel
-    var sheetEditorModel: SheetEditorModel
 
     var cacheItemListModel: CacheItemListModel
 
     @MainActor
-    static let fake = FakeEditController(itemControllable: FakeItemController.fake, tagController: TagController(), linkRegisterController: LinkRegisterController(root: nil), editorModel: ItemEditorModel(), sheetRootModel: SheetRootModel.fake, sheetEditorModel: SheetEditorModel(), cacheItemListModel: CacheItemListModel())
+    static let fake = FakeEditController(itemControllable: FakeItemController.fake, tagController: TagController(), linkRegisterController: LinkRegisterController(root: nil), editorModel: ItemEditorModel(sheetEditorModel: SheetEditorModel()), cacheItemListModel: CacheItemListModel())
 }
 
 extension FakeEditController: EntryDataEditable {
@@ -59,7 +57,10 @@ extension SheetRootModel {
 
 // Breaks the static fake cycle: ItemRootController.fake -> FakeEditController.fake -> SheetRootModel.fake.
 private struct FakeSheetItemRoot: ItemRootControllable {
-    var rootManager: RootManager { RootManager(anyRoot: self) }
+    var rootManager: RootManager? {
+        get { RootManager(anyRoot: self) }
+        set {}
+    }
     var configurable: ModuleConfigurable { FakeModuleConfiguration() }
     var navigationModel: ModuleNavigationModel { ModuleNavigationModel() }
     var inspectorEditorLinkModel: EditorLinkModel? { nil }

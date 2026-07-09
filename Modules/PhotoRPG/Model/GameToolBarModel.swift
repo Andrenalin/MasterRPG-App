@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 final class GameToolBarModel {
     var degrees: Double = 0
 }

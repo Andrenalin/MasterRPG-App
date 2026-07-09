@@ -2,8 +2,8 @@
 
 import SwiftUI
 
-@Observable
-final class FakeItemModel: Identifiable, @unchecked Sendable {
+@MainActor @Observable
+final class FakeItemModel: nonisolated Identifiable, @unchecked Sendable {
     
     var entries: [FakeEntryModel]
     
@@ -18,19 +18,19 @@ final class FakeItemModel: Identifiable, @unchecked Sendable {
     
     typealias Entry = FakeEntryModel
     
-    init(id: UUID = UUID(), name: String, category: ItemListCategory = .photo, description: String = "Long Descripotion test", tags: [String] = ["Test"], displayState: Int = 0, isGroupHiddenToggle: Bool = false, fileUrl: FileUrl? = nil, entries: [FakeEntryModel] = []) {
+    nonisolated init(id: UUID = UUID(), name: String, category: ItemListCategory = .photo, description: String = "Long Descripotion test", tags: [String] = ["Test"], displayState: Int = 0, isGroupHiddenToggle: Bool = false, fileUrl: FileUrl? = nil, entries: [FakeEntryModel] = []) {
         self.id = id
-        self.name = name
-        self.category = category
-        self.description = description
-        self.tags = tags
-        self.displayState = displayState
-        self.isGroupHiddenToggle = isGroupHiddenToggle
-        self.fileUrl = fileUrl
-        self.entries = entries
+        self._name = name
+        self._category = category
+        self._description = description
+        self._tags = tags
+        self._displayState = displayState
+        self._isGroupHiddenToggle = isGroupHiddenToggle
+        self._fileUrl = fileUrl
+        self._entries = entries
     }
     
-    var id: UUID
+    nonisolated let id: UUID
     var name: String
     var category: ItemListCategory
     var description: String
@@ -40,8 +40,8 @@ final class FakeItemModel: Identifiable, @unchecked Sendable {
     var fileUrl: FileUrl?
     var parentId: UUID?
     
-    static let empty: FakeItemModel =  empty(UUID())
-    static func empty(_ id: UUID) -> FakeItemModel {
+    nonisolated static var empty: FakeItemModel { empty(UUID()) }
+    nonisolated static func empty(_ id: UUID) -> FakeItemModel {
         FakeItemModel(id: id, name: "", category: ItemListCategory.all, description: "", tags: [], displayState: 0, isGroupHiddenToggle: false)
     }
         
@@ -63,9 +63,9 @@ final class FakeItemModel: Identifiable, @unchecked Sendable {
     
     func merge(_ other: FakeItemModel) -> Self { self }
     
-    static func == (lhs: FakeItemModel, rhs: FakeItemModel) -> Bool { false }
+    nonisolated static func == (lhs: FakeItemModel, rhs: FakeItemModel) -> Bool { false }
     
-    func hash(into hasher: inout Hasher) {
+    nonisolated func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
     
@@ -80,11 +80,11 @@ final class FakeItemModel: Identifiable, @unchecked Sendable {
         case _isGroupHiddenToggle
     }
     
-    init(from decoder: any Decoder) throws {
+    nonisolated init(from decoder: any Decoder) throws {
         let container: KeyedDecodingContainer<FakeItemModel.CodingKeys> = try decoder.container(keyedBy: FakeItemModel.CodingKeys.self)
         
         self._entries = try container.decode([FakeEntryModel].self, forKey: FakeItemModel.CodingKeys._entries)
-        self._id = try container.decode(UUID.self, forKey: FakeItemModel.CodingKeys._id)
+        self.id = try container.decode(UUID.self, forKey: FakeItemModel.CodingKeys._id)
         self._name = try container.decode(String.self, forKey: FakeItemModel.CodingKeys._name)
         self._category = try container.decode(ItemListCategory.self, forKey: FakeItemModel.CodingKeys._category)
         self._description = try container.decode(String.self, forKey: FakeItemModel.CodingKeys._description)
@@ -94,18 +94,22 @@ final class FakeItemModel: Identifiable, @unchecked Sendable {
         
     }
     
-    final func encode(to encoder: any Encoder) throws {
-        var container: KeyedEncodingContainer<FakeItemModel.CodingKeys> = encoder.container(keyedBy: FakeItemModel.CodingKeys.self)
-        
-        try container.encode(self._entries, forKey: FakeItemModel.CodingKeys._entries)
-        try container.encode(self._id, forKey: FakeItemModel.CodingKeys._id)
-        try container.encode(self._name, forKey: FakeItemModel.CodingKeys._name)
-        try container.encode(self._category, forKey: FakeItemModel.CodingKeys._category)
-        try container.encode(self._description, forKey: FakeItemModel.CodingKeys._description)
-        try container.encode(self._tags, forKey: FakeItemModel.CodingKeys._tags)
-        try container.encode(self._displayState, forKey: FakeItemModel.CodingKeys._displayState)
-        try container.encode(self._isGroupHiddenToggle, forKey: FakeItemModel.CodingKeys._isGroupHiddenToggle)
+    nonisolated final func encode(to encoder: any Encoder) throws {
+        nonisolated(unsafe) let encoder = encoder
+        try MainActor.assumeIsolated {
+            var container: KeyedEncodingContainer<FakeItemModel.CodingKeys> = encoder.container(keyedBy: FakeItemModel.CodingKeys.self)
+            
+            try container.encode(self._entries, forKey: FakeItemModel.CodingKeys._entries)
+            try container.encode(self.id, forKey: FakeItemModel.CodingKeys._id)
+            try container.encode(self._name, forKey: FakeItemModel.CodingKeys._name)
+            try container.encode(self._category, forKey: FakeItemModel.CodingKeys._category)
+            try container.encode(self._description, forKey: FakeItemModel.CodingKeys._description)
+            try container.encode(self._tags, forKey: FakeItemModel.CodingKeys._tags)
+            try container.encode(self._displayState, forKey: FakeItemModel.CodingKeys._displayState)
+            try container.encode(self._isGroupHiddenToggle, forKey: FakeItemModel.CodingKeys._isGroupHiddenToggle)
+        }
     }
 }
 
-extension FakeItemModel: ItemDataAccessable, ItemDiffComparable, ItemDuplicatable, ItemLinkRegistable, Equatable, Hashable, Codable {}
+extension FakeItemModel: nonisolated ItemDataAccessable, nonisolated ItemDiffComparable, nonisolated ItemDuplicatable, nonisolated ItemLinkRegistable {}
+extension FakeItemModel: nonisolated Equatable, nonisolated Hashable, nonisolated Codable {}

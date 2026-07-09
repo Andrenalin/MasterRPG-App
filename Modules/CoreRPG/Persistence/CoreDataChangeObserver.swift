@@ -5,6 +5,12 @@ import Combine
 import Foundation
 import os.log
 
+/// Do NOT mark this `@MainActor`. `context` is frequently a private-queue background
+/// context (see `CloudKitCoreDataPersistenceController`'s "background_context"), and Core
+/// Data posts `didMergeChangesObjectIDsNotification` synchronously on that context's own
+/// queue — not necessarily the main thread. `@MainActor` here makes the Combine closures
+/// below inferred main-actor-isolated while Combine still invokes them off-thread, which
+/// broke Core Data's thread confinement in practice (see git history for this file).
 public final class CoreDataChangeObserver: @unchecked Sendable {
     typealias DataType = (NSManagedObject & CoreDataId)
 
@@ -14,34 +20,32 @@ public final class CoreDataChangeObserver: @unchecked Sendable {
 
     public func observeCoreDataChanges(from context: NSManagedObjectContext, entity: NSEntityDescription, handler: @escaping @Sendable ([UUID], [UUID], [UUID]) -> Void) {
         let localCtx = context
-        localCtx.performAndWait {
-            observer = NotificationCenter.default
-                .publisher(for: NSManagedObjectContext.didMergeChangesObjectIDsNotification, object: localCtx)
-                .compactMap { notification -> (deleted: [UUID], inserted: [UUID], updated: [UUID])? in
-                    // Pull the (Sendable) object ID sets out of the non-Sendable notification
-                    // before hopping onto the context's queue.
-                    let idsByType = ChangeType.allCases.reduce(into: [ChangeType: Set<NSManagedObjectID>]()) { result, type in
-                        if let ids = notification.userInfo?[type.userInfoKey] as? Set<NSManagedObjectID> {
-                            result[type] = ids
-                        }
+        observer = NotificationCenter.default
+            .publisher(for: NSManagedObjectContext.didMergeChangesObjectIDsNotification, object: localCtx)
+            .compactMap { notification -> (deleted: [UUID], inserted: [UUID], updated: [UUID])? in
+                // Pull the (Sendable) object ID sets out of the non-Sendable notification
+                // before hopping onto the context's queue.
+                let idsByType = ChangeType.allCases.reduce(into: [ChangeType: Set<NSManagedObjectID>]()) { result, type in
+                    if let ids = notification.userInfo?[type.userInfoKey] as? Set<NSManagedObjectID> {
+                        result[type] = ids
                     }
-                    guard !idsByType.isEmpty else { return nil }
+                }
+                guard !idsByType.isEmpty else { return nil }
 
-                    // Resolve UUIDs inside the context's queue — NSManagedObjects must
-                    // never escape it; only the value-type UUIDs leave the block.
-                    return localCtx.performAndWait {
-                        let deleted = Self.uuids(for: idsByType[.deleted], type: .deleted, context: localCtx, entity: entity)
-                        let inserted = Self.uuids(for: idsByType[.inserted], type: .inserted, context: localCtx, entity: entity)
-                        let updated = Self.uuids(for: idsByType[.updated], type: .updated, context: localCtx, entity: entity)
-                        guard !deleted.isEmpty || !inserted.isEmpty || !updated.isEmpty else { return nil }
-                        return (deleted, inserted, updated)
-                    }
+                // Resolve UUIDs inside the context's queue — NSManagedObjects must
+                // never escape it; only the value-type UUIDs leave the block.
+                return localCtx.performAndWait {
+                    let deleted = Self.uuids(for: idsByType[.deleted], type: .deleted, context: localCtx, entity: entity)
+                    let inserted = Self.uuids(for: idsByType[.inserted], type: .inserted, context: localCtx, entity: entity)
+                    let updated = Self.uuids(for: idsByType[.updated], type: .updated, context: localCtx, entity: entity)
+                    guard !deleted.isEmpty || !inserted.isEmpty || !updated.isEmpty else { return nil }
+                    return (deleted, inserted, updated)
                 }
-                .sink { deleted, inserted, updated in
-                    Logger.coreDataChangeObserver.debug("Handler D:\(deleted.count) I:\(inserted.count) U:\(updated.count)")
-                    handler(deleted, inserted, updated)
-                }
-        }
+            }
+            .sink { deleted, inserted, updated in
+                Logger.coreDataChangeObserver.debug("Handler D:\(deleted.count) I:\(inserted.count) U:\(updated.count)")
+                handler(deleted, inserted, updated)
+            }
     }
 }
 

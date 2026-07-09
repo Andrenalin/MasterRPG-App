@@ -3,151 +3,65 @@
 import AVFoundation
 import CoreRPG
 import CoreData
-import SwiftData
 import SwiftUI
 
-@MainActor @Observable
-public final class AudioRootModel {
+@MainActor @Observable public final class AudioRootModel {
     @MainActor init(tagController: TagController) {
-        self.tagController = tagController
-
         let config = ModuleConfiguration()
         self.config = config
 
+        let navigationModel = ModuleNavigationModel()
+        self.navigationModel = navigationModel
         self.itemSelectionModel = ItemSelectionModel()
-        self.navigationModel = ModuleNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
+        self.removeEntryListModel = RemoveEntryListModel()
 
-        self.searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
-        self.listDisplayModel = ListDisplayModel()
-
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
+        self.searchModel = searchModel
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        
         let audioPlayerModel = AudioPlayerModel()
         self.audioPlayerModel = audioPlayerModel
 
         let itemController = ItemController(config: config)
         self.itemController = itemController
-        self.audioController = AudioController(itemController: itemController, model: audioPlayerModel)
-        self.sheetController = SheetController(itemController: itemController)
-    }
-
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
-        self.context = context
-        self.batchContext = batchContext
-        self.rootManager = rootManager
-        self._adventureRootControllable = adventureRootControllable
-        self._linkRegisterController = linkRegisterController
-
-        _importController = nil
-        _searchController = nil
-        _folderListController = nil
-        _folderLinkController = nil
-        _rootController = nil
-
-        itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
-        itemController.itemDataModel.linkRegisterController = linkRegisterController
-
-        _exportController = ExportController(hubControllable: adventureRootControllable, itemController: itemController)
-        _gameController = GameController(itemController: itemController, audioController: audioController, exportController: exportController)
-        _linkController = LinkController(itemController: itemController, audioController: audioController, gameController: gameController)
-        _editController = EditController(rootManager: rootManager, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: tagController)
-
-        syncTask?.cancel()
-        if let dataControllable = itemController.itemDataModel.dataController, let context {
-            let controller = SyncDataController(context: context, dataControllable: dataControllable, itemController: itemController)
-            syncDataController = controller
-            syncTask = controller.start()
-        }
-    }
-
-    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = {
-        OpenFileWindowModel()
-    }()
-
-    private var _rootManager: RootManager?
-    public var rootManager: RootManager {
-        get { _rootManager! }
-        set { _rootManager = newValue }
-    }
-    private(set) var context: NSManagedObjectContext?
-    private(set) var batchContext: NSManagedObjectContext?
-    private var _adventureRootControllable: (any RootExportControllable)?
-    var adventureRootControllable: any RootExportControllable { _adventureRootControllable! }
-    private var _linkRegisterController: LinkRegisterController?
-    var linkRegisterController: LinkRegisterController { _linkRegisterController! }
-
-    public let config: ModuleConfiguration
-    let tagController: TagController
-    let searchModel: SearchModel
-    let listDisplayModel: ListDisplayModel
-
-    @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: ModuleNavigationModel
-    @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
-
-    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
-    public let removeEntryListModel = RemoveEntryListModel()
-
-    public let audioPlayerModel: AudioPlayerModel
-
-    let audioController: AudioController
-
-    public var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
-    @ObservationIgnored var syncDataController: SyncDataController?
-    @ObservationIgnored var syncTask: Task<Void, Never>?
-
-    let itemController: ItemController
-    @ObservationIgnored private var _editController: EditController?
-    var editController: EditController { _editController! }
-    @ObservationIgnored private var _exportController: ExportController?
-    var exportController: ExportController { _exportController! }
-    @ObservationIgnored private var _importController: ImportController?
-    var importController: ImportController {
-        if let controller = _importController { return controller }
-        let controller = ImportController(itemController: itemController, editController: editController)
-        _importController = controller
-        return controller
-    }
-    @ObservationIgnored private var _gameController: GameController?
-    var gameController: GameController { _gameController! }
-    @ObservationIgnored private var _linkController: LinkController?
-    var linkController: LinkController { _linkController! }
-    @ObservationIgnored private var _searchController: SearchController?
-    var searchController: SearchController {
-        if let controller = _searchController { return controller }
-        let controller = SearchController(itemController: itemController)
-        _searchController = controller
-        return controller
-    }
-    let sheetController: SheetController
-
-    @ObservationIgnored private var _folderListController: FolderListController?
-    var folderListController: FolderListController {
-        if let controller = _folderListController { return controller }
+        let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
+        self.audioController = audioController
+        let sheetController = SheetController(itemController: itemController)
+        self.sheetController = sheetController
+        let exportController = ExportController(itemController: itemController)
+        self.exportController = exportController
+        let gameController = GameController(itemController: itemController, audioController: audioController, exportController: exportController)
+        self.gameController = gameController
+        let linkController = LinkController(itemController: itemController, audioController: audioController, gameController: gameController)
+        self.linkController = linkController
+        let editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: tagController)
+        self.editController = editController
+        let importController = ImportController(itemController: itemController, editController: editController)
+        self.importController = importController
+        let searchController = SearchController(itemController: itemController)
+        self.searchController = searchController
+        self.viewController = ViewController()
+        
         let folderListModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
-        let controller = FolderListController(listModel: folderListModel, listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))
-        _folderListController = controller
-        return controller
-    }
-
-    @ObservationIgnored private var _folderLinkController: FolderListController?
-    var folderLinkController: FolderListController {
-        if let controller = _folderLinkController { return controller }
+        let folderListController = FolderListController(listModel: folderListModel, listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))
+        self.folderListController = folderListController
+        
         let folderLinkModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
         let linkDisplayModel = listDisplayModel.newListDisplayModel
-        let controller = FolderListController(listModel: folderLinkModel, listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
-        _folderLinkController = controller
-        return controller
-    }
+        let folderLinkController = FolderListController(listModel: folderLinkModel, listDisplayModel: linkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: linkDisplayModel))
+        self.folderLinkController = folderLinkController
 
-    @ObservationIgnored public lazy var viewController: ViewController = {
-        ViewController()
-    }()
-
-    @MainActor @ObservationIgnored private var _rootController: ItemRootController?
-    @MainActor public var rootController: ItemRootController {
-        if let controller = _rootController { return controller }
-        let controller = ItemRootController(
-            rootManager: rootManager,
+        self.editorLinkModel = EditorLinkModel(
+            folderListController: folderLinkController,
+            firstRow: [],
+            selection: .none
+        )
+        self.openFileWindowModel = OpenFileWindowModel()
+        
+        self.rootController = ItemRootController(
+            rootManager: nil,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
@@ -167,22 +81,70 @@ public final class AudioRootModel {
             sheetControllable: sheetController,
             viewControllable: viewController
         )
-        _rootController = controller
-        return controller
     }
 
-    @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
-        EditorLinkModel(
-            rootManager: RootManager(anyRoot: self),
-            folderListController: folderLinkController,
-            firstRow: [],
-            selection: .none
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
+        rootController.rootManager = rootManager
+        
+        itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
+        itemController.itemDataModel.linkRegisterController = linkRegisterController
+
+        exportController.exportModel.hubControllable = adventureRootControllable
+        editController.editorModel.sheetRootModel = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: linkController,
+            sheetControllable: sheetController,
+            itemId: UUID(),
+            isEditor: true,
+            editorModel: editController.editorModel.sheetEditorModel
         )
-    }()
+        editorLinkModel.rootManager = rootManager
+        
+        syncTask?.cancel()
+        if let dataControllable = itemController.itemDataModel.dataController, let context {
+            let controller = SyncDataController(context: context, dataControllable: dataControllable, itemController: itemController)
+            syncDataController = controller
+            syncTask = controller.start()
+        }
+    }
+
+    public let config: ModuleConfiguration
+    @MainActor public var navigationModel: ModuleNavigationModel
+    @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
+    @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
+    public let removeEntryListModel: RemoveEntryListModel
+
+    let searchModel: SearchModel
+    let listDisplayModel: ListDisplayModel
+    
+    public let audioPlayerModel: AudioPlayerModel
+
+    @ObservationIgnored let audioController: AudioController
+    @ObservationIgnored let itemController: ItemController
+    @ObservationIgnored let editController: EditController
+    @ObservationIgnored let exportController: ExportController
+    @ObservationIgnored let gameController: GameController
+    @ObservationIgnored let importController: ImportController
+    @ObservationIgnored let linkController: LinkController
+    @ObservationIgnored let searchController: SearchController
+    @ObservationIgnored let sheetController: SheetController
+    @MainActor @ObservationIgnored public let rootController: ItemRootController
+    @ObservationIgnored public let viewController: ViewController
+
+    @ObservationIgnored let folderListController: FolderListController
+    @ObservationIgnored let folderLinkController: FolderListController
+
+    @ObservationIgnored var syncDataController: SyncDataController?
+    @ObservationIgnored var syncTask: Task<Void, Never>?
+
+    @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
+    @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel
 }
 
-@MainActor
-extension AudioRootModel: ItemRootControllable {
+@MainActor extension AudioRootModel: ItemRootControllable {
+    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
+
+    public var rootManager: RootManager? { rootController.rootManager }
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
@@ -194,22 +156,12 @@ extension AudioRootModel: ItemRootControllable {
 }
 
 extension AudioRootModel {
-    public var exportControllable: any ExportControllable {
-        exportController as ExportControllable
-    }
-    public var importControllable: any ImportControllable {
-        importController as ImportControllable
-    }
-    public var gameControllable: any GameControllable {
-        gameController
-    }
-    @MainActor public var itemControllable: any ItemControllable {
-        itemController
-    }
+    public var exportControllable: any ExportControllable { exportController }
+    public var importControllable: any ImportControllable { importController }
+    public var gameControllable: any GameControllable { gameController }
+    @MainActor public var itemControllable: any ItemControllable { itemController }
     public var searchControllable: any SearchControllable { searchController }
-    public var audioGameControllable: any (GameControllable & AudioGameStoreable) {
-        gameController
-    }
+    public var audioGameControllable: any (GameControllable & AudioGameStoreable) { gameController }
 }
 
 // MARK: - AudioPlayer

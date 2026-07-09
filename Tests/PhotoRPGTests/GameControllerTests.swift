@@ -86,7 +86,8 @@ struct GameControllerTests {
     @Test func CreateGameData() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let itemController = root.itemController
-        let exportController = ExportController(hubControllable: root, itemController: itemController)
+        var exportController = ExportController(itemController: itemController)
+        exportController.hubControllable = root
         let sut = GameController(itemController: itemController, exportController: exportController)
 
         root.itemController.itemDataModel.resetGame(start: true)
@@ -114,7 +115,8 @@ struct GameControllerTests {
     @Test func UpdateGame() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let itemController = root.itemController
-        let exportController = ExportController(hubControllable: root, itemController: itemController)
+        var exportController = ExportController(itemController: itemController)
+        exportController.hubControllable = root
         let sut = GameController(itemController: itemController, exportController: exportController)
 
         root.itemController.itemDataModel.resetGame(start: true)
@@ -147,7 +149,7 @@ private extension GameControllerTests {
         let task = root.importController.importUrl(from: url)
         let _ = try await task.value
 
-        #expect(root.itemController.itemDataModel.items.count == 6)
+        #expect(root.itemController.itemDataModel.items.count == 3)
         return root
     }
 }

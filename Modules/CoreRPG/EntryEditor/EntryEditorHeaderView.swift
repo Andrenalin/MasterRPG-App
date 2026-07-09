@@ -17,25 +17,17 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     var body: some View {
         HStack(spacing: 12) {
             dismissButton
-            
+
             dropLinkArea
-            
+
             saveButton
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 8)
-        
-#if os(macOS)
-        .focusable()
-        .onKeyPress(.escape) {
-            withAnimation { editorModel.entryId = nil }
-            return .handled
-        }
-#endif
     }
-    
+
     // MARK: - Dismiss Button
-    
+
     private var dismissButton: some View {
         Button {
             withAnimation { editorModel.entryId = nil }
@@ -44,6 +36,9 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
         }
         .padding(12)
         .foregroundStyle(.primary)
+#if os(macOS)
+        .keyboardShortcut(.cancelAction)
+#endif
 #if !os(visionOS)
         .glassEffectAll(.regular.interactive())
 #endif

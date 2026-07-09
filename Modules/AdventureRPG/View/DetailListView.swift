@@ -34,7 +34,6 @@ struct DetailListView: View {
             if !model.specialCategory && !root.openFileWindowModel.showItem {
                 ControlGroup {
 #if !os(tvOS)
-                    AdventureAIAssistantButton(root: root, model: model)
                     AdventureExtractToolBarButton(model: model)
 #endif
                 }

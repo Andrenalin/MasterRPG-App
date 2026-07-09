@@ -3,7 +3,7 @@
 #if os(iOS)  || os(visionOS) || os(tvOS)
 import SwiftUI
 
-@Observable final class IosAppDelegate: NSObject, UIApplicationDelegate {
+@MainActor @Observable final class IosAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions:
                      [UIApplication.LaunchOptionsKey: Any]?) -> Bool {

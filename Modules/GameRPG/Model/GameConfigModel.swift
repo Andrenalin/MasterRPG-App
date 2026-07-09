@@ -34,11 +34,17 @@ struct GameConfigModel: Equatable, Identifiable, Codable, Sendable {
     static let empty = GameConfigModel(id: UUID(), state: .stopped, master: .empty)
 }
 
-// Dynamic roster: players, sharing controls, and features. Changes on every join/leave.
-struct GameRosterModel: Equatable, Codable, Sendable {
-    var players: [PlayerGameModel] = []
+// Dynamic sharing controls and feature gates. Changes while the game is running.
+struct GameControlModel: Equatable, Codable, Sendable {
     var controls: [SharingControlModel] = []
     var features: GameFeatureModel = GameFeatureModel()
+
+    static let empty = GameControlModel()
+}
+
+// Dynamic roster: players joining or leaving the game.
+struct GameRosterModel: Equatable, Codable, Sendable {
+    var players: [PlayerGameModel] = []
 
     static let empty = GameRosterModel()
 }

@@ -45,9 +45,7 @@ public extension ExportControllable {
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
     func exportUrl(isSaveGame: Bool) -> URL {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyyMMdd"
-        let now = dateFormatter.string(from: Date())
+        let now = Date.now.formatted(.iso8601.year().month().day().dateSeparator(.omitted))
         let name = isSaveGame ? "SavedGame.gms" : "Export.gmz"
         return URL.cachesDirectory.appending(path: "\(now)-\(name)")
     }
@@ -173,34 +171,26 @@ public extension ExportControllable {
 
         await logExport(title: "extract", count: allIds.count, exportModel: exportModel)
 
-        let indexModel = ExportIndexModel(index: allIds.startIndex)
+        let version = itemControllable.itemDataModel.version
+        try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: module.rawValue, version: version))
 
-        let dataStream = AsyncThrowingStream<ExportStream, Error> { () async throws -> ExportStream? in
-            let index = await indexModel.index
-            guard index < allIds.endIndex else { return nil }
-            let itemId = allIds[index]
-            await indexModel.update(index: allIds.index(after: index))
+        for itemId in allIds {
+            try Task.checkCancellation()
             guard let item = await self.itemControllable.item(for: itemId, fullIds: fullIds, partialIds: partialIds) else {
                 throw ItemDataExportableError.writeError
             }
             // Models may be @MainActor-isolated; encode on the main actor so the
             // Codable implementation (wire format) stays untouched.
             let data = try await MainActor.run { try JSONEncoder().encode(item) }
-            return ExportStream(id: itemId, data: data)
-        }
 
-        let version = itemControllable.itemDataModel.version
-        try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: module.rawValue, version: version))
-
-        for try await exportData in dataStream {
-            if await !exportModel.exportWithoutFileData, let data = await inlineFiles(for: exportData.id) {
-                try outputStream.append(counter: data.count, token: ExportDataToken.file.rawValue)
-                try outputStream.write(data: data)
+            if await !exportModel.exportWithoutFileData, let fileData = await inlineFiles(for: itemId) {
+                try outputStream.append(counter: fileData.count, token: ExportDataToken.file.rawValue)
+                try outputStream.write(data: fileData)
             }
-            try outputStream.append(counter: exportData.data.count, token: ExportDataToken.item.rawValue)
-            try outputStream.write(data: exportData.data)
+            try outputStream.append(counter: data.count, token: ExportDataToken.item.rawValue)
+            try outputStream.write(data: data)
             await MainActor.run { exportModel.exportedItems += 1 }
-            try Task.checkCancellation()
+            await Task.yield()
         }
     }
 

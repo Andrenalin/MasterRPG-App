@@ -24,6 +24,11 @@ final class AdventureSessionModel {
     let conversationEngine: ConversationEngine
     var session: LanguageModelSession
 
+    /// The item this session's conversation currently belongs to — used by
+    /// GeneratorRootModel.generatorController(for:itemId:) to clear the transcript
+    /// when the target item changes within the same module.
+    var lastItemId: UUID?
+
     var isLoading: Bool = false
     var isSummarizing: Bool = false
     var isApplyingWindow: Bool = false
@@ -110,6 +115,10 @@ final class AdventureSessionModel {
     // extracting
     var extractSession = LanguageModelSession()
     var extracted: [BlockEntryGenModel.PartiallyGenerated] = []
+    /// True while a stream is actively producing partial results. Callers that need to
+    /// persist the final blocks (rather than every partial update) should watch for the
+    /// true → false transition.
+    var isExtracting: Bool = false
     
     func set(extractSession: LanguageModelSession) {
         self.extractSession = extractSession
@@ -219,8 +228,10 @@ struct AdventureGeneratorController: Sendable {
 
     @MainActor func extract(message: String) {
         guard !model.extractSession.isResponding else { return }
+        model.isExtracting = true
 
         Task {
+            defer { model.isExtracting = false }
             do {
                 let prompt = Prompt {
                     "\(message)"

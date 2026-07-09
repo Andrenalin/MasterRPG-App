@@ -26,7 +26,7 @@ struct TabbedSplitNavigation: View {
 
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
             TabSidebar()
-                .navigationSplitViewColumnWidth(min: 100, ideal: 150, max: 200)
+                .navigationSplitViewColumnWidth(min: 96, ideal: 140, max: 180)
         } content: {
             ManagedPresentationView {
                 appModel.selectedModule
@@ -106,20 +106,13 @@ struct TabSidebar: View {
         } header: {
             Text("Material", bundle: .module)
         }
-        
-        Section {
-            //tabView(tab: .search)
-            
-            tabView(tab: .generator)
-        } header: {
-            Text("Special", bundle: .module)
-        }
     }
     
     @ViewBuilder func tabView(tab: RootRoute) -> some View {
         NavigationLink(to: tab) {
-            Label(tab.title, systemImage: tab.icon)
+            ModuleTabLabel(route: tab)
         }
+        .listItemTint(tab.module.tint)
         .tag(tab)
     }
 }

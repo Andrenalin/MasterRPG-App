@@ -24,13 +24,16 @@ struct DetailEditorView: View {
         .padding()
         .onChange(of: model.id, initial: true) {
             if sheetRootModel == nil {
+                let rootController = root.rootController
+                guard let rootManager = rootController.rootManager else { return }
+
                 sheetRootModel = SheetRootModel(
-                    rootManager: root.rootController.rootManager,
-                    linkControllable: root.rootController.linkControllable,
-                    sheetControllable: root.rootController.sheetControllable,
+                    rootManager: rootManager,
+                    linkControllable: rootController.linkControllable,
+                    sheetControllable: rootController.sheetControllable,
                     itemId: model.id,
                     isEditor: true,
-                    editorModel: root.editController.sheetEditorModel
+                    editorModel: root.editController.editorModel.sheetEditorModel
                 )
             } else {
                 sheetRootModel?.reset(itemId: model.id)

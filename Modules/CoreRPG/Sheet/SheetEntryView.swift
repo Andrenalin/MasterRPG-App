@@ -35,35 +35,41 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
     @Environment(\.navigator) private var navigator
 
     var body: some View {
-        VStack(alignment: .leading) {
-            beforeInline
+        ZStack(alignment: .topLeading) {
+            selectionBackgroundButton
 
-            mainRow
+            VStack(alignment: .leading) {
+                beforeInline
 
-            contentRow
+                mainRow
 
-            detailContent(entryModel)
+                contentRow
 
-            inlineEditorRow
+                detailContent(entryModel)
 
-            afterInline
+                inlineEditorRow
+
+                afterInline
+            }
         }
         .id(entryModel.source.entryId)
         .sheetBorderColor(level: parentModel.level)
         .overlay {
             generatedSelectionBorder
+            selectionBorder
         }
         .contentShape(.rect)
         .animation(.easeInOut(duration: 0.2), value: entryModel.isGeneratedSelected)
+        .animation(.easeInOut(duration: 0.2), value: entryModel.isSelected)
         .onChange(of: entryModel.name) {
             rootModel.updateParent(parentModel)
         }
         .onChange(of: entryModel.description) {
             rootModel.updateParent(parentModel)
         }
-        .applyIf(isEditor) {
+        .applyIf(isEditor || entryModel.isSelected) {
             $0.contextMenuAll {
-                SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, isEditor: isEditor, onlyIcon: false)
+                SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: false)
                 SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor)
                 SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
                     .tint(.red)
@@ -104,7 +110,7 @@ private extension SheetEntryView {
             }
 
             if (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
-                SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, isEditor: isEditor, onlyIcon: true)
+                SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: true)
             }
             
             switch entryModel.sheetType {
@@ -238,6 +244,44 @@ private extension SheetEntryView {
                     entryModel.isGeneratedSelected ? Color.green : Color.secondary.opacity(0.25),
                     lineWidth: entryModel.isGeneratedSelected ? 2 : 1
                 )
+        }
+    }
+
+    /// Fills the full row so a plain tap anywhere that isn't already an interactive
+    /// element (edit/delete buttons, links inside LinkHighlightTextView) selects it —
+    /// or, for an unpersisted AI-generated preview row, commits it into a real entry.
+    /// Placed behind the row content, so those existing controls keep first hit-test priority.
+    /// The explicit frame + contentShape guarantee the whole row is tappable, independent
+    /// of how the sibling row content happens to size the surrounding ZStack.
+    var selectionBackgroundButton: some View {
+        Button {
+            if entryModel.isGeneratedAnswer {
+                rootModel.commitGeneratedEntry(entryModel, parent: parentModel)
+            } else {
+                rootModel.setSelected(entryModel, parent: parentModel)
+            }
+        } label: {
+            Rectangle().fill(.clear)
+        }
+        .buttonStyle(.plain)
+        .contentShape(.rect)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityLabel(Text("Select \(entryModel.name.withoutLink())", bundle: .module))
+    }
+
+    @ViewBuilder var selectionBorder: some View {
+        if entryModel.isSelected {
+            let tint = entryModel.source.typeId.tint
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(tint.opacity(0.08))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(colors: [tint, tint.opacity(0.5)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                        lineWidth: 2
+                    )
+            }
+            .shadow(color: tint.opacity(0.35), radius: 6)
         }
     }
 

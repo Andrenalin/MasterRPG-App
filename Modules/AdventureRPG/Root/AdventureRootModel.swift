@@ -21,6 +21,21 @@ public final class AdventureRootModel {
 
     @MainActor
     init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel?, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
+        let config = ModuleConfiguration()
+        self.config = config
+
+        let navigationModel = ModuleNavigationModel()
+        self.navigationModel = navigationModel
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+        self.linkSelectionModel = config.linkSelectionModel
+        self.removeEntryListModel = RemoveEntryListModel()
+
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
+        self.searchModel = searchModel
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
         self.generatorRoot = generatorRoot
@@ -32,45 +47,80 @@ public final class AdventureRootModel {
         self.characterRoot = characterRoot
         self.weatherRoot = weatherRoot
 
-        let config = ModuleConfiguration()
-        self.config = config
-
-        let listDisplayModel = ListDisplayModel()
-        self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
-        self.searchModel = searchModel
-
-        self.itemSelectionModel = ItemSelectionModel()
-        self.navigationModel = ModuleNavigationModel()
-        self.linkSelectionModel = config.linkSelectionModel
-
         let itemController = ItemController(config: config)
         self.itemController = itemController
-        self.sheetController = SheetController(itemController: itemController)
+        let sheetController = SheetController(itemController: itemController)
+        self.sheetController = sheetController
+        let linkController = LinkController(itemController: itemController)
+        self.linkController = linkController
+        let searchController = SearchController(itemController: itemController)
+        self.searchController = searchController
+        self._viewController = ViewController()
+
+        let folderListDisplayModel = ListDisplayModel(displayMode: .compact)
+        let folderListModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
+        let folderListController = FolderListController(listModel: folderListModel, listDisplayModel: folderListDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: folderListDisplayModel))
+        self.folderListController = folderListController
+
+        let folderLinkDisplayModel = ListDisplayModel(displayMode: .compact)
+        let folderLinkModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
+        let folderLinkController = FolderListController(listModel: folderLinkModel, listDisplayModel: folderLinkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: folderLinkDisplayModel))
+        self.folderLinkController = folderLinkController
+
+        self.editorLinkModel = EditorLinkModel(
+            folderListController: folderLinkController,
+            adventureSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            mapSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            spaceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            weatherSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            firstRow: [.adventure, .map, .value, .table, .weather],
+            secondRow: [.audio, .dice, .pdf, .photo, .space],
+            selection: .map
+        )
+        self.playerLinkModel = EditorLinkModel(
+            folderListController: folderLinkController,
+            audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            spaceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            firstRow: [.table, .pdf, .audio, .photo, .space, .dice],
+            secondRow: [],
+            selection: .table
+        )
+        self.openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
     }
 
     @MainActor public func setUp(root: RootManager, context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?) {
-        self.rootManager = root
-        self.context = context
-
         let linkRegisterController = LinkRegisterController(root: root)
         linkRegisterController.setup(context: context)
         _linkRegisterController = linkRegisterController
 
-        _importController = nil
-        _searchController = nil
-        _folderListController = nil
-        _folderLinkController = nil
-        _rootController = nil
-
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
 
-        _linkController = LinkController(rootManager: rootManager, itemController: itemController)
-        
-        _editController = EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
-        _exportController = ExportController(rootManager: rootManager, root: self, itemController: itemController)
-        _gameController = GameController(rootManager: rootManager, root: self, itemController: itemController, exportController: exportController)
+        linkController.rootManager = root
+        exportController.rootManager = root
+        rootController.rootManager = root
+
+        editController.editorModel.sheetRootModel = SheetRootModel(
+            rootManager: root,
+            linkControllable: linkController,
+            sheetControllable: sheetController,
+            itemId: UUID(),
+            isEditor: true,
+            editorModel: editController.editorModel.sheetEditorModel
+        )
+        editorLinkModel.rootManager = root
+        playerLinkModel.rootManager = root
 
         audioRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
         diceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
@@ -104,120 +154,38 @@ public final class AdventureRootModel {
     let characterRoot: CharacterRootModel
     let weatherRoot: WeatherRootModel
 
-    private var _rootManager: RootManager?
-    public var rootManager: RootManager {
-        get { _rootManager! }
-        set { _rootManager = newValue }
-    }
-    private(set) var context: NSManagedObjectContext?
-
     public let config: ModuleConfiguration
+    @MainActor public var navigationModel: ModuleNavigationModel
+    @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
+    @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
+    public let removeEntryListModel: RemoveEntryListModel
 
     public let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
-    @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: ModuleNavigationModel
-    @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
-
-    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
-    public let removeEntryListModel = RemoveEntryListModel()
-
-    @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
-        EditorLinkModel(
-            rootManager: rootManager,
-            folderListController: folderLinkController,
-            adventureSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            mapSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            spaceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            weatherSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            firstRow: [.adventure, .map, .value, .table, .weather],
-            secondRow: [.audio, .dice, .pdf, .photo, .space],
-            selection: .map
-        )
-    }()
-
-    @MainActor @ObservationIgnored lazy var playerLinkModel: EditorLinkModel = {
-        EditorLinkModel(
-            rootManager: rootManager,
-            folderListController: folderLinkController,
-            audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            spaceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            firstRow: [.table, .pdf, .audio, .photo, .space, .dice],
-            secondRow: [],
-            selection: .table
-        )
-    }()
-
-    @MainActor @ObservationIgnored lazy public var openFileWindowModel: OpenFileWindowModel = { OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
-    }()
-
-    @ObservationIgnored var syncDataController: SyncDataController?
-    @ObservationIgnored var syncTask: Task<Void, Never>?
 
     let itemController: ItemController
-    @ObservationIgnored private var _linkController: LinkController?
-    var linkController: LinkController { _linkController! }
+    @ObservationIgnored var linkController: LinkController
     let sheetController: SheetController
-    @ObservationIgnored private var _editController: EditController?
-    var editController: EditController { _editController! }
-    @ObservationIgnored private var _exportController: ExportController?
-    var exportController: ExportController { _exportController! }
-    @ObservationIgnored private var _importController: ImportController?
-    var importController: ImportController {
-        if let controller = _importController { return controller }
-        let controller = ImportController(root: self, itemController: itemController)
-        _importController = controller
-        return controller
-    }
-    @ObservationIgnored private var _gameController: GameController?
-    var gameController: GameController { _gameController! }
-    @ObservationIgnored private var _searchController: SearchController?
-    var searchController: SearchController {
-        if let controller = _searchController { return controller }
-        let controller = SearchController(itemController: itemController)
-        _searchController = controller
-        return controller
-    }
+    @ObservationIgnored lazy var editController: EditController = {
+        EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
+    }()
+    @ObservationIgnored lazy var exportController: ExportController = {
+        ExportController(root: self, itemController: itemController)
+    }()
+    @ObservationIgnored lazy var importController: ImportController = {
+        ImportController(root: self, itemController: itemController)
+    }()
+    @ObservationIgnored lazy var gameController: GameController = {
+        GameController(root: self, itemController: itemController, exportController: exportController)
+    }()
+    @ObservationIgnored var searchController: SearchController
 
     @ObservationIgnored private(set) var _linkRegisterController: LinkRegisterController?
     var linkRegisterController: LinkRegisterController { _linkRegisterController! }
 
-    @MainActor @ObservationIgnored private var _folderListController: FolderListControllable?
-    var folderListController: FolderListControllable {
-        if let controller = _folderListController { return controller }
-        let ldm = ListDisplayModel(displayMode: .compact)
-        let controller = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ldm, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: ldm))
-        _folderListController = controller
-        return controller
-    }
-    @MainActor @ObservationIgnored private var _folderLinkController: FolderListControllable?
-    var folderLinkController: FolderListControllable {
-        if let controller = _folderLinkController { return controller }
-        let ldm = ListDisplayModel(displayMode: .compact)
-        let controller = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: ldm, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: ldm))
-        _folderLinkController = controller
-        return controller
-    }
-    @ObservationIgnored public lazy var viewController: ViewController = {
-        ViewController()
-    }()
-
-    @MainActor @ObservationIgnored private var _rootController: ItemRootController?
-    @MainActor public var rootController: ItemRootController {
-        if let controller = _rootController { return controller }
-        let controller = ItemRootController(
-            rootManager: rootManager,
+    @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
+        ItemRootController(
+            rootManager: nil,
             config: config,
             navigationModel: navigationModel,
             inspectorEditorLinkModel: editorLinkModel,
@@ -226,24 +194,37 @@ public final class AdventureRootModel {
             removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
-            exportControllable: exportControllable,
-            gameControllable: gameControllable,
-            importControllable: importControllable,
-            itemControllable: itemControllable,
-            linkControllable: linkControllable,
+            exportControllable: exportController,
+            gameControllable: gameController,
+            importControllable: importController,
+            itemControllable: itemController,
+            linkControllable: linkController,
             folderListControllable: folderListController,
             folderLinkControllable: folderLinkController,
             searchControllable: searchController,
             sheetControllable: sheetController,
-            viewControllable: viewController
+            viewControllable: _viewController
         )
-        _rootController = controller
-        return controller
-    }
+    }()
+    @ObservationIgnored private let _viewController: ViewController
+    public var viewController: ViewController { _viewController }
+
+    @ObservationIgnored let folderListController: FolderListController
+    @ObservationIgnored let folderLinkController: FolderListController
+
+    @ObservationIgnored var syncDataController: SyncDataController?
+    @ObservationIgnored var syncTask: Task<Void, Never>?
+
+    @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
+    @MainActor @ObservationIgnored let playerLinkModel: EditorLinkModel
+    @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel
 }
 
 @MainActor
 extension AdventureRootModel: ItemRootControllable {
+    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
+
+    public var rootManager: RootManager? { rootController.rootManager }
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }

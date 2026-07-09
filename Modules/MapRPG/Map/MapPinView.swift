@@ -4,7 +4,7 @@ import CoreRPG
 import PhotoRPG
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 final class MapPinViewModel {
     init(mapPins: [MapPinModel], pointer: MapPinModel) {
         self.mapPins = mapPins

@@ -53,7 +53,7 @@ struct MapEditorButton: View {
     var body: some View {
         Button {
 #if os(visionOS) || os(macOS)
-            root.editController.sheetEditorModel.itemId = model.id
+            root.editController.editorModel.sheetEditorModel.itemId = model.id
             scenesManager.openWindow(.mapEditor)
 #else
             navigator.navigate(to: MapEditorRoute.mapEditor(model.id))
@@ -95,10 +95,10 @@ struct AddEntryButton: View {
             withAnimation {
                 root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                 let entryId = root.editController.addNewEntry(itemId: model.id)
-                root.editController.sheetEditorModel.entryId = entryId
+                root.editController.editorModel.sheetEditorModel.entryId = entryId
                 Task {
                     try? await Task.sleep(for: .seconds(0.25))
-                    root.editController.sheetEditorModel.scrollEntryId = entryId
+                    root.editController.editorModel.sheetEditorModel.scrollEntryId = entryId
                 }
             }
         } label: {

@@ -8,28 +8,15 @@ struct DetailEditorView: View {
     let root: MapRootModel
     let model: MapModel
 
-    @State private var sheetRootModel: SheetRootModel?
-
     var body: some View {
         DetailSelectionEditorView(root: root, model: model)
             .onChange(of: model.id, initial: true) {
-                if sheetRootModel == nil {
-                    sheetRootModel = SheetRootModel(
-                        rootManager: root.rootController.rootManager,
-                        linkControllable: root.rootController.linkControllable,
-                        sheetControllable: root.rootController.sheetControllable,
-                        itemId: model.id,
-                        isEditor: true,
-                        editorModel: root.editController.sheetEditorModel
-                    )
-                } else {
-                    sheetRootModel?.reset(itemId: model.id)
-                }
+                root.editController.editorModel.sheetRootModel?.reset(itemId: model.id)
             }
 
         DisplayConfigEditor(model: model)
 
-        if let sheetRootModel {
+        if let sheetRootModel = root.editController.editorModel.sheetRootModel {
             SheetRootEditorView(
                 root: root.rootController,
                 sheetRootModel: sheetRootModel,

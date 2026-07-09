@@ -10,10 +10,7 @@ public final class AccessibilityLabelCache {
 
     private var cache: [String: String] = [:]
 
-    private init() {
-        // Pre-populate common toolbar symbols to avoid first-time overhead
-        preloadCommonSymbols()
-    }
+    private init() {}
 
     /// Get cached accessibility label for an SF Symbol name
     /// Falls back to system generation if not cached
@@ -49,53 +46,9 @@ public final class AccessibilityLabelCache {
         return systemName
     }
 
-    /// Pre-load accessibility labels for frequently used toolbar symbols
-    private func preloadCommonSymbols() {
-        // Common toolbar symbols from GameToolBar.swift and other toolbars
-        let commonSymbols = [
-            "arrow.left.square.fill",
-            "arrow.right.square",
-            "rectangle.3.offgrid.fill",
-            "rectangle.lefthalf.inset.filled",
-            "rectangle.3.offgrid",
-            "person.2.fill",
-            "person.2.slash",
-            "mappin",
-            "mappin.and.ellipse",
-            "hand.point.up.left",
-            "hand.point.up.left.fill",
-            "hexagon",
-            "hexagon.fill",
-            "square.arrowtriangle.4.outward",
-            "square.and.arrow.up",
-            "photo",
-            "photo.fill",
-            "trash",
-            "document.on.document",
-            "square.resize",
-            "xmark",
-            "checkmark",
-            "gear",
-            "ellipsis",
-            "plus",
-            "minus",
-            "pencil",
-            "folder",
-            "list.bullet"
-        ]
-
-        // Warm up the cache on background thread to avoid blocking main thread
-        Task.detached(priority: .utility) { [weak self] in
-            for symbol in commonSymbols {
-                _ = await self?.label(for: symbol)
-            }
-        }
-    }
-
     /// Clear the cache (useful for memory pressure or testing)
     public func clearCache() {
         cache.removeAll()
-        preloadCommonSymbols()
     }
 
     /// Get cache statistics for monitoring

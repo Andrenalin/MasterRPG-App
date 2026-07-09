@@ -11,9 +11,7 @@ public protocol EditControllable: Sendable {
     @MainActor var linkRegisterController: LinkRegisterController { get }
     var tagController: TagController { get }
     
-    var editorModel: ItemEditorModel { get }
-    @MainActor var sheetRootModel: SheetRootModel { get }
-    @MainActor var sheetEditorModel: SheetEditorModel { get }
+    @MainActor var editorModel: ItemEditorModel { get }
 
     // overwrite extensions
     @MainActor func duplicate(item: any ItemDataAccessable) async
@@ -632,9 +630,9 @@ public extension EditControllable {
     }
 
     @MainActor func setCurrentItem(to item: ItemRowTreeModel) {
-        guard sheetEditorModel.itemId != item.model.itemId else {
-            sheetEditorModel.entryId <=> item.model.entryId
-            sheetEditorModel.module = item.model.typeId
+        guard editorModel.sheetEditorModel.itemId != item.model.itemId else {
+            editorModel.sheetEditorModel.entryId <=> item.model.entryId
+            editorModel.sheetEditorModel.module = item.model.typeId
             return
         }
         guard let model = itemControllable.copy(of: item.model.itemId) as? Model else { return }
@@ -642,13 +640,13 @@ public extension EditControllable {
     }
     
     @MainActor func setCurrentItem(model: Model, entryId: UUID? = nil, module: NetworkModules? = nil) {
-        if model.id != sheetEditorModel.itemId {
+        if model.id != editorModel.sheetEditorModel.itemId {
             editorModel.cacheItemListModel.resetItemLink()
             editorModel.undoManaged.resetValue(model)
-            sheetEditorModel.itemId = model.id
+            editorModel.sheetEditorModel.itemId = model.id
         }
-        sheetEditorModel.entryId <=> entryId
-        sheetEditorModel.module = module ?? itemControllable.config.module
+        editorModel.sheetEditorModel.entryId <=> entryId
+        editorModel.sheetEditorModel.module = module ?? itemControllable.config.module
     }
 
     @MainActor func save(with name: String, currentModel: Model) {

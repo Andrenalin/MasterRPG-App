@@ -5,12 +5,14 @@ import SwiftUI
 struct SheetEntryEditButton: View {
     let rootModel: SheetRootModel
     let entryModel: SheetModel
+    let parentModel: SheetModel
     let isEditor: Bool
     let onlyIcon: Bool
-    
+
     var body: some View {
         Button {
             withAnimation {
+                rootModel.setSelected(entryModel, parent: parentModel)
                 entryModel.isEditing.toggle()
                 if isEditor {
                     rootModel.editorModel.setEdit(source: entryModel.source)

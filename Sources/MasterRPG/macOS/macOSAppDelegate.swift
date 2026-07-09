@@ -3,7 +3,7 @@
 #if os(macOS)
 import AppKit
 
-@Observable final class MacAppDelegate: NSObject, NSApplicationDelegate {
+@MainActor @Observable final class MacAppDelegate: NSObject, NSApplicationDelegate {
 }
 
 #endif

@@ -27,8 +27,6 @@ struct EditControllerTests {
         _ = sut.itemControllable
         _ = sut.fileUrlDataController
         _ = sut.linkRegisterController
-        _ = sut.sheetRootModel
-        _ = sut.sheetEditorModel
 
         sut.add(die: extraDie, itemId: itemId)
         #expect(root.itemController.itemOrEmpty(for: itemId).dice.map(\.id) == [baseDie.id, extraDie.id])

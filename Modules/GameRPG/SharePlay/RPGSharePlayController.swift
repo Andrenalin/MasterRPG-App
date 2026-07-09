@@ -39,7 +39,7 @@ final class RPGSharePlayController {
     var canActivateSharePlay: Bool = false
     var stateText: String = "Not Active"
 
-    var gameModel: GameModel?
+    var gameModel: GameRootModel?
     var packageSender: SharePlaySingleQueuePackageSender?
     var packageReceiver = SharePlayPackageReceiver()
 
@@ -85,7 +85,7 @@ final class RPGSharePlayController {
         Logger.sharePlay.debug("SharePlay: deinit")
     }
 
-    func setup(gameModel: GameModel) {
+    func setup(gameModel: GameRootModel) {
         Logger.sharePlay.debug("SharePlay: setup")
         self.gameModel = gameModel
         packageSender = SharePlaySingleQueuePackageSender { [weak self] package in
@@ -377,6 +377,12 @@ extension RPGSharePlayController {
                     delegate?.handleFileUpdate(metadata)
                 } catch let error {
                     Logger.sharePlay.error("Exception in load attachment data \(error.localizedDescription, privacy: .public)")
+                    // The load fails when the master replaced the attachment while
+                    // this participant was still transferring it. Deliver the
+                    // data-less metadata anyway: a reveal without data makes the
+                    // player controller request the payload again from the master,
+                    // instead of silently missing it while everyone else has it.
+                    delegate?.handleFileUpdate(metadata)
                 }
             } catch let error {
                 Logger.sharePlay.error("Exception in load attachment metaData \(error.localizedDescription, privacy: .public)")

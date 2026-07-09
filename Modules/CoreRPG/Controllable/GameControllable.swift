@@ -240,8 +240,24 @@ public extension GameControllable {
         await NetworkCodableDataType(id: id, type: itemControllable.config.module, version: itemControllable.item(for: id)?.version ?? -1)
     }
     
+    /// Whether the item's backing file (if any) is available on this device.
+    /// Items without a file trivially return true.
+    func hasLocalFileData(for itemId: UUID) async -> Bool {
+        guard let fileUrlDataController = itemControllable.fileUrlDataController else { return true }
+        guard let fileUrl = await itemControllable.item(for: itemId)?.fileUrl else { return true }
+        return await fileUrlDataController.hasLocalData(for: fileUrl)
+    }
+
     func reveal(itemId: UUID, data: NetworkCodableDataType, save: Bool) async throws -> Bool {
         guard await hasItem(id: itemId, version: data.version) == false else {
+            // A version match can hide an item whose binary never arrived
+            // (metadata-only import). When the message carries data and the local
+            // file is missing, import anyway instead of dropping the payload —
+            // otherwise the item can never be repaired by a resend.
+            if data.data != nil, await !hasLocalFileData(for: itemId) {
+                try await updateGame(data: data, hide: !save, deep: false)
+                return true
+            }
             _ = await setCurrent(itemId: itemId)
             if save, let model = await gameModel.itemData[itemId] {
                 await itemControllable.replaceForGame(model: model, isInsert: true, policy: .persist)

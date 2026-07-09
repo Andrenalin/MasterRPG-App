@@ -34,23 +34,6 @@ struct GmzFileHeader {
     let version: Int
 }
 
-struct ExportStream {
-    let id: UUID
-    let data: Data
-}
-
-actor ExportIndexModel {
-    init(index: Int = 0) {
-        self.index = index
-    }
-    
-    var index: Int = 0
-    
-    func update(index: Int) {
-        self.index = index
-    }
-}
-
 extension OutputStream {
     func append(fileHeader: GmzFileHeader) throws {
         try append(counter: fileHeader.counter)

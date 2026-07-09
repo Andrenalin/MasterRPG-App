@@ -15,11 +15,31 @@ import SpaceRPG
 struct LogGameController: Sendable {
     weak var root: GameRoot?
     
-    let gameModel: GameModel
+    let gameModel: GameRootModel
+
+    static var noPlayersText: String {
+        String(localized: "No Players", bundle: .module).localizedString
+    }
     
     @MainActor
     var logModels: [LogGameModel] {
         gameModel.logs.compactMap { gameModel.logData[$0] }
+    }
+
+    @MainActor
+    var logRows: [LogMessageRowModel] {
+        let maxPlayers = gameModel.gameRoster.players.count
+        let playerNamesById = Dictionary(uniqueKeysWithValues: gameModel.gameRoster.players.map { ($0.id, $0.name) })
+
+        return gameModel.logs.reversed().compactMap { counter in
+            guard let model = gameModel.logData[counter] else { return nil }
+            return LogMessageRowModel(
+                id: model.id,
+                title: title(for: model),
+                playerNames: logPlayerNames(for: model.players, namesById: playerNamesById),
+                deliveryState: deliveryState(for: model, maxPlayers: maxPlayers)
+            )
+        }
     }
     
     @MainActor
@@ -38,7 +58,7 @@ struct LogGameController: Sendable {
     var attachments: [AttachmentMetadata] {
         gameModel.metaDataAttachments.map {
             AttachmentMetadata(id: $0.key.token, itemId: name(for: $0.key, itemId: $0.value))
-        }
+        }.sorted { $0.id < $1.id }
     }
     
     @MainActor
@@ -61,10 +81,8 @@ struct LogGameController: Sendable {
 
     @MainActor
     func playerNames(for players: [UUID]) -> String {
-        players.map { player -> String in
-            guard let data = gameModel.gameRoster.players.first(where: { $0.id == player }) else { return "Unknown Player" }
-            return data.name
-        }.joined(separator: ", ")
+        let playerNamesById = Dictionary(uniqueKeysWithValues: gameModel.gameRoster.players.map { ($0.id, $0.name) })
+        return namedPlayers(for: players, namesById: playerNamesById)
     }
     
     @MainActor
@@ -104,6 +122,46 @@ struct LogGameController: Sendable {
             fatalError()
         }
     }
+
+    @MainActor
+    private func title(for model: LogGameModel) -> String {
+        "\(model.id): \(model.type.debugDescription) -  \(model.subType.debugDescription) - \(model.module.token) \(name(for: model.module, itemId: model.itemId))"
+    }
+
+    private func logPlayerNames(for players: [UUID], namesById: [UUID: String]) -> String {
+        guard !players.isEmpty else { return Self.noPlayersText }
+        return namedPlayers(for: players, namesById: namesById)
+    }
+
+    private func namedPlayers(for players: [UUID], namesById: [UUID: String]) -> String {
+        players.map { namesById[$0] ?? "Unknown Player" }.joined(separator: ", ")
+    }
+
+    @MainActor
+    private func deliveryState(for model: LogGameModel, maxPlayers: Int) -> LogMessageDeliveryState {
+        guard model.type == .reveal else { return .notTracked }
+        if maxPlayers > 0 && model.players.isEmpty {
+            return .missingPlayers
+        }
+        if model.players.count < maxPlayers {
+            return .partialPlayers
+        }
+        return .allPlayers
+    }
+}
+
+struct LogMessageRowModel: Identifiable, Equatable, Sendable {
+    let id: Int
+    let title: String
+    let playerNames: String
+    let deliveryState: LogMessageDeliveryState
+}
+
+enum LogMessageDeliveryState: Equatable, Sendable {
+    case notTracked
+    case missingPlayers
+    case partialPlayers
+    case allPlayers
 }
 
 struct AttachmentMetadata: Identifiable {

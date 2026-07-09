@@ -61,9 +61,11 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
                 }
         }
         .task {
+#if !os(tvOS)
             // Small delay to ensure smooth appearance
             try? await Task.sleep(for: .milliseconds(100))
             currentFocus = .name
+#endif
         }
     }
     

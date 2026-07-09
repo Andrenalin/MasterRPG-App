@@ -29,6 +29,9 @@ final class PlayerControllerModel: Sendable {
     var asGameMaster = false
     var sendCharacterTask: Task<Void, Never>?
     var proxyFocusTask: Task<Void, Never>?
+    // Map ids with an in-flight full-map re-request, so a burst of mapState
+    // messages cannot trigger a request storm. Cleared when map data arrives.
+    var pendingMapRequests: Set<UUID> = []
 
     func increaseMessageCounter() {
         messageCounter += 1
@@ -106,13 +109,14 @@ extension PlayerController {
         await root.networkStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
         gameModel.hasSendPlayer = false
+        gameModel.pendingMapRequests = []
     }
     
     @MainActor
     func resetPlayers() {
-        let players = root.gameModel.gameRoster.controls.compactMap { $0.show ? $0.id : nil }
+        let players = root.gameModel.gameControl.controls.compactMap { $0.show ? $0.id : nil }
         root.audioRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
-        let playerNames = root.gameModel.gameRoster.controls.map { $0.name }.sorted()
+        let playerNames = root.gameModel.gameControl.controls.map { $0.name }.sorted()
         root.diceRoot.diceGameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
     }
 }
@@ -135,10 +139,19 @@ extension PlayerController {
     
     func send(counter: Int, type: RPGMessageType, subType: RPGMessageActionType = .show, updated: NetworkCodableDataType, useJournal: Bool = false) async {
         Logger.networking.debug("PlayerController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
-        let networtData = await GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subType, gameConfig: root.gameModel.gameConfig, gameRoster: root.gameModel.gameRoster, data: updated)
-        
+        let (gameConfig, gameRoster, gameControl) = await stateSnapshot()
+        let networtData = GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subType, gameConfig: gameConfig, gameRoster: gameRoster, gameControl: gameControl, data: updated)
+
         let useOnTypeJournal = useJournal || updated.type == .audio || updated.type == .photo || updated.type == .space
         await send(model: networtData, useJournal: useOnTypeJournal)
+    }
+
+    /// Captures config, roster and controls in a single MainActor hop so a
+    /// message never carries a torn combination from a concurrent update.
+    func stateSnapshot() async -> (config: GameConfigModel, roster: GameRosterModel, control: GameControlModel) {
+        await MainActor.run {
+            (root.gameModel.gameConfig, root.gameModel.gameRoster, root.gameModel.gameControl)
+        }
     }
     
     private func send(model: GameNetworkModel, useJournal: Bool = false) async {
@@ -159,6 +172,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         await MainActor.run {
             gameModel.sendCharacterTask?.cancel()
             gameModel.sendCharacterTask = nil
+            gameModel.pendingMapRequests = []
         }
         await gameModel.reset(lostMaster: true)
         await gameModel.reset(sendPlayer: false)
@@ -195,13 +209,15 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         let model = event.model
 
         if await !gameModel.asGameMaster {
-            let controls = model.gameRoster.controls
+            let controls = model.gameControl.controls
             if model.gameConfig.isMaster {
-                await root.gameModel.reset(controls: controls)
-                await root.gameModel.reset(master: model.gameConfig.master)
-                await root.gameModel.reset(playerId: root.gameModel.gameConfig.id, player: root.gameModel.gamePlayer, players: model.gameRoster.players)
-                await root.gameModel.reset(features: model.gameRoster.features)
-                await resetPlayers()
+                // One MainActor hop for the whole broadcast: applying config,
+                // controls and roster in separate steps lets concurrent message
+                // builders capture a torn state and send it back to the master.
+                await MainActor.run {
+                    root.gameModel.applyMasterBroadcast(master: model.gameConfig.master, players: model.gameRoster.players, controls: model.gameControl.controls, features: model.gameControl.features)
+                    resetPlayers()
+                }
             }
 
             let configName = await root.gameModel.gameName
@@ -319,7 +335,7 @@ extension PlayerController {
             case .audioList:
                 await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
             case .playAudio:
-                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: model.gameRoster.controls.map { $0.id } + [model.gameConfig.master.id])
+                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: model.gameControl.controls.map { $0.id } + [model.gameConfig.master.id])
                 let isSharePlayActive = await MainActor.run { root.networkStore.sharePlayStore.isActive }
                 if isSharePlayActive && !model.gameConfig.isMaster {
                     // SharePlay: AVPlayerPlaybackCoordinator propagates play() from the initiator.
@@ -336,7 +352,7 @@ extension PlayerController {
     }
 
     func handleDice(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        let features = await root.gameModel.gameRoster.features
+        let features = await root.gameModel.gameControl.features
         guard await (root.gameModel.gameName != model.senderName) &&
                 (features.diceMaster || !model.gameConfig.isMaster) &&
                 (features.dicePlayers || model.gameConfig.isMaster)
@@ -366,13 +382,16 @@ extension PlayerController {
     func handleMap(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
         switch model.type {
         case .reveal:
+            await MainActor.run { _ = gameModel.pendingMapRequests.remove(model.data.id) }
             if try await root.mapRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: false) {
                 _ = await root.mapRoot.gameControllable.setCurrent(itemId: model.data.id)
                 await MainActor.run {
-                    if gameModel.asGameMaster {
-                        gameModel.gameUpdateType = .map
-                    }
+                    // Also for players: a reveal means "show the map". Waiting for
+                    // the next mapState left the screen behind the black overlay
+                    // when that one-shot message was missed.
+                    gameModel.gameUpdateType = .map
                 }
+                await requestMissingMapImages(itemId: model.data.id)
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 await MainActor.run {
@@ -383,6 +402,7 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
+            await MainActor.run { _ = gameModel.pendingMapRequests.remove(model.data.id) }
             try await root.mapRoot.gameControllable.updateGame(data: model.data, hide: true, deep: true)
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
@@ -390,11 +410,8 @@ extension PlayerController {
             case .mapState:
                 if await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: model.data.version) {
                     await root.mapRoot.mapGameControllable.updateMap(for: model.data.id, with: model.data)
-                    let missingImages = await root.mapRoot.mapGameControllable.missingPlayerImages(itemId: model.data.id)
-                    for idType in missingImages {
-                        await send(counter: 0, type: .store, subType: .store, updated: idType)
-                    }
-                    
+                    await requestMissingMapImages(itemId: model.data.id)
+
                     // Update fog of war on 3D board
                     #if os(visionOS)
                     let isGameMaster = await root.gameModel.gameConfig.isMaster
@@ -404,7 +421,12 @@ extension PlayerController {
                     }
                     #endif
                 } else {
-                    return await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: .reveal, subType: .ok, gameConfig: root.gameModel.gameConfig, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
+                    // Re-request the full map once — the master answers a
+                    // `.reveal .mapState` with the map data plus the current map
+                    // state. A plain `.ok` is only an ACK and would dead-end here.
+                    let isFirstRequest = await MainActor.run { gameModel.pendingMapRequests.insert(model.data.id).inserted }
+                    let (gameConfig, gameRoster, gameControl) = await stateSnapshot()
+                    return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: .reveal, subType: isFirstRequest ? .mapState : .ok, gameConfig: gameConfig, gameRoster: gameRoster, gameControl: gameControl, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
                 }
             case .mapPin:
                 // master will never send mapPin updates, they come only from players.
@@ -417,6 +439,15 @@ extension PlayerController {
             }
         }
         return nil
+    }
+
+    /// Requests photos the current map needs (background and player pins) whose
+    /// binary is not available locally, via the unconditional `.store` path.
+    func requestMissingMapImages(itemId: UUID) async {
+        let missingImages = await root.mapRoot.mapGameControllable.missingPlayerImages(itemId: itemId)
+        for idType in missingImages {
+            await send(counter: 0, type: .store, subType: .store, updated: idType)
+        }
     }
 
     func handlePdf(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
@@ -615,12 +646,11 @@ extension PlayerController {
     }
     
     nonisolated func response(for model: GameNetworkModel, isSuccess: Bool, requestData: Bool) async -> GameNetworkModel {
-        let gameConfig = await root.gameModel.gameConfig
-        let gameRoster = await root.gameModel.gameRoster
+        let (gameConfig, gameRoster, gameControl) = await stateSnapshot()
         if requestData {
-            return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: gameConfig, gameRoster: gameRoster, data: model.data)
+            return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: gameConfig, gameRoster: gameRoster, gameControl: gameControl, data: model.data)
         }
-        return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: isSuccess ? .ok : .failed, gameConfig: gameConfig, gameRoster: gameRoster, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
+        return GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: isSuccess ? .ok : .failed, gameConfig: gameConfig, gameRoster: gameRoster, gameControl: gameControl, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
     }
 
     func scheduleSendCharacter() async {

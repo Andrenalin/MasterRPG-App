@@ -2,7 +2,7 @@
 import CoreRPG
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 final class GameScreenModel {
     
     private enum WidthValues {

@@ -11,11 +11,13 @@ public protocol SpotlightIndexerAtyribute {
 #endif
 }
 
-@Observable
+@MainActor @Observable
 public final class RpgSpotlightIndexerModel: @unchecked Sendable {
+    public nonisolated init() {}
+
     public private(set) var message: String?
     
-    func reset(message: String) {
+    nonisolated func reset(message: String) {
         Task { @MainActor in
             self.message = message
         }

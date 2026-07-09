@@ -62,6 +62,12 @@
       "skillPath": "swift-concurrency/SKILL.md",
       "computedHash": "5e1f6433159038c49135028eeeea3a7b9a0a6001c8a4cc8227e391caf35cd985"
     },
+    "swift-focusengine-pro": {
+      "source": "mhaviv/Swift-FocusEngine-Agent-Skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "5bae0b90511002aafaf4a380e68586b6da58d1e94b622f436298c2dba398a91f"
+    },
     "swift-testing-expert": {
       "source": "avdlee/swift-testing-agent-skill",
       "sourceType": "github",

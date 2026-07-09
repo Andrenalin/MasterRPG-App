@@ -20,6 +20,8 @@ import Testing
 
 struct MockRoot {
     static func importTestData(_ name: String = ResourcesDebug.adventureTestData, itemCounter: Int = 3) async throws -> AdventureRootModel {
+        await TagController.preview.resetData()
+
         let audioRoot = await AudioRootModel.testRoot()
         let diceRoot = await DiceRootModel.testRoot()
         let pdfRoot = await PdfRootModel.testRoot()

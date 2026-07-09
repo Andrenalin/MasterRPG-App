@@ -5,29 +5,18 @@ import Foundation
 import SwiftData
 
 struct EditController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
-        self.itemController = itemController
+    @MainActor init(itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
         self.tagController = tagController
-        self.editorModel = ItemEditorModel()
+        self.itemController = itemController
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
-        self.sheetRootModel = SheetRootModel(
-            rootManager: rootManager,
-            linkControllable: linkController,
-            sheetControllable: sheetController,
-            itemId: UUID(),
-            isEditor: true,
-            editorModel: sheetEditorModel
-        )
-        self.sheetEditorModel = sheetEditorModel
+        let editorModel = ItemEditorModel(sheetEditorModel: sheetEditorModel)
+        self.editorModel = editorModel
         self.selectionReference = ItemSelectionModel()
     }
 
     let itemController: ItemController
     let tagController: TagController
     let editorModel: ItemEditorModel
-    let sheetRootModel: SheetRootModel
-    let sheetEditorModel: SheetEditorModel
-
     let selectionReference: ItemSelectionModel
 }
 

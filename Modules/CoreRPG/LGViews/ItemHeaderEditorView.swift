@@ -79,7 +79,9 @@ public struct ItemHeaderEditorView: View {
         }
         .animation(.snappy, value: currentFocus)
         .onAppear {
+#if !os(tvOS)
             currentFocus = .name
+#endif
         }
         .onChange(of: name) { isDirty = true }
         .onChange(of: information) { isDirty = true }

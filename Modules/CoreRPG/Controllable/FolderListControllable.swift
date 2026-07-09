@@ -231,8 +231,6 @@ extension FolderListControllable {
             guard let model = await root.editControllable.addNew(type: type) else { return }
             if let url {
                 await root.editControllable.resetFile(url: url, itemId: model.id)
-                let cc = ConvertController(itemController: root.itemControllable, editController: root.editControllable)
-                await cc.moveAndCreateFolders(itemId: model.id)
             }
             try? await Task.sleep(for: .seconds(1.0))
             await root.itemControllable.save()

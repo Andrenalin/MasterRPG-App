@@ -18,6 +18,7 @@ public struct ModuleCommands: Commands {
 
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
     @FocusedValue(\.listDisplayModel) private var listDisplayModel: ListDisplayModel?
+    @FocusedValue(\.selectedSheetEntry) private var selectedSheetEntry: SelectedSheetEntry?
 
     public var body: some Commands {
         CommandGroup(after: .windowArrangement) {
@@ -47,6 +48,14 @@ public struct ModuleCommands: Commands {
                 Divider()
                 DeleteItemButton(root: root)
                 Divider()
+            }
+        }
+        CommandGroup(after: .textEditing) {
+            if selectedModule == root.configurable.module,
+               let selectedSheetEntry, selectedSheetEntry.entryModel.source.typeId == root.configurable.module {
+                SheetEntryEditButton(rootModel: selectedSheetEntry.rootModel, entryModel: selectedSheetEntry.entryModel, parentModel: selectedSheetEntry.parentModel, isEditor: selectedSheetEntry.isEditor, onlyIcon: false)
+                SheetContextMenuView(rootModel: selectedSheetEntry.rootModel, parentModel: selectedSheetEntry.parentModel, entryModel: selectedSheetEntry.entryModel, isEditor: selectedSheetEntry.isEditor)
+                SheetEntryDeleteButton(rootModel: selectedSheetEntry.rootModel, parentModel: selectedSheetEntry.parentModel, entryModel: selectedSheetEntry.entryModel, onlyIcon: false)
             }
         }
         CommandGroup(replacing: .undoRedo) {

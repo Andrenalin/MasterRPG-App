@@ -105,6 +105,19 @@ public extension FileUrlDataController {
         return checkUrl.startAccessingSecurityScopedResource()
     }
 
+    /// Whether the file's binary is available on this device — attached in memory
+    /// or present at the resolved local URL. Unlike `hasAccess(for:)` this checks
+    /// existence, not permission: an imported item whose binary never arrived has
+    /// a valid-looking FileUrl but no local file.
+    func hasLocalData(for fileUrl: FileUrl) async -> Bool {
+        if fileUrl.hasUnconvertedData { return true }
+        let exists = await url(for: fileUrl) { url -> Bool? in
+            guard let url else { return false }
+            return FileManager.default.fileExists(atPath: url.relativePath)
+        }
+        return exists ?? false
+    }
+
     func loadData(for fileUrl: FileUrl) async throws -> Data? {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.loadData(for:)", file: "FileUrlDataController.swift")
         

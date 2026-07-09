@@ -74,7 +74,11 @@ public final class SheetRootModel: Sendable {
             updateFilteredEntries(shouldRestoreState: shouldRestore)
         }
     }
-    
+
+    /// The id (SheetModel.id) of the exclusively selected row in the tree, if any.
+    public private(set) var selectedEntryId: String?
+    private var selectedParentModel: SheetModel?
+
     @ObservationIgnored let rootManager: RootManager
     @ObservationIgnored let sheetControllable: SheetControllable
     @ObservationIgnored let linkControllable: any LinkControllable
@@ -99,6 +103,9 @@ public final class SheetRootModel: Sendable {
         // means didSet will not attempt a restore when searchText is set to "").
         hasActiveSearch = false
         searchText = ""
+        // The old tree (and whatever entry was selected in it) is gone.
+        selectedEntryId = nil
+        selectedParentModel = nil
     }
     
     func rootController(for module: NetworkModules) -> ItemRootController? {
@@ -185,7 +192,94 @@ public final class SheetRootModel: Sendable {
         guard let sheetController = rootManager.rootModel(for: sheetModel.source.typeId)?.sheetControllable else { return }
         sheetController.unfold(root: rootManager, sheetModel: sheetModel)
     }
-    
+
+    // MARK: - Selection
+
+    /// Exclusively selects `entryModel`, clearing whichever entry was previously selected
+    /// (anywhere in the tree, including the root sheetModel itself), and scrolls it into view.
+    /// `parent` is threaded explicitly by the caller (who already has it in scope) rather than
+    /// looked up, since SheetContextMenuView's move-up/down/into-group actions need it too.
+    func setSelected(_ entryModel: SheetModel, parent: SheetModel) {
+        guard selectedEntryId != entryModel.id else { return }
+        if let selectedEntryId, let previous = findEntry(id: selectedEntryId, in: sheetModel) {
+            previous.isSelected = false
+        }
+        entryModel.isSelected = true
+        selectedEntryId = entryModel.id
+        selectedParentModel = parent
+        if let entryId = entryModel.source.entryId {
+            // The root/name-row case (entryModel == sheetModel) has no entryId — nothing to scroll to.
+            setScrollEntryId(source: entryModel.source, entryId: entryId)
+        }
+    }
+
+    func clearSelection() {
+        guard let selectedEntryId else { return }
+        findEntry(id: selectedEntryId, in: sheetModel)?.isSelected = false
+        self.selectedEntryId = nil
+        self.selectedParentModel = nil
+    }
+
+    /// First non-hidden top-level entry — used to select "into" a sheet from the sidebar list.
+    var firstSelectableEntry: SheetModel? {
+        sheetModel.entries.first { !$0.isHidden && !$0.isGeneratedHidden }
+    }
+
+    /// (parent, entry) pair for menu-bar/Commands consumers — see SelectedSheetEntry.
+    var selectedSheetEntryFocusValue: SelectedSheetEntry? {
+        guard isEditor, let selectedEntryId, let selectedParentModel,
+              let entry = findEntry(id: selectedEntryId, in: sheetModel) else { return nil }
+        return SelectedSheetEntry(rootModel: self, parentModel: selectedParentModel, entryModel: entry, isEditor: isEditor)
+    }
+
+    /// The currently selected entry itself, or nil if nothing (or only the root row) is selected.
+    public var selectedEntry: SheetModel? {
+        guard let selectedEntryId, selectedEntryId != sheetModel.id else { return nil }
+        return findEntry(id: selectedEntryId, in: sheetModel)
+    }
+
+    /// Creates real, persisted entries via the module's EditController — not transient
+    /// in-memory SheetModels — under `parent` (defaults to the root sheetModel), re-syncs
+    /// the tree from the saved data (which drops any unpersisted preview entry with the
+    /// same synthetic id — see SheetController.update), and scrolls to the first one.
+    @discardableResult
+    public func appendEntries(_ blocks: [(title: String, content: String)], into parent: SheetModel? = nil) -> [UUID] {
+        let targetParent = parent ?? sheetModel
+        guard !blocks.isEmpty, let editable = entryDataEditable(for: targetParent.source) else { return [] }
+        let newEntryIds = blocks.map { block in
+            let entryId = editable.addNewEntry(itemId: targetParent.source.itemId)
+            editable.update(itemId: targetParent.source.itemId, entryId: entryId, name: block.title, content: block.content)
+            return entryId
+        }
+        updateParent(targetParent)
+        if let firstEntryId = newEntryIds.first {
+            setScrollEntryId(source: targetParent.source, entryId: firstEntryId)
+        }
+        return newEntryIds
+    }
+
+    /// Commits a temporary, unpersisted `isGeneratedAnswer` preview entry (as created by
+    /// SheetAIAssistantOverlayView) into a real, saved entry via the EditController, then
+    /// clears the preview flag. Called when the user taps a generated-preview row.
+    @discardableResult
+    public func commitGeneratedEntry(_ entryModel: SheetModel, parent: SheetModel) -> Bool {
+        guard entryModel.isGeneratedAnswer else { return false }
+        entryModel.isGeneratedAnswer = false
+        entryModel.generatedBatchID = nil
+        return !appendEntries([(title: entryModel.name, content: entryModel.description)], into: parent).isEmpty
+    }
+
+    private func findEntry(id: String, in model: SheetModel) -> SheetModel? {
+        if model.id == id { return model }
+        for entry in model.inlineEntries {
+            if let found = findEntry(id: id, in: entry) { return found }
+        }
+        for entry in model.entries {
+            if let found = findEntry(id: id, in: entry) { return found }
+        }
+        return nil
+    }
+
     // MARK: - Search
 
     private func initializeLastIsShownState(sheetModel: SheetModel) {
@@ -252,9 +346,9 @@ public final class SheetRootModel: Sendable {
         return entryId
     }
 
-    func setScrollEntryId(source: ItemRowModel, entryId: UUID?) {
+    public func setScrollEntryId(source: ItemRowModel, entryId: UUID?) {
         guard let editController = editControllable(for: source) else { return }
-        editController.sheetEditorModel.scrollEntryId = entryId
+        editController.editorModel.sheetEditorModel.scrollEntryId = entryId
     }
 
     private func addNewEntry(to source: ItemRowModel) -> UUID? {
