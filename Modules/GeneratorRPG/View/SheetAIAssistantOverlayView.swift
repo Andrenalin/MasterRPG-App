@@ -61,7 +61,9 @@ public struct SheetAIAssistantOverlayView: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(module.tint)
+        #if !os(visionOS)
         .glassEffectAll(.regular.tint(module.tint).interactive())
+        #endif
         .padding()
     }
 
