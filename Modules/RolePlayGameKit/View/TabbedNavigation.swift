@@ -16,12 +16,14 @@ struct TabbedNavigation: View {
         
         TabView(selection: $appModel.selectedModule) {
             ForEach(RootRoute.fiveTabs) { tab in
-                Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
+                Tab(value: tab, role: tab.tabRole) {
                     ManagedNavigationStack(name: tab.title) { navigator in
                         tab
                     }
                     .tint(color(for: tab))
                     .environment(itemRootController(for: tab))
+                } label: {
+                    ModuleTabLabel(route: tab, color: color(for: tab))
                 }
             }
         }
@@ -69,5 +71,33 @@ struct TabbedNavigation: View {
     var selectedModule: NetworkModules {
         guard let appModule = appModel.selectedModule?.module else { return .game }
         return appModule == .editor ? (appModel.selectedExtendedModule?.module ?? .game) : appModule
+    }
+}
+
+struct ModuleTabLabel: View {
+    let title: String
+    let icon: String
+    let color: Color
+
+    init(route: RootRoute, color: Color? = nil) {
+        title = route.title
+        icon = route.icon
+        self.color = color ?? route.module.tint
+    }
+
+    var body: some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName: icon)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(color)
+        }
+    }
+}
+
+extension RootRoute {
+    var tabRole: TabRole? {
+        self == .search ? .search : nil
     }
 }

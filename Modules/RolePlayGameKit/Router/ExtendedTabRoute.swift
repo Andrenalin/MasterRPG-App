@@ -78,7 +78,7 @@ extension ExtendedTabRoute: NavigationDestination {
     }
     
     static var allTabs: [ExtendedTabRoute] {
-        [.pdfs, .tables, .maps, .generator, .photos, .audios, .space, .weathers, .dice, .settings]
+        [.pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings]
     }
     
     static var limitedTabs: [ExtendedTabRoute] {
