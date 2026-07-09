@@ -52,9 +52,6 @@ private extension SplitNavigation {
             TabSection {
                 pageTab(for: .search)
                     .customizationID("Tab.\(NetworkModules.search.token)")
-                
-                pageTab(for: .generator)
-                    .customizationID("Tab.\(NetworkModules.generator.token)")
             } header: {
                 Text("Special", bundle: .module)
             }
@@ -114,13 +111,18 @@ private extension SplitNavigation {
         }
         .tabViewCustomization($customization)
         .tabViewStyle(.sidebarAdaptable)
+#if os(iOS)
+        .navigationSplitViewColumnWidth(min: 150, ideal: 150, max: 180)
+#endif
     }
     
-    func pageTab(for tab: RootRoute) -> Tab<RootRoute?, some View, DefaultTabLabel> {
-        Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
+    func pageTab(for tab: RootRoute) -> some TabContent<RootRoute?> {
+        Tab(value: tab, role: tab.tabRole) {
             tabView(tab: tab)
                 .tint(tab.module.tint)
                 .environment(appModel.itemRootController(for: tab.module))
+        } label: {
+            ModuleTabLabel(route: tab)
         }
     }
     
@@ -173,6 +175,9 @@ private struct SplitWithDetailView: View {
                 tab
             }
             .environment(controller)
+#if os(iOS)
+            .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 800)
+#endif
         } detail: {
             SplitDetailView(isExtendedRoutes: false)
                 .environment(controller)

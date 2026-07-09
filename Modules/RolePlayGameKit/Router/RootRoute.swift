@@ -126,11 +126,11 @@ extension RootRoute: NavigationDestination {
     }
     
     public static var allTabs: [RootRoute] {
-        [.game, .adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
+        [.game, .adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
     }
 
     public static var visionTabs: [RootRoute] {
-        [.game, .adventures, .values, .generator, .search, .settings]
+        [.game, .adventures, .values, .search, .settings]
     }
 
     public static var visionEditorTabs: [RootRoute] {
