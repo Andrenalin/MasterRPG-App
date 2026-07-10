@@ -5,6 +5,10 @@ participants, transports, counters, roster/control state, message types, replies
 and module-specific behavior for audio, photo, dice, map, PDF, table, character,
 weather, space, and screen updates.
 
+For broader controller responsibilities, import/export controllers, and how
+`GameRoot`, `MasterController`, `PlayerController`, and module `GameController`
+fit into the root graph, see [Controllers](CONTROLLERS.md).
+
 Primary source files:
 
 - `Modules/GameRPG/Root/GameRootModel.swift`
