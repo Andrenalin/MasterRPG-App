@@ -2,6 +2,6 @@
 
 import Foundation
 
-public protocol FileControllable: FileUrlAccessible {
+public protocol FileControllable: Sendable {
     var fileUrlDataController: FileUrlDataController { get }
 }

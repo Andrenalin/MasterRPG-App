@@ -54,6 +54,6 @@ struct ItemControllerTests {
         let isUsed = sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: item.photoId!, typeId: .photo))
         #expect(isUsed)
         let effectedLinks = sut.linkRegisterController.used(for: ItemRowModel(itemId: item.photoId!, typeId: .photo))
-        #expect(effectedLinks.count == 1)
+        #expect(effectedLinks.count == 2)
     }
 }

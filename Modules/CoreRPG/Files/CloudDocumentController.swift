@@ -65,24 +65,6 @@ struct CloudDocumentController: Sendable {
         return name
     }
     
-    func read(filePath: String) async throws -> Data? {
-        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.read(filePath:)", file: "CloudDocumentController.swift")
-        
-        let url = fullUrl(filePath: filePath)
-        
-        // Batch download check and read into single coordinated access
-        return try await FileManager.default.updateFile(coordinatingAccessTo: url) { coordUrl in
-            // Check if file needs to be downloaded first
-            if let values = try? coordUrl.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]),
-               values.ubiquitousItemDownloadingStatus != .current {
-                try? FileManager.default.startDownloadingUbiquitousItem(at: coordUrl)
-                // Note: This starts async download, but doesn't wait for completion
-            }
-            
-            return try Data(contentsOf: coordUrl)
-        }
-    }
-
     func write(data: Data, to filePath: String) async throws {
         await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.write(data:to:)", file: "CloudDocumentController.swift")
         

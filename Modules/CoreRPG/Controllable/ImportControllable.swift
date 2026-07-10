@@ -105,6 +105,8 @@ public extension ImportControllable {
 
         var currentFile: Data?
         var importedIds: Set<UUID> = []
+        var locallyReusedFileIds: Set<UUID> = []
+        var deferredFolderItems: [(item: ModelType, id: UUID)] = []
 
         var counter = 0
         while !Task.isCancelled && counter < itemCount {
@@ -129,9 +131,15 @@ public extension ImportControllable {
                         let itemVersion = version
                         let newItem = try await MainActor.run { try itemControllable.decode(data: data, with: JSONDecoder(), version: itemVersion) }
                         if let itemFile {
-                            try await addFile(data: itemFile, to: newItem, forceSave: forceSave)
+                            if try await addFile(data: itemFile, to: newItem, forceSave: forceSave) {
+                                locallyReusedFileIds.insert(newItem.id)
+                            }
                         }
-                        try await addItem(importedItem: newItem, id: newItem.id, forceSave: forceSave, importModel: importModel)
+                        if await itemControllable.shouldDeferGameModeFolderImport(newItem, forceSave: forceSave) {
+                            deferredFolderItems.append((newItem, newItem.id))
+                        } else {
+                            try await addItem(importedItem: newItem, id: newItem.id, forceSave: forceSave, importModel: importModel, locallyReusedFileIds: locallyReusedFileIds)
+                        }
                         importedIds.insert(newItem.id)
                     } catch {
                         await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
@@ -146,6 +154,20 @@ public extension ImportControllable {
         }
 
         guard !Task.isCancelled else { return }
+        for deferredFolderItem in deferredFolderItems {
+            do {
+                try await addItem(
+                    importedItem: deferredFolderItem.item,
+                    id: deferredFolderItem.id,
+                    forceSave: forceSave,
+                    importModel: importModel,
+                    locallyReusedFileIds: locallyReusedFileIds
+                )
+            } catch {
+                await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
+            }
+        }
+
         let mode = await importModel.importMode
         if mode == .manual {
             // Collect local items absent from the import stream as deletion candidates
@@ -227,28 +249,33 @@ private extension ImportControllable {
         }
     }
 
-    func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, importModel: ItemDataImportModel) async throws {
+    func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, importModel: ItemDataImportModel, locallyReusedFileIds: Set<UUID> = []) async throws {
         let mode = await importModel.importMode
         let itemController = itemControllable
         let editCtrl = editControllable
         let normalizedImportedItem = await itemController.normalizedImportedItem(from: importedItem)
+        guard let importableItem = await itemController.gameModeImportedItem(from: normalizedImportedItem, forceSave: forceSave, locallyReusedFileIds: locallyReusedFileIds) else {
+            await MainActor.run { importModel.importedItems += 1 }
+            try Task.checkCancellation()
+            return
+        }
 
         switch mode {
         case .merge:
-            let finalItem = await itemController.merge(with: normalizedImportedItem, forceMerge: forceSave)
+            let finalItem = await itemController.merge(with: importableItem, forceMerge: forceSave)
             if let finalItem {
                 await itemController.replace(model: finalItem, isInsert: true, forceSave: forceSave)
                 await editCtrl.repairFolder(itemId: id)
             }
 
         case .overwrite:
-            await itemController.replace(model: normalizedImportedItem, isInsert: true, forceSave: forceSave)
+            await itemController.replace(model: importableItem, isInsert: true, forceSave: forceSave)
             await editCtrl.repairFolder(itemId: id)
 
         case .manual:
-            let merged = await itemController.merge(with: normalizedImportedItem) as? any ItemDataAccessable
+            let merged = await itemController.merge(with: importableItem) as? any ItemDataAccessable
             await MainActor.run {
-                guard let imported = normalizedImportedItem as? any ItemDataAccessable else { return }
+                guard let imported = importableItem as? any ItemDataAccessable else { return }
                 let existing = itemController.itemSync(for: id)
                 let module = itemController.config.module
 
@@ -422,8 +449,8 @@ private extension ImportControllable {
         }
     }
 
-    @MainActor func addFile(data: Data, to item: any ItemDataAccessable, forceSave: Bool) async throws {
-        guard let fileUrlDataController, var fileUrl = item.fileUrl else { return }
+    @MainActor func addFile(data: Data, to item: any ItemDataAccessable, forceSave: Bool) async throws -> Bool {
+        guard let fileUrlDataController, var fileUrl = item.fileUrl else { return false }
         var item = item
         let module = itemControllable.config.module.rawValue
         let importedHash = FileUrl.contentHash(of: data)
@@ -433,7 +460,10 @@ private extension ImportControllable {
         if let existingFileUrl = await reusableExistingFileUrl(for: item.id, importedHash: importedHash, forceSave: forceSave) {
             Logger.importController.debug("Import addFile reuses existing file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(existingFileUrl.fileId, privacy: .public) hash=\(importedHash, privacy: .public) forceSave=\(forceSave, privacy: .public)")
             item.fileUrl = existingFileUrl
-            return
+            if forceSave == false, let localItem = itemControllable.itemSync(for: item.id, noGame: true) {
+                item.parentId = localItem.parentId
+            }
+            return forceSave == false
         }
 
         if let localFileUrl {
@@ -451,6 +481,7 @@ private extension ImportControllable {
             Logger.importController.error("Cannot save bookmark \(module, privacy: .public), file stored as data")
             await itemControllable.reset(fileUrl: fileUrl, item: &item)
         }
+        return false
     }
 
     /// The existing item's local file URL when the imported bytes are unchanged.
@@ -484,10 +515,30 @@ private extension ImportControllable {
 
 private extension ItemControllable {
     @MainActor
+    func shouldDeferGameModeFolderImport(_ item: ModelType, forceSave: Bool) -> Bool {
+        guard forceSave == false, itemDataModel.isGameMode, let imported = item as? Model else { return false }
+        return imported.category == .folder
+    }
+
+    @MainActor
     func normalizedImportedItem(from item: ModelType) -> ModelType {
         guard var imported = (item as? Model)?.copy() else { return item }
         normalizeImportedItemForMerge(in: &imported)
         return imported
+    }
+
+    @MainActor
+    func gameModeImportedItem(from item: ModelType, forceSave: Bool, locallyReusedFileIds: Set<UUID>) -> ModelType? {
+        guard forceSave == false, itemDataModel.isGameMode, var imported = (item as? Model)?.copy() else { return item }
+
+        if locallyReusedFileIds.contains(imported.id), let localItem = itemSync(for: imported.id, noGame: true) {
+            imported.parentId = localItem.parentId
+            return imported
+        }
+
+        guard imported.category == .folder, !locallyReusedFileIds.isEmpty else { return imported }
+        imported.entries.removeAll { locallyReusedFileIds.contains($0.childId) }
+        return imported.entries.isEmpty ? nil : imported
     }
 
     @MainActor

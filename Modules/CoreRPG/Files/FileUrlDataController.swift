@@ -7,27 +7,9 @@ import os.log
 
 extension KeyPath: @unchecked @retroactive Sendable {}
 
-public protocol FileUrlAccessible: Sendable {
-    func saveFileUrl(fileUrl: FileUrl) async
-}
-
 @MainActor @Observable
 public final class FileUrlDataModel {
     var folders: [FileUrlViewModel] = []
-
-    var sortOrder = [KeyPathComparator(\FileUrlViewModel.type, order: .forward), KeyPathComparator(\FileUrlViewModel.name)]
-
-    public var defaultLocation: FileLocation = .newCloud
-    public var defaultCloudPath: UUID?
-
-    func append(folder: FileUrlViewModel) {
-        folders.append(folder)
-        folders.sort(using: sortOrder)
-    }
-
-    func resetFolders() {
-        folders.removeAll()
-    }
 }
 
 public struct FileUrlDataController: Sendable {
@@ -37,19 +19,17 @@ public struct FileUrlDataController: Sendable {
 
     public let fileTypes: [UTType]
     let filenameExtension: String
-    private let fileUrlAccess: any FileUrlAccessible
 
     public let model: FileUrlDataModel
 
     @MainActor
-    public init(moduleFolder: String, fileTypes: [UTType], filenameExtension: String, fileUrlAccess: any FileUrlAccessible) {
+    public init(moduleFolder: String, fileTypes: [UTType], filenameExtension: String) {
         let fileBookmarkController = FileBookmarkController(module: moduleFolder)
         self.fileBookmarkController = fileBookmarkController
         self.locationFileManager = LocationFileManager(moduleFolder: moduleFolder)
 
         self.fileTypes = fileTypes
         self.filenameExtension = filenameExtension
-        self.fileUrlAccess = fileUrlAccess
 
         self.cloudDocumentController = CloudDocumentController(modulePath: moduleFolder)
 
@@ -70,7 +50,10 @@ public struct FileUrlDataController: Sendable {
             let model = FileUrlViewModel(id: id, name: url?.lastPathComponent ?? "Filename Unknown", path: url?.relativePath ?? "Path not set", type: .folder, hasData: false, hasAccess: true, isDownloaded: nil)
             folders.append(model)
         }
-        return folders
+        return folders.sorted(using: [
+            KeyPathComparator(\FileUrlViewModel.type, order: .forward),
+            KeyPathComparator(\FileUrlViewModel.name)
+        ])
     }
 }
 
@@ -87,20 +70,11 @@ public extension FileUrlDataController {
 
     func hasAccess(for fileUrl: FileUrl) async -> Bool {
         let url = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
-        var newFileUrl = fileUrl
         if let url, url != locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) {
             Logger.bookmarkStore.info("Different URL detected \(url.absoluteString, privacy: .public)")
-            _ = url.startAccessingSecurityScopedResource()
-            if let updatedFileUrl = try? await createFileUrl(fileId: fileUrl.fileId, url: url, module: fileUrl.module, category: nil, contentHash: fileUrl.contentHash) {
-                await fileUrlAccess.saveFileUrl(fileUrl: updatedFileUrl)
-                newFileUrl = updatedFileUrl
-            } else {
-                Logger.bookmarkStore.info("URL cannot repaired \(fileUrl.rawUrl.absoluteString, privacy: .public)")
-            }
-            url.stopAccessingSecurityScopedResource()
         }
-        guard url != nil || newFileUrl.location == .newCloud || newFileUrl.location == .local || newFileUrl.location == .appCloud else { return false }
-        let checkUrl = url ?? newFileUrl.rawUrl
+        guard url != nil || fileUrl.location == .newCloud || fileUrl.location == .local || fileUrl.location == .appCloud else { return false }
+        let checkUrl = url ?? fileUrl.rawUrl
         defer { checkUrl.stopAccessingSecurityScopedResource() }
         return checkUrl.startAccessingSecurityScopedResource()
     }
@@ -183,26 +157,26 @@ public extension FileUrlDataController {
         
         guard let oldData = unconvertedFileUrl.data else { return nil }
         let contentHash = unconvertedFileUrl.contentHash ?? FileUrl.contentHash(of: oldData)
-        let location: FileLocation = unconvertedFileUrl.location == .url ? .url : .newCloud
-        guard let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: location, module: unconvertedFileUrl.module) else { return nil }
 
-        do {
-            // try to get access to the old location (single coordinated check)
-            let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
-            if exists && !isDir {
-                if let existingData = try? await FileManager.default.contentsOfFile(coordinatingAccessAt: oldUrl),
-                   FileUrl.contentHash(of: existingData) == contentHash {
-                    // File already exists on disk - return FileUrl without data in memory
-                    return FileUrl(fileId: fileId, url: unconvertedFileUrl.rawUrl, location: unconvertedFileUrl.location, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
+        if let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: unconvertedFileUrl.location, module: unconvertedFileUrl.module) {
+            do {
+                // Try the stored legacy location before rewriting imported bytes.
+                let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
+                if exists && !isDir {
+                    if let existingData = try? await FileManager.default.contentsOfFile(coordinatingAccessAt: oldUrl),
+                       FileUrl.contentHash(of: existingData) == contentHash {
+                        // File already exists on disk - return FileUrl without data in memory
+                        return FileUrl(fileId: fileId, url: unconvertedFileUrl.rawUrl, location: unconvertedFileUrl.location, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
+                    }
                 }
+            } catch {
+                Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
             }
-        } catch {
-            Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
         }
 
-        guard let fileURL = locationFileManager.relativeUrl(for: unconvertedFileUrl.rawUrl) else { return nil }
-        let filePath = fileURL.pathComponents.joined(separator: "/")
-        let fullUrl: URL = cloudDocumentController.fullUrl(filePath: filePath)
+        let fullUrl = cloudDocumentController.fullUrl(fileUrl: unconvertedFileUrl.rawUrl)
+        let fileURL = cloudDocumentController.nameUrl(fullUrl: fullUrl)
+        let filePath = fileURL.path(percentEncoded: false)
 
         do {
             // Write uses batched coordination internally now (createDirectory + write)
@@ -210,7 +184,7 @@ public extension FileUrlDataController {
         } catch {
             Logger.fileStore.error("Cannot create file in cloud app group \(error.localizedDescription, privacy: .public)")
             // Fallback: Keep data in memory when cloud storage fails
-            var fileUrl = FileUrl(fileId: fileId, url: fileURL, location: location, module: unconvertedFileUrl.module, relativeUrl: nil)
+            var fileUrl = FileUrl(fileId: fileId, url: fileURL, location: .newCloud, module: unconvertedFileUrl.module, relativeUrl: nil)
             fileUrl.resetData(oldData)
             Logger.fileStore.info("Keeping file data in memory as fallback")
             return fileUrl
@@ -224,7 +198,7 @@ public extension FileUrlDataController {
         } catch {
             Logger.fileStore.error("Cannot bookmark file \(error.localizedDescription, privacy: .public)")
         }
-        return FileUrl(fileId: fileId, url: fileURL, location: location, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
+        return FileUrl(fileId: fileId, url: fileURL, location: .newCloud, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
     }
 
     /// ItemController will call to get FileUrl for given urls from picker
@@ -407,6 +381,6 @@ extension FileUrlDataController {
 extension FileUrlDataController {
     @MainActor
     static public func empty() -> FileUrlDataController {
-        FileUrlDataController(moduleFolder: "Tests", fileTypes: [.image], filenameExtension: "test", fileUrlAccess: FakeFileFileAccessible())
+        FileUrlDataController(moduleFolder: "Tests", fileTypes: [.image], filenameExtension: "test")
     }
 }

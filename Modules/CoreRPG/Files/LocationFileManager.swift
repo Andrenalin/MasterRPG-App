@@ -64,7 +64,10 @@ public extension LocationFileManager {
             return add(relative: url, to: rootNewCloud, module: mapModule(name: module))
         case .local:
             guard let rootLocal else { return nil }
-            let filePath = Array(url.pathComponents.drop(while: { $0 != "Documents" }).dropFirst()).joined(separator: "/")
+            guard let documentsIndex = url.pathComponents.firstIndex(of: "Documents") else {
+                return url
+            }
+            let filePath = url.pathComponents[(documentsIndex + 1)...].joined(separator: "/")
             let newUrl = rootLocal.appending(path: filePath)
             return newUrl
         default:
@@ -83,38 +86,6 @@ public extension LocationFileManager {
         }
     }
 
-    func copy(pickedURL: URL, to location: FileLocation, id: UUID) async throws -> URL? {
-        guard let destinationURL = try await url(id: id, location: location, pathExtension: pickedURL.pathExtension, cloudUrl: nil) else { return nil }
-        return try await copy(pickedURL: pickedURL, to: destinationURL)
-    }
-
-    func copy(pickedURL: URL, to newUrl: URL) async throws -> URL? {
-        let destinationURL = newUrl
-        let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: destinationURL)
-        if exists && isDir == false {
-            try await FileManager.default.removeItem(coordinatingAccessAt: destinationURL)
-        }
-        guard isDir == false else { return nil }
-        try await FileManager.default.copyItem(coordinatingAccessFrom: pickedURL, to: destinationURL)
-        return destinationURL
-    }
-
-    func create(id: UUID, location: FileLocation, pathExtension: String, data: Data, cloudUrl: URL? = nil) async throws -> URL? {
-        guard let url = try await url(id: id, location: location, pathExtension: pathExtension, cloudUrl: cloudUrl) else { return nil }
-        let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: url)
-        if !exists {
-            try await FileManager.default.write(data, coordinatingAccessTo: url)
-        }
-        return url
-    }
-
-    func createLocalUrl(id: UUID, pathExtension: String) async throws -> URL? {
-        try await url(id: id, location: .local, pathExtension: pathExtension, cloudUrl: nil)
-    }
-
-    func remove(url: URL) async throws {
-        try await FileManager.default.removeItem(coordinatingAccessAt: url)
-    }
 }
 
 private extension LocationFileManager {
@@ -133,35 +104,4 @@ private extension LocationFileManager {
         return result
     }
 
-    private func createDirectory(url: URL) async throws {
-        let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: url)
-        guard !exists else { return }
-        try await FileManager.default.createDirectory(coordinatingAccessAt: url, withIntermediateDirectories: true)
-    }
-
-    private func subfolder(for id: UUID) -> String {
-        String(id.uuidString.suffix(2))
-    }
-
-    private func url(id: UUID, location: FileLocation, pathExtension: String, cloudUrl: URL?) async throws -> URL? {
-        var rootUrl: URL?
-        switch location {
-        case .local:
-            rootUrl = rootLocal
-        case .appCloud:
-            rootUrl = rootAppCloud
-        case .icloud:
-            return cloudUrl
-        case .other, .url, .newCloud:
-            return nil
-        }
-        guard var fileURL = rootUrl?
-            .appendingPathComponent(moduleFolder, isDirectory: true)
-            .appendingPathComponent(subfolder(for: id), isDirectory: true) else { return nil }
-        try await createDirectory(url: fileURL)
-        fileURL = fileURL
-            .appendingPathComponent(id.uuidString, isDirectory: false)
-            .appendingPathExtension(pathExtension)
-        return fileURL
-    }
 }

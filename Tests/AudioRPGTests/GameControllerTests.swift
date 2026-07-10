@@ -76,9 +76,104 @@ struct GameControllerTests {
         try await sut.play(id: nil, shouldPlay: true).value
         try await sut.play(id: playlistId, shouldPlay: false).value
     }
+
+    @Test("Game import adds source folder only when audio file is missing locally")
+    func gameImportAddsFolderOnlyForMissingAudioFile() async throws {
+        let fileData = Data("shared game audio".utf8)
+        let exported = try await Self.exportedFolderAudioGameData(fileData: fileData)
+
+        let missingRoot = AudioRootModel.testRoot()
+        try await MockRoot.resetTestData(for: missingRoot)
+        missingRoot.itemController.itemDataModel.isGameMode = true
+
+        try await missingRoot.gameController.importNetwork(from: exported.data)
+
+        let missingAudio = try #require(missingRoot.itemController.itemSync(for: exported.audioId))
+        let missingFolder = try #require(missingRoot.itemController.itemSync(for: exported.folderId))
+        #expect(missingAudio.parentId == exported.folderId)
+        #expect(missingFolder.entries.contains { $0.childId == exported.audioId })
+
+        for placement in ExistingAudioPlacement.allCases {
+            let existing = try await Self.rootWithExistingAudio(
+                audioId: exported.audioId,
+                fileData: fileData,
+                placement: placement
+            )
+
+            existing.root.itemController.itemDataModel.isGameMode = true
+
+            try await existing.root.gameController.importNetwork(from: exported.data)
+
+            let gameAudio = try #require(existing.root.itemController.itemSync(for: exported.audioId))
+            let storedAudio = try #require(existing.root.itemController.itemSync(for: exported.audioId, noGame: true))
+            #expect(gameAudio.parentId == existing.parentId, "Game import should preserve \(placement.label) placement for an existing local audio file.")
+            #expect(storedAudio.parentId == existing.parentId, "Game import must not persistently move an existing local audio file.")
+            #expect(existing.root.itemController.itemSync(for: exported.folderId) == nil, "Game import should not add the source folder when the audio file already exists locally.")
+        }
+    }
 }
 
 private extension GameControllerTests {
+    enum ExistingAudioPlacement: CaseIterable {
+        case noFolder
+        case differentFolder
+
+        var label: String {
+            switch self {
+            case .noFolder: "root-level"
+            case .differentFolder: "different-folder"
+            }
+        }
+    }
+
+    static func exportedFolderAudioGameData(fileData: Data) async throws -> (data: Data, audioId: UUID, folderId: UUID) {
+        let root = AudioRootModel.testRoot()
+        try await MockRoot.resetTestData(for: root)
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        root.editController.reset(name: "Source Folder", itemId: folderId)
+
+        let audioId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Source Cue", itemId: audioId)
+        root.editController.addItem(itemId: audioId, parentId: folderId)
+        try await root.editController.resetFile(data: fileData, itemId: audioId, path: "Source Cue.m4a")
+
+        let gameData = try await root.gameController.createGameData(for: audioId)
+        let data = try #require(gameData.data)
+        return (data, audioId, folderId)
+    }
+
+    static func rootWithExistingAudio(
+        audioId: UUID,
+        fileData: Data,
+        placement: ExistingAudioPlacement
+    ) async throws -> (root: AudioRootModel, parentId: UUID?) {
+        let root = AudioRootModel.testRoot()
+        try await MockRoot.resetTestData(for: root)
+
+        let fileUrl = try localFileUrl(for: audioId, fileData: fileData)
+        let audio = AudioModel(id: audioId, name: "Local Cue", fileUrl: fileUrl)
+        root.itemController.replace(model: audio, isInsert: true)
+
+        switch placement {
+        case .noFolder:
+            return (root, nil)
+        case .differentFolder:
+            let folderId = await root.itemController.addNew(type: .folder)
+            root.editController.reset(name: "Local Folder", itemId: folderId)
+            root.editController.addItem(itemId: audioId, parentId: folderId)
+            return (root, folderId)
+        }
+    }
+
+    static func localFileUrl(for id: UUID, fileData: Data) throws -> FileUrl {
+        let fileUrl = URL.temporaryDirectory
+            .appending(path: "existing-\(id.uuidString)-\(UUID().uuidString)")
+            .appendingPathExtension("m4a")
+        try fileData.write(to: fileUrl)
+        return FileUrl(fileId: id, url: fileUrl, location: .local, module: NetworkModules.audio.token, relativeUrl: nil)
+    }
+
     static func fileUrl(for id: UUID) -> FileUrl {
         FileUrl(fileId: id, url: URL(filePath: "/tmp/\(id.uuidString).m4a"), location: .local, module: "audio", relativeUrl: nil)
     }

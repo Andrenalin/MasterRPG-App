@@ -129,22 +129,6 @@ extension FileBookmarkController {
         await changeBookmark(fileId: fileId, data: data, folder: folder)
     }
 
-    func saveBookmarkSync(fileId: UUID, fileUrl: URL, folder: Bool = false) throws {
-#if os(macOS)
-        let options = URL.BookmarkCreationOptions.withSecurityScope
-#else
-        let options = URL.BookmarkCreationOptions.suitableForBookmarkFile
-#endif
-        let data = try fileUrl.bookmarkData(
-            options: options,
-            includingResourceValuesForKeys: nil,
-            relativeTo: nil
-        )
-        Task {
-            await changeBookmark(fileId: fileId, data: data, folder: folder)
-        }
-    }
-
     func removeBookmark(fileId: UUID) {
         let model = fileBookmarkModel
         Task(priority: priority) {

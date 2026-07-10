@@ -286,7 +286,6 @@ Inspectors, sheets, file import/export panels, quick editors, and rows reuse the
 
 - `FileViews/ExportProgressPanelView.swift`
 - `FileViews/FileBrowserPickerView.swift`
-- `FileViews/FileLocationEditor.swift`
 - `FileViews/ImportProgressPanelView.swift`
 - `FileViews/ImportReviewItemListView.swift`
 - `FileViews/ImportReviewModels.swift`

@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import RPGResourcesDebug
@@ -512,4 +511,3 @@ private extension MasterPlayerControllerTests {
         let _ = try await task.value
     }
 }
-#endif
