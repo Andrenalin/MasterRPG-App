@@ -300,6 +300,21 @@ private struct MultiplayerPhotoParticipant {
         await controller.receivedProcess(model)
         return try #require(network.directPlayerSpy.requestData as? GameNetworkModel)
     }
+
+    /// Delivers a message that this participant must ignore (targeted at
+    /// someone else) — asserts no response was sent.
+    func receiveIgnored(_ model: GameNetworkModel) async -> Bool {
+        network.directPlayerSpy.requestData = nil
+        network.proxyPlayerSpy.requestData = nil
+
+        if role.type == .proxy {
+            await controller.receivedProxy(model)
+            return network.proxyPlayerSpy.requestData == nil
+        }
+
+        await controller.receivedProcess(model)
+        return network.directPlayerSpy.requestData == nil
+    }
 }
 
 @MainActor
@@ -826,7 +841,7 @@ struct MultiConnectionPhotoTests {
             #expect(host.network.proxyMasterSpy.calledSendResponseAll > 0)
         }
 
-        var fullDataBroadcasts: [GameNetworkModel] = []
+        var fullDataResponses: [GameNetworkModel] = []
         for role in testCase.missingRolesInTopologyOrder {
             let missingResponse = try #require(initialResponses[role])
             await env.master.receivedProcess(missingResponse, connectionId: nil)
@@ -837,16 +852,23 @@ struct MultiConnectionPhotoTests {
             #expect(fullData.data.type == .photo)
             #expect(fullData.data.version == version)
             #expect(fullData.data.data != nil)
-            fullDataBroadcasts.append(fullData)
+            fullDataResponses.append(fullData)
         }
 
-        #expect(fullDataBroadcasts.count == testCase.missingRoles.count)
+        #expect(fullDataResponses.count == testCase.missingRoles.count)
 
-        for fullData in fullDataBroadcasts {
-            for participant in env.participants {
-                let response = try await participant.receive(fullData)
-                #expect(response.subType == .ok)
-                await env.master.receivedProcess(response, connectionId: nil)
+        for fullData in fullDataResponses {
+            // The full payload is targeted at the requester: only the addressee
+            // imports and acknowledges it, everyone else ignores it — screens of
+            // participants that already show the photo no longer flip.
+            let targetId = try #require(fullData.targetId)
+            let addressee = try #require(env.participants.first { $0.config.id == targetId })
+            let response = try await addressee.receive(fullData)
+            #expect(response.subType == .ok)
+            await env.master.receivedProcess(response, connectionId: nil)
+
+            for participant in env.participants where participant.config.id != targetId {
+                #expect(await participant.receiveIgnored(fullData))
             }
         }
 

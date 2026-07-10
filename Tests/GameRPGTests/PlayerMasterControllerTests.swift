@@ -350,9 +350,6 @@ struct PlayerMasterControllerTests {
         env.playerRoot.adventureRoot.startGame()
 
         let characterId = env.playerRoot.characterRoot.itemController.itemDataModel.items[1]
-        var master = env.masterRoot.gameModel.gameConfig.master
-        master.characterId = characterId
-        env.masterRoot.gameModel.reset(master: master)
         let photoId = env.playerRoot.characterRoot.itemController.itemOrEmpty(for: characterId).photoId
         #expect(nil != photoId)
 

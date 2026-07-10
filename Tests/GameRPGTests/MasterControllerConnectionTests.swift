@@ -233,7 +233,10 @@ struct MasterControllerDirectProxyTests {
         #expect(env.root.gameModel.gameControl.controls.isEmpty)
 
         let filteredMessage = try #require(env.directMasterSpy.sendResponseData as? GameNetworkModel)
-        #expect(filteredMessage.gameControl.controls.map(\.id) == [playerId])
+        // Targeting replaced the controls filter: the message is addressed to
+        // the player, the master state stays complete.
+        #expect(filteredMessage.targetId == playerId)
+        #expect(filteredMessage.masterState?.controls.map(\.id) == [playerId, hiddenPlayerId])
     }
 
     @Test("direct receive, ready, and file receive process messages")

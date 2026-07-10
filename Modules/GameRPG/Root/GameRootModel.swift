@@ -101,12 +101,12 @@ final class GameRootModel: Sendable {
 
     /// Applies a master broadcast in one atomic step so concurrent readers
     /// (message building, sendCharacter) never observe a half-updated state.
-    func applyMasterBroadcast(master: MasterGameModel, players: [PlayerGameModel], controls: [SharingControlModel], features: GameFeatureModel) {
-        gameConfig.master = master
-        gameControl.controls = controls
-        gameControl.features = features
+    func applyMasterBroadcast(masterId: UUID, masterName: String, state: GameMasterStateModel) {
+        gameConfig.master = MasterGameModel(id: masterId, type: .master, name: masterName, adventureId: state.adventureId, adventureTitle: state.adventureTitle)
+        gameControl.controls = state.controls
+        gameControl.features = state.features
 
-        var updatedPlayers = players
+        var updatedPlayers = state.players
         if !updatedPlayers.contains(where: { $0.id == gameConfig.id }) {
             // Keep the local player in the roster, but never append the `.empty`
             // fallback — its random id would poison every later lookup.
@@ -116,6 +116,34 @@ final class GameRootModel: Sendable {
             }
         }
         gameRoster.players = updatedPlayers
+    }
+
+    /// Builds an outgoing message from local state in one MainActor hop, so a
+    /// message never carries a torn combination from a concurrent update.
+    /// Master messages carry the authoritative `masterState`; player messages
+    /// carry only the sender identity.
+    func outgoingMessage(counter: Int, proxyCounter: Int = 0, type: RPGMessageType, subType: RPGMessageActionType, asMaster: Bool, targetId: UUID? = nil, data: NetworkCodableDataType) -> GameNetworkModel {
+        let sender: GameSenderModel
+        var masterState: GameMasterStateModel?
+        if asMaster {
+            sender = GameSenderModel(id: gameConfig.master.id, role: .master, name: gameConfig.master.name, characterId: nil)
+            masterState = GameMasterStateModel(
+                state: gameConfig.state,
+                adventureId: gameConfig.master.adventureId,
+                adventureTitle: gameConfig.master.adventureTitle,
+                players: gameRoster.players,
+                controls: gameControl.controls,
+                features: gameControl.features
+            )
+        } else {
+            let player = gamePlayer
+            if player.id == gameConfig.id {
+                sender = GameSenderModel(id: player.id, role: player.type, name: player.name, characterId: player.characterId)
+            } else {
+                sender = GameSenderModel(id: gameConfig.id, role: .notSet, name: gameName, characterId: nil)
+            }
+        }
+        return GameNetworkModel(counter: counter, proxyCounter: proxyCounter, type: type, subType: subType, masterId: gameConfig.master.id, sender: sender, masterState: masterState, targetId: targetId, data: data)
     }
 
     var gameType: GameType { gameConfig.type(in: gameRoster) }
@@ -446,7 +474,7 @@ extension GameRoot {
                         }
                         guard !Task.isCancelled else { return }
                         let data = await photoRoot.gameControllable.share(id: photo)
-                        let gameNetworkModel = GameNetworkModel(counter: 1, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, gameControl: gameModel.gameControl, data: data)
+                        let gameNetworkModel = gameModel.outgoingMessage(counter: 1, type: .reveal, subType: .show, asMaster: true, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
                     }
                     
@@ -459,7 +487,7 @@ extension GameRoot {
                         }
                         guard !Task.isCancelled else { return }
                         let data = await weatherRoot.gameControllable.share(id: weather)
-                        let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, gameControl: gameModel.gameControl, data: data)
+                        let gameNetworkModel = gameModel.outgoingMessage(counter: 2, type: .reveal, subType: .show, asMaster: true, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
                     }
                     
@@ -472,7 +500,7 @@ extension GameRoot {
                         }
                         guard !Task.isCancelled else { return }
                         let data = await mapRoot.gameControllable.share(id: map)
-                        let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, gameControl: gameModel.gameControl, data: data)
+                        let gameNetworkModel = gameModel.outgoingMessage(counter: 2, type: .reveal, subType: .show, asMaster: true, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
                         
                         var showMap = true
@@ -491,7 +519,7 @@ extension GameRoot {
                             }
                             guard !Task.isCancelled else { return }
                             
-                            let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .update, subType: .mapState, gameConfig: gameModel.gameConfig, gameControl: gameModel.gameControl, data: data)
+                            let gameNetworkModel = gameModel.outgoingMessage(counter: 2, type: .update, subType: .mapState, asMaster: true, data: data)
                             await playerController.receivedProcess(gameNetworkModel)
                         }
                     }

@@ -12,13 +12,12 @@ public enum GameType: Equatable, Codable, Sendable {
 }
 
 public struct MasterGameModel: Equatable, Identifiable, Codable, Sendable {
-    public init(id: UUID, type: GameType, name: String, adventureId: UUID? = nil, adventureTitle: String? = nil, characterId: UUID? = nil) {
+    public init(id: UUID, type: GameType, name: String, adventureId: UUID? = nil, adventureTitle: String? = nil) {
         self.id = id
         self.type = type
         self.name = name
         self.adventureId = adventureId
         self.adventureTitle = adventureTitle
-        self.characterId = characterId
     }
 
     public var id: UUID
@@ -26,7 +25,6 @@ public struct MasterGameModel: Equatable, Identifiable, Codable, Sendable {
     public var name: String
     public var adventureId: UUID?
     public var adventureTitle: String?
-    public var characterId: UUID?
 
     public static let empty = MasterGameModel(id: UUID(), type: .notSet, name: "")
 }

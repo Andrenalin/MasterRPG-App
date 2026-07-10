@@ -36,7 +36,16 @@ struct CloudDocumentController: Sendable {
 
     func fullUrl(fileUrl: URL) -> URL {
         var nameUrl = moduleUrl
-        let compPath = fileUrl.pathComponents
+        // An absolute url (imported from another device or a legacy item) must be
+        // reduced to its name below Documents/<module> — appending it verbatim
+        // produces .../<module>/Users/... which never exists on this device.
+        let components = fileUrl.pathComponents
+        let compPath: [String]
+        if components.contains(CloudDocumentController.documentDirName) {
+            compPath = Array(components.drop(while: { $0 != CloudDocumentController.documentDirName }).dropFirst(2))
+        } else {
+            compPath = components.filter { $0 != "/" }
+        }
         compPath.forEach {
             nameUrl.append(path: $0)
         }

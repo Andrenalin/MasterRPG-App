@@ -21,7 +21,7 @@ public struct NetworkActions: Sendable {
     @MainActor static let empty = NetworkActions(shareId: { _ in }, send: { _ in }, game: { _, _, _ in })
 }
 
-public struct NetworkCodableDataType: Codable, Sendable {
+public struct NetworkCodableDataType: Codable, Sendable, Equatable {
     public init(id: UUID, type: NetworkModules, version: Int, data: Data? = nil) {
         self.id = id
         self.type = type

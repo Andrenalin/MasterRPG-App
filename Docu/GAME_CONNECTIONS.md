@@ -248,18 +248,43 @@ missing-data path and requests the full payload from the master.
 
 ## 5. Message Envelope
 
+### Wire-Format Versions
+
+| Version | Layout | Sender |
+| --- | --- | --- |
+| 1 | `players`, `controls`, `features` inside `gameConfig`. No top-level roster/control. | Shipped 2.6 app (`GameNetworkModelV1`). |
+| 1/2 (unreleased dev layouts) | Slim `gameConfig`; state in `gameRoster` [+ `gameControl`]. | Dev builds before the sender/masterState redesign. |
+| 2 (current) | Explicit `sender` + master-only `masterState` + optional `targetId`. | Current builds. |
+
+Compatibility rules:
+
+- **Decode**: `GameNetworkModel.init(from:)` accepts all layouts. A message with
+  a `sender` key is current; a pure V1 envelope (no `gameRoster`/`gameControl`
+  keys) is decoded as `GameNetworkModelV1` and up-mapped via `v2Model`, keeping
+  `version == 1` so the receiver can tell the peer is old; the unreleased dev
+  layouts are derived via `legacyIdentity` (sender/masterState from
+  config + roster).
+- **Encode**: `encode(to:)` writes a compatibility superset. Besides
+  `sender`/`masterState`, `gameConfig` is encoded through the down-mapper
+  (`v1Model.gameConfig`) with players/controls/features embedded for V1 peers,
+  plus `gameRoster`/`gameControl` for the dev layouts. Player messages embed the
+  sender as the only roster entry so V1 peers can resolve the sender name.
+- Mappers exist in both directions: `GameNetworkModelV1.v2Model` and
+  `GameNetworkModel.v1Model`.
+
 ### `GameNetworkModel`
 
 | Field | Meaning |
 | --- | --- |
-| `version` | Envelope version. Defaults to `1`. |
+| `version` | Envelope version. New messages are stamped `2` (`GameNetworkModel.currentVersion`); up-mapped V1 messages keep `1`. |
 | `counter` | Master message id or copied request id. Used by logs and deduplication. |
 | `proxyCounter` | Reserved proxy-hop counter. Currently preserved, not incremented in traced code. |
 | `type` | High-level message kind: reveal, store, update. |
 | `subType` | Action/ack subtype: show, store, ok, failed, mapState, playAudio, etc. |
-| `gameConfig` | Sender id plus authoritative master identity/state. |
-| `gameRoster` | Dynamic player list. |
-| `gameControl` | Sharing controls and feature gates. |
+| `masterId` | The master's id — routing and `isMaster` checks without roster lookups. |
+| `sender` | `GameSenderModel`: id, role (`GameType`), name, characterId. The only identity a player ever sends. |
+| `masterState` | `GameMasterStateModel`: state, adventureId/title, players, controls, features. **Only master messages carry it** — players structurally cannot change roster/controls. |
+| `targetId` | When set, only the addressed participant processes the message (data-request responses, map-state recovery). |
 | `data` | Module item id, module type, version, optional payload bytes. |
 
 ### `GameConfigModel`
@@ -1362,6 +1387,10 @@ Master:
 
 ## 18. Important Invariants And Gotchas
 
+- Outgoing messages are encoded as a version superset: V1 peers (shipped 2.6),
+  intermediate dev builds, and V2 peers all decode the same bytes. Do not remove
+  the duplicated roster/control fields from the encoder without a version
+  negotiation replacing them.
 - Master is authoritative for roster, controls, features, and most module state.
 - Every message carries config, roster, and controls to keep receivers synced.
 - Config/roster/control snapshots are captured in one `MainActor` hop to avoid

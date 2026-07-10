@@ -131,16 +131,11 @@ extension MasterController {
         let counter = await gameModel.nextMessageCounter()
         Logger.networking.debug("MasterController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subtype.debugDescription, privacy: .public) for \(updated.type.token, privacy: .public) -> \(updated.id, privacy: .public)")
 
-        // Snapshot in one MainActor hop so the message never carries a torn
-        // combination of config, roster and controls from a concurrent update.
-        let (game, roster, currentControl) = await MainActor.run {
-            (root.gameModel.gameConfig, root.gameModel.gameRoster, root.gameModel.gameControl)
+        // Built from local state in one MainActor hop; a playerId becomes the
+        // message target so only the addressee processes it.
+        let networtData = await MainActor.run {
+            root.gameModel.outgoingMessage(counter: counter, type: type, subType: subtype, asMaster: !asProxy, targetId: playerId, data: updated)
         }
-        var control = currentControl
-        if let playerId {
-            control.controls = control.controls.filter { $0.id == playerId }
-        }
-        let networtData = GameNetworkModel(counter: counter, proxyCounter: 0, type: type, subType: subtype, gameConfig: game, gameRoster: roster, gameControl: control, data: updated)
 
         await root.logGameController.addMessage(counter: counter, type: type, subType: subtype, module: updated.type, itemId: updated.id)
 
@@ -196,31 +191,37 @@ extension MasterController: MasterNetworkStoreDelegate {
     private func process(_ event: GameMessageEvent) async {
         let model = event.model
 
-        await root.logGameController.updateMessage(counter: model.counter, player: model.gameConfig.id)
+        await root.logGameController.updateMessage(counter: model.counter, player: model.sender.id)
         if let connectionId = event.connectionId {
-            await gameModel.add(connectionId: connectionId, playerId: model.gameConfig.id)
+            await gameModel.add(connectionId: connectionId, playerId: model.sender.id)
         }
         
-        if await root.gameModel.add(playerId: model.gameConfig.id, playerModel: model.gameConfig.player(in: model.gameRoster), sharingModel: SharingControlModel(id: model.gameConfig.id, name: model.senderName, show: true)) {
-            await resetPlayers()
+        if !model.sender.isMaster, model.sender.role != .notSet {
+            if await root.gameModel.add(playerId: model.sender.id, playerModel: model.sender.playerModel, sharingModel: SharingControlModel(id: model.sender.id, name: model.sender.name, show: true)) {
+                await resetPlayers()
+            }
         }
 
         if asProxy {
             if model.data.type == .dice && model.type == .update {
-                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: root.gameModel.gameName, isGameMaster: model.gameConfig.isMaster)
-                let sendData = await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: root.gameModel.gameConfig, gameRoster: root.gameModel.gameRoster, gameControl: root.gameModel.gameControl, data: model.data)
+                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: root.gameModel.gameName, isGameMaster: model.sender.isMaster)
+                let sendData = await MainActor.run {
+                    root.gameModel.outgoingMessage(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, asMaster: false, data: model.data)
+                }
                 await root.networkStore.sendMaster(data: sendData, fileJournal: false)
             } else {
                 await root.networkStore.sendMaster(data: model, fileJournal: false)
             }
         } else if let requestedData = try? await handle(model) {
-            await send(type: model.type, subtype: model.subType, updated: requestedData)
+            // Target the answer at the requester: an untargeted full payload
+            // re-triggered "show" on every peer and flipped everyone's screen.
+            await send(type: model.type, subtype: model.subType, updated: requestedData, playerId: model.sender.id)
         }
     }
     
     func receivedFile(_ model: GameNetworkModel) async {
         Logger.networking.debug("MasterController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-        guard await root.gameModel.gameConfig.isMaster != model.gameConfig.isMaster else { return }
+        guard await root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
         guard await messagePipeline.enqueue(GameMessageEvent(model: model, origin: .file)) else {
             Logger.networking.debug("MasterController: Duplicate file ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
             return
@@ -262,7 +263,7 @@ extension MasterController {
     
     func handleAudio(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
-            await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
+            await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             await send(type: .update, subtype: .audioList, updated: root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
             return nil
         }
@@ -280,7 +281,7 @@ extension MasterController {
                 let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
                 return model.data
             case .audioList:
-                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
+                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.sender.id)
                 await send(type: .update, subtype: .audioList, updated: root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
             default:
                 break
@@ -296,7 +297,7 @@ extension MasterController {
         case .reveal, .store:
             return try await root.diceRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
-            let (diceResult, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.senderName, isGameMaster: model.gameConfig.isMaster)
+            let (diceResult, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.senderName, isGameMaster: model.sender.isMaster)
             if let diceResult, let resultCategory {
                 await root.tableRoot.tableGameControllable.addResult(resultCategory, value: diceResult)
             }
@@ -305,13 +306,13 @@ extension MasterController {
     }
     
     func handleGame(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
-        await root.logGameController.updateScreen(counter: model.counter, player: model.gameConfig.id, data: model.data.data)
+        await root.logGameController.updateScreen(counter: model.counter, player: model.sender.id, data: model.data.data)
         return nil
     }
     
     func handleMap(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
-            await root.mapRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
+            await root.mapRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
         
@@ -323,7 +324,7 @@ extension MasterController {
                 // Send the live map state (not the request echo, whose data is
                 // nil) so the recovering player syncs room visibility and pins.
                 // Targeted: the other players are already up to date.
-                await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id), playerId: model.gameConfig.id)
+                await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id), playerId: model.sender.id)
             } else {
                 return mapData
             }
@@ -336,7 +337,7 @@ extension MasterController {
                 // never get from players mapState updates, only as resend from SharePlay?
                 break
             case .mapPin:
-                await root.mapRoot.mapGameControllable.updatePin(itemId: model.data.id, data: model.data.data, playerId: model.gameConfig.id)
+                await root.mapRoot.mapGameControllable.updatePin(itemId: model.data.id, data: model.data.data, playerId: model.sender.id)
                 await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id))
             default:
                 break
@@ -347,7 +348,7 @@ extension MasterController {
 
     func handlePdf(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
-            await root.pdfRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
+            await root.pdfRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
 
@@ -363,7 +364,7 @@ extension MasterController {
 
     func handlePhoto(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
-            await root.photoRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
+            await root.photoRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
         
@@ -379,7 +380,7 @@ extension MasterController {
     
     func handleTable(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
-            await root.tableRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
+            await root.tableRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
         
@@ -394,7 +395,7 @@ extension MasterController {
 
     func handleValue(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
-            await root.characterRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
+            await root.characterRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
 
@@ -404,8 +405,8 @@ extension MasterController {
         case .update:
             guard model.senderType != .observer else { return nil }
             try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data)
-            if let characterId = model.gameConfig.player(in: model.gameRoster).characterId {
-                await root.mapRoot.mapGameControllable.setPlayerPin(for: model.gameConfig.id, name: model.senderName, characterId: characterId)
+            if let characterId = model.sender.characterId {
+                await root.mapRoot.mapGameControllable.setPlayerPin(for: model.sender.id, name: model.senderName, characterId: characterId)
             }
         }
         return nil
@@ -413,7 +414,7 @@ extension MasterController {
     
     func handleWeather(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
-            await root.weatherRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
+            await root.weatherRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
         return try await root.weatherRoot.gameControllable.createGameData(for: model.data.id)
@@ -421,7 +422,7 @@ extension MasterController {
     
     func handleSpace(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
-            await root.spaceRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
+            await root.spaceRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
         switch model.type {

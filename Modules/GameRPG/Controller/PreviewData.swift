@@ -60,11 +60,11 @@ extension GameConfigModel {
     
     static let player = GameConfigModel(
         id: playerId, state: .started,
-        master: MasterGameModel(id: masterId, type: .master, name: "Master", adventureId: UUID(uuidString: "9E5F5A2D-EC03-4CF2-91F2-A64E820658CD")!, adventureTitle: "Adventure Testing", characterId: UUID()))
+        master: MasterGameModel(id: masterId, type: .master, name: "Master", adventureId: UUID(uuidString: "9E5F5A2D-EC03-4CF2-91F2-A64E820658CD")!, adventureTitle: "Adventure Testing"))
 
     static let master = GameConfigModel(
         id: masterId, state: .started,
-        master: MasterGameModel(id: masterId, type: .master, name: "Master", adventureId: UUID(uuidString: "9E5F5A2D-EC03-4CF2-91F2-A64E820658CD")!, adventureTitle: "Adventure Testing", characterId: UUID()))
+        master: MasterGameModel(id: masterId, type: .master, name: "Master", adventureId: UUID(uuidString: "9E5F5A2D-EC03-4CF2-91F2-A64E820658CD")!, adventureTitle: "Adventure Testing"))
 }
 
 extension GameRosterModel {
