@@ -2,6 +2,14 @@
 
 MasterRPG is a multi-platform Apple app (iOS, macOS, tvOS, visionOS) for managing RPG data during tabletop game sessions. It supports Adventures, Characters, Maps, Photos, Audio, PDFs, 3D Objects, Tables, and Weather, with a live game mode where players join via SharePlay or local network.
 
+Related deep dives:
+
+- [Root Models And Setup](ROOT_MODELS.md)
+- [Controllers](CONTROLLERS.md)
+- [Database Handling](DATABASE.md)
+- [File Handling](FILES.md)
+- [Game Connections](GAME_CONNECTIONS.md)
+
 ---
 
 ## App Entry Point

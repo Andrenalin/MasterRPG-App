@@ -62,6 +62,20 @@ public struct ConvertController: Sendable {
                     editController.removeGroup(itemId: itemId, childId: entry.childId)
                 }
             }
+
+            if let repairedItem = itemController.itemSync(for: itemId) {
+                resetLinkRegister(for: repairedItem)
+            }
         }
+    }
+
+    @MainActor private func resetLinkRegister(for item: any ItemLinkRegistable) {
+        let register = editController.linkRegisterController
+        var existing: [LinkRegisterModel] = []
+        for links in register.model.items.values {
+            existing.append(contentsOf: links.filter { $0.source.itemId == item.id })
+        }
+        register.deregister(links: existing)
+        register.register(links: item.linkRegisterModels)
     }
 }
