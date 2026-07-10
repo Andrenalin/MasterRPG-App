@@ -11,9 +11,6 @@
     }
   ],
   "defaultOptions" : {
-    "addressSanitizer" : {
-      "enabled" : true
-    },
     "codeCoverage" : {
       "targets" : [
         {
@@ -99,15 +96,22 @@
       }
     ],
     "language" : "en",
+    "mainThreadCheckerDetectionPolicy" : {
+      "severity" : "failure"
+    },
     "region" : "US",
+    "runtimeIssueDetection" : {
+      "severity" : "failure"
+    },
     "targetForVariableExpansion" : {
       "containerPath" : "container:MasterRPG.xcodeproj",
       "identifier" : "8EC4E46828DDA29600D0279F",
       "name" : "MasterRPG"
     },
     "testExecutionOrdering" : "random",
-    "threadSanitizerEnabled" : true,
-    "undefinedBehaviorSanitizerEnabled" : true
+    "threadPerformanceCheckerRuntimeIssueDetection" : {
+      "severity" : "failure"
+    }
   },
   "testTargets" : [
     {
