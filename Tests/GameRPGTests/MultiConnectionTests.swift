@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+@testable import CoreRPG
 import Foundation
 import RPGResourcesDebug
 import Testing
@@ -162,6 +162,242 @@ struct MultiConnectionTestEnvironment {
             networkController: networkController,
             networkProxyController: networkProxyController
         )
+    }
+}
+
+enum MultiplayerPhotoRole: CaseIterable, Hashable, Sendable {
+    case player1
+    case player2
+    case player3
+    case player4
+    case observer1
+    case observer2
+    case proxy1
+    case proxy2
+
+    var name: String {
+        switch self {
+        case .player1: "Player - 1"
+        case .player2: "Player - 2"
+        case .player3: "Player - 3"
+        case .player4: "Player - 4"
+        case .observer1: "Observer - 1"
+        case .observer2: "Observer - 2"
+        case .proxy1: "Proxy - 1"
+        case .proxy2: "Proxy - 2"
+        }
+    }
+
+    var type: GameType {
+        switch self {
+        case .player1, .player2, .player3, .player4:
+            .player
+        case .observer1, .observer2:
+            .observer
+        case .proxy1, .proxy2:
+            .proxy
+        }
+    }
+
+    var proxyHost: MultiplayerPhotoRole? {
+        switch self {
+        case .proxy1:
+            .player1
+        case .proxy2:
+            .player3
+        default:
+            nil
+        }
+    }
+}
+
+struct MultiplayerPhotoScenario: CustomStringConvertible, Sendable {
+    let name: String
+    let missingRoles: Set<MultiplayerPhotoRole>
+
+    var description: String { name }
+    var missingRolesInTopologyOrder: [MultiplayerPhotoRole] {
+        MultiplayerPhotoRole.allCases.filter { missingRoles.contains($0) }
+    }
+
+    static let all: [MultiplayerPhotoScenario] = [
+        MultiplayerPhotoScenario(
+            name: "all devices already have the photo",
+            missingRoles: []
+        ),
+        MultiplayerPhotoScenario(
+            name: "one player is missing the photo",
+            missingRoles: [.player1]
+        ),
+        MultiplayerPhotoScenario(
+            name: "one player, one observer, and one proxy are missing the photo",
+            missingRoles: [.player2, .observer1, .proxy1]
+        ),
+        MultiplayerPhotoScenario(
+            name: "no receiver has the photo",
+            missingRoles: Set(MultiplayerPhotoRole.allCases)
+        )
+    ]
+}
+
+@MainActor
+private struct MultiplayerPhotoNetworkHarness {
+    let directMasterSpy: MasterNetworkControllableMock
+    let directPlayerSpy: PlayerStoreAbstractionMock
+    let proxyMasterSpy: MasterNetworkControllableMock
+    let proxyPlayerSpy: PlayerStoreAbstractionMock
+    let directNetwork: GameNetworkController
+    let proxyNetwork: GameNetworkController
+
+    static func make(name: String) -> MultiplayerPhotoNetworkHarness {
+        let directMasterSpy = MasterNetworkControllableMock()
+        let directPlayerSpy = PlayerStoreAbstractionMock()
+        let proxyMasterSpy = MasterNetworkControllableMock()
+        let proxyPlayerSpy = PlayerStoreAbstractionMock()
+
+        let directNetwork = GameNetworkController(
+            name: name,
+            proxy: false,
+            masterBuilder: { _, _ in directMasterSpy },
+            playerBuilder: { _, _ in directPlayerSpy }
+        )
+        let proxyNetwork = GameNetworkController(
+            name: "\(name) Proxy",
+            proxy: true,
+            masterBuilder: { _, _ in proxyMasterSpy },
+            playerBuilder: { _, _ in proxyPlayerSpy }
+        )
+
+        return MultiplayerPhotoNetworkHarness(
+            directMasterSpy: directMasterSpy,
+            directPlayerSpy: directPlayerSpy,
+            proxyMasterSpy: proxyMasterSpy,
+            proxyPlayerSpy: proxyPlayerSpy,
+            directNetwork: directNetwork,
+            proxyNetwork: proxyNetwork
+        )
+    }
+}
+
+@MainActor
+private struct MultiplayerPhotoParticipant {
+    let role: MultiplayerPhotoRole
+    let root: GameRoot
+    let controller: PlayerController
+    let config: GameConfigModel
+    let playerModel: PlayerGameModel
+    let network: MultiplayerPhotoNetworkHarness
+
+    func receive(_ model: GameNetworkModel) async throws -> GameNetworkModel {
+        network.directPlayerSpy.requestData = nil
+        network.proxyPlayerSpy.requestData = nil
+
+        if role.type == .proxy {
+            await controller.receivedProxy(model)
+            return try #require(network.proxyPlayerSpy.requestData as? GameNetworkModel)
+        }
+
+        await controller.receivedProcess(model)
+        return try #require(network.directPlayerSpy.requestData as? GameNetworkModel)
+    }
+}
+
+@MainActor
+private struct MultiplayerPhotoTopology {
+    let master: MasterController
+    let masterRoot: GameRoot
+    let masterConfig: GameConfigModel
+    let masterNetwork: MultiplayerPhotoNetworkHarness
+    let participants: [MultiplayerPhotoParticipant]
+
+    var participantIds: [UUID] {
+        participants.map(\.config.id)
+    }
+
+    static func make() async throws -> MultiplayerPhotoTopology {
+        let masterNetwork = MultiplayerPhotoNetworkHarness.make(name: "Master")
+        let masterRoot = try await MockRoot.createGameRoot()
+        try await MockRoot.resetTestData(for: masterRoot.adventureRoot)
+        try await MockRoot.resetGameController(for: masterRoot)
+        masterRoot.networkStore = masterNetwork.directNetwork
+        masterRoot.networkProxyStore = masterNetwork.proxyNetwork
+
+        let masterId = UUID()
+        let masterConfig = GameConfigModel(
+            id: masterId,
+            state: .started,
+            master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin")
+        )
+
+        var participants: [MultiplayerPhotoParticipant] = []
+        for role in MultiplayerPhotoRole.allCases {
+            let network = MultiplayerPhotoNetworkHarness.make(name: role.name)
+            let root = try await MockRoot.createGameRoot()
+            try await MockRoot.resetTestData(for: root.adventureRoot)
+            try await MockRoot.resetGameController(for: root)
+            root.networkStore = network.directNetwork
+            root.networkProxyStore = network.proxyNetwork
+
+            let id = UUID()
+            let config = GameConfigModel(id: id, state: .started, master: .empty)
+            let playerModel = PlayerGameModel(id: id, type: role.type, name: role.name)
+            root.gameModel.reset(gameConfig: config, gameRoster: GameRosterModel(players: [playerModel]))
+
+            let controller = PlayerController(root: root, asGameMaster: false)
+            participants.append(MultiplayerPhotoParticipant(
+                role: role,
+                root: root,
+                controller: controller,
+                config: config,
+                playerModel: playerModel,
+                network: network
+            ))
+        }
+
+        let roster = GameRosterModel(players: participants.map(\.playerModel))
+        let controls = participants.map { SharingControlModel(id: $0.config.id, name: $0.role.name, show: true) }
+        masterRoot.gameModel.reset(
+            gameConfig: masterConfig,
+            gameRoster: roster,
+            gameControl: GameControlModel(controls: controls)
+        )
+
+        let master = MasterController(root: masterRoot, asProxy: false)
+        return MultiplayerPhotoTopology(
+            master: master,
+            masterRoot: masterRoot,
+            masterConfig: masterConfig,
+            masterNetwork: masterNetwork,
+            participants: participants
+        )
+    }
+
+    func importPhotoData() async throws -> UUID {
+        try await MockRoot.importTestData(into: masterRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
+        for participant in participants {
+            try await MockRoot.importTestData(into: participant.root.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
+        }
+
+        masterRoot.adventureRoot.startGame()
+        for participant in participants {
+            participant.root.adventureRoot.startGame()
+        }
+
+        return try #require(masterRoot.photoRoot.itemController.itemDataModel.items.first {
+            masterRoot.photoRoot.itemController.itemSync(for: $0)?.fileUrl != nil
+        })
+    }
+
+    func removePhoto(_ photoId: UUID, from missingRoles: Set<MultiplayerPhotoRole>) {
+        for participant in participants where missingRoles.contains(participant.role) {
+            participant.root.photoRoot.itemController.itemDataModel.resetModel(id: photoId)
+            participant.root.photoRoot.gameController.gameModel.itemData[photoId] = nil
+            participant.root.photoRoot.gameController.gameModel.items.removeAll { $0 == photoId }
+        }
+    }
+
+    func participant(for role: MultiplayerPhotoRole) throws -> MultiplayerPhotoParticipant {
+        try #require(participants.first { $0.role == role })
     }
 }
 
@@ -539,5 +775,94 @@ struct MultiConnectionAudioTests {
         #expect(env.player2Root.audioRoot.audioController.model.playList.count == 1)
         #expect(env.player3Root.audioRoot.audioController.model.playList.count == 1)
 
+    }
+}
+
+// MARK: - Multi-Connection Photo Tests
+
+@Suite("Multi-player photo synchronization")
+@MainActor
+struct MultiConnectionPhotoTests {
+
+    @Test("Master sends photo to players, observers, and proxies", arguments: MultiplayerPhotoScenario.all)
+    func masterSendsPhotoToPlayersObserversAndProxies(testCase: MultiplayerPhotoScenario) async throws {
+        let env = try await MultiplayerPhotoTopology.make()
+        let photoId = try await env.importPhotoData()
+        let version = env.masterRoot.photoRoot.itemController.itemOrEmpty(for: photoId).version
+        env.removePhoto(photoId, from: testCase.missingRoles)
+
+        let photoShareData = await env.masterRoot.photoRoot.gameController.share(id: photoId)
+        await env.master.show(for: photoShareData)
+
+        let showCommand = try #require(env.masterNetwork.directMasterSpy.sendResponseData as? GameNetworkModel)
+        #expect(showCommand.type == .reveal)
+        #expect(showCommand.subType == .show)
+        #expect(showCommand.data.id == photoId)
+        #expect(showCommand.data.type == .photo)
+        #expect(showCommand.data.data == nil)
+
+        var initialResponses: [MultiplayerPhotoRole: GameNetworkModel] = [:]
+        for participant in env.participants {
+            let response = try await participant.receive(showCommand)
+            initialResponses[participant.role] = response
+            #expect(response.data.id == photoId)
+            #expect(response.data.type == .photo)
+
+            if testCase.missingRoles.contains(participant.role) {
+                #expect(response.subType == .show)
+            } else {
+                #expect(response.subType == .ok)
+            }
+        }
+
+        for response in initialResponses.values where response.subType == .ok {
+            await env.master.receivedProcess(response, connectionId: nil)
+        }
+
+        let proxyHosts = try [MultiplayerPhotoRole.proxy1, .proxy2].map { try #require($0.proxyHost) }
+        #expect(Set(proxyHosts).count == 2)
+        for proxyHost in proxyHosts {
+            let host = try env.participant(for: proxyHost)
+            #expect(host.network.proxyMasterSpy.calledSendResponseAll > 0)
+        }
+
+        var fullDataBroadcasts: [GameNetworkModel] = []
+        for role in testCase.missingRolesInTopologyOrder {
+            let missingResponse = try #require(initialResponses[role])
+            await env.master.receivedProcess(missingResponse, connectionId: nil)
+            let fullData = try #require(env.masterNetwork.directMasterSpy.sendResponseData as? GameNetworkModel)
+            #expect(fullData.type == .reveal)
+            #expect(fullData.subType == .show)
+            #expect(fullData.data.id == photoId)
+            #expect(fullData.data.type == .photo)
+            #expect(fullData.data.version == version)
+            #expect(fullData.data.data != nil)
+            fullDataBroadcasts.append(fullData)
+        }
+
+        #expect(fullDataBroadcasts.count == testCase.missingRoles.count)
+
+        for fullData in fullDataBroadcasts {
+            for participant in env.participants {
+                let response = try await participant.receive(fullData)
+                #expect(response.subType == .ok)
+                await env.master.receivedProcess(response, connectionId: nil)
+            }
+        }
+
+        let reports = env.masterRoot.photoRoot.gameController.gameModel.playerReport(for: photoId)
+        #expect(reports.sorted() == env.participantIds.sorted())
+
+        for participant in env.participants {
+            #expect(await participant.root.photoRoot.gameController.currentId == photoId)
+            let storedPhoto = try #require(participant.root.photoRoot.itemController.itemSync(for: photoId, noGame: true))
+            #expect(storedPhoto.version == version)
+            #expect(storedPhoto.fileUrl != nil)
+        }
+
+        for proxyRole in [MultiplayerPhotoRole.proxy1, .proxy2] {
+            let proxy = try env.participant(for: proxyRole)
+            #expect(proxy.network.proxyPlayerSpy.calledRequest > 0)
+        }
     }
 }
