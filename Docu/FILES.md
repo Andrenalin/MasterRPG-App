@@ -51,7 +51,10 @@ Supported locations:
 - `.url`
 
 Most imported or newly picked managed files become `.newCloud`, with data written
-under the app-managed iCloud/document area and a bookmark saved for access.
+under the app-managed iCloud/document area and a bookmark saved for access. The
+older location cases remain in the wire/storage model so imports and updates from
+old app versions can resolve existing file metadata before rewriting managed
+copies.
 
 ## FileUrlDataController
 
@@ -59,8 +62,8 @@ under the app-managed iCloud/document area and a bookmark saved for access.
 
 - `CloudDocumentController`: app-managed cloud document folder operations
 - `FileBookmarkController`: security-scoped bookmarks
-- `LocationFileManager`: absolute/relative URL conversion
-- `FileUrlDataModel`: folder bookmarks and default location settings
+- `LocationFileManager`: legacy absolute/relative URL conversion
+- `FileUrlDataModel`: folder bookmark display state
 - allowed `UTType` file types and the module filename extension
 
 It can:
@@ -87,7 +90,6 @@ keeps transient data as fallback.
 Photo, PDF, audio, map, and space use file URLs heavily:
 
 - Photo/PDF item controllers create `FileUrlDataController` and `CacheController`.
-- `saveFileUrl(fileUrl:)` updates the owning item and clears stale cache.
 - PDF can create `PDFDocument` after ensuring the file is downloaded.
 - Audio loads file URLs into temporary files for `AVURLAsset` so playback streams from disk instead of memory.
 - Map uses photo roots and cache controllers for background map images.

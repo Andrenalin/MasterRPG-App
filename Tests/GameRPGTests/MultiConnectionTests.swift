@@ -729,7 +729,7 @@ struct MultiConnectionAudioTests {
         // Assert - Player starts playback, no response expected
         let noResponse = env.playerNetworkSpy.requestData
         #expect(noResponse == nil)
-        #expect(env.player1Root.audioRoot.audioController.model.playList.count == 1)
+        try #require(env.player1Root.audioRoot.audioController.model.playList.count == 1)
         #expect(env.player1Root.audioRoot.audioController.model.playList[0].id == audioId)
         #expect(env.player1Root.audioRoot.audioController.model.currentId == audioId)
     }

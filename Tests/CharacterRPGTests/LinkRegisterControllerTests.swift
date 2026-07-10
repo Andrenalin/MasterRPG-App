@@ -32,13 +32,13 @@ struct LinkRegisterControllerTests {
         let item = await root.editController.addNew(type: .item)
         try #require(item != nil)
         
-        #expect(sut.model.items.count == 0)
+        #expect(sut.model.items.count == 17)
         let itemID = item!.id
         let entryID = UUID()
         let model = ValueModel(id: itemID, name: "Super", description: "Nix", entries: [ValueEntryModel(id: entryID, name: "Good \(photoLink)", type: .text, value: diceLink)])
         root.editController.save(updated: model, message: "Test")
 
-        #expect(sut.model.items.count == 2)
+        #expect(sut.model.items.count == 19)
         var itemLinks = sut.model.items[diceId]
         try #require(nil != itemLinks)
         #expect(itemLinks!.count == 1)

@@ -11,8 +11,7 @@ struct FileUrlDataControllerTests {
 
     @Test("Initialize controller with folders")
     func readAddSaveReread() async throws {
-        let fake = FakeFileUrAccessible()
-        let sut = await FileUrlDataController(moduleFolder: uniqueModuleName("MegaModules"), fileTypes: [.rpgDocument], filenameExtension: ".rpg", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: uniqueModuleName("MegaModules"), fileTypes: [.rpgDocument], filenameExtension: ".rpg")
 
         #expect(await sut.model.folders.isEmpty)
     }
@@ -25,9 +24,8 @@ struct CreateNewFileUrlTests {
     
     @Test("Returns nil when FileUrl has no data")
     func returnsNilWhenNoData() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         let fileUrl = FileUrl(fileId: UUID(), url: try uniqueRelativeTestURL(), location: .newCloud, module: module, relativeUrl: nil)
         
@@ -38,9 +36,8 @@ struct CreateNewFileUrlTests {
     
     @Test("Returns existing FileUrl when file already exists at old location")
     func returnsExistingFileUrlWhenFileExists() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         // Create a test file in temporary directory
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("test")
@@ -53,6 +50,7 @@ struct CreateNewFileUrlTests {
         let result = try await sut.createNewFileUrl(fileId: UUID(), unconvertedFileUrl: fileUrl, pathExtension: "test")
         
         #expect(result?.rawUrl == tempURL)
+        #expect(result?.location == .local)
         // File exists on disk, so data should NOT be kept in memory (memory optimization)
         #expect(result?.hasUnconvertedData == false, "Should NOT keep data in memory when file already exists on disk")
         
@@ -62,9 +60,8 @@ struct CreateNewFileUrlTests {
     
     @Test("Successfully creates file in cloud storage")
     func successfullyCreatesFileInCloudStorage() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         let fileId = UUID()
         let testData = "Test cloud data".data(using: .utf8)!
@@ -90,9 +87,8 @@ struct CreateNewFileUrlTests {
     
     @Test("Successfully creates file in cloud storage without keeping data in memory")
     func successfullyCreatesFileWithoutKeepingDataInMemory() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         let fileId = UUID()
         let testData = "Test fallback data".data(using: .utf8)!
@@ -121,9 +117,8 @@ struct CreateNewFileUrlTests {
     
     @Test("Handles file from different device or user gracefully")
     func handlesFileFromDifferentDevice() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         let fileId = UUID()
         let testData = "Data from another device".data(using: .utf8)!
@@ -140,6 +135,28 @@ struct CreateNewFileUrlTests {
         #expect(result != nil)
         #expect(result?.hasUnconvertedData == false || ((result?.rawUrl.path().isEmpty) != nil), "Should either save to disk or keep in memory as last resort")
     }
+
+    @Test("Writes imported URL metadata into managed cloud storage")
+    func writesImportedUrlMetadataIntoManagedCloudStorage() async throws {
+        let module = uniqueModuleName()
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
+
+        let fileId = UUID()
+        let testData = "Remote file bytes".data(using: .utf8)!
+        let remoteUrl = try #require(URL(string: "https://example.com/remote-file.test"))
+
+        var fileUrl = FileUrl(fileId: fileId, url: remoteUrl, location: .url, module: module, relativeUrl: nil)
+        fileUrl.resetData(testData)
+
+        let result = try await sut.createNewFileUrl(fileId: fileId, unconvertedFileUrl: fileUrl, pathExtension: "test")
+
+        let stored = try #require(result)
+        #expect(stored.location == .newCloud)
+        #expect(stored.rawUrl.lastPathComponent == remoteUrl.lastPathComponent)
+        #expect(stored.hasUnconvertedData == false)
+        let loadedData = try await sut.loadData(for: stored)
+        #expect(loadedData == testData)
+    }
 }
 
 // MARK: - Other FileUrlDataController Methods Tests
@@ -149,9 +166,8 @@ struct FileAccessTests {
     
     @Test("hasAccess returns true for valid FileUrl")
     func hasAccessForValidFileUrl() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         let fileId = UUID()
         let testData = "Accessible file data".data(using: .utf8)!
@@ -168,9 +184,8 @@ struct FileAccessTests {
     
     @Test("loadData returns data when FileUrl has unconverted data")
     func loadDataReturnsUnconvertedData() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         let testData = "Unconverted test data".data(using: .utf8)!
         var fileUrl = FileUrl(fileId: UUID(), url: try uniqueRelativeTestURL(), location: .newCloud, module: module, relativeUrl: nil)
@@ -183,9 +198,8 @@ struct FileAccessTests {
     
     @Test("fileDownloaded returns nil for local files")
     func fileDownloadedReturnsNilForLocalFiles() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         let fileUrl = FileUrl(fileId: UUID(), url: URL(fileURLWithPath: "/test.test"), location: .local, module: module, relativeUrl: nil)
         
@@ -200,9 +214,8 @@ struct FileDuplicationTests {
     
     @Test("duplicate creates new FileUrl with different fileId")
     func duplicateCreatesNewFileUrl() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         // Create original file
         let originalFileId = UUID()
@@ -225,9 +238,8 @@ struct FileDuplicationTests {
     
     @Test("duplicate returns nil when original has no data")
     func duplicateReturnsNilWhenNoData() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         // Create a FileUrl without data (file doesn't exist)
         let fileUrl = FileUrl(fileId: UUID(), url: try uniqueRelativeTestURL(prefix: "nonexistent"), location: .newCloud, module: module, relativeUrl: nil)
@@ -244,9 +256,8 @@ struct FileDeletionTests {
     
     @Test("delete removes cloud file")
     func deleteRemovesCloudFile() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         // Create a file in cloud storage first
         let fileId = UUID()
@@ -274,8 +285,7 @@ struct FileDeletionTests {
     
     @Test("delete handles nil FileUrl gracefully")
     func deleteHandlesNilGracefully() async throws {
-        let fake = FakeFileUrAccessible()
-        let sut = await FileUrlDataController(moduleFolder: uniqueModuleName(), fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: uniqueModuleName(), fileTypes: [.data], filenameExtension: "test")
         
         // Should not crash
         sut.delete(nil)
@@ -289,9 +299,8 @@ struct IsSameFileTests {
     
     @Test("isSameFile returns true for same cloud file")
     func returnsTrueForSameCloudFile() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         // Create an actual file and get its URL
         let fileId = UUID()
@@ -316,9 +325,8 @@ struct IsSameFileTests {
     
     @Test("isSameFile returns false for different paths")
     func returnsFalseForDifferentPaths() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         let fileUrl = FileUrl(fileId: UUID(), url: URL(fileURLWithPath: "/path1/file.test"), location: .newCloud, module: module, relativeUrl: nil)
         let differentUrl = URL(fileURLWithPath: "/path2/file.test")
@@ -330,9 +338,8 @@ struct IsSameFileTests {
     
     @Test("isSameFile returns false for nil URL")
     func returnsFalseForNilUrl() async throws {
-        let fake = FakeFileUrAccessible()
         let module = uniqueModuleName()
-        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test", fileUrlAccess: fake)
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
         
         let fileUrl = FileUrl(fileId: UUID(), url: try uniqueRelativeTestURL(), location: .newCloud, module: module, relativeUrl: nil)
         
@@ -340,12 +347,6 @@ struct IsSameFileTests {
         
         #expect(isSame == false)
     }
-}
-
-// MARK: - Test Helpers
-
-fileprivate struct FakeFileUrAccessible: FileUrlAccessible {
-    func saveFileUrl(fileUrl: FileUrl) async {}
 }
 
 fileprivate enum FileUrlDataControllerTestError: Error {

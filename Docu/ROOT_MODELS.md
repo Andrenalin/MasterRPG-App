@@ -160,6 +160,6 @@ When adding a new module root, keep these invariants:
 5. Add the root to `AppModel.init` in dependency order.
 6. Add the module bundle to `DataBaseModel.rpgModuleBundles`.
 7. In `setUp`, attach `DataController`, shared `LinkRegisterController`, `RootManager`, `SheetRootModel`, and `SyncDataController`.
-8. If file-backed, create a `FileUrlDataController`, cache controller, and `FileUrlAccessible.saveFileUrl` implementation.
+8. If file-backed, create a `FileUrlDataController` and cache controller.
 9. If game-capable, implement `GameControllable` and any module-specific game protocol used by `GameRoot`.
 10. If the module links to other modules, make export include linked dependencies and make models produce correct `linkRegisterModels`.
