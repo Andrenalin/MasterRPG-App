@@ -26,7 +26,7 @@ extension SheetController: SheetControllable {
             Logger.sheetController.info("🚀 [Sheet] Starting sheet creation \(itemController.config.module.token) - itemId: \(itemId.uuidString)")
         }
         
-        let model = itemController.itemOrEmpty(for: itemId)
+        let model = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         var inlineEntries: [SheetModel] = []
         var totalSheetCount = 1 // Count this sheet
         
@@ -60,7 +60,7 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
-        let item = itemController.itemOrEmpty(for: itemId)
+        let item = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         let sheets = item.entries.map { entry in
             sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
         }
@@ -69,7 +69,7 @@ extension SheetController: SheetControllable {
     
     @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
-        let (name, description) = entryNameDescription(entry: entry)
+        let (name, description) = entryNameDescription(entry: entry, root: root)
 
         var inlineEntries: [SheetModel] = []
         if let diceId = entry.diceId {
@@ -120,11 +120,11 @@ extension SheetController: SheetControllable {
         return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: entryType, editType: entry.editType, name: name, description: description, inlineEntries: inlineEntries, entries: allSheets)
     }
 
-    @MainActor func entryNameDescription(entry: ValueEntryModel) -> (name: String, description: String) {
+    @MainActor func entryNameDescription(entry: ValueEntryModel, root: RootManager) -> (name: String, description: String) {
         var name = entry.name
         var description = ""
         if let valueId = entry.valueId {
-            let value = itemController.itemOrEmpty(for: valueId)
+            let value = itemController.reviewAwareItemOrEmpty(root: root, for: valueId)
             name = value.url(linkNumber: 0)
         } else {
             description = entry.value
@@ -147,7 +147,7 @@ extension SheetController: SheetControllable {
         let startTime = ContinuousClock.now
         Logger.sheetController.info("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
         
-        let item = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+        let item = itemController.reviewAwareItemOrEmpty(root: root, for: sheetModel.source.itemId)
 
         var changeCount = 0
         var updatedInlineEntries: [SheetModel] = []
@@ -223,7 +223,7 @@ extension SheetController: SheetControllable {
             return sheet(entry: entry, root: root, itemId: item.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor)
         }
         
-        let (name, description) = entryNameDescription(entry: entry)
+        let (name, description) = entryNameDescription(entry: entry, root: root)
         unequalSet(lhs: &existingSheetModel.name, rhs: name) { changed in
             existingSheetModel.hasChanged = changed
         }

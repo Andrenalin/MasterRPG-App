@@ -9,7 +9,7 @@ struct SheetController {
 
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
-        let model = itemController.itemOrEmpty(for: itemId)
+        let model = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         var inlineEntries: [SheetModel] = []
         if model.hasAudio {
             inlineEntries.append(
@@ -24,14 +24,14 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
-        let item = itemController.itemOrEmpty(for: itemId)
+        let item = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         return item.entries.map { entry in
             sheetEntry(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
         }
     }
 
     @MainActor private func sheetEntry(entry: AudioEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
-        let track = itemController.itemOrEmpty(for: entry.audioId)
+        let track = itemController.reviewAwareItemOrEmpty(root: root, for: entry.audioId)
         var name = track.name
         let description = track.description
         if track.specialCategory {
@@ -62,7 +62,7 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
-        let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+        let model = itemController.reviewAwareItemOrEmpty(root: root, for: sheetModel.source.itemId)
 
         unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
             sheetModel.hasChanged = changed
@@ -95,7 +95,7 @@ extension SheetController: SheetControllable {
         var updatedEntries: [SheetModel] = []
         for entry in model.entries {
             if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
-                let track = itemController.itemOrEmpty(for: entry.audioId)
+                let track = itemController.reviewAwareItemOrEmpty(root: root, for: entry.audioId)
                 var name = track.name
                 let description = track.description
                 if track.specialCategory {

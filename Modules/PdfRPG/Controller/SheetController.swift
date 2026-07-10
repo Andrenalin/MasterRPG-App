@@ -9,7 +9,7 @@ struct SheetController {
 
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
-        let model = itemController.itemOrEmpty(for: itemId)
+        let model = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         var inlineEntries: [SheetModel] = []
         inlineEntries.append(SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .pdf, isShown: isShown, name: "", description: "", entries: []))
 
@@ -24,7 +24,7 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> [SheetModel] {
-        let item = itemController.itemOrEmpty(for: itemId)
+        let item = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         return item.entries.map { entry in
             let name = entry.name
             let description = entry.content
@@ -51,7 +51,7 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
-        let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+        let model = itemController.reviewAwareItemOrEmpty(root: root, for: sheetModel.source.itemId)
 
         unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
             sheetModel.hasChanged = changed

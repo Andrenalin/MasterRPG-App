@@ -9,13 +9,13 @@ struct SheetController {
 
 extension SheetController: SheetControllable {
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
-        let model = itemController.itemOrEmpty(for: itemId)
+        let model = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, type: .dice, isShown: isShown, name: model.name, description: model.description, entries: [])
         return sheetModel
     }
 
     @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
-        let model = itemController.itemOrEmpty(for: sheetModel.source.itemId)
+        let model = itemController.reviewAwareItemOrEmpty(root: root, for: sheetModel.source.itemId)
 
         unequalSet(lhs: &sheetModel.name, rhs: model.name) { changed in
             sheetModel.hasChanged = changed
