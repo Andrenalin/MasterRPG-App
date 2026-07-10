@@ -59,6 +59,24 @@ public struct GameTableView: View {
                 .tabletopGame(loadedGame.tabletopGame, parent: loadedGame.renderer.root) { _ in
                     GameInteraction(game: loadedGame)
                 }
+                // Game-master pin drag: the handlers guard isGameMaster, so
+                // players get no write-back even if they pinch a token.
+                .gesture(
+                    DragGesture(minimumDistance: 0.001)
+                        .targetedToEntity(where: .has(PinComponent.self))
+                        .onChanged { value in
+                            guard let pinId = value.entity.components[PinComponent.self]?.pinId,
+                                  let parent = value.entity.parent else { return }
+                            let position = value.convert(value.location3D, from: .local, to: parent)
+                            loadedGame.pinDragChanged(pinId: pinId, position: position)
+                        }
+                        .onEnded { value in
+                            guard let pinId = value.entity.components[PinComponent.self]?.pinId,
+                                  let parent = value.entity.parent else { return }
+                            let position = value.convert(value.location3D, from: .local, to: parent)
+                            loadedGame.pinDragEnded(pinId: pinId, position: position)
+                        }
+                )
             }
         }
         .task {
@@ -89,6 +107,14 @@ public struct GameTableView: View {
             
             self.activityManager = .init(tabletopGame: initGame.tabletopGame, sharePlayController: root.networkStore.sharePlayStore)
             initGame.setupSeating(sharePlayController: root.networkStore.sharePlayStore)
+
+            // The volume can open after a map is already revealed — bring the
+            // table up to date immediately instead of waiting for the next
+            // mapState round-trip.
+            initGame.networkActions = root.networkActions
+            initGame.isGameMaster = root.gameModel.gameConfig.isMaster
+            await initGame.handleMapChange(isGameMaster: initGame.isGameMaster)
+            initGame.syncPawnsWithMapPins()
             
             // ✅ Verify initialization
             #if DEBUG

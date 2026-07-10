@@ -150,6 +150,14 @@ public final class MapModel: nonisolated Identifiable {
     public var parentId: UUID? = nil
 }
 
+public extension MapModel {
+    /// Whether players see fog at this location: true when a hidden room
+    /// polygon covers it. Locations outside every room are visible (no fog).
+    func isLocationHiddenForPlayers(_ location: CGPoint) -> Bool {
+        entries.contains { !$0.isShown && $0.contains(location) }
+    }
+}
+
 extension MapModel {
     subscript(_: MapPinId, positionId: MapPinModel.ID) -> MapPinModel {
         get {

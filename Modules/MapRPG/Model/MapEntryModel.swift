@@ -72,6 +72,17 @@ public struct MapEntryModel: Identifiable, Equatable, Hashable, Codable, Sendabl
     }
 }
 
+public extension MapEntryModel {
+    /// Whether the room polygon spanned by `coordinates` contains the point.
+    func contains(_ point: CGPoint) -> Bool {
+        guard coordinates.count >= 3 else { return false }
+        let path = CGMutablePath()
+        path.addLines(between: coordinates)
+        path.closeSubpath()
+        return path.contains(point)
+    }
+}
+
 extension MapEntryModel {
     var xOffset: CGFloat {
         var x: CGFloat = coordinates.first?.x ?? 0.0

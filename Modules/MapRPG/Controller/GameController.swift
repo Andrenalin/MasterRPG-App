@@ -24,6 +24,7 @@ public protocol MapGameStorable {
     @MainActor func resetPlayerPins(for players: [PlayerGameModel])
     @MainActor func updatePin(itemId: UUID, data: Data?, playerId: UUID)
     func missingPlayerImages(itemId: UUID) async -> [NetworkCodableDataType]
+    @MainActor func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool
     @MainActor func updateMap(for itemId: UUID, with data: NetworkCodableDataType)
     @MainActor func mapUpdateResult(for itemId: UUID) -> String
     @MainActor func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType
@@ -165,6 +166,22 @@ extension GameController: MapGameStorable {
             }
         }
         return result
+    }
+
+    /// Moves a pin as the game master: updates the game item and the shared
+    /// player-pin state by id, stamping `timeInterval` so receivers can resolve
+    /// conflicts — the 3D-table equivalent of the 2D game-master drag.
+    @MainActor
+    func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool {
+        let item = gameItem(for: itemId)
+        guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
+        pin.location = location
+        pin.timeInterval = Date.now.timeIntervalSince1970
+        item[MapPinId.id, pinId] = pin
+        if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pinId }) {
+            mapGameModel.playerPins[index] = pin
+        }
+        return true
     }
 
     @MainActor

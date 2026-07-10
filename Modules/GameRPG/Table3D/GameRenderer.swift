@@ -10,7 +10,6 @@ import RPGTabletopGameContent
 class GameRenderer: TabletopGame.RenderDelegate {
     let cursorEntity: Entity
     let root: Entity
-    var cuteBots: [Entity] = []
     // Initial fallback for the table height inside the app volume. The value
     // -0.7 assumes Apple's 1.5 m-tall sample volume (origin at volume center);
     // our volume is flatter, so the view corrects it via placeTable(bottomY:)
@@ -97,21 +96,6 @@ class GameRenderer: TabletopGame.RenderDelegate {
         }
     }
 
-    @MainActor
-    func getAnimation(entity: Entity, animation: PlayerPawn.AnimationState) -> AnimationResource? {
-        if let component = entity.components[AnimationLibraryComponent.self] {
-            return component.animations[animation.rawValue]
-        }
-        return nil
-    }
-    
-    @MainActor
-    func playAnimation(entity: Entity, animation: AnimationResource) {
-        if let rigGroup = entity.findEntity(named: "cutebot_bind") {
-            rigGroup.playAnimation(animation, transitionDuration: 1, startsPaused: false)
-        }
-    }
-
     /// Applies a uniform scale to the table scene and the portal window.
     /// The portal world itself is not scaled (it is a coordinate space, not geometry).
     func applyScale(_ scale: Float) {
@@ -132,18 +116,6 @@ class GameRenderer: TabletopGame.RenderDelegate {
         }
     }
 
-    @MainActor
-    func cuteBotEntity(for cuteBotColor: PlayerPawn.CuteBotColor) -> Entity {
-        switch cuteBotColor {
-        case .red:
-            return cuteBots[0]
-        case .blue:
-            return cuteBots[1]
-        case .purple:
-            return cuteBots[2]
-        }
-    }
-    
     nonisolated func updateCursor(_ proposedDestination: EquipmentIdentifier?, valid: Bool = false) {
         Task { @MainActor in
             guard let game = game else {

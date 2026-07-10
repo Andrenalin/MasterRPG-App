@@ -403,6 +403,15 @@ extension PlayerController {
                     gameModel.gameUpdateType = .map
                 }
                 await requestMissingMapImages(itemId: model.data.id)
+                #if os(visionOS)
+                // A re-reveal of the current map changes rooms/pins without a
+                // map change — bring the 3D table up to date as well.
+                let isGameMaster = await root.gameModel.gameConfig.isMaster
+                await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
+                await MainActor.run {
+                    root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+                }
+                #endif
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 await MainActor.run {

@@ -6,6 +6,7 @@ import RealityKit
 import SwiftUI
 import RPGTabletopGameContent
 import Spatial
+import os.log
 import MapRPG
 import CoreRPG
 
@@ -25,12 +26,11 @@ class GameSetup {
     let root: Entity
     var setup: TableSetup
     var board: Board
-    var pawns: [PlayerPawn] = []
-    var monsterPawns: [MonsterPawn] = []
+    var pinPawns: [PinPawn] = []
     var seats: [PlayerSeat] = []
-    /// Container for dynamically-added monster entities. Parented to root so they
+    /// Container for dynamically-added pin entities. Parented to root so they
     /// appear in the scene without going through TabletopKit's frozen TableSetup.
-    let monsterContainer: Entity
+    let pinContainer: Entity
 
     // This is an incrementing counter to generate unique IDs for each piece of equipment.
     struct IdentifierGenerator {
@@ -72,9 +72,10 @@ class GameSetup {
      */
     init(root: Entity) {
         self.root = root
-        monsterContainer = Entity()
-        monsterContainer.name = "MonsterContainer"
-        root.addChild(monsterContainer)
+        PinComponent.registerComponent()
+        pinContainer = Entity()
+        pinContainer.name = "PinContainer"
+        root.addChild(pinContainer)
         setup = TableSetup(tabletop: Table())
 
         for (index, pose) in PlayerSeat.seatPoses.enumerated() {
@@ -93,303 +94,136 @@ class GameSetup {
 
         let die20 = Die20(id: EquipmentIdentifier(self.idGenerator.newId()))
         setup.add(equipment: die20)
+    }
+    
+    /// Syncs pin tokens (players and monsters) with the current map pins,
+    /// id-matched: updates existing, creates missing, removes stale tokens.
+    /// Returns pinId → photoId for tokens that still need their photo texture.
+    func syncPins(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, isGameMaster: Bool) -> [UUID: UUID] {
+        let allPins = mapModel?.mapPins ?? []
+        // Visibility: the master sees every pin (hidden ones dimmed); players
+        // see a pin when it is shown and — for monsters — not covered by fog.
+        let targetPins = allPins.filter { pin in
+            if isGameMaster { return true }
+            guard pin.isShown else { return false }
+            if pin.isPlayer { return true }
+            return mapModel.map { !$0.isLocationHiddenForPlayers(pin.location) } ?? true
+        }
 
-        loadEntityEquipment()
-    }
-    
-    func loadEntityEquipment() {
-        for (index, pawnInfo) in PlayerPawn.pawns.enumerated() {
-            let pawn = PlayerPawn(id: PlayerPawn.ID(self.idGenerator.newId()),
-                                  seat: seats[index],
-                                  cuteBotColor: pawnInfo.1,
-                                  entity: try! Entity.load(named: pawnInfo.0, in: tabletopGameContentBunlde))
-            pawns.append(pawn)
-            setup.add(equipment: pawn)
+        var projection: MapTableProjection?
+        if let mapImage, let cgImage = mapImage.cgImage {
+            projection = MapTableProjection(imageSize: CGSize(width: cgImage.width, height: cgImage.height), degrees: degrees)
         }
-    }
-    
-    /// Syncs player pawns on the 3D table with player pins from the 2D map
-    /// - Parameters:
-    ///   - mapModel: The map containing player pins
-    ///   - mapImage: The current map image for aspect ratio calculations
-    ///   - degrees: The rotation of the map
-    func syncPlayerPawnsWithMapPins(mapModel: MapModel, mapImage: AKImage, degrees: Double) {
-        // Get player pins from the map
-        let playerPins = mapModel.mapPins.filter { $0.isPlayer && $0.isShown }
-        
-        guard !playerPins.isEmpty else {
-            print("No visible player pins found on map")
-            return
-        }
-        
-        // Get map dimensions and calculate positions
-        guard let cgImage = mapImage.cgImage else {
-            print("Failed to get image dimensions")
-            return
-        }
-        
-        let imageWidth = CGFloat(cgImage.width)
-        let imageHeight = CGFloat(cgImage.height)
-        let aspectRatio = imageWidth / imageHeight
-        
-        // Calculate the actual rendered map size on the board
-        let mapSize = GameMetrics.tableEdge - (0.05 * 2) // 5cm border on all sides
-        let planeWidth: Float
-        let planeDepth: Float
-        
-        if aspectRatio > 1.0 {
-            planeWidth = mapSize
-            planeDepth = mapSize / Float(aspectRatio)
-        } else {
-            planeDepth = mapSize
-            planeWidth = mapSize * Float(aspectRatio)
-        }
-        
-        // Sync player pawns
-        for (pawnIndex, pawn) in pawns.enumerated() {
-            guard pawnIndex < playerPins.count else {
-                print("No pin available for pawn \(pawnIndex)")
-                continue
-            }
-            
-            let pin = playerPins[pawnIndex]
-            let position = calculateTablePosition(
-                pinLocation: pin.location,
-                imageSize: CGSize(width: imageWidth, height: imageHeight),
-                planeWidth: planeWidth,
-                planeDepth: planeDepth,
-                degrees: degrees
-            )
-            
-            pawn.entity.position = position
-            print("Syncing player pawn \(pawnIndex) '\(pin.name)' to position (\(position.x), \(position.z))")
-        }
-    }
-    
-    /// Syncs monster pawns on the 3D table with monster pins from the 2D map
-    /// Dynamically creates, updates, and removes monster pawns as needed
-    /// - Parameters:
-    ///   - mapModel: The map containing monster pins
-    ///   - mapImage: The current map image for aspect ratio calculations
-    ///   - degrees: The rotation of the map
-    func syncMonsterPawnsWithMapPins(mapModel: MapModel, mapImage: AKImage, degrees: Double) {
-        // Get monster pins from the map (not player pins, and shown)
-        let monsterPins = mapModel.mapPins.filter { !$0.isPlayer && $0.isShown }
-        
-        print("🐉 Syncing \(monsterPins.count) monster pins")
-        
-        // Get map dimensions
-        guard let cgImage = mapImage.cgImage else {
-            print("Failed to get image dimensions")
-            return
-        }
-        
-        let imageWidth = CGFloat(cgImage.width)
-        let imageHeight = CGFloat(cgImage.height)
-        let aspectRatio = imageWidth / imageHeight
-        
-        // Calculate the actual rendered map size on the board
-        let mapSize = GameMetrics.tableEdge - (0.05 * 2)
-        let planeWidth: Float
-        let planeDepth: Float
-        
-        if aspectRatio > 1.0 {
-            planeWidth = mapSize
-            planeDepth = mapSize / Float(aspectRatio)
-        } else {
-            planeDepth = mapSize
-            planeWidth = mapSize * Float(aspectRatio)
-        }
-        
-        // Track which monster pawns to keep
-        //let monsterPinIds = Set(monsterPins.map { $0.id })
-        
-        // Update existing monster pawns or hide them if pin no longer exists
-        for monsterPawn in monsterPawns {
-            if let pin = monsterPins.first(where: { $0.id == monsterPawn.pinId }) {
-                // Update existing pawn
-                let position = calculateTablePosition(
-                    pinLocation: pin.location,
-                    imageSize: CGSize(width: imageWidth, height: imageHeight),
-                    planeWidth: planeWidth,
-                    planeDepth: planeDepth,
-                    degrees: degrees
-                )
-                
-                var updatedPawn = monsterPawn
-                updatedPawn.update(position: position, color: pin.color, size: pin.size)
-                
-                // Make sure entity is visible
-                updatedPawn.entity.isEnabled = true
-                
-                print("🔄 Updated monster '\(pin.name)' at (\(position.x), \(position.z))")
+
+        var photoLoads: [UUID: UUID] = [:]
+        var lineupIndex = 0
+        var keptIds: Set<UUID> = []
+
+        for pin in targetPins {
+            keptIds.insert(pin.id)
+            let position: SIMD3<Float>
+            if let projection {
+                position = projection.tablePosition(for: pin.location)
             } else {
-                // Pin no longer exists, hide the entity instead of removing
-                monsterPawn.entity.isEnabled = false
-                print("👻 Hidden monster pawn (pin no longer exists)")
+                // No map on the table: line the tokens up outside the map area
+                // on the near edge so joining players are visible immediately.
+                position = SIMD3<Float>(-0.15 + 0.06 * Float(lineupIndex), MapTableProjection.pinHeight, MapTableProjection.mapSize / 2 + 0.05)
+                lineupIndex += 1
+            }
+            let hiddenForMaster = isGameMaster && !pin.isShown
+            if let pawn = pinPawns.first(where: { $0.pinId == pin.id }) {
+                pawn.update(pin: pin, position: position, hiddenForMaster: hiddenForMaster)
+                if pawn.loadedPhotoId != pin.photoId, let photoId = pin.photoId {
+                    photoLoads[pin.id] = photoId
+                }
+            } else {
+                let pawn = PinPawn(pin: pin)
+                pawn.update(pin: pin, position: position, hiddenForMaster: hiddenForMaster)
+                pinPawns.append(pawn)
+                pinContainer.addChild(pawn.entity)
+                if let photoId = pin.photoId {
+                    photoLoads[pin.id] = photoId
+                }
             }
         }
-        
-        // Create new monster pawns for new pins
-        let existingPinIds = Set(monsterPawns.map { $0.pinId })
-        let newPins = monsterPins.filter { !existingPinIds.contains($0.id) }
-        
-        for pin in newPins {
-            let position = calculateTablePosition(
-                pinLocation: pin.location,
-                imageSize: CGSize(width: imageWidth, height: imageHeight),
-                planeWidth: planeWidth,
-                planeDepth: planeDepth,
-                degrees: degrees
-            )
-            
-            let monsterPawn = MonsterPawn(
-                pinId: pin.id,
-                position: position,
-                color: pin.color,
-                size: pin.size
-            )
 
-            monsterPawns.append(monsterPawn)
-            monsterContainer.addChild(monsterPawn.entity)
-            
-            print("✨ Created new monster '\(pin.name)' at (\(position.x), \(position.z))")
+        for pawn in pinPawns where !keptIds.contains(pawn.pinId) {
+            pawn.entity.removeFromParent()
         }
-        
-        // Count visible monsters
-        let visibleCount = monsterPawns.filter { $0.entity.isEnabled }.count
-        print("🐉 Monster sync complete: \(visibleCount) visible monsters (total: \(monsterPawns.count))")
-    }
-    
-    /// Helper function to calculate 3D table position from 2D map coordinates
-    /// - Parameters:
-    ///   - pinLocation: The pin location in pixel coordinates
-    ///   - imageSize: The size of the map image
-    ///   - planeWidth: The rendered width of the map on the table
-    ///   - planeDepth: The rendered depth of the map on the table
-    ///   - degrees: The rotation of the map
-    /// - Returns: 3D position on the table
-    private func calculateTablePosition(
-        pinLocation: CGPoint,
-        imageSize: CGSize,
-        planeWidth: Float,
-        planeDepth: Float,
-        degrees: Double
-    ) -> SIMD3<Float> {
-        // Normalize pin location to 0...1 range
-        let normalizedX = pinLocation.x / imageSize.width
-        let normalizedY = pinLocation.y / imageSize.height
-        
-        // Convert to table coordinates
-        let tableX = Float(normalizedX - 0.5) * planeWidth
-        let tableZ = Float(normalizedY - 0.5) * planeDepth
-        
-        // Apply rotation
-        let radians = Float(degrees * .pi / 180.0)
-        let cosRad = cos(radians)
-        let sinRad = sin(radians)
-        let rotatedX = tableX * cosRad - tableZ * sinRad
-        let rotatedZ = tableX * sinRad + tableZ * cosRad
-        
-        // Position above the board surface
-        let yPosition: Float = 0.03
-        
-        return SIMD3<Float>(rotatedX, yPosition, rotatedZ)
-    }
-    
-    /// Clears all monster pawns from the scene and the tracking array.
-    func clearAllMonsters() {
-        for monsterPawn in monsterPawns {
-            monsterPawn.entity.removeFromParent()
-        }
-        monsterPawns.removeAll()
-        print("🧹 Cleared all monster pawns")
+        pinPawns.removeAll { !keptIds.contains($0.pinId) }
+
+        Logger.gameTable.debug("Pin sync: \(self.pinPawns.count, privacy: .public) tokens, \(photoLoads.count, privacy: .public) photo loads pending")
+        return photoLoads
     }
 }
 
 extension GameTableModel {
     @MainActor
     func resetGame() {
-        // Move pawns back to their starting location.
-        for pawn in setup.pawns {
-            // Reset entity position to match initial state
-            let initialPose = pawn.initialState.pose
-            let yPosition: Float = 0.03 // Position above the board surface
-            pawn.entity.position = SIMD3<Float>(
-                Float(initialPose.position.x),
-                yPosition,
-                Float(initialPose.position.z)
-            )
-        }
-        
-        // Hide all monster pawns on reset (they remain in array for potential reuse)
-        for monsterPawn in setup.monsterPawns {
-            monsterPawn.entity.isEnabled = false
-        }
-        print("🔄 Game reset: hidden all monster pawns")
+        syncPawnsWithMapPins()
     }
-    
-    /// Syncs player pawns with player pins from the current map
+
+    /// Syncs pin tokens with the pins of the current map (may be nil — player
+    /// pins then line up outside the map area) and loads missing pin photos.
     @MainActor
     func syncPawnsWithMapPins() {
-        // Get the current map
-        guard let mapId = currentMapId,
-              let mapImage = currentMapImage else {
-            print("No current map available to sync pawns")
-            return
+        var mapModel: MapModel?
+        if let mapId = currentMapId {
+            mapModel = mapRoot.itemControllable.itemSync(for: mapId) as? MapModel
         }
-        
-        // Get the map model from mapRoot with proper type casting
-        guard let mapModel = mapRoot.itemControllable.itemSync(for: mapId) as? MapModel else {
-            print("Could not find map model for current map")
-            return
+        let photoLoads = setup.syncPins(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees, isGameMaster: isGameMaster)
+        for (pinId, photoId) in photoLoads {
+            Task { [weak self] in
+                await self?.loadPinThumbnail(pinId: pinId, photoId: photoId)
+            }
         }
-        
-        // Sync player pawns with map pins
-        setup.syncPlayerPawnsWithMapPins(
-            mapModel: mapModel,
-            mapImage: mapImage,
-            degrees: currentMapDegrees
-        )
-        
-        // Sync monster pawns with map pins
-        setup.syncMonsterPawnsWithMapPins(
-            mapModel: mapModel,
-            mapImage: mapImage,
-            degrees: currentMapDegrees
-        )
-        
-        print("✅ Synced pawns and monsters with map pins")
     }
-    
-    /// Syncs only monster pawns (useful for GM operations)
-    @MainActor
-    func syncMonsterPawns() {
-        guard let mapId = currentMapId,
-              let mapImage = currentMapImage else {
-            print("No current map available to sync monsters")
-            return
+}
+
+/// Projects between 2D map pixel coordinates and 3D table coordinates.
+struct MapTableProjection {
+    /// Rendered map size on the board (5 cm border on all sides).
+    static let mapSize: Float = GameMetrics.tableEdge - (0.05 * 2)
+    /// Token height above the board surface.
+    static let pinHeight: Float = 0.03
+
+    let imageSize: CGSize
+    let degrees: Double
+    let planeWidth: Float
+    let planeDepth: Float
+
+    init(imageSize: CGSize, degrees: Double) {
+        self.imageSize = imageSize
+        self.degrees = degrees
+        let aspectRatio = imageSize.width / imageSize.height
+        if aspectRatio > 1.0 {
+            planeWidth = Self.mapSize
+            planeDepth = Self.mapSize / Float(aspectRatio)
+        } else {
+            planeDepth = Self.mapSize
+            planeWidth = Self.mapSize * Float(aspectRatio)
         }
-        
-        guard let mapModel = mapRoot.itemControllable.itemSync(for: mapId) as? MapModel else {
-            print("Could not find map model for current map")
-            return
-        }
-        
-        setup.syncMonsterPawnsWithMapPins(
-            mapModel: mapModel,
-            mapImage: mapImage,
-            degrees: currentMapDegrees
-        )
-        
-        print("✅ Synced \(setup.monsterPawns.count) monster pawns")
     }
-    
-    /// Clears all monsters from the table
-    /// Useful when changing maps or starting fresh
-    @MainActor
-    func clearAllMonsters() {
-        setup.clearAllMonsters()
+
+    func tablePosition(for location: CGPoint) -> SIMD3<Float> {
+        let normalizedX = location.x / imageSize.width
+        let normalizedY = location.y / imageSize.height
+        let tableX = Float(normalizedX - 0.5) * planeWidth
+        let tableZ = Float(normalizedY - 0.5) * planeDepth
+        let radians = Float(degrees * .pi / 180.0)
+        let rotatedX = tableX * cos(radians) - tableZ * sin(radians)
+        let rotatedZ = tableX * sin(radians) + tableZ * cos(radians)
+        return SIMD3<Float>(rotatedX, Self.pinHeight, rotatedZ)
+    }
+
+    /// Exact inverse of `tablePosition(for:)`, clamped to the image bounds.
+    func mapLocation(for position: SIMD3<Float>) -> CGPoint {
+        let radians = Float(-degrees * .pi / 180.0)
+        let tableX = position.x * cos(radians) - position.z * sin(radians)
+        let tableZ = position.x * sin(radians) + position.z * cos(radians)
+        let x = (CGFloat(tableX / planeWidth) + 0.5) * imageSize.width
+        let y = (CGFloat(tableZ / planeDepth) + 0.5) * imageSize.height
+        return CGPoint(x: min(max(x, 0), imageSize.width), y: min(max(y, 0), imageSize.height))
     }
 }
 

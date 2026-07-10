@@ -34,9 +34,6 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
     
     @MainActor
     func onPhaseStarted(interaction: TabletopInteraction) {
-        if game.tabletopGame.equipment(of: PlayerPawn.self, matching: interaction.value.startingEquipmentID) != nil {
-        }
-
         if game.tabletopGame.equipment(of: Die.self, matching: interaction.value.startingEquipmentID) != nil {
             // Don't let the die land on any other equipment, just the table.
             interaction.setConfiguration(.init(allowedDestinations: .restricted([])))
@@ -85,15 +82,11 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
     func onPhaseEnded(interaction: TabletopInteraction) {
         /* If there isn't a proposed destination, there's nothing to do here.
          Objects moving back to their original group animate there smoothly by default. */
-        guard let dst = interaction.value.proposedDestination else {
+        guard interaction.value.proposedDestination != nil else {
             return
         }
-        
-        if let pawn = game.tabletopGame.equipment(of: PlayerPawn.self, matching: interaction.value.startingEquipmentID) {
-            // Move the pawn to its new proposed destination with a default pose (centered in new destination).
-            interaction.addAction(.moveEquipment(matching: pawn.id, childOf: dst.equipmentID, pose: .init()))
-        }
-        
+        // Pins are plain entities driven by mapState, not TabletopKit
+        // equipment — dice are the only draggable equipment left.
     }
 }
 

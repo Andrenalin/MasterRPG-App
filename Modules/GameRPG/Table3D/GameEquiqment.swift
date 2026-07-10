@@ -296,71 +296,54 @@ struct PlayerSeat: TableSeat {
     }
 }
 
-struct PlayerPawn: EntityEquipment {
-    public enum AnimationState: String, Codable, Sendable, Equatable, CaseIterable {
-        case idleA
-        case jumpJoy
-        case sad
-    }
+// MARK: - Pin Pawn
 
-    enum CuteBotColor: Sendable {
-        case red
-        case purple
-        case blue
-    }
-
-    let id: ID
-    let cuteBotColor: CuteBotColor
-    let entity: Entity
-
-    var initialState: BaseEquipmentState
-    
-    static let pawns: [(String, CuteBotColor)] = [
-        ("player_pawn_red_assembly", .red),
-        ("player_pawn_purple_assembly", .purple),
-        ("player_pawn_blue_assembly", .blue)
-    ]
-
-    @MainActor
-    init(id: ID, seat: PlayerSeat, cuteBotColor: CuteBotColor, entity: Entity) {
-        self.id = id
-        self.cuteBotColor = cuteBotColor
-        self.entity = entity
-        let pawnToSeat: TableVisualState.Pose2D = .init(position: .init(x: -0.2, z: -0.3), rotation: .init())
-        let seatToTable = seat.initialState.pose
-        let pawnToTable = pawnToSeat * seatToTable
-        initialState = .init(parentID: .tableID, pose: pawnToTable, entity: self.entity)
-    }
+/// Identifies a pin token entity for gesture targeting.
+struct PinComponent: Component {
+    let pinId: UUID
 }
 
-// MARK: - Monster Pawn
+/// A map pin token on the 3D table (player or monster), synced with the pins
+/// of the current map. Lives as a plain RealityKit entity parented to
+/// `GameSetup.pinContainer` — TabletopKit only snapshots TableSetup at init
+/// time, so dynamic EntityEquipment additions would never appear. Pins are
+/// deliberately NOT TabletopKit equipment: `mapState` is their single source
+/// of truth, TabletopKit pose sync would fight it.
+@MainActor
+final class PinPawn {
+    static let baseRadius: Float = 0.02
 
-/// Represents a monster pawn on the 3D tabletop, synced with monster pins from the map.
-/// Lives as a plain RealityKit entity parented to GameSetup.monsterContainer —
-/// TabletopKit only snapshots TableSetup at init time, so dynamic EntityEquipment additions
-/// would never appear.
-struct MonsterPawn {
     let pinId: UUID
     let entity: Entity
+    private let baseModel: ModelEntity
+    private let photoPlane: ModelEntity
+    var loadedPhotoId: UUID?
+    private var currentSize: MapPinModel.MapPinSize
 
-    @MainActor
-    init(pinId: UUID, position: SIMD3<Float>, color: Color, size: MapPinModel.MapPinSize) {
-        self.pinId = pinId
+    init(pin: MapPinModel) {
+        pinId = pin.id
+        currentSize = pin.size
+        let radius = Self.baseRadius * Self.scaleForPinSize(pin.size)
+        let diameter = radius * 1.8
 
-        let monsterEntity = Entity()
-        let scale = Self.scaleForPinSize(size)
-        let mesh = MeshResource.generateSphere(radius: 0.02 * scale)
+        var baseMaterial = UnlitMaterial()
+        baseMaterial.color = .init(tint: UIColor(pin.color))
+        baseModel = ModelEntity(mesh: .generateCylinder(height: 0.005, radius: radius), materials: [baseMaterial])
 
-        var material = PhysicallyBasedMaterial()
-        material.baseColor = .init(tint: UIColor(color))
-        material.metallic = 0.3
-        material.roughness = 0.7
+        var photoMaterial = UnlitMaterial()
+        photoMaterial.color = .init(tint: UIColor(pin.color))
+        photoPlane = ModelEntity(mesh: .generatePlane(width: diameter, depth: diameter, cornerRadius: diameter / 2), materials: [photoMaterial])
+        photoPlane.position.y = 0.004
 
-        let modelEntity = ModelEntity(mesh: mesh, materials: [material])
-        monsterEntity.addChild(modelEntity)
-        monsterEntity.position = position
-
-        self.entity = monsterEntity
+        let pinEntity = Entity()
+        pinEntity.name = "Pin-\(pin.name)"
+        pinEntity.addChild(baseModel)
+        pinEntity.addChild(photoPlane)
+        pinEntity.components.set(PinComponent(pinId: pin.id))
+        pinEntity.components.set(InputTargetComponent())
+        pinEntity.components.set(CollisionComponent(shapes: [.generateBox(width: diameter, height: 0.02, depth: diameter)]))
+        pinEntity.components.set(HoverEffectComponent())
+        entity = pinEntity
     }
 
     static func scaleForPinSize(_ size: MapPinModel.MapPinSize) -> Float {
@@ -374,18 +357,39 @@ struct MonsterPawn {
         }
     }
 
-    @MainActor
-    mutating func update(position: SIMD3<Float>, color: Color, size: MapPinModel.MapPinSize) {
+    /// Applies pin state: position, size, tint, and the game-master-only
+    /// hidden dimming (mirrors the 2D green overlay for hidden pins).
+    func update(pin: MapPinModel, position: SIMD3<Float>, hiddenForMaster: Bool) {
         entity.position = position
-        let scale = Self.scaleForPinSize(size)
-        entity.scale = SIMD3<Float>(repeating: scale)
-        if let modelEntity = entity.children.first as? ModelEntity {
-            var material = PhysicallyBasedMaterial()
-            material.baseColor = .init(tint: UIColor(color))
-            material.metallic = 0.3
-            material.roughness = 0.7
-            modelEntity.model?.materials = [material]
+        if pin.size != currentSize {
+            currentSize = pin.size
+            applySize(pin.size)
         }
+        var baseMaterial = UnlitMaterial()
+        baseMaterial.color = .init(tint: UIColor(pin.color))
+        baseModel.model?.materials = [baseMaterial]
+        if hiddenForMaster {
+            entity.components.set(OpacityComponent(opacity: 0.5))
+        } else {
+            entity.components.remove(OpacityComponent.self)
+        }
+    }
+
+    /// Puts the pin's photo (thumbnail) onto the token face.
+    func setPhotoTexture(_ image: AKImage) {
+        guard let cgImage = image.cgImage,
+              let texture = try? TextureResource(image: cgImage, options: .init(semantic: .color)) else { return }
+        var material = UnlitMaterial()
+        material.color = .init(texture: .init(texture))
+        photoPlane.model?.materials = [material]
+    }
+
+    private func applySize(_ size: MapPinModel.MapPinSize) {
+        let radius = Self.baseRadius * Self.scaleForPinSize(size)
+        let diameter = radius * 1.8
+        baseModel.model?.mesh = .generateCylinder(height: 0.005, radius: radius)
+        photoPlane.model?.mesh = .generatePlane(width: diameter, depth: diameter, cornerRadius: diameter / 2)
+        entity.components.set(CollisionComponent(shapes: [.generateBox(width: diameter, height: 0.02, depth: diameter)]))
     }
 }
 

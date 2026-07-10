@@ -108,6 +108,17 @@ extension MasterController {
         await root.diceRoot.diceGameControllable.resetPlayerDice(to: playerNames)
         if !asProxy {
             await root.mapRoot.mapGameControllable.resetPlayerPins(for: gameRoster.players.filter { $0.type != .observer })
+            #if os(visionOS)
+            await MainActor.run {
+                root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+            }
+            #endif
+            // Push the changed player pins to everyone right away — otherwise
+            // a joining player's pin only appears on the next unrelated map
+            // state update.
+            if let mapId = await root.mapRoot.gameControllable.gameModel.currentItemId {
+                await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId))
+            }
         }
     }
 }
