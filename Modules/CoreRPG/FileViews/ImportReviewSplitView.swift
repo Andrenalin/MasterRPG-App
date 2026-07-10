@@ -101,7 +101,7 @@ private struct ImportReviewSheetDetailView: View {
                     LazyVStack(alignment: .leading, spacing: 16) {
                         sheetPreview(rootController: rootController)
 
-                        DisclosureGroup(isExpanded: $showsChoices) {
+                        DisclosureGroupTV(isExpanded: $showsChoices) {
                             SingleItemReviewChoicesView(
                                 model: item.itemModel,
                                 root: root,
