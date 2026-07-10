@@ -45,7 +45,7 @@ final class AudioPlayerSession: Sendable {
 #if !os(macOS)
         setCategory()
         registerSessionNotifications()
-        setActive()
+        Task { await setActive() }
 #endif
     }
 }
@@ -64,8 +64,10 @@ private extension AudioPlayerSession {
         }
     }
 
-    func setActive() {
+    @concurrent
+    func setActive() async {
         do {
+            // setActive is a blocking AVAudioSession call — keep it off the main actor.
             try audioSession.setActive(true)
         } catch {
             print("an error occurred when audio session activation.\n \(error)")
@@ -124,12 +126,9 @@ private extension AudioPlayerSession {
         } else if let optionsRaw,
                   AVAudioSession.InterruptionOptions(rawValue: optionsRaw) == .shouldResume {
             let wasPlaying = model.wasPlaying
-            Task { @concurrent [weak self] in
-                // setActive is a blocking AVAudioSession call — keep it off the main actor.
-                self?.setActive()
-                await MainActor.run {
-                    self?.model.delegate?.endInterruption(wasPlaying: wasPlaying)
-                }
+            Task { [weak self] in
+                await self?.setActive()
+                self?.model.delegate?.endInterruption(wasPlaying: wasPlaying)
             }
         }
     }
