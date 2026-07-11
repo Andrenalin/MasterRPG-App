@@ -30,18 +30,38 @@ public struct SheetAIAssistantOverlayView: View {
     /// Captured at send time: if an entry was selected when the message was sent, the
     /// resulting blocks are added as its subentries; otherwise they go under the root.
     @State private var targetParent: SheetModel?
+    @Namespace private var glassNamespace
 
     private var generatorController: AdventureGeneratorController {
         generatorRoot.generatorController(for: module, itemId: itemId)
     }
 
     public var body: some View {
+        // Outer Group lets .onChange apply once regardless of inner platform branch.
         Group {
-            if isComposing {
-                composer
-            } else {
-                openButton
+            #if os(visionOS)
+            Group {
+                if isComposing {
+                    composer
+                        .transition(.scale(scale: 0.95).combined(with: .opacity))
+                } else {
+                    openButton
+                        .transition(.scale(scale: 0.95).combined(with: .opacity))
+                }
             }
+            .animation(.smooth, value: isComposing)
+            #else
+            // GlassEffectContainer lets the glass surface morph between the
+            // button capsule and the composer bar via a shared glassEffectID.
+            GlassEffectContainer {
+                if isComposing {
+                    composer
+                } else {
+                    openButton
+                }
+            }
+            .animation(.smooth, value: isComposing)
+            #endif
         }
         // extracted updates on every partial streaming token — only persist once the
         // stream has actually finished (the isExtracting true -> false transition),
@@ -58,11 +78,16 @@ public struct SheetAIAssistantOverlayView: View {
             isTextFieldFocused = true
         } label: {
             Label { Text("Ask AI", bundle: .module) } icon: { Image(systemName: NetworkModules.generator.icon) }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
         }
+        #if os(visionOS)
         .buttonStyle(.borderedProminent)
         .tint(module.tint)
-        #if !os(visionOS)
-        .glassEffectAll(.regular.tint(module.tint).interactive())
+        #else
+        .buttonStyle(.plain)
+        .glassEffectAll(.regular.tint(module.tint).interactive(), in: .capsule)
+        .glassEffectID("aiOverlay", in: glassNamespace)
         #endif
         .padding()
     }
@@ -86,8 +111,14 @@ public struct SheetAIAssistantOverlayView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
             .padding(.bottom, 12)
-            .padding(.trailing, 8)
+            .padding(.trailing, 4)
         }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        #if !os(visionOS)
+        .glassEffectAll(.regular.tint(module.tint), in: .capsule)
+        .glassEffectID("aiOverlay", in: glassNamespace)
+        #endif
         .padding(.horizontal)
     }
 
