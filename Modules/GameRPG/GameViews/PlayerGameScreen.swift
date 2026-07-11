@@ -45,6 +45,15 @@ struct PlayerGameScreen: View {
         .task {
             await prepareWindows()
         }
+#if os(macOS)
+        .overlay(alignment: .trailing) {
+            VStack {
+                PlayerMenuView()
+            }
+            .padding(12)
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+        }
+#endif
 #if os(visionOS)
         .gameImmersiveSpaceSync(root: root)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
@@ -124,7 +133,7 @@ private extension PlayerGameScreen {
 
 }
 
-#if os(visionOS)
+#if os(visionOS) || os(macOS)
 private struct PlayerMenuView: View {
     @Environment(ScenesManager.self) private var scenesManager
     @State private var infoState: NetworkModules = .none

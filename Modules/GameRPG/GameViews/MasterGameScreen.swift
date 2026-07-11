@@ -66,6 +66,15 @@ struct MasterGameScreen: View {
                 endGame()
             }
         }
+#if os(macOS)
+        .overlay(alignment: .trailing) {
+            VStack {
+                MasterMenuView()
+            }
+            .padding(12)
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+        }
+#endif
 #if os(visionOS)
         .gameImmersiveSpaceSync(root: root)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
@@ -153,7 +162,7 @@ private extension MasterGameScreen {
     }
 }
 
-#if os(visionOS)
+#if os(visionOS) || os(macOS)
 private struct MasterMenuView: View {
     @Environment(ScenesManager.self) private var scenesManager
     @State private var infoState: NetworkModules = .none

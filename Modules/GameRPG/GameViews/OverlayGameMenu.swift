@@ -145,7 +145,6 @@ private extension OverlayGameMenu {
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .frame(height: 24)
         }
-        .selectedBorderedStype(isSelected: true)
     }
     
     var firstOptionView: some View {
@@ -201,65 +200,22 @@ private extension OverlayGameMenu {
     @ViewBuilder
     var toolIconMacViewMaster: some View {
         @Bindable var gameScreenModel = gameScreenModel
-        GameToolBarButtonView(valueType: .adventure, showType: $gameScreenModel.showGameType)
-            .padding(.leading, marginWidth)
-        
-        GameToolBarButtonView(valueType: .audio, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .dice, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .map, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .pdf, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .photo, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .space, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .table, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .value, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .weather, showType: $gameScreenModel.showGameType)
-        
         GameMainTabButtonView(isMaster: true, displayMode: $gameScreenModel.gameMainTabDisplayMode)
-            .padding(.trailing, marginWidth)
-            .onChange(of: gameScreenModel.showGameType) {
-                guard gameScreenModel.showGameType != .none && gameScreenModel.showGameType != .game else { return }
-                if scenesManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
-                    scenesManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
-                } else {
-                    scenesManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
-                }
-            }
+            .padding(.horizontal, marginWidth)
             .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
                 handleMainTabDisplayModeChange(oldValue: oldValue, newValue: newValue, isMaster: true)
             }
     }
-    
+
     @ViewBuilder
     var toolIconMacViewPlayer: some View {
         @Bindable var gameScreenModel = gameScreenModel
-        if root.gameModel.gameType != .observer {
-            GameToolBarButtonView(valueType: .value, showType: $gameScreenModel.showGameType)
-                .padding(.leading, marginWidth)
-            GameToolBarButtonView(valueType: .dice, showType: $gameScreenModel.showGameType)
-        }
-        
-        GameToolBarButtonView(valueType: .pdf, showType: $gameScreenModel.showGameType)
-            .padding(.leading, root.gameModel.gameType == .observer ? marginWidth : 0)
-        
-        GameToolBarButtonView(valueType: .audio, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .photo, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .space, showType: $gameScreenModel.showGameType)
-        GameToolBarButtonView(valueType: .table, showType: $gameScreenModel.showGameType)
-        
         Group {
             if root.gameModel.gameType != .observer {
                 GameMainTabButtonView(isMaster: false, displayMode: $gameScreenModel.gameMainTabDisplayMode)
             }
         }
-        .padding(.trailing, marginWidth)
-        .onChange(of: gameScreenModel.showGameType) {
-            guard gameScreenModel.showGameType != .none && gameScreenModel.showGameType != .game else { return }
-            if scenesManager.getSceneState(for: SceneId.sceneId(for: gameScreenModel.showGameType)) == .closed {
-                scenesManager.openWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
-            } else {
-                scenesManager.dismissWindow(SceneId.sceneId(for: gameScreenModel.showGameType))
-            }
-        }
+        .padding(.horizontal, marginWidth)
         .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
             handleMainTabDisplayModeChange(oldValue: oldValue, newValue: newValue, isMaster: false)
         }
