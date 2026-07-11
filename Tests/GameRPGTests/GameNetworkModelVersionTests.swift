@@ -115,6 +115,36 @@ struct GameNetworkModelVersionTests {
         #expect(decoded.masterState == nil)
     }
 
+    @Test func decodesV1PlayerEnvelopeWithoutRosterAsPlayer() throws {
+        struct V1PlayerEnvelopeWithoutRoster: Encodable {
+            let version: Int
+            let counter: Int
+            let proxyCounter: Int
+            let type: RPGMessageType
+            let subType: RPGMessageActionType
+            let gameConfig: GameConfigModel
+            let data: NetworkCodableDataType
+        }
+        let oldPlayer = V1PlayerEnvelopeWithoutRoster(
+            version: 1,
+            counter: 8,
+            proxyCounter: 0,
+            type: .update,
+            subType: .generic,
+            gameConfig: GameConfigModel(id: playerId, state: .started, master: master),
+            data: NetworkCodableDataType(id: UUID(), type: .dice, version: 0, data: Data([0x01]))
+        )
+        let oldPlayerData = try JSONEncoder().encode(oldPlayer)
+
+        let decoded = try #require(GameNetworkModel.decodeData(of: oldPlayerData))
+
+        #expect(decoded.masterId == masterId)
+        #expect(decoded.sender.id == playerId)
+        #expect(decoded.sender.role == .player)
+        #expect(!decoded.sender.name.isEmpty)
+        #expect(decoded.masterState == nil)
+    }
+
     @Test func decodesUnreleasedDevLayout() throws {
         // Dev layout: slim gameConfig, gameRoster carries players + controls + features.
         struct DevRoster: Encodable {
@@ -162,6 +192,7 @@ struct GameNetworkModelVersionTests {
         // gameConfig — exactly what the shipped 2.6 app does.
         let v1Decoded = try JSONDecoder().decode(GameNetworkModelV1.self, from: encoded)
 
+        #expect(v1Decoded.version == GameNetworkModelV1.wireVersion)
         #expect(v1Decoded.counter == 7)
         #expect(v1Decoded.gameConfig.id == masterId)
         #expect(v1Decoded.gameConfig.master.id == masterId)
@@ -177,12 +208,71 @@ struct GameNetworkModelVersionTests {
 
         let v1Decoded = try JSONDecoder().decode(GameNetworkModelV1.self, from: encoded)
 
+        #expect(v1Decoded.version == GameNetworkModelV1.wireVersion)
         #expect(v1Decoded.gameConfig.id == playerId)
         #expect(v1Decoded.gameConfig.master.id == masterId)
         // The sender travels as the only roster entry so V1 peers can resolve
         // the sender name.
         #expect(v1Decoded.gameConfig.players.map(\.id) == [playerId])
         #expect(v1Decoded.gameConfig.players.first?.name == "Player - 1")
+    }
+
+    @Test("V2 gamemaster and V1 player can send dice and photo")
+    func v2MasterAndV1PlayerCanSendDiceAndPhoto() throws {
+        for payload in Self.compatibilityPayloads {
+            let v2MasterMessage = v2MasterMessage(payload)
+            let encodedMasterMessage = try #require(v2MasterMessage.encodeData())
+
+            let receivedByV1Player = try JSONDecoder().decode(GameNetworkModelV1.self, from: encodedMasterMessage)
+
+            #expect(receivedByV1Player.version == GameNetworkModelV1.wireVersion)
+            #expect(receivedByV1Player.gameConfig.id == masterId)
+            #expect(receivedByV1Player.gameConfig.master.id == masterId)
+            #expect(receivedByV1Player.gameConfig.players == players)
+            assert(receivedByV1Player, matches: v2MasterMessage)
+
+            let v1PlayerMessage = v1PlayerMessage(payload)
+            let encodedPlayerMessage = try JSONEncoder().encode(v1PlayerMessage)
+
+            let receivedByV2Master = try #require(GameNetworkModel.decodeData(of: encodedPlayerMessage))
+
+            #expect(receivedByV2Master.masterId == masterId)
+            #expect(receivedByV2Master.sender.id == playerId)
+            #expect(receivedByV2Master.sender.role == .player)
+            #expect(receivedByV2Master.sender.name == "Player - 1")
+            #expect(receivedByV2Master.masterState == nil)
+            assert(receivedByV2Master, matches: v1PlayerMessage)
+        }
+    }
+
+    @Test("V1 gamemaster and V2 player can send dice and photo")
+    func v1MasterAndV2PlayerCanSendDiceAndPhoto() throws {
+        for payload in Self.compatibilityPayloads {
+            let v1MasterMessage = v1MasterMessage(payload)
+            let encodedMasterMessage = try JSONEncoder().encode(v1MasterMessage)
+
+            let receivedByV2Player = try #require(GameNetworkModel.decodeData(of: encodedMasterMessage))
+
+            #expect(receivedByV2Player.masterId == masterId)
+            #expect(receivedByV2Player.sender.id == masterId)
+            #expect(receivedByV2Player.sender.role == .master)
+            let masterState = try #require(receivedByV2Player.masterState)
+            #expect(masterState.players == players)
+            #expect(masterState.controls == controls)
+            assert(receivedByV2Player, matches: v1MasterMessage)
+
+            let v2PlayerMessage = v2PlayerMessage(payload)
+            let encodedPlayerMessage = try #require(v2PlayerMessage.encodeData())
+
+            let receivedByV1Master = try JSONDecoder().decode(GameNetworkModelV1.self, from: encodedPlayerMessage)
+
+            #expect(receivedByV1Master.version == GameNetworkModelV1.wireVersion)
+            #expect(receivedByV1Master.gameConfig.id == playerId)
+            #expect(receivedByV1Master.gameConfig.master.id == masterId)
+            #expect(receivedByV1Master.gameConfig.players.map(\.id) == [playerId])
+            #expect(receivedByV1Master.gameConfig.players.first?.type == .player)
+            assert(receivedByV1Master, matches: v2PlayerMessage)
+        }
     }
 
     // MARK: - Current round trip
@@ -194,7 +284,7 @@ struct GameNetworkModelVersionTests {
 
         let decoded = try #require(GameNetworkModel.decodeData(of: encoded))
 
-        #expect(decoded.version == GameNetworkModel.currentVersion)
+        #expect(decoded.version == GameNetworkModelV1.wireVersion)
         #expect(decoded.counter == message.counter)
         #expect(decoded.proxyCounter == message.proxyCounter)
         #expect(decoded.type == message.type)
@@ -258,6 +348,89 @@ struct GameNetworkModelVersionTests {
         // A failed journal transfer delivers metadata first; the later full
         // payload must not be dropped as a duplicate.
         #expect(metadataKey != payloadKey)
+    }
+}
+
+private extension GameNetworkModelVersionTests {
+    struct CompatibilityPayload {
+        let module: NetworkModules
+        let type: RPGMessageType
+        let subType: RPGMessageActionType
+        let bytes: Data
+    }
+
+    static let compatibilityPayloads: [CompatibilityPayload] = [
+        CompatibilityPayload(module: .dice, type: .update, subType: .generic, bytes: Data([0xD1, 0xCE])),
+        CompatibilityPayload(module: .photo, type: .reveal, subType: .show, bytes: Data([0xF0, 0x70]))
+    ]
+
+    func v2MasterMessage(_ payload: CompatibilityPayload) -> GameNetworkModel {
+        GameNetworkModel(
+            counter: payload.module == .dice ? 10 : 11,
+            proxyCounter: 0,
+            type: payload.type,
+            subType: payload.subType,
+            masterId: masterId,
+            sender: GameSenderModel(id: masterId, role: .master, name: "Master", characterId: nil),
+            masterState: GameMasterStateModel(state: .started, adventureId: master.adventureId, adventureTitle: master.adventureTitle, players: players, controls: controls, features: features),
+            data: data(for: payload)
+        )
+    }
+
+    func v2PlayerMessage(_ payload: CompatibilityPayload) -> GameNetworkModel {
+        GameNetworkModel(
+            counter: payload.module == .dice ? 20 : 21,
+            proxyCounter: 0,
+            type: payload.type,
+            subType: payload.subType,
+            masterId: masterId,
+            sender: GameSenderModel(id: playerId, role: .player, name: "Player - 1", characterId: players[0].characterId),
+            data: data(for: payload)
+        )
+    }
+
+    func v1MasterMessage(_ payload: CompatibilityPayload) -> GameNetworkModelV1 {
+        GameNetworkModelV1(
+            counter: payload.module == .dice ? 30 : 31,
+            proxyCounter: 0,
+            type: payload.type,
+            subType: payload.subType,
+            gameConfig: GameConfigModelV1(id: masterId, state: .started, master: master, players: players, controls: controls, features: features),
+            data: data(for: payload)
+        )
+    }
+
+    func v1PlayerMessage(_ payload: CompatibilityPayload) -> GameNetworkModelV1 {
+        GameNetworkModelV1(
+            counter: payload.module == .dice ? 40 : 41,
+            proxyCounter: 0,
+            type: payload.type,
+            subType: payload.subType,
+            gameConfig: GameConfigModelV1(id: playerId, state: .started, master: master, players: players, controls: controls, features: features),
+            data: data(for: payload)
+        )
+    }
+
+    func data(for payload: CompatibilityPayload) -> NetworkCodableDataType {
+        NetworkCodableDataType(id: UUID(), type: payload.module, version: 1, data: payload.bytes)
+    }
+
+    func assert(_ received: GameNetworkModelV1, matches sent: GameNetworkModel) {
+        #expect(received.counter == sent.counter)
+        #expect(received.proxyCounter == sent.proxyCounter)
+        #expect(received.type == sent.type)
+        #expect(received.subType == sent.subType)
+        #expect(received.data.type == sent.data.type)
+        #expect(received.data.data == sent.data.data)
+    }
+
+    func assert(_ received: GameNetworkModel, matches sent: GameNetworkModelV1) {
+        #expect(received.counter == sent.counter)
+        #expect(received.proxyCounter == sent.proxyCounter)
+        #expect(received.type == sent.type)
+        #expect(received.subType == sent.subType)
+        #expect(received.data.type == sent.data.type)
+        #expect(received.data.data == sent.data.data)
     }
 }
 #endif

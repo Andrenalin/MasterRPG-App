@@ -353,6 +353,59 @@ final class MasterPlayerControllerTests {
         #expect(mapPlayer.entries[0].isShown)
         #expect(mapPlayer.entries == mapMaster.entries)
     }
+
+    @Test func mapRevealRequestsMapPayloadBeforeChangingPlayerState() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        try #require(rootSut.mapRoot.itemController.itemDataModel.items.count == 3)
+
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+        sutPlayer.gameModel.gameUpdateType = .table
+
+        let mapId = rootSut.mapRoot.itemController.itemDataModel.items[0]
+        let version = rootSut.mapRoot.itemController.itemOrEmpty(for: mapId).version
+        let mapShareData = await rootSut.mapRoot.gameController.share(id: mapId)
+
+        await sut.show(for: mapShareData)
+        let idOnlyMapReveal = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(idOnlyMapReveal.type == .reveal)
+        #expect(idOnlyMapReveal.subType == .show)
+        #expect(idOnlyMapReveal.data.id == mapId)
+        #expect(idOnlyMapReveal.data.type == .map)
+        #expect(idOnlyMapReveal.data.data == nil)
+
+        let fullMapRequest = try #require(try await sutPlayer.handle(idOnlyMapReveal))
+        #expect(fullMapRequest.type == .reveal)
+        #expect(fullMapRequest.subType == .show)
+        #expect(fullMapRequest.data.id == mapId)
+        #expect(fullMapRequest.data.type == .map)
+        #expect(fullMapRequest.data.data == nil)
+        #expect(sutPlayer.gameModel.gameUpdateType == .table)
+        #expect(await rootPlayer.mapRoot.gameController.currentId != mapId)
+        #expect(!rootPlayer.photoRoot.gameController.photoGameModel.openPhotoSpace)
+
+        let fullMapPayload = try #require(try await sut.handle(fullMapRequest))
+        #expect(fullMapPayload.id == mapId)
+        #expect(fullMapPayload.type == .map)
+        #expect(fullMapPayload.type != .photo)
+        #expect(fullMapPayload.version == version)
+        #expect(fullMapPayload.data != nil)
+
+        await sut.send(type: fullMapRequest.type, subtype: fullMapRequest.subType, updated: fullMapPayload)
+        let fullMapReveal = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(fullMapReveal.type == .reveal)
+        #expect(fullMapReveal.subType == .show)
+        #expect(fullMapReveal.data.id == mapId)
+        #expect(fullMapReveal.data.type == .map)
+        #expect(fullMapReveal.data.type != .photo)
+
+        let mapRevealAck = try #require(try await sutPlayer.handle(fullMapReveal))
+        #expect(mapRevealAck.subType == .ok)
+        #expect(await rootPlayer.mapRoot.gameController.currentId == mapId)
+        #expect(sutPlayer.gameModel.gameUpdateType == .map)
+        #expect(!rootPlayer.photoRoot.gameController.photoGameModel.openPhotoSpace)
+    }
     
     @Test func handlePhoto() async throws {
         try await setUp()
@@ -392,6 +445,144 @@ final class MasterPlayerControllerTests {
         #expect(result!.subType == .ok)
         #expect(await rootPlayer.photoRoot.gameController.currentId == photoId)
         #expect(rootPlayer.photoRoot.gameController.gameItem(for: photoId).version == version)
+    }
+
+    @Test("V2 gamemaster and V1 player exchange dice and photo through controllers")
+    func v2MasterAndV1PlayerExchangeDiceAndPhotoThroughControllers() async throws {
+        let env = try await LinkedMasterPlayerControllerTestEnvironment.create(
+            masterToPlayer: .currentDecodedByV1,
+            playerToMaster: .v1Envelope
+        )
+        try await importTestData(into: env.masterRoot)
+        try await importDiceTestData(into: env.masterRoot)
+        try await importDiceTestData(into: env.playerRoot)
+        env.masterRoot.adventureRoot.startGame()
+        env.playerRoot.adventureRoot.startGame()
+
+        await env.master.ready(for: env.connectionId)
+
+        let diceId = env.masterRoot.diceRoot.itemController.itemDataModel.items[0]
+        let tableId = env.masterRoot.tableRoot.itemController.itemDataModel.items[0]
+        let resultCategory = ResultCategory(id: tableId, module: .table)
+        let masterDiceData = await env.masterRoot.diceRoot.gameController.createDiceResult(for: diceId, resultCategory: resultCategory)
+
+        await env.master.game(message: masterDiceData, actionType: .generic)
+        #expect(env.playerRoot.diceRoot.gameController.diceGameModel.playerDice.count == 1)
+        #expect(env.playerRoot.diceRoot.gameController.diceGameModel.playerDice.first?.name == "Andrenalin")
+
+        let playerDiceId = try #require(env.playerRoot.diceRoot.gameController.gameModel.items.first)
+        let playerDiceData = await env.playerRoot.diceRoot.gameController.createDiceResult(for: playerDiceId, resultCategory: resultCategory)
+
+        await env.player.game(message: playerDiceData, actionType: .generic)
+        #expect(env.masterRoot.diceRoot.gameController.diceGameModel.playerDice.count == 1)
+        #expect(env.masterRoot.diceRoot.gameController.diceGameModel.playerDice.first?.name == "AndrenalinPlayer")
+
+        let photoEnv = try await LinkedMasterPlayerControllerTestEnvironment.create(
+            masterToPlayer: .currentDecodedByV1,
+            playerToMaster: .v1Envelope
+        )
+        try await importTestData(into: photoEnv.masterRoot)
+        try await importPhotoTestData(into: photoEnv.masterRoot)
+        photoEnv.masterRoot.adventureRoot.startGame()
+        photoEnv.playerRoot.adventureRoot.startGame()
+        await photoEnv.master.ready(for: photoEnv.connectionId)
+
+        let photoId = photoEnv.masterRoot.photoRoot.itemController.itemDataModel.items[0]
+        let version = photoEnv.masterRoot.photoRoot.itemController.itemOrEmpty(for: photoId).version
+        let photoShareData = await photoEnv.masterRoot.photoRoot.gameController.share(id: photoId)
+
+        await photoEnv.master.show(for: photoShareData)
+        #expect(await photoEnv.playerRoot.photoRoot.gameController.currentId == photoId)
+        #expect(photoEnv.playerRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
+        #expect(await photoEnv.playerRoot.photoRoot.gameController.hasLocalFileData(for: photoId))
+
+        let playerPhotoEnv = try await LinkedMasterPlayerControllerTestEnvironment.create(
+            masterToPlayer: .currentDecodedByV1,
+            playerToMaster: .v1Envelope
+        )
+        try await importTestData(into: playerPhotoEnv.playerRoot)
+        try await importPhotoTestData(into: playerPhotoEnv.playerRoot)
+        playerPhotoEnv.masterRoot.adventureRoot.startGame()
+        playerPhotoEnv.playerRoot.adventureRoot.startGame()
+        await playerPhotoEnv.master.ready(for: playerPhotoEnv.connectionId)
+
+        let playerPhotoId = playerPhotoEnv.playerRoot.photoRoot.itemController.itemDataModel.items[0]
+        let playerPhotoVersion = playerPhotoEnv.playerRoot.photoRoot.itemController.itemOrEmpty(for: playerPhotoId).version
+        let playerPhotoData = try await playerPhotoEnv.playerRoot.photoRoot.gameController.createGameData(for: playerPhotoId)
+
+        await playerPhotoEnv.player.game(message: playerPhotoData, actionType: .generic)
+        #expect(playerPhotoEnv.masterRoot.photoRoot.gameController.gameModel.items.contains(playerPhotoId))
+        #expect(playerPhotoEnv.masterRoot.photoRoot.gameController.gameItem(for: playerPhotoId).version == playerPhotoVersion)
+        #expect(await playerPhotoEnv.masterRoot.photoRoot.gameController.hasLocalFileData(for: playerPhotoId))
+    }
+
+    @Test("V1 gamemaster and V2 player exchange dice and photo through controllers")
+    func v1MasterAndV2PlayerExchangeDiceAndPhotoThroughControllers() async throws {
+        let env = try await LinkedMasterPlayerControllerTestEnvironment.create(
+            masterToPlayer: .v1Envelope,
+            playerToMaster: .currentDecodedByV1
+        )
+        try await importTestData(into: env.masterRoot)
+        try await importDiceTestData(into: env.masterRoot)
+        try await importDiceTestData(into: env.playerRoot)
+        env.masterRoot.adventureRoot.startGame()
+        env.playerRoot.adventureRoot.startGame()
+
+        await env.master.ready(for: env.connectionId)
+
+        let diceId = env.masterRoot.diceRoot.itemController.itemDataModel.items[0]
+        let tableId = env.masterRoot.tableRoot.itemController.itemDataModel.items[0]
+        let resultCategory = ResultCategory(id: tableId, module: .table)
+        let masterDiceData = await env.masterRoot.diceRoot.gameController.createDiceResult(for: diceId, resultCategory: resultCategory)
+
+        await env.master.game(message: masterDiceData, actionType: .generic)
+        #expect(env.playerRoot.diceRoot.gameController.diceGameModel.playerDice.count == 1)
+        #expect(env.playerRoot.diceRoot.gameController.diceGameModel.playerDice.first?.name == "Andrenalin")
+
+        let playerDiceId = try #require(env.playerRoot.diceRoot.gameController.gameModel.items.first)
+        let playerDiceData = await env.playerRoot.diceRoot.gameController.createDiceResult(for: playerDiceId, resultCategory: resultCategory)
+
+        await env.player.game(message: playerDiceData, actionType: .generic)
+        #expect(env.masterRoot.diceRoot.gameController.diceGameModel.playerDice.count == 1)
+        #expect(env.masterRoot.diceRoot.gameController.diceGameModel.playerDice.first?.name == "AndrenalinPlayer")
+
+        let photoEnv = try await LinkedMasterPlayerControllerTestEnvironment.create(
+            masterToPlayer: .v1Envelope,
+            playerToMaster: .currentDecodedByV1
+        )
+        try await importTestData(into: photoEnv.masterRoot)
+        try await importPhotoTestData(into: photoEnv.masterRoot)
+        photoEnv.masterRoot.adventureRoot.startGame()
+        photoEnv.playerRoot.adventureRoot.startGame()
+        await photoEnv.master.ready(for: photoEnv.connectionId)
+
+        let photoId = photoEnv.masterRoot.photoRoot.itemController.itemDataModel.items[0]
+        let version = photoEnv.masterRoot.photoRoot.itemController.itemOrEmpty(for: photoId).version
+        let photoShareData = await photoEnv.masterRoot.photoRoot.gameController.share(id: photoId)
+
+        await photoEnv.master.show(for: photoShareData)
+        #expect(await photoEnv.playerRoot.photoRoot.gameController.currentId == photoId)
+        #expect(photoEnv.playerRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
+        #expect(await photoEnv.playerRoot.photoRoot.gameController.hasLocalFileData(for: photoId))
+
+        let playerPhotoEnv = try await LinkedMasterPlayerControllerTestEnvironment.create(
+            masterToPlayer: .v1Envelope,
+            playerToMaster: .currentDecodedByV1
+        )
+        try await importTestData(into: playerPhotoEnv.playerRoot)
+        try await importPhotoTestData(into: playerPhotoEnv.playerRoot)
+        playerPhotoEnv.masterRoot.adventureRoot.startGame()
+        playerPhotoEnv.playerRoot.adventureRoot.startGame()
+        await playerPhotoEnv.master.ready(for: playerPhotoEnv.connectionId)
+
+        let playerPhotoId = playerPhotoEnv.playerRoot.photoRoot.itemController.itemDataModel.items[0]
+        let playerPhotoVersion = playerPhotoEnv.playerRoot.photoRoot.itemController.itemOrEmpty(for: playerPhotoId).version
+        let playerPhotoData = try await playerPhotoEnv.playerRoot.photoRoot.gameController.createGameData(for: playerPhotoId)
+
+        await playerPhotoEnv.player.game(message: playerPhotoData, actionType: .generic)
+        #expect(playerPhotoEnv.masterRoot.photoRoot.gameController.gameModel.items.contains(playerPhotoId))
+        #expect(playerPhotoEnv.masterRoot.photoRoot.gameController.gameItem(for: playerPhotoId).version == playerPhotoVersion)
+        #expect(await playerPhotoEnv.masterRoot.photoRoot.gameController.hasLocalFileData(for: playerPhotoId))
     }
 
     @Test func handleSapce() async throws {
@@ -475,6 +666,198 @@ final class MasterPlayerControllerTests {
     }
 }
 
+private enum CompatibilityWireMode: Sendable {
+    case current
+    case v1Envelope
+    case currentDecodedByV1
+}
+
+@MainActor
+private struct LinkedMasterPlayerControllerTestEnvironment {
+    let link: InMemoryLocalNetworkLink
+    let master: MasterController
+    let masterRoot: GameRoot
+    let masterGameConfig: GameConfigModel
+    let player: PlayerController
+    let playerRoot: GameRoot
+    let playerGameConfig: GameConfigModel
+    let connectionId: ConnectionController.ID
+
+    static func create(
+        masterToPlayer: CompatibilityWireMode,
+        playerToMaster: CompatibilityWireMode
+    ) async throws -> LinkedMasterPlayerControllerTestEnvironment {
+        let link = InMemoryLocalNetworkLink(masterToPlayer: masterToPlayer, playerToMaster: playerToMaster)
+
+        let masterNetwork = GameNetworkController(
+            name: "Master Link",
+            proxy: false,
+            masterBuilder: { _, _ in link.masterStore },
+            playerBuilder: { _, _ in link.unusedPlayerStore }
+        )
+        let playerNetwork = GameNetworkController(
+            name: "Player Link",
+            proxy: false,
+            masterBuilder: { _, _ in link.unusedMasterStore },
+            playerBuilder: { _, _ in link.playerStore }
+        )
+        link.masterNetwork = masterNetwork
+        link.playerNetwork = playerNetwork
+
+        let masterProxyNetwork = GameNetworkController(
+            name: "Master Proxy Link",
+            proxy: true,
+            masterBuilder: { _, _ in MasterNetworkControllableMock() },
+            playerBuilder: { _, _ in PlayerStoreAbstractionMock() }
+        )
+        let playerProxyNetwork = GameNetworkController(
+            name: "Player Proxy Link",
+            proxy: true,
+            masterBuilder: { _, _ in MasterNetworkControllableMock() },
+            playerBuilder: { _, _ in PlayerStoreAbstractionMock() }
+        )
+
+        let masterRoot = try await MockRoot.createGameRoot()
+        try await MockRoot.resetTestData(for: masterRoot.adventureRoot)
+        try await MockRoot.resetGameController(for: masterRoot)
+        masterRoot.networkStore = masterNetwork
+        masterRoot.networkProxyStore = masterProxyNetwork
+
+        let masterId = UUID()
+        let masterConfig = GameConfigModel(
+            id: masterId,
+            state: .started,
+            master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin")
+        )
+        masterRoot.gameModel.reset(gameConfig: masterConfig)
+        let master = MasterController(root: masterRoot, asProxy: false)
+
+        let playerRoot = try await MockRoot.createGameRoot()
+        try await MockRoot.resetTestData(for: playerRoot.adventureRoot)
+        try await MockRoot.resetGameController(for: playerRoot)
+        playerRoot.networkStore = playerNetwork
+        playerRoot.networkProxyStore = playerProxyNetwork
+
+        let playerId = UUID()
+        let playerConfig = GameConfigModel(id: playerId, state: .started, master: .empty)
+        let playerRoster = GameRosterModel(players: [
+            PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")
+        ])
+        playerRoot.gameModel.reset(gameConfig: playerConfig, gameRoster: playerRoster)
+        let player = PlayerController(root: playerRoot, asGameMaster: false)
+
+        return LinkedMasterPlayerControllerTestEnvironment(
+            link: link,
+            master: master,
+            masterRoot: masterRoot,
+            masterGameConfig: masterConfig,
+            player: player,
+            playerRoot: playerRoot,
+            playerGameConfig: playerConfig,
+            connectionId: link.connectionId
+        )
+    }
+}
+
+private final class InMemoryLocalNetworkLink: @unchecked Sendable {
+    let connectionId = ConnectionController.ID()
+    let masterToPlayer: CompatibilityWireMode
+    let playerToMaster: CompatibilityWireMode
+    let masterStore: InMemoryMasterNetworkStore
+    let playerStore: InMemoryPlayerNetworkStore
+    let unusedMasterStore: MasterNetworkControllableMock
+    let unusedPlayerStore: PlayerStoreAbstractionMock
+    weak var masterNetwork: GameNetworkController?
+    weak var playerNetwork: GameNetworkController?
+
+    @MainActor
+    init(masterToPlayer: CompatibilityWireMode, playerToMaster: CompatibilityWireMode) {
+        self.masterToPlayer = masterToPlayer
+        self.playerToMaster = playerToMaster
+        masterStore = InMemoryMasterNetworkStore()
+        playerStore = InMemoryPlayerNetworkStore()
+        unusedMasterStore = MasterNetworkControllableMock()
+        unusedPlayerStore = PlayerStoreAbstractionMock()
+        masterStore.link = self
+        playerStore.link = self
+    }
+
+    func relayMasterToPlayer(_ content: MessageMapper?) async {
+        await playerNetwork?.playerReceived(data: encodedData(for: content, mode: masterToPlayer))
+    }
+
+    func relayPlayerToMaster(_ content: MessageMapper?) async {
+        await masterNetwork?.masterReceived(data: encodedData(for: content, mode: playerToMaster), for: connectionId, fileJournal: false)
+    }
+
+    private func encodedData(for content: MessageMapper?, mode: CompatibilityWireMode) -> Data? {
+        guard let model = content as? GameNetworkModel else {
+            return content?.encodeData()
+        }
+
+        switch mode {
+        case .current:
+            return model.encodeData()
+        case .v1Envelope:
+            return try? JSONEncoder().encode(model.v1Model)
+        case .currentDecodedByV1:
+            guard let data = model.encodeData(),
+                  let v1Envelope = try? JSONDecoder().decode(GameNetworkModelV1.self, from: data)
+            else {
+                return nil
+            }
+            return try? JSONEncoder().encode(v1Envelope)
+        }
+    }
+}
+
+private final class InMemoryMasterNetworkStore: MasterNetworkControllable, @unchecked Sendable {
+    @MainActor let networkModel: MasterNetworkNodel
+    weak var link: InMemoryLocalNetworkLink?
+
+    @MainActor
+    init(networkModel: MasterNetworkNodel = MasterNetworkNodel(name: "Linked Master")) {
+        self.networkModel = networkModel
+    }
+
+    @MainActor func startStreaming() {}
+    @MainActor func stopStreaming() {}
+    @MainActor func toggleStreaming() {}
+    @MainActor func startProxyStreaming() {}
+
+    func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async {
+        guard id == link?.connectionId else { return }
+        await link?.relayMasterToPlayer(data)
+    }
+
+    func sendResponse(data: MessageMapper?) async {
+        await link?.relayMasterToPlayer(data)
+    }
+
+    func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async {
+        guard except != link?.connectionId else { return }
+        await link?.relayMasterToPlayer(data)
+    }
+}
+
+private final class InMemoryPlayerNetworkStore: PlayerNetworkControllable, @unchecked Sendable {
+    @MainActor let networkModel = PlayerNetworkNodel(name: "Linked Player")
+    let browserManager: BrowserManager
+    weak var link: InMemoryLocalNetworkLink?
+
+    @MainActor
+    init(browserManager: BrowserManager = BrowserManager()) {
+        self.browserManager = browserManager
+    }
+
+    @MainActor func toggleConnection(to _: BrowserGameModel) async {}
+    @MainActor func stop() async {}
+
+    func request(with content: MessageMapper?) async {
+        await link?.relayPlayerToMaster(content)
+    }
+}
+
 private extension MasterPlayerControllerTests {
     func importTestData(into root: GameRoot) async throws {
         let bundle = ResourcesDebug.bundle
@@ -510,4 +893,5 @@ private extension MasterPlayerControllerTests {
         let task = root.adventureRoot.importControllable.importUrl(from: url)
         let _ = try await task.value
     }
+
 }

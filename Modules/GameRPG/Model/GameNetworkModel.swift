@@ -36,6 +36,8 @@ struct GameNetworkModel: Codable, Sendable {
     /// - 2: explicit `sender` + master-only `masterState` + optional `targetId`.
     ///      Unreleased dev layouts (gameConfig + gameRoster [+ gameControl]) also
     ///      stamped 1 or 2 and are decoded via the legacy fallbacks.
+    /// Current in-memory schema. Encoded messages still advertise the V1 wire
+    /// version because the encoder emits a compatibility superset for old peers.
     static let currentVersion = 2
 
     var version: Int = GameNetworkModel.currentVersion
@@ -141,10 +143,11 @@ struct GameNetworkModel: Codable, Sendable {
     /// V1 peers (shipped 2.6) read players/controls/features from inside
     /// `gameConfig` via the down-mapper; the unreleased dev layouts read
     /// `gameConfig` + `gameRoster`/`gameControl`; current peers read
-    /// `sender`/`masterState`.
+    /// `sender`/`masterState`. The version key stays at V1 so old clients do not
+    /// reject an otherwise compatible envelope.
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(version, forKey: .version)
+        try container.encode(GameNetworkModelV1.wireVersion, forKey: .version)
         try container.encode(counter, forKey: .counter)
         try container.encode(proxyCounter, forKey: .proxyCounter)
         try container.encode(type, forKey: .type)
@@ -180,8 +183,37 @@ struct GameNetworkModel: Codable, Sendable {
             return (config.master.id, sender, state)
         }
         let player = players.first(where: { $0.id == config.id })
-        let sender = GameSenderModel(id: config.id, role: player?.type ?? .notSet, name: player?.name ?? "", characterId: player?.characterId)
+        let role: GameType = if let type = player?.type, type != .notSet {
+            type
+        } else {
+            .player
+        }
+        let name = if let playerName = player?.name, !playerName.isEmpty {
+            playerName
+        } else {
+            "Player \(config.id.uuidString.prefix(8))"
+        }
+        let sender = GameSenderModel(id: config.id, role: role, name: name, characterId: player?.characterId)
         return (config.master.id, sender, nil)
+    }
+}
+
+extension GameNetworkModel {
+    var usesFileJournal: Bool {
+        guard type == .reveal || type == .store else { return false }
+        return data.usesFileJournal
+    }
+}
+
+extension NetworkCodableDataType {
+    var usesFileJournal: Bool {
+        guard data != nil else { return false }
+        switch type {
+        case .pdf, .audio, .space, .photo:
+            return true
+        default:
+            return false
+        }
     }
 }
 
@@ -191,7 +223,9 @@ struct GameNetworkModel: Codable, Sendable {
 /// sharing controls and feature gates travel inside `gameConfig`. Restored so
 /// old and new app versions can play in the same game.
 struct GameNetworkModelV1: Codable, Sendable {
-    var version: Int = 1
+    static let wireVersion = 1
+
+    var version: Int = GameNetworkModelV1.wireVersion
     var counter: Int
     var proxyCounter: Int
     var type: RPGMessageType

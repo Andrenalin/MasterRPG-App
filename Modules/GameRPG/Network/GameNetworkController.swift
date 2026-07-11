@@ -206,7 +206,8 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
         } else {
             // Fan-out received data to all other peers + SharePlay
             await model.masterStore?.sendResponse(data: gameData, except: connectionId)
-            await MainActor.run { sharePlayStore.sendData(gameData, fileJournal: fileJournal) }
+            let useFileJournal = fileJournal || gameData.usesFileJournal
+            await MainActor.run { sharePlayStore.sendData(gameData, fileJournal: useFileJournal) }
             await model.masterDelegate?.received(gameData, connectionId: connectionId)
         }
     }

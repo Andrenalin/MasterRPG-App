@@ -148,8 +148,16 @@ extension PlayerController {
             root.gameModel.outgoingMessage(counter: counter, type: type, subType: subType, asMaster: false, data: updated)
         }
 
-        let useOnTypeJournal = useJournal || updated.type == .audio || updated.type == .photo || updated.type == .space
+        let useOnTypeJournal = useJournal || Self.usesFileJournal(for: networtData)
         await send(model: networtData, useJournal: useOnTypeJournal)
+    }
+
+    static func usesFileJournal(for model: GameNetworkModel) -> Bool {
+        model.usesFileJournal
+    }
+
+    static func usesFileJournal(for data: NetworkCodableDataType) -> Bool {
+        data.usesFileJournal
     }
     
     private func send(model: GameNetworkModel, useJournal: Bool = false) async {
