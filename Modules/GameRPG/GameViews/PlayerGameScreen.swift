@@ -20,7 +20,7 @@ struct PlayerGameScreen: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        ZStack {
+        ManagedNavigationStack {
             GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running", contentType: .player)
         }
         .overlay(alignment: .topLeading) {

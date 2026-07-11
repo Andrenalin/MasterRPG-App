@@ -59,7 +59,6 @@ private extension OverlayGameMenu {
                 root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .bottomTrailing)
                 
                 if isMaster {
-                    ControlSharingView(alignment: .bottomLeading) {}
                     secondOptionView
                 }
                 

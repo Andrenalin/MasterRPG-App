@@ -48,9 +48,7 @@ private struct TabGameView: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
-        ManagedNavigationStack {
-            root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
-        }
+        root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
         .gameOverlayTabBarView(value: NetworkModules.game)
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity,
                alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
