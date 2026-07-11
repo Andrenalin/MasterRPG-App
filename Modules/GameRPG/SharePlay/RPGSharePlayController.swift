@@ -153,8 +153,7 @@ extension RPGSharePlayController {
                         Logger.sharePlay.error("Cannot remove old attachment from Journal with module \(gameNetworkModel.data.type.token, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
                     }
                 }
-                var model = gameNetworkModel
-                model.data = NetworkCodableDataType(id: gameNetworkModel.data.id, type: gameNetworkModel.data.type, version: gameNetworkModel.data.version, data: nil)
+                let model = Self.journalMetadata(for: gameNetworkModel)
                 do {
                     let result = try await journal.add(attachmentData, metadata: model)
                     self.gameModel?.attachments[gameNetworkModel.data.type] = result
@@ -170,6 +169,25 @@ extension RPGSharePlayController {
             guard let self, let sender = self.packageSender else { return }
             await sender.send(data: encodedModel)
         }
+    }
+
+    static func journalMetadata(for model: GameNetworkModel) -> GameNetworkModel {
+        var metadata = model
+        if metadata.data.type == .audio, metadata.targetId != nil {
+            // GroupSessionJournal attachments are visible to the whole session.
+            // Store the audio on every participant without treating a repair as
+            // a new reveal; proxy hosts then forward the same store downstream.
+            metadata.type = .store
+            metadata.subType = .show
+            metadata.targetId = nil
+        }
+        metadata.data = NetworkCodableDataType(
+            id: model.data.id,
+            type: model.data.type,
+            version: model.data.version,
+            data: nil
+        )
+        return metadata
     }
 
     /// Runs a send operation as a session-scoped task that is cancellable by

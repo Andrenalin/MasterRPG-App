@@ -8,8 +8,9 @@ import Testing
 
 @testable import CoreRPG
 @testable import GameRPG
+@testable import AudioRPG
 @testable import CharacterRPG
-import PhotoRPG
+@testable import PhotoRPG
 import AdventureRPG
 @testable import WeatherRPG
 
@@ -83,6 +84,7 @@ struct PlayerControllerTests {
         let itemId = env.root.photoRoot.itemControllable.itemDataModel.items[0]
         let netData = try await env.root.photoRoot.gameControllable.createGameData(for: itemId)
         let netId = await env.root.photoRoot.gameControllable.share(id: itemId)
+        let masterConfig = Self.masterConfig()
 
         // Act & Assert - Handle photo with full data
         var gameNetworkModel = GameNetworkModel(
@@ -91,7 +93,7 @@ struct PlayerControllerTests {
             proxyCounter: 0,
             type: .reveal,
             subType: .show,
-            gameConfig: env.gameConfig,
+            gameConfig: masterConfig,
             data: netData
         )
 
@@ -111,7 +113,7 @@ struct PlayerControllerTests {
             proxyCounter: 0,
             type: .reveal,
             subType: .show,
-            gameConfig: env.gameConfig,
+            gameConfig: masterConfig,
             data: netId
         )
         result = try await env.playerController.handle(gameNetworkModel)
@@ -125,7 +127,7 @@ struct PlayerControllerTests {
             proxyCounter: 0,
             type: .reveal,
             subType: .show,
-            gameConfig: env.gameConfig,
+            gameConfig: masterConfig,
             data: netData
         )
         result = try await env.playerController.handle(gameNetworkModel)
@@ -134,6 +136,75 @@ struct PlayerControllerTests {
         let restoredItem = await env.root.photoRoot.itemControllable.item(for: itemId)
         #expect(restoredItem != nil)
         #expect(restoredItem?.name == item?.name)
+    }
+
+    @Test("Player photo reveal does not replace the map presentation")
+    func playerPhotoRevealDoesNotReplaceMapPresentation() async throws {
+        // Arrange
+        let env = try await PlayerControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.root.adventureRoot)
+        env.root.adventureRoot.startGame()
+
+        let photoId = try #require(env.root.photoRoot.itemControllable.itemDataModel.items.first)
+        let photoData = try await env.root.photoRoot.gameControllable.createGameData(for: photoId)
+        env.playerController.gameModel.gameUpdateType = .map
+        #expect(env.root.photoRoot.gameControllable.gameModel.currentItemId == nil)
+        #expect(!env.root.photoRoot.gameController.photoGameModel.openPhotoSpace)
+
+        let playerMessage = Self.networkModel(
+            type: .reveal,
+            data: photoData,
+            gameConfig: Self.playerConfig(masterId: UUID())
+        )
+
+        // Act
+        let response = try await env.playerController.handle(playerMessage)
+
+        // Assert
+        #expect(response == nil)
+        #expect(env.playerController.gameModel.gameUpdateType == .map)
+        #expect(env.root.photoRoot.gameControllable.gameModel.currentItemId == nil)
+        #expect(!env.root.photoRoot.gameController.photoGameModel.openPhotoSpace)
+    }
+
+    @Test("SharePlay audio store completes a pending reveal and can play")
+    func sharePlayAudioStoreCompletesPendingRevealAndCanPlay() async throws {
+        // Arrange
+        let env = try await PlayerControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.root.adventureRoot)
+        try await MockRoot.importTestData(
+            into: env.root.adventureRoot,
+            name: ResourcesDebug.audioTestData,
+            itemCounter: 3
+        )
+        env.root.adventureRoot.startGame()
+
+        let audioId = try #require(env.root.audioRoot.itemController.itemDataModel.items.last)
+        let audioData = try await env.root.audioRoot.gameControllable.createGameData(for: audioId)
+        let audioReference = await env.root.audioRoot.gameControllable.share(id: audioId)
+        await env.root.audioRoot.gameControllable.reset()
+        env.root.audioRoot.itemController.itemDataModel.resetModel(id: audioId)
+        let masterConfig = Self.masterConfig()
+
+        let reveal = Self.networkModel(type: .reveal, data: audioReference, gameConfig: masterConfig)
+        let store = Self.networkModel(type: .store, subType: .show, data: audioData, gameConfig: masterConfig)
+
+        // Act
+        let request = try await env.playerController.handle(reveal)
+        let acknowledgment = try await env.playerController.handle(store)
+
+        let playData = env.root.audioRoot.gameController.requestPlay(id: audioId)
+        let play = Self.networkModel(type: .update, subType: .playAudio, data: playData, gameConfig: masterConfig)
+        _ = try await env.playerController.handle(play)
+
+        // Assert
+        #expect(request?.subType == .show)
+        #expect(acknowledgment?.subType == .ok)
+        #expect(env.playerController.gameModel.pendingAudioRequests.isEmpty)
+        #expect(await env.root.audioRoot.gameControllable.currentId == audioId)
+        #expect(await env.root.audioRoot.gameControllable.hasLocalFileData(for: audioId))
+        #expect(env.root.audioRoot.audioController.model.playList.map(\.id) == [audioId])
+        #expect(env.root.audioRoot.audioController.model.currentId == audioId)
     }
 
     @Test("Handle value reveal, store, item update and result update from master")
@@ -204,9 +275,9 @@ struct PlayerControllerTests {
         let characterData = try await root.characterRoot.gameControllable.createGameData(for: characterId)
         let response = try await sut.handle(Self.networkModel(type: .update, subType: .store, data: characterData, gameConfig: Self.masterConfig()))
         #expect(response == nil)
-        #expect(sut.gameModel.proxyFocusTask != nil)
+        let focusTask = try #require(sut.gameModel.proxyFocusTask)
 
-        try await Task.sleep(for: .milliseconds(1_100))
+        await focusTask.value
         #expect(root.gameModel.selectedCharacter == characterId)
         #expect(sut.gameModel.proxyFocusTask == nil)
     }
