@@ -139,11 +139,10 @@ extension AudioController {
                 guard let url else { return nil }
                 // Copy file-to-file: AVURLAsset streams from disk, so the track never
                 // needs to be loaded into memory.
-                let tempUrl = URL.temporaryDirectory.appending(path: request.id.uuidString).appendingPathExtension(url.pathExtension)
+                let tempUrl = URL.temporaryDirectory
+                    .appending(path: "\(request.id.uuidString)-\(UUID().uuidString)")
+                    .appendingPathExtension(url.pathExtension)
                 let fileManager = FileManager.default
-                if fileManager.fileExists(atPath: tempUrl.path) {
-                    try fileManager.removeItem(at: tempUrl)
-                }
                 try fileManager.copyItem(at: url, to: tempUrl)
                 return try await self.playlistItem(for: request, assetUrl: tempUrl)
             }
@@ -153,7 +152,9 @@ extension AudioController {
 
         do {
             if audioAsset == nil, let data = request.fileUrl.data {
-                let tempUrl = URL.temporaryDirectory.appending(path: request.id.uuidString).appendingPathExtension(itemController.config.filenameExtension)
+                let tempUrl = URL.temporaryDirectory
+                    .appending(path: "\(request.id.uuidString)-\(UUID().uuidString)")
+                    .appendingPathExtension(itemController.config.filenameExtension)
                 try data.write(to: tempUrl)
                 return try await playlistItem(for: request, assetUrl: tempUrl)
             }

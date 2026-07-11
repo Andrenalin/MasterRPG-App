@@ -32,6 +32,9 @@ final class PlayerControllerModel: Sendable {
     // Map ids with an in-flight full-map re-request, so a burst of mapState
     // messages cannot trigger a request storm. Cleared when map data arrives.
     var pendingMapRequests: Set<UUID> = []
+    // Audio reveals waiting for a full payload. SharePlay journals deliver the
+    // bytes as a non-presenting store so every participant and proxy can save it.
+    var pendingAudioRequests: Set<UUID> = []
     // Photo ids already requested for repair. An id is only released when the
     // repair actually produced a local file — a permanently failing photo is
     // requested once instead of looping master responses forever.
@@ -114,6 +117,7 @@ extension PlayerController {
         await root.adventureRoot.adventureGameControllable.resetGame()
         gameModel.hasSendPlayer = false
         gameModel.pendingMapRequests = []
+        gameModel.pendingAudioRequests = []
         gameModel.requestedRepairIds = []
     }
     
@@ -179,6 +183,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             gameModel.sendCharacterTask?.cancel()
             gameModel.sendCharacterTask = nil
             gameModel.pendingMapRequests = []
+            gameModel.pendingAudioRequests = []
             gameModel.requestedRepairIds = []
         }
         await gameModel.reset(lostMaster: true)
@@ -341,13 +346,20 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
+                await MainActor.run { _ = gameModel.pendingAudioRequests.remove(model.data.id) }
                 await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
+                await MainActor.run { _ = gameModel.pendingAudioRequests.insert(model.data.id) }
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
             try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
+            let completesReveal = await MainActor.run { gameModel.pendingAudioRequests.remove(model.data.id) != nil }
+            if completesReveal {
+                _ = await root.audioRoot.gameControllable.setCurrent(itemId: model.data.id)
+                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
+            }
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
@@ -504,6 +516,10 @@ extension PlayerController {
     }
 
     func handlePhoto(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+        // Player-originated reveal/update messages are requests relayed through
+        // SharePlay or a proxy, not presentation commands for this device.
+        guard model.sender.isMaster || model.type == .store else { return nil }
+
         switch model.type {
         case .reveal:
             if try await root.photoRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {

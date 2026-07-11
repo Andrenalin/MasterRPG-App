@@ -66,6 +66,33 @@ struct SharePlayPackageTransportTests {
             }
         }
     }
+
+    @Test("targeted audio journal payload becomes a broadcast store")
+    func targetedAudioJournalPayloadBecomesBroadcastStore() {
+        let targetId = UUID()
+        let audioId = UUID()
+        let masterId = UUID()
+        let payload = GameNetworkModel(
+            counter: 7,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: masterId,
+            sender: GameSenderModel(id: masterId, role: .master, name: "Master", characterId: nil),
+            targetId: targetId,
+            data: NetworkCodableDataType(id: audioId, type: .audio, version: 3, data: Data("audio".utf8))
+        )
+
+        let metadata = RPGSharePlayController.journalMetadata(for: payload)
+
+        #expect(metadata.type == .store)
+        #expect(metadata.subType == .show)
+        #expect(metadata.targetId == nil)
+        #expect(metadata.data.id == audioId)
+        #expect(metadata.data.type == .audio)
+        #expect(metadata.data.version == 3)
+        #expect(metadata.data.data == nil)
+    }
 }
 
 private extension SharePlayPackageTransportTests {
