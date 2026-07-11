@@ -182,11 +182,19 @@ extension PlayerController {
     }
 
     static func usesFileJournal(for model: GameNetworkModel) -> Bool {
-        model.usesFileJournal
+        model.usesFileJournal || usesFileJournal(type: model.type, subType: model.subType, data: model.data)
     }
 
     static func usesFileJournal(for data: NetworkCodableDataType) -> Bool {
         data.usesFileJournal
+    }
+
+    static func usesFileJournal(type: RPGMessageType, subType: RPGMessageActionType, data: NetworkCodableDataType) -> Bool {
+        type == .update && subType == .generic && data.type == .audio && data.data != nil
+    }
+
+    static func shouldStartAudioPlayback(isSharePlayActive: Bool, asGameMaster: Bool) -> Bool {
+        !isSharePlayActive || asGameMaster
     }
     
     private func sendOriginating(model: GameNetworkModel, useJournal: Bool = false) async {
@@ -235,17 +243,30 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     func receivedFile(_ model: GameNetworkModel) async {
         Logger.networking.debug("PlayerController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
         guard await root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
-        await received(model)
+        await receivedProcess(model, origin: .file)
     }
     
     func received(_ model: GameNetworkModel) async {
         await receivedProcess(model, fromProxy: false)
+    }
+
+    func receivedSharePlay(_ model: GameNetworkModel, participantId: UUID) async {
+        await receivedProcess(model, origin: .sharePlay(participantId))
+    }
+
+    func receivedSharePlayFile(_ model: GameNetworkModel) async {
+        guard await root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
+        await receivedProcess(model, origin: .file)
     }
     
     func receivedProcess(_ model: GameNetworkModel, fromProxy: Bool = false) async {
         Logger.networking.debug("PlayerController: Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
 
         let origin: GameMessageOrigin = fromProxy ? .proxy : .direct(nil)
+        await receivedProcess(model, origin: origin)
+    }
+
+    private func receivedProcess(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
         guard await messagePipeline.enqueue(GameMessageEvent(model: model, origin: origin)) else {
             Logger.networking.debug("PlayerController: Duplicate ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
             return
@@ -310,7 +331,10 @@ extension PlayerController: PlayerNetworkStoreDelegate {
 
             do {
                 try Task.checkCancellation()
-                let response = try await handle(event.model)
+                let response = try await handle(
+                    event.model,
+                    usesSharePlayPlaybackCoordination: event.origin.usesSharePlayFileTransport
+                )
                 try Task.checkCancellation()
                 if let response {
                     await sendUpstream(model: response)
@@ -356,14 +380,20 @@ extension PlayerController: PlayerNetworkProxyControllerDelegate {
 }
 
 extension PlayerController {
-    func handle(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+    func handle(
+        _ model: GameNetworkModel,
+        usesSharePlayPlaybackCoordination: Bool = false
+    ) async throws -> GameNetworkModel? {
         switch model.data.type {
         case .none, .game, .setting, .editor, .generator, .search:
             return nil
         case .adventure:
             return handleAdventure(model)
         case .audio:
-            return try await handleAudio(model)
+            return try await handleAudio(
+                model,
+                usesSharePlayPlaybackCoordination: usesSharePlayPlaybackCoordination
+            )
         case .dice:
             return try await handleDice(model)
         case .pdf:
@@ -389,7 +419,10 @@ extension PlayerController {
         nil
     }
     
-    func handleAudio(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+    func handleAudio(
+        _ model: GameNetworkModel,
+        usesSharePlayPlaybackCoordination: Bool = false
+    ) async throws -> GameNetworkModel? {
         if model.subType == .ok {
             await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
@@ -424,14 +457,18 @@ extension PlayerController {
             case .audioList:
                 await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.sender.id, authoritative: model.sender.isMaster)
             case .playAudio:
+                guard model.sender.isMaster else { return nil }
                 await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: (model.masterState?.controls.map { $0.id } ?? []) + [model.masterId])
-                let isSharePlayActive = await MainActor.run { root.networkStore.sharePlayStore.isActive }
-                if isSharePlayActive && !model.sender.isMaster {
-                    // SharePlay: AVPlayerPlaybackCoordinator propagates play() from the initiator.
-                    // Only load the item here so the coordinator can sync this participant.
-                    await root.audioRoot.audioGameControllable.loadPlaylist(id: model.data.id)
-                } else {
+                let asGameMaster = await gameModel.asGameMaster
+                if Self.shouldStartAudioPlayback(
+                    isSharePlayActive: usesSharePlayPlaybackCoordination,
+                    asGameMaster: asGameMaster
+                ) {
                     let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
+                } else {
+                    // The master device initiates playback; other SharePlay
+                    // participants only prepare for AVPlayerPlaybackCoordinator.
+                    await root.audioRoot.audioGameControllable.loadPlaylist(id: model.data.id)
                 }
             default:
                 break

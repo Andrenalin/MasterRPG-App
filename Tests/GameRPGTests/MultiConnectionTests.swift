@@ -418,7 +418,7 @@ private struct MultiplayerPhotoTopology {
 
 // MARK: - Multi-Connection Audio Tests
 
-@Suite("Multi-player audio synchronization")
+@Suite("Multi-player audio synchronization", .serialized)
 @MainActor
 struct MultiConnectionAudioTests {
 
@@ -910,6 +910,18 @@ struct MultiConnectionAudioTests {
 
         env.masterRoot.adventureRoot.startGame()
 
+        env.masterRoot.gameModel.gameRoster = GameRosterModel(players: [
+            env.player1Roster.players[0],
+            env.player2Roster.players[0],
+            env.player3Roster.players[0]
+        ])
+        env.masterRoot.gameModel.gameControl = GameControlModel(controls: [
+            SharingControlModel(id: env.player1Config.id, name: env.player1Roster.players[0].name, show: true),
+            SharingControlModel(id: env.player2Config.id, name: env.player2Roster.players[0].name, show: true),
+            SharingControlModel(id: env.player3Config.id, name: env.player3Roster.players[0].name, show: true)
+        ])
+        await env.master.resetPlayers()
+
         let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
 
         // Complete distribution to all players (abbreviated)
@@ -934,14 +946,25 @@ struct MultiConnectionAudioTests {
         let data3 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
 
         await env.player1.receivedProcess(data1!)
+        let ok1 = env.playerNetworkSpy.requestData as? GameNetworkModel
         await env.player2.receivedProcess(data2!)
+        let ok2 = env.playerNetworkSpy.requestData as? GameNetworkModel
         await env.player3.receivedProcess(data3!)
+        let ok3 = env.playerNetworkSpy.requestData as? GameNetworkModel
+
+        try #require(ok1?.subType == .ok)
+        try #require(ok2?.subType == .ok)
+        try #require(ok3?.subType == .ok)
+        await env.master.receivedProcess(ok1!, connectionId: nil)
+        await env.master.receivedProcess(ok2!, connectionId: nil)
+        await env.master.receivedProcess(ok3!, connectionId: nil)
 
         // Master sends play
         let playData = env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
         await env.master.game(message: playData, actionType: .playAudio)
         let playCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         try #require(playCommand != nil)
+        #expect(playCommand?.subType == .playAudio)
 
         // Act - All players receive play command
         await env.player1.receivedProcess(playCommand!)

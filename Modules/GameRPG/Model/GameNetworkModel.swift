@@ -359,6 +359,15 @@ enum GameMessageOrigin: Hashable, Sendable {
         guard case .proxy = self else { return false }
         return true
     }
+
+    var usesSharePlayFileTransport: Bool {
+        switch self {
+        case .sharePlay, .file:
+            true
+        case .direct, .proxy, .local:
+            false
+        }
+    }
 }
 
 struct GameMessageKey: Hashable, Sendable {

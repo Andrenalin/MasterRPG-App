@@ -19,6 +19,8 @@ final class MasterControllerModel: Sendable {
     var messageCounter: Int = 1
     var connectIDPlayers: [ConnectionController.ID: UUID] = [:]
     var asProxy = false
+    var pendingAudioPlays: [UUID: NetworkCodableDataType] = [:]
+    var audioTransferPlayers: [UUID: Set<UUID>] = [:]
     
     /// Reserves the next counter atomically. Reading and incrementing in separate
     /// calls lets concurrent sends stamp the same counter, which the receivers'
@@ -81,6 +83,8 @@ extension MasterController {
     func stop() async {
         Logger.networking.debug("MasterController: Stop")
         await messagePipeline.cancelAll()
+        gameModel.pendingAudioPlays.removeAll()
+        gameModel.audioTransferPlayers.removeAll()
         await root.networkStore.stopGame()
         await root.networkProxyStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
@@ -93,6 +97,7 @@ extension MasterController {
             (root.gameModel.gameConfig, root.gameModel.gameRoster, root.gameModel.gameControl)
         }
 
+        let previousAudioPlayers = Set(await root.audioRoot.gameControllable.gameModel.currentPlayers)
         var players = gameControl.controls.compactMap { $0.show ? $0.id : nil }.sorted()
         if asProxy {
             players.append(gameConfig.master.id)
@@ -120,6 +125,12 @@ extension MasterController {
                 await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId))
             }
         }
+        // A newly joined player reports its database-backed audio list from
+        // ready(). Wait for that report before deciding whether to transfer.
+        // Removals can immediately unblock a pending play.
+        if Set(players).isSubset(of: previousAudioPlayers) {
+            await continuePendingAudioPlays()
+        }
     }
 }
 
@@ -131,6 +142,10 @@ extension MasterController {
     }
     
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType, playerId: UUID? = nil) async {
+        if message.type == .audio, actionType == .playAudio {
+            await requestAudioPlay(message)
+            return
+        }
         await send(type: .update, subtype: actionType, updated: message, playerId: playerId)
     }
     
@@ -298,9 +313,13 @@ extension MasterController {
             await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id)
             await send(type: .update, subtype: .audioList, updated: audioList)
+            await continuePendingAudioPlays()
             return nil
         }
-        guard model.subType != .failed else { return nil }
+        if model.subType == .failed {
+            await audioTransferFailed(itemId: model.data.id, playerId: model.sender.id)
+            return nil
+        }
         switch model.type {
         case .reveal, .store:
             return try await root.audioRoot.gameControllable.createGameData(for: model.data.id)
@@ -310,18 +329,91 @@ extension MasterController {
                 try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
                 await send(type: .reveal, subtype: .show, updated: model.data)
             case .playAudio:
-                // Master must also play so it participates; returning model.data echoes
-                // the command to all players (non-SharePlay path).
-                let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
-                return model.data
+                await requestAudioPlay(model.data)
             case .audioList:
+                await resetAudioTransfers(for: model.sender.id)
                 await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.sender.id, authoritative: false)
                 let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id)
                 await send(type: .update, subtype: .audioList, updated: audioList)
+                await continuePendingAudioPlays()
             default:
                 break
             }
             return nil
+        }
+    }
+
+    @MainActor
+    func requestAudioPlay(_ data: NetworkCodableDataType) async {
+        if !root.audioRoot.audioGameControllable.shouldPlay(with: data) {
+            gameModel.pendingAudioPlays[data.id] = nil
+            gameModel.audioTransferPlayers[data.id] = nil
+            await broadcastAudioPlay(data)
+            return
+        }
+
+        gameModel.pendingAudioPlays[data.id] = data
+        await fulfillPendingAudioPlay(id: data.id, data: data)
+    }
+
+    @MainActor
+    private func continuePendingAudioPlays() async {
+        let pending = gameModel.pendingAudioPlays
+        for (id, data) in pending {
+            await fulfillPendingAudioPlay(id: id, data: data)
+        }
+    }
+
+    @MainActor
+    private func fulfillPendingAudioPlay(id: UUID, data: NetworkCodableDataType) async {
+        let missingPlayers = Set(root.audioRoot.audioGameControllable.missingPlayers(for: id))
+        if missingPlayers.isEmpty {
+            gameModel.pendingAudioPlays[id] = nil
+            gameModel.audioTransferPlayers[id] = nil
+            await broadcastAudioPlay(data)
+            return
+        }
+
+        let inFlight = gameModel.audioTransferPlayers[id] ?? []
+        let newPlayers = missingPlayers.subtracting(inFlight)
+        guard !newPlayers.isEmpty else { return }
+
+        do {
+            gameModel.audioTransferPlayers[id] = inFlight.union(newPlayers)
+            let audioData = try await root.audioRoot.gameControllable.createGameData(for: id)
+            guard gameModel.pendingAudioPlays[id] != nil else {
+                gameModel.audioTransferPlayers[id] = nil
+                return
+            }
+            let stillMissing = Set(root.audioRoot.audioGameControllable.missingPlayers(for: id))
+                .intersection(newPlayers)
+            for playerId in stillMissing.sorted() {
+                await send(type: .store, subtype: .show, updated: audioData, playerId: playerId)
+            }
+        } catch {
+            gameModel.audioTransferPlayers[id]?.subtract(newPlayers)
+            Logger.networking.error("MasterController: Cannot prepare pending audio \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    @MainActor
+    private func audioTransferFailed(itemId: UUID, playerId: UUID) {
+        gameModel.audioTransferPlayers[itemId]?.remove(playerId)
+    }
+
+    @MainActor
+    private func resetAudioTransfers(for playerId: UUID) {
+        for itemId in gameModel.audioTransferPlayers.keys {
+            gameModel.audioTransferPlayers[itemId]?.remove(playerId)
+        }
+    }
+
+    @MainActor
+    private func broadcastAudioPlay(_ data: NetworkCodableDataType) async {
+        await send(type: .update, subtype: .playAudio, updated: data)
+        let hasLocalPlayer = root.networkStore.model.hasLocalPlayer
+        if !hasLocalPlayer {
+            let _ = await root.audioRoot.audioGameControllable.play(with: data).result
         }
     }
     

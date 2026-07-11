@@ -19,6 +19,18 @@ protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
     func ready() async
     func received(_ model: GameNetworkModel) async
     func receivedFile(_ model: GameNetworkModel) async
+    func receivedSharePlay(_ model: GameNetworkModel, participantId: UUID) async
+    func receivedSharePlayFile(_ model: GameNetworkModel) async
+}
+
+extension PlayerNetworkStoreDelegate {
+    func receivedSharePlay(_ model: GameNetworkModel, participantId: UUID) async {
+        await received(model)
+    }
+
+    func receivedSharePlayFile(_ model: GameNetworkModel) async {
+        await receivedFile(model)
+    }
 }
 
 // MARK: - Proxy-mode delegate protocols

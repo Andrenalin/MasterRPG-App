@@ -16,8 +16,10 @@ public protocol AudioGameStoreable {
     @MainActor func audioList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType
     @MainActor func applyAudio(id: UUID, for players: [UUID])
     @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool)
+    @MainActor func missingPlayers(for itemId: UUID) -> [UUID]
     func hasLocalAudioData(for itemId: UUID) async -> Bool
     func play(with data: NetworkCodableDataType) -> Task<Void, Error>
+    func shouldPlay(with data: NetworkCodableDataType) -> Bool
     @MainActor func requestPlay(id: UUID) -> NetworkCodableDataType
 }
 
@@ -72,6 +74,21 @@ extension GameController: GameControllable {
             }
         }
         return true
+    }
+
+    @MainActor func missingPlayers(for itemId: UUID) -> [UUID] {
+        missingPlayers(for: itemId, visited: []).sorted()
+    }
+
+    @MainActor private func missingPlayers(for itemId: UUID, visited: Set<UUID>) -> Set<UUID> {
+        guard !visited.contains(itemId) else { return [] }
+        let visited = visited.union([itemId])
+        let reported = Set(gameModel.playerReport(for: itemId))
+        var missing = Set(gameModel.currentPlayers).subtracting(reported)
+        for entry in gameItem(for: itemId).entries {
+            missing.formUnion(missingPlayers(for: entry.audioId, visited: visited))
+        }
+        return missing
     }
 
     @MainActor func report(itemId: UUID, for player: UUID) {
@@ -278,6 +295,10 @@ extension GameController: AudioGameStoreable {
     func play(with data: NetworkCodableDataType) -> Task<Void, Error> {
         let request = AudioPlayRequest.decodeData(of: data.data)
         return play(id: request?.id, shouldPlay: request?.shouldPlay ?? false)
+    }
+
+    func shouldPlay(with data: NetworkCodableDataType) -> Bool {
+        AudioPlayRequest.decodeData(of: data.data)?.shouldPlay ?? false
     }
 
     @MainActor

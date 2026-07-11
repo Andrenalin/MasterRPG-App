@@ -300,11 +300,11 @@ extension GameNetworkController: SharePlayControllerDelegate {
     @MainActor
     func routeSharePlayUpdate(_ message: GameNetworkModel, id: UUID) async {
         if message.sender.isMaster {
-            await model.playerDelegate?.received(message)
+            await model.playerDelegate?.receivedSharePlay(message, participantId: id)
         } else {
             await model.masterDelegate?.received(message, connectionId: id)
             if !model.hasLocalPlayer {
-                await model.playerDelegate?.received(message)
+                await model.playerDelegate?.receivedSharePlay(message, participantId: id)
             }
         }
 
@@ -316,11 +316,11 @@ extension GameNetworkController: SharePlayControllerDelegate {
     @MainActor
     func routeSharePlayFileUpdate(_ message: GameNetworkModel) async {
         if message.sender.isMaster {
-            await model.playerDelegate?.receivedFile(message)
+            await model.playerDelegate?.receivedSharePlayFile(message)
         } else {
             await model.masterDelegate?.receivedFile(message)
             if !model.hasLocalPlayer {
-                await model.playerDelegate?.receivedFile(message)
+                await model.playerDelegate?.receivedSharePlayFile(message)
             }
         }
 
