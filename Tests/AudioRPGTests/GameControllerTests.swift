@@ -72,7 +72,8 @@ struct GameControllerTests {
         let incomingList = AudioListRequest(list: [playlistId], players: [trackBId: [otherPlayerId]])
         sut.applyAudioList(
             data: NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: incomingList.encodeData()),
-            for: playerId
+            for: playerId,
+            authoritative: false
         )
         #expect(sut.gameModel.playerReport(for: playlistId).contains(playerId))
         #expect(sut.gameModel.playerReport(for: trackBId).contains(otherPlayerId))

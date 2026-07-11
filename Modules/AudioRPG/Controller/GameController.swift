@@ -15,7 +15,7 @@ public protocol AudioGameStoreable {
 
     @MainActor func audioList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType
     @MainActor func applyAudio(id: UUID, for players: [UUID])
-    @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID)
+    @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool)
     func hasLocalAudioData(for itemId: UUID) async -> Bool
     func play(with data: NetworkCodableDataType) -> Task<Void, Error>
     @MainActor func requestPlay(id: UUID) -> NetworkCodableDataType
@@ -232,18 +232,27 @@ extension GameController: AudioGameStoreable {
     }
 
     @MainActor
-    func applyAudioList(data: NetworkCodableDataType, for playerId: UUID) {
+    func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool) {
         guard let list = AudioListRequest.decodeData(of: data.data) else { return }
-        applyAudioList(list: list.list, to: playerId)
-        list.players.forEach {
-            applyAudio(id: $0.key, for: $0.value)
-        }
-    }
-    
-    @MainActor
-    private func applyAudioList(list: [UUID], to playerId: UUID) {
-        list.forEach {
-            applyAudio(id: $0, for: [playerId])
+        if authoritative {
+            let itemIds = Set(itemController.itemDataModel.items)
+                .union(gameModel.playerReports.keys)
+                .union(list.players.keys)
+            for itemId in itemIds {
+                gameModel.playerReports[itemId] = list.players[itemId] ?? []
+            }
+        } else {
+            let reportedItems = Set(list.list)
+            let itemIds = Set(itemController.itemDataModel.items)
+                .union(gameModel.playerReports.keys)
+                .union(reportedItems)
+            for itemId in itemIds {
+                var players = gameModel.playerReport(for: itemId).filter { $0 != playerId }
+                if reportedItems.contains(itemId) {
+                    players.append(playerId)
+                }
+                gameModel.playerReports[itemId] = players
+            }
         }
     }
     

@@ -60,9 +60,9 @@ final class PlayerControllerModel: Sendable {
 final class PlayerController: Sendable {
     // Strong on purpose: an intentional, temporary cycle GameRoot → GameModel →
     // PlayerController → GameRoot that stopGame() breaks by dropping the controllers.
-    // `unowned` crashed here: delayed tasks (e.g. sendCharacter's 5s sleep) can
-    // outlive stopGame()/teardown and would read a destroyed GameRoot. A strong
-    // reference keeps GameRoot alive until the last in-flight task finishes.
+    // `unowned` crashed here when in-flight controller tasks outlived
+    // stopGame()/teardown. A strong reference keeps GameRoot alive until the
+    // last task finishes.
     let root: GameRoot
     let gameModel: PlayerControllerModel
     let proxyMasterController: MasterController?
@@ -193,6 +193,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     func ready() async {
         Logger.networking.debug("PlayerController: Ready")
         await gameModel.reset(lostMaster: false)
+        await sendAudioList()
         await scheduleSendCharacter()
     }
     
@@ -295,6 +296,8 @@ extension PlayerController: PlayerNetworkProxyControllerDelegate {
     func readyProxy() async {
         Logger.networking.debug("PlayerController: Proxy Ready")
         await gameModel.reset(lostMaster: false)
+        await sendAudioList()
+        await scheduleSendCharacter()
     }
     
     func receivedProxy(_ model: GameNetworkModel) async {
@@ -370,7 +373,7 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .audioList:
-                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.sender.id)
+                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.sender.id, authoritative: model.sender.isMaster)
             case .playAudio:
                 await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: (model.masterState?.controls.map { $0.id } ?? []) + [model.masterId])
                 let isSharePlayActive = await MainActor.run { root.networkStore.sharePlayStore.isActive }
@@ -764,13 +767,6 @@ extension PlayerController {
         if let result = try? await root.characterRoot.gameControllable.createGameData(for: characterId) {
             await send(counter: 0, type: .update, subType: .store, updated: result, useJournal: true)
         }
-        do {
-            try await Task.sleep(for: .seconds(5))
-        } catch {
-            return
-        }
-        guard !Task.isCancelled else { return }
-        await sendAudioList()
     }
 
     func sendAudioList() async {

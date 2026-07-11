@@ -422,6 +422,64 @@ private struct MultiplayerPhotoTopology {
 @MainActor
 struct MultiConnectionAudioTests {
 
+    @Test("Initial and reconnect audio reports are rebroadcast authoritatively")
+    func initialAndReconnectAudioReportsAreRebroadcast() async throws {
+        // Arrange
+        let env = try await MultiConnectionTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
+        try await MockRoot.importTestData(
+            into: env.masterRoot.adventureRoot,
+            name: ResourcesDebug.audioTestData,
+            itemCounter: 3
+        )
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+
+        func audioReport(from root: GameRoot, availableIds: [UUID]) -> GameNetworkModel {
+            let request = AudioListRequest(list: availableIds, players: [:])
+            let data = NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: request.encodeData())
+            return root.gameModel.outgoingMessage(
+                counter: 0,
+                type: .update,
+                subType: .audioList,
+                asMaster: false,
+                data: data
+            )
+        }
+
+        // Act - Player 1 reports its initial availability.
+        _ = try await env.master.handle(audioReport(from: env.player1Root, availableIds: [audioId]))
+        let firstUpdate = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        _ = try await env.player2.handle(firstUpdate)
+
+        // Assert - The master rebroadcast reaches another local player.
+        #expect(firstUpdate.subType == .audioList)
+        #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(env.player2Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+
+        // Act - Player 2 reports and the next authoritative update reaches Player 1.
+        _ = try await env.master.handle(audioReport(from: env.player2Root, availableIds: [audioId]))
+        let secondUpdate = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        _ = try await env.player1.handle(secondUpdate)
+
+        // Assert
+        #expect(secondUpdate.subType == .audioList)
+        #expect(env.player1Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(env.player1Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player2Config.id))
+
+        // Act - Player 1 reconnects without the audio and replaces its old report.
+        _ = try await env.master.handle(audioReport(from: env.player1Root, availableIds: []))
+        let reconnectUpdate = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        _ = try await env.player2.handle(reconnectUpdate)
+
+        // Assert - Stale Player 1 availability is removed everywhere; Player 2 remains.
+        #expect(reconnectUpdate.subType == .audioList)
+        #expect(!env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player2Config.id))
+        #expect(!env.player2Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(env.player2Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player2Config.id))
+        #expect(env.masterNetworkSpy.calledSendResponseAll == 3)
+    }
+
     @Test("Audio receipt waits for local bytes and propagates after storage")
     func audioReceiptWaitsForLocalBytesAndPropagates() async throws {
         // Arrange
