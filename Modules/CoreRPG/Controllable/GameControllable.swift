@@ -250,13 +250,10 @@ public extension GameControllable {
 
     func reveal(itemId: UUID, data: NetworkCodableDataType, save: Bool) async throws -> Bool {
         guard await hasItem(id: itemId, version: data.version) == false else {
-            // A version match can hide an item whose binary never arrived
-            // (metadata-only import). When the message carries data and the local
-            // file is missing, import anyway instead of dropping the payload —
-            // otherwise the item can never be repaired by a resend.
-            if data.data != nil, await !hasLocalFileData(for: itemId) {
+            if await !hasLocalFileData(for: itemId) {
+                guard data.data != nil else { return false }
                 try await updateGame(data: data, hide: !save, deep: false)
-                return true
+                return await hasLocalFileData(for: itemId)
             }
             _ = await setCurrent(itemId: itemId)
             if save, let model = await gameModel.itemData[itemId] {
@@ -266,7 +263,7 @@ public extension GameControllable {
         }
         guard data.data != nil else { return false }
         try await updateGame(data: data, hide: !save, deep: false)
-        return true
+        return await hasLocalFileData(for: itemId)
     }
 
     func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool) async throws {

@@ -264,22 +264,14 @@ extension GameNetworkController: SharePlayControllerDelegate {
     @MainActor
     func handleUpdate(_ model: GameNetworkModel, id: UUID) {
         scheduleDelegateTask {
-            await self.model.playerDelegate?.received(model)
-            await self.model.masterDelegate?.received(model, connectionId: id)
-            if self.model.hasLocalPlayer {
-                await self.model.masterStore?.sendResponse(data: model)
-            }
+            await self.routeSharePlayUpdate(model, id: id)
         }
     }
 
     @MainActor
     func handleFileUpdate(_ model: GameNetworkModel) {
         scheduleDelegateTask {
-            await self.model.playerDelegate?.receivedFile(model)
-            await self.model.masterDelegate?.receivedFile(model)
-            if self.model.hasLocalPlayer {
-                await self.model.masterStore?.sendResponse(data: model)
-            }
+            await self.routeSharePlayFileUpdate(model)
         }
     }
 
@@ -302,6 +294,38 @@ extension GameNetworkController: SharePlayControllerDelegate {
         scheduleDelegateTask {
             guard !self.model.hasLocalPlayer else { return }
             await self.model.playerDelegate?.ready()
+        }
+    }
+
+    @MainActor
+    func routeSharePlayUpdate(_ message: GameNetworkModel, id: UUID) async {
+        if message.sender.isMaster {
+            await model.playerDelegate?.received(message)
+        } else {
+            await model.masterDelegate?.received(message, connectionId: id)
+            if !model.hasLocalPlayer {
+                await model.playerDelegate?.received(message)
+            }
+        }
+
+        if model.hasLocalPlayer {
+            await model.masterStore?.sendResponse(data: message)
+        }
+    }
+
+    @MainActor
+    func routeSharePlayFileUpdate(_ message: GameNetworkModel) async {
+        if message.sender.isMaster {
+            await model.playerDelegate?.receivedFile(message)
+        } else {
+            await model.masterDelegate?.receivedFile(message)
+            if !model.hasLocalPlayer {
+                await model.playerDelegate?.receivedFile(message)
+            }
+        }
+
+        if model.hasLocalPlayer {
+            await model.masterStore?.sendResponse(data: message)
         }
     }
 }

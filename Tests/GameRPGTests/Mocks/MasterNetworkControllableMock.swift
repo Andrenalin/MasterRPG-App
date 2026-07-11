@@ -48,12 +48,19 @@ final class MasterNetworkControllableMock: MasterNetworkControllable, @unchecked
     func sendResponse(data netData: MessageMapper?, id _: ConnectionController.ID) {
         calledSendResponseId += 1
         sendResponseData = netData
+        if let netData {
+            sendResponseHistory.append(netData)
+        }
     }
 
     var sendResponseData: MessageMapper?
+    var sendResponseHistory: [MessageMapper] = []
     func sendResponse(data netData: MessageMapper?) {
         calledSendResponseAll += 1
         sendResponseData = netData
+        if let netData {
+            sendResponseHistory.append(netData)
+        }
     }
 
     func sendResponse(data _: MessageMapper?, except _: ConnectionController.ID) {

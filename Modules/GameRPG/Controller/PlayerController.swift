@@ -23,12 +23,15 @@ import UIKit
 final class PlayerControllerModel: Sendable {
     var gameUpdateType: NetworkModules = .none
     var messageCounter: Int = 0
-    var responseCounter: Int = 0
+    private var outgoingMessageCounter: Int = 1
+    private var lastMasterStateCounters: [UUID: Int] = [:]
     var lostMaster: Bool = true
     var hasSendPlayer = false
     var asGameMaster = false
     var sendCharacterTask: Task<Void, Never>?
+    var sendCharacterTaskId: UUID?
     var proxyFocusTask: Task<Void, Never>?
+    var proxyFocusTaskId: UUID?
     // Map ids with an in-flight full-map re-request, so a burst of mapState
     // messages cannot trigger a request storm. Cleared when map data arrives.
     var pendingMapRequests: Set<UUID> = []
@@ -42,6 +45,22 @@ final class PlayerControllerModel: Sendable {
 
     func increaseMessageCounter() {
         messageCounter += 1
+    }
+
+    func nextOutgoingMessageCounter() -> Int {
+        defer { outgoingMessageCounter += 1 }
+        return outgoingMessageCounter
+    }
+
+    func shouldApplyMasterState(from masterId: UUID, counter: Int) -> Bool {
+        guard counter > 0 else { return true }
+        guard counter > (lastMasterStateCounters[masterId] ?? 0) else { return false }
+        lastMasterStateCounters[masterId] = counter
+        return true
+    }
+
+    func resetMasterStateSequence() {
+        lastMasterStateCounters.removeAll()
     }
 
     func reset(lostMaster: Bool) {
@@ -110,8 +129,10 @@ extension PlayerController {
         await messagePipeline.cancelAll()
         gameModel.sendCharacterTask?.cancel()
         gameModel.sendCharacterTask = nil
+        gameModel.sendCharacterTaskId = nil
         gameModel.proxyFocusTask?.cancel()
         gameModel.proxyFocusTask = nil
+        gameModel.proxyFocusTaskId = nil
         await root.networkProxyStore.stopGame()
         await root.networkStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
@@ -119,6 +140,7 @@ extension PlayerController {
         gameModel.pendingMapRequests = []
         gameModel.pendingAudioRequests = []
         gameModel.requestedRepairIds = []
+        gameModel.resetMasterStateSequence()
     }
     
     @MainActor
@@ -134,11 +156,11 @@ extension PlayerController {
 
 extension PlayerController {
     func send(updated: NetworkCodableDataType) async {
-        await send(counter: 0, type: .store, subType: .store, updated: updated)
+        await send(type: .store, subType: .store, updated: updated)
     }
     
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType) async {
-        await send(counter: 0, type: .update, subType: actionType, updated: message)
+        await send(type: .update, subType: actionType, updated: message)
     }
     
     func send(screen: AKImage, responseCounter: Int) async {
@@ -146,14 +168,17 @@ extension PlayerController {
         await send(counter: responseCounter, type: .store, subType: .screen, updated: data)
     }
     
-    func send(counter: Int, type: RPGMessageType, subType: RPGMessageActionType = .show, updated: NetworkCodableDataType, useJournal: Bool = false) async {
-        Logger.networking.debug("PlayerController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
+    func send(counter: Int? = nil, type: RPGMessageType, subType: RPGMessageActionType = .show, updated: NetworkCodableDataType, useJournal: Bool = false) async {
+        let outgoingCounter = await MainActor.run {
+            counter ?? gameModel.nextOutgoingMessageCounter()
+        }
+        Logger.networking.debug("PlayerController: Send \(outgoingCounter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
         let networtData = await MainActor.run {
-            root.gameModel.outgoingMessage(counter: counter, type: type, subType: subType, asMaster: false, data: updated)
+            root.gameModel.outgoingMessage(counter: outgoingCounter, type: type, subType: subType, asMaster: false, data: updated)
         }
 
         let useOnTypeJournal = useJournal || Self.usesFileJournal(for: networtData)
-        await send(model: networtData, useJournal: useOnTypeJournal)
+        await sendOriginating(model: networtData, useJournal: useOnTypeJournal)
     }
 
     static func usesFileJournal(for model: GameNetworkModel) -> Bool {
@@ -164,12 +189,20 @@ extension PlayerController {
         data.usesFileJournal
     }
     
-    private func send(model: GameNetworkModel, useJournal: Bool = false) async {
+    private func sendOriginating(model: GameNetworkModel, useJournal: Bool = false) async {
         if await root.gameModel.gameType == .proxy {
             await root.networkProxyStore.sendMaster(data: model)
         } else {
             await root.networkStore.sendMaster(data: model, fileJournal: useJournal)
             await root.networkProxyStore.sendPlayer(data: model)
+        }
+    }
+
+    private func sendUpstream(model: GameNetworkModel) async {
+        if await root.gameModel.gameType == .proxy {
+            await root.networkProxyStore.sendMaster(data: model)
+        } else {
+            await root.networkStore.sendMaster(data: model, fileJournal: false)
         }
     }
 }
@@ -182,9 +215,11 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         await MainActor.run {
             gameModel.sendCharacterTask?.cancel()
             gameModel.sendCharacterTask = nil
+            gameModel.sendCharacterTaskId = nil
             gameModel.pendingMapRequests = []
             gameModel.pendingAudioRequests = []
             gameModel.requestedRepairIds = []
+            gameModel.resetMasterStateSequence()
         }
         await gameModel.reset(lostMaster: true)
         await gameModel.reset(sendPlayer: false)
@@ -226,7 +261,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         // still forwarded to local proxy clients: the addressee may sit behind
         // this player's proxy server.
         if let targetId = model.targetId, await targetId != root.gameModel.gameConfig.id {
-            if !event.fromProxy {
+            if !event.fromProxy, !model.isAcknowledgement {
                 await root.networkProxyStore.sendPlayer(data: model)
             }
             Logger.networking.debug("PlayerController: Message ignored, targeted at \(targetId, privacy: .public)")
@@ -235,7 +270,9 @@ extension PlayerController: PlayerNetworkStoreDelegate {
 
         if await !gameModel.asGameMaster {
             let controls = model.masterState?.controls ?? []
-            if let masterState = model.masterState, model.sender.isMaster {
+            if let masterState = model.masterState,
+               model.sender.isMaster,
+               await gameModel.shouldApplyMasterState(from: model.masterId, counter: model.counter) {
                 // One MainActor hop for the whole broadcast: applying config,
                 // controls and roster in separate steps lets concurrent message
                 // builders capture a torn state and send it back to the master.
@@ -257,7 +294,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             }
         }
 
-        if !event.fromProxy {
+        if !event.fromProxy, !model.isAcknowledgement {
             await root.networkProxyStore.sendPlayer(data: model)
             await scheduleSendCharacter()
         }
@@ -267,20 +304,32 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     func processMessages() async {
         while let event = await messagePipeline.next() {
             guard await prepareForProcessing(event) else {
-                await messagePipeline.processed()
+                await messagePipeline.processed(success: true)
                 continue
             }
 
-            let response = try? await handle(event.model)
-            if let response {
-                await send(model: response)
-                if response.subType == .ok {
+            do {
+                try Task.checkCancellation()
+                let response = try await handle(event.model)
+                try Task.checkCancellation()
+                if let response {
+                    await sendUpstream(model: response)
+                    if response.subType == .ok {
+                        await gameModel.increaseMessageCounter()
+                    }
+                } else {
                     await gameModel.increaseMessageCounter()
                 }
-            } else {
-                await gameModel.increaseMessageCounter()
+                await messagePipeline.processed(success: true)
+            } catch is CancellationError {
+                await messagePipeline.processed(success: false)
+                return
+            } catch {
+                Logger.networking.error("PlayerController: Failed to process \(event.model.debugDescription, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                let failure = await response(for: event.model, isSuccess: false, requestData: false)
+                await sendUpstream(model: failure)
+                await messagePipeline.processed(success: false)
             }
-            await messagePipeline.processed()
         }
     }
 }
@@ -393,7 +442,7 @@ extension PlayerController {
 
     func handleDice(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
         let features = await root.gameModel.gameControl.features
-        guard await (root.gameModel.gameName != model.senderName) &&
+        guard await (root.gameModel.gameConfig.id != model.sender.id) &&
                 (features.diceMaster || !model.sender.isMaster) &&
                 (features.dicePlayers || model.sender.isMaster)
         else { return await response(for: model, isSuccess: false, requestData: false) }
@@ -504,7 +553,7 @@ extension PlayerController {
         for idType in missingImages {
             let isFirstRequest = await MainActor.run { gameModel.requestedRepairIds.insert(idType.id).inserted }
             guard isFirstRequest else { continue }
-            await send(counter: 0, type: .store, subType: .store, updated: idType)
+            await send(type: .store, subType: .store, updated: idType)
         }
     }
 
@@ -521,7 +570,8 @@ extension PlayerController {
                 }
             case .store:
                 try await root.pdfRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
-                return await response(for: model, isSuccess: true, requestData: false)
+                let hasLocalData = await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id)
+                return await response(for: model, isSuccess: hasLocalData, requestData: !hasLocalData)
             case .update:
                 break
         }
@@ -547,10 +597,11 @@ extension PlayerController {
             }
         case .store:
             try await root.photoRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
-            if await root.photoRoot.gameControllable.hasLocalFileData(for: model.data.id) {
+            let hasLocalData = await root.photoRoot.gameControllable.hasLocalFileData(for: model.data.id)
+            if hasLocalData {
                 await MainActor.run { _ = gameModel.requestedRepairIds.remove(model.data.id) }
             }
-            return await response(for: model, isSuccess: true, requestData: false)
+            return await response(for: model, isSuccess: hasLocalData, requestData: !hasLocalData)
         case .update:
             switch model.subType {
             case .photoSpace:
@@ -672,7 +723,8 @@ extension PlayerController {
             }
         case .store:
             try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
-            return await response(for: model, isSuccess: true, requestData: false)
+            let hasLocalData = await root.spaceRoot.gameControllable.hasLocalFileData(for: model.data.id)
+            return await response(for: model, isSuccess: hasLocalData, requestData: !hasLocalData)
         case .update:
             if model.subType == .spaceTransform {
                 // Manipulation sync (rotate / scale / move) — apply to the shared
@@ -714,17 +766,21 @@ extension PlayerController {
         let subType: RPGMessageActionType = requestData ? model.subType : (isSuccess ? .ok : .failed)
         let payload = requestData ? model.data : NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil)
         return await MainActor.run {
-            root.gameModel.outgoingMessage(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: subType, asMaster: false, data: payload)
+            root.gameModel.outgoingMessage(counter: gameModel.nextOutgoingMessageCounter(), proxyCounter: model.proxyCounter, type: model.type, subType: subType, asMaster: false, data: payload)
         }
     }
 
     func scheduleSendCharacter() async {
         await MainActor.run {
             guard gameModel.sendCharacterTask == nil else { return }
+            let taskId = UUID()
+            gameModel.sendCharacterTaskId = taskId
             gameModel.sendCharacterTask = Task { [weak self] in
                 await self?.sendCharacter()
                 await MainActor.run {
+                    guard self?.gameModel.sendCharacterTaskId == taskId else { return }
                     self?.gameModel.sendCharacterTask = nil
+                    self?.gameModel.sendCharacterTaskId = nil
                 }
             }
         }
@@ -733,6 +789,8 @@ extension PlayerController {
     func scheduleProxyFocus(characterId: UUID) async {
         await MainActor.run {
             gameModel.proxyFocusTask?.cancel()
+            let taskId = UUID()
+            gameModel.proxyFocusTaskId = taskId
             gameModel.proxyFocusTask = Task { [weak self] in
                 guard let self else { return }
                 _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
@@ -741,19 +799,25 @@ extension PlayerController {
                     try await Task.sleep(for: .seconds(1))
                 } catch {
                     await MainActor.run {
+                        guard self.gameModel.proxyFocusTaskId == taskId else { return }
                         self.gameModel.proxyFocusTask = nil
+                        self.gameModel.proxyFocusTaskId = nil
                     }
                     return
                 }
                 guard !Task.isCancelled else {
                     await MainActor.run {
+                        guard self.gameModel.proxyFocusTaskId == taskId else { return }
                         self.gameModel.proxyFocusTask = nil
+                        self.gameModel.proxyFocusTaskId = nil
                     }
                     return
                 }
                 await MainActor.run {
+                    guard gameModel.proxyFocusTaskId == taskId else { return }
                     root.gameModel.selectedCharacter = characterId
                     gameModel.proxyFocusTask = nil
+                    gameModel.proxyFocusTaskId = nil
                 }
             }
         }
@@ -761,16 +825,28 @@ extension PlayerController {
     
     func sendCharacter() async {
         let gameType = await root.gameModel.gameType
-        guard await !gameModel.hasSendPlayer && gameType != .observer, let characterId = await root.gameModel.gamePlayer.characterId else { return }
-        await gameModel.reset(sendPlayer: true)
+        let canSend = await MainActor.run { !gameModel.hasSendPlayer && !gameModel.lostMaster }
+        guard canSend, gameType != .observer,
+              let characterId = await root.gameModel.gamePlayer.characterId
+        else { return }
 
-        if let result = try? await root.characterRoot.gameControllable.createGameData(for: characterId) {
-            await send(counter: 0, type: .update, subType: .store, updated: result, useJournal: true)
+        do {
+            try Task.checkCancellation()
+            let result = try await root.characterRoot.gameControllable.createGameData(for: characterId)
+            try Task.checkCancellation()
+            await send(type: .update, subType: .store, updated: result, useJournal: true)
+            let lostMaster = await gameModel.lostMaster
+            guard !Task.isCancelled, !lostMaster else { return }
+            await gameModel.reset(sendPlayer: true)
+        } catch is CancellationError {
+            return
+        } catch {
+            Logger.networking.error("PlayerController: Failed to send character \(characterId, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
     func sendAudioList() async {
         let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id)
-        await send(counter: 0, type: .update, subType: .audioList, updated: audioList, useJournal: false)
+        await send(type: .update, subType: .audioList, updated: audioList, useJournal: false)
     }
 }

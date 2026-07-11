@@ -199,6 +199,10 @@ struct GameNetworkModel: Codable, Sendable {
 }
 
 extension GameNetworkModel {
+    var isAcknowledgement: Bool {
+        subType == .ok || subType == .failed
+    }
+
     var usesFileJournal: Bool {
         guard type == .reveal || type == .store else { return false }
         return data.usesFileJournal
@@ -412,6 +416,8 @@ actor GameMessagePipeline {
     private var isCancelled = false
     private var recentKeys: [GameMessageKey] = []
     private var recentKeySet: Set<GameMessageKey> = []
+    private var pendingKeySet: Set<GameMessageKey> = []
+    private var currentKey: GameMessageKey?
 
     init(recentLimit: Int = 256) {
         self.recentLimit = recentLimit
@@ -420,8 +426,8 @@ actor GameMessagePipeline {
     func enqueue(_ event: GameMessageEvent) -> Bool {
         guard !isCancelled else { return false }
         if let key = event.deduplicationKey {
-            guard !recentKeySet.contains(key) else { return false }
-            remember(key)
+            guard !recentKeySet.contains(key), !pendingKeySet.contains(key) else { return false }
+            pendingKeySet.insert(key)
         }
         messages.append(event)
         return true
@@ -430,10 +436,19 @@ actor GameMessagePipeline {
     func next() -> GameMessageEvent? {
         guard !isCancelled, !processing, !messages.isEmpty else { return nil }
         processing = true
-        return messages.removeFirst()
+        let event = messages.removeFirst()
+        currentKey = event.deduplicationKey
+        return event
     }
 
-    func processed() {
+    func processed(success: Bool) {
+        if let currentKey {
+            pendingKeySet.remove(currentKey)
+            if success {
+                remember(currentKey)
+            }
+        }
+        currentKey = nil
         processing = false
     }
 
@@ -443,6 +458,8 @@ actor GameMessagePipeline {
         isCancelled = true
         recentKeys.removeAll()
         recentKeySet.removeAll()
+        pendingKeySet.removeAll()
+        currentKey = nil
     }
 
     func reset() {
@@ -451,6 +468,8 @@ actor GameMessagePipeline {
         isCancelled = false
         recentKeys.removeAll()
         recentKeySet.removeAll()
+        pendingKeySet.removeAll()
+        currentKey = nil
     }
 
     private func remember(_ key: GameMessageKey) {

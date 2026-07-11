@@ -31,9 +31,13 @@ final class PlayerStoreAbstractionMock: PlayerNetworkControllable, @unchecked Se
     }
 
     var requestData: MessageMapper?
+    var requestHistory: [MessageMapper] = []
     func request(with data: MessageMapper?) {
         calledRequest += 1
         requestData = data
+        if let data {
+            requestHistory.append(data)
+        }
     }
 }
 
