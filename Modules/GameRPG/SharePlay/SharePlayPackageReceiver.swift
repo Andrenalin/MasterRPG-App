@@ -32,26 +32,28 @@ final class PackageMessageList {
     init(initalPackage: PackageMessage) {
         self.id = initalPackage.uuid
         self.total = initalPackage.total
-        self.messages = [initalPackage]
+        self.messages = [initalPackage.count: initalPackage]
     }
 
     let id: UUID
     let total: Int
-    private var messages: [PackageMessage]
+    private var messages: [Int: PackageMessage]
 
-    private(set) var packageCounter = 1
+    var packageCounter: Int {
+        messages.count
+    }
 
     var isComplete: Bool {
         packageCounter == total
     }
 
     func received(package: PackageMessage) {
-        messages.append(package)
-        packageCounter += 1
+        guard package.uuid == id, package.total == total, (1...total).contains(package.count) else { return }
+        messages[package.count] = package
     }
 
     var package: PackageMessage {
-        let data = messages.compactMap { $0.data }.reduce(Data(), +)
+        let data = (1...total).compactMap { messages[$0]?.data }.reduce(Data(), +)
         return PackageMessage(uuid: id, count: 1, total: 1, data: data)
     }
 }

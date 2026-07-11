@@ -157,7 +157,20 @@ extension MasterController {
                 await root.networkProxyStore.sendPlayer(data: networtData)
             }
         } else {
-            await root.networkStore.sendPlayer(data: networtData, fileJournal: networtData.type == .reveal)
+            await root.networkStore.sendPlayer(data: networtData, fileJournal: Self.usesFileJournal(for: networtData))
+        }
+    }
+
+    static func usesFileJournal(for model: GameNetworkModel) -> Bool {
+        model.type == .reveal || usesFileJournal(for: model.data)
+    }
+
+    static func usesFileJournal(for data: NetworkCodableDataType) -> Bool {
+        switch data.type {
+        case .audio, .photo, .space:
+            true
+        default:
+            false
         }
     }
 }
