@@ -25,6 +25,8 @@ public protocol MapGameStorable {
     @MainActor func updatePin(itemId: UUID, data: Data?, playerId: UUID)
     func missingPlayerImages(itemId: UUID) async -> [NetworkCodableDataType]
     @MainActor func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool
+    @MainActor func togglePin(itemId: UUID, pinId: UUID) -> Bool
+    @MainActor func networkPin(itemId: UUID, pinId: UUID) -> NetworkCodableDataType?
     @MainActor func updateMap(for itemId: UUID, with data: NetworkCodableDataType)
     @MainActor func mapUpdateResult(for itemId: UUID) -> String
     @MainActor func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType
@@ -182,6 +184,29 @@ extension GameController: MapGameStorable {
             mapGameModel.playerPins[index] = pin
         }
         return true
+    }
+
+    /// Toggles a pin's visibility as the game master — the 3D-table
+    /// equivalent of the 2D game-master double tap.
+    @MainActor
+    func togglePin(itemId: UUID, pinId: UUID) -> Bool {
+        let item = gameItem(for: itemId)
+        guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
+        pin.isShown.toggle()
+        pin.timeInterval = Date.now.timeIntervalSince1970
+        item[MapPinId.id, pinId] = pin
+        if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pinId }) {
+            mapGameModel.playerPins[index] = pin
+        }
+        return true
+    }
+
+    /// Encodes the current state of a single pin for a `.mapPin` message —
+    /// the player-origin route to the master.
+    @MainActor
+    func networkPin(itemId: UUID, pinId: UUID) -> NetworkCodableDataType? {
+        guard let pin = gameItem(for: itemId).mapPins.first(where: { $0.id == pinId }) else { return nil }
+        return networkPin(itemId: itemId, position: pin)
     }
 
     @MainActor
