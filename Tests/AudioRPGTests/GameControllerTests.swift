@@ -86,6 +86,54 @@ struct GameControllerTests {
         try await sut.play(id: playlistId, shouldPlay: false).value
     }
 
+    @Test("Audio availability uses database items and ignores stale game packages")
+    func audioAvailabilityUsesDatabaseItems() async throws {
+        let root = AudioRootModel.testRoot()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let playerId = UUID()
+        let databaseAudioId = UUID()
+        let shadowedAudioId = UUID()
+        let gameOnlyAudioId = UUID()
+
+        let databaseAudio = AudioModel(
+            id: databaseAudioId,
+            name: "Database audio",
+            fileUrl: try Self.localFileUrl(for: databaseAudioId, fileData: Data("database".utf8))
+        )
+        let shadowedDatabaseAudio = AudioModel(
+            id: shadowedAudioId,
+            name: "Missing database audio",
+            fileUrl: Self.fileUrl(for: shadowedAudioId)
+        )
+        root.itemController.replace(model: databaseAudio, isInsert: true)
+        root.itemController.replace(model: shadowedDatabaseAudio, isInsert: true)
+
+        sut.setGame(
+            item: AudioModel(
+                id: shadowedAudioId,
+                name: "Stale game replacement",
+                fileUrl: try Self.localFileUrl(for: shadowedAudioId, fileData: Data("stale".utf8))
+            ),
+            itemId: shadowedAudioId
+        )
+        sut.setGame(
+            item: AudioModel(
+                id: gameOnlyAudioId,
+                name: "Old game package",
+                fileUrl: try Self.localFileUrl(for: gameOnlyAudioId, fileData: Data("old-game".utf8))
+            ),
+            itemId: gameOnlyAudioId
+        )
+
+        let data = await sut.audioList(allPlayers: false, with: playerId)
+        let request = try #require(AudioListRequest.decodeData(of: data.data))
+
+        #expect(request.list == [databaseAudioId])
+        #expect(!request.list.contains(shadowedAudioId))
+        #expect(!request.list.contains(gameOnlyAudioId))
+    }
+
     @Test("Game import adds source folder only when audio file is missing locally")
     func gameImportAddsFolderOnlyForMissingAudioFile() async throws {
         let fileData = Data("shared game audio".utf8)

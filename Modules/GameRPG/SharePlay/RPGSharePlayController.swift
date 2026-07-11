@@ -142,6 +142,7 @@ extension RPGSharePlayController {
         guard let encodedModel = gameNetworkModel.encodeData() else { return }
         guard messenger != nil else { return }
 
+        let hasAttachmentData = gameNetworkModel.data.data != nil
         if let attachmentData = gameNetworkModel.data.data, let journal, fileJournal {
             Logger.sharePlay.debug("Journal: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
             addSendTask(priority: .userInitiated) { [weak self] in
@@ -160,15 +161,26 @@ extension RPGSharePlayController {
                     Logger.sharePlay.debug("Journal: \(result.id, privacy: .public)")
                 } catch {
                     Logger.sharePlay.error("Cannot add attachment for module \(gameNetworkModel.data.type.token, privacy: .public) and id: \(gameNetworkModel.data.id, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
+                    if let sender = self.packageSender {
+                        await sender.send(data: encodedModel)
+                    }
                 }
             }
         }
-        // Keep the package path as a compatibility fallback for V1 peers. Current
-        // peers deduplicate it against the journal delivery by message key.
+        guard Self.usesPackageTransport(
+            fileJournal: fileJournal,
+            hasAttachmentData: hasAttachmentData,
+            journalAvailable: journal != nil
+        ) else { return }
+
         addSendTask { [weak self] in
             guard let self, let sender = self.packageSender else { return }
             await sender.send(data: encodedModel)
         }
+    }
+
+    static func usesPackageTransport(fileJournal: Bool, hasAttachmentData: Bool, journalAvailable: Bool) -> Bool {
+        !fileJournal || !hasAttachmentData || !journalAvailable
     }
 
     static func journalMetadata(for model: GameNetworkModel) -> GameNetworkModel {
