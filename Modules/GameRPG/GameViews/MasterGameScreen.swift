@@ -6,6 +6,7 @@ import SwiftUI
 import MapRPG
 import CharacterRPG
 import AdventureRPG
+import AudioRPG
 
 struct MasterGameScreen: View {
     let root: GameRoot
@@ -21,8 +22,7 @@ struct MasterGameScreen: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-
-        ZStack {
+        ManagedNavigationStack {
             GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object", contentType: .master)
         }
         .overlay(alignment: .topLeading) {
@@ -211,6 +211,14 @@ private struct MasterOverlayMenu: View {
         } toolBarOverlay: {
             OverlayToolBar(root: root, playerController: playerController, isMaster: true)
         }
+        .toolbar {
+            #if os(macOS)
+            ToolbarItem(placement: .automatic) {
+                OverlayGameMenu(root: root, playerController: nil, isMaster: true)
+            }
+            #endif
+        }
+
         .padding([.top, .leading], valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
         .id("masterOverlayLayout")
     }
