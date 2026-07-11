@@ -115,6 +115,36 @@ struct GameNetworkModelVersionTests {
         #expect(decoded.masterState == nil)
     }
 
+    @Test func decodesV1PlayerEnvelopeWithoutRosterAsPlayer() throws {
+        struct V1PlayerEnvelopeWithoutRoster: Encodable {
+            let version: Int
+            let counter: Int
+            let proxyCounter: Int
+            let type: RPGMessageType
+            let subType: RPGMessageActionType
+            let gameConfig: GameConfigModel
+            let data: NetworkCodableDataType
+        }
+        let oldPlayer = V1PlayerEnvelopeWithoutRoster(
+            version: 1,
+            counter: 8,
+            proxyCounter: 0,
+            type: .update,
+            subType: .generic,
+            gameConfig: GameConfigModel(id: playerId, state: .started, master: master),
+            data: NetworkCodableDataType(id: UUID(), type: .dice, version: 0, data: Data([0x01]))
+        )
+        let oldPlayerData = try JSONEncoder().encode(oldPlayer)
+
+        let decoded = try #require(GameNetworkModel.decodeData(of: oldPlayerData))
+
+        #expect(decoded.masterId == masterId)
+        #expect(decoded.sender.id == playerId)
+        #expect(decoded.sender.role == .player)
+        #expect(!decoded.sender.name.isEmpty)
+        #expect(decoded.masterState == nil)
+    }
+
     @Test func decodesUnreleasedDevLayout() throws {
         // Dev layout: slim gameConfig, gameRoster carries players + controls + features.
         struct DevRoster: Encodable {
@@ -162,6 +192,7 @@ struct GameNetworkModelVersionTests {
         // gameConfig — exactly what the shipped 2.6 app does.
         let v1Decoded = try JSONDecoder().decode(GameNetworkModelV1.self, from: encoded)
 
+        #expect(v1Decoded.version == GameNetworkModelV1.wireVersion)
         #expect(v1Decoded.counter == 7)
         #expect(v1Decoded.gameConfig.id == masterId)
         #expect(v1Decoded.gameConfig.master.id == masterId)
@@ -177,6 +208,7 @@ struct GameNetworkModelVersionTests {
 
         let v1Decoded = try JSONDecoder().decode(GameNetworkModelV1.self, from: encoded)
 
+        #expect(v1Decoded.version == GameNetworkModelV1.wireVersion)
         #expect(v1Decoded.gameConfig.id == playerId)
         #expect(v1Decoded.gameConfig.master.id == masterId)
         // The sender travels as the only roster entry so V1 peers can resolve
@@ -194,7 +226,7 @@ struct GameNetworkModelVersionTests {
 
         let decoded = try #require(GameNetworkModel.decodeData(of: encoded))
 
-        #expect(decoded.version == GameNetworkModel.currentVersion)
+        #expect(decoded.version == GameNetworkModelV1.wireVersion)
         #expect(decoded.counter == message.counter)
         #expect(decoded.proxyCounter == message.proxyCounter)
         #expect(decoded.type == message.type)
