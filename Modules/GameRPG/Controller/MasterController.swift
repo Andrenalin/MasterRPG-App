@@ -162,16 +162,11 @@ extension MasterController {
     }
 
     static func usesFileJournal(for model: GameNetworkModel) -> Bool {
-        model.type == .reveal || usesFileJournal(for: model.data)
+        model.usesFileJournal
     }
 
     static func usesFileJournal(for data: NetworkCodableDataType) -> Bool {
-        switch data.type {
-        case .audio, .photo, .space:
-            true
-        default:
-            false
-        }
+        data.usesFileJournal
     }
 }
 

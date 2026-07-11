@@ -41,18 +41,48 @@ struct SharePlayPackageTransportTests {
         #expect(result?.data == Data("abcdefgh".utf8))
     }
 
-    @Test("master journals file-backed store payloads")
-    func masterJournalsFileBackedStorePayloads() {
-        let photo = NetworkCodableDataType(id: UUID(), type: .photo, version: 1, data: Data("photo".utf8))
-        let audio = NetworkCodableDataType(id: UUID(), type: .audio, version: 1, data: Data("audio".utf8))
-        let space = NetworkCodableDataType(id: UUID(), type: .space, version: 1, data: Data("space".utf8))
-        let setting = NetworkCodableDataType(id: UUID(), type: .setting, version: 1, data: Data("setting".utf8))
+    @Test("master journals file-backed reveal and store payloads only when bytes are present")
+    func masterJournalsFileBackedRevealAndStorePayloadsOnlyWithData() {
+        for type in Self.journaledMessageTypes {
+            for module in Self.fileBackedModules {
+                let withData = Self.message(type: type, module: module, data: Data(module.token.utf8))
+                let idOnly = Self.message(type: type, module: module, data: nil)
 
-        #expect(MasterController.usesFileJournal(for: photo))
-        #expect(MasterController.usesFileJournal(for: audio))
-        #expect(MasterController.usesFileJournal(for: space))
-        #expect(!MasterController.usesFileJournal(for: setting))
+                #expect(MasterController.usesFileJournal(for: withData), "\(type) \(module) with bytes should use the file journal")
+                #expect(!MasterController.usesFileJournal(for: idOnly), "\(type) \(module) without bytes should stay on the normal message path")
+            }
+        }
     }
+
+    @Test("player send policy journals the same file-backed reveal and store payloads")
+    func playerSendPolicyJournalsFileBackedRevealAndStorePayloadsOnlyWithData() {
+        for type in Self.journaledMessageTypes {
+            for module in Self.fileBackedModules {
+                let withData = Self.message(type: type, module: module, data: Data(module.token.utf8))
+                let idOnly = Self.message(type: type, module: module, data: nil)
+
+                #expect(PlayerController.usesFileJournal(for: withData), "\(type) \(module) with bytes should use the file journal")
+                #expect(!PlayerController.usesFileJournal(for: idOnly), "\(type) \(module) without bytes should stay on the normal message path")
+            }
+        }
+    }
+}
+
+private extension SharePlayPackageTransportTests {
+    static let fileBackedModules: [NetworkModules] = [.pdf, .audio, .space, .photo]
+    static let journaledMessageTypes: [RPGMessageType] = [.reveal, .store]
+
+    static func message(type: RPGMessageType, module: NetworkModules, data: Data?) -> GameNetworkModel {
+        GameNetworkModel(
+            counter: 1,
+            proxyCounter: 0,
+            type: type,
+            subType: type == .store ? .store : .show,
+            gameConfig: GameConfigModel(id: UUID(), state: .started, master: .empty),
+            data: NetworkCodableDataType(id: UUID(), type: module, version: 1, data: data)
+        )
+    }
+
 }
 
 private actor PackageCollector {

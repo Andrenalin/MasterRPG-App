@@ -185,6 +185,25 @@ struct GameNetworkModel: Codable, Sendable {
     }
 }
 
+extension GameNetworkModel {
+    var usesFileJournal: Bool {
+        guard type == .reveal || type == .store else { return false }
+        return data.usesFileJournal
+    }
+}
+
+extension NetworkCodableDataType {
+    var usesFileJournal: Bool {
+        guard data != nil else { return false }
+        switch type {
+        case .pdf, .audio, .space, .photo:
+            return true
+        default:
+            return false
+        }
+    }
+}
+
 // MARK: - V1 wire format (shipped 2.6 app)
 
 /// The envelope exactly as the first release sends and expects it: roster,
