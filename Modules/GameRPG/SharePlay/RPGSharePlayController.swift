@@ -355,7 +355,11 @@ extension RPGSharePlayController {
         }
         tasks[UUID()] = journalTask
 
-        groupSession.join()
+        // join() must not run on the main thread while an audio session is active
+        // (AVFoundation SessionCore warning), so hop to a detached task.
+        Task.detached { [groupSession] in
+            groupSession.join()
+        }
         playBack?.coordinateWithSession(groupSession)
         // Notify delegate so player re-sends character data and triggers a full
         // game-state sync. Safe to call on first join too: on master the guard

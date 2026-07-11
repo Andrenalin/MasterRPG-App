@@ -52,26 +52,28 @@ private extension OverlayGameMenu {
     }
     
     var macMenu: some View {
-        HStack {
-            titleView
-            
-            HStack {
-                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .bottomTrailing)
-                
+        EmptyView()
+            .toolbar {
                 if isMaster {
-                    ControlSharingView(alignment: .bottomLeading) {}
-                    secondOptionView
+                    ToolbarItem(placement: .automatic) {
+                        Text(root.gameModel.startGameTime, style: .relative)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                
-                toolIconView
-                enlargerView
-                
-                wifiView
-                closeView
+                ToolbarItemGroup(placement: .automatic) {
+                    root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .bottomTrailing)
+
+                    if isMaster {
+                        secondOptionView
+                    }
+
+                    toolIconView
+                    enlargerView
+                    wifiView
+                    closeView
+                }
             }
-            .foregroundStyle(.secondary)
-            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-        }
     }
     
     var tvMenu: some View {
