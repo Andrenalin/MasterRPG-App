@@ -93,6 +93,25 @@ struct SharePlayPackageTransportTests {
         #expect(metadata.data.version == 3)
         #expect(metadata.data.data == nil)
     }
+
+    @Test("journal-backed transfers do not also use legacy packages")
+    func journalBackedTransfersSkipLegacyPackages() {
+        #expect(!RPGSharePlayController.usesPackageTransport(
+            fileJournal: true,
+            hasAttachmentData: true,
+            journalAvailable: true
+        ))
+        #expect(RPGSharePlayController.usesPackageTransport(
+            fileJournal: true,
+            hasAttachmentData: true,
+            journalAvailable: false
+        ))
+        #expect(RPGSharePlayController.usesPackageTransport(
+            fileJournal: false,
+            hasAttachmentData: true,
+            journalAvailable: true
+        ))
+    }
 }
 
 private extension SharePlayPackageTransportTests {

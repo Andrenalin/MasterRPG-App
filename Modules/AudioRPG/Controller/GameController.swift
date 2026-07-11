@@ -105,6 +105,24 @@ extension GameController {
         return true
     }
 
+    @MainActor
+    private func hasLocalDatabaseAudioData(for itemId: UUID, visited: Set<UUID> = []) async -> Bool {
+        guard !visited.contains(itemId) else { return true }
+        guard let item = itemController.itemSync(for: itemId, noGame: true) else { return false }
+        let visited = visited.union([itemId])
+
+        if let fileUrl = item.fileUrl,
+           let fileUrlDataController = itemController.fileUrlDataController,
+           await !fileUrlDataController.hasLocalData(for: fileUrl) {
+            return false
+        }
+
+        for entryId in item.entries.map(\.audioId) {
+            guard await hasLocalDatabaseAudioData(for: entryId, visited: visited) else { return false }
+        }
+        return true
+    }
+
     func audioAsset(for itemId: UUID) async -> PlaylistItem? {
         let item = await gameItem(for: itemId)
         // Extract the Sendable fields on the MainActor — the @MainActor model must
@@ -204,8 +222,9 @@ extension GameController: AudioGameStoreable {
         let request: AudioListRequest
         if allPlayers {
             var players: [UUID: [UUID]] = [:]
-            for itemId in itemController.itemDataModel.items {
-                if await hasLocalAudioData(for: itemId) {
+            let itemIds = Set(itemController.itemDataModel.items).union(gameModel.playerReports.keys)
+            for itemId in itemIds {
+                if await hasLocalDatabaseAudioData(for: itemId) {
                     applyAudio(id: itemId, for: [masterId])
                 }
                 players[itemId] = gameModel.playerReport(for: itemId)
@@ -214,7 +233,7 @@ extension GameController: AudioGameStoreable {
         } else {
             var availableItems: [UUID] = []
             for itemId in itemController.itemDataModel.items {
-                guard await hasLocalAudioData(for: itemId) else { continue }
+                guard await hasLocalDatabaseAudioData(for: itemId) else { continue }
                 applyAudio(id: itemId, for: [masterId])
                 availableItems.append(itemId)
             }
