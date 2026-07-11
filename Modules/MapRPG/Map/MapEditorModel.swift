@@ -30,6 +30,9 @@ final class MapEditorModel {
 
     var pinScale: CGFloat
     var hexScale: Double
+    // Max room coordinate extent relative to the map image; 1.0 is the image boundary.
+    var maxWidthRatio: Double = 1.0
+    var maxHeightRatio: Double = 1.0
     var lastPinScale: CGFloat = 1
     var lastHexScale: Double = 1
     var isHexMap: Bool = false
