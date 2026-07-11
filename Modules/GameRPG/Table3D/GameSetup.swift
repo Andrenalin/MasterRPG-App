@@ -172,6 +172,7 @@ extension GameTableModel {
             mapModel = mapRoot.itemControllable.itemSync(for: mapId) as? MapModel
         }
         let photoLoads = setup.syncPins(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees, isGameMaster: isGameMaster)
+        applyExpandedScale()
         for (pinId, photoId) in photoLoads {
             Task { [weak self] in
                 await self?.loadPinThumbnail(pinId: pinId, photoId: photoId)

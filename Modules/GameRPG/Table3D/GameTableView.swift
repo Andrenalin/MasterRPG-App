@@ -59,10 +59,10 @@ public struct GameTableView: View {
                 .tabletopGame(loadedGame.tabletopGame, parent: loadedGame.renderer.root) { _ in
                     GameInteraction(game: loadedGame)
                 }
-                // Game-master pin drag: the handlers guard isGameMaster, so
-                // players get no write-back even if they pinch a token.
+                // Pin drag: the handlers guard permissions — the master moves
+                // every pin, a player only its own.
                 .gesture(
-                    DragGesture(minimumDistance: 0.001)
+                    DragGesture(minimumDistance: 5)
                         .targetedToEntity(where: .has(PinComponent.self))
                         .onChanged { value in
                             guard let pinId = value.entity.components[PinComponent.self]?.pinId,
@@ -75,6 +75,23 @@ public struct GameTableView: View {
                                   let parent = value.entity.parent else { return }
                             let position = value.convert(value.location3D, from: .local, to: parent)
                             loadedGame.pinDragEnded(pinId: pinId, position: position)
+                        }
+                )
+                // Double tap: master hides/shows the pin. Single tap: ×4 zoom
+                // for everyone, like the 2D viewer.
+                .gesture(
+                    TapGesture(count: 2)
+                        .targetedToEntity(where: .has(PinComponent.self))
+                        .exclusively(before: TapGesture().targetedToEntity(where: .has(PinComponent.self)))
+                        .onEnded { value in
+                            switch value {
+                            case .first(let doubleTap):
+                                guard let pinId = doubleTap.entity.components[PinComponent.self]?.pinId else { return }
+                                loadedGame.pinDoubleTapped(pinId: pinId)
+                            case .second(let tap):
+                                guard let pinId = tap.entity.components[PinComponent.self]?.pinId else { return }
+                                loadedGame.pinTapped(pinId: pinId)
+                            }
                         }
                 )
             }
@@ -113,6 +130,7 @@ public struct GameTableView: View {
             // mapState round-trip.
             initGame.networkActions = root.networkActions
             initGame.isGameMaster = root.gameModel.gameConfig.isMaster
+            initGame.playerPinId = initGame.isGameMaster ? nil : root.gameModel.gameConfig.id
             await initGame.handleMapChange(isGameMaster: initGame.isGameMaster)
             initGame.syncPawnsWithMapPins()
             

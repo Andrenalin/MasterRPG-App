@@ -68,6 +68,47 @@ struct MapPinVisibilityTests {
         #expect(sut.mapGameModel.playerPins.first { $0.id == pinId }?.location == CGPoint(x: 42, y: 24))
     }
 
+    @Test func togglePinFlipsVisibilityAndStampsTime() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let pinId = UUID()
+        let pin = MapPinModel(id: pinId, name: "Ogre", isShown: true, timeInterval: 1)
+        let map = MapModel(id: mapId, name: "Dungeon", mapPins: [pin])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+
+        #expect(sut.togglePin(itemId: mapId, pinId: pinId))
+
+        let itemPin = sut.gameItem(for: mapId).mapPins.first { $0.id == pinId }
+        #expect(itemPin?.isShown == false)
+        #expect((itemPin?.timeInterval ?? 0) > 1)
+        #expect(!sut.togglePin(itemId: mapId, pinId: UUID()))
+    }
+
+    @Test func networkPinEncodesCurrentPinState() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let pinId = UUID()
+        let pin = MapPinModel(id: pinId, name: "Hero", isPlayer: true, players: [pinId])
+        let map = MapModel(id: mapId, name: "Dungeon", mapPins: [pin])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        _ = sut.movePin(itemId: mapId, pinId: pinId, location: CGPoint(x: 7, y: 9))
+
+        let data = try #require(sut.networkPin(itemId: mapId, pinId: pinId))
+
+        #expect(data.id == mapId)
+        #expect(data.type == .map)
+        let decoded = try #require(MapPinModel.decodeData(of: data.data))
+        #expect(decoded.id == pinId)
+        #expect(decoded.location == CGPoint(x: 7, y: 9))
+        #expect(sut.networkPin(itemId: mapId, pinId: UUID()) == nil)
+    }
+
     @Test func movePinUnknownPinReturnsFalse() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)

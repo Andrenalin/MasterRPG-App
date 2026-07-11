@@ -26,6 +26,10 @@ final class GameTableModel: Sendable {
     var currentMapDegrees: Double = 0
     var networkActions: NetworkActions?
     var isGameMaster = false
+    /// The local player's own pin id (== the player's game id); nil on the master.
+    var playerPinId: UUID?
+    /// Tap-zoomed token, ×4 like the 2D viewer's tap zoom. Local visual state.
+    var expandedPinId: UUID?
     /// Room-visibility signature of the last rendered fog texture — pin moves
     /// broadcast mapState constantly; skip the expensive composite when the
     /// room state did not change.
@@ -188,24 +192,61 @@ final class GameTableModel: Sendable {
         pawn.loadedPhotoId = photoId
     }
 
-    /// Game-master pin drag: follow the finger on the board plane.
+    /// The master moves every pin; a player only its own (2D `canDrag` parity).
+    func canMovePin(_ pinId: UUID) -> Bool {
+        isGameMaster || pinId == playerPinId
+    }
+
+    /// Pin drag: follow the finger on the board plane.
     @MainActor
     func pinDragChanged(pinId: UUID, position: SIMD3<Float>) {
-        guard isGameMaster, let pawn = setup.pinPawns.first(where: { $0.pinId == pinId }) else { return }
+        guard canMovePin(pinId), let pawn = setup.pinPawns.first(where: { $0.pinId == pinId }) else { return }
         pawn.entity.position = SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)
     }
 
-    /// Game-master pin drop: write the move back into the map model and
-    /// broadcast the map state — the round-trip snaps every device (including
-    /// this one) to the authoritative position.
+    /// Pin drop: write the move back into the map model, then network it.
+    /// The master broadcasts the authoritative map state directly; a player
+    /// sends its own pin as `.mapPin` to the master, which rebroadcasts the
+    /// map state to everyone — either way the round-trip snaps every device
+    /// (including this one) to the authoritative position.
     @MainActor
     func pinDragEnded(pinId: UUID, position: SIMD3<Float>) {
-        guard isGameMaster, let mapId = currentMapId,
+        guard canMovePin(pinId), let mapId = currentMapId,
               let cgImage = currentMapImage?.cgImage else { return }
         let projection = MapTableProjection(imageSize: CGSize(width: cgImage.width, height: cgImage.height), degrees: currentMapDegrees)
         let location = projection.mapLocation(for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z))
         guard mapRoot.mapGameControllable.movePin(itemId: mapId, pinId: pinId, location: location) else { return }
+        if isGameMaster {
+            networkActions?.game(mapRoot.mapGameControllable.networkMapUpdate(for: mapId), .mapState, nil)
+        } else if let pinData = mapRoot.mapGameControllable.networkPin(itemId: mapId, pinId: pinId) {
+            networkActions?.game(pinData, .mapPin, nil)
+        }
+    }
+
+    /// Tap zoom: expands the token ×4, matching the 2D viewer's tap zoom.
+    /// Available to master and players; local visual state, not networked
+    /// (2D parity — `isExpandedId` is local there too).
+    @MainActor
+    func pinTapped(pinId: UUID) {
+        expandedPinId = expandedPinId == pinId ? nil : pinId
+        applyExpandedScale()
+    }
+
+    /// Master only: double tap hides/shows the pin and broadcasts the map
+    /// state (2D game-master double-tap parity).
+    @MainActor
+    func pinDoubleTapped(pinId: UUID) {
+        guard isGameMaster, let mapId = currentMapId else { return }
+        guard mapRoot.mapGameControllable.togglePin(itemId: mapId, pinId: pinId) else { return }
+        syncPawnsWithMapPins()
         networkActions?.game(mapRoot.mapGameControllable.networkMapUpdate(for: mapId), .mapState, nil)
+    }
+
+    @MainActor
+    func applyExpandedScale() {
+        for pawn in setup.pinPawns {
+            pawn.entity.scale = SIMD3<Float>(repeating: pawn.pinId == expandedPinId ? 4.0 : 1.0)
+        }
     }
     
     isolated deinit {
