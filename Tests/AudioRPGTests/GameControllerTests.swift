@@ -18,8 +18,16 @@ struct GameControllerTests {
         let trackAId = UUID()
         let trackBId = UUID()
         let playlistId = UUID()
-        let trackA = AudioModel(id: trackAId, name: "Track A", fileUrl: Self.fileUrl(for: trackAId))
-        let trackB = AudioModel(id: trackBId, name: "Track B", fileUrl: Self.fileUrl(for: trackBId))
+        let trackA = AudioModel(
+            id: trackAId,
+            name: "Track A",
+            fileUrl: try Self.localFileUrl(for: trackAId, fileData: Data("track-a".utf8))
+        )
+        let trackB = AudioModel(
+            id: trackBId,
+            name: "Track B",
+            fileUrl: try Self.localFileUrl(for: trackBId, fileData: Data("track-b".utf8))
+        )
         let playlist = AudioModel(
             id: playlistId,
             name: "Playlist",
@@ -51,12 +59,12 @@ struct GameControllerTests {
         sut.report(itemId: playlistId, for: otherPlayerId)
         #expect(sut.allPlayersReported(for: playlistId))
 
-        let allPlayersData = sut.audioList(allPlayers: true, with: masterId)
+        let allPlayersData = await sut.audioList(allPlayers: true, with: masterId)
         let allPlayersRequest = try #require(AudioListRequest.decodeData(of: allPlayersData.data))
         #expect(allPlayersRequest.list.isEmpty)
         #expect(allPlayersRequest.players[trackAId]?.contains(masterId) == true)
 
-        let listData = sut.audioList(allPlayers: false, with: masterId)
+        let listData = await sut.audioList(allPlayers: false, with: masterId)
         let listRequest = try #require(AudioListRequest.decodeData(of: listData.data))
         #expect(listRequest.list.contains(trackAId))
         #expect(listRequest.players.isEmpty)

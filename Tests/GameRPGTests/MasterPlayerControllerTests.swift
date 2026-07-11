@@ -406,6 +406,51 @@ final class MasterPlayerControllerTests {
         #expect(sutPlayer.gameModel.gameUpdateType == .map)
         #expect(!rootPlayer.photoRoot.gameController.photoGameModel.openPhotoSpace)
     }
+
+    @Test func repeatMapRevealUsesMemoryWithoutRequestingPinPhotos() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let mapId = try #require(rootSut.mapRoot.itemController.itemDataModel.items.first)
+        let mapReference = await rootSut.mapRoot.gameController.share(id: mapId)
+
+        await sut.show(for: mapReference)
+        let firstReveal = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        let mapRequest = try #require(try await sutPlayer.handle(firstReveal))
+        let mapPayload = try #require(try await sut.handle(mapRequest))
+        await sut.send(type: .reveal, subtype: .show, updated: mapPayload)
+        let fullReveal = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        _ = try #require(try await sutPlayer.handle(fullReveal))
+
+        let loadedMap = rootPlayer.mapRoot.gameController.gameItem(for: mapId)
+        let retainedPin = MapPinModel(
+            id: UUID(),
+            name: "Retained Player",
+            photoId: UUID(),
+            isPlayer: true
+        )
+        loadedMap.mapPins.append(retainedPin)
+        sutPlayer.gameModel.gameUpdateType = .space
+        playerStoreAbstractionMock.requestData = nil
+
+        let repeatReveal = rootSut.gameModel.outgoingMessage(
+            counter: 99,
+            type: .reveal,
+            subType: .show,
+            asMaster: true,
+            data: mapReference
+        )
+
+        let acknowledgment = try #require(try await sutPlayer.handle(repeatReveal))
+
+        #expect(acknowledgment.subType == .ok)
+        #expect(sutPlayer.gameModel.gameUpdateType == .map)
+        #expect(rootPlayer.mapRoot.gameController.gameItem(for: mapId) === loadedMap)
+        #expect(loadedMap.mapPins.contains { $0.id == retainedPin.id && $0.photoId == retainedPin.photoId })
+        #expect(playerStoreAbstractionMock.requestData == nil)
+    }
     
     @Test func handlePhoto() async throws {
         try await setUp()
