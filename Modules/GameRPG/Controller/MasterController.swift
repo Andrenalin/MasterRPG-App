@@ -39,9 +39,9 @@ final class MasterControllerModel: Sendable {
 final class MasterController: Sendable {
     // Strong on purpose: an intentional, temporary cycle GameRoot → GameModel →
     // MasterController → GameRoot that stopGame() breaks by dropping the controllers.
-    // `unowned` crashed here: delayed tasks (e.g. sendCharacter's 5s sleep) can
-    // outlive stopGame()/teardown and would read a destroyed GameRoot. A strong
-    // reference keeps GameRoot alive until the last in-flight task finishes.
+    // `unowned` crashed here when in-flight controller tasks outlived
+    // stopGame()/teardown. A strong reference keeps GameRoot alive until the
+    // last task finishes.
     let root: GameRoot
     let gameModel: MasterControllerModel
     let asProxy: Bool
@@ -302,7 +302,7 @@ extension MasterController {
                 let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
                 return model.data
             case .audioList:
-                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.sender.id)
+                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.sender.id, authoritative: false)
                 let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id)
                 await send(type: .update, subtype: .audioList, updated: audioList)
             default:

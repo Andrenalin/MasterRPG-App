@@ -22,8 +22,8 @@ protocol SharePlayControllerDelegate: AnyObject {
     /// controller can reset `hasSendPlayer` and mark the master as lost.
     func sharePlayLostConnection()
     /// Called each time a session is fully configured and joined. On a player
-    /// device this triggers `ready()` → `sendCharacter()` so the player
-    /// re-announces itself to the master after an automatic re-join.
+    /// device this triggers `ready()` so audio availability and the selected
+    /// character are re-announced after an automatic re-join.
     func sharePlaySessionConfigured()
 }
 

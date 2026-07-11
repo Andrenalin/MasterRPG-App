@@ -323,6 +323,13 @@ struct PlayerControllerTests {
 
         await sut.readyProxy()
         #expect(sut.gameModel.lostMaster == false)
+        #expect(env.playerNetworkSpy.calledRequest == 1)
+        let initialAudioReport = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(initialAudioReport.type == .update)
+        #expect(initialAudioReport.subType == .audioList)
+        #expect(initialAudioReport.sender.id == env.gameConfig.id)
+        let initialAudioList = try #require(AudioListRequest.decodeData(of: initialAudioReport.data.data))
+        #expect(initialAudioList.list.isEmpty)
 
         await sut.lostProxyConnection()
         #expect(sut.gameModel.lostMaster)
@@ -330,6 +337,9 @@ struct PlayerControllerTests {
 
         await sut.ready()
         #expect(sut.gameModel.lostMaster == false)
+        #expect(env.playerNetworkSpy.calledRequest == 2)
+        let reconnectAudioReport = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(reconnectAudioReport.subType == .audioList)
         await sut.lostConnection()
         #expect(sut.gameModel.lostMaster)
         #expect(sut.gameModel.sendCharacterTask == nil)
