@@ -422,6 +422,115 @@ private struct MultiplayerPhotoTopology {
 @MainActor
 struct MultiConnectionAudioTests {
 
+    @Test("Audio receipt waits for local bytes and propagates after storage")
+    func audioReceiptWaitsForLocalBytesAndPropagates() async throws {
+        // Arrange
+        let env = try await MultiConnectionTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
+        try await MockRoot.importTestData(
+            into: env.masterRoot.adventureRoot,
+            name: ResourcesDebug.audioTestData,
+            itemCounter: 3
+        )
+
+        env.masterRoot.adventureRoot.startGame()
+        env.player1Root.adventureRoot.startGame()
+        env.player2Root.adventureRoot.startGame()
+
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let sourceAudio = env.masterRoot.audioRoot.itemController.itemOrEmpty(for: audioId)
+        let sourceFile = try #require(sourceAudio.fileUrl)
+        let missingFile = FileUrl(
+            fileId: UUID(),
+            url: URL.temporaryDirectory.appending(path: "missing-\(UUID().uuidString).m4a"),
+            location: .local,
+            module: NetworkModules.audio.token,
+            relativeUrl: nil,
+            contentHash: sourceFile.contentHash
+        )
+        let metadataOnlyAudio = AudioModel(
+            id: audioId,
+            name: sourceAudio.name,
+            description: sourceAudio.description,
+            tags: sourceAudio.tags,
+            category: sourceAudio.category,
+            displayState: sourceAudio.displayState,
+            fileUrl: missingFile,
+            entries: sourceAudio.entries,
+            parentId: sourceAudio.parentId
+        )
+        env.player1Root.audioRoot.itemController.replace(model: metadataOnlyAudio, isInsert: true)
+
+        let audioReference = await env.masterRoot.audioRoot.gameController.share(id: audioId)
+        #expect(metadataOnlyAudio.version == audioReference.version)
+        #expect(await !env.player1Root.audioRoot.gameController.hasLocalAudioData(for: audioId))
+
+        await env.master.show(for: audioReference)
+        let reveal = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+
+        // Act - Metadata alone must result in a data request, not an OK report.
+        let request = try #require(try await env.player1.handle(reveal))
+
+        // Assert
+        #expect(request.subType == .show)
+        #expect(!env.player1Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(!env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+
+        // Act - The master answers the request; only the successful import is acknowledged.
+        let audioData = try #require(try await env.master.handle(request))
+        await env.master.send(
+            type: request.type,
+            subtype: request.subType,
+            updated: audioData,
+            playerId: env.player1Config.id
+        )
+        let targetedAudio = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        let acknowledgment = try #require(try await env.player1.handle(targetedAudio))
+
+        // Assert - The bytes exist before OK is emitted.
+        #expect(acknowledgment.subType == .ok)
+        #expect(await env.player1Root.audioRoot.gameController.hasLocalAudioData(for: audioId))
+
+        // Act - The master publishes the authoritative report to another local player.
+        _ = try await env.master.handle(acknowledgment)
+        let reportUpdate = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(reportUpdate.subType == .audioList)
+        _ = try await env.player2.handle(reportUpdate)
+
+        // Assert
+        #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(env.player2Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+    }
+
+    @Test("Master does not report a failed audio receipt")
+    func masterDoesNotReportFailedAudioReceipt() async throws {
+        // Arrange
+        let env = try await MultiConnectionTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
+        try await MockRoot.importTestData(
+            into: env.masterRoot.adventureRoot,
+            name: ResourcesDebug.audioTestData,
+            itemCounter: 3
+        )
+        let audioId = env.masterRoot.audioRoot.itemController.itemDataModel.items[1]
+        let audioReference = await env.masterRoot.audioRoot.gameController.share(id: audioId)
+        let failedReceipt = env.player1Root.gameModel.outgoingMessage(
+            counter: 0,
+            type: .reveal,
+            subType: .failed,
+            asMaster: false,
+            data: audioReference
+        )
+
+        // Act
+        _ = try await env.master.handle(failedReceipt)
+        _ = try await env.player2.handle(failedReceipt)
+
+        // Assert
+        #expect(!env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(!env.player2Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+    }
+
     @Test("Master broadcasts audio show command to all players")
     func masterBroadcastsAudioShowToAllPlayers() async throws {
         // Arrange

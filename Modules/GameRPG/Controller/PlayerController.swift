@@ -338,14 +338,16 @@ extension PlayerController {
     }
     
     func handleAudio(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        guard model.subType != .ok && model.subType != .failed else {
+        if model.subType == .ok {
             await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
+        guard model.subType != .failed else { return nil }
         
         switch model.type {
         case .reveal:
-            if try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
+            let revealed = try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true)
+            if revealed, await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) {
                 await MainActor.run { _ = gameModel.pendingAudioRequests.remove(model.data.id) }
                 await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
                 return await response(for: model, isSuccess: true, requestData: false)
@@ -355,11 +357,15 @@ extension PlayerController {
             }
         case .store:
             try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
+            guard await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) else {
+                await MainActor.run { _ = gameModel.pendingAudioRequests.insert(model.data.id) }
+                return await response(for: model, isSuccess: true, requestData: true)
+            }
             let completesReveal = await MainActor.run { gameModel.pendingAudioRequests.remove(model.data.id) != nil }
             if completesReveal {
                 _ = await root.audioRoot.gameControllable.setCurrent(itemId: model.data.id)
-                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
             }
+            await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
@@ -413,6 +419,9 @@ extension PlayerController {
     func handleMap(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
         switch model.type {
         case .reveal:
+            let mapWasLoaded = await MainActor.run {
+                root.mapRoot.gameControllable.gameModel.itemData[model.data.id] != nil
+            }
             await MainActor.run { _ = gameModel.pendingMapRequests.remove(model.data.id) }
             if try await root.mapRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: false) {
                 _ = await root.mapRoot.gameControllable.setCurrent(itemId: model.data.id)
@@ -422,7 +431,9 @@ extension PlayerController {
                     // when that one-shot message was missed.
                     gameModel.gameUpdateType = .map
                 }
-                await requestMissingMapImages(itemId: model.data.id)
+                if !mapWasLoaded {
+                    await requestMissingMapImages(itemId: model.data.id)
+                }
                 #if os(visionOS)
                 // A re-reveal of the current map changes rooms/pins without a
                 // map change — bring the 3D table up to date as well.
@@ -450,7 +461,6 @@ extension PlayerController {
             case .mapState:
                 if await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: model.data.version) {
                     await root.mapRoot.mapGameControllable.updateMap(for: model.data.id, with: model.data)
-                    await requestMissingMapImages(itemId: model.data.id)
 
                     // Update fog of war on 3D board
                     #if os(visionOS)
@@ -764,6 +774,7 @@ extension PlayerController {
     }
 
     func sendAudioList() async {
-        await send(counter: 0, type: .update, subType: .audioList, updated: root.audioRoot.audioGameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id), useJournal: false)
+        let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id)
+        await send(counter: 0, type: .update, subType: .audioList, updated: audioList, useJournal: false)
     }
 }

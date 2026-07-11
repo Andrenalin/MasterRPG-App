@@ -13,9 +13,10 @@ public protocol AudioGameStoreable {
     /// AVPlayerPlaybackCoordinator propagates play() from the initiating device.
     @MainActor func loadPlaylist(id: UUID) async
 
-    @MainActor func audioList(allPlayers: Bool, with masterId: UUID) -> NetworkCodableDataType
+    @MainActor func audioList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType
     @MainActor func applyAudio(id: UUID, for players: [UUID])
     @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID)
+    func hasLocalAudioData(for itemId: UUID) async -> Bool
     func play(with data: NetworkCodableDataType) -> Task<Void, Error>
     @MainActor func requestPlay(id: UUID) -> NetworkCodableDataType
 }
@@ -86,6 +87,24 @@ extension GameController: GameControllable {
 }
 
 extension GameController {
+    func hasLocalAudioData(for itemId: UUID) async -> Bool {
+        await hasLocalAudioData(for: itemId, visited: [])
+    }
+
+    private func hasLocalAudioData(for itemId: UUID, visited: Set<UUID>) async -> Bool {
+        guard !visited.contains(itemId) else { return true }
+        let visited = visited.union([itemId])
+
+        let item = await gameItem(for: itemId)
+        let entryIds = await MainActor.run { item.entries.map(\.audioId) }
+        guard await hasLocalFileData(for: itemId) else { return false }
+
+        for entryId in entryIds {
+            guard await hasLocalAudioData(for: entryId, visited: visited) else { return false }
+        }
+        return true
+    }
+
     func audioAsset(for itemId: UUID) async -> PlaylistItem? {
         let item = await gameItem(for: itemId)
         // Extract the Sendable fields on the MainActor — the @MainActor model must
@@ -181,20 +200,25 @@ extension GameController: AudioGameStoreable {
     }
     
     @MainActor
-    func audioList(allPlayers: Bool, with masterId: UUID) -> NetworkCodableDataType {
+    func audioList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType {
         let request: AudioListRequest
         if allPlayers {
             var players: [UUID: [UUID]] = [:]
-            itemController.itemDataModel.items.forEach {
-                applyAudio(id: $0, for: [masterId])
-                players[$0] = gameModel.playerReport(for: $0)
+            for itemId in itemController.itemDataModel.items {
+                if await hasLocalAudioData(for: itemId) {
+                    applyAudio(id: itemId, for: [masterId])
+                }
+                players[itemId] = gameModel.playerReport(for: itemId)
             }
             request = AudioListRequest(list: [], players: players)
         } else {
-            itemController.itemDataModel.items.forEach {
-                applyAudio(id: $0, for: [masterId])
+            var availableItems: [UUID] = []
+            for itemId in itemController.itemDataModel.items {
+                guard await hasLocalAudioData(for: itemId) else { continue }
+                applyAudio(id: itemId, for: [masterId])
+                availableItems.append(itemId)
             }
-            request = AudioListRequest(list: itemController.itemDataModel.items, players: [:])
+            request = AudioListRequest(list: availableItems, players: [:])
         }
         let data = request.encodeData()
         return NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: data)

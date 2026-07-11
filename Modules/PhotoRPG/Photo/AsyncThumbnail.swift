@@ -15,7 +15,7 @@ struct AsyncThumbnail: View {
 
     var body: some View {
         if let itemId {
-            let model = root.itemController.itemOrEmpty(for: itemId)
+            let model = root.gameController.gameItem(for: itemId)
             Group {
                 if let image = cachedImage(for: model.id) {
                     Image(akImage: image)
