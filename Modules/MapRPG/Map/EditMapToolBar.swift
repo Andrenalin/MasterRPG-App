@@ -57,6 +57,12 @@ struct EditToolBarViewModifier: ViewModifier {
                         HexMapScaleView(model: editorModel) { scale in
                             mapEditController.updateHexScale(scale, editorModel: editorModel)
                         }
+
+                        MaxSizeScaleView(model: editorModel) { ratio in
+                            mapEditController.updateMaxWidth(ratio, editorModel: editorModel)
+                        } onMaxHeightChanged: { ratio in
+                            mapEditController.updateMaxHeight(ratio, editorModel: editorModel)
+                        }
                     }
                     .padding()
                     #if !os(visionOS)
@@ -435,6 +441,45 @@ private struct HexMapScaleView: View {
             }
             .accessibilityValue(String(format: "%.0f", model.hexScale))
             .labelsHidden()
+#endif
+        }
+        .opacity(model.hideCloseButton ? 0 : 1)
+    }
+}
+
+private struct MaxSizeScaleView: View {
+    @Bindable var model: MapEditorModel
+    let onMaxWidthChanged: (Double) -> Void
+    let onMaxHeightChanged: (Double) -> Void
+
+    var body: some View {
+        VStack(spacing: 8) {
+#if !os(tvOS)
+            HStack {
+                Text("Max Width", bundle: .module)
+                    .foregroundStyle(.white)
+                Slider(value: $model.maxWidthRatio, in: 0.1 ... 1.0) {
+                    Text("Max Width", bundle: .module)
+                }
+                .onChange(of: model.maxWidthRatio) {
+                    onMaxWidthChanged(model.maxWidthRatio)
+                }
+                .accessibilityValue(model.maxWidthRatio.formatted(.number.precision(.fractionLength(2))))
+                .labelsHidden()
+            }
+
+            HStack {
+                Text("Max Height", bundle: .module)
+                    .foregroundStyle(.white)
+                Slider(value: $model.maxHeightRatio, in: 0.1 ... 1.0) {
+                    Text("Max Height", bundle: .module)
+                }
+                .onChange(of: model.maxHeightRatio) {
+                    onMaxHeightChanged(model.maxHeightRatio)
+                }
+                .accessibilityValue(model.maxHeightRatio.formatted(.number.precision(.fractionLength(2))))
+                .labelsHidden()
+            }
 #endif
         }
         .opacity(model.hideCloseButton ? 0 : 1)

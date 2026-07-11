@@ -17,6 +17,10 @@ extension MapEditController {
         editorModel.workingCopy = map.copy()
         editorModel.undoDepthAtOpen = editController.editorModel.undoManaged.undoDepth
         editorModel.isHexMap = editorModel.workingCopy?.entries.contains(where: { $0.isHexGrid }) ?? false
+        if let copy = editorModel.workingCopy {
+            editorModel.maxWidthRatio = editController.maxWidthRatio(for: copy)
+            editorModel.maxHeightRatio = editController.maxHeightRatio(for: copy)
+        }
     }
 
     @MainActor
@@ -324,6 +328,41 @@ extension MapEditController {
             clamp(CGPoint(x: offset.x + width / 2,  y: offset.y + 3 * height / 4)),
             clamp(CGPoint(x: offset.x,             y: offset.y + size)),
         ]
+    }
+}
+
+// MARK: - Entry Boundary (working copy only)
+
+extension MapEditController {
+    @MainActor
+    func updateMaxWidth(_ ratio: Double, editorModel: MapEditorModel) {
+        rescaleEntries(editorModel: editorModel) { copy in
+            editController.rescale(maxWidthRatio: ratio, in: copy)
+        }
+    }
+
+    @MainActor
+    func updateMaxHeight(_ ratio: Double, editorModel: MapEditorModel) {
+        rescaleEntries(editorModel: editorModel) { copy in
+            editController.rescale(maxHeightRatio: ratio, in: copy)
+        }
+    }
+
+    @MainActor
+    private func rescaleEntries(editorModel: MapEditorModel, using rescale: (MapModel) -> Void) {
+        guard let copy = editorModel.workingCopy else { return }
+        // Flush the in-progress entry edit so it is rescaled together with the others
+        for entry in editorModel.editEntries.entries {
+            copy[entry.id] = entry
+        }
+        // Flush pin state too — commitChanges takes pins from the UI model, not the copy
+        copy.mapPins = editorModel.pins.mapPins
+        rescale(copy)
+        // Reload the active entry so it picks up its rescaled coordinates
+        let rescaledActive = editorModel.editEntries.entries.map { copy[$0.id] }
+        editorModel.editEntries.resetEntries(mapId: copy.id, entries: rescaledActive)
+        editorModel.pins.mapPins = copy.mapPins
+        syncDisplayEntries(from: copy, editorModel: editorModel)
     }
 }
 

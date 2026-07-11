@@ -228,6 +228,68 @@ extension EditController {
     }
 }
 
+// MARK: - Entry Boundary Rescaling
+
+extension EditController {
+    /// Largest x extent of all room coordinates relative to the map width, clamped at 1.0 (map image boundary).
+    @MainActor func maxWidthRatio(for model: MapModel) -> Double {
+        maxRatio(in: model, dimension: model.width) { $0.x }
+    }
+
+    /// Largest y extent of all room coordinates relative to the map height, clamped at 1.0 (map image boundary).
+    @MainActor func maxHeightRatio(for model: MapModel) -> Double {
+        maxRatio(in: model, dimension: model.height) { $0.y }
+    }
+
+    @MainActor func rescale(maxWidthRatio: Double, in model: MapModel) {
+        rescaleCoordinates(in: model, ratio: maxWidthRatio, dimension: model.width, axis: \.x)
+    }
+
+    @MainActor func rescale(maxHeightRatio: Double, in model: MapModel) {
+        rescaleCoordinates(in: model, ratio: maxHeightRatio, dimension: model.height, axis: \.y)
+    }
+
+    @MainActor private func maxRatio(in model: MapModel, dimension: CGFloat, value: (CGPoint) -> CGFloat) -> Double {
+        guard dimension > 0 else { return 1.0 }
+        let maxValue = editEntries(for: model)
+            .flatMap { $0.coordinates }
+            .map(value)
+            .max() ?? 0
+        guard maxValue > 0 else { return 1.0 }
+        return min(1.0, maxValue / dimension)
+    }
+
+    @MainActor private func rescaleCoordinates(in model: MapModel, ratio: Double, dimension: CGFloat, axis: WritableKeyPath<CGPoint, CGFloat>) {
+        guard dimension > 0, ratio > 0 else { return }
+        let currentMax = editEntries(for: model)
+            .flatMap { $0.coordinates }
+            .map { $0[keyPath: axis] }
+            .max() ?? 0
+        guard currentMax > 0 else { return }
+
+        // Scale from the real extent, so entries beyond the image boundary shrink back into it.
+        let factor = (ratio * dimension) / currentMax
+        guard factor != 1.0 else { return }
+
+        model.entries = model.entries.map { entry in
+            guard !entry.isHexGrid else { return entry }
+            var scaledEntry = entry
+            scaledEntry.coordinates = scaledEntry.coordinates.map { point in
+                var scaledPoint = point
+                scaledPoint[keyPath: axis] = scaledPoint[keyPath: axis] * factor
+                return scaledPoint
+            }
+            return scaledEntry
+        }
+        // Pins follow the rooms they are placed in, same as resetEntrySize
+        model.mapPins = model.mapPins.map { pin in
+            var scaledPin = pin
+            scaledPin.location[keyPath: axis] = scaledPin.location[keyPath: axis] * factor
+            return scaledPin
+        }
+    }
+}
+
 // MARK: - Edit Pins
 
 extension EditController {
