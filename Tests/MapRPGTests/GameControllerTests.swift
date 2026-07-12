@@ -74,6 +74,13 @@ struct GameControllerTests {
         let missingImages = await sut.missingPlayerImages(itemId: mapId)
         #expect(missingImages.map(\.id) == [photoId])
 
+        // A map without a background photo is trivially complete; an unknown
+        // background photo makes it incomplete.
+        #expect(await sut.hasBackgroundImage(itemId: mapId))
+        sut.gameItem(for: mapId).photoId = photoId
+        #expect(await !sut.hasBackgroundImage(itemId: mapId))
+        sut.gameItem(for: mapId).photoId = nil
+
         _ = sut.demoNextMap(itemId: mapId, restart: true)
         _ = sut.saveAll()
         #expect(sut.gameItem(for: mapId).mapPins.allSatisfy { !$0.isPlayer })

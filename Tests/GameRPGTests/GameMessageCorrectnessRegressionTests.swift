@@ -296,7 +296,6 @@ struct GameMessageCorrectnessRegressionTests {
 
         // When
         let connectionId = UUID()
-        directMasterSpy.networkModel.registerTestConnection(id: connectionId)
         await master.ready(for: connectionId)
 
         // Then

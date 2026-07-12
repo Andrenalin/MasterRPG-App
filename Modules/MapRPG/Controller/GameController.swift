@@ -23,6 +23,7 @@ public protocol MapGameStorable {
     @MainActor func setPlayerPin(for playerId: UUID, name: String, characterId: UUID)
     @MainActor func resetPlayerPins(for players: [PlayerGameModel])
     @MainActor func updatePin(itemId: UUID, data: Data?, playerId: UUID)
+    func hasBackgroundImage(itemId: UUID) async -> Bool
     func missingPlayerImages(itemId: UUID) async -> [NetworkCodableDataType]
     @MainActor func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool
     @MainActor func togglePin(itemId: UUID, pinId: UUID) -> Bool
@@ -151,6 +152,13 @@ extension GameController: MapGameStorable {
         }
     }
 
+    /// Whether the map's background photo is usable on this device. A map
+    /// without one is trivially complete.
+    @MainActor func hasBackgroundImage(itemId: UUID) async -> Bool {
+        guard let backgroundPhotoId = gameItem(for: itemId).photoId else { return true }
+        return await hasPhotoImage(for: backgroundPhotoId)
+    }
+
     @MainActor func missingPlayerImages(itemId: UUID) async -> [NetworkCodableDataType] {
         let model = gameItem(for: itemId)
         var photoIds = model.mapPins.filter { $0.isPlayer }.compactMap { $0.photoId }
@@ -159,15 +167,18 @@ extension GameController: MapGameStorable {
         }
         var result: [NetworkCodableDataType] = []
         for photoId in photoIds {
-            // hasItem alone is true for a metadata-only photo whose binary never
-            // arrived — the file check catches those so the map can self-heal.
-            let hasItem = await root.photoRoot.gameControllable.hasItem(id: photoId, version: 0)
-            let hasFile = await root.photoRoot.gameControllable.hasLocalFileData(for: photoId)
-            if !hasItem || !hasFile {
-                await result.append(root.photoRoot.gameControllable.share(id: photoId))
-            }
+            guard await !hasPhotoImage(for: photoId) else { continue }
+            await result.append(root.photoRoot.gameControllable.share(id: photoId))
         }
         return result
+    }
+
+    @MainActor private func hasPhotoImage(for photoId: UUID) async -> Bool {
+        // hasItem alone is true for a metadata-only photo whose binary never
+        // arrived — the file check catches those so the map can self-heal.
+        let hasItem = await root.photoRoot.gameControllable.hasItem(id: photoId, version: 0)
+        let hasFile = await root.photoRoot.gameControllable.hasLocalFileData(for: photoId)
+        return hasItem && hasFile
     }
 
     /// Moves a pin as the game master: updates the game item and the shared

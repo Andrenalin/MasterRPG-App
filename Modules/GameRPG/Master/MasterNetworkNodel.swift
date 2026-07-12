@@ -18,7 +18,11 @@ protocol MasterNetworkControllable: Sendable & AnyObject {
     @MainActor func toggleStreaming()
     @MainActor func startProxyStreaming()
 
-    func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async
+    /// Returns whether a connection with that id exists and the data was handed
+    /// to it — false means the id is unknown here (e.g. a SharePlay participant)
+    /// and the caller must deliver another way.
+    @discardableResult
+    func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async -> Bool
     func sendResponse(data: MessageMapper?) async
     func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async
 }
@@ -86,6 +90,8 @@ final class MasterNetworkControllableSpyingStub: MasterNetworkControllable, @unc
     public var calledStartProxyStreaming = 0
     /// Number of times `sendResponse(data:id:)` was called
     public var calledSendResponseId = 0
+    /// Stubbed delivery result for `sendResponse(data:id:)`
+    public var sendResponseIdDelivered = true
     /// Number of times `sendResponse(data:)` was called
     public var calledSendResponseAll = 0
     /// Number of times `sendResponse(data:except:)` was called
@@ -129,10 +135,12 @@ final class MasterNetworkControllableSpyingStub: MasterNetworkControllable, @unc
         calledStartProxyStreaming += 1
     }
 
-    func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async {
+    @discardableResult
+    func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async -> Bool {
         calledSendResponseId += 1
         lastSentData = data
         lastSentToId = id
+        return sendResponseIdDelivered
     }
 
     func sendResponse(data: MessageMapper?) async {

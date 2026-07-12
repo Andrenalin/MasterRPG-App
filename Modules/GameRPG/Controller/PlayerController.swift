@@ -42,6 +42,11 @@ final class PlayerControllerModel: Sendable {
     // repair actually produced a local file — a permanently failing photo is
     // requested once instead of looping master responses forever.
     var requestedRepairIds: Set<UUID> = []
+    // Maps whose background photo was missing after a delivery and triggered one
+    // full-map re-request. A master that cannot inline the background would
+    // otherwise ping-pong full payloads forever; after the single retry the
+    // background heals through the per-photo repair path instead.
+    var requestedFullMapIds: Set<UUID> = []
 
     func increaseMessageCounter() {
         messageCounter += 1
@@ -140,6 +145,7 @@ extension PlayerController {
         gameModel.pendingMapRequests = []
         gameModel.pendingAudioRequests = []
         gameModel.requestedRepairIds = []
+        gameModel.requestedFullMapIds = []
         gameModel.resetMasterStateSequence()
     }
     
@@ -227,6 +233,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             gameModel.pendingMapRequests = []
             gameModel.pendingAudioRequests = []
             gameModel.requestedRepairIds = []
+            gameModel.requestedFullMapIds = []
             gameModel.resetMasterStateSequence()
         }
         await gameModel.reset(lostMaster: true)
@@ -510,6 +517,16 @@ extension PlayerController {
         case .reveal:
             await MainActor.run { _ = gameModel.pendingMapRequests.remove(model.data.id) }
             if try await root.mapRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: false) {
+                // A map without its background photo is incomplete — ask for the
+                // whole package once instead of showing a blank board. After that
+                // single retry the background heals via the per-photo repair, so
+                // a master that cannot inline it never causes a payload loop.
+                if await !root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: model.data.id) {
+                    let isFirstFullMapRequest = await MainActor.run { gameModel.requestedFullMapIds.insert(model.data.id).inserted }
+                    if isFirstFullMapRequest {
+                        return await response(for: model, isSuccess: true, requestData: true)
+                    }
+                }
                 _ = await root.mapRoot.gameControllable.setCurrent(itemId: model.data.id)
                 await MainActor.run {
                     // Also for players: a reveal means "show the map". Waiting for

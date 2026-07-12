@@ -213,7 +213,7 @@ extension NetworkCodableDataType {
     var usesFileJournal: Bool {
         guard data != nil else { return false }
         switch type {
-        case .pdf, .audio, .space, .photo:
+        case .pdf, .audio, .space, .photo, .map:
             return true
         default:
             return false

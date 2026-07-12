@@ -119,8 +119,11 @@ extension MasterNetworkController: MasterNetworkControllable {
 // MARK: - Send
 
 extension MasterNetworkController {
-    func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async {
-        await networkModel.connections.first { $0.id == id }?.sendResponse(data: data)
+    @discardableResult
+    func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async -> Bool {
+        guard let connection = await networkModel.connections.first(where: { $0.id == id }) else { return false }
+        await connection.sendResponse(data: data)
+        return true
     }
 
     func sendResponse(data: MessageMapper?) async {

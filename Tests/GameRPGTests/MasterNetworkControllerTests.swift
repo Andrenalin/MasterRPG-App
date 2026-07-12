@@ -134,7 +134,10 @@ struct MasterNetworkControllerTests {
 
         // Act & Assert - All send methods execute without error
         await env.controller.sendResponse(data: nil)
-        await env.controller.sendResponse(data: nil, id: UUID())
+        let deliveredToUnknown = await env.controller.sendResponse(data: nil, id: UUID())
+        #expect(!deliveredToUnknown)
+        let deliveredToConnection = await env.controller.sendResponse(data: nil, id: connectionId)
+        #expect(deliveredToConnection)
         await env.controller.sendResponse(data: nil, except: UUID())
         await env.controller.sendResponse(data: nil, except: connectionId)
     }

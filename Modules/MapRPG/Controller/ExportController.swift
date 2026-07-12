@@ -126,6 +126,17 @@ extension ExportController: ExportControllable {
                 }
             }
         }
+        // In a running game the map package must carry the player photos as
+        // well — player pins may not be appended to the exported item's mapPins
+        // yet. Only when a map is actually exported: the hub chain also calls
+        // this with no map ids at all.
+        if itemControllable.itemDataModel.isGameMode, !results.isEmpty {
+            photoIds.formUnion(root.gameController.mapGameModel.playerPins.compactMap { pin in
+                guard let photoId = pin.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) else { return nil }
+                return photoId
+            })
+        }
+
         let partialFolderIds: Set<UUID> = exportingFolder(results: &results)
         var allIds = itemIds
         allIds.ids[itemController.config.module] = Array(results)

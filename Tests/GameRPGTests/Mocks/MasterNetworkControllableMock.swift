@@ -45,12 +45,17 @@ final class MasterNetworkControllableMock: MasterNetworkControllable, @unchecked
         calledStartProxyStreaming += 1
     }
 
-    func sendResponse(data netData: MessageMapper?, id _: ConnectionController.ID) {
+    /// Stubbed delivery result — set to false to exercise the broadcast fallback.
+    var sendResponseIdResult = true
+
+    @discardableResult
+    func sendResponse(data netData: MessageMapper?, id _: ConnectionController.ID) -> Bool {
         calledSendResponseId += 1
         sendResponseData = netData
         if let netData {
             sendResponseHistory.append(netData)
         }
+        return sendResponseIdResult
     }
 
     var sendResponseData: MessageMapper?

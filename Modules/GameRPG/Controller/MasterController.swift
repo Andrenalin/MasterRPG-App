@@ -21,6 +21,9 @@ final class MasterControllerModel: Sendable {
     var asProxy = false
     var pendingAudioPlays: [UUID: NetworkCodableDataType] = [:]
     var audioTransferPlayers: [UUID: Set<UUID>] = [:]
+    /// Maps whose full package already went out in the current game — the first
+    /// show sends the whole package, every reshow only the id reference.
+    var sentGameMaps: Set<UUID> = []
     
     /// Reserves the next counter atomically. Reading and incrementing in separate
     /// calls lets concurrent sends stamp the same counter, which the receivers'
@@ -85,6 +88,7 @@ extension MasterController {
         await messagePipeline.cancelAll()
         gameModel.pendingAudioPlays.removeAll()
         gameModel.audioTransferPlayers.removeAll()
+        gameModel.sentGameMaps.removeAll()
         await root.networkStore.stopGame()
         await root.networkProxyStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
@@ -138,6 +142,19 @@ extension MasterController {
 
 extension MasterController {
     func show(for idType: NetworkCodableDataType) async {
+        // A map's package is huge (background + pin + player photos). The first
+        // show in a game ships the whole package right away — the id-then-request
+        // round trip would make every player wait one extra full transfer. A
+        // reshow sends only the reference; players still holding the map show it
+        // from memory, the others request the package.
+        if idType.type == .map, await !gameModel.sentGameMaps.contains(idType.id) {
+            if let mapData = try? await root.mapRoot.gameControllable.createGameData(for: idType.id) {
+                await MainActor.run { _ = gameModel.sentGameMaps.insert(idType.id) }
+                await send(type: .reveal, subtype: .show, updated: mapData)
+                return
+            }
+            Logger.networking.error("MasterController: Cannot create map package for \(idType.id, privacy: .public) — sending reference instead")
+        }
         await send(type: .reveal, subtype: .show, updated: idType)
     }
     
@@ -452,6 +469,9 @@ extension MasterController {
         switch model.type {
         case .reveal:
             let mapData = try await root.mapRoot.gameControllable.createGameData(for: model.data.id)
+            // The full package went out through the request path — reshows can
+            // rely on the reference no matter which path delivered first.
+            await MainActor.run { _ = gameModel.sentGameMaps.insert(model.data.id) }
             if model.subType == .mapState {
                 await send(type: .reveal, subtype: .store, updated: mapData)
                 // Send the live map state (not the request echo, whose data is
