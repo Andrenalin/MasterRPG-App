@@ -221,3 +221,125 @@ public enum SheetModelType: Equatable, Hashable, Sendable {
     case space
     case weather
 }
+
+public enum SheetInsertionPosition: Equatable, Hashable, Sendable {
+    case end
+    case after(UUID)
+}
+
+public struct SheetContentSnapshot: Identifiable, Equatable, Hashable, Sendable {
+    public init(
+        id: String,
+        source: ItemRowModel,
+        name: String,
+        content: String,
+        children: [SheetContentSnapshot] = []
+    ) {
+        self.id = id
+        self.source = source
+        self.name = name
+        self.content = content
+        self.children = children
+    }
+
+    public let id: String
+    public let source: ItemRowModel
+    public let name: String
+    public let content: String
+    public let children: [SheetContentSnapshot]
+
+    public var hasContent: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+public struct SheetGenerationFocus: Equatable, Hashable, Sendable {
+    public init(
+        rootItemID: UUID,
+        parentModelID: String,
+        parentSource: ItemRowModel,
+        selectedModelID: String?,
+        selectedSource: ItemRowModel?,
+        position: SheetInsertionPosition,
+        module: NetworkModules
+    ) {
+        self.rootItemID = rootItemID
+        self.parentModelID = parentModelID
+        self.parentSource = parentSource
+        self.selectedModelID = selectedModelID
+        self.selectedSource = selectedSource
+        self.position = position
+        self.module = module
+    }
+
+    public let rootItemID: UUID
+    public let parentModelID: String
+    public let parentSource: ItemRowModel
+    public let selectedModelID: String?
+    public let selectedSource: ItemRowModel?
+    public let position: SheetInsertionPosition
+    public let module: NetworkModules
+}
+
+public struct SheetGenerationRequest: Identifiable, Equatable, Sendable {
+    public init(
+        id: UUID = UUID(),
+        prompt: String,
+        sheetContext: SheetContentSnapshot,
+        focusedContent: SheetContentSnapshot?,
+        focus: SheetGenerationFocus
+    ) {
+        self.id = id
+        self.prompt = prompt
+        self.sheetContext = sheetContext
+        self.focusedContent = focusedContent
+        self.focus = focus
+    }
+
+    public let id: UUID
+    public let prompt: String
+    public let sheetContext: SheetContentSnapshot
+    public let focusedContent: SheetContentSnapshot?
+    public let focus: SheetGenerationFocus
+}
+
+public struct GeneratedSheetDraft: Identifiable, Equatable, Hashable, Sendable {
+    public init(id: UUID = UUID(), title: String, content: String) {
+        self.id = id
+        self.title = title
+        self.content = content
+    }
+
+    public let id: UUID
+    public let title: String
+    public let content: String
+}
+
+@MainActor
+public struct SheetGeneratedBatch: Identifiable {
+    public init(
+        id: String,
+        focus: SheetGenerationFocus,
+        entries: [SheetModel],
+        lastAcceptedEntryID: UUID? = nil
+    ) {
+        self.id = id
+        self.focus = focus
+        self.entries = entries
+        self.lastAcceptedEntryID = lastAcceptedEntryID
+    }
+
+    public let id: String
+    public let focus: SheetGenerationFocus
+    public var entries: [SheetModel]
+    public var lastAcceptedEntryID: UUID?
+}
+
+public extension SheetModel {
+    var hasGenerationContent: Bool {
+        guard !isGeneratedAnswer else { return false }
+        return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}

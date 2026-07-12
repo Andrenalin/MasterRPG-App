@@ -9,6 +9,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
         entryModel: SheetModel,
         isEditor: Bool,
         linkTypes: LinkType.Type,
+        generatedAcceptanceNamespace: Namespace.ID,
         detailAction: ((SheetModel) -> Void)? = nil,
         @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
     ) {
@@ -17,6 +18,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
         self.entryModel = entryModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
+        self.generatedAcceptanceNamespace = generatedAcceptanceNamespace
         self.detailAction = detailAction
         self.detailContent = detailContent
     }
@@ -26,6 +28,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
     let entryModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
+    let generatedAcceptanceNamespace: Namespace.ID
     let detailAction: ((SheetModel) -> Void)?
     let detailContent: (SheetModel) -> DetailContent
     
@@ -33,10 +36,18 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let geometryMatch = rootModel.sheetRowGeometryMatch(
+            for: entryModel,
+            parent: parentModel
+        )
+
         ZStack(alignment: .topLeading) {
-            selectionBackgroundButton
+            if !usesGeneratedContextMenu {
+                selectionBackgroundButton
+            }
 
             VStack(alignment: .leading) {
                 beforeInline
@@ -44,6 +55,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
                 mainRow
 
                 contentRow
+                    .allowsHitTesting(!entryModel.isGeneratedAnswer)
 
                 detailContent(entryModel)
 
@@ -52,13 +64,25 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
                 afterInline
             }
         }
-        .id(entryModel.source.entryId)
+        .id(entryModel.source.entryId ?? entryModel.source.itemId)
         .sheetBorderColor(level: parentModel.level)
         .overlay {
-            generatedSelectionBorder
-            selectionBorder
+            ZStack {
+                generatedSelectionBorder
+                selectionBorder
+            }
+            .allowsHitTesting(false)
         }
+        .matchedGeometryEffect(
+            id: geometryMatch.id,
+            in: generatedAcceptanceNamespace,
+            properties: .frame,
+            anchor: .center,
+            isSource: geometryMatch.isSource
+        )
         .contentShape(.rect)
+        .zIndex(entryModel.isGeneratedAnswer ? 1 : 0)
+        .animation(accessibilityReduceMotion ? nil : .smooth, value: entryModel.isGeneratedAnswer)
         .animation(.easeInOut(duration: 0.2), value: entryModel.isGeneratedSelected)
         .animation(.easeInOut(duration: 0.2), value: entryModel.isSelected)
         .onChange(of: entryModel.name) {
@@ -67,13 +91,36 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
         .onChange(of: entryModel.description) {
             rootModel.updateParent(parentModel)
         }
-        .applyIf(isEditor || entryModel.isSelected) {
+        .applyIf(!entryModel.isGeneratedAnswer && (isEditor || entryModel.isSelected)) {
             $0.contextMenuAll {
                 SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: false)
                 SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor)
                 SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
                     .tint(.red)
             }
+        }
+        .applyIf(usesGeneratedContextMenu) {
+            $0
+                .contextMenuAll {
+                    GeneratedSheetEntryContextMenu(
+                        canRefine: rootModel.canRefineGeneratedPreview(
+                            entryModel,
+                            in: parentModel
+                        ),
+                        takeOverAction: takeOverGeneratedEntry,
+                        refineAction: refineGeneratedEntry,
+                        deleteAction: deleteGeneratedEntry
+                    )
+                }
+                .accessibilityAction(named: Text("Take Over", bundle: .module)) {
+                    takeOverGeneratedEntry()
+                }
+                .accessibilityAction(named: Text("Refine with AI", bundle: .module)) {
+                    refineGeneratedEntry()
+                }
+                .accessibilityAction(named: Text("Delete Generated Content", bundle: .module)) {
+                    deleteGeneratedEntry()
+                }
         }
     }
 }
@@ -99,54 +146,52 @@ private extension SheetEntryView {
 
     var mainRow: some View {
         HStack {
-            if entryModel.isGeneratedAnswer {
-                Button("Select answer", systemImage: entryModel.isGeneratedSelected ? "checkmark.circle.fill" : "circle") {
-                    toggleGeneratedSelection()
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
+            if usesGeneratedContextMenu {
+                generatedTakeOverButton
+            } else if entryModel.isGeneratedAnswer {
+                Image(systemName: generatedIndicatorSystemImage)
                 .foregroundStyle(entryModel.isGeneratedSelected ? .green : .secondary)
-                .help("Select answer")
+                .accessibilityHidden(true)
             }
 
-            if (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
+            refineWithAIButton
+
+            if !entryModel.isGeneratedAnswer && (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: true)
             }
-            
-            switch entryModel.sheetType {
-            case .item, .group:
-                if entryModel.isGeneratedAnswer {
-                    Button(action: toggleGeneratedSelection) {
-                        LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.name, shareResults: shareResult))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .font(.headline)
-                    }
-                    .buttonStyle(.plain)
-                } else {
+
+            Group {
+                switch entryModel.sheetType {
+                case .item, .group:
                     LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.name, shareResults: shareResult))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.headline)
-                }
-                
-            case .dice:
-                viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-            case .pdf, .photo, .space, .weather:
-                viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                    .frame(height: 256)
 
-            case .audio:
-                HStack {
+                case .dice:
                     viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: audioDisplayText, shareResults: shareResult))
+                case .pdf, .photo, .space, .weather:
+                    viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                        .frame(height: 256)
+
+                case .audio:
+                    HStack {
+                        viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                        LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: audioDisplayText, shareResults: shareResult))
+                    }
+                    .font(.body)
                 }
-                .font(.body)
             }
+            .allowsHitTesting(!entryModel.isGeneratedAnswer)
                             
-            if isEditor && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
+            if !entryModel.isGeneratedAnswer && isEditor && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
             }
 
-            if let detailAction, canGoDeeper {
+            if usesGeneratedContextMenu {
+                generatedDeleteButton
+            }
+
+            if !entryModel.isGeneratedAnswer, let detailAction, canGoDeeper {
                 Button("Next Question", systemImage: "questionmark.bubble") {
                     detailAction(entryModel)
                 }
@@ -237,36 +282,94 @@ private extension SheetEntryView {
         !entryModel.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    @ViewBuilder var generatedSelectionBorder: some View {
-        if entryModel.isGeneratedAnswer {
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(
-                    entryModel.isGeneratedSelected ? Color.green : Color.secondary.opacity(0.25),
-                    lineWidth: entryModel.isGeneratedSelected ? 2 : 1
-                )
+    var usesGeneratedContextMenu: Bool {
+        isEditor && entryModel.isGeneratedAnswer
+    }
+
+    @ViewBuilder var refineWithAIButton: some View {
+        if !entryModel.isGeneratedAnswer && rootModel.isAIModeActive && hasDetailContent {
+            Button(action: refineExistingEntry) {
+                if isRefiningWithAI {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Label("Refine with AI", systemImage: "sparkles")
+                        .labelStyle(.iconOnly)
+                }
+            }
+            .buttonStyle(.borderless)
+            .disabled(rootModel.pendingGenerationRequest != nil)
+            .accessibilityLabel(Text("Refine with AI", bundle: .module))
+            .accessibilityValue(
+                isRefiningWithAI
+                    ? Text("Generating", bundle: .module)
+                    : Text("Ready", bundle: .module)
+            )
+            .help("Refine this content with AI")
+            .transition(.scale(scale: 0.9).combined(with: .opacity))
         }
     }
 
-    /// Fills the full row so a plain tap anywhere that isn't already an interactive
-    /// element (edit/delete buttons, links inside LinkHighlightTextView) selects it —
-    /// or, for an unpersisted AI-generated preview row, commits it into a real entry.
+    var isRefiningWithAI: Bool {
+        rootModel.pendingGenerationRequest?.focus.selectedModelID == entryModel.id
+    }
+
+    var generatedTakeOverButton: some View {
+        Button("Take Over", systemImage: "sparkles", action: takeOverGeneratedEntry)
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.green)
+            .help("Take over generated content")
+    }
+
+    var generatedDeleteButton: some View {
+        Button("Delete Generated Content", systemImage: "trash", role: .destructive, action: deleteGeneratedEntry)
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .help("Delete generated content")
+    }
+
+    @ViewBuilder var generatedSelectionBorder: some View {
+        if entryModel.isGeneratedAnswer {
+            let green = Color.green
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(green.opacity(entryModel.isGeneratedSelected ? 0.14 : 0.06))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [green, .mint.opacity(0.75)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: entryModel.isGeneratedSelected ? 3 : 2
+                    )
+            }
+            .shadow(
+                color: green.opacity(entryModel.isGeneratedSelected ? 0.35 : 0.2),
+                radius: entryModel.isGeneratedSelected ? 6 : 4
+            )
+            .transition(.scale(scale: 0.98).combined(with: .opacity))
+        }
+    }
+
+    /// Fills regular and non-editor rows so a plain tap anywhere that isn't already an
+    /// interactive element selects it. Editor previews intentionally omit this button
+    /// because they expose explicit Take Over/Delete controls (and a context menu).
     /// Placed behind the row content, so those existing controls keep first hit-test priority.
     /// The explicit frame + contentShape guarantee the whole row is tappable, independent
     /// of how the sibling row content happens to size the surrounding ZStack.
     var selectionBackgroundButton: some View {
         Button {
-            if entryModel.isGeneratedAnswer {
-                rootModel.commitGeneratedEntry(entryModel, parent: parentModel)
-            } else {
-                rootModel.setSelected(entryModel, parent: parentModel)
-            }
+            performPrimaryAction()
         } label: {
             Rectangle().fill(.clear)
         }
         .buttonStyle(.plain)
         .contentShape(.rect)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .accessibilityLabel(Text("Select \(entryModel.name.withoutLink())", bundle: .module))
+        .accessibilityLabel(primaryActionAccessibilityLabel)
+        .accessibilityValue(generatedSelectionAccessibilityValue)
     }
 
     @ViewBuilder var selectionBorder: some View {
@@ -289,5 +392,79 @@ private extension SheetEntryView {
         withAnimation {
             entryModel.isGeneratedSelected.toggle()
         }
+    }
+
+    func performPrimaryAction() {
+        if entryModel.isGeneratedAnswer {
+            toggleGeneratedSelection()
+        } else {
+            rootModel.setSelected(entryModel, parent: parentModel)
+        }
+    }
+
+    func takeOverGeneratedEntry() {
+        guard usesGeneratedContextMenu else { return }
+
+        let previewID = entryModel.source.entryId ?? entryModel.source.itemId
+        let parentModelID = parentModel.id
+        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
+        _ = withAnimation(animation, completionCriteria: .removed) {
+            rootModel.commitGeneratedEntry(entryModel, parent: parentModel)
+        } completion: {
+            rootModel.finishGeneratedAcceptanceTransition(
+                previewID: previewID,
+                parentModelID: parentModelID
+            )
+        }
+    }
+
+    func refineExistingEntry() {
+        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
+        _ = withAnimation(animation) {
+            rootModel.queueGeneration(
+                from: entryModel,
+                parent: parentModel,
+                module: parentModel.source.typeId
+            )
+        }
+    }
+
+    func refineGeneratedEntry() {
+        guard usesGeneratedContextMenu else { return }
+        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
+        _ = withAnimation(animation) {
+            rootModel.refineGeneratedPreview(entryModel, in: parentModel)
+        }
+    }
+
+    func deleteGeneratedEntry() {
+        guard usesGeneratedContextMenu else { return }
+        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
+        _ = withAnimation(animation) {
+            rootModel.discardGeneratedPreview(entryModel, in: parentModel)
+        }
+    }
+
+    var generatedIndicatorSystemImage: String {
+        entryModel.isGeneratedSelected ? "checkmark.circle.fill" : "circle"
+    }
+
+    var primaryActionAccessibilityLabel: Text {
+        if entryModel.isGeneratedAnswer {
+            if isEditor {
+                Text("Use generated content \(entryModel.name.withoutLink())", bundle: .module)
+            } else {
+                Text("Select answer \(entryModel.name.withoutLink())", bundle: .module)
+            }
+        } else {
+            Text("Select \(entryModel.name.withoutLink())", bundle: .module)
+        }
+    }
+
+    var generatedSelectionAccessibilityValue: Text {
+        guard entryModel.isGeneratedAnswer && !isEditor else { return Text("") }
+        return entryModel.isGeneratedSelected
+            ? Text("Selected", bundle: .module)
+            : Text("Not selected", bundle: .module)
     }
 }

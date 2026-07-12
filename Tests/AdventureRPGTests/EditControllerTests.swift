@@ -17,6 +17,40 @@ import Testing
 
 @MainActor
 struct EditControllerTests {
+    @Test("Generated content is inserted after its focused entry")
+    func insertGeneratedEntryAtFocus() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+        let itemId = try #require(root.itemController.itemDataModel.items.first)
+        let anchorId = try #require(root.itemController.itemOrEmpty(for: itemId).entries.first?.id)
+
+        // When
+        let insertedId = try #require(
+            sut.insertEntry(
+                itemId: itemId,
+                name: "Generated Scene",
+                content: "A newly generated complication.",
+                position: .after(anchorId)
+            )
+        )
+        let updated = root.itemController.itemOrEmpty(for: itemId)
+        let anchorIndex = try #require(updated.entries.firstIndex { $0.id == anchorId })
+
+        // Then
+        #expect(updated.entries[anchorIndex + 1].id == insertedId)
+        #expect(updated.entries[anchorIndex + 1].name == "Generated Scene")
+        #expect(updated.entries[anchorIndex + 1].content == "A newly generated complication.")
+        #expect(
+            sut.insertEntry(
+                itemId: UUID(),
+                name: "Missing",
+                content: "Should not be inserted",
+                position: .end
+            ) == nil
+        )
+    }
+
     @Test func mergeEntries() async throws {
         let root = try await MockRoot.importTestData()
         let sut = root.editController

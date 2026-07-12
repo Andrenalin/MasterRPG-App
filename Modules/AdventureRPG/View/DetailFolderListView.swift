@@ -26,14 +26,7 @@ struct DetailFolderListView: View {
         }
 #if !os(tvOS)
         .applyIf(root.editController.editorModel.sheetRootModel != nil) {
-            // A second live aiAssistantView here (e.g. as an invisible safeAreaInset
-            // spacer) would double every stateful side effect (its .onChange fires
-            // once per instance) — a fixed-height Color.clear reserves scroll space
-            // without duplicating the view's state.
-            $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-                Color.clear.frame(height: 64)
-            }
-            .overlay(alignment: .bottom) {
+            $0.safeAreaInset(edge: .bottom, alignment: .center) {
                 GlassEffectContainerAll {
                     aiAssistantView
                 }

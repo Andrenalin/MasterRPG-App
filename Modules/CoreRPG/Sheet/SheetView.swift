@@ -9,6 +9,7 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
         sheetModel: SheetModel,
         isEditor: Bool = false,
         linkTypes: LinkType.Type = LinkDiceData.self,
+        generatedAcceptanceNamespace: Namespace.ID,
         detailAction: ((SheetModel) -> Void)? = nil,
         @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
     ) {
@@ -17,6 +18,7 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
         self.sheetModel = sheetModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
+        self.generatedAcceptanceNamespace = generatedAcceptanceNamespace
         self.detailAction = detailAction
         self.detailContent = detailContent
     }
@@ -26,6 +28,7 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
     let sheetModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
+    let generatedAcceptanceNamespace: Namespace.ID
     let detailAction: ((SheetModel) -> Void)?
     let detailContent: (SheetModel) -> DetailContent
     
@@ -61,11 +64,47 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
 }
 
 private extension SheetView {
+    var isRefiningWithAI: Bool {
+        rootModel.pendingGenerationRequest?.focus.selectedModelID == sheetModel.id
+    }
+
+    func refineSheetWithAI() {
+        _ = withAnimation(.smooth) {
+            rootModel.queueGeneration(
+                from: sheetModel,
+                parent: sheetModel,
+                module: sheetModel.source.typeId
+            )
+        }
+    }
+
     var nameRow: some View {
         ZStack(alignment: .topLeading) {
             selectionBackgroundButton
 
             HStack {
+                if rootModel.isAIModeActive && sheetModel.hasDetailContent {
+                    Button(action: refineSheetWithAI) {
+                        if isRefiningWithAI {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Label("Refine with AI", systemImage: "sparkles")
+                                .labelStyle(.iconOnly)
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(rootModel.pendingGenerationRequest != nil)
+                    .accessibilityLabel(Text("Refine with AI", bundle: .module))
+                    .accessibilityValue(
+                        isRefiningWithAI
+                            ? Text("Generating", bundle: .module)
+                            : Text("Ready", bundle: .module)
+                    )
+                    .help("Refine this sheet with AI")
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                }
+
                 if isEditor && sheetModel.canAdd {
                     SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
                 }
@@ -87,6 +126,7 @@ private extension SheetView {
         }
         .overlay {
             selectionBorder
+                .allowsHitTesting(false)
         }
         .contentShape(.rect)
         .animation(.easeInOut(duration: 0.2), value: sheetModel.isSelected)
@@ -165,25 +205,36 @@ private extension SheetView {
         detailContent(sheetModel)
 
         entryRows(for: generatedEntries(in: sheetModel.entries))
+
+        generatedPreviewRows(rootModel.trailingGeneratedEntries(in: sheetModel))
     }
 
     @ViewBuilder func entryRows(for entries: [SheetModel]) -> some View {
         ForEach(entries) { entry in
-            SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, detailAction: detailAction, detailContent: detailContent)
+            SheetEntryView(
+                rootModel: rootModel,
+                parentModel: sheetModel,
+                entryModel: entry,
+                isEditor: isEditor,
+                linkTypes: linkTypes,
+                generatedAcceptanceNamespace: generatedAcceptanceNamespace,
+                detailAction: detailAction,
+                detailContent: detailContent
+            )
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .transition(entry.isGeneratedAnswer ? .generatedSheetEntry : .persistedSheetEntry)
                 // .draggable() below installs its own gesture recognizer that can win
                 // arbitration over the nested selection Button in editor mode, so taps
                 // silently stop reaching it. simultaneousGesture is guaranteed to coexist
-                // with .draggable's gesture rather than compete with it.
-                .simultaneousGesture(TapGesture().onEnded {
-                    if entry.isGeneratedAnswer {
-                        rootModel.commitGeneratedEntry(entry, parent: sheetModel)
-                    } else {
+                // with .draggable's gesture rather than compete with it. Generated editor
+                // rows deliberately omit tap handling and expose their actions by context menu.
+                .applyIf(!entry.isGeneratedAnswer) {
+                    $0.simultaneousGesture(TapGesture().onEnded {
                         rootModel.setSelected(entry, parent: sheetModel)
-                    }
-                })
+                    })
+                }
 #if !os(tvOS)
-                .applyIf(isEditor) {
+                .applyIf(isEditor && !entry.isGeneratedAnswer) {
                     $0
                         .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
                         .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)
@@ -195,17 +246,55 @@ private extension SheetView {
                 }
 #endif
 
+            generatedPreviewRows(rootModel.generatedEntries(after: entry, in: sheetModel))
+
             let visibleSubEntries = visibleEntries(in: entry.entries)
             ForEach(visibleSubEntries) { subEntry in
                 if subEntry.isGeneratedAnswer {
-                    GeneratedSheetEntryTreeView(rootModel: rootModel, parentModel: entry, entryModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, detailAction: detailAction, detailContent: detailContent)
+                    GeneratedSheetEntryTreeView(
+                        rootModel: rootModel,
+                        parentModel: entry,
+                        entryModel: subEntry,
+                        isEditor: isEditor,
+                        linkTypes: linkTypes,
+                        generatedAcceptanceNamespace: generatedAcceptanceNamespace,
+                        detailAction: detailAction,
+                        detailContent: detailContent
+                    )
                         .padding(.leading, 8)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .transition(.generatedSheetEntry)
                 } else if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
-                    SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, detailAction: detailAction, detailContent: detailContent)
+                    SheetView(
+                        root: root,
+                        rootModel: rootModel,
+                        sheetModel: subEntry,
+                        isEditor: isEditor,
+                        linkTypes: linkTypes,
+                        generatedAcceptanceNamespace: generatedAcceptanceNamespace,
+                        detailAction: detailAction,
+                        detailContent: detailContent
+                    )
                         .padding(.leading, 2)
                 }
             }
+        }
+    }
+
+    @ViewBuilder func generatedPreviewRows(_ entries: [SheetModel]) -> some View {
+        ForEach(entries) { preview in
+            SheetEntryView(
+                rootModel: rootModel,
+                parentModel: sheetModel,
+                entryModel: preview,
+                isEditor: isEditor,
+                linkTypes: linkTypes,
+                generatedAcceptanceNamespace: generatedAcceptanceNamespace,
+                detailAction: detailAction,
+                detailContent: detailContent
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .transition(.generatedSheetEntry)
         }
     }
 
@@ -238,6 +327,7 @@ private struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, Detai
         entryModel: SheetModel,
         isEditor: Bool,
         linkTypes: LinkType.Type,
+        generatedAcceptanceNamespace: Namespace.ID,
         detailAction: ((SheetModel) -> Void)?,
         @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
     ) {
@@ -246,6 +336,7 @@ private struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, Detai
         self.entryModel = entryModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
+        self.generatedAcceptanceNamespace = generatedAcceptanceNamespace
         self.detailAction = detailAction
         self.detailContent = detailContent
     }
@@ -255,6 +346,7 @@ private struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, Detai
     let entryModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
+    let generatedAcceptanceNamespace: Namespace.ID
     let detailAction: ((SheetModel) -> Void)?
     let detailContent: (SheetModel) -> DetailContent
 
@@ -265,6 +357,7 @@ private struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, Detai
             entryModel: entryModel,
             isEditor: isEditor,
             linkTypes: linkTypes,
+            generatedAcceptanceNamespace: generatedAcceptanceNamespace,
             detailAction: detailAction,
             detailContent: detailContent
         )
@@ -278,6 +371,7 @@ private struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, Detai
                     entryModel: childEntry,
                     isEditor: isEditor,
                     linkTypes: linkTypes,
+                    generatedAcceptanceNamespace: generatedAcceptanceNamespace,
                     detailAction: detailAction,
                     detailContent: detailContent
                 )
@@ -290,6 +384,7 @@ private struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, Detai
                     sheetModel: childEntry,
                     isEditor: isEditor,
                     linkTypes: linkTypes,
+                    generatedAcceptanceNamespace: generatedAcceptanceNamespace,
                     detailAction: detailAction,
                     detailContent: detailContent
                 )
@@ -300,6 +395,22 @@ private struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, Detai
 
     private var visibleChildEntries: [SheetModel] {
         entryModel.entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
+    }
+}
+
+private extension AnyTransition {
+    static var persistedSheetEntry: AnyTransition {
+        .asymmetric(
+            insertion: .scale(scale: 0.98).combined(with: .opacity),
+            removal: .scale(scale: 0.99).combined(with: .opacity)
+        )
+    }
+
+    static var generatedSheetEntry: AnyTransition {
+        .asymmetric(
+            insertion: .scale(scale: 0.96).combined(with: .opacity),
+            removal: .scale(scale: 0.98).combined(with: .opacity)
+        )
     }
 }
 

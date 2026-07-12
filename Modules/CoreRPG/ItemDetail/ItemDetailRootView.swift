@@ -435,6 +435,8 @@ private struct ItemEditorForegroundView<Editor: View>: View {
     let folderListController: FolderListControllable
     let shouldShowContent: Bool
     let isSubFolder: Bool
+
+    @State private var scrollPosition = ScrollPosition(idType: UUID.self)
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -473,31 +475,33 @@ private struct ItemEditorForegroundView<Editor: View>: View {
     }
     
     private var formEditorContent: some View {
-        ScrollViewReader { scrollProxy in
-            ScrollView {
-                LazyVStack(spacing: 4) {
-                    if !model.description.isEmpty {
-                        ItemDetailOverlayView(
-                            model: model,
-                            cacheItemListModel: root.editControllable.cacheItemListModel,
-                            listDisplayModel: folderListController.listDisplayModel,
-                            searchModel: folderListController.searchModel,
-                            fullHeader: false,
-                            onlyDescription: true
-                        )
-                    }
-                    
-                    editor
-                        .onChange(of: root.editControllable.editorModel.sheetEditorModel.scrollEntryId) {
-                            guard let scrollEntryId = root.editControllable.editorModel.sheetEditorModel.scrollEntryId else { return }
-                            scrollProxy.scrollTo(scrollEntryId, anchor: .center)
-                            root.editControllable.editorModel.sheetEditorModel.scrollEntryId = nil
-                        }
+        ScrollView {
+            LazyVStack(spacing: 4) {
+                if !model.description.isEmpty {
+                    ItemDetailOverlayView(
+                        model: model,
+                        cacheItemListModel: root.editControllable.cacheItemListModel,
+                        listDisplayModel: folderListController.listDisplayModel,
+                        searchModel: folderListController.searchModel,
+                        fullHeader: false,
+                        onlyDescription: true
+                    )
                 }
-                .padding()
+
+                editor
             }
-            .scrollClipDisabled(true)
-            .scrollBounceBehavior(.basedOnSize)
+            .scrollTargetLayout()
+            .padding()
+        }
+        .scrollPosition($scrollPosition, anchor: .center)
+        .scrollClipDisabled(true)
+        .scrollBounceBehavior(.basedOnSize)
+        .onChange(of: root.editControllable.editorModel.sheetEditorModel.scrollEntryId) { _, entryID in
+            guard let entryID else { return }
+            withAnimation(.smooth) {
+                scrollPosition.scrollTo(id: entryID, anchor: .center)
+            }
+            root.editControllable.editorModel.sheetEditorModel.scrollEntryId = nil
         }
     }
 }

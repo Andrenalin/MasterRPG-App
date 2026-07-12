@@ -49,6 +49,7 @@ public protocol EntryDataEditable: EditControllable {
     // MARK: - Entry Editor
     
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String)
+    @MainActor func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition) -> UUID?
     
     // MARK: - Inline Quick Editor
     
@@ -184,6 +185,24 @@ public extension EntryDataEditable {
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
         updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false)
     }
+
+    @MainActor
+    func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition) -> UUID? {
+        guard let item = editModel(for: itemId) else { return nil }
+
+        let entry = create(name: name, content: content)
+        let insertionIndex: Int
+        switch position {
+        case .end:
+            insertionIndex = item.entries.count
+        case .after(let anchorEntryID):
+            insertionIndex = item.entries.firstIndex(where: { $0.id == anchorEntryID })
+                .map { $0 + 1 } ?? item.entries.count
+        }
+
+        add(entry: entry, into: itemId, index: insertionIndex)
+        return entry.id
+    }
     
     @MainActor func updateDefault(itemId: UUID, entryId: UUID, name: String, content: String, nameWithLink: Bool) {
         guard var item = editModel(for: itemId) else { return }
@@ -311,4 +330,3 @@ public extension EntryDataEditable {
         return replacedEntry
     }
 }
-

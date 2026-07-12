@@ -42,11 +42,22 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
     let linkTypes: LinkType.Type
     let detailAction: ((SheetModel) -> Void)?
     let detailContent: (SheetModel) -> DetailContent
+
+    @Namespace private var generatedAcceptanceNamespace
         
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        SheetView(root: root, rootModel: rootModel, sheetModel: rootModel.sheetModel, isEditor: isEditor, linkTypes: linkTypes, detailAction: detailAction, detailContent: detailContent)
+        SheetView(
+            root: root,
+            rootModel: rootModel,
+            sheetModel: rootModel.sheetModel,
+            isEditor: isEditor,
+            linkTypes: linkTypes,
+            generatedAcceptanceNamespace: generatedAcceptanceNamespace,
+            detailAction: detailAction,
+            detailContent: detailContent
+        )
             .id(rootModel.sheetModel.id)
             .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)
     }

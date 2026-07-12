@@ -24,6 +24,20 @@ public struct BlockGenModel: Equatable, Identifiable, Sendable {
     public var stableID: String {
         "\(blockCategory.rawValue)-\(name)-\(information)"
     }
+
+    public init(
+        name: String,
+        information: String,
+        tags: [String] = [],
+        blockCategory: BlockCategoryGenModel,
+        entries: [BlockEntryGenModel]
+    ) {
+        self.name = name
+        self.information = information
+        self.tags = tags
+        self.blockCategory = blockCategory
+        self.entries = entries
+    }
 }
 
 @Generable()
@@ -43,6 +57,11 @@ public struct BlockEntryGenModel: Equatable, Identifiable, Sendable {
 
     public var stableID: String {
         "\(title)-\(content)"
+    }
+
+    public init(title: String, content: String) {
+        self.title = title
+        self.content = content
     }
 }
 

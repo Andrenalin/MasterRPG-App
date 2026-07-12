@@ -2,15 +2,12 @@
 
 #if !os(tvOS)
 import CoreRPG
-import FoundationModels
+import Foundation
 import SwiftUI
 
-/// Bottom overlay for a detail editor's SheetRootView: a small "Ask AI" trigger that
-/// expands, in place, into a chat composer (no separate sheet/window, no header chrome).
-/// On send, the resulting blocks are added as temporary, unpersisted preview entries
-/// (isGeneratedAnswer) directly into the SAME `rootModel` already driving the visible
-/// sheet tree — not a second, parallel SheetRootModel. Tapping a preview row (see
-/// SheetEntryView/SheetView) is what actually persists it via the EditController.
+/// A compact composer for generating transient SheetModel previews in the visible sheet.
+/// The SheetRootModel owns focus, request identity, and preview lifetime; this view only
+/// runs the latest immutable request and reports its result back to that model.
 public struct SheetAIAssistantOverlayView: View {
     public init(module: NetworkModules, itemId: UUID, rootModel: SheetRootModel) {
         self.module = module
@@ -22,64 +19,209 @@ public struct SheetAIAssistantOverlayView: View {
     let itemId: UUID
     let rootModel: SheetRootModel
 
-    @Environment(GeneratorRootModel.self) private var generatorRoot
-
-    @State private var isComposing = false
     @State private var messageText = ""
+    @State private var errorMessage: String?
+    @State private var availability = SheetAIGenerationController().availability
     @FocusState private var isTextFieldFocused: Bool
-    /// Captured at send time: if an entry was selected when the message was sent, the
-    /// resulting blocks are added as its subentries; otherwise they go under the root.
-    @State private var targetParent: SheetModel?
     @Namespace private var glassNamespace
 
-    private var generatorController: AdventureGeneratorController {
-        generatorRoot.generatorController(for: module, itemId: itemId)
-    }
+    private let generationController = SheetAIGenerationController()
 
     public var body: some View {
-        // Outer Group lets .onChange apply once regardless of inner platform branch.
         Group {
             #if os(visionOS)
             Group {
-                if isComposing {
-                    composer
+                if rootModel.isAIModeActive {
+                    SheetAIAssistantComposer(
+                        module: module,
+                        messageText: $messageText,
+                        availability: availability,
+                        isGenerating: rootModel.pendingGenerationRequest != nil,
+                        canSubmit: canSubmit,
+                        isTextFieldFocused: $isTextFieldFocused,
+                        glassNamespace: glassNamespace,
+                        submitAction: submitPrompt,
+                        closeAction: closeAIMode
+                    )
                         .transition(.scale(scale: 0.95).combined(with: .opacity))
                 } else {
-                    openButton
+                    SheetAIAssistantOpenButton(
+                        module: module,
+                        glassNamespace: glassNamespace,
+                        action: activateAIMode
+                    )
                         .transition(.scale(scale: 0.95).combined(with: .opacity))
                 }
             }
-            .animation(.smooth, value: isComposing)
             #else
-            // GlassEffectContainer lets the glass surface morph between the
-            // button capsule and the composer bar via a shared glassEffectID.
             GlassEffectContainer {
-                if isComposing {
-                    composer
+                if rootModel.isAIModeActive {
+                    SheetAIAssistantComposer(
+                        module: module,
+                        messageText: $messageText,
+                        availability: availability,
+                        isGenerating: rootModel.pendingGenerationRequest != nil,
+                        canSubmit: canSubmit,
+                        isTextFieldFocused: $isTextFieldFocused,
+                        glassNamespace: glassNamespace,
+                        submitAction: submitPrompt,
+                        closeAction: closeAIMode
+                    )
                 } else {
-                    openButton
+                    SheetAIAssistantOpenButton(
+                        module: module,
+                        glassNamespace: glassNamespace,
+                        action: activateAIMode
+                    )
                 }
             }
-            .animation(.smooth, value: isComposing)
             #endif
         }
-        // extracted updates on every partial streaming token — only persist once the
-        // stream has actually finished (the isExtracting true -> false transition),
-        // otherwise every partial token batch would create duplicate saved entries.
-        .onChange(of: generatorController.model.isExtracting) { wasExtracting, isExtracting in
-            guard wasExtracting, !isExtracting else { return }
-            persistGeneratedBlocks()
+        .animation(.smooth, value: rootModel.isAIModeActive)
+        .alert(
+            Text("AI Generation Failed", bundle: .module),
+            isPresented: isErrorPresented,
+            actions: {
+                Button(role: .cancel) {
+                    errorMessage = nil
+                } label: {
+                    Text("OK", bundle: .module)
+                }
+            },
+            message: {
+                Text(errorMessage ?? "")
+            }
+        )
+        .task(id: rootModel.isAIModeActive) {
+            guard rootModel.isAIModeActive else {
+                isTextFieldFocused = false
+                return
+            }
+
+            availability = generationController.availability
+            await Task.yield()
+            guard !Task.isCancelled, rootModel.isAIModeActive else { return }
+            isTextFieldFocused = true
+        }
+        .task(id: rootModel.pendingGenerationRequest?.id) {
+            guard let request = rootModel.pendingGenerationRequest else { return }
+            await generate(request)
+        }
+        .onChange(of: itemId) { _, _ in
+            resetForItemChange()
         }
     }
 
-    private var openButton: some View {
-        Button {
-            isComposing = true
-            isTextFieldFocused = true
-        } label: {
-            Label { Text("Ask AI", bundle: .module) } icon: { Image(systemName: NetworkModules.generator.icon) }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+    private var canSubmit: Bool {
+        availability.isAvailable &&
+        !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var isErrorPresented: Binding<Bool> {
+        Binding(
+            get: { errorMessage != nil },
+            set: { isPresented in
+                if !isPresented {
+                    errorMessage = nil
+                }
+            }
+        )
+    }
+
+    private func activateAIMode() {
+        withAnimation(.smooth) {
+            availability = generationController.availability
+            rootModel.setAIModeActive(true)
+        }
+    }
+
+    private func closeAIMode() {
+        withAnimation(.smooth) {
+            isTextFieldFocused = false
+            rootModel.setAIModeActive(false)
+        }
+    }
+
+    private func resetForItemChange() {
+        messageText = ""
+        errorMessage = nil
+        availability = generationController.availability
+        isTextFieldFocused = false
+        rootModel.setAIModeActive(false)
+    }
+
+    private func submitPrompt() {
+        let prompt = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !prompt.isEmpty else { return }
+
+        availability = generationController.availability
+        guard availability.isAvailable else { return }
+        let didQueue = withAnimation(.smooth) {
+            guard rootModel.queueGeneration(prompt: prompt, module: module) != nil else {
+                return false
+            }
+            messageText = ""
+            errorMessage = nil
+            return true
+        }
+        guard didQueue else { return }
+        isTextFieldFocused = true
+    }
+
+    @MainActor
+    private func generate(_ request: SheetGenerationRequest) async {
+        guard request.focus.rootItemID == itemId else {
+            rootModel.finishGenerationRequest(request.id)
+            return
+        }
+
+        availability = generationController.availability
+        withAnimation(.smooth) {
+            errorMessage = nil
+        }
+
+        do {
+            let drafts = try await generationController.generateDrafts(for: request)
+            try Task.checkCancellation()
+            guard rootModel.pendingGenerationRequest?.id == request.id else { return }
+
+            let installed = withAnimation(.smooth) {
+                rootModel.installGeneratedDrafts(drafts, for: request.id)
+            }
+            if !installed {
+                withAnimation(.smooth) {
+                    errorMessage = SheetAIGenerationError.emptyResponse.localizedDescription
+                    rootModel.finishGenerationRequest(request.id)
+                }
+            }
+        } catch is CancellationError {
+            guard rootModel.pendingGenerationRequest?.id == request.id else { return }
+            withAnimation(.smooth) {
+                rootModel.finishGenerationRequest(request.id)
+            }
+        } catch {
+            guard rootModel.pendingGenerationRequest?.id == request.id else { return }
+            withAnimation(.smooth) {
+                errorMessage = error.localizedDescription
+                rootModel.finishGenerationRequest(request.id)
+            }
+        }
+    }
+}
+
+private struct SheetAIAssistantOpenButton: View {
+    let module: NetworkModules
+    let glassNamespace: Namespace.ID
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label {
+                Text("Ask AI", bundle: .module)
+            } icon: {
+                Image(systemName: NetworkModules.generator.icon)
+            }
+            .padding()
         }
         #if os(visionOS)
         .buttonStyle(.borderedProminent)
@@ -91,78 +233,80 @@ public struct SheetAIAssistantOverlayView: View {
         #endif
         .padding()
     }
+}
 
-    private var composer: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            ChatInputView(
-                messageText: $messageText,
-                generatorController: generatorController,
-                isTextFieldFocused: $isTextFieldFocused,
-                sendMessageAction: sendMessage
-            )
+private struct SheetAIAssistantComposer: View {
+    let module: NetworkModules
+    @Binding var messageText: String
+    let availability: SheetAIGenerationAvailability
+    let isGenerating: Bool
+    let canSubmit: Bool
+    @FocusState.Binding var isTextFieldFocused: Bool
+    let glassNamespace: Namespace.ID
+    let submitAction: () -> Void
+    let closeAction: () -> Void
 
-            Button {
-                isComposing = false
-                isTextFieldFocused = false
-            } label: {
-                Label { Text("Close", bundle: .module) } icon: { Image(systemName: "xmark.circle.fill") }
+    var body: some View {
+        VStack(alignment: .leading) {
+            if let availabilityMessage = availability.message {
+                Label(availabilityMessage, systemImage: "apple.intelligence")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .padding(.bottom, 12)
-            .padding(.trailing, 4)
+
+            HStack(alignment: .bottom) {
+                TextField(
+                    String(localized: "Type your request...", bundle: .module),
+                    text: $messageText,
+                    axis: .vertical
+                )
+                .textFieldStyle(.plain)
+                .focused($isTextFieldFocused)
+                .onSubmit(submitAction)
+                #if os(iOS)
+                .submitLabel(.send)
+                #endif
+                .disabled(!availability.isAvailable)
+
+                if isGenerating {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel(Text("Generating sheet content", bundle: .module))
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                }
+
+                Button(action: submitAction) {
+                    Label {
+                        Text("Generate", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.up")
+                    }
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
+                .disabled(!canSubmit)
+
+                Button(action: closeAction) {
+                    Label {
+                        Text("Close", bundle: .module)
+                    } icon: {
+                        Image(systemName: "xmark.circle.fill")
+                    }
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            }
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        #if !os(visionOS)
+        .animation(.smooth, value: isGenerating)
+        .padding()
+        #if os(visionOS)
+        .background(.regularMaterial, in: .capsule)
+        #else
         .glassEffectAll(.regular.tint(module.tint), in: .capsule)
         .glassEffectID("aiOverlay", in: glassNamespace)
         #endif
         .padding(.horizontal)
-    }
-
-    private func sendMessage(_ message: String) {
-        targetParent = rootModel.selectedEntry
-        generatorController.generateExtractor()
-        let prompt = """
-        Create a few sheet entries from this request. Return concise blocks, each with a \
-        useful title and playable content, suitable for saving directly into the sheet. \
-        One block is fine if that's all the request calls for.
-
-        Request:
-        \(message)
-        """
-        generatorController.extract(message: prompt)
-    }
-
-    @MainActor
-    private func persistGeneratedBlocks() {
-        let batchID = UUID().uuidString
-        let parent = targetParent ?? rootModel.sheetModel
-        let newEntries: [SheetModel] = generatorController.model.extracted.compactMap { block in
-            let title = block.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let content = block.content?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard !title.isEmpty || !content.isEmpty else { return nil }
-            let typeId: NetworkModules = parent.source.typeId == .none ? module : parent.source.typeId
-            let source = ItemRowModel(itemId: parent.source.itemId, entryId: UUID(), typeId: typeId)
-            let entry = SheetModel(
-                source: source,
-                destination: parent.source,
-                level: parent.level + 1,
-                name: title.isEmpty ? String(localized: "Generated Entry", bundle: .module) : title,
-                description: content,
-                entries: []
-            )
-            entry.isGeneratedAnswer = true
-            entry.generatedBatchID = batchID
-            return entry
-        }
-        parent.entries.append(contentsOf: newEntries)
-        if let firstEntryId = newEntries.first?.source.entryId {
-            rootModel.setScrollEntryId(source: parent.source, entryId: firstEntryId)
-        }
-        targetParent = nil
     }
 }
 #endif

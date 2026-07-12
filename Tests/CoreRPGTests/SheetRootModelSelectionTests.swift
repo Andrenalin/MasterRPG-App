@@ -37,6 +37,66 @@ struct SheetRootModelSelectionTests {
         #expect(rootModel.selectedEntryId == entries[1].id)
     }
 
+    @Test func duplicateModelIDsStillUpdateSelectedIdentityAndParent() async throws {
+        let sharedItemID = UUID()
+        let sharedEntryID = UUID()
+        let firstEntry = SheetModel(
+            source: ItemRowModel(itemId: sharedItemID, entryId: sharedEntryID, typeId: .value),
+            level: 2,
+            name: "First copy",
+            description: "",
+            entries: []
+        )
+        let secondEntry = SheetModel(
+            source: ItemRowModel(itemId: sharedItemID, entryId: sharedEntryID, typeId: .value),
+            level: 2,
+            name: "Second copy",
+            description: "",
+            entries: []
+        )
+        let sharedSource = ItemRowModel(itemId: sharedItemID, typeId: .value)
+        let firstParent = SheetModel(source: sharedSource, level: 1, name: "First parent", description: "", entries: [firstEntry])
+        let secondParent = SheetModel(source: sharedSource, level: 1, name: "Second parent", description: "", entries: [secondEntry])
+        let rootItemID = UUID()
+        let firstContainer = SheetModel(
+            source: ItemRowModel(itemId: rootItemID, entryId: UUID(), typeId: .adventure),
+            level: 0,
+            name: "First container",
+            description: "",
+            entries: [firstParent]
+        )
+        let secondContainer = SheetModel(
+            source: ItemRowModel(itemId: rootItemID, entryId: UUID(), typeId: .adventure),
+            level: 0,
+            name: "Second container",
+            description: "",
+            entries: [secondParent]
+        )
+        let rootSheet = SheetModel(
+            source: ItemRowModel(itemId: rootItemID, typeId: .adventure),
+            level: 0,
+            name: "Root",
+            description: "",
+            entries: [firstContainer, secondContainer]
+        )
+        let rootModel = SheetRootModel(
+            rootManager: ItemRootController.fake.rootManager!,
+            linkControllable: FakeLinkController.fake,
+            sheetControllable: FakeSheetController.fake,
+            sheetModel: rootSheet,
+            isEditor: true
+        )
+
+        rootModel.setSelected(firstEntry, parent: firstParent)
+        rootModel.setSelected(secondEntry, parent: secondParent)
+
+        #expect(!firstEntry.isSelected)
+        #expect(secondEntry.isSelected)
+        #expect(rootModel.selectedEntry === secondEntry)
+        #expect(rootModel.selectedSheetEntryFocusValue?.entryModel === secondEntry)
+        #expect(rootModel.selectedSheetEntryFocusValue?.parentModel === secondParent)
+    }
+
     @Test func selectedSheetEntryFocusValueCarriesParentAndEntry() async throws {
         let (rootModel, entries) = makeRootModel()
         #expect(rootModel.selectedSheetEntryFocusValue == nil)
