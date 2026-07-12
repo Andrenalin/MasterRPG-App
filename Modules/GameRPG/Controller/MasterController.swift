@@ -21,9 +21,18 @@ final class MasterControllerModel: Sendable {
     var asProxy = false
     var pendingAudioPlays: [UUID: NetworkCodableDataType] = [:]
     var audioTransferPlayers: [UUID: Set<UUID>] = [:]
-    /// Maps whose full package already went out in the current game — the first
-    /// show sends the whole package, every reshow only the id reference.
-    var sentGameMaps: Set<UUID> = []
+    /// File-backed items whose full package already went out in the current
+    /// game — the first show sends the whole payload, every reshow only the id
+    /// reference.
+    var sentGameItems: [NetworkModules: Set<UUID>] = [:]
+
+    func hasSentGameItem(type: NetworkModules, id: UUID) -> Bool {
+        sentGameItems[type, default: []].contains(id)
+    }
+
+    func markSentGameItem(type: NetworkModules, id: UUID) {
+        sentGameItems[type, default: []].insert(id)
+    }
     
     /// Reserves the next counter atomically. Reading and incrementing in separate
     /// calls lets concurrent sends stamp the same counter, which the receivers'
@@ -88,7 +97,7 @@ extension MasterController {
         await messagePipeline.cancelAll()
         gameModel.pendingAudioPlays.removeAll()
         gameModel.audioTransferPlayers.removeAll()
-        gameModel.sentGameMaps.removeAll()
+        gameModel.sentGameItems.removeAll()
         await root.networkStore.stopGame()
         await root.networkProxyStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
@@ -142,20 +151,45 @@ extension MasterController {
 
 extension MasterController {
     func show(for idType: NetworkCodableDataType) async {
-        // A map's package is huge (background + pin + player photos). The first
-        // show in a game ships the whole package right away — the id-then-request
-        // round trip would make every player wait one extra full transfer. A
-        // reshow sends only the reference; players still holding the map show it
-        // from memory, the others request the package.
-        if idType.type == .map, await !gameModel.sentGameMaps.contains(idType.id) {
-            if let mapData = try? await root.mapRoot.gameControllable.createGameData(for: idType.id) {
-                await MainActor.run { _ = gameModel.sentGameMaps.insert(idType.id) }
-                await send(type: .reveal, subtype: .show, updated: mapData)
+        // File-backed payloads are big (a map package carries background + pin +
+        // player photos). The first show in a game ships the whole payload right
+        // away — the id-then-request round trip would make every player wait one
+        // extra full transfer, and over SharePlay the broadcast rides the journal
+        // as one shared attachment. A reshow sends only the reference; players
+        // still holding the item show it from memory, the others request it.
+        if Self.sendsFullPayloadOnFirstShow(idType.type), await !gameModel.hasSentGameItem(type: idType.type, id: idType.id) {
+            if let fullData = try? await createGameData(for: idType) {
+                await MainActor.run { gameModel.markSentGameItem(type: idType.type, id: idType.id) }
+                await send(type: .reveal, subtype: .show, updated: fullData)
                 return
             }
-            Logger.networking.error("MasterController: Cannot create map package for \(idType.id, privacy: .public) — sending reference instead")
+            Logger.networking.error("MasterController: Cannot create package for \(idType.type.token, privacy: .public) \(idType.id, privacy: .public) — sending reference instead")
         }
         await send(type: .reveal, subtype: .show, updated: idType)
+    }
+
+    static func sendsFullPayloadOnFirstShow(_ type: NetworkModules) -> Bool {
+        switch type {
+        case .map, .photo, .pdf, .space:
+            true
+        default:
+            false
+        }
+    }
+
+    private func createGameData(for idType: NetworkCodableDataType) async throws -> NetworkCodableDataType? {
+        switch idType.type {
+        case .map:
+            try await root.mapRoot.gameControllable.createGameData(for: idType.id)
+        case .photo:
+            try await root.photoRoot.gameControllable.createGameData(for: idType.id)
+        case .pdf:
+            try await root.pdfRoot.gameControllable.createGameData(for: idType.id)
+        case .space:
+            try await root.spaceRoot.gameControllable.createGameData(for: idType.id)
+        default:
+            nil
+        }
     }
     
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType, playerId: UUID? = nil) async {
@@ -249,27 +283,29 @@ extension MasterController: MasterNetworkStoreDelegate {
         if let connectionId = event.connectionId {
             await gameModel.add(connectionId: connectionId, playerId: model.sender.id)
         }
-        
+
+        // Before the roster add: a proxy client is a private mirror of the host
+        // player and must never appear as a player of its own — not in the
+        // host's roster and never upstream at the master.
+        if asProxy {
+            return await processAsProxy(model)
+        }
+
         if !model.sender.isMaster, model.sender.role != .notSet {
             if await root.gameModel.add(playerId: model.sender.id, playerModel: model.sender.playerModel, sharingModel: SharingControlModel(id: model.sender.id, name: model.sender.name, show: true)) {
                 await resetPlayers()
             }
         }
 
-        if asProxy {
-            if model.data.type == .dice && model.type == .update {
-                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.senderName, isGameMaster: model.sender.isMaster)
-                await root.networkStore.sendMaster(data: model, fileJournal: false)
-            } else {
-                await root.networkStore.sendMaster(data: model, fileJournal: false)
-            }
-            return true
-        }
-
         do {
             try Task.checkCancellation()
             if let requestedData = try await handle(model) {
                 try Task.checkCancellation()
+                if requestedData.data != nil {
+                    // The full payload went out — a later reshow can rely on
+                    // the reference no matter which path delivered first.
+                    await gameModel.markSentGameItem(type: requestedData.type, id: requestedData.id)
+                }
                 // Target the answer at the requester: an untargeted full payload
                 // re-triggered "show" on every peer and flipped everyone's screen.
                 // When the request came over a direct connection, answer on that
@@ -471,9 +507,12 @@ extension MasterController {
             let mapData = try await root.mapRoot.gameControllable.createGameData(for: model.data.id)
             // The full package went out through the request path — reshows can
             // rely on the reference no matter which path delivered first.
-            await MainActor.run { _ = gameModel.sentGameMaps.insert(model.data.id) }
+            await MainActor.run { gameModel.markSentGameItem(type: .map, id: model.data.id) }
             if model.subType == .mapState {
-                await send(type: .reveal, subtype: .store, updated: mapData)
+                // Targeted at the recovering player: everyone else already has
+                // the map, and over SharePlay an untargeted full payload would
+                // be skipped as identical to the published journal attachment.
+                await send(type: .reveal, subtype: .store, updated: mapData, playerId: model.sender.id)
                 // Send the live map state (not the request echo, whose data is
                 // nil) so the recovering player syncs room visibility and pins.
                 // Targeted: the other players are already up to date.
@@ -620,6 +659,102 @@ extension MasterController: MasterNetworkProxyControllerDelegate {
             return
         }
         await processMessages()
+    }
+}
+
+// MARK: - Proxy host routing
+
+private extension MasterController {
+    /// Routes a proxy client's message. The proxy device is a private mirror of
+    /// the host player: nothing leaves this device with the proxy's identity,
+    /// so the master and the other players never see it.
+    func processAsProxy(_ model: GameNetworkModel) async -> Bool {
+        // Reports and screens are meaningless upstream — the master does not
+        // know the proxy exists. The host is authoritative for the character
+        // and the audio availability, so the proxy's own announcements drop too.
+        if model.isAcknowledgement || model.subType == .screen || model.subType == .audioList {
+            return true
+        }
+        if model.data.type == .value, model.type == .update, model.subType == .store {
+            return true
+        }
+
+        if model.data.type == .dice, model.type == .update {
+            // The proxy rolls as the host player — show it on the host as well.
+            let hostName = await root.gameModel.gamePlayer.name
+            _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: hostName, isGameMaster: false)
+            await remapUpstream(model)
+            return true
+        }
+
+        if model.data.type == .map, model.type == .update, model.subType == .mapPin {
+            // Update the host's own map first, then tell the master.
+            let hostId = await root.gameModel.gameConfig.id
+            await root.mapRoot.mapGameControllable.updatePin(itemId: model.data.id, data: model.data.data, playerId: hostId)
+            await remapUpstream(model)
+            return true
+        }
+
+        if model.data.type == .space, model.type == .update, model.subType == .spaceTransform {
+            // Mirror the manipulation on the host; the master fan-out covers the rest.
+            try? await root.spaceRoot.gameControllable.updateGame(data: model.data, subtype: .spaceTransform)
+            await remapUpstream(model)
+            return true
+        }
+
+        if model.data.data == nil, model.type == .reveal || model.type == .store {
+            if await canServeProxyRequest(for: model.data) {
+                do {
+                    // Serve from the host's own game memory — local network is
+                    // fast and the master never learns about the proxy.
+                    // `authoritativeMaster` mirrors replayCurrentPresentation:
+                    // the proxy's handlers only accept reveals from the master.
+                    if let requestedData = try await handle(model) {
+                        await send(type: model.type, subtype: model.subType, updated: requestedData, playerId: model.sender.id, authoritativeMaster: true)
+                    }
+                    return true
+                } catch {
+                    Logger.networking.error("MasterController: Cannot serve proxy request locally \(model.debugDescription, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                }
+            }
+            // The host lacks the data itself — ask the master as the host. The
+            // targeted answer is forwarded to the proxy with the target cleared.
+            await remapUpstream(model)
+            return true
+        }
+
+        await remapUpstream(model)
+        return true
+    }
+
+    /// Re-sends a proxy client's message as the host player's own — fresh host
+    /// counter, host sender identity, same payload.
+    func remapUpstream(_ model: GameNetworkModel) async {
+        guard let playerController = await root.gameModel.playerController else {
+            Logger.networking.error("MasterController: No player controller to remap proxy message \(model.debugDescription, privacy: .public)")
+            return
+        }
+        await playerController.send(type: model.type, subType: model.subType, updated: model.data)
+    }
+
+    /// Whether the host holds everything needed to answer a proxy data request
+    /// itself, including the binaries of file-backed modules.
+    func canServeProxyRequest(for data: NetworkCodableDataType) async -> Bool {
+        switch data.type {
+        case .photo:
+            return await root.photoRoot.gameControllable.hasLocalFileData(for: data.id)
+        case .pdf:
+            return await root.pdfRoot.gameControllable.hasLocalFileData(for: data.id)
+        case .audio:
+            return await root.audioRoot.gameControllable.hasLocalFileData(for: data.id)
+        case .space:
+            return await root.spaceRoot.gameControllable.hasLocalFileData(for: data.id)
+        case .map:
+            guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: data.id) else { return false }
+            return await root.mapRoot.mapGameControllable.missingPlayerImages(itemId: data.id).isEmpty
+        default:
+            return true
+        }
     }
 }
 

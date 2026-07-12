@@ -94,28 +94,32 @@ struct SharePlayPackageTransportTests {
         #expect(metadata.data.data == nil)
     }
 
-    @Test("journal-backed transfers do not also use legacy packages")
-    func journalBackedTransfersSkipLegacyPackages() {
-        #expect(!RPGSharePlayController.usesPackageTransport(
-            fileJournal: true,
-            hasAttachmentData: true,
-            journalAvailable: true
-        ))
-        #expect(RPGSharePlayController.usesPackageTransport(
-            fileJournal: true,
-            hasAttachmentData: true,
-            journalAvailable: false
-        ))
-        #expect(RPGSharePlayController.usesPackageTransport(
-            fileJournal: false,
-            hasAttachmentData: true,
-            journalAvailable: true
-        ))
+    @Test("journal carries broadcasts and audio; targeted answers use packages")
+    func journalTransportSelection() {
+        let broadcastPhoto = Self.message(type: .reveal, module: .photo, data: Data("photo".utf8))
+        #expect(RPGSharePlayController.usesJournalTransport(for: broadcastPhoto, fileJournal: true, journalAvailable: true))
+        #expect(!RPGSharePlayController.usesJournalTransport(for: broadcastPhoto, fileJournal: true, journalAvailable: false))
+        #expect(!RPGSharePlayController.usesJournalTransport(for: broadcastPhoto, fileJournal: false, journalAvailable: true))
+
+        let reference = Self.message(type: .reveal, module: .map, data: nil)
+        #expect(!RPGSharePlayController.usesJournalTransport(for: reference, fileJournal: true, journalAvailable: true))
+
+        // A targeted map answer must never replace the broadcast attachment
+        // that other participants are still downloading.
+        var targetedMap = Self.message(type: .reveal, module: .map, data: Data("map".utf8))
+        targetedMap.targetId = UUID()
+        #expect(!RPGSharePlayController.usesJournalTransport(for: targetedMap, fileJournal: true, journalAvailable: true))
+
+        // Audio repairs stay on the journal — their metadata is morphed into
+        // an untargeted store that every participant saves.
+        var targetedAudio = Self.message(type: .store, module: .audio, data: Data("audio".utf8))
+        targetedAudio.targetId = UUID()
+        #expect(RPGSharePlayController.usesJournalTransport(for: targetedAudio, fileJournal: true, journalAvailable: true))
     }
 }
 
 private extension SharePlayPackageTransportTests {
-    static let fileBackedModules: [NetworkModules] = [.pdf, .audio, .space, .photo]
+    static let fileBackedModules: [NetworkModules] = [.pdf, .audio, .space, .photo, .map]
     static let journaledMessageTypes: [RPGMessageType] = [.reveal, .store]
 
     static func message(type: RPGMessageType, module: NetworkModules, data: Data?) -> GameNetworkModel {

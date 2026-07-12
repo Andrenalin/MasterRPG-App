@@ -361,7 +361,7 @@ final class MasterPlayerControllerTests {
 
         // A reshow announces the map by reference — simulate the package having
         // gone out earlier in this game.
-        sut.gameModel.sentGameMaps.insert(mapId)
+        sut.gameModel.markSentGameItem(type: .map, id: mapId)
 
         await sut.show(for: mapShareData)
         let idOnlyMapReveal = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
@@ -515,10 +515,121 @@ final class MasterPlayerControllerTests {
 
         let mapId = rootSut.mapRoot.itemController.itemDataModel.items[0]
         await sut.show(for: rootSut.mapRoot.gameController.share(id: mapId))
-        #expect(sut.gameModel.sentGameMaps.contains(mapId))
+        #expect(sut.gameModel.hasSentGameItem(type: .map, id: mapId))
 
         await sut.stop()
-        #expect(sut.gameModel.sentGameMaps.isEmpty)
+        #expect(sut.gameModel.sentGameItems.isEmpty)
+    }
+
+    // MARK: - Invisible proxy routing
+
+    private func proxyMessage(counter: Int = 3, type: RPGMessageType, subType: RPGMessageActionType, data: NetworkCodableDataType, remoteId: UUID) -> GameNetworkModel {
+        GameNetworkModel(
+            counter: counter,
+            proxyCounter: 1,
+            type: type,
+            subType: subType,
+            gameConfig: GameConfigModel(id: remoteId, state: .started, master: .empty),
+            gameRoster: GameRosterModel(players: [PlayerGameModel(id: remoteId, type: .proxy, name: "Proxy Mirror")]),
+            data: data
+        )
+    }
+
+    @Test func proxyAnnouncementsAreConsumed() async throws {
+        try await setUp()
+        rootPlayer.gameModel.playerController = sutPlayer
+        rootPlayer.adventureRoot.startGame()
+        let proxyMaster = try #require(sutPlayer.proxyMasterController)
+        let remoteId = UUID()
+
+        await proxyMaster.receivedServerProxy(proxyMessage(counter: 1, type: .reveal, subType: .ok, data: NetworkCodableDataType(id: UUID(), type: .photo, version: 0), remoteId: remoteId))
+        await proxyMaster.receivedServerProxy(proxyMessage(counter: 2, type: .update, subType: .store, data: NetworkCodableDataType(id: UUID(), type: .value, version: 0, data: Data([1])), remoteId: remoteId))
+        await proxyMaster.receivedServerProxy(proxyMessage(counter: 3, type: .update, subType: .audioList, data: NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: Data([2])), remoteId: remoteId))
+        await proxyMaster.receivedServerProxy(proxyMessage(counter: 4, type: .store, subType: .screen, data: NetworkCodableDataType(id: UUID(), type: .game, version: 0, data: Data([3])), remoteId: remoteId))
+
+        #expect(playerStoreAbstractionMock.calledRequest == 0)
+        #expect(!rootPlayer.gameModel.gameRoster.players.contains { $0.id == remoteId })
+    }
+
+    @Test func proxyMapPinUpdatesHostMapFirstAndRemaps() async throws {
+        try await setUp()
+        try await importTestData(into: rootPlayer)
+        rootPlayer.gameModel.playerController = sutPlayer
+        rootPlayer.adventureRoot.startGame()
+        let proxyMaster = try #require(sutPlayer.proxyMasterController)
+
+        let mapId = rootPlayer.mapRoot.itemController.itemDataModel.items[0]
+        _ = await rootPlayer.mapRoot.gameController.setCurrent(itemId: mapId)
+        let remoteId = UUID()
+        let pin = MapPinModel(id: UUID(), name: "Proxy Pin", location: CGPoint(x: 5, y: 6), isPlayer: true, players: [remoteId], timeInterval: 99)
+        let pinData = NetworkCodableDataType(id: mapId, type: .map, version: 0, data: pin.encodeData())
+
+        await proxyMaster.receivedServerProxy(proxyMessage(type: .update, subType: .mapPin, data: pinData, remoteId: remoteId))
+
+        // The host's own map updates first, then the same pin leaves as the host's update.
+        #expect(rootPlayer.mapRoot.gameController.gameItem(for: mapId).mapPins.contains { $0.id == pin.id })
+        let forwarded = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)
+        #expect(forwarded.subType == .mapPin)
+        #expect(forwarded.sender.id == gameConfigModelPlayer.id)
+        #expect(forwarded.data.id == mapId)
+    }
+
+    @Test func proxyPhotoRequestIsServedByHost() async throws {
+        try await setUp()
+        try await importTestData(into: rootPlayer)
+        try await importPhotoTestData(into: rootPlayer)
+        rootPlayer.gameModel.playerController = sutPlayer
+        rootPlayer.adventureRoot.startGame()
+
+        let proxyMasterSpy = MasterNetworkControllableMock()
+        rootPlayer.networkProxyStore = GameNetworkController(
+            name: "ProxySpy",
+            proxy: true,
+            masterBuilder: { _, _ in proxyMasterSpy },
+            playerBuilder: { _, _ in PlayerStoreAbstractionMock() }
+        )
+        let proxyMaster = try #require(sutPlayer.proxyMasterController)
+        let photoId = rootPlayer.photoRoot.itemController.itemDataModel.items[0]
+        let remoteId = UUID()
+
+        await proxyMaster.receivedServerProxy(proxyMessage(type: .reveal, subType: .show, data: NetworkCodableDataType(id: photoId, type: .photo, version: 0), remoteId: remoteId))
+
+        // Served from the host's own data over the local proxy connection —
+        // stamped as master so the proxy's reveal guards accept it.
+        let served = try #require(proxyMasterSpy.sendResponseData as? GameNetworkModel)
+        #expect(served.sender.isMaster)
+        #expect(served.targetId == remoteId)
+        #expect(served.data.id == photoId)
+        #expect(served.data.data != nil)
+        #expect(playerStoreAbstractionMock.calledRequest == 0)
+    }
+
+    @Test func proxyPhotoRequestIsRemappedWhenHostLacksData() async throws {
+        try await setUp()
+        try await importTestData(into: rootPlayer)
+        try await importPhotoTestData(into: rootPlayer)
+        rootPlayer.gameModel.playerController = sutPlayer
+        rootPlayer.adventureRoot.startGame()
+        let proxyMaster = try #require(sutPlayer.proxyMasterController)
+
+        let photoId = rootPlayer.photoRoot.itemController.itemDataModel.items[0]
+        // The host itself lacks the binary — it must ask the master instead.
+        rootPlayer.photoRoot.gameController.gameItem(for: photoId).fileUrl = FileUrl(
+            fileId: UUID(),
+            url: URL(filePath: "/missing/photo.png"),
+            location: .local,
+            module: "photo",
+            relativeUrl: nil
+        )
+        let remoteId = UUID()
+
+        await proxyMaster.receivedServerProxy(proxyMessage(type: .reveal, subType: .show, data: NetworkCodableDataType(id: photoId, type: .photo, version: 0), remoteId: remoteId))
+
+        let forwarded = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)
+        #expect(forwarded.sender.id == gameConfigModelPlayer.id)
+        #expect(forwarded.type == .reveal)
+        #expect(forwarded.data.id == photoId)
+        #expect(forwarded.data.data == nil)
     }
 
     @Test func handlePhoto() async throws {
@@ -535,30 +646,24 @@ final class MasterPlayerControllerTests {
         let version = rootSut.photoRoot.itemController.itemOrEmpty(for: photoId).version
         let photoShareData = await rootSut.photoRoot.gameController.share(id: photoId)
         await sut.show(for: photoShareData)
-        var sendedShowPhotoData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
-        #expect(nil != sendedShowPhotoData)
+        let sendedShowPhotoData = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(sendedShowPhotoData.data.data != nil)
+        #expect(sendedShowPhotoData.data.version == version)
+        #expect(sendedShowPhotoData.usesFileJournal)
 
-        var result = try await sutPlayer.handle(sendedShowPhotoData!)
-        #expect(nil != result)
-        #expect(result!.subType == .show)
-        #expect(await rootPlayer.photoRoot.gameController.currentId != photoId)
-
-        let response = try await sut.handle(result!)
-        #expect(nil != response)
-        #expect(response!.id == photoId)
-        #expect(response!.type == .photo)
-        #expect(nil != response!.data)
-        #expect(response!.version == version)
-
-        await sut.send(type: result!.type, subtype: result!.subType, updated: response!)
-        sendedShowPhotoData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
-        #expect(nil != sendedShowPhotoData)
-
-        result = try await sutPlayer.handle(sendedShowPhotoData!)
+        var result = try await sutPlayer.handle(sendedShowPhotoData)
         #expect(nil != result)
         #expect(result!.subType == .ok)
         #expect(await rootPlayer.photoRoot.gameController.currentId == photoId)
         #expect(rootPlayer.photoRoot.gameController.gameItem(for: photoId).version == version)
+
+        // a reshow announces the photo only by reference
+        await sut.show(for: photoShareData)
+        let reshowReference = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(reshowReference.data.id == photoId)
+        #expect(reshowReference.data.data == nil)
+        result = try await sutPlayer.handle(reshowReference)
+        #expect(result?.subType == .ok)
     }
 
     @Test("V2 gamemaster and V1 player exchange dice and photo through controllers")
@@ -713,26 +818,11 @@ final class MasterPlayerControllerTests {
         let version = rootSut.spaceRoot.itemController.itemOrEmpty(for: spaceId).version
         let spaceShareData = await rootSut.spaceRoot.gameController.share(id: spaceId)
         await sut.show(for: spaceShareData)
-        var sendedShowSpaceData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
-        #expect(nil != sendedShowSpaceData)
+        let sendedShowSpaceData = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(sendedShowSpaceData.data.data != nil)
+        #expect(sendedShowSpaceData.data.version == version)
 
-        var result = try await sutPlayer.handle(sendedShowSpaceData!)
-        #expect(nil != result)
-        #expect(result!.subType == .show)
-        #expect(await rootPlayer.spaceRoot.gameController.currentId != spaceId)
-
-        let response = try await sut.handle(result!)
-        #expect(nil != response)
-        #expect(response!.id == spaceId)
-        #expect(response!.type == .space)
-        #expect(nil != response!.data)
-        #expect(response!.version == version)
-
-        await sut.send(type: result!.type, subtype: result!.subType, updated: response!)
-        sendedShowSpaceData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
-        #expect(nil != sendedShowSpaceData)
-
-        result = try await sutPlayer.handle(sendedShowSpaceData!)
+        let result = try await sutPlayer.handle(sendedShowSpaceData)
         #expect(nil != result)
         #expect(result!.subType == .ok)
         #expect(await rootPlayer.spaceRoot.gameController.currentId == spaceId)

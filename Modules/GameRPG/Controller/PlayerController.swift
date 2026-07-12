@@ -323,7 +323,15 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         }
 
         if !event.fromProxy, !model.isAcknowledgement {
-            await root.networkProxyStore.sendPlayer(data: model)
+            // Proxy clients mirror this player: an answer addressed to this
+            // device must be processed by them too, so clear the target before
+            // forwarding. (Messages targeted at OTHERS were already forwarded
+            // above and never reach this point.)
+            var forwarded = model
+            if await forwarded.targetId == root.gameModel.gameConfig.id {
+                forwarded.targetId = nil
+            }
+            await root.networkProxyStore.sendPlayer(data: forwarded)
             await scheduleSendCharacter()
         }
         return true
@@ -557,8 +565,25 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
-            await MainActor.run { _ = gameModel.pendingMapRequests.remove(model.data.id) }
+            let completesReveal = await MainActor.run { gameModel.pendingMapRequests.remove(model.data.id) != nil }
             try await root.mapRoot.gameControllable.updateGame(data: model.data, hide: true, deep: true)
+            if completesReveal {
+                // The payload answers a mapState-triggered re-request: the map is
+                // the current presentation, and the mapState that flips the screen
+                // was sent alongside — usually arriving before this big payload.
+                _ = await root.mapRoot.gameControllable.setCurrent(itemId: model.data.id)
+                await MainActor.run {
+                    gameModel.gameUpdateType = .map
+                }
+                await requestMissingMapImages(itemId: model.data.id)
+                #if os(visionOS)
+                let isGameMaster = await root.gameModel.gameConfig.isMaster
+                await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
+                await MainActor.run {
+                    root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+                }
+                #endif
+            }
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
@@ -878,7 +903,9 @@ extension PlayerController {
     func sendCharacter() async {
         let gameType = await root.gameModel.gameType
         let canSend = await MainActor.run { !gameModel.hasSendPlayer && !gameModel.lostMaster }
-        guard canSend, gameType != .observer,
+        // A proxy device never announces a character: it mirrors the host
+        // player and receives the host's character on readyProxy instead.
+        guard canSend, gameType != .observer, gameType != .proxy,
               let characterId = await root.gameModel.gamePlayer.characterId
         else { return }
 
@@ -898,6 +925,9 @@ extension PlayerController {
     }
 
     func sendAudioList() async {
+        // A proxy device stays invisible: the host answers for its audio
+        // availability, and the host consumes any list that still arrives.
+        guard await root.gameModel.gameType != .proxy else { return }
         let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id)
         await send(type: .update, subType: .audioList, updated: audioList, useJournal: false)
     }

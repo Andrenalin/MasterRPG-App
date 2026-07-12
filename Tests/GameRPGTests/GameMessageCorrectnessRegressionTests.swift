@@ -140,8 +140,8 @@ struct GameMessageCorrectnessRegressionTests {
         #expect(response == nil)
     }
 
-    @Test("Proxy dice forwarding preserves the originating player identity")
-    func proxyDiceForwardingPreservesSender() async throws {
+    @Test("Proxy dice are remapped to the host player identity")
+    func proxyDiceIsRemappedToHostIdentity() async throws {
         // Given
         let environment = try await RoutingEnvironment.make()
         let proxyMaster = try #require(environment.player.proxyMasterController)
@@ -161,11 +161,35 @@ struct GameMessageCorrectnessRegressionTests {
         // When
         await proxyMaster.receivedServerProxy(remoteMessage)
 
-        // Then
+        // Then — the proxy stays invisible: its roll leaves as the host's own.
         let forwarded = try #require(environment.directPlayerSpy.requestData as? GameNetworkModel)
-        #expect(forwarded.sender.id == remoteId)
-        #expect(forwarded.sender.name == "Remote proxy")
-        #expect(forwarded.counter == remoteMessage.counter)
+        #expect(forwarded.sender.id == environment.playerId)
+        #expect(forwarded.sender.name == "Local player")
+        #expect(forwarded.data.type == .dice)
+        #expect(forwarded.counter != remoteMessage.counter)
+        #expect(!environment.root.gameModel.gameRoster.players.contains { $0.id == remoteId })
+    }
+
+    @Test("Host-targeted answers are forwarded to proxy clients without a target")
+    func hostTargetedAnswerIsForwardedToProxyWithoutTarget() async throws {
+        // Given
+        let environment = try await RoutingEnvironment.make()
+        var command = environment.masterMessage(
+            counter: 5,
+            type: .reveal,
+            subType: .show,
+            data: NetworkCodableDataType(id: UUID(), type: .photo, version: 1)
+        )
+        command.targetId = environment.playerId
+
+        // When
+        await environment.player.receivedProcess(command)
+
+        // Then — proxy clients mirror the host and must process the answer.
+        let relayed = try #require(environment.proxyMasterSpy.sendResponseData as? GameNetworkModel)
+        #expect(relayed.targetId == nil)
+        #expect(relayed.counter == command.counter)
+        #expect(relayed.data.id == command.data.id)
     }
 
     @Test("Failed receipts never update master player reports")
@@ -308,6 +332,46 @@ struct GameMessageCorrectnessRegressionTests {
         #expect(replay.data.id == photoId)
     }
 
+    @Test("A proxy device announces neither audio list nor character on ready")
+    func proxyDeviceStaysSilentOnReady() async throws {
+        // Given
+        let environment = try await RoutingEnvironment.make()
+        environment.root.gameModel.reset(
+            gameConfig: GameConfigModel(id: environment.playerId, state: .started, master: .empty),
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(id: environment.playerId, type: .proxy, name: "Mirror", characterId: UUID())
+            ])
+        )
+
+        // When
+        await environment.player.ready()
+        await environment.player.gameModel.sendCharacterTask?.value
+
+        // Then — the host pushes its state to the proxy, never the other way.
+        #expect(environment.directPlayerSpy.calledRequest == 0)
+    }
+
+    @Test("Master broadcast keeps the local proxy roster entry")
+    func masterBroadcastKeepsLocalProxyEntry() async throws {
+        // Given
+        let root = try await MockRoot.createGameRoot()
+        let proxyId = UUID()
+        root.gameModel.reset(
+            gameConfig: GameConfigModel(id: proxyId, state: .started, master: .empty),
+            gameRoster: GameRosterModel(players: [PlayerGameModel(id: proxyId, type: .proxy, name: "Mirror")])
+        )
+
+        // When — the master never lists an invisible proxy in its roster.
+        root.gameModel.applyMasterBroadcast(
+            masterId: UUID(),
+            masterName: "Master",
+            state: GameMasterStateModel(state: .started, players: [PlayerGameModel(id: UUID(), type: .player, name: "Someone")])
+        )
+
+        // Then — the device still resolves its own proxy role locally.
+        #expect(root.gameModel.gameType == .proxy)
+    }
+
     @Test("Failed processing releases the deduplication key for retry")
     func failedProcessingCanBeRetried() async throws {
         // Given
@@ -377,6 +441,8 @@ private struct RoutingEnvironment {
             gameRoster: GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "Local player")])
         )
         let player = PlayerController(root: root, asGameMaster: false)
+        // Production wiring: the proxy-master remaps proxy messages through it.
+        root.gameModel.playerController = player
         return RoutingEnvironment(
             root: root,
             player: player,

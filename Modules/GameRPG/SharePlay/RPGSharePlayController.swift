@@ -55,6 +55,10 @@ final class RPGSharePlayController {
     private let groupStateObserver = GroupStateObserver()
 
     private var messenger: GroupSessionMessenger?
+    // What this device last published per journal slot. The journal keeps one
+    // attachment per module; re-adding identical content only aborts everyone's
+    // in-flight download, so identical sends are skipped.
+    private var publishedAttachments: [NetworkModules: (id: UUID, version: Int)] = [:]
     // Session-scoped tasks (state/participant/message/journal loops and in-flight
     // sends), cancelled by reset(). Send tasks remove themselves on completion so
     // the collection stays bounded during a long game.
@@ -142,8 +146,22 @@ extension RPGSharePlayController {
         guard let encodedModel = gameNetworkModel.encodeData() else { return }
         guard messenger != nil else { return }
 
-        let hasAttachmentData = gameNetworkModel.data.data != nil
-        if let attachmentData = gameNetworkModel.data.data, let journal, fileJournal {
+        let moduleKey = gameNetworkModel.data.type
+        let alreadyPublished = publishedAttachments[moduleKey].map {
+            $0.id == gameNetworkModel.data.id && $0.version == gameNetworkModel.data.version
+        } ?? false
+
+        if Self.usesJournalTransport(for: gameNetworkModel, fileJournal: fileJournal, journalAvailable: journal != nil),
+           let attachmentData = gameNetworkModel.data.data, let journal {
+            guard !alreadyPublished else {
+                // The journal already carries exactly these bytes. Re-adding
+                // replaces the attachment, which aborts every participant's
+                // in-flight download and restarts the whole fan-out — repeated
+                // answers for the same item kept the map from ever arriving.
+                Logger.sharePlay.debug("Journal: \(moduleKey.token, privacy: .public) attachment for \(gameNetworkModel.data.id, privacy: .public) already published — skip re-add")
+                return
+            }
+            publishedAttachments[moduleKey] = (id: gameNetworkModel.data.id, version: gameNetworkModel.data.version)
             Logger.sharePlay.debug("Journal: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
             addSendTask(priority: .userInitiated) { [weak self] in
                 guard let self else { return }
@@ -161,26 +179,32 @@ extension RPGSharePlayController {
                     Logger.sharePlay.debug("Journal: \(result.id, privacy: .public)")
                 } catch {
                     Logger.sharePlay.error("Cannot add attachment for module \(gameNetworkModel.data.type.token, privacy: .public) and id: \(gameNetworkModel.data.id, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
+                    // Allow a later retry to publish again before falling back.
+                    self.publishedAttachments[moduleKey] = nil
                     if let sender = self.packageSender {
                         await sender.send(data: encodedModel)
                     }
                 }
             }
+            return
         }
-        guard Self.usesPackageTransport(
-            fileJournal: fileJournal,
-            hasAttachmentData: hasAttachmentData,
-            journalAvailable: journal != nil
-        ) else { return }
 
+        // Targeted answers always ride the messenger — a requester that asks
+        // despite a published attachment demonstrably failed to get it, and the
+        // journal never re-emits an unchanged attachment set.
         addSendTask { [weak self] in
             guard let self, let sender = self.packageSender else { return }
             await sender.send(data: encodedModel)
         }
     }
 
-    static func usesPackageTransport(fileJournal: Bool, hasAttachmentData: Bool, journalAvailable: Bool) -> Bool {
-        !fileJournal || !hasAttachmentData || !journalAvailable
+    /// The journal slot per module carries broadcast content — the master's
+    /// current presentation — plus audio, whose targeted repairs are morphed
+    /// into untargeted stores. Targeted answers of the other modules ride the
+    /// messenger, so they can never replace (and abort) an attachment that
+    /// participants are still downloading.
+    static func usesJournalTransport(for model: GameNetworkModel, fileJournal: Bool, journalAvailable: Bool) -> Bool {
+        fileJournal && journalAvailable && model.data.data != nil && (model.targetId == nil || model.data.type == .audio)
     }
 
     static func journalMetadata(for model: GameNetworkModel) -> GameNetworkModel {
@@ -230,6 +254,7 @@ extension RPGSharePlayController {
         Logger.sharePlay.debug("SharePlay: reset state: \(self.printState(), privacy: .public)")
         isActive = false
         messenger = nil
+        publishedAttachments = [:]
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
         if groupSession != nil {

@@ -301,8 +301,8 @@ struct MasterControllerDirectProxyTests {
         #expect(sent.data.id == characterId)
     }
 
-    @Test("proxy received messages are forwarded to the master network")
-    func proxyReceivedServerMessageForwardsToMaster() async throws {
+    @Test("proxy messages are never relayed raw to the master network")
+    func proxyMessageIsNotRelayedRawToMaster() async throws {
         let env = try await MasterControllerHarness.make(asProxy: true)
         let playerId = UUID()
         let playerConfig = GameConfigModel(id: playerId, state: .started, master: .empty)
@@ -318,10 +318,10 @@ struct MasterControllerDirectProxyTests {
 
         await env.master.receivedServerProxy(message)
 
-        #expect(env.directPlayerSpy.calledRequest == 1)
-        let forwarded = try #require(env.directPlayerSpy.requestData as? GameNetworkModel)
-        #expect(forwarded.counter == 9)
-        #expect(forwarded.proxyCounter == 1)
+        // The proxy stays invisible: nothing goes upstream with its identity,
+        // and it never enters the host's roster.
+        #expect(env.directPlayerSpy.calledRequest == 0)
+        #expect(env.root.gameModel.gameRoster.players.isEmpty)
     }
 
     @Test("weather and game handlers cover report, reveal, and screen updates")
