@@ -79,13 +79,20 @@ struct NetworkStoreTests {
         await env.networkController.masterReady(for: ConnectionController.ID())
         #expect(env.masterDelegateSpy.calledReady == 1)
 
-        // Act & Assert - Send to specific player
+        // Act & Assert - Send to specific player (id registered as a direct connection)
+        let connectionId = ConnectionController.ID()
+        env.masterNetworkSpy.networkModel.registerTestConnection(id: connectionId)
+        await env.networkController.sendPlayer(masterGameNetworkModel, to: connectionId)
+        #expect(env.masterNetworkSpy.calledSendResponseId == 1)
+
+        // Act & Assert - Unknown id (e.g. a SharePlay participant) falls back to broadcast
         await env.networkController.sendPlayer(masterGameNetworkModel, to: ConnectionController.ID())
         #expect(env.masterNetworkSpy.calledSendResponseId == 1)
+        #expect(env.masterNetworkSpy.calledSendResponseAll == 1)
 
         // Act & Assert - Send to all players
         await env.networkController.sendPlayer(data: masterGameNetworkModel, fileJournal: false)
-        #expect(env.masterNetworkSpy.calledSendResponseAll == 1)
+        #expect(env.masterNetworkSpy.calledSendResponseAll == 2)
 
         // Act & Assert - Master received data
         await env.networkController.masterReceived(

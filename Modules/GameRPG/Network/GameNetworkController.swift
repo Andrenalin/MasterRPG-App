@@ -160,6 +160,15 @@ extension GameNetworkController {
 extension GameNetworkController {
     @MainActor
     func sendPlayer(_ data: GameNetworkModel, to connectionId: ConnectionController.ID) async {
+        // The master receives SharePlay messages through the same delegate with
+        // the participant id in the connection slot. sendResponse(data:id:)
+        // silently drops unknown ids, so fall back to the broadcast path — the
+        // message's targetId keeps other peers from processing it.
+        let isDirectConnection = model.masterStore?.networkModel.connections.contains { $0.id == connectionId } ?? false
+        guard isDirectConnection else {
+            await sendPlayer(data: data, fileJournal: data.usesFileJournal)
+            return
+        }
         await model.masterStore?.sendResponse(data: data, id: connectionId)
         if !proxy && model.hasLocalPlayer {
             await model.playerDelegate?.received(data)

@@ -162,7 +162,7 @@ extension PdfModel: nonisolated ItemDiffComparable {
     }
     
     public var version: Int {
-        fileUrl?.contentVersion ?? fileUrl_.update.hashValue
+        fileUrl?.contentVersion ?? FileUrl.versionValue(of: fileUrl_.update)
     }
 }
 

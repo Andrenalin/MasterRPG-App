@@ -292,7 +292,9 @@ struct MasterControllerDirectProxyTests {
             PlayerGameModel(id: playerId, type: .proxy, name: "Proxy", characterId: characterId)
         ])
 
-        await env.master.readyProxy(for: UUID())
+        let connectionId = UUID()
+        env.proxyMasterSpy.networkModel.registerTestConnection(id: connectionId)
+        await env.master.readyProxy(for: connectionId)
 
         let sent = try #require(env.proxyMasterSpy.sendResponseData as? GameNetworkModel)
         #expect(env.proxyMasterSpy.calledSendResponseId == 1)

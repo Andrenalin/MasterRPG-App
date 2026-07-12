@@ -508,9 +508,6 @@ extension PlayerController {
     func handleMap(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
         switch model.type {
         case .reveal:
-            let mapWasLoaded = await MainActor.run {
-                root.mapRoot.gameControllable.gameModel.itemData[model.data.id] != nil
-            }
             await MainActor.run { _ = gameModel.pendingMapRequests.remove(model.data.id) }
             if try await root.mapRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: false) {
                 _ = await root.mapRoot.gameControllable.setCurrent(itemId: model.data.id)
@@ -520,9 +517,10 @@ extension PlayerController {
                     // when that one-shot message was missed.
                     gameModel.gameUpdateType = .map
                 }
-                if !mapWasLoaded {
-                    await requestMissingMapImages(itemId: model.data.id)
-                }
+                // Also on a re-reveal from memory: a pin photo may have lost its
+                // local binary (or joined via mapState) since the first show.
+                // `requestedRepairIds` keeps this to one request per connection.
+                await requestMissingMapImages(itemId: model.data.id)
                 #if os(visionOS)
                 // A re-reveal of the current map changes rooms/pins without a
                 // map change — bring the 3D table up to date as well.

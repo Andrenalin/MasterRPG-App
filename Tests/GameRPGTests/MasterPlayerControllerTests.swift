@@ -407,7 +407,7 @@ final class MasterPlayerControllerTests {
         #expect(!rootPlayer.photoRoot.gameController.photoGameModel.openPhotoSpace)
     }
 
-    @Test func repeatMapRevealUsesMemoryWithoutRequestingPinPhotos() async throws {
+    @Test func repeatMapRevealUsesMemoryAndRepairsMissingPinPhotosOnce() async throws {
         try await setUp()
         try await importTestData(into: rootSut)
         rootSut.adventureRoot.startGame()
@@ -449,6 +449,23 @@ final class MasterPlayerControllerTests {
         #expect(sutPlayer.gameModel.gameUpdateType == .map)
         #expect(rootPlayer.mapRoot.gameController.gameItem(for: mapId) === loadedMap)
         #expect(loadedMap.mapPins.contains { $0.id == retainedPin.id && $0.photoId == retainedPin.photoId })
+
+        // The re-reveal repairs the pin photo that never arrived locally.
+        let repairRequest = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)
+        #expect(repairRequest.type == .store)
+        #expect(repairRequest.data.type == .photo)
+        #expect(repairRequest.data.id == retainedPin.photoId)
+
+        // A further re-reveal must not request it again — one repair per connection.
+        playerStoreAbstractionMock.requestData = nil
+        let secondRepeatReveal = rootSut.gameModel.outgoingMessage(
+            counter: 100,
+            type: .reveal,
+            subType: .show,
+            asMaster: true,
+            data: mapReference
+        )
+        _ = try #require(try await sutPlayer.handle(secondRepeatReveal))
         #expect(playerStoreAbstractionMock.requestData == nil)
     }
     

@@ -423,7 +423,11 @@ extension MapModel: nonisolated ItemDiffComparable {
     }
     
     public var version: Int {
-        (hexMapScale + pinScale).hashValue
+        // Must be identical across processes and devices: the master sends this
+        // version with a reveal reference, and a player re-requests the full map
+        // payload whenever its local value differs. `hashValue` is randomly
+        // seeded per launch, so it forced a full re-transfer on every reveal.
+        Int(bitPattern: UInt(truncatingIfNeeded: Double(hexMapScale + pinScale).bitPattern))
     }
 }
 

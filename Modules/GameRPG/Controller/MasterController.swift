@@ -255,7 +255,12 @@ extension MasterController: MasterNetworkStoreDelegate {
                 try Task.checkCancellation()
                 // Target the answer at the requester: an untargeted full payload
                 // re-triggered "show" on every peer and flipped everyone's screen.
-                await send(type: model.type, subtype: model.subType, updated: requestedData, playerId: model.sender.id)
+                // When the request came over a direct connection, answer on that
+                // connection only — broadcasting a targeted multi-MB payload made
+                // every transfer ride the SharePlay messenger once per requester.
+                // A proxied client behind the connection still gets it: its host
+                // forwards messages targeted at someone else to its proxy clients.
+                await send(type: model.type, subtype: model.subType, updated: requestedData, connectionId: event.connectionId, playerId: model.sender.id)
             }
             return true
         } catch is CancellationError {

@@ -76,6 +76,19 @@ public extension FileUrl {
         return Int(bitPattern: UInt(truncatingIfNeeded: value))
     }
 
+    /// Deterministic version derived from a CRDT update UUID — the fallback for
+    /// items whose content hash is unknown. Stable across processes and devices,
+    /// unlike `UUID.hashValue`, which is randomly seeded per launch and forced a
+    /// full re-transfer on every reveal.
+    static func versionValue(of update: UUID) -> Int {
+        let bytes = update.uuid
+        let high = [bytes.0, bytes.1, bytes.2, bytes.3, bytes.4, bytes.5, bytes.6, bytes.7]
+            .reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
+        let low = [bytes.8, bytes.9, bytes.10, bytes.11, bytes.12, bytes.13, bytes.14, bytes.15]
+            .reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
+        return Int(bitPattern: UInt(truncatingIfNeeded: high ^ low))
+    }
+
     mutating func resetData(_ data: Data) {
         self.data = data
         self.contentHash = Self.contentHash(of: data)
