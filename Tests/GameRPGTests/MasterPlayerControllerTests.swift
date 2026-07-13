@@ -666,6 +666,130 @@ final class MasterPlayerControllerTests {
         #expect(result?.subType == .ok)
     }
 
+    @Test func reshowingAnEarlierPhotoAfterANewerOneStillWorks() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        try await importPhotoTestData(into: rootSut)
+
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let photoA = rootSut.photoRoot.itemController.itemDataModel.items[0]
+        let photoB = rootSut.photoRoot.itemController.itemDataModel.items[1]
+
+        // Show photo A fully.
+        await sut.show(for: rootSut.photoRoot.gameController.share(id: photoA))
+        let showA = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(showA.data.data != nil)
+        _ = try await sutPlayer.handle(showA)
+        #expect(await rootPlayer.photoRoot.gameController.currentId == photoA)
+
+        // Show a different photo B fully — replaces the journal attachment / current item.
+        await sut.show(for: rootSut.photoRoot.gameController.share(id: photoB))
+        let showB = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(showB.data.data != nil)
+        _ = try await sutPlayer.handle(showB)
+        #expect(await rootPlayer.photoRoot.gameController.currentId == photoB)
+
+        // Reshow the OLDER photo A — master already sent it once, so this is
+        // reference-only; the player must still be able to show it from memory.
+        await sut.show(for: rootSut.photoRoot.gameController.share(id: photoA))
+        let reshowA = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(reshowA.data.id == photoA)
+        #expect(reshowA.data.data == nil)
+
+        let result = try await sutPlayer.handle(reshowA)
+        #expect(result?.subType == .ok, "expected an ok ack, got \(String(describing: result?.subType))")
+        #expect(await rootPlayer.photoRoot.gameController.currentId == photoA)
+    }
+
+    @Test func repairRequestForAnOldPhotoGetsTheCorrectPhotoBack() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        try await importPhotoTestData(into: rootSut)
+
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let photoA = rootSut.photoRoot.itemController.itemDataModel.items[0]
+        let photoB = rootSut.photoRoot.itemController.itemDataModel.items[1]
+
+        // Master shows A fully, but the player's download/import never lands —
+        // e.g. the SharePlay journal attachment got replaced mid-download.
+        // Master still marks A as sent since export succeeded on its end.
+        await sut.show(for: rootSut.photoRoot.gameController.share(id: photoA))
+        _ = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+
+        // Master shows a different photo B fully — this one the player does receive.
+        await sut.show(for: rootSut.photoRoot.gameController.share(id: photoB))
+        let showB = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        _ = try await sutPlayer.handle(showB)
+        #expect(await rootPlayer.photoRoot.gameController.currentId == photoB)
+
+        // Master reshows A — already marked sent, so only the reference goes out.
+        await sut.show(for: rootSut.photoRoot.gameController.share(id: photoA))
+        let reshowA = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(reshowA.data.id == photoA)
+        #expect(reshowA.data.data == nil)
+
+        // The player never actually has A, so it must ask for the full payload.
+        let repairRequest = try await sutPlayer.handle(reshowA)
+        let request = try #require(repairRequest)
+        #expect(request.subType == .show)
+        #expect(request.data.id == photoA)
+        #expect(request.data.data == nil)
+
+        // Route the request through the master's full receive pipeline, exactly
+        // like the network layer would.
+        await sut.receivedProcess(request, connectionId: nil)
+        let repairResponse = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+
+        // The master's answer must be for the REQUESTED photo (A), not whatever
+        // else happens to be current — and it must carry the actual bytes.
+        #expect(repairResponse.data.id == photoA, "master answered with \(repairResponse.data.id) instead of the requested \(photoA)")
+        #expect(repairResponse.data.data != nil)
+
+        let finalAck = try await sutPlayer.handle(repairResponse)
+        #expect(finalAck?.subType == .ok)
+        #expect(await rootPlayer.photoRoot.gameController.currentId == photoA)
+    }
+
+    @Test func photoRevealAckUpdatesMasterMessageLog() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        try await importPhotoTestData(into: rootSut)
+
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        // Seed the roster so the pending row's delivery state is meaningful —
+        // with zero known players "missing" and "all" are indistinguishable.
+        rootSut.gameModel.gameRoster.players = [PlayerGameModel(id: gameConfigModelPlayer.id, type: .player, name: "AndrenalinPlayer")]
+
+        let photoId = rootSut.photoRoot.itemController.itemDataModel.items[0]
+        let photoShareData = await rootSut.photoRoot.gameController.share(id: photoId)
+        await sut.show(for: photoShareData)
+        let sendedShowPhotoData = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+
+        // Before any acknowledgement travels back, the row the master logged
+        // for this send shows nobody has confirmed it yet.
+        let pendingRow = try #require(rootSut.logGameController.logRows.first)
+        #expect(pendingRow.deliveryState == .missingPlayers)
+
+        let ack = try #require(try await sutPlayer.handle(sendedShowPhotoData))
+        #expect(ack.subType == .ok)
+        // The ack must echo the original send's counter — with a fresh
+        // player-local counter this round trip silently updates no row at all.
+        #expect(ack.counter == sendedShowPhotoData.counter)
+
+        // Route the ack through the master's full receive pipeline, exactly
+        // like the network layer would, so `updateMessage` actually runs.
+        await sut.receivedProcess(ack, connectionId: nil)
+
+        let updatedRow = try #require(rootSut.logGameController.logRows.first)
+        #expect(updatedRow.deliveryState == .allPlayers)
+    }
+
     @Test("V2 gamemaster and V1 player exchange dice and photo through controllers")
     func v2MasterAndV1PlayerExchangeDiceAndPhotoThroughControllers() async throws {
         let env = try await LinkedMasterPlayerControllerTestEnvironment.create(

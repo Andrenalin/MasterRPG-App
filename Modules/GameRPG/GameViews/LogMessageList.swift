@@ -116,7 +116,7 @@ private struct LogMessageRow: View, Equatable {
                 .font(.caption)
             Text(row.playerNames)
         }
-        .foregroundStyle(.black)
+        .foregroundStyle(.primary)
         .listRowBackground(row.deliveryState.rowBackground)
     }
 }

@@ -841,9 +841,22 @@ extension PlayerController {
     
     nonisolated func response(for model: GameNetworkModel, isSuccess: Bool, requestData: Bool) async -> GameNetworkModel {
         let subType: RPGMessageActionType = requestData ? model.subType : (isSuccess ? .ok : .failed)
-        let payload = requestData ? model.data : NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil)
+        // A "please send more" request only needs to name the item: the master
+        // rebuilds the payload from `data.id` via createGameData and never reads
+        // these bytes. Echoing `model.data` verbatim used to re-upload whatever
+        // we just received — e.g. a map that's merely short its background photo
+        // sent its whole multi-MB self straight back upstream over the slow,
+        // small-message-oriented player→master path, for nothing.
+        let payload = NetworkCodableDataType(id: model.data.id, type: model.data.type, version: requestData ? model.data.version : 0, data: nil)
+        // Echo the counter of the message being answered (same precedent as the
+        // mapState re-request below) instead of minting a fresh one. The pipeline
+        // already deduplicates the incoming trigger, so this stays exactly-once;
+        // it also lets the master's message log match the ack back to the row it
+        // created for the original send — with a fresh counter here that link
+        // was counter-space garbage and the log's delivery indicator could never
+        // leave "missing players", on every transport, not just file sharing.
         return await MainActor.run {
-            root.gameModel.outgoingMessage(counter: gameModel.nextOutgoingMessageCounter(), proxyCounter: model.proxyCounter, type: model.type, subType: subType, asMaster: false, data: payload)
+            root.gameModel.outgoingMessage(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: subType, asMaster: false, data: payload)
         }
     }
 

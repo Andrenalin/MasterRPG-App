@@ -372,6 +372,43 @@ struct GameMessageCorrectnessRegressionTests {
         #expect(root.gameModel.gameType == .proxy)
     }
 
+    @Test("A response echoes the answered message's counter and never re-uploads its bytes")
+    func responseEchoesCounterAndStripsPayloadBytes() async throws {
+        // Given — a full map/photo package the player is currently handling.
+        let root = try await MockRoot.createGameRoot()
+        let playerId = UUID()
+        root.gameModel.reset(
+            gameConfig: GameConfigModel(id: playerId, state: .started, master: .empty),
+            gameRoster: GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "Player")])
+        )
+        let player = PlayerController(root: root, asGameMaster: false)
+        let itemId = UUID()
+        let payload = NetworkCodableDataType(id: itemId, type: .map, version: 7, data: Data(repeating: 0x41, count: 4096))
+        let incoming = root.gameModel.outgoingMessage(counter: 42, type: .reveal, subType: .show, asMaster: true, data: payload)
+
+        // When — asking the master for more (e.g. a still-missing background
+        // photo) must never re-upload the payload bytes we already received:
+        // the master only reads `data.id` to rebuild the answer from scratch.
+        let request = await player.response(for: incoming, isSuccess: true, requestData: true)
+
+        // Then
+        #expect(request.data.data == nil)
+        #expect(request.data.id == itemId)
+        #expect(request.data.version == 7)
+        // The counter must match the message being answered, not a fresh
+        // player-local counter — the master's message log keys its delivery
+        // row on the original send's counter and can only find it this way.
+        #expect(request.counter == incoming.counter)
+
+        // When — a plain acknowledgement carries the same identity rule.
+        let ack = await player.response(for: incoming, isSuccess: true, requestData: false)
+
+        // Then
+        #expect(ack.subType == .ok)
+        #expect(ack.data.data == nil)
+        #expect(ack.counter == incoming.counter)
+    }
+
     @Test("Failed processing releases the deduplication key for retry")
     func failedProcessingCanBeRetried() async throws {
         // Given

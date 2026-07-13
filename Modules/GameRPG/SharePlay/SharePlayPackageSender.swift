@@ -12,7 +12,13 @@ import Foundation
     private let packageSize: Int
     private let sendPackage: (PackageMessage) async -> Void
 
-    static let packageSize = 16_000
+    // Apple's guidance for GroupSessionMessenger.send(_:to:) is that "small
+    // messages can include up to 256 kilobytes of data" (Synchronizing data
+    // during a SharePlay activity). 16 KB chunks meant a multi-MB repair
+    // transfer needed 10x more round trips than necessary; 200 KB stays under
+    // that ceiling with headroom for the PackageMessage/GameNetworkModel
+    // envelope overhead, cutting both message count and the throttle below.
+    static let packageSize = 200_000
     static let lowPackageCount = 60
     static let throttleInMilliSeconds = 200
 

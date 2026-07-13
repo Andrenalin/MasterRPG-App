@@ -12,28 +12,37 @@ public struct GameShareView<Content: View>: View {
     let root: any ItemRootControllable
     let itemId: UUID
     let content: Content
-        
+
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
+    @Environment(\.sharingControlActions) private var sharingControlActions
 
     public var body: some View {
-        actionBarWithSharing
+        // Computed once per render — avoids re-deriving the same list for the
+        // button's allReported state and the row below it.
+        let statuses = playerReportStatuses
+        VStack(alignment: .leading, spacing: 4) {
+            actionBarWithSharing(statuses: statuses)
+            if root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
+                playerReportRow(for: statuses)
+            }
+        }
     }
-    
+
     @ViewBuilder
-    var actionBarWithSharing: some View {
+    private func actionBarWithSharing(statuses: [PlayerReportStatus]) -> some View {
         switch root.viewControllable.sharingViewType {
         case .none:
             content
         case .share:
             content
-                .shareListItem(isActive: canShare, feedBackEnabled: true, action: shareAction)
+                .shareListItem(isActive: canShare, allReported: !statuses.isEmpty && statuses.allSatisfy(\.reported), feedBackEnabled: true, action: shareAction)
         case .custom:
             root.viewControllable.sharingView(for: itemId)
         }
     }
-    
+
     var canShare: Bool {
         if appGameStateModel.gameModus == .player {
             let features = sharingFeatureActions.features()
@@ -51,7 +60,7 @@ public struct GameShareView<Content: View>: View {
             return appGameStateModel.isGameRunning
         }
     }
-    
+
     func shareAction() {
         Task {
             if appGameStateModel.gameModus == .master {
@@ -65,9 +74,110 @@ public struct GameShareView<Content: View>: View {
     }
 }
 
+// MARK: - Player report status
+
+private extension GameShareView {
+    /// Only the game master receives per-player acknowledgements for a share —
+    /// a player device has no visibility into its siblings' delivery state, so
+    /// this stays empty (and the row never appears) anywhere else.
+    var playerReportStatuses: [PlayerReportStatus] {
+        guard appGameStateModel.gameModus == .master else { return [] }
+        let reported = Set(root.gameControllable.gameModel.playerReport(for: itemId))
+        return (sharingControlActions.control?() ?? [])
+            .filter(\.show)
+            .map { PlayerReportStatus(id: $0.id, name: $0.name, reported: reported.contains($0.id)) }
+            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+    }
+
+    func playerReportRow(for statuses: [PlayerReportStatus]) -> some View {
+        playerReportText(for: statuses)
+            .font(.caption)
+            .animation(.default, value: statuses.map(\.reported))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(playerReportAccessibilityLabel(for: statuses))
+    }
+
+    func playerReportText(for statuses: [PlayerReportStatus]) -> Text {
+        statuses.enumerated().reduce(Text("")) { line, entry in
+            let (index, status) = entry
+            let nameText = Text(status.name)
+                .bold(status.reported)
+                .foregroundStyle(status.reported ? .primary : .secondary)
+            guard index > 0 else { return nameText }
+            return line + Text(", ") + nameText
+        }
+    }
+
+    func playerReportAccessibilityLabel(for statuses: [PlayerReportStatus]) -> Text {
+        let reportedNames = statuses.filter(\.reported).map(\.name).joined(separator: ", ")
+        let missingNames = statuses.filter { !$0.reported }.map(\.name).joined(separator: ", ")
+        if missingNames.isEmpty {
+            return Text("All players confirmed: \(reportedNames)", bundle: .module)
+        }
+        if reportedNames.isEmpty {
+            return Text("Waiting on: \(missingNames)", bundle: .module)
+        }
+        return Text("Confirmed: \(reportedNames). Waiting on: \(missingNames)", bundle: .module)
+    }
+}
+
+private struct PlayerReportStatus {
+    let id: UUID
+    let name: String
+    let reported: Bool
+}
+
 #Preview {
     GameShareView(root: ItemRootController.fake, itemId: UUID()) {
         Label("Share item", systemImage: "square.and.arrow.up")
     }
     .environment(AppGameStateModel())
+}
+
+#Preview("Master with player report status") {
+    let itemId = UUID()
+    let confirmedPlayer = UUID()
+    let missingPlayer = UUID()
+    // ItemRootController.fake defaults to sharingViewType .none, which skips
+    // the share button (and this row) entirely — swap in .share for the demo.
+    let root = ItemRootController(
+        config: FakeModuleConfiguration(),
+        navigationModel: ModuleNavigationModel(),
+        inspectorEditorLinkModel: nil,
+        openFileWindowModel: OpenFileWindowModel(),
+        itemSelectionModel: ItemSelectionModel(),
+        removeEntryListModel: RemoveEntryListModel(),
+        cacheControllable: nil,
+        editControllable: FakeEditController.fake,
+        exportControllable: FakeExportController.fake,
+        gameControllable: FakeGameController.fake,
+        importControllable: FakeImportController.fake,
+        itemControllable: FakeItemController.fake,
+        linkControllable: FakeLinkController.fake,
+        folderListControllable: FakeFolderListController.fake,
+        folderLinkControllable: FakeFolderListController.fake,
+        searchControllable: FakeSearchController.fake,
+        sheetControllable: FakeSheetController.fake,
+        viewControllable: FakeViewController(sharingViewType: .share)
+    )
+    root.gameControllable.report(itemId: itemId, for: confirmedPlayer)
+
+    let gameState = AppGameStateModel()
+    gameState.gameModus = .master
+    gameState.isGameRunning = true
+
+    return GameShareView(root: root, itemId: itemId) {
+        Label("Share item", systemImage: "square.and.arrow.up")
+    }
+    .padding()
+    .environment(gameState)
+    .environment(\.sharingControlActions, SharingControlActions(
+        control: {
+            [
+                SharingControlModel(id: confirmedPlayer, name: "Arin", show: true),
+                SharingControlModel(id: missingPlayer, name: "Zara", show: true)
+            ]
+        },
+        update: { _ in }
+    ))
 }
