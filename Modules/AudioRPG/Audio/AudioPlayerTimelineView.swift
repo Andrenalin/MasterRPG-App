@@ -3,6 +3,18 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(AudioRootModel.self) var root
+    @Previewable @State var viewModel = AudioPlayerBarViewModel()
+    AudioPlayerTimelineView(
+        currentItem: root.audioPlayerModel.currentItem,
+        audioController: root.audioController,
+        audioPlayerModel: root.audioPlayerModel,
+        viewModel: viewModel
+    )
+    .padding()
+}
+
 struct AudioPlayerTimelineView: View {
     let currentItem: PlaylistItem?
     let audioController: AudioController

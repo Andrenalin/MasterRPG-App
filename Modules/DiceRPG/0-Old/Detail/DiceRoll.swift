@@ -3,6 +3,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    DiceRoll(itemId: DiceModel.previewId)
+}
+
 struct DiceRoll: View {
     let itemId: UUID
 

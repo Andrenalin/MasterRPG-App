@@ -4,6 +4,10 @@ import CoreRPG
 
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    AudioRouteDestinationView(itemId: AudioModel.previewId)
+}
+
 public enum AudioRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }

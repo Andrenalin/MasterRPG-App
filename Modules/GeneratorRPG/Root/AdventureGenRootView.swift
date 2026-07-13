@@ -190,6 +190,18 @@ struct CampaignGenView: View {
     }
 }
 
+#Preview("Campaign") {
+    if let content = try? GeneratedContent(json: """
+    {"name":"The Drowned Crown","description":"A coastal campaign of ancient ruins and storm-bound secrets.","tags":["mystery","coastal"],"entries":[]}
+    """), let campaign = try? CampaignGenModel.PartiallyGenerated(content) {
+        CampaignGenView(campaign: campaign)
+            .padding()
+    } else {
+        ContentUnavailableView("Campaign preview unavailable", systemImage: "exclamationmark.triangle")
+    }
+}
+
+
 struct AdventureGenView: View {
     let adventure: AdventureGenModel.PartiallyGenerated
     
@@ -367,4 +379,11 @@ struct GenericSegmentsView: View {
         }
         .textSelection(.enabled)
     }
+}
+
+#Preview("Transcript Segments", traits: .mockData) {
+    GenericSegmentsView(
+        segments: [.text(.init(content: "A ruined fortress waits above the stormy coast."))],
+        isUser: true
+    )
 }

@@ -89,3 +89,22 @@ private struct ImportReviewCountBadge: View {
         .accessibilityValue(Text(count, format: .number))
     }
 }
+
+#Preview {
+    ImportReviewCountBadge(
+        count: 3,
+        systemImage: "exclamationmark.triangle.fill",
+        tint: .red,
+        accessibilityLabel: Text("Blocked references")
+    )
+    .padding()
+}
+
+#Preview("Module List") {
+    ImportReviewModuleListView(model: .preview)
+}
+
+#Preview("Module Row") {
+    ImportReviewModuleRow(module: ImportReviewModel.preview.modules[0])
+        .padding()
+}

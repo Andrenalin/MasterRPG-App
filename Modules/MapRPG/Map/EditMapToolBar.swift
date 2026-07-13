@@ -506,3 +506,18 @@ private struct MaxSizeScaleView: View {
         ))
     }
 }
+
+#Preview {
+    @Previewable var model = MapEditorModel(map: .empty, image: AKImage(), photoDegrees: 0, containerSize: CGSize(width: 320, height: 240))
+    PinScaleView(model: model)
+}
+
+#Preview {
+    @Previewable var model = MapEditorModel(map: .empty, image: AKImage(), photoDegrees: 0, containerSize: CGSize(width: 320, height: 240))
+    HexMapScaleView(model: model, onScaleChanged: { _ in })
+}
+
+#Preview {
+    @Previewable var model = MapEditorModel(map: .empty, image: AKImage(), photoDegrees: 0, containerSize: CGSize(width: 320, height: 240))
+    MaxSizeScaleView(model: model, onMaxWidthChanged: { _ in }, onMaxHeightChanged: { _ in })
+}

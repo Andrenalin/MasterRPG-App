@@ -79,3 +79,8 @@ private struct PhotoDropSection: View {
             }
     }
 }
+
+#Preview(traits: .mockData) { DetailEditorView(root: .preview, model: .preview) }
+#Preview(traits: .mockData) { DetailSelectionEditorView(root: .preview, model: .preview) }
+#Preview(traits: .mockData) { DiceDropSection(root: .preview, model: .preview) }
+#Preview(traits: .mockData) { PhotoDropSection(root: .preview, model: .preview) }

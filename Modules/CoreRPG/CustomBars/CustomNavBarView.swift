@@ -2,6 +2,30 @@
 
 import SwiftUI
 
+#Preview("Custom navigation bar") {
+    CustomNavBarView({
+        Text("Adventure")
+    }, content: {
+        List {
+            Text("Goblin ambush")
+            Text("Hidden temple")
+        }
+    }, leading: { EmptyView() }, trailing: { EmptyView() }, background: { EmptyView() })
+}
+
+#Preview("Navigation bar internals") {
+    @Previewable @State var offset: CGFloat = 0
+    CustomNavBarInternalView({
+        Text("Adventure")
+    }, leading: {
+        Image(systemName: "chevron.left")
+    }, trailing: {
+        Image(systemName: "ellipsis")
+    }, background: {
+        Color.blue.opacity(0.2)
+    }, offset: $offset)
+}
+
 public struct CustomNavBarView<Title: View, Content: View, Leading: View, Trailing: View, Background: View>: View {
     let content: () -> Content
     let navSearch: (Binding<CGFloat>) -> CustomNavBarInternalView<Title, Leading, Trailing, Background>

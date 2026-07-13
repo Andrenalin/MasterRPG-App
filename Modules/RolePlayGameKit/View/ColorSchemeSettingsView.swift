@@ -3,6 +3,21 @@
 import CoreRPG
 import SwiftUI
 
+#Preview("System color scheme") {
+    ColorSchemeView(colorScheme: .system)
+        .padding()
+}
+
+#Preview("Dark color scheme") {
+    ColorSchemeView(colorScheme: .dark)
+        .padding()
+}
+
+#Preview("Light color scheme") {
+    ColorSchemeView(colorScheme: .light)
+        .padding()
+}
+
 public struct ColorSchemeSettingsView: View {
     public init() {}
 

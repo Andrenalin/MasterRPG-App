@@ -155,3 +155,7 @@ struct MapEntryViewer: View {
         )
     }
 }
+
+#Preview {
+    MapEntryViewer(entry: .previewGreatHall, displayMode: .master, displayConfig: MapModel.preview.displayConfig, activateGestures: false, mapImage: nil, doubleTapAction: {}, longPressAction: {})
+}

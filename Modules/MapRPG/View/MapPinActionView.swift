@@ -199,3 +199,17 @@ private struct MapPinActionButtons: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var model = MapPinViewModel(mapPins: [], pointer: .empty)
+    @Namespace var glassNamespace
+    @Namespace var photoSpace
+    MapPinActionButtons(
+        model: model,
+        pinId: UUID(),
+        layoutDown: true,
+        glassNamespace: glassNamespace,
+        photoSpace: photoSpace,
+        onRemove: {}, onCopy: {}, onResize: {}, onPhoto: {}
+    )
+}

@@ -16,6 +16,14 @@ extension Logger {
     static let scanner3D = Logger(subsystem: subsystem, category: "Scanner3D")
 }
 
+#Preview {
+    Scanner3DRootView()
+}
+
+#Preview {
+    CircularProgressView()
+}
+
 struct Scanner3DRootView: View {
     @State private var appModel: AppDataModel = AppDataModel.instance
 

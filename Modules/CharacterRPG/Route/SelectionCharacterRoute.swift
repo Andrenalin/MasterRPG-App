@@ -7,6 +7,10 @@ enum SelectionRoute: Equatable, Hashable, Codable {
     case selection
 }
 
+#Preview(traits: .mockData) {
+    SelectionDestinationView()
+}
+
 extension SelectionRoute: NavigationDestination {
     public var body: some View {
         switch self {

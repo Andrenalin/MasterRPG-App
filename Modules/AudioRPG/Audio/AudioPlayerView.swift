@@ -42,6 +42,10 @@ struct AudioPlayerView: View {
     }
 }
 
+#Preview(traits: .mockData) {
+    AudioPlayerView()
+}
+
 extension AudioPlayerView {
     var playerControls: some View {
         VStack {

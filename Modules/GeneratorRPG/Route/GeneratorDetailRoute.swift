@@ -59,3 +59,7 @@ struct GeneratorDetailRouteDestinationView: View {
         DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
     }
 }
+
+#Preview(traits: .mockData) {
+    GeneratorDetailRouteDestinationView(itemId: GeneratorModel.previewId)
+}

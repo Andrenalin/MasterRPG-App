@@ -117,3 +117,16 @@ public struct QuickEditorAction<EntryViewModel, SelectionView: View>: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var entries: [String] = []
+    QuickEditorAction(
+        configs: [QuickLinkConfig(module: .adventure, title: "Adventure", name: { _ in "Preview adventure" })],
+        bundle: nil,
+        afterEntries: $entries,
+        scanner: { _, _, _, _ in ["Scanned entry"] }
+    ) { _, _, _ in
+        Text("Link selection")
+    }
+    .padding()
+}

@@ -105,3 +105,16 @@ private extension Optional where Wrapped == String {
             .filter { !$0.isEmpty }
     }
 }
+
+#Preview {
+    SingleReviewAlternativeBlock(
+        decision: .imported,
+        value: "The new expedition begins at the forgotten shrine.",
+        onSelect: {}
+    )
+    .padding()
+}
+
+#Preview { SingleReviewLinkText(text: "Visit [the shrine](RPG://ADVENTURE/preview).") }
+#Preview { SingleReviewValueView(kind: .tags, value: "dungeon, mystery, undead") }
+#Preview { SingleReviewTagValue(tags: ["dungeon", "mystery", "undead"]) }

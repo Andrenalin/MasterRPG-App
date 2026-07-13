@@ -2,6 +2,11 @@
 
 import SwiftUI
 
+#Preview {
+    BlurText(text: "Critical hit!", color: .red)
+        .padding()
+}
+
 public struct BlurText: View {
     public init(text: String, color: Color) {
         self.text = text

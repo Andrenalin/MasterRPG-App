@@ -106,5 +106,6 @@ private struct EmptyDropButton: View {
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
         DropChooseView(selectionModel: ItemSelectionModel())
+        EmptyDropButton(selectionModel: ItemSelectionModel())
     }
 }

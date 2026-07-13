@@ -170,3 +170,15 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
 #endif
     }
 }
+
+#Preview {
+    @Previewable var editModel = TextEditModel(linkRegisterController: LinkRegisterController.fake)
+    EntryEditorHeaderView(
+        editController: FakeEditController.fake,
+        editorModel: SheetEditorModel(),
+        itemId: UUID(),
+        editModel: editModel,
+        entry: FakeEntryModel.empty,
+        linkTypes: EmptyLinkTransferable.self
+    )
+}

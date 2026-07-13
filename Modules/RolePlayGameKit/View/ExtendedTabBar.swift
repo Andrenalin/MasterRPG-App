@@ -52,6 +52,10 @@ struct ExtendedTabBar: View {
     }
 }
 
+#Preview {
+    ExtendedTabBar()
+}
+
 private extension ExtendedTabBar {
     func gridButtonView(for route: ExtendedTabRoute, in navigator: Navigator) -> some View {
         Button {

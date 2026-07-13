@@ -12,6 +12,12 @@ import AppKit
 import UIKit
 #endif
 
+#if !os(tvOS)
+    #Preview(traits: .mockData) {
+        ContentExtractionView(itemId: PdfModel.previewId)
+    }
+#endif
+
 struct ContentExtractionView: View {
     let itemId: UUID
 

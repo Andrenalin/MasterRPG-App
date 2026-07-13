@@ -3,6 +3,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    AudioDetailRouteDestinationView(route: .folder(AudioModel.previewId))
+}
+
 public enum AudioDetailRoute: Equatable, Hashable, Codable {
     case folder(UUID)
     case folderInline(UUID)

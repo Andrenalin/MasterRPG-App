@@ -46,3 +46,7 @@ struct SelectedPlayerView: View {
         }
     }
 }
+
+#Preview {
+    SelectedPlayerView(root: .preview)
+}

@@ -100,3 +100,14 @@ struct ChatInputView: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var messageText = "Describe a forgotten shrine"
+    @Previewable @FocusState var isTextFieldFocused: Bool
+    ChatInputView(
+        messageText: $messageText,
+        generatorController: AdventureGeneratorController(),
+        isTextFieldFocused: $isTextFieldFocused,
+        sendMessageAction: { _ in }
+    )
+}

@@ -79,6 +79,14 @@ public struct ExportProgressPanelView: View {
     }
 }
 
+#Preview {
+    ExportProgressPanelView(
+        exportController: FakeExportController.fake,
+        showOptions: true,
+        exporter: { .init() }
+    )
+}
+
 private extension ExportProgressPanelView {
     func startExport() async {
         do {

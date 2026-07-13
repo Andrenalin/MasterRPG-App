@@ -108,3 +108,7 @@ struct SplitEditorNavigation: View {
         }
     }
 }
+
+#Preview {
+    SplitEditorNavigation()
+}

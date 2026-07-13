@@ -134,6 +134,16 @@ struct GroupEditorView: View {
     }
 }
 
+#Preview {
+    GroupEditorView(
+        groupEditorController: GroupEditorController(
+            itemController: FakeItemController.fake,
+            editController: FakeEditController.fake,
+            ids: [UUID()]
+        )
+    )
+}
+
 private extension GroupEditorView {
     @ViewBuilder private var nameSection: some View {
         @Bindable var model = groupEditorController.model

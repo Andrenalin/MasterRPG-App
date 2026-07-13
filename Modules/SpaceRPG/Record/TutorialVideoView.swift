@@ -59,4 +59,12 @@ struct TutorialVideoView: View {
     }
 }
 
+#Preview {
+    TutorialVideoView(
+        url: URL(fileURLWithPath: "/dev/null"),
+        isInReviewSheet: true
+    )
+    .environment(AppDataModel.instance)
+}
+
 #endif

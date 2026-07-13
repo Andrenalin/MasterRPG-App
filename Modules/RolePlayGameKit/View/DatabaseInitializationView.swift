@@ -87,3 +87,7 @@ struct DatabaseInitializationView: View {
         )
     }
 }
+
+#Preview {
+    DatabaseInitializationView()
+}

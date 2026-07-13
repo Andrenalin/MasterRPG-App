@@ -63,3 +63,15 @@ public struct ItemSplitDetailRouteRootView<Route: NavigationDestination>: View {
         root.folderListControllable.listModel
     }
 }
+
+#Preview("Item Root") {
+    ItemRootView(root: ItemRootController.fake)
+}
+
+#Preview("Item Root List") {
+    ItemRootListView(root: ItemRootController.fake)
+}
+
+#Preview("Split Detail") {
+    ItemSplitDetailRouteRootView(root: ItemRootController.fake, route: InternalRoute.removeAlert)
+}

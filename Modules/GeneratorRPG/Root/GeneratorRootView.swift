@@ -46,3 +46,7 @@ struct SaveView: View {
         GeneratorRootView()
     }
 }
+
+#Preview(traits: .mockData) {
+    SaveView(root: .preview)
+}

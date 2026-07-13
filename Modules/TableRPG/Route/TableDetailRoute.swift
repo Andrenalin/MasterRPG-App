@@ -89,6 +89,10 @@ struct TableDetailRouteDestinationView: View {
     }
 }
 
+#Preview(traits: .mockData) {
+    TableDetailRouteDestinationView(route: .folder(TableModel.previewId))
+}
+
 #if !os(tvOS)
 private struct TableExtractionDestination: View {
     let itemId: UUID
@@ -125,5 +129,9 @@ private struct TableExtractionDestination: View {
         }
         return lines.joined(separator: "\n")
     }
+}
+
+#Preview(traits: .mockData) {
+    TableExtractionDestination(itemId: TableModel.previewId)
 }
 #endif

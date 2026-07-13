@@ -234,4 +234,13 @@ public struct BatchTextSummaryExtractionView: View {
     }
 }
 
+#Preview(traits: .mockData) {
+    BatchTextSummaryExtractionView(
+        module: .generator,
+        ids: [GeneratorModel.previewId],
+        itemController: GeneratorRootModel.preview.itemController,
+        editController: GeneratorRootModel.preview.editController
+    )
+}
+
 #endif

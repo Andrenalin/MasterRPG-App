@@ -50,3 +50,5 @@ struct QuickEntryEditor: View {
         withAnimation { referenceText.input.append(selection.string) }
     }
 }
+
+#Preview(traits: .mockData) { QuickEntryEditor(model: .preview) }

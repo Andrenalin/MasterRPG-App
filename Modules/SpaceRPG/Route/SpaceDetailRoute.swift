@@ -68,3 +68,7 @@ struct SpaceDetailRouteDestinationView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) {
+    SpaceDetailRouteDestinationView(route: .folder(SpaceModel.previewId))
+}

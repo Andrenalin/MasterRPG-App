@@ -110,3 +110,11 @@ struct OpenFileWindowView: View {
 #endif
     }
 }
+
+#Preview {
+    OpenFileWindowView(
+        model: OpenFileWindowModel(windowId: "preview-window", canShow: true, route: { _ in InternalRoute.removeAlert }),
+        module: .adventure
+    )
+    .environment(ScenesManager())
+}

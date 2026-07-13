@@ -61,3 +61,5 @@ struct DisplayConfigBorderEditor: View {
         }
     }
 }
+
+#Preview(traits: .mockData) { DisplayConfigBorderEditor(model: .preview) }

@@ -190,3 +190,5 @@ struct DisplayConfigEditor: View {
         }
     }
 }
+
+#Preview(traits: .mockData) { DisplayConfigEditor(model: .preview).environment(ScenesManager()) }

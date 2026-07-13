@@ -215,6 +215,13 @@ struct UnavailableGlassOverlay<Content: View>: View {
     }
 }
 
+#Preview {
+    UnavailableGlassOverlay(isUnavailable: true) {
+        Text("Search results")
+            .padding()
+    }
+}
+
 
 // MARK: - ItemRowsView
 // Extracted from the @ViewBuilder itemRows() function so SwiftUI can skip this struct's
@@ -297,6 +304,24 @@ private struct ItemRowsView: View {
         let value = listController.listDisplayModel.isSelectionMode ? 12 : 8
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
+}
+
+#Preview("Item List") {
+    ListRootView(root: ItemRootController.fake, listController: FakeFolderListController.fake, parentModel: nil, isSubFolder: false)
+}
+
+#Preview("Item Rows") {
+    ItemRowsView(
+        root: ItemRootController.fake,
+        listController: FakeFolderListController.fake,
+        parentModel: nil,
+        listModel: FakeFolderListController.fake.listModel,
+        menuController: ContextMenuMultiController(
+            editController: FakeEditController.fake,
+            itemController: FakeItemController.fake,
+            listModel: FakeFolderListController.fake.listModel
+        )
+    )
 }
 
 // MARK: - ListRowItemView

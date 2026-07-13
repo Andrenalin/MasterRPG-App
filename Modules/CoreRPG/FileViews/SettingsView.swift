@@ -68,3 +68,21 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
         .navigationTitle(Text("Settings", bundle: .module))
     }
 }
+
+@MainActor
+private final class SettingsPreviewStore: StoreManiplable {
+    func resetData() async {}
+    func validate() {}
+}
+
+#Preview {
+    SettingsView(
+        store: SettingsPreviewStore(),
+        exportController: FakeExportController.fake,
+        importController: FakeImportController.fake
+    ) {
+        Section("Import") {
+            Text("Import data from a file")
+        }
+    }
+}

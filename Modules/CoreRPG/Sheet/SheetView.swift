@@ -420,3 +420,62 @@ private extension SheetModel {
         !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
+
+private struct SheetViewPreview: View {
+    @Namespace private var namespace
+
+    var body: some View {
+        VStack {
+            SheetView(
+                root: ItemRootController.fake,
+                rootModel: .fake,
+                sheetModel: .empty,
+                isEditor: true,
+                linkTypes: EmptyLinkTransferable.self,
+                generatedAcceptanceNamespace: namespace,
+                detailContent: { _ in EmptyView() }
+            )
+            GeneratedSheetEntryTreeView(
+                rootModel: .fake,
+                parentModel: .empty,
+                entryModel: .empty,
+                isEditor: true,
+                linkTypes: EmptyLinkTransferable.self,
+                generatedAcceptanceNamespace: namespace,
+                detailAction: nil,
+                detailContent: { _ in EmptyView() }
+            )
+        }
+    }
+}
+
+#Preview {
+    SheetViewPreview()
+}
+
+#Preview("Sheet View Direct") {
+    @Previewable @Namespace var namespace
+    SheetView(
+        root: ItemRootController.fake,
+        rootModel: .fake,
+        sheetModel: .empty,
+        isEditor: true,
+        linkTypes: EmptyLinkTransferable.self,
+        generatedAcceptanceNamespace: namespace,
+        detailContent: { _ in EmptyView() }
+    )
+}
+
+#Preview("Generated Sheet Tree Direct") {
+    @Previewable @Namespace var namespace
+    GeneratedSheetEntryTreeView(
+        rootModel: .fake,
+        parentModel: .empty,
+        entryModel: .empty,
+        isEditor: true,
+        linkTypes: EmptyLinkTransferable.self,
+        generatedAcceptanceNamespace: namespace,
+        detailAction: nil,
+        detailContent: { _ in EmptyView() }
+    )
+}

@@ -118,3 +118,11 @@ private struct AsyncImageViewerLoadKey: Equatable {
     let fileUrl: FileUrl?
     let hasInlineData: Bool
 }
+
+#Preview(traits: .mockData) {
+    AsyncImageViewer(
+        model: .preview,
+        size: CGSize(width: 320, height: 240),
+        toolBarModel: nil
+    )
+}

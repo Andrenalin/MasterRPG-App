@@ -4,6 +4,10 @@ import CoreRPG
 
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    SpaceRouteDestinationView(itemId: SpaceModel.previewId)
+}
+
 public enum SpaceRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }

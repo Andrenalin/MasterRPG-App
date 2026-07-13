@@ -309,4 +309,57 @@ private struct SheetAIAssistantComposer: View {
         .padding(.horizontal)
     }
 }
+
+private struct SheetAIAssistantComponentPreview: View {
+    @Namespace private var namespace
+    @State private var message = "Create a dramatic encounter"
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack {
+            SheetAIAssistantOpenButton(module: .adventure, glassNamespace: namespace, action: {})
+            SheetAIAssistantComposer(
+                module: .adventure,
+                messageText: $message,
+                availability: SheetAIGenerationController().availability,
+                isGenerating: false,
+                canSubmit: true,
+                isTextFieldFocused: $isFocused,
+                glassNamespace: namespace,
+                submitAction: {},
+                closeAction: {}
+            )
+        }
+    }
+}
+
+#Preview("Sheet AI Components") {
+    SheetAIAssistantComponentPreview()
+}
+
+#Preview("Sheet AI Assistant") {
+    SheetAIAssistantOverlayView(module: .adventure, itemId: UUID(), rootModel: .fake)
+}
+
+#Preview("Sheet AI Open Button") {
+    @Previewable @Namespace var namespace
+    SheetAIAssistantOpenButton(module: .adventure, glassNamespace: namespace, action: {})
+}
+
+#Preview("Sheet AI Composer") {
+    @Previewable @Namespace var namespace
+    @Previewable @State var message = "Create a dramatic encounter"
+    @Previewable @FocusState var isFocused: Bool
+    SheetAIAssistantComposer(
+        module: .adventure,
+        messageText: $message,
+        availability: SheetAIGenerationController().availability,
+        isGenerating: false,
+        canSubmit: true,
+        isTextFieldFocused: $isFocused,
+        glassNamespace: namespace,
+        submitAction: {},
+        closeAction: {}
+    )
+}
 #endif

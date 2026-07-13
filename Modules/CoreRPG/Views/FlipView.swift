@@ -2,6 +2,24 @@
 
 import SwiftUI
 
+#Preview("Front") {
+    FlipView {
+        Label("Front", systemImage: "rectangle.front.fill")
+    } back: {
+        Label("Back", systemImage: "rectangle.back.fill")
+    }
+    .padding()
+}
+
+#Preview("Back") {
+    FlipView(isFlipped: true) {
+        Label("Front", systemImage: "rectangle.front.fill")
+    } back: {
+        Label("Back", systemImage: "rectangle.back.fill")
+    }
+    .padding()
+}
+
 public struct FlipView<Front: View, Back: View>: View {
     public var isFlipped: Bool
     public var front: () -> Front

@@ -2,6 +2,21 @@
 
 import SwiftUI
 
+#Preview("System") {
+    ColorSchemeView(colorScheme: .system)
+        .padding()
+}
+
+#Preview("Dark") {
+    ColorSchemeView(colorScheme: .dark)
+        .padding()
+}
+
+#Preview("Light") {
+    ColorSchemeView(colorScheme: .light)
+        .padding()
+}
+
 public struct ColorSchemeSettingsView: View {
     public init() {}
 

@@ -5,6 +5,12 @@ import CoreRPG
 import GeneratorRPG
 #endif
 
+#if !os(tvOS)
+#Preview(traits: .mockData) {
+    TableExtractToolBarButton(model: .preview)
+}
+#endif
+
 import SwiftUI
 
 #if !os(tvOS)
@@ -93,4 +99,16 @@ struct AddLinkButton: View {
             }
         }
     }
+}
+
+#Preview(traits: .mockData) {
+    QuickEditorButton(root: .preview, model: .preview)
+}
+
+#Preview(traits: .mockData) {
+    AddEntryButton(root: .preview, model: .preview)
+}
+
+#Preview(traits: .mockData) {
+    AddLinkButton(root: .preview, model: .preview, module: .photo)
 }

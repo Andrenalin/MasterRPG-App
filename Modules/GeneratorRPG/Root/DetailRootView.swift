@@ -88,3 +88,19 @@ struct DetailListView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) {
+    @Previewable @Environment(GeneratorRootModel.self) var root
+
+    if let model = root.itemController.itemSync(for: GeneratorModel.previewId) {
+        DetailRootView(root: root, model: model)
+    }
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @Environment(GeneratorRootModel.self) var root
+
+    if let model = root.itemController.itemSync(for: GeneratorModel.previewId) {
+        DetailListView(root: root, model: model)
+    }
+}

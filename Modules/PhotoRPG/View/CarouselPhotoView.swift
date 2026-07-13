@@ -160,3 +160,17 @@ private struct CarouselDropAreaView: View {
 
     CarouselPhotoView(photoIds: ItemSelectionModel(selection: root.itemController.itemDataModel.items.map { WindowItemSelection(itemId: $0) }, isSingleSelection: false), selection: GroupItemSelectionModel())
 }
+
+#Preview(traits: .mockData) {
+    CarouselPhotoItemView(
+        photoSelection: WindowItemSelection(itemId: PhotoModel.previewId),
+        photoIds: ItemSelectionModel(selection: [WindowItemSelection(itemId: PhotoModel.previewId)], isSingleSelection: false),
+        groupSelection: GroupItemSelectionModel()
+    )
+}
+
+#Preview(traits: .mockData) {
+    CarouselDropAreaView(photoIds: ItemSelectionModel(isSingleSelection: false))
+        .environment(AppWindowSizeModel())
+        .environment(ScenesManager())
+}

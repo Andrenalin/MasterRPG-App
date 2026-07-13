@@ -61,6 +61,14 @@ struct TabbedSplitNavigation: View {
     }
 }
 
+#Preview {
+    TabbedSplitNavigation()
+}
+
+#Preview {
+    TabSidebar()
+}
+
 struct TabSidebar: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .adventures
 

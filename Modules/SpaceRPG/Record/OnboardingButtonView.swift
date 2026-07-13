@@ -194,4 +194,17 @@ private struct CancelButton: View {
     }
 }
 
+#Preview {
+    CreateButton(buttonLabel: "Continue", shouldApplyBackground: true, action: {})
+}
+
+#Preview {
+    CancelButton(buttonLabel: "Cancel")
+}
+
+#Preview("Onboarding Buttons") {
+    OnboardingButtonView(session: ObjectCaptureSession(), onboardingStateMachine: OnboardingStateMachine(.firstSegment))
+        .environment(AppDataModel.instance)
+}
+
 #endif

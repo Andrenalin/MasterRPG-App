@@ -3,6 +3,11 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    AudioPlayPauseButton(itemId: AudioModel.previewId)
+        .padding()
+}
+
 struct AudioPlayPauseButton: View, Equatable {
     let itemId: UUID
 

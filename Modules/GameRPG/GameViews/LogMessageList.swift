@@ -140,3 +140,29 @@ private extension LogMessageDeliveryState {
     LogMessageList(logController: .preview)
         .environment(\.locale, .init(identifier: "de"))
 }
+
+#Preview {
+    @Previewable @Bindable var gameModel = LogGameController.preview.gameModel
+    SharingOptionsSection(features: $gameModel.gameControl.features)
+}
+
+#Preview {
+    @Previewable var controller = LogGameController.preview
+    @Previewable @State var isExpanded = true
+    AttachmentSection(logController: controller, isExpanded: $isExpanded)
+}
+
+#Preview {
+    LogRowsSection(logController: .preview)
+}
+
+#Preview {
+    LogMessageRow(
+        row: LogMessageRowModel(
+            id: 1,
+            title: "Map shared",
+            playerNames: "Ari, Bea",
+            deliveryState: .allPlayers
+        )
+    )
+}

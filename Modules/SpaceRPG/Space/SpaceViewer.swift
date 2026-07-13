@@ -618,4 +618,9 @@ extension EntityTargetValue<DragGesture.Value> {
     }
 }
 
+#Preview("Space Viewer") {
+    SpaceViewer(root: .preview, id: SpaceModel.previewId, isModal: false)
+        .environment(ScenesManager())
+}
+
 #endif

@@ -37,6 +37,10 @@ struct ExtendedSplitBar: View {
     }
 }
 
+#Preview {
+    ExtendedSplitBar()
+}
+
 private extension ExtendedSplitBar {
     var allCustomTabs: some View {
         ZStack {

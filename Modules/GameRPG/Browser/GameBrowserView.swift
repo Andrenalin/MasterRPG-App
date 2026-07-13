@@ -26,3 +26,7 @@ struct GameBrowserView: View {
         .onDisappear { browserManager.stop() }
     }
 }
+
+#Preview(traits: .mockData) {
+    GameBrowserView()
+}

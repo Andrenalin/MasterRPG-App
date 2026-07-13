@@ -39,4 +39,9 @@ struct OnboardingView: View {
     }
 }
 
+#Preview {
+    OnboardingView(state: .firstSegment)
+        .environment(AppDataModel.instance)
+}
+
 #endif

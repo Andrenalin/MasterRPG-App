@@ -47,3 +47,7 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
         }
     }
 }
+
+#Preview {
+    SheetRootEditorView(root: ItemRootController.fake, sheetRootModel: .fake, headerTitle: "Entries", linkTypes: EmptyLinkTransferable.self)
+}

@@ -3,6 +3,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    DiceDetailRouteDestinationView(route: .folder(DiceModel.previewId))
+}
+
 public enum DiceDetailRoute: Equatable, Hashable, Codable {
     case folder(UUID)
     case folderInline(UUID)

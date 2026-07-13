@@ -108,3 +108,7 @@ struct SplitVisionNavigation: View {
         }
     }
 }
+
+#Preview {
+    SplitVisionNavigation()
+}

@@ -478,6 +478,15 @@ private struct TileNeedleMapPin: View {
     }
 }
 
+#Preview {
+    TileNeedleMapPin(
+        entries: MapEntryViewerModel(mapId: MapModel.previewId, entries: [.previewGreatHall]),
+        entryId: MapEntryModel.previewGreatHall.id,
+        index: 0,
+        onUpdate: { _ in }
+    )
+}
+
 // MARK: - Magnifier glass with Crosshair
 
 private extension MapEditor {

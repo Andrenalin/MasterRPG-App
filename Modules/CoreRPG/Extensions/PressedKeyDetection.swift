@@ -258,3 +258,16 @@ public struct AltOpenWindowButton: View {
         }
     }
 }
+
+#Preview {
+    OptionKeyPressedButton(action: { _ in }) { isPressed in
+        Label(isPressed ? "Alternate action" : "Primary action", systemImage: "option")
+    }
+    .environment(OptionKeyDownModel())
+}
+
+#Preview {
+    AltOpenWindowButton(module: .adventure)
+        .environment(ScenesManager())
+        .environment(OptionKeyDownModel())
+}

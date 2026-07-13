@@ -92,3 +92,7 @@ private struct TabPlayerSecondGameView: View {
     OverlayPlayerTabBar(root: GameRoot.preview)
         .environment(GameScreenModel())
 }
+
+#Preview { OnlyPlayerGameView(root: .preview).environment(GameScreenModel()) }
+#Preview { TabPlayerGameView(root: .preview).environment(GameScreenModel()) }
+#Preview { TabPlayerSecondGameView(root: .preview).environment(GameScreenModel()) }

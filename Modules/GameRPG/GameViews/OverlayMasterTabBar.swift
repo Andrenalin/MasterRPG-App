@@ -89,3 +89,7 @@ private struct TabSecondGameView: View {
     OverlayMasterTabBar(root: GameRoot.preview, adventureId: UUID())
         .environment(GameScreenModel())
 }
+
+#Preview { OnlyGameView(root: .preview, adventureId: UUID()).environment(GameScreenModel()) }
+#Preview { TabGameView(root: .preview, adventureId: UUID()).environment(GameScreenModel()) }
+#Preview { TabSecondGameView(root: .preview).environment(GameScreenModel()) }

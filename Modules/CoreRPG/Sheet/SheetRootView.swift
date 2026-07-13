@@ -62,3 +62,7 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
             .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)
     }
 }
+
+#Preview {
+    SheetRootView(root: ItemRootController.fake, rootModel: .fake, linkTypes: EmptyLinkTransferable.self)
+}

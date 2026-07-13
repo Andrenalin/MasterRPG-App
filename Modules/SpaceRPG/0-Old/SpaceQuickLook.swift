@@ -45,3 +45,14 @@ struct SpaceQuickLook: View {
 #endif
     }
 }
+
+#Preview {
+    SpaceQuickLook(
+        root: .preview,
+        item: ItemSelection(itemId: SpaceModel.previewId, entryId: nil),
+        startLoading: false,
+        gameMode: false,
+        dismiss: nil
+    )
+    .environment(ScenesManager())
+}

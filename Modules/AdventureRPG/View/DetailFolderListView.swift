@@ -6,6 +6,11 @@ import GeneratorRPG
 #endif
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(AdventureRootModel.self) var root
+    DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), folderListController: root.folderListController)
+}
+
 struct DetailFolderListView: View {
     let root: AdventureRootModel
     let model: AdventureModel

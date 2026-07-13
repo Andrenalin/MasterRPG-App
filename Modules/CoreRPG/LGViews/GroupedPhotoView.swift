@@ -33,3 +33,12 @@ public struct GroupedPhotoView: View {
         return itemController.itemSync(for: id)
     }
 }
+
+#Preview {
+    GroupedPhotoView(
+        cacheController: FakeImageCacheController(),
+        itemControllable: FakeItemController.fake,
+        model: nil
+    )
+    .environment(GroupItemSelectionModel())
+}

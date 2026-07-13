@@ -64,3 +64,10 @@ public struct GameShareView<Content: View>: View {
         }
     }
 }
+
+#Preview {
+    GameShareView(root: ItemRootController.fake, itemId: UUID()) {
+        Label("Share item", systemImage: "square.and.arrow.up")
+    }
+    .environment(AppGameStateModel())
+}

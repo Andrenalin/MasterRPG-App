@@ -226,6 +226,27 @@ struct SpaceActionButton: View {
     }
 }
 
+#if !os(tvOS)
+#Preview {
+    NavigateButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in }, key: "n")
+}
+
+#Preview {
+    AddItemButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in }, key: "n")
+}
+
+#Preview {
+    AddFolderButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in }, key: "n")
+}
+
+#Preview {
+    AddCollectionButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in }, key: "n")
+}
+
+#Preview { EditItemButton(root: ItemRootController.fake) }
+#Preview { SpaceActionButton(root: ItemRootController.fake, scenesManager: ScenesManager()) }
+#endif
+
 struct ExportItemButton: View {
     let root: any ItemRootControllable
 
@@ -456,5 +477,17 @@ struct DeleteItemButton: View {
         return root.itemControllable.itemOrEmpty(for: selectedItemId)
     }
 }
+
+#if !os(tvOS)
+#Preview { ExportItemButton(root: ItemRootController.fake) }
+#Preview { GroupEditorButton(root: ItemRootController.fake) }
+#Preview { OpenFolderButton(root: ItemRootController.fake) }
+#Preview { CloseFolderButton(root: ItemRootController.fake) }
+#Preview { DuplicateItemButton(root: ItemRootController.fake) }
+#Preview { BatchExtractionButton(root: ItemRootController.fake) }
+#Preview { AddItemIntoButton(root: ItemRootController.fake) }
+#Preview { MoveItemIntoButton(root: ItemRootController.fake) }
+#Preview { DeleteItemButton(root: ItemRootController.fake) }
+#endif
 
 #endif

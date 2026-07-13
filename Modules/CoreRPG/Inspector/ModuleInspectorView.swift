@@ -34,3 +34,7 @@ public struct ModuleInspectorView: View {
         }
     }
 }
+
+#Preview {
+    ModuleInspectorView(rootController: .fake)
+}

@@ -21,6 +21,10 @@ struct ImageSpaceView: View {
     }
 }
 
+#Preview(traits: .mockData) {
+    ImageSpaceView()
+}
+
 struct OrnamentsView: View {
     let model: ImagePresentationModel
 
@@ -72,6 +76,10 @@ struct OrnamentsView: View {
         }
         .glassBackgroundEffect()
     }
+}
+
+#Preview {
+    OrnamentsView(model: ImagePresentationModel())
 }
 
 #endif

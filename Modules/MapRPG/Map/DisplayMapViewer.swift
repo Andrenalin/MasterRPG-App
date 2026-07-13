@@ -37,3 +37,8 @@ struct DisplayMapViewer: View {
     private func focused() {}
     private func sendMapUpdates() {}
 }
+
+#Preview(traits: .mockData) {
+    @Previewable @State var entryId = MapEntryModel.previewId
+    DisplayMapViewer(image: AKImage(), itemId: MapModel.previewId, entryId: $entryId, size: CGSize(width: 320, height: 240))
+}

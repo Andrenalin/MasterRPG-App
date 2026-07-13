@@ -42,3 +42,10 @@ public struct AltLinkWindowCommandView: View {
 }
 
 #endif
+
+#if !os(tvOS)
+#Preview {
+    AltLinkWindowCommandView(title: "Adventure Link", networkModule: .adventure, key: "l")
+        .environment(ScenesManager())
+}
+#endif

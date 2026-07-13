@@ -31,6 +31,12 @@ public struct DumpingEnvironment<Content: View>: View {
     }
 }
 
+#Preview {
+    DumpingEnvironment(optimized: true) {
+        Text("Environment content")
+    }
+}
+
 extension EnvironmentValues {
     var asTextualRepresentationWithNonReaptingKeys: [String] {
         // split description into lines starting with EnvironmentPropertyKey

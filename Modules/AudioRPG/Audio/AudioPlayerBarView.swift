@@ -68,3 +68,7 @@ struct AudioPlayerBarView: View {
         .contentShape(.rect) // Ensure the entire bar area is interactive
     }
 }
+
+#Preview(traits: .mockData) {
+    AudioPlayerBarView()
+}

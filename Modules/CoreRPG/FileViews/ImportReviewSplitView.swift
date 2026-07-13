@@ -169,3 +169,16 @@ private struct ImportReviewSheetDetailView: View {
         )
     }
 }
+
+#Preview("Import Review") {
+    ImportReviewSplitView(model: .preview, rootManager: nil, onCancel: {}, onApply: {})
+}
+
+#Preview("Review Detail") {
+    ImportReviewSheetDetailView(
+        item: ImportReviewModel.preview.modules[0].reviewItems[0],
+        root: nil,
+        rootManager: nil,
+        reviewModel: .preview
+    )
+}

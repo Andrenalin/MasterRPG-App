@@ -82,6 +82,10 @@ struct AdventureChatRootView: View {
     }
 }
 
+#Preview {
+    AdventureNoBlocksView()
+}
+
 private extension AdventureChatRootView {
     @ViewBuilder var contentView: some View {
         @Bindable var model = model
@@ -810,6 +814,15 @@ struct AdventureGeneratedBlockRow: View {
         }
         return .secondary.opacity(0.25)
     }
+}
+
+#Preview {
+    AdventureGeneratedBlockRow(
+        block: AdventureChatPreviewData.blocks[0],
+        isSelected: true,
+        toggleSelectionAction: {}
+    )
+    .padding()
 }
 
 struct AdventureNoBlocksView: View {

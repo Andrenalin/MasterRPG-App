@@ -119,3 +119,40 @@ public struct LinkListViewWrapper<Controller: ViewControllable>: View {
         controller.linkListView(rootController: rootController, type: type, itemSelectionModel: itemSelectionModel)
     }
 }
+
+#Preview("File Importer Wrapper") {
+    FileImporterViewWrapper(controller: FakeViewController(), itemId: UUID(), preopen: false, layoutDown: false)
+}
+
+#Preview("Sharing Wrapper") {
+    SharingViewWrapper(controller: FakeViewController(), itemId: UUID())
+}
+
+#Preview("Thumbnail Wrapper") {
+    ThumbnailRowViewWrapper(controller: FakeViewController(), itemId: UUID())
+}
+
+#Preview("Row Viewer Wrapper") {
+    RowViewerWrapper(
+        controller: FakeViewController(),
+        source: ItemRowModel(itemId: UUID(), typeId: .none),
+        destination: ItemRowModel(itemId: UUID(), typeId: .none)
+    )
+}
+
+#Preview("Inline Row Viewer Wrapper") {
+    InlineEditRowViewerWrapper(
+        controller: FakeViewController(),
+        source: ItemRowModel(itemId: UUID(), typeId: .none),
+        destination: ItemRowModel(itemId: UUID(), typeId: .none)
+    )
+}
+
+#Preview("Link List Wrapper") {
+    LinkListViewWrapper(
+        controller: FakeViewController(),
+        rootController: ItemRootController.fake,
+        type: .inspector,
+        itemSelectionModel: ItemSelectionModel()
+    )
+}

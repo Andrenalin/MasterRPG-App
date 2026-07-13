@@ -143,3 +143,11 @@ struct SharingControlActionsKey: EnvironmentKey {
             }
     }
 }
+
+#Preview("Sharing controls") {
+    @Previewable @State var controls = [
+        SharingControlModel(id: UUID(), name: "Alice", show: true),
+        SharingControlModel(id: UUID(), name: "Bob", show: false)
+    ]
+    SendControlView(controls: $controls)
+}

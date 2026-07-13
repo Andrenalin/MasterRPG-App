@@ -246,4 +246,38 @@ extension CaptureOverlayView {
     }
 }
 
+#Preview {
+    NextButton()
+}
+
+#Preview {
+    FilesButton()
+}
+
+#Preview {
+    CancelButton()
+}
+
+#Preview {
+    @Previewable @State var showInfo = false
+    HelpButton(showInfo: $showInfo)
+}
+
+#Preview {
+    @Previewable @State var detectionFailed = false
+    CaptureButton(session: ObjectCaptureSession(), isObjectFlipped: false, hasDetectionFailed: $detectionFailed)
+}
+
+#Preview {
+    ResetBoundingBoxButton(session: ObjectCaptureSession())
+}
+
+#Preview {
+    ManualShotButton(session: ObjectCaptureSession())
+}
+
+#Preview {
+    NumOfImagesButton(session: ObjectCaptureSession())
+}
+
 #endif

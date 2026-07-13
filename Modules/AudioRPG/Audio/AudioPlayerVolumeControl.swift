@@ -3,6 +3,13 @@
 import CoreRPG
 import SwiftUI
 
+#Preview {
+    @Previewable @State var sliderVisible = true
+    @Previewable @State var playerModel = AudioPlayerModel()
+    AudioPlayerVolumeControl(audioPlayerModel: playerModel, isSliderVisible: $sliderVisible, onToggleMute: {})
+        .padding()
+}
+
 struct AudioPlayerVolumeControl: View {
     @Bindable var audioPlayerModel: AudioPlayerModel
     @Binding var isSliderVisible: Bool

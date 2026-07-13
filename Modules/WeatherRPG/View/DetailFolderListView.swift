@@ -3,6 +3,17 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(WeatherRootModel.self) var root
+    @Previewable @State var animate = false
+    DetailFolderListView(
+        root: root,
+        model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]),
+        folderListController: root.folderListController,
+        animate: $animate
+    )
+}
+
 struct DetailFolderListView: View {
     let root: WeatherRootModel
     let model: WeatherModel

@@ -136,3 +136,7 @@ public struct PdfContentExtractionView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
+
+#Preview {
+    PdfContentExtractionView(pdfDocument: PDFDocument()) { _ in }
+}

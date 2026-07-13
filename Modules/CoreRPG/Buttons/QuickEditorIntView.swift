@@ -2,6 +2,12 @@
 
 import SwiftUI
 
+#Preview {
+    @Previewable @State var number = 12
+    QuickEditorIntView(number: $number)
+        .padding()
+}
+
 struct QuickEditorIntView: View {
     @Binding var number: Int
 

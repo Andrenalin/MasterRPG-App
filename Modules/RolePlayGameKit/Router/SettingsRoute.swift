@@ -3,6 +3,11 @@
 import CoreRPG
 import SwiftUI
 
+#Preview {
+    SettingsRouteDestinationView(route: .validate)
+        .environment(AppModel())
+}
+
 enum SettingsRoute {
     case exportData
     case importData

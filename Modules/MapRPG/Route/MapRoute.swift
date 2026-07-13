@@ -4,6 +4,10 @@ import CoreRPG
 
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    MapRouteDestinationView(itemId: MapModel.previewId)
+}
+
 public enum MapRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }

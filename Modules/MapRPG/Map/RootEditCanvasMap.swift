@@ -80,3 +80,5 @@ struct RootEditCanvasMap: View {
         }
     }
 }
+
+#Preview(traits: .mockData) { RootEditCanvasMap(itemId: MapModel.previewId) }

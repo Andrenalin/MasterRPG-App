@@ -67,3 +67,16 @@ private extension EntryEditRow {
         editController.thumbnailEntryViewType == .photo && root.cacheControllable != nil
     }
 }
+
+#Preview {
+    EntryEditRow(
+        root: ItemRootController.fake,
+        editController: FakeEditController.fake,
+        itemId: UUID(),
+        entry: FakeEntryModel.empty,
+        cacheItemListModel: CacheItemListModel(),
+        listDisplayModel: ListDisplayModel(),
+        searchModel: FakeSearchController.fake.searchModel
+    )
+    .padding()
+}

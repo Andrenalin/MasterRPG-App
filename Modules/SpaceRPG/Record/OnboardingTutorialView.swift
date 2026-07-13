@@ -148,4 +148,12 @@ struct OnboardingTutorialView: View {
     }
 }
 
+#Preview {
+    OnboardingTutorialView(
+        session: ObjectCaptureSession(),
+        onboardingStateMachine: OnboardingStateMachine(.firstSegment)
+    )
+    .environment(AppDataModel.instance)
+}
+
 #endif

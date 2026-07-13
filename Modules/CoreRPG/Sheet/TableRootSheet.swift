@@ -65,3 +65,7 @@ private extension TableRootSheet {
         }
     }
 }
+
+#Preview {
+    TableRootSheet(root: ItemRootController.fake, itemId: UUID(), module: .none, configuration: .init())
+}

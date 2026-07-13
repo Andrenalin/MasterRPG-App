@@ -40,3 +40,11 @@ public struct LinkItemRootView: View {
             }
     }
 }
+
+#Preview {
+    LinkItemRootView(
+        root: ItemRootController.fake,
+        type: .inspector,
+        itemSelectionModel: ItemSelectionModel()
+    )
+}

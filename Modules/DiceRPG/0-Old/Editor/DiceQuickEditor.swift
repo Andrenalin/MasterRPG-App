@@ -3,6 +3,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    DiceQuickEditor(itemId: DiceModel.previewId) { _ in }
+}
+
 struct DiceQuickEditor: View {
     init(itemId: UUID, action: @escaping (Int) async -> Void) {
         self.itemId = itemId

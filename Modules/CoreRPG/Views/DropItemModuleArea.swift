@@ -2,6 +2,13 @@
 
 import SwiftUI
 
+#Preview {
+    DropItemModuleArea(module: .adventure) {
+        Label("Drop an adventure here", systemImage: "tray.and.arrow.down")
+    } dropAction: { _, _, _ in }
+    .padding()
+}
+
 public struct DropItemModuleArea<Content: View>: View {
     public init(module: NetworkModules, @ViewBuilder contentView: () -> Content, dropAction: @escaping (_ name: String, _ itenId: UUID, _ entryId: UUID?) -> Void) {
         self.module = module

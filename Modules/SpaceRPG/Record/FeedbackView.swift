@@ -28,4 +28,12 @@ struct FeedbackView: View {
     }
 }
 
+#Preview {
+    @Previewable var messageList = TimedMessageList()
+    FeedbackView(messageList: messageList)
+        .task {
+            messageList.add("Move slowly around the object")
+        }
+}
+
 #endif

@@ -91,6 +91,12 @@ struct PlayerGameScreen: View {
     }
 }
 
+#if os(macOS) || os(visionOS)
+    #Preview(traits: .mockData) {
+        PlayerMenuView()
+    }
+#endif
+
 private extension PlayerGameScreen {
     func prepareWindows() async {
         do {
@@ -184,5 +190,10 @@ private struct PlayerOverlayMenu: View {
 
 #Preview(traits: .mockData) {
     PlayerGameScreen(root: .preview, playerController: PlayerController.preview)
+        .environment(GameScreenModel())
+}
+
+#Preview {
+    PlayerOverlayMenu(root: .preview, playerController: .preview)
         .environment(GameScreenModel())
 }

@@ -41,3 +41,6 @@ struct DetailSelectionEditorView: View {
             }
     }
 }
+
+#Preview(traits: .mockData) { DetailEditorView(root: .preview, model: .preview) }
+#Preview(traits: .mockData) { DetailSelectionEditorView(root: .preview, model: .preview) }

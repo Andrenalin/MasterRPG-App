@@ -125,6 +125,15 @@ public struct LinkItemListView: View {
     }
 }
 
+#Preview {
+    LinkItemListView(
+        root: ItemRootController.fake,
+        type: .inspector,
+        selectionModel: ItemSelectionModel(),
+        parentModel: nil
+    )
+}
+
 // MARK: - Private helpers
 
 private extension LinkItemListView {

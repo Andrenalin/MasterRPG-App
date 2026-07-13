@@ -180,4 +180,27 @@ struct TextSummaryUpdateView: View {
     }
 }
 
+#Preview {
+    NavigationStack {
+        TextSummaryExtractionView(
+            module: .table,
+            entriesText: "A moss-covered altar stands in the center of the chamber."
+        ) { _, _ in }
+    }
+}
+
+#Preview {
+    @Previewable @State var selectedProperties = TextSummaryPropertySelection()
+
+    TextSummaryUpdateView(
+        content: TableSummaryAnalysis(
+            title: "Forgotten Shrine Encounters",
+            description: "Potential discoveries and dangers within an ancient shrine.",
+            tags: ["ruins", "mystery"]
+        ),
+        module: .table,
+        selectedProperties: $selectedProperties
+    )
+}
+
 #endif

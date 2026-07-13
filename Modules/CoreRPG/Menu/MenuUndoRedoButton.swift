@@ -56,3 +56,7 @@ struct RedoButton: View {
         .disabled(!root.editControllable.canRedo)
     }
 }
+
+#Preview { MenuUndoRedoButton(root: ItemRootController.fake) }
+#Preview { UndoButton(root: ItemRootController.fake) }
+#Preview { RedoButton(root: ItemRootController.fake) }

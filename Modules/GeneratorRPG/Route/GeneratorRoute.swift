@@ -4,6 +4,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    GeneratorRouteDestinationView(itemId: GeneratorModel.previewId)
+}
+
 public enum GeneratorRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }

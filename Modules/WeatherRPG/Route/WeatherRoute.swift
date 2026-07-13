@@ -3,6 +3,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    WeatherRouteDestinationView(itemId: WeatherModel.previewId)
+}
+
 public enum WeatherRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }

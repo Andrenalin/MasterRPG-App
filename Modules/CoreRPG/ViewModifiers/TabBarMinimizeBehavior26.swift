@@ -70,3 +70,10 @@ public struct GlassEffectContainerView<Content: View>: View {
 /// A type alias for GlassEffectContainerView that automatically handles visionOS platform differences.
 /// Use this instead of wrapping GlassEffectContainer in #if !os(visionOS) checks.
 public typealias GlassEffectContainerAll = GlassEffectContainerView
+
+#Preview {
+    GlassEffectContainerView {
+        Text("Glass content")
+            .padding()
+    }
+}

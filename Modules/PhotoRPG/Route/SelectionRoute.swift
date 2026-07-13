@@ -8,6 +8,14 @@ enum SelectionRoute: Equatable, Hashable, Codable {
     case mutliSelection
 }
 
+#Preview(traits: .mockData) {
+    SelectionDestinationView()
+}
+
+#Preview(traits: .mockData) {
+    MultiSelectionDestinationView()
+}
+
 extension SelectionRoute: NavigationDestination {
     public var body: some View {
         switch self {

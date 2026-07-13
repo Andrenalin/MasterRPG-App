@@ -2,6 +2,11 @@
 
 import SwiftUI
 
+#Preview {
+    GridLabelView(value: NetworkModules.adventure, color: .orange)
+        .padding()
+}
+
 public protocol GridButtonValue {
     var icon: String { get }
     var title: String { get }

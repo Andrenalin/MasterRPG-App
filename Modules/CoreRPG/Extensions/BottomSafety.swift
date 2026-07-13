@@ -2,6 +2,13 @@
 
 import SwiftUI
 
+#Preview {
+    VStack {
+        Text("Content")
+        BottomSafetyView()
+    }
+}
+
 public struct BottomSafetyView: View {
     public init(space: CGFloat = 68) {
         self.space = space

@@ -37,3 +37,12 @@ public struct FileImporterView: View {
 #endif
     }
 }
+
+#Preview {
+    FileImporterView(
+        editControllable: FakeEditController.fake,
+        fileTypes: [.data],
+        itemId: UUID()
+    )
+    .padding()
+}

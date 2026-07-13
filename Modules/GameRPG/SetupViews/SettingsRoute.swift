@@ -26,3 +26,5 @@ struct ImportRouteDestinationView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) { ImportRouteDestinationView(route: .importGame) }

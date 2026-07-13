@@ -37,3 +37,11 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
         }
     }
 }
+
+#Preview {
+    EntryEditorView(
+        rootManager: RootManager.preview(fake: ItemRootController.fake),
+        editorModel: SheetEditorModel(itemId: UUID(), entryId: UUID(), module: .none),
+        linkTypes: EmptyLinkTransferable.self
+    )
+}

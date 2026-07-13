@@ -3,6 +3,15 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(DiceRootModel.self) var root
+    ToggleDiceValue(
+        model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]),
+        toggleKetpath: \.sumUp
+    )
+    .padding()
+}
+
 struct ToggleDiceValue: View {
     let model: DiceModel
     let toggleKetpath: WritableKeyPath<DiceModel, Bool>

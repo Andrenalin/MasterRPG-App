@@ -3,6 +3,11 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(AudioRootModel.self) var root
+    PlayToolbarButton(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
+}
+
 struct PlayToolbarButton: View {
     let root: AudioRootModel
     let model: AudioModel

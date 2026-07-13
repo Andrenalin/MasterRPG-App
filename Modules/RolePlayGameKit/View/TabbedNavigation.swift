@@ -5,6 +5,11 @@ import CoreRPG
 import SwiftUI
 import AdventureRPG
 
+#Preview {
+    ModuleTabLabel(route: .game)
+        .padding()
+}
+
 struct TabbedNavigation: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
 
@@ -72,6 +77,10 @@ struct TabbedNavigation: View {
         guard let appModule = appModel.selectedModule?.module else { return .game }
         return appModule == .editor ? (appModel.selectedExtendedModule?.module ?? .game) : appModule
     }
+}
+
+#Preview {
+    TabbedNavigation()
 }
 
 struct ModuleTabLabel: View {

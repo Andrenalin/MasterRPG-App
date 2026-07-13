@@ -35,3 +35,7 @@ struct AnimatedMap: View {
         return root.itemController.itemOrEmpty(for: itemId).entries[Int.random(in: 0..<count)].id
     }
 }
+
+#Preview(traits: .mockData) {
+    AnimatedMap(itemId: MapModel.previewId, image: AKImage(), date: .now, size: CGSize(width: 320, height: 240))
+}

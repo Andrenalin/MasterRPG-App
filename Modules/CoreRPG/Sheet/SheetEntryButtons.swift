@@ -141,3 +141,38 @@ struct SheetEntryAddButton: View {
         rootModel.entryDataEditable(for: parentModel.source)
     }
 }
+
+@MainActor private enum SheetButtonPreviewData {
+    static let parent = SheetModel(
+        source: ItemRowModel(itemId: UUID(), typeId: .none),
+        name: "Character",
+        description: "Preview item",
+        entries: []
+    )
+    static let entry = SheetModel(
+        source: ItemRowModel(itemId: parent.source.itemId, entryId: UUID(), typeId: .none),
+        name: "Background",
+        description: "A wandering ranger.",
+        entries: []
+    )
+}
+
+#Preview("Edit Entry") {
+    SheetEntryEditButton(rootModel: .fake, entryModel: SheetButtonPreviewData.entry, parentModel: SheetButtonPreviewData.parent, isEditor: true, onlyIcon: false)
+        .padding()
+}
+
+#Preview("Quick Edit Entry") {
+    SheetEntryQuickEditButton(rootModel: .fake, entryModel: SheetButtonPreviewData.entry, parentModel: SheetButtonPreviewData.parent, onlyIcon: false)
+        .padding()
+}
+
+#Preview("Delete Entry") {
+    SheetEntryDeleteButton(rootModel: .fake, parentModel: SheetButtonPreviewData.parent, entryModel: SheetButtonPreviewData.entry, onlyIcon: false)
+        .padding()
+}
+
+#Preview("Add Entry") {
+    SheetEntryAddButton(rootModel: .fake, parentModel: SheetButtonPreviewData.parent, onlyIcon: false)
+        .padding()
+}

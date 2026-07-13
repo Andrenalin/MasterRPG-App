@@ -12,6 +12,10 @@ struct RoutePickerView: View {
     }
 }
 
+#Preview {
+    RoutePickerView()
+}
+
 #elseif !os(macOS)
 import UIKit
 
@@ -24,5 +28,9 @@ struct RoutePickerView: UIViewRepresentable {
 
     func updateUIView(_ view: AVRoutePickerView, context: Context) {
     }
+}
+
+#Preview {
+    RoutePickerView()
 }
 #endif

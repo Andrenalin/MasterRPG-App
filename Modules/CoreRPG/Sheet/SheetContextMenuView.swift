@@ -65,6 +65,16 @@ struct SheetContextMenuView: View {
     }
 }
 
+#Preview("Generated Entry Menu") {
+    GeneratedSheetEntryContextMenu(canRefine: true, takeOverAction: {}, refineAction: {}, deleteAction: {})
+        .padding()
+}
+
+#Preview("Entry Menu") {
+    SheetContextMenuView(rootModel: .fake, parentModel: SheetModel.empty, entryModel: SheetModel.empty, isEditor: true)
+        .padding()
+}
+
 private extension SheetContextMenuView {
     @ViewBuilder var addGroupButton: some View {
         if let editable = rootModel.entryDataEditable(for: parentModel.source), editable.canAddGroups {

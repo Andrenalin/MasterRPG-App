@@ -88,3 +88,15 @@ private extension TextIntEditor{
 #endif
     }
 }
+
+#Preview {
+    TextIntEditor(
+        model: EditIdentifierModel(value: 12.0),
+        title: "Count",
+        icon: "number",
+        prompt: "Count",
+        bundle: nil,
+        range: 0...20
+    )
+    .padding()
+}

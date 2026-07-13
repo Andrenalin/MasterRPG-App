@@ -95,3 +95,8 @@ struct AddLinkButton: View {
         }
     }
 }
+
+#Preview(traits: .mockData) { QuickEditorButton(root: .preview, model: .preview) }
+#Preview(traits: .mockData) { AddEntryButton(root: .preview, model: .preview) }
+#Preview(traits: .mockData) { AddGroupButton(root: .preview, model: .preview) }
+#Preview(traits: .mockData) { AddLinkButton(root: .preview, model: .preview, module: .photo) }

@@ -64,3 +64,7 @@ struct DestinationTableEditorRouteView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) {
+    DestinationTableEditorRouteView(route: .quickEditor(TableModel.previewId))
+}

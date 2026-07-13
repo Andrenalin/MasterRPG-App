@@ -2,6 +2,11 @@
 
 import SwiftUI
 
+#Preview {
+    AudioPlayerScrubberView(currentTime: 92, totalDuration: 245, elapsedText: "01:32", onSeek: { _ in })
+        .padding()
+}
+
 struct AudioPlayerScrubberView: View {
     let currentTime: Double
     let totalDuration: Double

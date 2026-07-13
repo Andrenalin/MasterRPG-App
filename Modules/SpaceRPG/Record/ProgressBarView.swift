@@ -117,4 +117,14 @@ struct ProgressBarView: View {
     }
 }
 
+#Preview {
+    ProgressBarView(
+        progress: 0.65,
+        estimatedRemainingTime: 90,
+        processingStageDescription: "Creating model"
+    )
+    .environment(AppDataModel.instance)
+    .padding()
+}
+
 #endif

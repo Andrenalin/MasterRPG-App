@@ -68,3 +68,7 @@ struct CharacterDetailRouteDestinationView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) {
+    CharacterDetailRouteDestinationView(route: .folder(ValueModel.previewId))
+}

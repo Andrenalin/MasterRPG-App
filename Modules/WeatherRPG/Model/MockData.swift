@@ -47,8 +47,11 @@ struct MockRootViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(root)
-            .environment(root.photoRoot)
+            .environment(AppGameStateModel())
+            .environment(AppWindowSizeModel())
             .environment(CacheItemListModel())
+            .environment(ScenesManager())
+            .environment(root.photoRoot)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

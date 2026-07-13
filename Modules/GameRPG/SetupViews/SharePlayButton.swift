@@ -12,6 +12,10 @@ import AppKit
 import UIKit
 #endif
 
+#Preview {
+    SharePlayButton("Start SharePlay", activity: RPGActivity(adventureTitle: "Preview Adventure"))
+}
+
 struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: View {
     @ObservedObject
     private var groupStateObserver = GroupStateObserver()

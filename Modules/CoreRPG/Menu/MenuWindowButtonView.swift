@@ -28,3 +28,8 @@ public struct MenuWindowButtonView: View {
         #endif
     }
 }
+
+#Preview {
+    MenuWindowButtonView(valueType: .adventure)
+        .environment(ScenesManager())
+}

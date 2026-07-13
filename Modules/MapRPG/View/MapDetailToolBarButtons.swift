@@ -4,6 +4,10 @@ import CoreRPG
 #if !os(tvOS)
 import GeneratorRPG
 #endif
+
+#if !os(tvOS)
+#Preview(traits: .mockData) { MapExtractToolBarButton(model: .preview) }
+#endif
 import SwiftUI
 
 #if !os(tvOS)
@@ -131,3 +135,9 @@ struct AddLinkButton: View {
         }
     }
 }
+
+#Preview(traits: .mockData) { QuickEditorButton(model: .preview) }
+#Preview(traits: .mockData) { MapEditorButton(model: .preview) }
+#Preview(traits: .mockData) { EditTileButton(model: .preview) }
+#Preview(traits: .mockData) { AddEntryButton(root: .preview, model: .preview) }
+#Preview(traits: .mockData) { AddLinkButton(root: .preview, model: .preview, module: .photo) }

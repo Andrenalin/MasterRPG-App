@@ -3,6 +3,12 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(WeatherRootModel.self) var root
+    @Previewable @State var animate = true
+    OverlayViewer(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), animate: $animate)
+}
+
 struct OverlayViewer: View {
     let model: WeatherModel
     @Binding var animate: Bool

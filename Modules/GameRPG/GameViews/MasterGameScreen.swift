@@ -112,6 +112,12 @@ struct MasterGameScreen: View {
     }
 }
 
+#if os(macOS) || os(visionOS)
+    #Preview(traits: .mockData) {
+        MasterMenuView()
+    }
+#endif
+
 private extension MasterGameScreen {
     func prepareWindows() async {
         do {
@@ -226,4 +232,9 @@ private struct MasterOverlayMenu: View {
 
 #Preview("iPad") {
     MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())
+}
+
+#Preview {
+    MasterOverlayMenu(root: .preview, adventureId: UUID(), playerController: .preview)
+        .environment(GameScreenModel())
 }

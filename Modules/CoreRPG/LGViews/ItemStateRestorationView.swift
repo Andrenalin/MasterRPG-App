@@ -63,3 +63,23 @@ public struct ItemStateRestorationView<Route: ItemDetailRoute & Equatable, Root:
             }
     }
 }
+
+private enum ItemStateRestorationPreviewRoute: @MainActor ItemDetailRoute {
+    case detail(UUID)
+
+    var id: UUID { detail() ?? UUID() }
+
+    func detail() -> UUID? {
+        if case let .detail(id) = self { id } else { nil }
+    }
+
+    func reset(detail: UUID) -> Self { .detail(detail) }
+    static func detailRoute(itemId: UUID) -> Self { .detail(itemId) }
+
+    var body: some View { EmptyView() }
+}
+
+#Preview {
+    ItemStateRestorationView<ItemStateRestorationPreviewRoute, ItemRootController>(root: .fake, keyPrefix: "preview")
+        .environment(AppWindowSizeModel())
+}

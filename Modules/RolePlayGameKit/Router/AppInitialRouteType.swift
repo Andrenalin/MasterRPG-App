@@ -3,6 +3,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview {
+    AppInitialRouteTypeDestinationView(route: .initializing)
+}
+
 extension AppInitialRouteType: @retroactive NavigationDestination {
     public var body: some View {
         AppInitialRouteTypeDestinationView(route: self)

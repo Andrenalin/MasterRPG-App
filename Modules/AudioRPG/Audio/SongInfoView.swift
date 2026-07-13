@@ -2,6 +2,11 @@
 
 import SwiftUI
 
+#Preview {
+    SongInfoView(title: "The Tavern at Midnight", artist: "MasterRPG Orchestra")
+        .padding()
+}
+
 struct SongInfoView: View {
     let title: String
     let artist: String

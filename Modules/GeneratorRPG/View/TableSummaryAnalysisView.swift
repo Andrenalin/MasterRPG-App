@@ -141,3 +141,7 @@ public struct TableSummaryAnalysisView: View {
         }
     }
 }
+
+#Preview {
+    TableSummaryAnalysisView(entriesText: "A ruined watchtower overlooks the northern road.") { _ in }
+}

@@ -3,6 +3,11 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(PdfRootModel.self) var root
+    DetailEditorView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
+}
+
 struct DetailEditorView: View {
     let root: PdfRootModel
     let model: PdfModel

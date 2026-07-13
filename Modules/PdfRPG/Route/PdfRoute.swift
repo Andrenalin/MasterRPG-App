@@ -3,6 +3,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    PdfRouteDestinationView(itemId: PdfModel.previewId)
+}
+
 public enum PdfRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }

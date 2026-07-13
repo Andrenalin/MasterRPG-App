@@ -2,6 +2,10 @@
 
 import SwiftUI
 
+#Preview {
+    SplitContentUnavailable(module: .adventure)
+}
+
 public struct SplitContentUnavailable: View {
     public init(module: NetworkModules) {
         self.module = module

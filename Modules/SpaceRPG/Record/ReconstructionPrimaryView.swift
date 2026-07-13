@@ -40,6 +40,22 @@ struct ReconstructionPrimaryView: View {
     }
 }
 
+#Preview {
+    TitleView()
+}
+
+#Preview("Reconstruction") {
+    ReconstructionPrimaryView(outputFile: URL(fileURLWithPath: "/dev/null"))
+        .environment(AppDataModel.instance)
+}
+
+#Preview("Reconstruction Progress") {
+    @Previewable @State var completed = false
+    @Previewable @State var cancelled = false
+    ReconstructionProgressView(outputFile: URL(fileURLWithPath: "/dev/null"), completed: $completed, cancelled: $cancelled)
+        .environment(AppDataModel.instance)
+}
+
 struct ReconstructionProgressView: View {
     @Environment(AppDataModel.self) private var appModel
     let outputFile: URL

@@ -22,3 +22,7 @@ public struct SplitContentUnavailableView: View {
         }
     }
 }
+
+#Preview {
+    SplitContentUnavailableView(module: .adventure)
+}

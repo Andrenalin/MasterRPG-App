@@ -50,3 +50,7 @@ struct SelectedMasterView: View {
         }
     }
 }
+
+#Preview {
+    SelectedMasterView(root: .preview)
+}

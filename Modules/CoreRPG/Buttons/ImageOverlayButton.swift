@@ -2,6 +2,13 @@
 
 import SwiftUI
 
+#Preview {
+    HStack {
+        ImageOverlayButton(icon: "pencil", action: {})
+        ImageOverlayButton(icon: "trash", disabled: true, action: {})
+    }
+}
+
 public struct ImageOverlayButton: View {
     public init(icon: String, disabled: Bool = false, withoutButton: Bool = false, action: @escaping () -> Void) {
         self.icon = icon

@@ -15,3 +15,5 @@ struct AdventureSheet: View {
             .id(model.id)
     }
 }
+
+#Preview(traits: .mockData) { AdventureSheet(model: .preview, configuration: .init(), dismissAction: nil) }

@@ -192,6 +192,17 @@ struct SingleReviewReadOnlyPropertyRow: View {
     }
 }
 
+#Preview {
+    SingleReviewStaticPropertyRow(displayName: "Description", value: "A suspicious ranger.")
+        .padding()
+}
+
+#Preview {
+    let model = SingleItemImportModel.preview
+    SingleReviewReadOnlyPropertyRow(model: model, property: model.properties[0])
+        .padding()
+}
+
 struct SingleReviewPropertyRow: View {
     let model: SingleItemImportModel
     let property: SingleReviewItemProperty
@@ -291,4 +302,16 @@ struct SingleReviewPropertyRow: View {
     private var expansionHint: Text {
         isExpanded ? Text("Collapse choices", bundle: .module) : Text("Show choices", bundle: .module)
     }
+}
+
+#Preview("Property") {
+    let model = SingleItemImportModel.preview
+    SingleReviewPropertyRow(model: model, property: model.properties[0])
+        .padding()
+}
+
+#Preview("Linked Property") {
+    let model = SingleItemImportModel.preview
+    SingleReviewLinkedPropertyRow(model: model, property: model.properties[0], rootManager: nil, reviewModel: nil)
+        .padding()
 }

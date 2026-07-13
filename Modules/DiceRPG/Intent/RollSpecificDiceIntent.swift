@@ -7,6 +7,12 @@ import AppIntents
 import Foundation
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(DiceRootModel.self) var root
+    RollResultSnippetView(result: DiceResultModel(diceModel: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])))
+        .background(.black)
+}
+
 public struct RollSpecificDiceIntent: AppIntent {
     public static let title: LocalizedStringResource = "Roll Specific Dice"
     public static let description = IntentDescription("Roll a specific dice from your collection")

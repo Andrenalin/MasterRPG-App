@@ -138,3 +138,15 @@ private extension TextDoubleEditor {
         number.formatted(.number.precision(.fractionLength(1)))
     }
 }
+
+#Preview {
+    TextDoubleEditor(
+        model: EditIdentifierModel(value: 2.5),
+        title: "Scale",
+        icon: "slider.horizontal.3",
+        prompt: "Scale",
+        bundle: nil,
+        range: 0...5
+    )
+    .padding()
+}

@@ -219,3 +219,14 @@ struct SingleReviewEntryPropertyRow: View {
         }
     }
 }
+
+#Preview {
+    SingleReviewEntryRow(entry: SingleItemImportModel.preview.entries[0])
+        .padding()
+}
+
+#Preview {
+    let entry = SingleItemImportModel.preview.entries[0]
+    SingleReviewEntryPropertyRow(entry: entry, property: entry.properties[0])
+        .padding()
+}

@@ -109,3 +109,9 @@ private struct EmptyDropButton: View {
         DropChooseView(selectionModel: ItemSelectionModel())
     }
 }
+
+#Preview(traits: .mockData) {
+    EmptyDropButton(selectionModel: ItemSelectionModel())
+        .environment(AppWindowSizeModel())
+        .environment(ScenesManager())
+}

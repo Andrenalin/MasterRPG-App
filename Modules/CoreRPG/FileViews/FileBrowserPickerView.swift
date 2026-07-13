@@ -48,6 +48,16 @@ public struct FileBrowserPickerView: View {
     }
 }
 
+#Preview {
+    @Previewable @State var shown = false
+    FileBrowserPickerView(
+        shown: $shown,
+        pickerType: .open,
+        fileNameSuggestion: "adventure.pdf",
+        handler: { _ in }
+    )
+}
+
 #if os(macOS)
 
 enum BrowserPicker {

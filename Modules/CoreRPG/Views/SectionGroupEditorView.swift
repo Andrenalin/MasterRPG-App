@@ -2,6 +2,18 @@
 
 import SwiftUI
 
+#Preview {
+    List {
+        SectionGroupEditorView {
+            Toggle("Visible to players", isOn: .constant(true))
+        } header: {
+            Text("Sharing")
+        } footer: {
+            Text("This setting is synced to joined players.")
+        }
+    }
+}
+
 public struct SectionGroupEditorView<Content: View, Header: View, Footer: View>: View {
     public let content: () -> Content
     public let header: () -> Header

@@ -113,3 +113,15 @@ private extension EditorLinkView {
             .tag(module)
     }
 }
+
+#Preview {
+    EditorLinkView(
+        root: .fake,
+        model: FakeItemModel.empty,
+        editorLinkModel: EditorLinkModel(
+            folderListController: FakeFolderListController.fake,
+            firstRow: [.none],
+            selection: .none
+        )
+    )
+}

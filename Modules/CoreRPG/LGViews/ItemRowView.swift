@@ -2,6 +2,16 @@
 
 import SwiftUI
 
+#Preview("Tags") {
+    TagDisplayView(tags: ["Dungeon", "Encounter", "Important"], category: .folder, collectionCategory: .folder)
+        .padding()
+}
+
+#Preview("Many tags") {
+    TwoLineTagView(tags: ["Dungeon", "Encounter", "Important", "Combat", "Boss"], category: .folder, collectionCategory: .folder)
+        .padding()
+}
+
 public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     public init(root: any ItemRootControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, isSelected: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.root = root

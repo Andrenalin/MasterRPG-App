@@ -20,3 +20,7 @@ struct MenuSelectionButtonView: View {
 #endif
     }
 }
+
+#Preview {
+    MenuSelectionButtonView(listDisplayModel: ListDisplayModel())
+}

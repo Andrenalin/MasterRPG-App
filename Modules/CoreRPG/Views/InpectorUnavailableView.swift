@@ -2,6 +2,10 @@
 
 import SwiftUI
 
+#Preview {
+    InspectorUnavailableView()
+}
+
 public struct InspectorUnavailableView: View {
     public init() {}
     

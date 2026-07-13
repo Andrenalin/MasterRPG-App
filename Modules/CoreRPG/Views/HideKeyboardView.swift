@@ -2,6 +2,19 @@
 
 import SwiftUI
 
+#if os(iOS)
+    #Preview("Focus control") {
+        @Previewable @FocusState var focus: Int?
+        HideKeyboardFocusView(enabled: true, focusedField: $focus)
+            .padding()
+    }
+
+    #Preview("Keyboard control") {
+        HideKeyboardView(show: true)
+            .padding()
+    }
+#endif
+
 public extension View {
     func hideKeyboardView(show: Bool = true) -> some View {
 #if os(iOS)

@@ -3,6 +3,12 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(AudioRootModel.self) var root
+    AudioPlayerPlaybackControls(audioController: root.audioController, audioPlayerModel: root.audioPlayerModel)
+        .padding()
+}
+
 struct AudioPlayerPlaybackControls: View {
     let audioController: AudioController
     let audioPlayerModel: AudioPlayerModel

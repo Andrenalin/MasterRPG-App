@@ -5,6 +5,11 @@ import CoreRPG
 import GameRPG
 import SwiftUI
 
+#Preview {
+    AppGameTypeDestinationView(type: .gameSetup)
+        .environment(AppModel())
+}
+
 extension AppModeRouteType: @retroactive NavigationDestination {
     public var body: some View {
         AppGameTypeDestinationView(type: self)

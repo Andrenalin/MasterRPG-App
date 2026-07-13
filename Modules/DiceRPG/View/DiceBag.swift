@@ -40,5 +40,5 @@ struct DiceBag: View {
 #Preview(traits: .mockData) {
     @Previewable @Environment(DiceRootModel.self) var root
     
-    DiceEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
+    DiceBag(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }

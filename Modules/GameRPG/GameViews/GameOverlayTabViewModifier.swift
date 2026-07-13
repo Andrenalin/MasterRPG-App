@@ -49,3 +49,9 @@ struct GameToolBarButtonView: View {
         #endif
     }
 }
+
+#Preview {
+    @Previewable @State var showType = NetworkModules.none
+    GameToolBarButtonView(valueType: .adventure, showType: $showType)
+        .environment(ScenesManager())
+}

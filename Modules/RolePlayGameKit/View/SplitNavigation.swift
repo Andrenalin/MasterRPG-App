@@ -38,6 +38,10 @@ struct SplitNavigation: View {
     static let defaultTab: RootRoute = .game
 }
 
+#Preview {
+    SplitNavigation()
+}
+
 private extension SplitNavigation {
     @ViewBuilder var allTabs: some View {
         @Bindable var appModel = appModel

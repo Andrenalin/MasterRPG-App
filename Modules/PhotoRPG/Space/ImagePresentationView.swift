@@ -90,4 +90,8 @@ struct ImagePresentationView: View {
     }
 }
 
+#Preview(traits: .mockData) {
+    ImagePresentationView(model: ImagePresentationModel())
+}
+
 #endif

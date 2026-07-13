@@ -2,6 +2,15 @@
 
 import SwiftUI
 
+#Preview("Title") {
+    NavBarTitleView(title: "Adventure")
+}
+
+#Preview("Background") {
+    NavBarBackground.linearPinkBlue
+        .frame(height: 120)
+}
+
 public extension View {
     func navBarTitle() -> some View {
         modifier(NavBarTitleModifier())

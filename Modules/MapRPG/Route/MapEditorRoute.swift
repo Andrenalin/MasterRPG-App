@@ -70,3 +70,5 @@ struct DestinationMapEditorRoute: View {
         }
     }
 }
+
+#Preview(traits: .mockData) { DestinationMapEditorRoute(route: .quickEditor(MapModel.previewId)) }

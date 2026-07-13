@@ -153,4 +153,8 @@ public struct GameTableView: View {
     }
 }
 
+#Preview {
+    GameTableView(root: .preview)
+}
+
 #endif

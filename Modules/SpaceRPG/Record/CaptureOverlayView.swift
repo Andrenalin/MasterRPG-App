@@ -205,4 +205,16 @@ private struct BoundingBoxGuidanceView: View {
     }
 }
 
+#Preview {
+    @Previewable @State var showInfo = false
+    CaptureOverlayView(session: ObjectCaptureSession(), showInfo: $showInfo)
+        .environment(AppDataModel.instance)
+}
+
+#Preview {
+    BoundingBoxGuidanceView(session: ObjectCaptureSession(), hasDetectionFailed: false)
+        .padding()
+        .background(.black)
+}
+
 #endif

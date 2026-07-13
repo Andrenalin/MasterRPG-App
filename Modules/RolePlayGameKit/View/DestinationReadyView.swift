@@ -3,6 +3,12 @@
 import CoreRPG
 import SwiftUI
 
+#Preview {
+    DataBaseAppStoreAvailable(appModel: AppModel()) { _ in
+        Text("Editor ready")
+    }
+}
+
 struct DestinationReadyView: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.locale) private var locale: Locale
@@ -115,6 +121,10 @@ struct DestinationReadyView: View {
         case nil:               Text(verbatim: "")
         }
     }
+}
+
+#Preview {
+    DestinationReadyView()
 }
 
 // MARK: - Database App Store Available

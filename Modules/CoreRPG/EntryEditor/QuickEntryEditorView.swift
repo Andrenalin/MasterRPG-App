@@ -161,6 +161,18 @@ private extension QuickEntryEditorView {
     }
 }
 
+#Preview {
+    QuickEntryEditorView(
+        root: ItemRootController.fake,
+        editController: FakeEditController.fake,
+        model: FakeItemModel.empty,
+        referenceText: DebouncerModel(initialValue: ""),
+        pdfEditorRoute: InternalRoute.removeAlert,
+        inspector: { EmptyView() },
+        pdfOverlay: { EmptyView() }
+    )
+}
+
 private extension QuickEntryEditorView {
     private var parser: EntryTextParser { EntryTextParser() }
 

@@ -74,4 +74,10 @@ struct SecondaryTabBarExtButton: View {
         }
     }
 }
+
+#Preview("Secondary tab button") {
+    SecondaryTabBarExtButton(tab: .maps, hoverGroup: nil)
+        .environment(AppModel())
+        .padding()
+}
 #endif

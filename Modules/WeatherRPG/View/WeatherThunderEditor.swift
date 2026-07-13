@@ -3,6 +3,11 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(WeatherRootModel.self) var root
+    WeatherThunderEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
+}
+
 struct WeatherThunderEditor: View {
     let model: WeatherModel
 

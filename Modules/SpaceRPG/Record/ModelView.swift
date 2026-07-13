@@ -78,4 +78,8 @@ private class QLPreviewControllerWrapper: UIViewController {
     }
 }
 
+#Preview {
+    ModelView(modelFile: URL(fileURLWithPath: "/dev/null"), endCaptureCallback: {})
+}
+
 #endif

@@ -2,6 +2,11 @@
 
 import SwiftUI
 
+#Preview {
+    AlbumArtworkView(artwork: nil, fallbackImage: Image(systemName: "music.note"), size: 128, cornerRadius: 16)
+        .padding()
+}
+
 struct AlbumArtworkView: View {
     let artwork: Image?
     let fallbackImage: Image

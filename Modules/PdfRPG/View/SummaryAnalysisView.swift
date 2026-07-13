@@ -136,3 +136,9 @@ struct SummaryAnalysisView: View {
     }
 }
 #endif
+
+#if !os(tvOS)
+    #Preview(traits: .mockData) {
+        SummaryAnalysisView(itemId: PdfModel.previewId)
+    }
+#endif

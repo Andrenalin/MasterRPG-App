@@ -22,3 +22,7 @@ struct LinkItemPickerView: View {
         .disabled(isParentFiltering)
     }
 }
+
+#Preview {
+    LinkItemPickerView(listDisplayModel: ListDisplayModel())
+}

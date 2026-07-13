@@ -2,6 +2,18 @@
 
 import SwiftUI
 
+#Preview("Regular") {
+    GlassButton(action: {}) {
+        Label("Continue", systemImage: "arrow.right")
+    }
+}
+
+#Preview("Prominent") {
+    GlassButton(isProminent: true, action: {}) {
+        Label("Continue", systemImage: "arrow.right")
+    }
+}
+
 public struct GlassButton<Content: View>: View {
     public init(isProminent: Bool = false,  action: @escaping () -> Void, @ViewBuilder label: () -> Content) {
         self.isProminet = isProminent

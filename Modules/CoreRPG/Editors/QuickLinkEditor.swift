@@ -151,3 +151,31 @@ struct QuickLinkTextRow<EntryViewModel: ItemLinkEditable>: View {
         return colorScheme == .dark ? .black : .primary
     }
 }
+
+private struct QuickLinkPreviewEntry: ItemLinkEditable {
+    let textLinkContent: String
+}
+
+#Preview {
+    QuickLinkTextRow(
+        linkControllable: FakeLinkController.fake,
+        model: QuickLinkPreviewEntry(textLinkContent: "The [forgotten shrine](RPG://ADVENTURE/preview) awaits."),
+        original: true
+    )
+    .padding()
+}
+
+#Preview("Quick Link Editor") {
+    @Previewable @State var entries = [QuickLinkPreviewEntry(textLinkContent: "The forgotten shrine awaits.")]
+    QuickLinkEditor(
+        editController: FakeEditController.fake,
+        linkController: FakeLinkController.fake,
+        model: $entries,
+        title: "Quick Links"
+    ) { afterEntries in
+        Button("Scan Links") {
+            afterEntries.wrappedValue = [QuickLinkPreviewEntry(textLinkContent: "The [forgotten shrine](RPG://ADVENTURE/preview) awaits.")]
+        }
+        .padding()
+    }
+}

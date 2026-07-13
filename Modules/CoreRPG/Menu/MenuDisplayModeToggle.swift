@@ -121,3 +121,13 @@ struct RegularDisplayModeToggle: View {
 #endif
     }
 }
+
+#Preview {
+    MenuDisplayModeToggle(listDisplayModel: ListDisplayModel())
+}
+
+#Preview { ListModeToggle(listDisplayModel: ListDisplayModel()) }
+#Preview { FolderModeToggle(listDisplayModel: ListDisplayModel()) }
+#Preview { CompactDisplayModeToggle(listDisplayModel: ListDisplayModel()) }
+#Preview { MediumDisplayModeToggle(listDisplayModel: ListDisplayModel()) }
+#Preview { RegularDisplayModeToggle(listDisplayModel: ListDisplayModel()) }

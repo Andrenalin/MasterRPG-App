@@ -192,3 +192,17 @@ private struct SingleReviewFileAlternativeBlock<Thumbnail: View>: View {
         .accessibilityHint(Text("Choose this file version", bundle: .module))
     }
 }
+
+#Preview("File Property") {
+    let model = SingleItemImportModel.preview
+    SingleReviewFilePropertyRow(model: model, property: model.properties[0], root: nil)
+        .padding()
+}
+
+#Preview("File Alternative") {
+    SingleReviewFileAlternativeBlock(decision: .imported, value: "mara.png") {
+        Image(systemName: "photo")
+            .frame(width: 44, height: 44)
+    } onSelect: {}
+    .padding()
+}

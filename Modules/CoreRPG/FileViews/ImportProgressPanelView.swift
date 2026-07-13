@@ -6,6 +6,10 @@ public protocol ExampleUrlProvider {
     @MainActor func urlExampleData(isGerman: Bool) -> URL?
 }
 
+#Preview {
+    ImportInformationSection()
+}
+
 private enum ImportOutcome: Equatable, Sendable {
     case notStarted
     case running

@@ -4,6 +4,10 @@ import CoreRPG
 #if !os(tvOS)
 import GeneratorRPG
 #endif
+
+#if !os(tvOS)
+#Preview(traits: .mockData) { AdventureExtractToolBarButton(model: .preview) }
+#endif
 import SwiftUI
 
 #if !os(tvOS)
@@ -89,3 +93,7 @@ struct AdventureAddLinkButton: View {
         }
     }
 }
+
+#Preview(traits: .mockData) { AdventureQuickEditorButton(model: .preview) }
+#Preview(traits: .mockData) { AdventureAddEntryButton(root: .preview, model: .preview) }
+#Preview(traits: .mockData) { AdventureAddLinkButton(root: .preview, model: .preview, module: .photo) }

@@ -46,3 +46,7 @@ struct QuickEntryEditor: View {
         .background(.primary)
     }
 }
+
+#Preview(traits: .mockData) {
+    QuickEntryEditor(model: .preview)
+}

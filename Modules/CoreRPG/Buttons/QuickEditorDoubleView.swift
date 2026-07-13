@@ -2,6 +2,12 @@
 
 import SwiftUI
 
+#Preview {
+    @Previewable @State var number = 12.5
+    QuickEditorDoubleView(number: $number)
+        .padding()
+}
+
 struct QuickEditorDoubleView: View {
     @Binding var number: Double
 

@@ -52,3 +52,8 @@ extension SingleReviewReference.Status {
         }
     }
 }
+
+#Preview {
+    SingleReviewReferenceRow(reference: SingleItemImportModel.preview.references[0])
+        .padding()
+}

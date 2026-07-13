@@ -90,6 +90,8 @@ struct DestinationDetailAdventureRouteView: View {
     }
 }
 
+#Preview(traits: .mockData) { DestinationDetailAdventureRouteView(route: .folder(AdventureModel.previewId)) }
+
 #if !os(tvOS)
 private struct AdventureExtractionDestination: View {
     let itemId: UUID
@@ -127,4 +129,6 @@ private struct AdventureExtractionDestination: View {
         return lines.joined(separator: "\n")
     }
 }
+
+#Preview(traits: .mockData) { AdventureExtractionDestination(itemId: AdventureModel.previewId) }
 #endif

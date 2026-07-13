@@ -38,6 +38,8 @@ struct HorizontalSizeViewModifier: ViewModifier {
 }
 
 @MainActor @Observable public final class AppWindowSizeModel: Sendable {
+    public init() {}
+
 #if os(iOS)
     public internal(set) var mode: AppSizeMode = .compact
 #else

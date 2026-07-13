@@ -65,3 +65,8 @@ struct PlayerStartView: View {
     }
 }
 
+#Preview {
+    PlayerStartView(root: .preview)
+        .environment(AppGameStateModel())
+        .environment(ScenesManager())
+}

@@ -23,3 +23,17 @@ struct LinkEntryRowView: View {
         }
     }
 }
+
+#Preview {
+    LinkEntryRowView(
+        root: ItemRootController.fake,
+        item: FolderListItemModel(
+            id: UUID(),
+            source: ItemRowModel(itemId: UUID(), entryId: UUID(), typeId: .none),
+            destination: nil,
+            level: 0,
+            isShown: true
+        ),
+        listDisplayModel: ListDisplayModel()
+    )
+}

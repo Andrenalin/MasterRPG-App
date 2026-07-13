@@ -41,3 +41,8 @@ struct InternalRouteDestinationView: View {
         }
     }
 }
+
+#Preview {
+    InternalRouteDestinationView(route: .removeAlert)
+        .environment(ItemRootController.fake)
+}

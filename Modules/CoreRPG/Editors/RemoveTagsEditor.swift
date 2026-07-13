@@ -53,6 +53,18 @@ public struct AddTagsEditor: View {
     }
 }
 
+#Preview {
+    @Previewable @State var tags = ["Dungeon", "Mystery", "Undead"]
+    RemoveTagsEditor(tags: $tags)
+        .padding()
+}
+
+#Preview {
+    @Previewable @State var tags = ["Dungeon"]
+    AddTagsEditor(tags: $tags)
+        .padding()
+}
+
 private extension AddTagsEditor {
     var addTagView: some View {
         HStack {

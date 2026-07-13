@@ -16,6 +16,14 @@ public final class DiceDisplayModel {
     public var showDiceValueEditor: Bool
 }
 
+#Preview(traits: .mockData) {
+    DiceFocusActionBar()
+}
+
+#Preview(traits: .mockData) {
+    DiceFocusResult()
+}
+
 struct DiceFocusRoll: View {
     @Environment(DiceRootModel.self) private var root
 

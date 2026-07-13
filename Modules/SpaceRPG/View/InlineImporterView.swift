@@ -158,3 +158,7 @@ struct InlineImporterView: View, Equatable {
         lhs.itemId == rhs.itemId
     }
 }
+
+#Preview(traits: .mockData) {
+    InlineImporterView(itemId: SpaceModel.previewId, preopen: true, layoutDown: true)
+}

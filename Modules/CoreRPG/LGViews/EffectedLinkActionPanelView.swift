@@ -77,6 +77,10 @@ public struct EffectedLinkActionPanelView: View {
     }
 }
 
+#Preview {
+    EffectedLinkActionPanelView(root: ItemRootController.fake)
+}
+
 private extension EffectedLinkActionPanelView {
     @MainActor func removeItems(models: [ItemRowModel]) {
         for model in models {

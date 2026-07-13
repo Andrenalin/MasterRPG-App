@@ -73,6 +73,15 @@ struct CapturePrimaryView: View {
     }
 }
 
+#Preview {
+    CapturePrimaryView(session: ObjectCaptureSession())
+        .environment(AppDataModel.instance)
+}
+
+#Preview {
+    GradientBackground()
+}
+
 private struct GradientBackground: View {
     private let gradient = LinearGradient(
         colors: [.black.opacity(0.4), .clear],

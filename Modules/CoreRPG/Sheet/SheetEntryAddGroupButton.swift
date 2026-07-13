@@ -30,3 +30,8 @@ struct SheetEntryAddGroupButton: View {
         }
     }
 }
+
+#Preview {
+    SheetEntryAddGroupButton(rootModel: .fake, parentModel: SheetModel.empty, onlyIcon: false)
+        .padding()
+}

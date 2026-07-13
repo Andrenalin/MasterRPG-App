@@ -37,3 +37,11 @@ struct LinkItemFilterFieldView: View {
         }
     }
 }
+
+#Preview {
+    LinkItemFilterFieldView(
+        searchModel: FakeSearchController.fake.searchModel,
+        prompt: Text("Search links"),
+        onSearchChange: {}
+    )
+}

@@ -27,7 +27,18 @@ public struct ContentBlocksView: View {
 #if os(macOS)
         .formStyle(.grouped)
 #endif
+
+
     }
+}
+
+#Preview {
+    ContentBlocksView(content: [
+        BlockEntryGenModel(
+            title: "The Forgotten Shrine",
+            content: "A weathered stone doorway leads into a quiet underground chamber."
+        )
+    ])
 }
 
 #endif

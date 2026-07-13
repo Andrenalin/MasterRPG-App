@@ -42,3 +42,9 @@ public struct LinkWindowCommandView: View {
 }
 
 #endif
+
+#if !os(tvOS)
+#Preview {
+    LinkWindowCommandView(networkModule: .adventure, scenesManager: ScenesManager(), key: "l")
+}
+#endif

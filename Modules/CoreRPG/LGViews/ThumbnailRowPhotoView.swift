@@ -2,6 +2,15 @@
 
 import SwiftUI
 
+#Preview {
+    ThumbnailRowPhotoView(
+        cacheController: FakeImageCacheController(),
+        model: FakeItemModel(name: "Ancient map"),
+        listDisplayModel: ListDisplayModel()
+    )
+    .padding()
+}
+
 public struct ThumbnailRowPhotoView: View {
     public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, listDisplayModel: ListDisplayModel, entryId: UUID? = nil) {
         self.cacheController = cacheController

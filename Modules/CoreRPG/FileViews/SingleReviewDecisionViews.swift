@@ -69,3 +69,13 @@ struct SingleReviewDecisionCardsView: View {
         }
     }
 }
+
+#Preview {
+    SingleReviewDecisionHeaderView(item: .preview)
+        .padding()
+}
+
+#Preview {
+    SingleReviewDecisionCardsView(model: .preview)
+        .padding()
+}

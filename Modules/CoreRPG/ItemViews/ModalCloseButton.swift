@@ -2,6 +2,19 @@
 
 import SwiftUI
 
+#Preview("Close") {
+    ModalCloseButton(dismissAction: {})
+}
+
+#Preview("Presented close") {
+    @Previewable @State var isPresented = true
+    ModalPresentCloseButton(isPresented: $isPresented)
+}
+
+#Preview("OK") {
+    ModalCloseOkButton(dismissAction: {})
+}
+
 struct ModalCloseButton: View {
     let dismissAction: (() -> Void)?
     @Environment(\.dismiss) private var dismiss

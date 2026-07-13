@@ -34,3 +34,7 @@ private extension TableSheetView {
         .contentMargins(.horizontal, 8, for: .scrollContent)
     }
 }
+
+#Preview {
+    TableSheetView(root: ItemRootController.fake, model: .fake)
+}

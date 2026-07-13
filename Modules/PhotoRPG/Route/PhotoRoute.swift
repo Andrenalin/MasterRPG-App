@@ -3,6 +3,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    PhotoRouteDestinationView(itemId: PhotoModel.previewId)
+}
+
 public enum PhotoRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }

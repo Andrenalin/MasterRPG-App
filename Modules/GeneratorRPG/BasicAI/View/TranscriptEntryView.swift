@@ -108,3 +108,11 @@ private extension Transcript.Entry {
         return false
     }
 }
+
+#Preview {
+    TranscriptEntryView(
+        generatorController: AdventureGeneratorController(),
+        entry: .prompt(.init(segments: [.text(.init(content: "Describe a haunted lighthouse."))]))
+    )
+    .padding()
+}

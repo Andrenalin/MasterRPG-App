@@ -110,3 +110,13 @@ enum EntryEditorFocusField {
     case name
     case information
 }
+
+#Preview {
+    EntryEditorContent(
+        editController: FakeEditController.fake,
+        editorModel: SheetEditorModel(),
+        itemId: UUID(),
+        entry: FakeEntryModel.empty,
+        linkTypes: EmptyLinkTransferable.self
+    )
+}

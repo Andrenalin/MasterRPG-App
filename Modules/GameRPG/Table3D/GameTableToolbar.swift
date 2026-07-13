@@ -18,4 +18,25 @@ struct GameTableToolbar: View {
     }
 }
 
+private struct GameTableToolbarPreview: View {
+    @State private var game: GameTableModel?
+
+    var body: some View {
+        Group {
+            if let game {
+                GameTableToolbar(game: game)
+            } else {
+                ProgressView()
+            }
+        }
+        .task {
+            game = await GameTableModel(mapRoot: .preview, photoRoot: .preview)
+        }
+    }
+}
+
+#Preview {
+    GameTableToolbarPreview()
+}
+
 #endif

@@ -61,3 +61,5 @@ struct DestinationAdventureEditorRouteView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) { DestinationAdventureEditorRouteView(route: .quickEditor(AdventureModel.previewId)) }

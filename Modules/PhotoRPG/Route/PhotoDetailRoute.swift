@@ -69,3 +69,7 @@ struct PhotoDetailRouteDestinationView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) {
+    PhotoDetailRouteDestinationView(route: .folder(PhotoModel.previewId))
+}

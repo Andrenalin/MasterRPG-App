@@ -44,3 +44,6 @@ struct TokenUsageBar: View {
     }
 }
 
+#Preview {
+    TokenUsageBar(currentTokenCount: 4_200, maxContextSize: 8_192, tokenUsageFraction: 0.51)
+}

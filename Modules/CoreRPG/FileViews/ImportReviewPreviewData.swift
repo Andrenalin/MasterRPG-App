@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-private extension ImportReviewModel {
+extension ImportReviewModel {
     static var preview: ImportReviewModel {
         let previewItem = SingleItemImportModel.preview
 

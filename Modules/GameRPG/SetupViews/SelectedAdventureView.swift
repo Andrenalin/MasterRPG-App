@@ -46,3 +46,5 @@ struct SelectedAdventureView: View {
         }
     }
 }
+
+#Preview { SelectedAdventureView(root: .preview) }

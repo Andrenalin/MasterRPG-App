@@ -15,6 +15,11 @@ import CharacterRPG
 import WeatherRPG
 import SwiftUI
 
+#Preview {
+    ExtendedTabRouteDestionationView(route: .settings)
+        .environment(AppModel())
+}
+
 #if !os(tvOS)
 import GeneratorRPG
 #endif

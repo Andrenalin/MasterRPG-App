@@ -63,3 +63,7 @@ struct DestinationCharacterEditorRouteView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) {
+    DestinationCharacterEditorRouteView(route: .quickEditor(ValueModel.previewId))
+}

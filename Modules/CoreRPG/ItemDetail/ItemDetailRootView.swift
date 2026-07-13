@@ -560,6 +560,88 @@ private struct ItemEditorBackgroundView<Editor: View>: View {
     }
 }
 
+private struct ItemDetailPreview: View {
+    private let root = ItemRootController.fake
+    private let model = FakeItemModel.empty
+
+    var body: some View {
+        ItemDetailRootView(
+            root: root,
+            detailListController: FakeFolderListController.fake,
+            selectedModel: model,
+            linkTypes: EmptyLinkTransferable.self
+        ) {
+            Text("Editor content")
+        }
+    }
+}
+
+#Preview("Item Detail") {
+    ItemDetailPreview()
+}
+
+#Preview("Item Detail Header") {
+    ItemDetailHeaderView(
+        module: .none,
+        model: FakeItemModel.empty,
+        cacheItemListModel: CacheItemListModel(),
+        listDisplayModel: ListDisplayModel(),
+        searchModel: FakeSearchController.fake.searchModel
+    )
+    .padding()
+}
+
+#Preview("File Importer") {
+    ItemFileImporterView(root: ItemRootController.fake, model: FakeItemModel.empty, fileTypes: [], isInitial: true)
+}
+
+#Preview("Foreground Editor") {
+    ItemEditorForegroundView(
+        editor: Text("Editor content"),
+        model: FakeItemModel.empty,
+        root: ItemRootController.fake,
+        folderListController: FakeFolderListController.fake,
+        shouldShowContent: true,
+        isSubFolder: false
+    )
+}
+
+#Preview("Background Editor") {
+    ItemEditorBackgroundView(
+        editor: Color.blue.opacity(0.2),
+        model: FakeItemModel.empty,
+        root: ItemRootController.fake,
+        folderListController: FakeFolderListController.fake,
+        fileTypes: [],
+        shouldShowContent: true
+    )
+}
+
+#Preview("Item Detail Root Direct") {
+    ItemDetailRootView(
+        root: ItemRootController.fake,
+        detailListController: FakeFolderListController.fake,
+        selectedModel: FakeItemModel.empty,
+        linkTypes: EmptyLinkTransferable.self
+    ) {
+        Text("Editor content")
+    }
+}
+
+#Preview("Item Detail Content Direct") {
+    @Previewable @Namespace var namespace
+    ItemDetailContentView<Text, EmptyLinkTransferable>(
+        root: ItemRootController.fake,
+        model: FakeItemModel.empty,
+        configuration: .init(),
+        editor: Text("Editor content"),
+        headerModel: HeaderScrollModel(),
+        folderListController: FakeFolderListController.fake,
+        editingItem: .constant(nil),
+        editSheetNamespace: namespace
+    )
+}
+
 // MARK: - Toolbar Content (Extracted)
 
 private struct ItemDetailToolbarContent: ToolbarContent {

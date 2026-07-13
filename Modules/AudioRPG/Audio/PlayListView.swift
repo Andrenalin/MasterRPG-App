@@ -4,6 +4,12 @@ import CoreRPG
 import SwiftUI
 import CoreMedia
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(AudioRootModel.self) var root
+    PlayListView(root: root)
+        .padding()
+}
+
 struct PlayListView: View {
     let root: AudioRootModel
     

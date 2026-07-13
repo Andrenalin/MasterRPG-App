@@ -90,6 +90,8 @@ struct MapDetailRouteDestinationView: View {
     }
 }
 
+#Preview(traits: .mockData) { MapDetailRouteDestinationView(route: .folder(MapModel.previewId)) }
+
 #if !os(tvOS)
 private struct MapExtractionDestination: View {
     let itemId: UUID
@@ -128,4 +130,6 @@ private struct MapExtractionDestination: View {
         return lines.joined(separator: "\n")
     }
 }
+
+#Preview(traits: .mockData) { MapExtractionDestination(itemId: MapModel.previewId) }
 #endif

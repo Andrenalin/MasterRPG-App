@@ -2,6 +2,12 @@
 
 import SwiftUI
 
+#Preview {
+    List {
+        TagItemRow(tags: ["Dungeon", "Encounter", "Important"])
+    }
+}
+
 public struct TagItemRow: View {
     public init(tags: [String]) {
         self.tags = tags

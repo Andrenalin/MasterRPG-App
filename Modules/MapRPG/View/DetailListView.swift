@@ -3,6 +3,15 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    @Previewable @Environment(MapRootModel.self) var root
+    DetailListView(
+        root: root,
+        model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]),
+        folderListController: root.folderListController
+    )
+}
+
 struct DetailListView: View {
     let root: MapRootModel
     let model: MapModel

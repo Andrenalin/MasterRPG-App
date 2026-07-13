@@ -3,6 +3,11 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    SharingActionView(itemId: AudioModel.previewId, showPlayControl: true)
+        .padding()
+}
+
 struct SharingActionView: View, Equatable {
     let itemId: UUID
     let showPlayControl: Bool

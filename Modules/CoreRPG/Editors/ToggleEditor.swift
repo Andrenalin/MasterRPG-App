@@ -47,3 +47,8 @@ private extension ToggleEditor {
         }
     }
 }
+
+#Preview {
+    ToggleEditor(model: EditIdentifierModel(value: true), title: "Visible", bundle: nil, icon: "eye")
+        .padding()
+}

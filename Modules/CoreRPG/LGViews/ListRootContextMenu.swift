@@ -300,3 +300,17 @@ private extension ListRootContextMenu {
     }
 
 }
+
+#Preview {
+    ListRootContextMenu(
+        root: ItemRootController.fake,
+        controller: ContextMenuMultiController(
+            editController: FakeEditController.fake,
+            itemController: FakeItemController.fake,
+            listModel: FakeFolderListController.fake.listModel
+        ),
+        parentItem: nil,
+        listController: FakeFolderListController.fake
+    )
+    .padding()
+}

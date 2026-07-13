@@ -43,3 +43,14 @@ public struct ItemDetailOverlayView: View {
         }
     }
 }
+
+#Preview {
+    ItemDetailOverlayView(
+        model: FakeItemController.fake.itemOrEmpty(for: UUID()),
+        cacheItemListModel: CacheItemListModel(),
+        listDisplayModel: ListDisplayModel(),
+        searchModel: FakeSearchController.fake.searchModel,
+        fullHeader: true
+    )
+    .padding()
+}

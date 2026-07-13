@@ -124,3 +124,9 @@ private struct SingleItemReviewEntriesSection: View {
         }
     }
 }
+
+#Preview { SingleItemReviewAccordionView(model: .preview) }
+#Preview { SingleItemReviewChoicesView(model: .preview) }
+#Preview { SingleItemReviewReferencesSection(model: .preview).padding() }
+#Preview { SingleItemReviewPropertiesSection(model: .preview).padding() }
+#Preview { SingleItemReviewEntriesSection(model: .preview).padding() }

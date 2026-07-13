@@ -70,6 +70,26 @@ public struct GroupBoxTV<Label: View, Content: View>: View {
     }
 }
 
+#Preview("Disclosure group") {
+    @Previewable @State var isExpanded = true
+    DisclosureGroupTV(isExpanded: $isExpanded) {
+        Text("The party has entered the dungeon.")
+    } label: {
+        Label("Adventure notes", systemImage: "book.closed")
+    }
+    .padding()
+}
+
+#Preview("Menu") {
+    MenuTV {
+        Button("Edit", action: {})
+        Button("Duplicate", action: {})
+    } label: {
+        Label("Actions", systemImage: "ellipsis.circle")
+    }
+    .padding()
+}
+
 #if !os(tvOS)
 struct CardGroupBoxStyle: GroupBoxStyle {
     func makeBody(configuration: Configuration) -> some View {

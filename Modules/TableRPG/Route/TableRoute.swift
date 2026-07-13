@@ -3,6 +3,10 @@
 import CoreRPG
 import SwiftUI
 
+#Preview(traits: .mockData) {
+    TableRouteDestinationView(itemId: TableModel.previewId)
+}
+
 public enum TableRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }
