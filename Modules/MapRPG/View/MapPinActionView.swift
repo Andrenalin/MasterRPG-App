@@ -202,8 +202,8 @@ private struct MapPinActionButtons: View {
 
 #Preview {
     @Previewable @State var model = MapPinViewModel(mapPins: [], pointer: .empty)
-    @Namespace var glassNamespace
-    @Namespace var photoSpace
+    @Previewable @Namespace var glassNamespace
+    @Previewable @Namespace var photoSpace
     MapPinActionButtons(
         model: model,
         pinId: UUID(),

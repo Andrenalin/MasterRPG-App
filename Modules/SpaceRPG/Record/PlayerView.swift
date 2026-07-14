@@ -27,11 +27,14 @@ struct PlayerView: UIViewRepresentable {
     /// A Boolean value that indicates whether the player view loops the video.
     let shouldLoop: Bool
 
-    private static let videoSize = CGSize(width: 1280, height: 1080).applying(CGAffineTransformIdentity)
+    private nonisolated static let videoSize = CGSize(width: 1280, height: 1080).applying(CGAffineTransformIdentity)
     private static let transparentPixelBufferAttributes = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
 
-    class Coordinator {
+    @MainActor
+    final class Coordinator {
         var playerLooper: AVPlayerLooper?
+        var loadingTask: Task<Void, Never>?
+        var url: URL?
     }
 
     func makeCoordinator() -> Coordinator {
@@ -40,64 +43,120 @@ struct PlayerView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> AVPlayerView {
         let playerView = AVPlayerView()
-        let playerItem = AVPlayerItem(url: url)
-        playerItem.videoComposition = createVideoComposition(for: playerItem)
-        let player = AVQueuePlayer(playerItem: playerItem)
         playerView.playerLayer.videoGravity = .resizeAspect
-        player.actionAtItemEnd = .pause
-        if shouldLoop {
-            let playerLooper = AVPlayerLooper(player: player, templateItem: playerItem)
-            context.coordinator.playerLooper = playerLooper
-        }
-        playerView.player = player
         playerView.playerLayer.pixelBufferAttributes = isTransparent ? Self.transparentPixelBufferAttributes : nil
+        loadPlayer(in: playerView, coordinator: context.coordinator)
 
         return playerView
     }
 
     func updateUIView(_ playerView: AVPlayerView, context: Context) {
-        let currentItemUrl: URL? = (playerView.player?.currentItem?.asset as? AVURLAsset)?.url
-        if currentItemUrl != url {
-            let playerItem = AVPlayerItem(url: url)
-            playerItem.videoComposition = createVideoComposition(for: playerItem)
-            playerView.player?.replaceCurrentItem(with: playerItem)
+        if context.coordinator.url != url {
+            loadPlayer(in: playerView, coordinator: context.coordinator)
+        } else {
+            playerView.player?.play()
         }
-        playerView.player?.play()
     }
 
-    private func createVideoComposition(for playerItem: AVPlayerItem) -> AVVideoComposition {
+    private func loadPlayer(in playerView: AVPlayerView, coordinator: Coordinator) {
+        coordinator.loadingTask?.cancel()
+        coordinator.url = url
+
+        let url = url
+        let isStacked = isStacked
+        let isInverted = isInverted
+        let shouldLoop = shouldLoop
+
+        coordinator.loadingTask = Task { @MainActor [weak playerView, weak coordinator] in
+            let playerItem = AVPlayerItem(url: url)
+            playerItem.videoComposition = try? await Self.createVideoComposition(
+                for: playerItem.asset,
+                isStacked: isStacked,
+                isInverted: isInverted
+            )
+
+            guard !Task.isCancelled,
+                  let playerView,
+                  let coordinator,
+                  coordinator.url == url else {
+                return
+            }
+
+            let player = AVQueuePlayer(playerItem: playerItem)
+            player.actionAtItemEnd = .pause
+            coordinator.playerLooper = shouldLoop
+                ? AVPlayerLooper(player: player, templateItem: playerItem)
+                : nil
+            playerView.player = player
+            player.play()
+        }
+    }
+
+    private nonisolated static func createVideoComposition(
+        for asset: AVAsset,
+        isStacked: Bool,
+        isInverted: Bool
+    ) async throws -> AVVideoComposition {
         let size = PlayerView.videoSize
-
         let videoSize: CGSize = isStacked ? CGSize(width: size.width, height: size.height / 2.0) : size
-        let composition = AVMutableVideoComposition(asset: playerItem.asset, applyingCIFiltersWithHandler: { request in
-            let filter: CIFilter
+        let filteredComposition = try await AVVideoComposition(applyingFiltersTo: asset) { parameters in
+            let image = filteredImage(
+                parameters.sourceImage,
+                videoSize: videoSize,
+                isStacked: isStacked,
+                isInverted: isInverted
+            )
+            return AVCIImageFilteringResult(resultImage: image)
+        }
 
-            if isStacked {
-                filter = CIFilter(name: "CIBlendWithMask")!
-                let sourceRect = CGRect(origin: .zero, size: CGSize(width: videoSize.width, height: videoSize.height))
-                let alphaRect = sourceRect.offsetBy(dx: 0, dy: sourceRect.height)
-                let transform = CGAffineTransform(translationX: 0, y: -sourceRect.height)
-                let inputImage = request.sourceImage.cropped(to: alphaRect).transformed(by: transform)
-                let maskImage = request.sourceImage.cropped(to: sourceRect)
-                let backgroundImage = CIImage(color: .clear).cropped(to: inputImage.extent)
-                filter.setValue(inputImage, forKey: kCIInputImageKey)
-                filter.setValue(maskImage, forKey: kCIInputMaskImageKey)
-                filter.setValue(backgroundImage, forKey: kCIInputBackgroundImageKey)
-            } else {
-                filter = CIFilter(name: "CIMaskToAlpha")!
-                filter.setValue(request.sourceImage, forKey: kCIInputImageKey)
-            }
+        let configuration = AVVideoComposition.Configuration(
+            animationTool: filteredComposition.animationTool,
+            colorPrimaries: filteredComposition.colorPrimaries,
+            colorTransferFunction: filteredComposition.colorTransferFunction,
+            colorYCbCrMatrix: filteredComposition.colorYCbCrMatrix,
+            customVideoCompositorClass: filteredComposition.customVideoCompositorClass,
+            frameDuration: filteredComposition.frameDuration,
+            instructions: filteredComposition.instructions,
+            outputBufferDescription: filteredComposition.outputBufferDescription,
+            perFrameHDRDisplayMetadataPolicy: filteredComposition.perFrameHDRDisplayMetadataPolicy,
+            renderScale: filteredComposition.renderScale,
+            renderSize: videoSize,
+            sourceSampleDataTrackIDs: filteredComposition.sourceSampleDataTrackIDs,
+            sourceTrackIDForFrameTiming: filteredComposition.sourceTrackIDForFrameTiming,
+            spatialVideoConfigurations: filteredComposition.spatialVideoConfigurations
+        )
+        return AVVideoComposition(configuration: configuration)
+    }
 
-            if isInverted, let outputImage = filter.outputImage {
-                let invertFilterImage = outputImage.applyingFilter("CIColorInvert")
-                return request.finish(with: invertFilterImage, context: nil)
-            }
+    private nonisolated static func filteredImage(
+        _ sourceImage: CIImage,
+        videoSize: CGSize,
+        isStacked: Bool,
+        isInverted: Bool
+    ) -> CIImage {
+        let filterName = isStacked ? "CIBlendWithMask" : "CIMaskToAlpha"
+        guard let filter = CIFilter(name: filterName) else {
+            return sourceImage
+        }
 
-            return request.finish(with: filter.outputImage!, context: nil)
-        })
+        if isStacked {
+            let sourceRect = CGRect(origin: .zero, size: videoSize)
+            let alphaRect = sourceRect.offsetBy(dx: 0, dy: sourceRect.height)
+            let transform = CGAffineTransform(translationX: 0, y: -sourceRect.height)
+            let inputImage = sourceImage.cropped(to: alphaRect).transformed(by: transform)
+            let maskImage = sourceImage.cropped(to: sourceRect)
+            let backgroundImage = CIImage(color: .clear).cropped(to: inputImage.extent)
+            filter.setValue(inputImage, forKey: kCIInputImageKey)
+            filter.setValue(maskImage, forKey: kCIInputMaskImageKey)
+            filter.setValue(backgroundImage, forKey: kCIInputBackgroundImageKey)
+        } else {
+            filter.setValue(sourceImage, forKey: kCIInputImageKey)
+        }
 
-        composition.renderSize = videoSize
-        return composition
+        guard let outputImage = filter.outputImage else {
+            return sourceImage
+        }
+        return isInverted ? outputImage.applyingFilter("CIColorInvert") : outputImage
     }
 }
 
