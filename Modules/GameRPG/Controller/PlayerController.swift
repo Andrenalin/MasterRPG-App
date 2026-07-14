@@ -21,10 +21,18 @@ import UIKit
 
 @MainActor @Observable
 final class PlayerControllerModel: Sendable {
+    private struct PresentationIntent {
+        let module: NetworkModules
+        let counter: Int
+        let itemId: UUID
+        let version: Int
+    }
+
     var gameUpdateType: NetworkModules = .none
     var messageCounter: Int = 0
     private var outgoingMessageCounter: Int = 1
     private var lastMasterStateCounters: [UUID: Int] = [:]
+    private var presentationIntents: [UUID: PresentationIntent] = [:]
     var lostMaster: Bool = true
     var hasSendPlayer = false
     var asGameMaster = false
@@ -66,6 +74,115 @@ final class PlayerControllerModel: Sendable {
 
     func resetMasterStateSequence() {
         lastMasterStateCounters.removeAll()
+    }
+
+    /// Accepts presentation content according to the latest master intent, not
+    /// according to which transport happened to finish first.
+    ///
+    /// A repair reveal's freshly minted counter must
+    /// not make an older item current again, so it is accepted only when it
+    /// matches the desired item. Older untargeted content for that same desired
+    /// item remains useful as a delayed full-payload delivery.
+    func shouldProcessPresentation(
+        from masterId: UUID,
+        module: NetworkModules,
+        itemId: UUID,
+        version: Int,
+        counter: Int,
+        isRepair: Bool,
+        allowsUnversionedStateRepair: Bool = false
+    ) -> Bool {
+        guard let current = presentationIntents[masterId] else {
+            presentationIntents[masterId] = PresentationIntent(
+                module: module,
+                counter: counter,
+                itemId: itemId,
+                version: version
+            )
+            return true
+        }
+
+        if isRepair {
+            return acceptsCurrentPresentation(
+                current,
+                from: masterId,
+                module: module,
+                itemId: itemId,
+                version: version,
+                allowsUnversionedStateRepair: allowsUnversionedStateRepair
+            )
+        }
+
+        // Counter zero is the unsequenced legacy format. Preserve compatibility
+        // by treating its latest arrival as the current intent.
+        guard counter > 0 else {
+            presentationIntents[masterId] = PresentationIntent(
+                module: module,
+                counter: counter,
+                itemId: itemId,
+                version: version
+            )
+            return true
+        }
+
+        if counter < current.counter {
+            return acceptsCurrentPresentation(
+                current,
+                from: masterId,
+                module: module,
+                itemId: itemId,
+                version: version
+            )
+        }
+        if counter == current.counter {
+            return acceptsCurrentPresentation(
+                current,
+                from: masterId,
+                module: module,
+                itemId: itemId,
+                version: version
+            )
+        }
+
+        presentationIntents[masterId] = PresentationIntent(
+            module: module,
+            counter: counter,
+            itemId: itemId,
+            version: version
+        )
+        return true
+    }
+
+    private func acceptsCurrentPresentation(
+        _ current: PresentationIntent,
+        from masterId: UUID,
+        module: NetworkModules,
+        itemId: UUID,
+        version: Int,
+        allowsUnversionedStateRepair: Bool = false
+    ) -> Bool {
+        guard current.module == module, current.itemId == itemId else { return false }
+        guard current.version == 0 ||
+                version == current.version ||
+                (allowsUnversionedStateRepair && version == 0)
+        else { return false }
+
+        // Version zero means the legacy intent did not provide a fingerprint.
+        // Once matching bytes arrive, retain their exact version so a later
+        // same-item payload cannot replace them arbitrarily.
+        if current.version == 0, version != 0 {
+            presentationIntents[masterId] = PresentationIntent(
+                module: current.module,
+                counter: current.counter,
+                itemId: current.itemId,
+                version: version
+            )
+        }
+        return true
+    }
+
+    func resetPresentationSequence() {
+        presentationIntents.removeAll()
     }
 
     func reset(lostMaster: Bool) {
@@ -147,6 +264,7 @@ extension PlayerController {
         gameModel.requestedRepairIds = []
         gameModel.requestedFullMapIds = []
         gameModel.resetMasterStateSequence()
+        gameModel.resetPresentationSequence()
     }
     
     @MainActor
@@ -235,6 +353,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             gameModel.requestedRepairIds = []
             gameModel.requestedFullMapIds = []
             gameModel.resetMasterStateSequence()
+            gameModel.resetPresentationSequence()
         }
         await gameModel.reset(lostMaster: true)
         await gameModel.reset(sendPlayer: false)
@@ -318,6 +437,22 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             }
             guard await root.gameModel.gameType == .proxy || model.sender.isMaster || model.data.type == .dice || model.subType == .spaceTransform else {
                 Logger.networking.debug("PlayerController: Message will be ignored because it is send from Player \(model.senderName, privacy: .public)")
+                return false
+            }
+        }
+
+        if model.isPresentationIntent || model.isMapPresentationRepair {
+            let shouldProcess = await gameModel.shouldProcessPresentation(
+                from: model.masterId,
+                module: model.data.type,
+                itemId: model.data.id,
+                version: model.data.version,
+                counter: model.counter,
+                isRepair: model.targetId != nil || model.isMapPresentationRepair,
+                allowsUnversionedStateRepair: model.isTargetedMapStatePresentationRepair
+            )
+            guard shouldProcess else {
+                Logger.networking.debug("PlayerController: Stale presentation ignored \(model.counter, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
                 return false
             }
         }

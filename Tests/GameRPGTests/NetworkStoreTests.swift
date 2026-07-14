@@ -151,5 +151,23 @@ struct NetworkStoreTests {
         await env.networkController.stopGame()
         #expect(env.playerNetworkSpy.calledStop == 1)
     }
+
+    @Test("SharePlay file routing completes before returning to the journal")
+    func sharePlayFileRoutingCompletesBeforeReturningToJournal() async throws {
+        let env = try await NetworkStoreTestEnvironment.create()
+
+        await env.networkController.handleFileUpdate(masterGameNetworkModel)
+
+        #expect(env.playerDelegateSpy.calledFileReceived == 1)
+    }
+
+    @Test("SharePlay messenger routing completes before receiving the next message")
+    func sharePlayMessengerRoutingCompletesBeforeReceivingNextMessage() async throws {
+        let env = try await NetworkStoreTestEnvironment.create()
+
+        await env.networkController.handleUpdate(masterGameNetworkModel, id: UUID())
+
+        #expect(env.playerDelegateSpy.calledReceived == 1)
+    }
 }
 #endif

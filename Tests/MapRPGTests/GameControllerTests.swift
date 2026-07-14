@@ -64,6 +64,7 @@ struct GameControllerTests {
         #expect(sut.gameItem(for: mapId)[roomEntry.id].isShown)
 
         let snapshot = sut.networkMapUpdate(for: mapId)
+        #expect(snapshot.version == sut.gameItem(for: mapId).version)
         sut.gameItem(for: mapId).entries[0].isShown = false
         sut.updateMap(for: mapId, with: snapshot)
         #expect(sut.gameItem(for: mapId)[roomEntry.id].isShown)

@@ -346,6 +346,164 @@ final class MasterPlayerControllerTests {
         #expect(mapPlayer.entries == mapMaster.entries)
     }
 
+    @Test func consecutiveSharePlayMapFilesReplaceThePlayerPresentation() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        try #require(rootSut.mapRoot.itemController.itemDataModel.items.count >= 2)
+
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let mapA = rootSut.mapRoot.itemController.itemDataModel.items[0]
+        let mapB = rootSut.mapRoot.itemController.itemDataModel.items[1]
+
+        await sut.show(for: rootSut.mapRoot.gameController.share(id: mapA))
+        let showA = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(showA.data.data != nil)
+
+        await sut.show(for: rootSut.mapRoot.gameController.share(id: mapB))
+        let showB = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(showB.data.data != nil)
+
+        // Exercise the same awaited delegate route used by journal attachment
+        // delivery, not PlayerController.handle directly.
+        networkMock.model.setPlayerDelegate(sutPlayer)
+        await networkMock.handleFileUpdate(showA)
+        #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
+
+        await networkMock.handleFileUpdate(showB)
+        #expect(await rootPlayer.mapRoot.gameController.currentId == mapB)
+        #expect(sutPlayer.gameModel.gameUpdateType == .map)
+    }
+
+    @Test func newerMapReferenceRejectsAnOlderDelayedJournalMap() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        try #require(rootSut.mapRoot.itemController.itemDataModel.items.count >= 2)
+
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let mapA = rootSut.mapRoot.itemController.itemDataModel.items[0]
+        let mapB = rootSut.mapRoot.itemController.itemDataModel.items[1]
+
+        await sut.show(for: rootSut.mapRoot.gameController.share(id: mapA))
+        var initialMapA = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        initialMapA.counter = 41
+
+        await sut.show(for: rootSut.mapRoot.gameController.share(id: mapB))
+        var delayedMapB = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        delayedMapB.counter = 42
+
+        var reshowMapA = initialMapA
+        reshowMapA.counter = 43
+        reshowMapA.data = NetworkCodableDataType(
+            id: initialMapA.data.id,
+            type: initialMapA.data.type,
+            version: initialMapA.data.version,
+            data: nil
+        )
+
+        networkMock.model.setPlayerDelegate(sutPlayer)
+        await networkMock.handleFileUpdate(initialMapA)
+        #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
+
+        // The messenger reference is the newest master intent. Map B's older
+        // journal payload finishes afterward and must not restore map B.
+        await networkMock.handleUpdate(reshowMapA, id: UUID())
+        #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
+        await networkMock.handleFileUpdate(delayedMapB)
+
+        #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
+        #expect(sutPlayer.gameModel.gameUpdateType == .map)
+
+        // mapState recovery uses a fresh counter and `.reveal/.store`, but it
+        // repairs an earlier intent and must not revive map B either.
+        var staleMapStateRepair = delayedMapB
+        staleMapStateRepair.counter = 44
+        staleMapStateRepair.subType = .store
+        staleMapStateRepair.targetId = rootPlayer.gameModel.gameConfig.id
+        await networkMock.handleUpdate(staleMapStateRepair, id: UUID())
+
+        #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
+    }
+
+    @Test func mapStateAdvancesIntentAndAllowsItsTargetedMapRepair() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        try #require(rootSut.mapRoot.itemController.itemDataModel.items.count >= 2)
+
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let mapA = rootSut.mapRoot.itemController.itemDataModel.items[0]
+        let mapB = rootSut.mapRoot.itemController.itemDataModel.items[1]
+
+        await sut.show(for: rootSut.mapRoot.gameController.share(id: mapA))
+        var showA = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        showA.counter = 41
+
+        let mapStateB = rootSut.gameModel.outgoingMessage(
+            counter: 42,
+            type: .update,
+            subType: .mapState,
+            asMaster: true,
+            data: rootSut.mapRoot.mapGameControllable.networkMapUpdate(for: mapB)
+        )
+        let fullMapB = try await rootSut.mapRoot.gameControllable.createGameData(for: mapB)
+        let repairB = rootSut.gameModel.outgoingMessage(
+            counter: 43,
+            type: .reveal,
+            subType: .store,
+            asMaster: true,
+            targetId: rootPlayer.gameModel.gameConfig.id,
+            data: fullMapB
+        )
+        let masterMapB = rootSut.mapRoot.gameController.gameItem(for: mapB)
+        try #require(!masterMapB.entries.isEmpty)
+        masterMapB.entries[0].isShown.toggle()
+        let expectedRoomVisibility = masterMapB.entries[0].isShown
+        let targetedMapStateB = rootSut.gameModel.outgoingMessage(
+            counter: 44,
+            type: .update,
+            subType: .mapState,
+            asMaster: true,
+            targetId: rootPlayer.gameModel.gameConfig.id,
+            data: rootSut.mapRoot.mapGameControllable.networkMapUpdate(for: mapB)
+        )
+
+        #expect(mapStateB.data.version == fullMapB.version)
+        #expect(targetedMapStateB.data.version == fullMapB.version)
+        var legacyTargetedMapStateB = targetedMapStateB
+        legacyTargetedMapStateB.data = NetworkCodableDataType(
+            id: targetedMapStateB.data.id,
+            type: targetedMapStateB.data.type,
+            version: 0,
+            data: targetedMapStateB.data.data
+        )
+
+        networkMock.model.setPlayerDelegate(sutPlayer)
+        await networkMock.handleFileUpdate(showA)
+        #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
+
+        playerStoreAbstractionMock.requestData = nil
+        await networkMock.handleUpdate(mapStateB, id: UUID())
+        let requestB = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)
+        #expect(requestB.type == .reveal)
+        #expect(requestB.subType == .mapState)
+        #expect(requestB.data.id == mapB)
+
+        await networkMock.handleUpdate(repairB, id: UUID())
+
+        #expect(await rootPlayer.mapRoot.gameController.currentId == mapB)
+        #expect(sutPlayer.gameModel.gameUpdateType == .map)
+
+        await networkMock.handleUpdate(legacyTargetedMapStateB, id: UUID())
+
+        let playerMapB = rootPlayer.mapRoot.gameController.gameItem(for: mapB)
+        #expect(playerMapB.entries[0].isShown == expectedRoomVisibility)
+    }
+
     @Test func mapRevealRequestsMapPayloadBeforeChangingPlayerState() async throws {
         try await setUp()
         try await importTestData(into: rootSut)

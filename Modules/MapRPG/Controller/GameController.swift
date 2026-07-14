@@ -235,7 +235,13 @@ extension GameController: MapGameStorable {
 
     @MainActor
     func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType {
-        NetworkCodableDataType(id: itemId, type: .map, version: 0, data: mapUpdateResult(for: itemId).data(using: .utf8))
+        let item = gameItem(for: itemId)
+        return NetworkCodableDataType(
+            id: itemId,
+            type: .map,
+            version: item.version,
+            data: mapUpdateResult(for: itemId).data(using: .utf8)
+        )
     }
 
     func networkPin(itemId: UUID, position: MapPinModel) -> NetworkCodableDataType {

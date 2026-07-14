@@ -206,6 +206,224 @@ struct SharePlayPackageTransportTests {
         let processedAfterRemoval = tracker.shouldProcess(attachmentId: attachmentId)
         #expect(processedAfterRemoval)
     }
+
+    @Test("new journal maps publish while removal of the previous map is suspended")
+    func newJournalMapsPublishWhilePreviousRemovalIsSuspended() async {
+        let queue = SharePlayJournalPublicationQueue<TestJournalAttachment>()
+        let removalGate = JournalRemovalGate()
+        let recorder = JournalPublicationRecorder()
+        let firstMap = TestJournalAttachment(id: UUID())
+        let secondMap = TestJournalAttachment(id: UUID())
+        let thirdMap = TestJournalAttachment(id: UUID())
+
+        let firstPublication = queue.enqueue(for: .map) {
+            recorder.record(firstMap)
+            return firstMap
+        } remove: { attachment in
+            await removalGate.suspendRemoval(of: attachment.id)
+        }
+        await firstPublication.value
+
+        let secondPublication = queue.enqueue(for: .map) {
+            recorder.record(secondMap)
+            return secondMap
+        } remove: { attachment in
+            await removalGate.suspendRemoval(of: attachment.id)
+        }
+        await secondPublication.value
+        await removalGate.waitUntilRemovalStarts(for: firstMap.id)
+
+        // Map one is still being removed. Publishing map three must only wait
+        // for map two's add/commit, not for that cleanup operation.
+        let thirdPublication = queue.enqueue(for: .map) {
+            recorder.record(thirdMap)
+            return thirdMap
+        } remove: { attachment in
+            await removalGate.suspendRemoval(of: attachment.id)
+        }
+        await thirdPublication.value
+
+        #expect(recorder.attachmentIds == [firstMap.id, secondMap.id, thirdMap.id])
+        #expect(queue.currentAttachment(for: .map)?.id == thirdMap.id)
+
+        await removalGate.releaseAll()
+        await Task.yield()
+        queue.cancelAll()
+    }
+
+    @Test("overlapping journal maps are processed with the newest map last")
+    func overlappingJournalMapsAreProcessedWithNewestMapLast() {
+        let oldAttachmentId = UUID()
+        let newAttachmentId = UUID()
+        let masterId = UUID()
+        var oldMap = Self.message(type: .reveal, module: .map, data: nil)
+        oldMap.counter = 41
+        oldMap.masterId = masterId
+        oldMap.sender = GameSenderModel(
+            id: masterId,
+            role: .master,
+            name: "Master",
+            characterId: nil
+        )
+        var newMap = oldMap
+        newMap.counter = 42
+        newMap.data = NetworkCodableDataType(
+            id: UUID(),
+            type: .map,
+            version: oldMap.data.version + 1,
+            data: nil
+        )
+        var reversedSnapshot = [
+            JournalMetadataFixture(attachmentId: newAttachmentId, metadata: newMap),
+            JournalMetadataFixture(attachmentId: oldAttachmentId, metadata: oldMap)
+        ]
+        let latestPresentation = RPGSharePlayController.latestJournalPresentationAttachmentId(
+            in: reversedSnapshot.map { (attachmentId: $0.attachmentId, metadata: $0.metadata) }
+        )
+
+        reversedSnapshot.sort {
+            RPGSharePlayController.journalEntryComesBefore(
+                metadata: $0.metadata,
+                attachmentId: $0.attachmentId,
+                metadata: $1.metadata,
+                attachmentId: $1.attachmentId
+            )
+        }
+
+        #expect(reversedSnapshot.map(\.metadata.counter) == [41, 42])
+        #expect(reversedSnapshot.last?.metadata.data.id == newMap.data.id)
+        #expect(latestPresentation == newAttachmentId)
+        #expect(latestPresentation != oldAttachmentId)
+    }
+
+    @Test("presentation intent rejects stale payloads and stale targeted repairs")
+    func presentationIntentRejectsStalePayloadsAndTargetedRepairs() {
+        let model = PlayerControllerModel()
+        let masterId = UUID()
+        let mapA = UUID()
+        let mapB = UUID()
+
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapB,
+            version: 1,
+            counter: 42,
+            isRepair: false
+        ))
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapA,
+            version: 1,
+            counter: 43,
+            isRepair: false
+        ))
+
+        // Map B's journal load completed after the newer map A reference.
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapB,
+            version: 1,
+            counter: 42,
+            isRepair: false
+        ))
+        // A repair gets a fresh counter, but must not revive B either.
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapB,
+            version: 1,
+            counter: 44,
+            isRepair: true
+        ))
+        // Delayed bytes for the desired map remain useful.
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapA,
+            version: 1,
+            counter: 41,
+            isRepair: false
+        ))
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapA,
+            version: 0,
+            counter: 40,
+            isRepair: false
+        ))
+        // Older masters sent the targeted mapState companion with version zero.
+        // It is allowed only as state for the already intended map.
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapA,
+            version: 0,
+            counter: 44,
+            isRepair: true,
+            allowsUnversionedStateRepair: true
+        ))
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapB,
+            version: 0,
+            counter: 45,
+            isRepair: true,
+            allowsUnversionedStateRepair: true
+        ))
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapA,
+            version: 2,
+            counter: 40,
+            isRepair: false
+        ))
+
+        let crossModuleModel = PlayerControllerModel()
+        #expect(crossModuleModel.shouldProcessPresentation(
+            from: masterId,
+            module: .photo,
+            itemId: UUID(),
+            version: 1,
+            counter: 43,
+            isRepair: false
+        ))
+        #expect(!crossModuleModel.shouldProcessPresentation(
+            from: masterId,
+            module: .map,
+            itemId: mapB,
+            version: 1,
+            counter: 42,
+            isRepair: false
+        ))
+
+        var newerPhoto = Self.message(type: .reveal, module: .photo, data: nil)
+        newerPhoto.counter = 43
+        newerPhoto.masterId = masterId
+        newerPhoto.sender = GameSenderModel(
+            id: masterId,
+            role: .master,
+            name: "Master",
+            characterId: nil
+        )
+        var olderMap = newerPhoto
+        olderMap.counter = 42
+        olderMap.data = NetworkCodableDataType(id: mapB, type: .map, version: 1)
+        let olderMapAttachmentId = UUID()
+        let newerPhotoAttachmentId = UUID()
+        let latestCrossModuleAttachment = RPGSharePlayController.latestJournalPresentationAttachmentId(
+            in: [
+                (attachmentId: olderMapAttachmentId, metadata: olderMap),
+                (attachmentId: newerPhotoAttachmentId, metadata: newerPhoto)
+            ]
+        )
+        #expect(latestCrossModuleAttachment == newerPhotoAttachmentId)
+    }
 }
 
 private extension SharePlayPackageTransportTests {
@@ -234,6 +452,54 @@ private actor PackageCollector {
 
     func append(_ package: PackageMessage) {
         storage.append(package)
+    }
+}
+
+private struct TestJournalAttachment: Identifiable, Sendable {
+    let id: UUID
+}
+
+private struct JournalMetadataFixture {
+    let attachmentId: UUID
+    let metadata: GameNetworkModel
+}
+
+@MainActor
+private final class JournalPublicationRecorder {
+    private(set) var attachmentIds: [UUID] = []
+
+    func record(_ attachment: TestJournalAttachment) {
+        attachmentIds.append(attachment.id)
+    }
+}
+
+private actor JournalRemovalGate {
+    private var startedAttachmentIds: Set<UUID> = []
+    private var startWaiters: [UUID: [CheckedContinuation<Void, Never>]] = [:]
+    private var removalWaiters: [CheckedContinuation<Void, Never>] = []
+    private var isReleased = false
+
+    func suspendRemoval(of attachmentId: UUID) async {
+        startedAttachmentIds.insert(attachmentId)
+        startWaiters.removeValue(forKey: attachmentId)?.forEach { $0.resume() }
+        guard !isReleased else { return }
+        await withCheckedContinuation { continuation in
+            removalWaiters.append(continuation)
+        }
+    }
+
+    func waitUntilRemovalStarts(for attachmentId: UUID) async {
+        guard !startedAttachmentIds.contains(attachmentId) else { return }
+        await withCheckedContinuation { continuation in
+            startWaiters[attachmentId, default: []].append(continuation)
+        }
+    }
+
+    func releaseAll() {
+        isReleased = true
+        let waiters = removalWaiters
+        removalWaiters = []
+        waiters.forEach { $0.resume() }
     }
 }
 #endif

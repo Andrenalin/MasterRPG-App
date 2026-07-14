@@ -1,213 +1,200 @@
-# Game Communication Plan — Envelope Redesign And Regression Repair
+# Game Communication Redesign — Implementation Record
 
-Status: executed (2026-07-10) except the open questions at the end. Since V2
-was never released, the redesign landed **in V2 itself** — no V3 generation.
-The envelope now carries `sender` + master-only `masterState` + `targetId`;
-only the shipped 2.6 app (V1) needs mappers.
+Status: implemented and audited against the source on 2026-07-14.
 
-Executed:
-
-- A1/F1 targeted responses via `targetId` (applies to the master's local player too)
-- A1/F2 covered by targeting (untargeted full-reveal broadcasts no longer occur)
-- A1/F3 repair-loop guard (`requestedRepairIds`, released only on successful repair)
-- A1/F4 `CloudDocumentController.fullUrl` reduces absolute urls below `Documents/<module>`
-- A2/H1 V1 mappers + superset encoding (previous step)
-- A2/H2 dedup key includes payload presence
-- B: `GameSenderModel` + `GameMasterStateModel` in the V2 envelope; roster/controls
-  only from master messages; controls filtering by id; `MasterGameModel.characterId`
-  removed; `adventureId`/`adventureTitle` travel in `masterState`
-- C2 done with H2; C1 done via `targetId`
-
-Open: C3 (per-item journal slots), C4 (proxyCounter), two-device SharePlay
-smoke test, observer/proxy role questions below.
-
-Prerequisite (done): `GameNetworkModel` V1 restored with bidirectional mappers
-(`GameNetworkModelV1.v2Model` / `GameNetworkModel.v1Model`), V2 stamped as
-`currentVersion == 2`, superset encoding so V1 / intermediate / V2 peers decode
-the same bytes. Covered by `GameNetworkModelVersionTests`.
+This file records the redesign that repaired SharePlay delivery, photo/map
+repair loops, sender ambiguity, and proxy routing. It is a historical change
+record, not the primary description of the live system. See
+[Game Connections](GAME_CONNECTIONS.md) for the current end-to-end contract.
 
 ## Goals
 
-1. Fix the acute regressions: SharePlay not receiving, photos flip-flopping /
-   two photos cycling, map instability.
-2. Redesign the envelope so the sender role is explicit:
-   - the master sends the authoritative block (roster, controls, features)
-   - players send only their own identity
-   - receivers can no longer corrupt master state from player messages
-3. Keep every app generation playable together via the mapper ladder.
+1. Make sender identity explicit and keep master state authoritative.
+2. Keep the shipped 2.6/V1 envelope interoperable with current builds.
+3. Target full repair payloads at the requester so another player's missing file
+   cannot change everyone's current presentation.
+4. Make duplicate, retry, SharePlay-session, and proxy behavior deterministic.
 
-## Part A — Regression Root Causes And Fixes
+## Implemented Current Envelope
 
-Order matters: these are small, individually testable steps and come first.
-
-### A1. Photos flip-flopping / two photos cycling
-
-Suspected chain:
-
-1. The master answers every missing-data request with a **broadcast** full
-   `.reveal/.show` — to all peers including its own local player.
-2. Every receiver's `handlePhoto .reveal` success path calls `setCurrent` and
-   flips `gameUpdateType = .photo` — even on the "already have it" early
-   return. Any player's request re-shows the photo on **everyone's** screen.
-3. With two photos in play, interleaved responses cycle every screen between
-   them. The master's local player flips the master's own UI.
-4. Amplifier: `reveal` now re-imports when `hasLocalFileData` is false. If that
-   check misreports for an item (FileUrl path-resolution bug — see known
-   failing test `FileDuplicationTests`), the affected player re-requests
-   forever and drives an endless broadcast cycle.
-
-Fixes (each with a MultiConnection test):
-
-- **F1 Targeted responses.** Answers to missing-data requests go only to the
-  requester: connection id on local network, participant id on the SharePlay
-  messenger, playerId-filtered controls as fallback (the mapState recovery
-  already does this).
-- **F2 Reveal idempotence.** The "already have it" path must not re-set the
-  current item or flip `gameUpdateType` when the item is already current.
-  `.store` repairs never flip the screen (already true — keep it tested).
-- **F3 Repair-loop guard.** Per-item pending-request set (like
-  `pendingMapRequests`) for photo/audio/pdf/space requests, and
-  verify-after-import: if the file is still missing after importing a payload,
-  stop re-requesting and log — never loop.
-- **F4 FileUrl resolution.** Fix the double-path bug
-  (`…/Documents/module//Users/…`) so `hasLocalData`/`loadData` agree with
-  where `addFile` writes. This is the known failing
-  `FileDuplicationTests.duplicateReturnsNilWhenNoData`.
-
-### A2. SharePlay does not receive
-
-Hypotheses, in order of likelihood:
-
-- **H1 Mixed app versions (fixed).** A shipped-2.6 (V1) peer cannot decode the
-  V2 layout at all, and a V2 peer decoding V1 got empty roster/controls, so the
-  controls filter dropped everything. The V1/V2 mappers + superset encoding fix
-  both directions. Verify with a mixed-version test: encode with
-  `GameNetworkModelV1`, run through the full player pipeline.
-- **H2 Dedup swallows re-emitted journal payloads.** After a failed attachment
-  load we deliver the metadata-only model; its dedup key equals the key of the
-  later successful load of the same attachment (same counter), so the real
-  payload is dropped as a duplicate. Fix: include payload presence
-  (`data.data != nil`) in `GameMessageKey`, or skip dedup for `.file`-origin
-  events.
-- **H3 Session/messenger lifecycle** on the current OS beta — add reception
-  logging around `configureGroupSession` and verify with a two-device session.
-
-### A3. Map
-
-Mostly downstream of A1/A2 (map bundles and background-photo repair ride the
-same reveal/journal/store paths). Additionally:
-
-- Verify the targeted `.update/.mapState` recovery works over SharePlay — the
-  playerId-filtered controls rely on **name** matching in
-  `prepareForProcessing`; brittle. Superseded by R4 below (filter by id).
-
-## Part B — Envelope V3: explicit master / player
-
-Direction (agreed): master sends the master block, players send only their own
-player model, one simplified config with an explicit role, only the master
-sends controls.
-
-### Proposed wire shape
+The redesign landed as the current in-memory V2 schema. There is no V3 wire
+generation.
 
 ```swift
-enum GameRole: Int, Codable, Sendable { case master, player, observer, proxy }
+struct GameNetworkModel: Codable, Sendable {
+    static let currentVersion = 2
 
-/// The one simplified config: sender identity for every message.
-struct GameSenderModel: Equatable, Codable, Sendable {
-    var id: UUID
-    var role: GameRole
-    var name: String
-    var characterId: UUID?      // players only
+    var version: Int
+    var counter: Int
+    var proxyCounter: Int
+    var type: RPGMessageType
+    var subType: RPGMessageActionType
+    var masterId: UUID
+    var sender: GameSenderModel
+    var masterState: GameMasterStateModel?
+    var targetId: UUID?
+    var data: NetworkCodableDataType
 }
 
-/// Master-only authoritative block. Present only when sender.role == .master.
+struct GameSenderModel: Equatable, Codable, Sendable {
+    var id: UUID
+    var role: GameType
+    var name: String
+    var characterId: UUID?
+}
+
 struct GameMasterStateModel: Equatable, Codable, Sendable {
     var state: GameState
+    var adventureId: UUID?
     var adventureTitle: String?
     var players: [PlayerGameModel]
     var controls: [SharingControlModel]
     var features: GameFeatureModel
 }
-
-struct GameNetworkModel {   // V3
-    var version = 3
-    var counter: Int
-    var proxyCounter: Int
-    var type: RPGMessageType
-    var subType: RPGMessageActionType
-    var masterId: UUID                      // routing + V2 mapping
-    var sender: GameSenderModel
-    var masterState: GameMasterStateModel?  // nil in player messages
-    var data: NetworkCodableDataType
-}
 ```
 
-### What this eliminates
+Current rules:
 
-- `isMaster` by id comparison → `sender.role == .master`.
-- `senderName` roster lookups with `""` fallback → `sender.name` directly.
-  The whole lost-player-name class disappears.
-- Players echoing roster/controls back to the master → structurally impossible;
-  the master takes only `sender` (identity) from player messages.
-- Name-based controls filtering (**R4**): filter by `control.id` against the
-  local player id instead of display-name matching.
+- master messages contain `masterState`
+- player/observer/proxy-origin messages contain only `sender`
+- controls are matched by participant ID, never display name
+- a player accepts master state only from a newer counter for that `masterId`
+- `targetId` is a logical address applied by every player pipeline
+- `adventureId` and `adventureTitle` remain in `masterState`
+- `MasterGameModel.characterId` was removed from the transported master state;
+  player character identity belongs to `sender.characterId`
 
-### MasterGameModel trim (user question: adventureId / adventureTitle / characterId)
+## Compatibility
 
-Grep results (2026-07-10):
+`GameNetworkModel.init(from:)` accepts:
 
-- `master.characterId` — **no consumers**. Drop from the wire and the model.
-- `master.adventureId` — used only master-locally (`MasterController.start`
-  title image, `GameRootView` adventure display). Keep local, drop from the
-  wire. Verify `GameRootView.swift:36` is master-only before dropping.
-- `master.adventureTitle` — used for the SharePlay activity title and the
-  widget game name, both read from the master's **local** state. Keep a copy in
-  `GameMasterStateModel.adventureTitle` so players can display the session
-  name; drop the rest.
+- the shipped V1 envelope with roster, controls, and features inside
+  `gameConfig`
+- unreleased development layouts using `gameConfig` plus `gameRoster` and
+  optional `gameControl`
+- the current V2 `sender`/`masterState` layout
 
-### Compatibility
+`encode(to:)` emits one compatibility superset containing current and legacy
+keys. It deliberately writes wire `version == 1`, so shipped V1 clients accept
+the bytes. Current in-memory construction still defaults to
+`GameNetworkModel.currentVersion == 2`.
 
-- Decode ladder in `init(from:)`: V3 keys present → V3; else existing
-  V2 / intermediate / V1 handling (already implemented).
-- Mappers: `v3 ↔ v2` added next to the existing `v2 ↔ v1`.
-  - V3 → V2: `gameConfig` from `masterId` + `sender`; roster =
-    `masterState?.players` or `[sender-as-player]` for player messages so V2
-    peers can still resolve the sender name.
-  - V2 → V3: `sender` derived from `gameConfig` + roster lookup; `masterState`
-    only when the sender is the master.
-- Encoding stays a superset (V1 + intermediate + V2 + V3 fields) until the
-  2.6 app generation is retired; then reduce to V3-only behind a single flag in
-  `GameNetworkModel.encode(to:)`.
+Bidirectional mapping is implemented by:
 
-## Part C — Delivery semantics (after B, same milestone or next)
+- `GameNetworkModelV1.v2Model`
+- `GameNetworkModel.v1Model`
 
-- **C1** Formalize targeted sending: `send(..., to: PeerTarget)` covering
-  connection id, SharePlay participant, proxy connection.
-- **C2** Dedup key gains payload presence (from H2).
-- **C3** Journal slots per item id for photo/map instead of per module, to stop
-  replace-during-transfer churn when two items alternate.
-- **C4** `proxyCounter`: increment on proxy hops or delete the field in V3.
+A current player message embeds that sender as the sole V1 roster entry so an
+old peer can still recover the player's name and role.
 
-## Sequencing
+## Regression Repairs
 
-1. **A-fixes** F2 → F1 → H2 → F3 → F4, each with a failing-first
-   MultiConnection test (photo-cycling scenario: 4 players, 2 photos, one
-   repeatedly-requesting player; journal re-emission dedup test; mixed-version
-   V1-peer test).
-2. Two-device SharePlay smoke test (H1/H3 verification).
-3. **B**: V3 types + mappers + decode ladder + superset encode, tests mirroring
-   `GameNetworkModelVersionTests` for V3↔V2↔V1.
-4. Migrate `MasterController`/`PlayerController` handlers to
-   `sender`/`masterState`; remove name-based filtering (R4); trim
-   `MasterGameModel`.
-5. Update `GAME_CONNECTIONS.md` sections 5, 8, 18.
+### Targeted Payload Responses
 
-## Open questions
+Missing-data answers carry `targetId == requesterId`. When a local-network
+connection ID is known, the master sends only to that connection. SharePlay and
+fallback delivery can still fan out physically, but non-target player pipelines
+in current builds ignore the message. Shipped V1 clients have no `targetId`
+field, so only physical direct-connection targeting protects them; a V1 peer can
+still process a SharePlay/fallback broadcast containing this unknown key.
 
-- Does any player-side UI need `adventureId` (not just the title)? Check
-  `GameRootView` usage per platform before trimming.
-- Observers in V3: `role == .observer` with `characterId == nil` — any place
-  that needs to distinguish observer vs player beyond filtering?
-- Proxy relay in V3: the proxy master relays upstream — does it rewrite
-  `sender` (currently it substitutes the proxy host's identity for dice)?
-  Decide per subtype and document.
+The host of a private proxy mirror forwards host-targeted answers downstream
+with the target cleared. Messages targeted at a different ID are forwarded
+unchanged because that ID may be behind the host.
+
+### First Show And File Repair
+
+- the first map, photo, PDF, or space show in a game sends the full package
+- later shows use the ID/version reference
+- `GameControllable.reveal` verifies local backing bytes, not only metadata
+- photo/map repair sets bound repeated requests
+- responses echo the original counter and strip incoming payload bytes
+- a successful full response is marked sent even when it came through a request
+  path
+
+These rules prevent alternating photo responses from flipping every screen and
+prevent a permanently missing file from driving an endless repair loop.
+
+### Deduplication And Ordering
+
+`GameMessagePipeline` is an actor with queued, current, pending, and recent keys.
+Its key includes sender, counters, message/action, item identity/version, and
+payload presence. A metadata-only journal event and the later full payload are
+therefore distinct. Failed processing releases the key for retry; successful
+processing remembers it in a 256-entry window.
+
+Master and player-origin message counters now start at 1 and increase
+independently. ACKs and requests copy the counter they answer. Older
+authoritative master snapshots are ignored.
+
+### SharePlay
+
+- the session sequence is subscribed before activity activation
+- configuration is gated by the current session ID, requested join, and joined
+  state
+- session-scoped tasks are cancelled on reset; the join loop survives for rejoin
+- messenger payloads use ordered 200,000-byte packages
+- journal publications are serialized per module; a replacement is committed
+  before old-attachment cleanup, which runs without blocking later publications
+- journal snapshots load only their newest visual file presentation and await
+  file routing, preserving the newest map/photo/PDF/space reveal
+- messenger routing is awaited, and one visual presentation-intent sequence per
+  master rejects older cross-module/transport payloads and stale repairs
+- map-state updates carry the map version; targeted version-zero companions from
+  older masters are accepted only when they match the current map intent
+- cancelled messenger/journal work checks its session before delivery or mutation
+- targeted non-audio repair payloads use messenger packages
+- targeted audio journal repairs become untargeted `.store/.show` metadata
+- failed journal publication falls back to packages
+- failed attachment loading still delivers metadata so normal repair can run
+
+### Proxy Role
+
+The proxy role is resolved: a proxy client is a private mirror, not a real-master
+participant. The host does not add it to a roster. Messages that go upstream are
+rebuilt with the host sender identity and a fresh host counter. Dice, map-pin,
+and space-transform actions are applied on the host before remapping. ACKs,
+screens, audio lists, and proxy character announcements are consumed locally.
+
+### Reconnect
+
+Ready connections receive the current presentation immediately; maps also
+receive current map state. A proxy additionally receives the host's selected
+character. Lost connections clear repair/order state so availability and
+identity can be announced again safely.
+
+## Verification Coverage
+
+The implementation is covered by Swift Testing suites for:
+
+- V1/current mapping and superset round trips
+- current-master/V1-player and V1-master/current-player dice/photo exchange
+- monotonic player counters and stale master-state rejection
+- targeted photo repair across players, observers, and proxies
+- metadata/full-payload dedup separation and retry after failed processing
+- SharePlay package reassembly, lifecycle gating, and journal selection
+- proxy invisibility, host identity remapping, and host-target forwarding
+- audio availability convergence and targeted pre-play transfers
+- current-presentation replay after ready
+
+The main files are listed at the top of [Game Connections](GAME_CONNECTIONS.md).
+
+## Remaining Work
+
+- Run and record a real two-device SharePlay smoke test on the current OS build;
+  automated tests cover policy and lifecycle but not the system service.
+- Decide on a legacy-safe repair policy for mixed V1/current SharePlay sessions,
+  or formally retire that combination. V1 decoders ignore `targetId`, so logical
+  targeting alone cannot prevent them from processing a fallback broadcast.
+- Decide whether the journal should keep its current one-publication-per-module
+  model or adopt per-item broadcast slots. Targeted repairs no longer replace a
+  broadcast attachment, so this is now a capacity/product decision rather than
+  the original correctness blocker.
+- Either define and increment `proxyCounter` on proxy hops or remove it in a
+  future negotiated envelope. Current code preserves it without incrementing.
+- Recheck and remove the `@preconcurrency import GroupActivities` escape hatch
+  when the deployment SDK's concurrency annotations allow it; until then keep
+  mutable SharePlay state main-actor isolated and the detached join call free of
+  controller-state access.
+- When support for the shipped V1 generation is retired, replace the superset
+  encoder with a negotiated V2-only wire format and update version tests first.

@@ -270,17 +270,18 @@ extension GameNetworkController: PlayerNetworkControllerDelegate {
 
 extension GameNetworkController: SharePlayControllerDelegate {
     @MainActor
-    func handleUpdate(_ model: GameNetworkModel, id: UUID) {
-        scheduleDelegateTask {
-            await self.routeSharePlayUpdate(model, id: id)
-        }
+    func handleUpdate(_ model: GameNetworkModel, id: UUID) async {
+        // The messenger already yields messages in order. Await routing so that
+        // order is not lost by creating one unstructured task per message.
+        await routeSharePlayUpdate(model, id: id)
     }
 
     @MainActor
-    func handleFileUpdate(_ model: GameNetworkModel) {
-        scheduleDelegateTask {
-            await self.routeSharePlayFileUpdate(model)
-        }
+    func handleFileUpdate(_ model: GameNetworkModel) async {
+        // Journal snapshots may briefly contain both an old and replacement
+        // attachment. Await routing so their established order is preserved;
+        // independent unstructured tasks provide no FIFO guarantee.
+        await routeSharePlayFileUpdate(model)
     }
 
     @MainActor

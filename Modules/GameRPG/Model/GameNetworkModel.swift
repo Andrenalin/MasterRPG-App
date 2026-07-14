@@ -203,6 +203,58 @@ extension GameNetworkModel {
         subType == .ok || subType == .failed
     }
 
+    /// A master command that changes the player's current game presentation.
+    /// These commands can race payloads delivered by another transport, so the
+    /// intent is sequenced independently from transfer completion order.
+    var isPresentationIntent: Bool {
+        guard sender.isMaster else { return false }
+
+        if type == .reveal, subType == .show {
+            return switch data.type {
+            case .map, .photo, .pdf, .space, .table, .value, .weather:
+                true
+            default:
+                false
+            }
+        }
+
+        guard type == .update else { return false }
+        return switch data.type {
+        case .map:
+            subType == .mapState
+        case .photo, .weather:
+            true
+        case .value:
+            subType != .generic && subType != .valueResult
+        case .space:
+            subType != .spaceTransform
+        default:
+            false
+        }
+    }
+
+    var isFileBackedPresentation: Bool {
+        guard isPresentationIntent else { return false }
+        return data.type == .map || data.type == .photo || data.type == .pdf || data.type == .space
+    }
+
+    /// A mapState recovery payload is sent as `.reveal/.store`. It can promote
+    /// a map to the current screen, but it repairs an earlier intent rather than
+    /// declaring a new one.
+    var isMapPresentationRepair: Bool {
+        sender.isMaster && type == .reveal && subType == .store && data.type == .map
+    }
+
+    /// Older masters sent the targeted map-state companion with version zero.
+    /// It may repair only the already intended map; it never advances intent.
+    var isTargetedMapStatePresentationRepair: Bool {
+        sender.isMaster &&
+            targetId != nil &&
+            type == .update &&
+            subType == .mapState &&
+            data.type == .map
+    }
+
     var usesFileJournal: Bool {
         guard type == .reveal || type == .store else { return false }
         return data.usesFileJournal

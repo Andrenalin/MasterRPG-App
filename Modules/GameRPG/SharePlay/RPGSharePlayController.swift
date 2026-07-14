@@ -15,8 +15,8 @@ import TabletopKit
 
 @MainActor
 protocol SharePlayControllerDelegate: AnyObject {
-    func handleUpdate(_ model: GameNetworkModel, id: UUID) -> Void
-    func handleFileUpdate(_ model: GameNetworkModel) -> Void
+    func handleUpdate(_ model: GameNetworkModel, id: UUID) async -> Void
+    func handleFileUpdate(_ model: GameNetworkModel) async -> Void
     func sharePlayLostPlayer(id: UUID)
     /// Called when the local SharePlay session is invalidated so the player
     /// controller can reset `hasSendPlayer` and mark the master as lost.
@@ -134,10 +134,9 @@ final class RPGSharePlayController {
     // sends), cancelled by reset(). Send tasks remove themselves on completion so
     // the collection stays bounded during a long game.
     private var tasks: [UUID: Task<Void, Never>] = [:]
-    // Journal mutations for the same module must not overlap. GroupSessionJournal
-    // awaits are actor-reentrant, so independent Tasks could otherwise both remove
-    // the same old attachment and then add two replacements.
-    private var journalSendTasks: [NetworkModules: (id: UUID, task: Task<Void, Never>)] = [:]
+    // Publications for one module are serialized, but cleanup of the previous
+    // attachment never blocks publication of the next map/photo/PDF/space.
+    private let journalPublicationQueue = SharePlayJournalPublicationQueue<GroupSessionJournal.Attachment>()
     private var journal: GroupSessionJournal?
 
     // Lifetime observers — survive session resets; re-created if setup() runs again.
@@ -224,9 +223,9 @@ extension RPGSharePlayController {
         if Self.usesJournalTransport(for: gameNetworkModel, fileJournal: fileJournal, journalAvailable: journal != nil),
            let attachmentData = gameNetworkModel.data.data, let journal {
             let moduleKey = gameNetworkModel.data.type
-            addJournalSendTask(for: moduleKey, priority: .userInitiated) { [weak self] in
-                guard let self else { return }
-                guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return }
+            journalPublicationQueue.enqueue(for: moduleKey, priority: .userInitiated) { [weak self] in
+                guard let self else { return nil }
+                guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
                 let attachmentSize = Self.formattedByteCount(attachmentData.count)
                 self.recordJournalTransport(
                     state: .pending,
@@ -245,22 +244,12 @@ extension RPGSharePlayController {
                         for: gameNetworkModel
                     )
                     Logger.sharePlay.debug("Journal ✓: message \(gameNetworkModel.counter, privacy: .public) reused \(attachmentSize, privacy: .public) \(moduleKey.token, privacy: .public) attachment for \(gameNetworkModel.data.id, privacy: .public)")
-                    return
-                }
-                if let oldAttachment = self.gameModel?.attachments[gameNetworkModel.data.type] {
-                    self.gameModel?.attachments[gameNetworkModel.data.type] = nil
-                    self.journalTracker.didRemove(attachmentId: oldAttachment.id)
-                    do {
-                        try await journal.remove(attachment: oldAttachment)
-                    } catch {
-                        Logger.sharePlay.error("Cannot remove old attachment from Journal with module \(gameNetworkModel.data.type.token, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
-                    }
-                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return }
+                    return nil
                 }
                 let model = Self.journalMetadata(for: gameNetworkModel)
                 do {
                     let result = try await journal.add(attachmentData, metadata: model)
-                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return }
+                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
                     self.gameModel?.attachments[gameNetworkModel.data.type] = result
                     self.journalTracker.didPublish(
                         module: moduleKey,
@@ -274,6 +263,7 @@ extension RPGSharePlayController {
                         for: gameNetworkModel
                     )
                     Logger.sharePlay.debug("Journal ✓: message \(gameNetworkModel.counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public)")
+                    return result
                 } catch {
                     self.recordJournalTransport(
                         state: .failed,
@@ -284,6 +274,22 @@ extension RPGSharePlayController {
                     if self.sessionLifecycle.isCurrent(sessionId: sessionId), let sender = self.packageSender {
                         await self.sendChunked(encodedModel, for: gameNetworkModel, using: sender)
                     }
+                    return nil
+                }
+            } remove: { [weak self] oldAttachment in
+                guard let self,
+                      self.sessionLifecycle.isCurrent(sessionId: sessionId)
+                else { return }
+                do {
+                    try await journal.remove(attachment: oldAttachment)
+                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return }
+                    self.journalTracker.didRemove(attachmentId: oldAttachment.id)
+                    Logger.sharePlay.debug("Journal ✓: removed replaced \(moduleKey.token, privacy: .public) attachment \(oldAttachment.id, privacy: .public)")
+                } catch is CancellationError {
+                    // Session reset cancels cleanup tasks. The next session owns
+                    // a different journal, so cancellation needs no recovery.
+                } catch {
+                    Logger.sharePlay.error("Cannot remove replaced attachment from Journal with module \(moduleKey.token, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
                 }
             }
             return
@@ -336,35 +342,6 @@ extension RPGSharePlayController {
         tasks[id] = Task(priority: priority) { [weak self] in
             await operation()
             self?.tasks.removeValue(forKey: id)
-        }
-    }
-
-    private func addJournalSendTask(
-        for module: NetworkModules,
-        priority: TaskPriority? = nil,
-        _ operation: @escaping @MainActor () async -> Void
-    ) {
-        let id = UUID()
-        let previousTask = journalSendTasks[module]?.task
-        let task = Task(priority: priority) { [weak self] in
-            if let previousTask {
-                await previousTask.value
-            }
-            guard !Task.isCancelled else {
-                self?.finishJournalSendTask(id: id, module: module)
-                return
-            }
-            await operation()
-            self?.finishJournalSendTask(id: id, module: module)
-        }
-        journalSendTasks[module] = (id, task)
-        tasks[id] = task
-    }
-
-    private func finishJournalSendTask(id: UUID, module: NetworkModules) {
-        tasks.removeValue(forKey: id)
-        if journalSendTasks[module]?.id == id {
-            journalSendTasks[module] = nil
         }
     }
 
@@ -437,9 +414,9 @@ extension RPGSharePlayController {
         journal = nil
         sessionLifecycle.reset()
         journalTracker.reset()
+        journalPublicationQueue.cancelAll()
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
-        journalSendTasks = [:]
         gameModel?.attachments = [:]
         if groupSession != nil {
             groupSession?.leave()
@@ -574,12 +551,18 @@ extension RPGSharePlayController {
         let messageTask = Task { [weak self] in
             for await (message, context) in messenger.messages(of: PackageMessage.self) {
                 guard let self else { return }
+                guard !Task.isCancelled,
+                      self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
+                else { return }
                 Logger.sharePlay.debug("Received Update Message \(message.uuid, privacy: .public): \(message.count, privacy: .public) - \(message.total, privacy: .public) from \(context.source.id, privacy: .public)")
                 if let data = self.packageReceiver.received(package: message)?.data {
                     let size = Self.formattedByteCount(data.count)
                     Logger.sharePlay.debug("Chunked ✓: received \(message.total, privacy: .public) packages, assembled size \(size, privacy: .public) from \(context.source.id, privacy: .public)")
                     guard let gameModel = GameNetworkModel.decodeData(of: data) else { continue }
-                    self.delegate?.handleUpdate(gameModel, id: context.source.id)
+                    guard !Task.isCancelled,
+                          self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
+                    else { return }
+                    await self.delegate?.handleUpdate(gameModel, id: context.source.id)
                 }
             }
         }
@@ -587,7 +570,10 @@ extension RPGSharePlayController {
         let journalTask = Task { [weak self] in
             for await attachment in journal.attachments {
                 guard let self else { return }
-                await self.handle(attachment)
+                guard !Task.isCancelled,
+                      self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
+                else { return }
+                await self.handle(attachment, sessionId: groupSession.id)
             }
         }
         tasks[UUID()] = journalTask
@@ -616,46 +602,148 @@ extension RPGSharePlayController {
         #endif
     }
 
-    func handle(_ attachments: GroupSessionJournal.Attachments.Element) async {
+    func handle(_ attachments: GroupSessionJournal.Attachments.Element, sessionId: UUID) async {
+        guard !Task.isCancelled,
+              sessionLifecycle.isCurrent(sessionId: sessionId)
+        else { return }
         journalTracker.reconcile(attachmentIds: Set(attachments.map(\.id)))
         var currentAttachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
+        var entries: [(attachment: GroupSessionJournal.Attachment, metadata: GameNetworkModel)] = []
 
         for attachment in attachments {
             do {
-                var metadata = try await attachment.loadMetadata(of: GameNetworkModel.self)
-                currentAttachments[metadata.data.type] = attachment
-                // Recorded for every attachment currently in the journal — including
-                // our own — so the debug attachments list reflects what's actually
-                // published, regardless of who authored it.
-                gameModel?.metaDataAttachments[metadata.data.type] = metadata.data.id
-                // journal.attachments emits the FULL current set on every change.
-                // Track processed system attachment IDs separately from the current
-                // module slot. A removed/re-added item gets a new attachment ID and
-                // is therefore processed again.
-                guard journalTracker.shouldProcess(attachmentId: attachment.id) else { continue }
-                if metadata.sender.id == gameModel?.gameConfig.id { continue }
-                Logger.sharePlay.debug("Attachments \(metadata.counter, privacy: .public)")
-                do {
-                    let data = try await attachment.load(Data.self)
-                    let size = Self.formattedByteCount(data.count)
-                    Logger.sharePlay.debug("Journal ✓: received message \(metadata.counter, privacy: .public) attachment \(attachment.id, privacy: .public), size \(size, privacy: .public)")
-                    metadata.data = NetworkCodableDataType(id: metadata.data.id, type: metadata.data.type, version: metadata.data.version, data: data)
-                    delegate?.handleFileUpdate(metadata)
-                } catch let error {
-                    Logger.sharePlay.error("Exception in load attachment data \(error.localizedDescription, privacy: .public)")
-                    // The load fails when the master replaced the attachment while
-                    // this participant was still transferring it. Deliver the
-                    // data-less metadata anyway: a reveal without data makes the
-                    // player controller request the payload again from the master,
-                    // instead of silently missing it while everyone else has it.
-                    delegate?.handleFileUpdate(metadata)
-                }
+                let metadata = try await attachment.loadMetadata(of: GameNetworkModel.self)
+                guard !Task.isCancelled,
+                      sessionLifecycle.isCurrent(sessionId: sessionId)
+                else { return }
+                entries.append((attachment, metadata))
+            } catch is CancellationError {
+                return
             } catch let error {
+                guard !Task.isCancelled,
+                      sessionLifecycle.isCurrent(sessionId: sessionId)
+                else { return }
                 Logger.sharePlay.error("Exception in load attachment metaData \(error.localizedDescription, privacy: .public)")
             }
         }
 
+        // Add-before-remove intentionally creates a short snapshot containing
+        // both the old and new map. Process counters oldest-to-newest so a late
+        // join or transient overlap cannot finish by presenting the old map.
+        entries.sort {
+            Self.journalEntryComesBefore(
+                metadata: $0.metadata,
+                attachmentId: $0.attachment.id,
+                metadata: $1.metadata,
+                attachmentId: $1.attachment.id
+            )
+        }
+        let latestPresentationAttachmentId = Self.latestJournalPresentationAttachmentId(
+            in: entries.map { (attachmentId: $0.attachment.id, metadata: $0.metadata) }
+        )
+
+        for entry in entries {
+            guard !Task.isCancelled,
+                  sessionLifecycle.isCurrent(sessionId: sessionId)
+            else { return }
+            let attachment = entry.attachment
+            var metadata = entry.metadata
+            currentAttachments[metadata.data.type] = attachment
+            // Recorded for every attachment currently in the journal — including
+            // our own — so the debug attachments list reflects what's actually
+            // published, regardless of who authored it. Sorted processing leaves
+            // the newest publication in each module slot.
+            gameModel?.metaDataAttachments[metadata.data.type] = metadata.data.id
+            // journal.attachments emits the FULL current set on every change.
+            // Track processed system attachment IDs separately from the current
+            // module slot. A removed/re-added item gets a new attachment ID and
+            // is therefore processed again.
+            guard journalTracker.shouldProcess(attachmentId: attachment.id) else { continue }
+            if metadata.sender.id == gameModel?.gameConfig.id { continue }
+            if Self.isJournalPresentation(metadata),
+               latestPresentationAttachmentId != attachment.id {
+                // The replacement has already been published. Loading or
+                // repairing this superseded attachment could make an old map
+                // arrive after and overwrite the current presentation.
+                Logger.sharePlay.debug("Journal: skipped superseded message \(metadata.counter, privacy: .public) attachment \(attachment.id, privacy: .public)")
+                continue
+            }
+            Logger.sharePlay.debug("Attachments \(metadata.counter, privacy: .public)")
+            do {
+                let data = try await attachment.load(Data.self)
+                guard !Task.isCancelled,
+                      sessionLifecycle.isCurrent(sessionId: sessionId)
+                else { return }
+                let size = Self.formattedByteCount(data.count)
+                Logger.sharePlay.debug("Journal ✓: received message \(metadata.counter, privacy: .public) attachment \(attachment.id, privacy: .public), size \(size, privacy: .public)")
+                metadata.data = NetworkCodableDataType(id: metadata.data.id, type: metadata.data.type, version: metadata.data.version, data: data)
+                await delegate?.handleFileUpdate(metadata)
+            } catch is CancellationError {
+                return
+            } catch let error {
+                guard !Task.isCancelled,
+                      sessionLifecycle.isCurrent(sessionId: sessionId)
+                else { return }
+                Logger.sharePlay.error("Exception in load attachment data \(error.localizedDescription, privacy: .public)")
+                // The load fails when the master replaced the attachment while
+                // this participant was still transferring it. Deliver the
+                // data-less metadata anyway: a reveal without data makes the
+                // player controller request the payload again from the master,
+                // instead of silently missing it while everyone else has it.
+                await delegate?.handleFileUpdate(metadata)
+            }
+        }
+
+        guard !Task.isCancelled,
+              sessionLifecycle.isCurrent(sessionId: sessionId)
+        else { return }
         gameModel?.attachments = currentAttachments
+    }
+
+    /// Gives transient add-before-remove snapshots a stable processing order.
+    /// Message counters are authoritative for successive publications from the
+    /// master; version and attachment ID only make malformed/equal-counter
+    /// snapshots deterministic.
+    static func journalEntryComesBefore(
+        metadata lhs: GameNetworkModel,
+        attachmentId lhsAttachmentId: UUID,
+        metadata rhs: GameNetworkModel,
+        attachmentId rhsAttachmentId: UUID
+    ) -> Bool {
+        if lhs.counter != rhs.counter {
+            return lhs.counter < rhs.counter
+        }
+        if lhs.data.version != rhs.data.version {
+            return lhs.data.version < rhs.data.version
+        }
+        return lhsAttachmentId.uuidString < rhsAttachmentId.uuidString
+    }
+
+    static func latestJournalPresentationAttachmentId(
+        in entries: [(attachmentId: UUID, metadata: GameNetworkModel)]
+    ) -> UUID? {
+        var latest: (attachmentId: UUID, metadata: GameNetworkModel)?
+
+        for entry in entries where isJournalPresentation(entry.metadata) {
+            guard let current = latest else {
+                latest = entry
+                continue
+            }
+            if journalEntryComesBefore(
+                metadata: current.metadata,
+                attachmentId: current.attachmentId,
+                metadata: entry.metadata,
+                attachmentId: entry.attachmentId
+            ) {
+                latest = entry
+            }
+        }
+
+        return latest?.attachmentId
+    }
+
+    static func isJournalPresentation(_ metadata: GameNetworkModel) -> Bool {
+        metadata.isFileBackedPresentation
     }
 }
 

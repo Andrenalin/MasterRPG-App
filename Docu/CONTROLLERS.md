@@ -254,11 +254,14 @@ the network store can deliver master sends directly to the local player delegate
 - starting the proxy server
 - tracking connection ids to player ids
 - atomically reserving `messageCounter`
-- sending `GameNetworkModel` messages to players
+- sending `GameNetworkModel` broadcasts and targeted repair responses
+- serializing/deduplicating incoming messages through `GameMessagePipeline`
 - resetting player-dependent module state: audio players, dice player names, map player pins
 - handling player requests and returning full `NetworkCodableDataType` payloads
+  to the requester
 - processing ACKs and player reports
-- forwarding proxy messages to direct master/player networks
+- keeping proxy clients private: serving requests locally when possible and
+  remapping eligible upstream messages to the host player's identity
 
 The master handles module-specific messages:
 
@@ -274,11 +277,12 @@ The master handles module-specific messages:
 
 - connecting to a browser-discovered master/proxy
 - setting up local mode when acting as game master locally
-- maintaining message/response counters and missing-map request state
-- sending character data after ready
-- sending audio list after the initial character send
+- maintaining monotonic outgoing counters, response counters, deduplication, and
+  bounded map/file-repair state
+- sending the audio list immediately after ready, then scheduling character data
 - applying master broadcasts atomically
-- filtering messages by `GameControlModel.controls`
+- rejecting stale master-state snapshots
+- filtering controls and `targetId` by player ID
 - relaying messages to proxies
 - responding with `.ok`, `.failed`, or "request full data"
 
@@ -286,7 +290,8 @@ Player response behavior is important:
 
 - `.ok`: player applied the data; master can count that player as reported.
 - `.failed`: player rejected or could not apply the message.
-- same type/subtype with original data metadata: player is requesting full data.
+- same type/subtype with the original item id/type/version and no payload bytes:
+  player is requesting full data.
 
 ### GameController
 
