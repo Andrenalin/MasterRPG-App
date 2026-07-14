@@ -200,11 +200,126 @@ struct SharePlayPackageTransportTests {
         #expect(processedFirstTime)
         #expect(!processedSecondTime)
 
+        tracker.retryProcessing(attachmentId: attachmentId)
+        let retriedAfterFailure = tracker.shouldProcess(attachmentId: attachmentId)
+        let processedAfterRetry = tracker.shouldProcess(attachmentId: attachmentId)
+        #expect(retriedAfterFailure)
+        #expect(!processedAfterRetry)
+
         tracker.reconcile(attachmentIds: [])
         tracker.reconcile(attachmentIds: [attachmentId])
 
         let processedAfterRemoval = tracker.shouldProcess(attachmentId: attachmentId)
         #expect(processedAfterRemoval)
+    }
+
+    @Test("journal attachment load retries while its CloudAsset upload finishes")
+    func journalAttachmentLoadRetriesTransientUploadFailure() async throws {
+        let probe = AttachmentLoadRetryProbe(failuresRemaining: 2)
+        let retryDelays: [Duration] = [.milliseconds(1), .milliseconds(2)]
+
+        let data = try await SharePlayAttachmentLoadRetry.load(
+            retryDelays: retryDelays,
+            sleep: { delay in
+                await probe.recordSleep(delay)
+            },
+            operation: {
+                try await probe.load()
+            }
+        )
+
+        #expect(data == Data("map".utf8))
+        #expect(await probe.attemptCount == 3)
+        #expect(await probe.recordedDelays == retryDelays)
+    }
+
+    @Test("journal attachment load does not retry cancellation")
+    func journalAttachmentLoadDoesNotRetryCancellation() async {
+        let probe = AttachmentLoadRetryProbe(failuresRemaining: 0, cancels: true)
+
+        await #expect(throws: CancellationError.self) {
+            try await SharePlayAttachmentLoadRetry.load(
+                retryDelays: [.milliseconds(1)],
+                sleep: { delay in
+                    await probe.recordSleep(delay)
+                },
+                operation: {
+                    try await probe.load()
+                }
+            )
+        }
+
+        #expect(await probe.attemptCount == 1)
+        #expect(await probe.recordedDelays.isEmpty)
+    }
+
+    @Test("journal attachment load does not start when already cancelled")
+    func journalAttachmentLoadDoesNotStartWhenAlreadyCancelled() async {
+        let probe = AttachmentLoadRetryProbe(failuresRemaining: 0)
+        let startGate = AttachmentRetryStartGate()
+        let task = Task {
+            await startGate.wait()
+            return try await SharePlayAttachmentLoadRetry.load(
+                retryDelays: [.milliseconds(1)],
+                sleep: { _ in },
+                operation: {
+                    try await probe.load()
+                }
+            )
+        }
+        task.cancel()
+        await startGate.open()
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+        #expect(await probe.attemptCount == 0)
+    }
+
+    @Test("journal attachment load stops when cancelled during retry delay")
+    func journalAttachmentLoadStopsWhenCancelledDuringRetryDelay() async {
+        let probe = AttachmentLoadRetryProbe(failuresRemaining: 10)
+        let sleepGate = AttachmentRetrySleepGate()
+        let task = Task {
+            try await SharePlayAttachmentLoadRetry.load(
+                retryDelays: [.milliseconds(1), .milliseconds(2)],
+                sleep: { delay in
+                    await sleepGate.sleep(for: delay)
+                },
+                operation: {
+                    try await probe.load()
+                }
+            )
+        }
+        await sleepGate.waitUntilSleeping()
+        task.cancel()
+        await sleepGate.resume()
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+        #expect(await probe.attemptCount == 1)
+    }
+
+    @Test("journal attachment load exhausts its bounded retry policy")
+    func journalAttachmentLoadExhaustsBoundedRetryPolicy() async {
+        let probe = AttachmentLoadRetryProbe(failuresRemaining: 10)
+        let retryDelays: [Duration] = [.milliseconds(1), .milliseconds(2)]
+
+        await #expect(throws: AttachmentLoadProbeError.self) {
+            try await SharePlayAttachmentLoadRetry.load(
+                retryDelays: retryDelays,
+                sleep: { delay in
+                    await probe.recordSleep(delay)
+                },
+                operation: {
+                    try await probe.load()
+                }
+            )
+        }
+
+        #expect(await probe.attemptCount == retryDelays.count + 1)
+        #expect(await probe.recordedDelays == retryDelays)
     }
 
     @Test("new journal maps publish while removal of the previous map is suspended")
@@ -453,6 +568,85 @@ private actor PackageCollector {
     func append(_ package: PackageMessage) {
         storage.append(package)
     }
+}
+
+private actor AttachmentLoadRetryProbe {
+    private var failuresRemaining: Int
+    private let cancels: Bool
+    private(set) var attemptCount = 0
+    private(set) var recordedDelays: [Duration] = []
+
+    init(failuresRemaining: Int, cancels: Bool = false) {
+        self.failuresRemaining = failuresRemaining
+        self.cancels = cancels
+    }
+
+    func load() throws -> Data {
+        attemptCount += 1
+        if cancels {
+            throw CancellationError()
+        }
+        if failuresRemaining > 0 {
+            failuresRemaining -= 1
+            throw AttachmentLoadProbeError.uploadInProgress
+        }
+        return Data("map".utf8)
+    }
+
+    func recordSleep(_ delay: Duration) {
+        recordedDelays.append(delay)
+    }
+}
+
+private actor AttachmentRetryStartGate {
+    private var isOpen = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func wait() async {
+        guard !isOpen else { return }
+        await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
+    }
+
+    func open() {
+        isOpen = true
+        let currentWaiters = waiters
+        waiters = []
+        currentWaiters.forEach { $0.resume() }
+    }
+}
+
+private actor AttachmentRetrySleepGate {
+    private var isSleeping = false
+    private var startWaiters: [CheckedContinuation<Void, Never>] = []
+    private var sleepWaiter: CheckedContinuation<Void, Never>?
+
+    func sleep(for _: Duration) async {
+        isSleeping = true
+        let currentStartWaiters = startWaiters
+        startWaiters = []
+        currentStartWaiters.forEach { $0.resume() }
+        await withCheckedContinuation { continuation in
+            sleepWaiter = continuation
+        }
+    }
+
+    func waitUntilSleeping() async {
+        guard !isSleeping else { return }
+        await withCheckedContinuation { continuation in
+            startWaiters.append(continuation)
+        }
+    }
+
+    func resume() {
+        sleepWaiter?.resume()
+        sleepWaiter = nil
+    }
+}
+
+private enum AttachmentLoadProbeError: Error {
+    case uploadInProgress
 }
 
 private struct TestJournalAttachment: Identifiable, Sendable {

@@ -26,6 +26,7 @@ final class MasterNetworkStoreDelegateMock: MasterNetworkStoreDelegate, @uncheck
     func receivedFile(_ model: GameNetworkModel) {
         calledFileReceived += 1
     }
+
 }
 
 final class PlayerNetworkStoreDelegateMock: PlayerNetworkStoreDelegate, @unchecked Sendable {
@@ -34,6 +35,7 @@ final class PlayerNetworkStoreDelegateMock: PlayerNetworkStoreDelegate, @uncheck
     var calledReady = 0
     var calledReceived = 0
     var calledFileReceived = 0
+    var calledFileLoadFailed = 0
 
     func lostConnection() {
         calledLostConnection += 1
@@ -49,5 +51,9 @@ final class PlayerNetworkStoreDelegateMock: PlayerNetworkStoreDelegate, @uncheck
 
     func receivedFile(_ model: GameNetworkModel) {
         calledFileReceived += 1
+    }
+
+    func sharePlayFileLoadFailed(_ model: GameNetworkModel) {
+        calledFileLoadFailed += 1
     }
 }

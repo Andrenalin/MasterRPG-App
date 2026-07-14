@@ -24,6 +24,7 @@ struct ToolbarVolumeButtonView: View {
             .labelStyle(.iconOnly)
         }
         .help(Text("Adjust playback volume", bundle: .module))
+#if !os(tvOS)
         .popover(isPresented: $isVolumeSliderPresented) {
 #if os(iOS)
             ToolbarVolumeSliderView(root: root)
@@ -32,6 +33,7 @@ struct ToolbarVolumeButtonView: View {
             ToolbarVolumeSliderView(root: root)
 #endif
         }
+#endif
     }
 }
 
@@ -40,7 +42,9 @@ private struct ToolbarVolumeSliderView: View {
 
     var body: some View {
         @Bindable var audioPlayerModel = root.audioPlayerModel
-
+        #if os(tvOS)
+        EmptyView()
+        #else
         Slider(value: $audioPlayerModel.volume, in: 0...1) {
             Text("Volume", bundle: .module)
         } minimumValueLabel: {
@@ -50,6 +54,7 @@ private struct ToolbarVolumeSliderView: View {
         }
         .padding()
         .frame(minWidth: 240)
+        #endif
     }
 }
 

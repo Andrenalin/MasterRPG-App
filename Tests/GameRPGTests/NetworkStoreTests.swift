@@ -161,6 +161,16 @@ struct NetworkStoreTests {
         #expect(env.playerDelegateSpy.calledFileReceived == 1)
     }
 
+    @Test("SharePlay attachment failure routing completes before returning to the journal")
+    func sharePlayAttachmentFailureRoutingCompletesBeforeReturningToJournal() async throws {
+        let env = try await NetworkStoreTestEnvironment.create()
+
+        await env.networkController.handleFileLoadFailure(masterGameNetworkModel)
+
+        #expect(env.playerDelegateSpy.calledFileLoadFailed == 1)
+        #expect(env.playerDelegateSpy.calledFileReceived == 0)
+    }
+
     @Test("SharePlay messenger routing completes before receiving the next message")
     func sharePlayMessengerRoutingCompletesBeforeReceivingNextMessage() async throws {
         let env = try await NetworkStoreTestEnvironment.create()

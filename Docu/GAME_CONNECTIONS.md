@@ -240,7 +240,14 @@ processed once per snapshot lifetime. A snapshot can retain old presentation
 slots from different modules; only its single newest map/photo/PDF/space reveal
 is loaded, selected by message counter. File delivery is awaited rather than
 launched as independent tasks, so an old payload or repair cannot race back over
-the current presentation. A removed publication becomes publishable again.
+the current presentation. Because Apple can expose attachment metadata while
+its CloudAsset upload is still in progress, data loading uses bounded,
+cancellation-aware retries. A final failure leaves the attachment retryable for
+the next journal snapshot. Reveal metadata uses an exact-version local copy or
+requests missing bytes through its normal handler; store/update failures issue an
+explicit `.store/.store` messenger request so metadata-only handlers cannot ACK
+or fail without recovering the bytes. A removed publication becomes publishable
+again.
 
 Messenger routing is awaited as well, preserving its sequence before the next
 package is handled. Because messenger references and journal payloads can still
@@ -1548,9 +1555,11 @@ Master:
   repairs use packages; targeted audio repairs become untargeted stores.
 - A replacement attachment is published before old-attachment cleanup, and slow
   cleanup never blocks the next publication for that module.
-- Journal replacement can deliver metadata without bytes; the normal missing-data
-  request path repairs that, and payload presence prevents dedup from discarding
-  the later full delivery.
+- Journal metadata can arrive while its CloudAsset is still `uploadInProgress`.
+  Attachment loading retries briefly; exhausted attempts remain eligible for a
+  later journal snapshot. Reveal failures use conditional local-data recovery;
+  store/update failures explicitly request full bytes over messenger. Payload
+  presence prevents dedup from discarding the later full delivery.
 - A normal player is also a proxy server for private local mirrors. Proxy identity
   is never sent upstream; eligible actions are remapped to the host.
 - Observers receive content but should not mutate master gameplay state.
@@ -1576,3 +1585,7 @@ When diagnosing game communication:
     payload delivery; verify the active session ID and attachment module slot.
 11. If a message appears stale, compare its counter with the last applied master
     state and remember that only legacy/unsequenced counter `0` skips dedup/order.
+12. `AttachmentDownloadTask.Errors 0` with `uploadInProgress` is a transient
+    CloudAsset publication race. A following `.reveal/.ok` means the receiver
+    already had an exact usable local copy; `.reveal/.show` requests missing
+    bytes, while failed store/update loads recover through `.store/.store`.

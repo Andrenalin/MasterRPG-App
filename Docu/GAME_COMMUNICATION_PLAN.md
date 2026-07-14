@@ -138,6 +138,9 @@ authoritative master snapshots are ignored.
   before old-attachment cleanup, which runs without blocking later publications
 - journal snapshots load only their newest visual file presentation and await
   file routing, preserving the newest map/photo/PDF/space reveal
+- attachment data loading retries the transient CloudAsset `uploadInProgress`
+  window; exhausted loads remain journal-retryable, reveals recover conditionally,
+  and store/update failures explicitly request bytes through messenger
 - messenger routing is awaited, and one visual presentation-intent sequence per
   master rejects older cross-module/transport payloads and stale repairs
 - map-state updates carry the map version; targeted version-zero companions from

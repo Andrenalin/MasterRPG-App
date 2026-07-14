@@ -376,6 +376,44 @@ final class MasterPlayerControllerTests {
         #expect(sutPlayer.gameModel.gameUpdateType == .map)
     }
 
+    @Test func failedJournalStoresRequestBytesForEveryFileBackedModule() async throws {
+        try await setUp()
+        networkMock.model.setPlayerDelegate(sutPlayer)
+        let modules: [NetworkModules] = [.map, .photo, .pdf, .space, .audio]
+
+        for (index, module) in modules.enumerated() {
+            let itemId = UUID()
+            let version = index + 10
+            let metadata = rootSut.gameModel.outgoingMessage(
+                counter: index + 60,
+                type: .store,
+                subType: .store,
+                asMaster: true,
+                data: NetworkCodableDataType(
+                    id: itemId,
+                    type: module,
+                    version: version,
+                    data: nil
+                )
+            )
+            playerStoreAbstractionMock.requestData = nil
+            let requestCount = playerStoreAbstractionMock.calledRequest
+
+            await networkMock.handleFileLoadFailure(metadata)
+
+            #expect(playerStoreAbstractionMock.calledRequest == requestCount + 1)
+            let request = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)
+            #expect(request.counter == metadata.counter)
+            #expect(request.type == .store)
+            #expect(request.subType == .store)
+            #expect(request.data.id == itemId)
+            #expect(request.data.type == module)
+            #expect(request.data.version == version)
+            #expect(request.data.data == nil)
+            #expect(!request.sender.isMaster)
+        }
+    }
+
     @Test func newerMapReferenceRejectsAnOlderDelayedJournalMap() async throws {
         try await setUp()
         try await importTestData(into: rootSut)

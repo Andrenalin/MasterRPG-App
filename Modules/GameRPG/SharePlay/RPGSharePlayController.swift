@@ -17,6 +17,7 @@ import TabletopKit
 protocol SharePlayControllerDelegate: AnyObject {
     func handleUpdate(_ model: GameNetworkModel, id: UUID) async -> Void
     func handleFileUpdate(_ model: GameNetworkModel) async -> Void
+    func handleFileLoadFailure(_ model: GameNetworkModel) async -> Void
     func sharePlayLostPlayer(id: UUID)
     /// Called when the local SharePlay session is invalidated so the player
     /// controller can reset `hasSendPlayer` and mark the master as lost.
@@ -97,6 +98,10 @@ struct SharePlayJournalTracker: Sendable {
 
     mutating func shouldProcess(attachmentId: UUID) -> Bool {
         processedAttachmentIds.insert(attachmentId).inserted
+    }
+
+    mutating func retryProcessing(attachmentId: UUID) {
+        processedAttachmentIds.remove(attachmentId)
     }
 
     mutating func reset() {
@@ -670,7 +675,9 @@ extension RPGSharePlayController {
             }
             Logger.sharePlay.debug("Attachments \(metadata.counter, privacy: .public)")
             do {
-                let data = try await attachment.load(Data.self)
+                let data = try await SharePlayAttachmentLoadRetry.load {
+                    try await attachment.load(Data.self)
+                }
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }
@@ -684,13 +691,16 @@ extension RPGSharePlayController {
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }
-                Logger.sharePlay.error("Exception in load attachment data \(error.localizedDescription, privacy: .public)")
-                // The load fails when the master replaced the attachment while
-                // this participant was still transferring it. Deliver the
-                // data-less metadata anyway: a reveal without data makes the
-                // player controller request the payload again from the master,
-                // instead of silently missing it while everyone else has it.
-                await delegate?.handleFileUpdate(metadata)
+                // GroupSessionJournal can publish developer metadata while the
+                // CloudAsset still reports `uploadInProgress`. Keep this ID
+                // retryable for the next journal snapshot after the short local
+                // retry window, and use the messenger repair path immediately.
+                journalTracker.retryProcessing(attachmentId: attachment.id)
+                Logger.sharePlay.warning("Journal attachment \(attachment.id, privacy: .public) remained unavailable after retries: \(error.localizedDescription, privacy: .public). Requesting messenger recovery.")
+                // Reveal metadata can still use an exact-version local copy.
+                // Store/update metadata needs an explicit byte request because
+                // its normal handlers may ACK or fail without asking again.
+                await delegate?.handleFileLoadFailure(metadata)
             }
         }
 

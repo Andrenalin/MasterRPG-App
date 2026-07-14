@@ -2,6 +2,8 @@
 
 #if os(visionOS)
 import SwiftUI
+import MapRPG
+import PhotoRPG
 
 struct GameTableToolbar: View {
     let game: GameTableModel

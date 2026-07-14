@@ -384,6 +384,29 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         guard await root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
         await receivedProcess(model, origin: .file)
     }
+
+    func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {
+        guard model.sender.isMaster,
+              await !root.gameModel.gameConfig.isMaster
+        else { return }
+
+        if model.type == .reveal {
+            // A reveal reference may be fully satisfied by an exact-version
+            // local item. The regular handler ACKs that case and requests bytes
+            // only when the item or its backing file is unavailable.
+            await receivedProcess(model, origin: .file)
+            return
+        }
+
+        // Metadata-only stores and journaled updates do not consistently ask
+        // for missing bytes. Convert the recovery into a store request; the
+        // master rebuilds the full module payload and targets its reply here.
+        var requestTrigger = model
+        requestTrigger.type = .store
+        requestTrigger.subType = .store
+        let request = await response(for: requestTrigger, isSuccess: true, requestData: true)
+        await sendUpstream(model: request)
+    }
     
     func receivedProcess(_ model: GameNetworkModel, fromProxy: Bool = false) async {
         Logger.networking.debug("PlayerController: Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")

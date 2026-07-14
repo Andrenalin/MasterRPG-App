@@ -21,6 +21,7 @@ protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
     func receivedFile(_ model: GameNetworkModel) async
     func receivedSharePlay(_ model: GameNetworkModel, participantId: UUID) async
     func receivedSharePlayFile(_ model: GameNetworkModel) async
+    func sharePlayFileLoadFailed(_ model: GameNetworkModel) async
 }
 
 extension PlayerNetworkStoreDelegate {
@@ -30,6 +31,10 @@ extension PlayerNetworkStoreDelegate {
 
     func receivedSharePlayFile(_ model: GameNetworkModel) async {
         await receivedFile(model)
+    }
+
+    func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {
+        await receivedSharePlayFile(model)
     }
 }
 

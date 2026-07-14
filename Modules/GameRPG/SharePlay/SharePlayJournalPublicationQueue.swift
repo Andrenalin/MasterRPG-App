@@ -98,3 +98,36 @@ where Attachment.ID == UUID {
         }
     }
 }
+
+/// Retries the transient window where a journal entry is visible before its
+/// CloudAsset upload is downloadable by another participant.
+enum SharePlayAttachmentLoadRetry {
+    static let defaultRetryDelays: [Duration] = [
+        .milliseconds(250),
+        .seconds(1),
+        .seconds(2)
+    ]
+
+    static func load<Value: Sendable>(
+        retryDelays: [Duration] = defaultRetryDelays,
+        sleep: @Sendable (Duration) async throws -> Void = { delay in
+            try await Task.sleep(for: delay)
+        },
+        operation: @Sendable () async throws -> Value
+    ) async throws -> Value {
+        for delay in retryDelays {
+            try Task.checkCancellation()
+            do {
+                return try await operation()
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                try Task.checkCancellation()
+                try await sleep(delay)
+            }
+        }
+
+        try Task.checkCancellation()
+        return try await operation()
+    }
+}

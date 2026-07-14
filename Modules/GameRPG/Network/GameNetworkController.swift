@@ -285,6 +285,18 @@ extension GameNetworkController: SharePlayControllerDelegate {
     }
 
     @MainActor
+    func handleFileLoadFailure(_ message: GameNetworkModel) async {
+        if message.sender.isMaster {
+            await model.playerDelegate?.sharePlayFileLoadFailed(message)
+        } else {
+            // Player-origin journal uploads retain their existing master-side
+            // handling; the explicit player recovery request is for content
+            // whose authoritative source is the master.
+            await routeSharePlayFileUpdate(message)
+        }
+    }
+
+    @MainActor
     func sharePlayLostPlayer(id: UUID) {
         scheduleDelegateTask {
             await self.model.masterDelegate?.lostPlayer(for: id)
