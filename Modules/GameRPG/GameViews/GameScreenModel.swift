@@ -28,8 +28,16 @@ final class GameScreenModel {
     var showDice: Bool = false
     var showExport: Bool = false
     var showQuitGameAlert: Bool = false
-    
-    var showMainTab: NetworkModules =  .none
+
+    var isSideMenuVisible: Bool = true
+
+    var showMainTab: NetworkModules = .none {
+        didSet {
+            if showMainTab == .none {
+                isSideMenuVisible = true
+            }
+        }
+    }
     func resetToMainTab(toggle: Bool = true) {
         if toggle || showMainTab == .none {
             showMainTab = showMainTab == .game ? .none : .game
@@ -53,4 +61,7 @@ final class GameScreenModel {
     
     // Simple show/hide state for iOS/tvOS
     var showMainTabIOS: Bool = false
+
+    // Retains the selected iOS sidebar content while the sidebar is hidden.
+    var iOSSidebarShowsPrimaryView: Bool = true
 }

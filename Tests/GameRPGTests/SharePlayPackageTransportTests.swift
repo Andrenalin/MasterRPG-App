@@ -22,6 +22,7 @@ struct SharePlayPackageTransportTests {
         await sender.send(data: data)
 
         let packages = await collector.values
+        #expect(sender.packageCount(for: data) == 2)
         #expect(packages.count == 2)
         #expect(packages.map(\.count) == [1, 2])
         #expect(packages.map(\.total) == [2, 2])

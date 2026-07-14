@@ -54,6 +54,10 @@ private struct TabPlayerGameView: View {
             }
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity,
                    alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
+#if os(iOS)
+            .ignoresSafeArea(.container, edges: .bottom)
+            .clipShape(.rect(topLeadingRadius: 14, topTrailingRadius: 14))
+#endif
 #if !os(visionOS)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
 #endif

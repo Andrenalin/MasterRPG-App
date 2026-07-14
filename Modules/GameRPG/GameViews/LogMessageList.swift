@@ -114,10 +114,91 @@ private struct LogMessageRow: View, Equatable {
             Text(row.title)
                 .lineLimit(1)
                 .font(.caption)
-            Text(row.playerNames)
+            if !row.sharePlayTransport.isEmpty {
+                LogMessageTransportView(transport: row.sharePlayTransport)
+            }
+            LogMessagePlayersView(statuses: row.playerStatuses, fallback: row.playerNames)
         }
         .foregroundStyle(.primary)
         .listRowBackground(row.deliveryState.rowBackground)
+    }
+}
+
+private struct LogMessageTransportView: View {
+    let transport: SharePlayTransportLog
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("Message:", bundle: .module)
+            if let journal = transport.journal {
+                Text("Journal", bundle: .module)
+                JournalTransportStateImage(state: journal.state)
+                Text(Int64(journal.byteCount), format: .byteCount(style: .file))
+            }
+            if transport.journal != nil, transport.chunked != nil {
+                Text("/")
+            }
+            if let chunked = transport.chunked {
+                Text("Chunked \(chunked.count)", bundle: .module)
+                Text(Int64(chunked.byteCount), format: .byteCount(style: .file))
+            }
+        }
+        .font(.caption)
+        .lineLimit(1)
+    }
+}
+
+private struct JournalTransportStateImage: View {
+    let state: SharePlayJournalTransportState
+
+    var body: some View {
+        switch state {
+        case .pending:
+            Image(systemName: "ellipsis")
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(Text("Adding to journal", bundle: .module))
+        case .succeeded:
+            Image(systemName: "checkmark")
+                .foregroundStyle(.tint)
+                .accessibilityLabel(Text("Added to journal", bundle: .module))
+        case .failed:
+            Image(systemName: "xmark")
+                .foregroundStyle(.red)
+                .accessibilityLabel(Text("Failed to add to journal", bundle: .module))
+        }
+    }
+}
+
+private struct LogMessagePlayersView: View {
+    let attributedNames: AttributedString
+
+    init(statuses: [LogMessagePlayerStatus], fallback: String) {
+        guard !statuses.isEmpty else {
+            var fallbackName = AttributedString(fallback)
+            fallbackName.foregroundColor = .secondary
+            attributedNames = fallbackName
+            return
+        }
+
+        attributedNames = statuses.enumerated().reduce(into: AttributedString()) { line, entry in
+            let (index, status) = entry
+            if index > 0 {
+                line += AttributedString(", ")
+            }
+
+            var name = AttributedString(status.name)
+            if status.received {
+                name.font = .caption.bold()
+            } else {
+                name.foregroundColor = .secondary
+            }
+            line += name
+        }
+    }
+
+    var body: some View {
+        Text(attributedNames)
+            .font(.caption)
     }
 }
 

@@ -224,16 +224,27 @@ extension RPGSharePlayController {
         if Self.usesJournalTransport(for: gameNetworkModel, fileJournal: fileJournal, journalAvailable: journal != nil),
            let attachmentData = gameNetworkModel.data.data, let journal {
             let moduleKey = gameNetworkModel.data.type
-            Logger.sharePlay.debug("Journal: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
             addJournalSendTask(for: moduleKey, priority: .userInitiated) { [weak self] in
                 guard let self else { return }
                 guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return }
+                let attachmentSize = Self.formattedByteCount(attachmentData.count)
+                self.recordJournalTransport(
+                    state: .pending,
+                    byteCount: attachmentData.count,
+                    for: gameNetworkModel
+                )
+                Logger.sharePlay.debug("Journal: message \(gameNetworkModel.counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
                 guard self.journalTracker.shouldPublish(
                     module: moduleKey,
                     itemId: gameNetworkModel.data.id,
                     version: gameNetworkModel.data.version
                 ) else {
-                    Logger.sharePlay.debug("Journal: \(moduleKey.token, privacy: .public) attachment for \(gameNetworkModel.data.id, privacy: .public) is still available — skip re-add")
+                    self.recordJournalTransport(
+                        state: .succeeded,
+                        byteCount: attachmentData.count,
+                        for: gameNetworkModel
+                    )
+                    Logger.sharePlay.debug("Journal ✓: message \(gameNetworkModel.counter, privacy: .public) reused \(attachmentSize, privacy: .public) \(moduleKey.token, privacy: .public) attachment for \(gameNetworkModel.data.id, privacy: .public)")
                     return
                 }
                 if let oldAttachment = self.gameModel?.attachments[gameNetworkModel.data.type] {
@@ -257,11 +268,21 @@ extension RPGSharePlayController {
                         version: gameNetworkModel.data.version,
                         attachmentId: result.id
                     )
-                    Logger.sharePlay.debug("Journal: \(result.id, privacy: .public)")
+                    self.recordJournalTransport(
+                        state: .succeeded,
+                        byteCount: attachmentData.count,
+                        for: gameNetworkModel
+                    )
+                    Logger.sharePlay.debug("Journal ✓: message \(gameNetworkModel.counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public)")
                 } catch {
-                    Logger.sharePlay.error("Cannot add attachment for module \(gameNetworkModel.data.type.token, privacy: .public) and id: \(gameNetworkModel.data.id, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
+                    self.recordJournalTransport(
+                        state: .failed,
+                        byteCount: attachmentData.count,
+                        for: gameNetworkModel
+                    )
+                    Logger.sharePlay.error("Journal ✕: message \(gameNetworkModel.counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(gameNetworkModel.data.type.token, privacy: .public) and id: \(gameNetworkModel.data.id, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
                     if self.sessionLifecycle.isCurrent(sessionId: sessionId), let sender = self.packageSender {
-                        await sender.send(data: encodedModel)
+                        await self.sendChunked(encodedModel, for: gameNetworkModel, using: sender)
                     }
                 }
             }
@@ -276,7 +297,7 @@ extension RPGSharePlayController {
                   self.sessionLifecycle.isCurrent(sessionId: sessionId),
                   let sender = self.packageSender
             else { return }
-            await sender.send(data: encodedModel)
+            await self.sendChunked(encodedModel, for: gameNetworkModel, using: sender)
         }
     }
 
@@ -359,6 +380,54 @@ extension RPGSharePlayController {
         if let messenger {
             try? await messenger.send(package)
         }
+    }
+
+    private func sendChunked(
+        _ data: Data,
+        for model: GameNetworkModel,
+        using sender: SharePlaySingleQueuePackageSender
+    ) async {
+        let packageCount = sender.packageCount(for: data)
+        let size = Self.formattedByteCount(data.count)
+        recordChunkedTransport(count: packageCount, byteCount: data.count, for: model)
+        Logger.sharePlay.debug("Chunked: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public), encoded size \(size, privacy: .public)")
+        await sender.send(data: data)
+    }
+
+    private func recordJournalTransport(
+        state: SharePlayJournalTransportState,
+        byteCount: Int,
+        for model: GameNetworkModel
+    ) {
+        updateTransportLog(for: model) { transport in
+            transport.journal = SharePlayJournalTransportLog(byteCount: byteCount, state: state)
+        }
+    }
+
+    private func recordChunkedTransport(count: Int, byteCount: Int, for model: GameNetworkModel) {
+        updateTransportLog(for: model) { transport in
+            transport.chunked = SharePlayChunkTransportLog(count: count, byteCount: byteCount)
+        }
+    }
+
+    private func updateTransportLog(
+        for model: GameNetworkModel,
+        update: (inout SharePlayTransportLog) -> Void
+    ) {
+        guard let log = gameModel?.logData[model.counter],
+              log.type == model.type,
+              log.subType == model.subType,
+              log.module == model.data.type,
+              log.itemId == model.data.id
+        else { return }
+
+        var transport = log.sharePlayTransport
+        update(&transport)
+        log.sharePlayTransport = transport
+    }
+
+    nonisolated private static func formattedByteCount(_ byteCount: Int) -> String {
+        Int64(byteCount).formatted(.byteCount(style: .file))
     }
 
     func reset() {
@@ -506,8 +575,10 @@ extension RPGSharePlayController {
             for await (message, context) in messenger.messages(of: PackageMessage.self) {
                 guard let self else { return }
                 Logger.sharePlay.debug("Received Update Message \(message.uuid, privacy: .public): \(message.count, privacy: .public) - \(message.total, privacy: .public) from \(context.source.id, privacy: .public)")
-                if let data = self.packageReceiver.received(package: message)?.data,
-                    let gameModel = GameNetworkModel.decodeData(of: data) {
+                if let data = self.packageReceiver.received(package: message)?.data {
+                    let size = Self.formattedByteCount(data.count)
+                    Logger.sharePlay.debug("Chunked ✓: received \(message.total, privacy: .public) packages, assembled size \(size, privacy: .public) from \(context.source.id, privacy: .public)")
+                    guard let gameModel = GameNetworkModel.decodeData(of: data) else { continue }
                     self.delegate?.handleUpdate(gameModel, id: context.source.id)
                 }
             }
@@ -566,6 +637,8 @@ extension RPGSharePlayController {
                 Logger.sharePlay.debug("Attachments \(metadata.counter, privacy: .public)")
                 do {
                     let data = try await attachment.load(Data.self)
+                    let size = Self.formattedByteCount(data.count)
+                    Logger.sharePlay.debug("Journal ✓: received message \(metadata.counter, privacy: .public) attachment \(attachment.id, privacy: .public), size \(size, privacy: .public)")
                     metadata.data = NetworkCodableDataType(id: metadata.data.id, type: metadata.data.type, version: metadata.data.version, data: data)
                     delegate?.handleFileUpdate(metadata)
                 } catch let error {

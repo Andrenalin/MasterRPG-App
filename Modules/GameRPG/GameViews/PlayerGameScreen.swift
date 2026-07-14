@@ -47,11 +47,11 @@ struct PlayerGameScreen: View {
         }
 #if os(macOS)
         .overlay(alignment: .trailing) {
-            VStack {
-                PlayerMenuView()
+            if gameScreenModel.isSideMenuVisible {
+                PlayerSideMenu(root: root)
+                    .environment(gameScreenModel)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
             }
-            .padding(12)
-            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
         }
 #endif
 #if os(visionOS)
@@ -68,7 +68,8 @@ struct PlayerGameScreen: View {
         }
         .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .leading) {
             VStack {
-                PlayerMenuView()
+                PlayerSideMenu(root: root)
+                    .environment(gameScreenModel)
             }
             .padding(12)
         }
@@ -93,7 +94,10 @@ struct PlayerGameScreen: View {
 
 #if os(macOS) || os(visionOS)
     #Preview(traits: .mockData) {
-        PlayerMenuView()
+        PlayerSideMenu(root: .preview)
+            .environment(AppSettingsModel())
+            .environment(GameScreenModel())
+            .environment(ScenesManager())
     }
 #endif
 
@@ -105,6 +109,7 @@ private extension PlayerGameScreen {
             return
         }
 
+#if os(macOS) || os(visionOS)
         let savedMode = GameMainTabDisplayMode(rawValue: appSettingsModel.playerMainTabDisplayMode) ?? .hidden
         gameScreenModel.gameMainTabDisplayMode = savedMode
 
@@ -116,12 +121,30 @@ private extension PlayerGameScreen {
             withAnimation { gameScreenModel.showMainTab = .value }
 
         case .window:
-#if os(macOS) || os(visionOS)
+            withAnimation { gameScreenModel.showMainTab = .none }
             if let characterId = root.gameModel.selectedCharacter {
                 scenesManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
             }
-#endif
         }
+#else
+        let isShown = appSettingsModel.autoShowPlayerMainTab
+        gameScreenModel.showMainTabIOS = isShown
+
+        if isShown {
+#if os(iOS)
+            if root.gameModel.gameType == .observer {
+                gameScreenModel.iOSSidebarShowsPrimaryView = false
+                withAnimation { gameScreenModel.showSettingTab = .setting }
+            } else {
+                withAnimation { gameScreenModel.showMainTab = .value }
+            }
+#else
+            withAnimation { gameScreenModel.showMainTab = .value }
+#endif
+        } else {
+            withAnimation { gameScreenModel.showMainTab = .none }
+        }
+#endif
 
 #if os(visionOS)
         if appSettingsModel.showGameTableVolume {
@@ -140,28 +163,93 @@ private extension PlayerGameScreen {
 }
 
 #if os(visionOS) || os(macOS)
-private struct PlayerMenuView: View {
-    @Environment(ScenesManager.self) private var scenesManager
-    @State private var infoState: NetworkModules = .none
+private struct PlayerSideMenu: View {
+    let root: GameRoot
+
+    private static let modules: [NetworkModules] = [
+        .value,
+        .table,
+        .audio,
+        .photo,
+        .pdf,
+        .space,
+        .dice
+    ]
 
     var body: some View {
-        Group {
-            GameToolBarButtonView(valueType: .value, alwaysSet: true, showType: $infoState)
-            GameToolBarButtonView(valueType: .table, alwaysSet: true, showType: $infoState)
-            GameToolBarButtonView(valueType: .audio, alwaysSet: true, showType: $infoState)
-            GameToolBarButtonView(valueType: .photo, alwaysSet: true, showType: $infoState)
-            GameToolBarButtonView(valueType: .pdf, alwaysSet: true, showType: $infoState)
-            GameToolBarButtonView(valueType: .space, alwaysSet: true, showType: $infoState)
-            GameToolBarButtonView(valueType: .dice, alwaysSet: true, showType: $infoState)
-        }
-        .onChange(of: infoState) {
-            guard infoState != .none else { return }
-            if scenesManager.getSceneState(for: SceneId.sceneId(for: infoState)) == .closed {
-                scenesManager.openWindow(SceneId.sceneId(for: infoState))
-            } else {
-                scenesManager.dismissWindow(SceneId.sceneId(for: infoState))
+        GlassEffectContainerAll {
+            VStack(spacing: 8) {
+                if root.gameModel.gameType != .observer {
+                    PlayerGameWindowButtonView(root: root)
+                }
+
+                ForEach(Self.modules, id: \.self) { module in
+                    GameWindowButtonView(
+                        title: module.title,
+                        systemImage: module.icon,
+                        tint: module.tint,
+                        sceneId: SceneId.sceneId(for: module)
+                    )
+                }
             }
-            infoState = .none
+        }
+#if os(macOS)
+        .padding(.trailing, 8)
+#else
+        .padding()
+#endif
+    }
+}
+
+private struct PlayerGameWindowButtonView: View {
+    let root: GameRoot
+
+    @Environment(AppSettingsModel.self) private var appSettingsModel
+    @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(ScenesManager.self) private var scenesManager
+
+    var body: some View {
+        let isWindowPresented = scenesManager.getSceneState(for: gameWindowScene).isPresentedInGameMenu
+
+        Button(NetworkModules.game.title, systemImage: NetworkModules.game.icon) {
+            toggleGameWindow(isPresented: isWindowPresented)
+        }
+        .labelStyle(.iconOnly)
+        .imageScale(.large)
+        .padding(8)
+        .contentShape(.circle)
+        .modifier(
+            GameWindowButtonAppearance(
+                tint: NetworkModules.game.tint,
+                isWindowPresented: isWindowPresented
+            )
+        )
+        .help(NetworkModules.game.title)
+        .accessibilityValue(
+            Text(isWindowPresented ? "Window open" : "Window closed", bundle: .module)
+        )
+        .disabled(root.gameModel.selectedCharacter == nil && !isWindowPresented)
+    }
+
+    private var gameWindowScene: SceneId {
+        SceneId.viewerId(for: .value)
+    }
+
+    private func toggleGameWindow(isPresented: Bool) {
+        if isPresented {
+            scenesManager.dismissWindow(gameWindowScene)
+            gameScreenModel.gameMainTabDisplayMode = .hidden
+            appSettingsModel.playerMainTabDisplayMode = GameMainTabDisplayMode.hidden.rawValue
+        } else if let characterId = root.gameModel.selectedCharacter {
+            withAnimation {
+                gameScreenModel.showMainTab = .none
+                gameScreenModel.gameMainTabDisplayMode = .window
+            }
+            appSettingsModel.playerMainTabDisplayMode = GameMainTabDisplayMode.window.rawValue
+            scenesManager.openWindow(
+                gameWindowScene,
+                selection: WindowItemSelection(itemId: characterId)
+            )
         }
     }
 }
@@ -173,7 +261,7 @@ private struct PlayerOverlayMenu: View {
 
     var body: some View {
         OverlayGameLayout(root: root, hideDice: root.gameModel.gameType == .observer) {
-#if os(visionOS)
+#if os(visionOS) || os(macOS)
             EmptyView()
 #else
             OverlayGameMenu(root: root, playerController: playerController, isMaster: false)
@@ -183,7 +271,12 @@ private struct PlayerOverlayMenu: View {
         } toolBarOverlay: {
             OverlayToolBar(root: root, playerController: playerController, isMaster: false)
         }
-        .padding([.top, .leading], valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
+#if os(macOS)
+        .toolbar {
+            GameToolbarContent(root: root, role: .player, playerController: playerController)
+        }
+#endif
+        .padding(.leading, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
         .id("playerOverlayLayout")
     }
 }

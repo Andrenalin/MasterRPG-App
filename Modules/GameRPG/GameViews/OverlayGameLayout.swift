@@ -15,32 +15,28 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: valueFor(iOS: 4, macOS: 4, tvOS: 12, visionOS: 4)) {
-#if !os(visionOS)
-                openDiceButtonView
-#endif
+
+        Group {
+#if os(macOS)
+            OverlayGameSideContent(
+                side: sideOverlay(),
+                toolbar: toolBarOverlay(),
+                dice: root.diceRoot.viewController.overlayGameView(root: root.diceRoot, hideDice: hideDice),
+                showsDice: gameScreenModel.showDice
+            )
+#else
+            VStack(alignment: .leading, spacing: 8) {
                 menuOverlay()
+                    .zIndex(1)
+
+                OverlayGameSideContent(
+                    side: sideOverlay(),
+                    toolbar: toolBarOverlay(),
+                    dice: root.diceRoot.viewController.overlayGameView(root: root.diceRoot, hideDice: hideDice),
+                    showsDice: gameScreenModel.showDice
+                )
             }
-            .zIndex(1)
-            
-            HStack {
-                sideOverlay()
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .overlay(alignment: .topLeading) {
-#if !os(visionOS)
-                if gameScreenModel.showDice {
-                    diceOverlay
-                        .transition(.move(edge: .leading))
-                }
 #endif
-            }
-            .overlay(alignment: .bottomLeading) {
-                toolBarOverlay()
-                    .padding(.bottom, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
-            }
         }
         .padding(.horizontal, 4)
         .padding(.trailing, valueFor(iOS: 0, macOS: 0, tvOS: 0, visionOS: 20))
@@ -53,26 +49,50 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {
     }
 }
 
-private extension OverlayGameLayout {
-    @ViewBuilder
-    var openDiceButtonView: some View {
-        if hideDice {
-            EmptyView()
-        } else {
-            Button {
-                withAnimation { gameScreenModel.showDice.toggle() }
-            } label: {
+private struct OverlayGameSideContent<Side: View, ToolBar: View, Dice: View>: View {
+    let side: Side
+    let toolbar: ToolBar
+    let dice: Dice
+    let showsDice: Bool
+
+    var body: some View {
+        HStack {
+            side
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+        .overlay(alignment: .topLeading) {
+#if !os(visionOS)
+            if showsDice {
+                dice
+                    .transition(.move(edge: .leading))
+            }
+#endif
+        }
+        .overlay(alignment: .bottomLeading) {
+            toolbar
+                .padding(.bottom, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
+        }
+    }
+}
+
+struct GameDiceToggleButton: View {
+    @Environment(GameScreenModel.self) private var gameScreenModel
+
+    var body: some View {
+        Button {
+            withAnimation {
+                gameScreenModel.showDice.toggle()
+            }
+        } label: {
+            Label {
+                Text(gameScreenModel.showDice ? "Hide Dice" : "Show Dice", bundle: .module)
+            } icon: {
                 Image(systemName: "bag\(gameScreenModel.showDice ? ".fill" : "")")
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
             }
-#if !os(tvOS)
-            .buttonStyle(.borderedProminent)
-#endif
+            .labelStyle(.iconOnly)
         }
-    }
-    
-    var diceOverlay: some View {
-        root.diceRoot.viewController.overlayGameView(root: root.diceRoot, hideDice: hideDice)
+        .help(Text(gameScreenModel.showDice ? "Hide Dice" : "Show Dice", bundle: .module))
     }
 }
 
@@ -106,5 +126,3 @@ private extension OverlayGameLayout {
         .environment(DiceDisplayModel())
     }
 }
-
-

@@ -22,7 +22,7 @@ public struct GameShareView<Content: View>: View {
         // Computed once per render — avoids re-deriving the same list for the
         // button's allReported state and the row below it.
         let statuses = playerReportStatuses
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top, spacing: 4) {
             actionBarWithSharing(statuses: statuses)
             if root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
                 playerReportRow(for: statuses)
@@ -90,21 +90,33 @@ private extension GameShareView {
     }
 
     func playerReportRow(for statuses: [PlayerReportStatus]) -> some View {
-        playerReportText(for: statuses)
+        HStack(spacing: 4) {
+            Text(playerReportAttributedString(for: statuses))
+            if statuses.allSatisfy(\.reported) {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(.tint)
+            }
+        }
             .font(.caption)
             .animation(.default, value: statuses.map(\.reported))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(playerReportAccessibilityLabel(for: statuses))
     }
 
-    func playerReportText(for statuses: [PlayerReportStatus]) -> Text {
-        statuses.enumerated().reduce(Text("")) { line, entry in
+    func playerReportAttributedString(for statuses: [PlayerReportStatus]) -> AttributedString {
+        statuses.enumerated().reduce(into: AttributedString()) { line, entry in
             let (index, status) = entry
-            let nameText = Text(status.name)
-                .bold(status.reported)
-                .foregroundStyle(status.reported ? .primary : .secondary)
-            guard index > 0 else { return nameText }
-            return line + Text(", ") + nameText
+            if index > 0 {
+                line += AttributedString(", ")
+            }
+
+            var name = AttributedString(status.name)
+            if status.reported {
+                name.font = .caption.bold()
+            } else {
+                name.foregroundColor = .secondary
+            }
+            line += name
         }
     }
 
