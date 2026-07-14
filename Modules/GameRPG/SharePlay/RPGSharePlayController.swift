@@ -524,7 +524,12 @@ extension RPGSharePlayController {
         // Calling join() establishes the ordering guarantee documented by
         // GroupActivities: synchronization requested after this call is queued
         // until the session reaches .joined.
-        groupSession.join()
+        // Called via Task.detached to avoid blocking the main thread while the
+        // audio session is active (SessionCore warning).
+        let sessionToJoin = groupSession
+        Task.detached {
+            sessionToJoin.join()
+        }
         sessionLifecycle.didRequestJoin(sessionId: groupSession.id)
         playBack?.coordinateWithSession(groupSession)
         #if os(visionOS)
