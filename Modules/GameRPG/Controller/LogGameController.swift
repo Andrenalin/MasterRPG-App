@@ -17,6 +17,8 @@ struct LogGameController: Sendable {
     
     let gameModel: GameRootModel
 
+    static let maximumVisibleMessages = 25
+
     static var noPlayersText: String {
         String(localized: "No Players", bundle: .module).localizedString
     }
@@ -31,15 +33,22 @@ struct LogGameController: Sendable {
         let maxPlayers = gameModel.gameRoster.players.count
         let playerNamesById = Dictionary(uniqueKeysWithValues: gameModel.gameRoster.players.map { ($0.id, $0.name) })
 
-        return gameModel.logs.reversed().compactMap { counter in
-            guard let model = gameModel.logData[counter] else { return nil }
-            return LogMessageRowModel(
+        var rows: [LogMessageRowModel] = []
+        for counter in gameModel.logs.reversed() {
+            guard let model = gameModel.logData[counter] else { continue }
+            rows.append(LogMessageRowModel(
                 id: model.id,
                 title: title(for: model),
                 playerNames: logPlayerNames(for: model.players, namesById: playerNamesById),
-                deliveryState: deliveryState(for: model, maxPlayers: maxPlayers)
-            )
+                deliveryState: deliveryState(for: model, maxPlayers: maxPlayers),
+                playerStatuses: playerStatuses(for: model.players),
+                sharePlayTransport: model.sharePlayTransport
+            ))
+            if rows.count == Self.maximumVisibleMessages {
+                break
+            }
         }
+        return rows
     }
     
     @MainActor
@@ -138,6 +147,20 @@ struct LogGameController: Sendable {
     }
 
     @MainActor
+    private func playerStatuses(for receivedPlayers: [UUID]) -> [LogMessagePlayerStatus] {
+        let received = Set(receivedPlayers)
+        return gameModel.gameRoster.players
+            .map {
+                LogMessagePlayerStatus(
+                    id: $0.id,
+                    name: $0.name,
+                    received: received.contains($0.id)
+                )
+            }
+            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+    }
+
+    @MainActor
     private func deliveryState(for model: LogGameModel, maxPlayers: Int) -> LogMessageDeliveryState {
         guard model.type == .reveal else { return .notTracked }
         if maxPlayers > 0 && model.players.isEmpty {
@@ -151,10 +174,34 @@ struct LogGameController: Sendable {
 }
 
 struct LogMessageRowModel: Identifiable, Equatable, Sendable {
+    init(
+        id: Int,
+        title: String,
+        playerNames: String,
+        deliveryState: LogMessageDeliveryState,
+        playerStatuses: [LogMessagePlayerStatus] = [],
+        sharePlayTransport: SharePlayTransportLog = SharePlayTransportLog()
+    ) {
+        self.id = id
+        self.title = title
+        self.playerNames = playerNames
+        self.deliveryState = deliveryState
+        self.playerStatuses = playerStatuses
+        self.sharePlayTransport = sharePlayTransport
+    }
+
     let id: Int
     let title: String
     let playerNames: String
     let deliveryState: LogMessageDeliveryState
+    let playerStatuses: [LogMessagePlayerStatus]
+    let sharePlayTransport: SharePlayTransportLog
+}
+
+struct LogMessagePlayerStatus: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let name: String
+    let received: Bool
 }
 
 enum LogMessageDeliveryState: Equatable, Sendable {

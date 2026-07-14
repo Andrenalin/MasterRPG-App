@@ -39,6 +39,11 @@ import Foundation
         }
     }
 
+    nonisolated func packageCount(for data: Data) -> Int {
+        guard !data.isEmpty else { return 1 }
+        return (data.count + packageSize - 1) / packageSize
+    }
+
     // nonisolated: pure computation on immutable let properties, safe to call from any context
     nonisolated private func makePackages(from data: Data) -> [PackageMessage] {
         let uuid = UUID()
@@ -46,7 +51,7 @@ import Foundation
         guard !data.isEmpty else {
             return [PackageMessage(uuid: uuid, count: 1, total: 1, data: Data())]
         }
-        let total = (data.count + size - 1) / size
+        let total = packageCount(for: data)
         return stride(from: 0, to: data.count, by: size).map { offset in
             let end = min(offset + size, data.count)
             return PackageMessage(uuid: uuid, count: (offset / size) + 1, total: total, data: data[offset..<end])

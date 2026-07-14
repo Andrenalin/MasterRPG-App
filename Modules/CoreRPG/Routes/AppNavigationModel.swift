@@ -22,7 +22,8 @@ import SwiftUI
     let appGameStateModel: AppGameStateModel
     
     public var initialRouteType: AppInitialRouteType = .initializing
-    public var modeRouteType: AppModeRouteType { appGameStateModel.isGameRunning ? .game : AppNavigationModel.defaultMode
+    public var modeRouteType: AppModeRouteType {
+        appGameStateModel.isGameRunning ? .game : AppNavigationModel.defaultMode
     }
     
 #if os(iOS)

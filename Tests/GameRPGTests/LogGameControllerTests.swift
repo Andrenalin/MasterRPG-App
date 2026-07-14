@@ -41,6 +41,11 @@ struct LogGameControllerTests {
         sut.addMessage(counter: 7, type: .store, subType: .show, module: .photo, itemId: photoAttachmentId)
         sut.updateMessage(counter: 7, player: playerA)
         sut.addMessage(counter: 8, type: .reveal, subType: .show, module: .map, itemId: mapAttachmentId)
+        let transport = SharePlayTransportLog(
+            journal: SharePlayJournalTransportLog(byteCount: 1_200_000, state: .succeeded),
+            chunked: SharePlayChunkTransportLog(count: 7, byteCount: 1_250_000)
+        )
+        root.gameModel.logData[8]?.sharePlayTransport = transport
         sut.updateScreen(counter: 0, player: playerB, data: nil)
         sut.updateScreen(counter: 1, player: playerB, data: screenData)
 
@@ -61,11 +66,17 @@ struct LogGameControllerTests {
         #expect(missingRow.id == 8)
         #expect(missingRow.playerNames == LogGameController.noPlayersText)
         #expect(missingRow.deliveryState == .missingPlayers)
+        #expect(missingRow.sharePlayTransport == transport)
+        #expect(missingRow.playerStatuses == [
+            LogMessagePlayerStatus(id: playerA, name: "Arin", received: false),
+            LogMessagePlayerStatus(id: playerB, name: "Zara", received: false)
+        ])
 
         sut.updateMessage(counter: 8, player: playerA)
         let partialRow = try #require(sut.logRows.first)
         #expect(partialRow.playerNames == "Arin")
         #expect(partialRow.deliveryState == .partialPlayers)
+        #expect(partialRow.playerStatuses.map(\.received) == [true, false])
 
         sut.updateMessage(counter: 8, player: playerB)
         let rows = sut.logRows
@@ -74,8 +85,32 @@ struct LogGameControllerTests {
         #expect(rows.map(\.id) == [8, 7])
         #expect(completeRow.playerNames == "Arin, Zara")
         #expect(completeRow.deliveryState == .allPlayers)
+        #expect(completeRow.playerStatuses.map(\.received) == [true, true])
         #expect(storeRow.playerNames == "Arin")
         #expect(storeRow.deliveryState == .notTracked)
+    }
+
+    @Test func logRowsContainOnlyTheNewestTwentyFiveMessages() async throws {
+        // Given
+        let root = try await MockRoot.createGameRoot()
+        let sut = LogGameController(root: root, gameModel: root.gameModel)
+
+        // When
+        for counter in 0..<30 {
+            sut.addMessage(
+                counter: counter,
+                type: .update,
+                subType: .generic,
+                module: .none,
+                itemId: UUID()
+            )
+        }
+
+        let rows = sut.logRows
+
+        // Then
+        #expect(rows.count == LogGameController.maximumVisibleMessages)
+        #expect(rows.map(\.id) == Array((5..<30).reversed()))
     }
 
     @Test func nameResolvesKnownModuleItemsAndFallsBackForUnresolvedModules() async throws {

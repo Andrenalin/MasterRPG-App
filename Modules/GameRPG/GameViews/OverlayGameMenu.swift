@@ -1,8 +1,9 @@
 // @copyright André Trettin
 
 import CoreRPG
-import SwiftUI
 import AudioRPG
+import Foundation
+import SwiftUI
 
 struct OverlayGameMenu: View {
     let root: GameRoot
@@ -23,14 +24,18 @@ struct OverlayGameMenu: View {
 #elseif os(tvOS)
         tvMenu
 #else
-        iosMenu
+        IOSGameOverlayMenu(
+            root: root,
+            playerController: playerController,
+            isMaster: isMaster
+        )
 #endif
     }
 }
 
 private extension OverlayGameMenu {
     var visionProMenu: some View {
-        HStack(alignment: .bottom, spacing: 0) {
+        HStack(alignment: .bottom, spacing: marginWidth) {
             titleView
 
             HStack(alignment: .bottom, spacing: marginWidth + 4) {
@@ -46,8 +51,9 @@ private extension OverlayGameMenu {
                 gameTableButton
 
                 wifiView
-                closeView
             }
+
+            closeFieldView
         }
     }
     
@@ -58,53 +64,28 @@ private extension OverlayGameMenu {
             HStack {
                 root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .bottomTrailing)
                 
-                if isMaster {
-                    secondOptionView
-                }
-                
                 toolIconView
                 enlargerView
                 
                 wifiView
-                closeView
             }
             .foregroundStyle(.secondary)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+
+            closeFieldView
         }
     }
     
     var tvMenu: some View {
         HStack {
+            if isMaster || root.gameModel.gameType != .observer {
+                GameDiceToggleButton()
+            }
             Spacer()
             wifiView
-            closeView
+            closeFieldView
         }
         .focusSectionAll()
-    }
-    
-    var iosMenu: some View {
-        HStack(spacing: 0) {
-            titleView
-            
-            HStack(spacing: marginWidth + 4) {
-                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: appWindowSizeModel.mode == .compact ? .bottom : .bottomTrailing)
-                    .padding(.horizontal, marginWidth)
-                    .padding(.leading, marginWidth / 2)
-                    .zIndex(2)
-                
-                if isMaster {
-                    ControlSharingView(alignment: .bottom) {}
-                        .zIndex(1)
-                }
-                
-                toolIconView
-                enlargerView
-                
-                wifiView
-                closeView
-            }
-            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-        }
     }
     
     var marginWidth: CGFloat {
@@ -116,10 +97,16 @@ private extension OverlayGameMenu {
         if isMaster && appWindowSizeModel.mode == .regular {
             Text(root.gameModel.startGameTime, style: .relative)
                 .font(.caption)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             Spacer()
         }
+    }
+
+    var closeFieldView: some View {
+        closeView
+            .foregroundStyle(.secondary)
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
     }
         
     var closeView: some View {
@@ -132,7 +119,6 @@ private extension OverlayGameMenu {
         }
         .borderLessTVBottonStyle()
         .padding(.horizontal, marginWidth)
-        .padding(.trailing, marginWidth / 2)
     }
     
     var enlargerView: some View {
@@ -227,7 +213,6 @@ private extension OverlayGameMenu {
         @Bindable var gameScreenModel = gameScreenModel
         
         firstOptionView
-        secondOptionView
         
         GameMainTabButtonView(isMaster: true, displayMode: $gameScreenModel.gameMainTabDisplayMode)
             .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
@@ -408,6 +393,336 @@ private extension OverlayGameMenu {
 #endif
     }
 }
+
+#if os(iOS)
+private struct IOSGameOverlayMenu: View {
+    let root: GameRoot
+    let playerController: PlayerController?
+    let isMaster: Bool
+
+    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
+
+    var body: some View {
+        GlassEffectContainerAll {
+            if appWindowSizeModel.mode == .regular {
+                ZStack {
+                    HStack(spacing: itemSpacing) {
+                        if isMaster || root.gameModel.gameType != .observer {
+                            IOSGameDiceToggleButtonField()
+                        }
+                        IOSGameElapsedTimerText(startDate: root.gameModel.startGameTime)
+                        Spacer()
+                        IOSGameSidebarMenu(
+                            isMaster: isMaster,
+                            allowsPrimaryView: isMaster || root.gameModel.gameType != .observer
+                        )
+                        IOSGameOverlayCloseButton()
+                    }
+
+                    IOSGameOverlayControlField(
+                        root: root,
+                        playerController: playerController,
+                        isMaster: isMaster,
+                        spacing: itemSpacing
+                    )
+                }
+            } else {
+                HStack(spacing: itemSpacing) {
+                    if isMaster || root.gameModel.gameType != .observer {
+                        IOSGameDiceToggleButtonField()
+                    }
+                    Spacer(minLength: 0)
+                    IOSGameOverlayControlField(
+                        root: root,
+                        playerController: playerController,
+                        isMaster: isMaster,
+                        spacing: itemSpacing
+                    )
+                    IOSGameSidebarMenu(
+                        isMaster: isMaster,
+                        allowsPrimaryView: isMaster || root.gameModel.gameType != .observer
+                    )
+                    IOSGameOverlayCloseButton()
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var itemSpacing: CGFloat {
+        appWindowSizeModel.mode == .compact ? 4 : 8
+    }
+}
+
+private struct IOSGameDiceToggleButtonField: View {
+    var body: some View {
+        GameDiceToggleButton()
+            .buttonStyle(.plain)
+            .imageScale(.large)
+            .padding(8)
+            .contentShape(.circle)
+            .glassEffect(.regular.interactive(), in: .circle)
+    }
+}
+
+private struct IOSGameElapsedTimerText: View {
+    let startDate: Date
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            Text(
+                elapsedDuration(at: context.date),
+                format: .time(pattern: .hourMinuteSecond(padHourToLength: 2))
+            )
+            .monospacedDigit()
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .glassEffect(.regular, in: .capsule)
+        }
+    }
+
+    private func elapsedDuration(at date: Date) -> Duration {
+        let elapsedSeconds = max(0, date.timeIntervalSince(startDate)).rounded(.down)
+        return .seconds(elapsedSeconds)
+    }
+}
+
+private struct IOSGameOverlayControlField: View {
+    let root: GameRoot
+    let playerController: PlayerController?
+    let isMaster: Bool
+    let spacing: CGFloat
+
+    var body: some View {
+        HStack(spacing: spacing) {
+            root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot)
+
+            if isMaster {
+                ControlSharingView(alignment: .bottom, embeddedInGlass: true) {}
+                    .zIndex(1)
+            }
+
+            if let playerController {
+                IOSGameConnectionStatusView(playerController: playerController)
+            }
+        }
+        .buttonStyle(.plain)
+        .imageScale(.large)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .glassEffect(.regular.interactive(), in: .capsule)
+    }
+}
+
+private struct IOSGameConnectionStatusView: View {
+    let playerController: PlayerController
+
+    var body: some View {
+        Label {
+            Text(
+                playerController.gameModel.lostMaster ? "Connection Lost" : "Connected",
+                bundle: .module
+            )
+        } icon: {
+            Image(systemName: playerController.gameModel.lostMaster ? "wifi.slash" : "wifi")
+        }
+        .labelStyle(.iconOnly)
+        .foregroundStyle(playerController.gameModel.lostMaster ? .red : .teal)
+        .help(
+            Text(
+                playerController.gameModel.lostMaster ? "Connection Lost" : "Connected",
+                bundle: .module
+            )
+        )
+    }
+}
+
+private struct IOSGameSidebarMenu: View {
+    let isMaster: Bool
+    let allowsPrimaryView: Bool
+
+    @Environment(AppSettingsModel.self) private var appSettingsModel
+    @Environment(GameScreenModel.self) private var gameScreenModel
+
+    var body: some View {
+        let glass: Glass = if isSidebarVisible {
+            .regular.tint(NetworkModules.game.tint.opacity(0.7)).interactive()
+        } else {
+            .regular.interactive()
+        }
+
+        Menu {
+            Toggle(isOn: sidebarVisibilityBinding) {
+                Label {
+                    Text("Sidebar", bundle: .module)
+                } icon: {
+                    Image(systemName: "sidebar.right")
+                }
+            }
+
+            Toggle(isOn: primaryViewBinding) {
+                Label {
+                    Text(currentSidebarViewTitle)
+                } icon: {
+                    Image(systemName: currentSidebarViewIcon)
+                }
+            }
+            .disabled(!isSidebarVisible || !allowsPrimaryView)
+
+            Button {
+                withAnimation {
+                    gameScreenModel.toggleSideBarWidth()
+                }
+            } label: {
+                Label {
+                    Text(
+                        gameScreenModel.isLargeSideBar ? "Reduce Sidebar" : "Enlarge Sidebar",
+                        bundle: .module
+                    )
+                } icon: {
+                    Image(
+                        systemName: gameScreenModel.isLargeSideBar
+                            ? "square.resize.down"
+                            : "square.resize.up"
+                    )
+                }
+            }
+            .disabled(!isSidebarVisible)
+        } label: {
+            Label {
+                Text("Sidebar", bundle: .module)
+            } icon: {
+                Image(systemName: "sidebar.right")
+                    .symbolVariant(isSidebarVisible ? .fill : .none)
+            }
+            .labelStyle(.iconOnly)
+        }
+        .buttonStyle(.plain)
+        .imageScale(.large)
+        .padding(8)
+        .contentShape(.circle)
+        .glassEffect(glass, in: .circle)
+        .help(
+            Text(
+                isSidebarVisible ? "Hide Sidebar" : "Show Sidebar",
+                bundle: .module
+            )
+        )
+    }
+
+    private var primaryModule: NetworkModules {
+        isMaster ? .game : .value
+    }
+
+    private var isSidebarVisible: Bool {
+        gameScreenModel.showMainTab != .none || gameScreenModel.showSettingTab != .none
+    }
+
+    private var isShowingPrimaryView: Bool {
+        if gameScreenModel.showMainTab != .none {
+            return true
+        }
+
+        if gameScreenModel.showSettingTab != .none {
+            return false
+        }
+
+        return allowsPrimaryView && gameScreenModel.iOSSidebarShowsPrimaryView
+    }
+
+    private var currentSidebarViewTitle: String {
+        if isShowingPrimaryView {
+            return isMaster
+                ? String(localized: "Game View", bundle: .module)
+                : String(localized: "Character View", bundle: .module)
+        }
+
+        return String(localized: "Other View", bundle: .module)
+    }
+
+    private var currentSidebarViewIcon: String {
+        isShowingPrimaryView ? primaryModule.icon : NetworkModules.setting.icon
+    }
+
+    private var sidebarVisibilityBinding: Binding<Bool> {
+        Binding(
+            get: { isSidebarVisible },
+            set: { isVisible in setSidebarVisible(isVisible) }
+        )
+    }
+
+    private var primaryViewBinding: Binding<Bool> {
+        Binding(
+            get: { isShowingPrimaryView },
+            set: { showsPrimaryView in setPrimaryViewVisible(showsPrimaryView) }
+        )
+    }
+
+    private func setSidebarVisible(_ isVisible: Bool) {
+        gameScreenModel.showMainTabIOS = isVisible
+
+        if isMaster {
+            appSettingsModel.autoShowMasterMainTab = isVisible
+        } else {
+            appSettingsModel.autoShowPlayerMainTab = isVisible
+        }
+
+        withAnimation {
+            if isVisible {
+                showSelectedSidebarView()
+            } else {
+                gameScreenModel.showMainTab = .none
+                gameScreenModel.showSettingTab = .none
+            }
+        }
+    }
+
+    private func setPrimaryViewVisible(_ showsPrimaryView: Bool) {
+        guard allowsPrimaryView else { return }
+        gameScreenModel.iOSSidebarShowsPrimaryView = showsPrimaryView
+
+        guard isSidebarVisible else { return }
+
+        withAnimation {
+            showSelectedSidebarView()
+        }
+    }
+
+    private func showSelectedSidebarView() {
+        if allowsPrimaryView && gameScreenModel.iOSSidebarShowsPrimaryView {
+            gameScreenModel.showSettingTab = .none
+            gameScreenModel.showMainTab = primaryModule
+        } else {
+            gameScreenModel.showMainTab = .none
+            gameScreenModel.showSettingTab = .setting
+        }
+    }
+}
+
+private struct IOSGameOverlayCloseButton: View {
+    @Environment(GameScreenModel.self) private var gameScreenModel
+
+    var body: some View {
+        Button {
+            gameScreenModel.showQuitGameAlert = true
+        } label: {
+            Label {
+                Text("Quit", bundle: .module)
+            } icon: {
+                Image(systemName: "xmark.circle")
+            }
+            .labelStyle(.iconOnly)
+        }
+        .imageScale(.large)
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .padding(8)
+        .contentShape(.circle)
+        .glassEffect(.regular.interactive(), in: .circle)
+        .help(Text("Quit", bundle: .module))
+    }
+}
+#endif
 
 #Preview("wide") {
     VStack {

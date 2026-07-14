@@ -59,5 +59,8 @@ public extension ViewController {
     @MainActor func viewVolume(root: AudioRootModel, alignment: Alignment) -> some View {
         PlayerVolumeView(root: root, alignment: alignment)
     }
-}
 
+    @MainActor func toolbarVolumeButton(root: AudioRootModel) -> some View {
+        ToolbarVolumeButtonView(root: root)
+    }
+}

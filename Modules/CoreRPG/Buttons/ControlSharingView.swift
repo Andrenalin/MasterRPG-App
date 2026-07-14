@@ -32,19 +32,20 @@ public struct SharingControlModel: Identifiable, Equatable, Codable, Sendable {
 }
 
 public struct ControlSharingView: View {
-    public init(alignment: Alignment, action: @escaping () -> Void) {
+    public init(alignment: Alignment, embeddedInGlass: Bool = false, action: @escaping () -> Void) {
         self.alignment = alignment
+        self.embeddedInGlass = embeddedInGlass
         self.action = action
     }
 
     let action: () -> Void
     let alignment: Alignment
+    let embeddedInGlass: Bool
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.sharingControlActions) private var sharingControlActions
 
-    @State private var sharingSize: CGSize = .init(width: 200, height: 100)
     @State private var showSharingFilter = false
 
     public var body: some View {
@@ -60,19 +61,20 @@ public struct ControlSharingView: View {
         }
         .accessibilityLabel(Text("Sharing Controls", bundle: .module))
         .accessibilityHint(Text("Toggle sharing filter options", bundle: .module))
-        .selectedBorderedStype(isSelected: sharingFilterActive)
-        .overlay(alignment: alignment) {
-            SendControlView(controls: controls)
-                .opacity(showSharingFilter ? 1 : 0)
-                .fixedSize()
-                .onGeometryChange(for: CGSize.self) { proxy in
-                    proxy.size
-                } action: {
-                    sharingSize = $0
-                }
-                .frame(width: sharingSize.width, height: sharingSize.height, alignment: .topTrailing)
-                .offset(y: sharingSize.height + 8)
-        }
+        .modifier(
+            SharingControlButtonStyle(
+                embeddedInGlass: embeddedInGlass,
+                isActive: sharingFilterActive
+            )
+        )
+        .modifier(
+            SharingControlPresentation(
+                alignment: alignment,
+                usesPopover: embeddedInGlass,
+                controls: controls,
+                isPresented: $showSharingFilter
+            )
+        )
     }
 
     private var sharingFilterActive: Bool {
@@ -84,6 +86,73 @@ public struct ControlSharingView: View {
             sharingControlActions.control?() ?? []
         } set: { newValue in
             sharingControlActions.update?(newValue)
+        }
+    }
+}
+
+private struct SharingControlPresentation: ViewModifier {
+    let alignment: Alignment
+    let usesPopover: Bool
+    let controls: Binding<[SharingControlModel]>
+    @Binding var isPresented: Bool
+
+    @State private var sharingSize: CGSize = .init(width: 200, height: 100)
+
+    func body(content: Content) -> some View {
+#if os(tvOS)
+        content
+            .overlay(alignment: alignment) {
+                SendControlView(controls: controls)
+                    .opacity(isPresented ? 1 : 0)
+                    .fixedSize()
+                    .onGeometryChange(for: CGSize.self) { proxy in
+                        proxy.size
+                    } action: {
+                        sharingSize = $0
+                    }
+                    .frame(width: sharingSize.width, height: sharingSize.height, alignment: .topTrailing)
+                    .offset(y: sharingSize.height + 8)
+            }
+#else
+        if usesPopover {
+            content
+                .popover(isPresented: $isPresented) {
+                    SendControlView(controls: controls)
+                        .padding()
+#if os(iOS)
+                        .presentationCompactAdaptation(.popover)
+#endif
+                }
+        } else {
+            content
+                .overlay(alignment: alignment) {
+                    SendControlView(controls: controls)
+                        .opacity(isPresented ? 1 : 0)
+                        .fixedSize()
+                        .onGeometryChange(for: CGSize.self) { proxy in
+                            proxy.size
+                        } action: {
+                            sharingSize = $0
+                        }
+                        .frame(width: sharingSize.width, height: sharingSize.height, alignment: .topTrailing)
+                        .offset(y: sharingSize.height + 8)
+                }
+        }
+#endif
+    }
+}
+
+private struct SharingControlButtonStyle: ViewModifier {
+    let embeddedInGlass: Bool
+    let isActive: Bool
+
+    func body(content: Content) -> some View {
+        if embeddedInGlass {
+            content
+                .buttonStyle(.plain)
+                .foregroundStyle(isActive ? Color.accentColor : Color.primary)
+        } else {
+            content.selectedBorderedStype(isSelected: isActive)
         }
     }
 }
