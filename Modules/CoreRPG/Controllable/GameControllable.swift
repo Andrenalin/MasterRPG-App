@@ -231,9 +231,33 @@ public extension GameControllable {
         guard let data = stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data else {
             throw ItemGameStorableError.memoryStreamError
         }
+        await backfillContentHashIfNeeded(itemId: itemId)
         let version = await itemControllable.item(for: itemId)?.version ?? -1
         let module = itemControllable.config.module
         return NetworkCodableDataType(id: itemId, type: module, version: version, data: data)
+    }
+
+    /// A file attached through the picker (`EditControllable.resetFile`) never gets a
+    /// content hash — only network imports compute one (see the "Nil for legacy items
+    /// whose data was never seen on this device" note on `FileUrl.contentHash`). Left
+    /// alone, this item's `version` falls back to the update-UUID, which shares no
+    /// relationship with the content hash a receiver computes for the same bytes on
+    /// import — so `hasItem`'s version comparison would never agree. Backfill it once,
+    /// lazily, right before this item's version is sent over the network.
+    @MainActor
+    private func backfillContentHashIfNeeded(itemId: UUID) async {
+        guard let fileUrlDataController = itemControllable.fileUrlDataController else { return }
+        guard var item = await itemControllable.item(for: itemId), let fileUrl = item.fileUrl, fileUrl.contentHash == nil else { return }
+        guard let data = try? await fileUrlDataController.loadData(for: fileUrl) else { return }
+        item.fileUrl = FileUrl(
+            fileId: fileUrl.fileId,
+            url: fileUrl.rawUrl,
+            location: fileUrl.location,
+            module: fileUrl.module,
+            relativeUrl: nil,
+            contentHash: FileUrl.contentHash(of: data)
+        )
+        itemControllable.replaceForGame(model: item, isInsert: true, policy: .persist)
     }
 
     func share(id: UUID) async -> NetworkCodableDataType {

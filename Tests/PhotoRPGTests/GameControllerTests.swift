@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import Foundation
 import RPGResourcesDebug
@@ -112,6 +111,40 @@ struct GameControllerTests {
         #expect(root.itemController.itemDataModel.itemData[itemId] != nil)
     }
     
+    @Test func createGameDataBackfillsMissingContentHash() async throws {
+        let root = try await GameControllerTests.setupPhoto()
+        let itemController = root.itemController
+        var exportController = ExportController(itemController: itemController)
+        exportController.hubControllable = root
+        let sut = GameController(itemController: itemController, exportController: exportController)
+
+        root.itemController.itemDataModel.resetGame(start: true)
+        let itemId = root.itemController.itemDataModel.items[0]
+        let item = root.itemController.itemOrEmpty(for: itemId)
+
+        // Point the item at a dedicated temp file with its own fresh fileId instead
+        // of reusing the shared fixture's file/bookmark — the full suite runs many
+        // tests concurrently against that shared fixture, which raced with this
+        // test's own reset/reimport intermittently when the whole target ran.
+        let tempURL = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).dat")
+        try Data("backfill-test-content".utf8).write(to: tempURL)
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+        // A file attached locally through the picker never computes a content hash
+        // (see the "Nil for legacy items whose data was never seen on this device"
+        // note on FileUrl.contentHash) — simulate that here.
+        item.fileUrl = FileUrl(fileId: UUID(), url: tempURL, location: .other, module: "photo", relativeUrl: nil)
+        #expect(item.fileUrl?.contentHash == nil)
+        let staleVersion = item.version
+
+        let netdata = try await sut.createGameData(for: itemId)
+
+        let backfilledFileUrl = try #require(root.itemController.itemOrEmpty(for: itemId).fileUrl)
+        #expect(backfilledFileUrl.contentHash != nil)
+        #expect(netdata.version != staleVersion)
+        #expect(netdata.version == root.itemController.itemOrEmpty(for: itemId).version)
+    }
+
     @Test func UpdateGame() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let itemController = root.itemController
@@ -153,4 +186,3 @@ private extension GameControllerTests {
         return root
     }
 }
-#endif

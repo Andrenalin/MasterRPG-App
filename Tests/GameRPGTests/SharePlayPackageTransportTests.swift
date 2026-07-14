@@ -116,6 +116,95 @@ struct SharePlayPackageTransportTests {
         targetedAudio.targetId = UUID()
         #expect(RPGSharePlayController.usesJournalTransport(for: targetedAudio, fileJournal: true, journalAvailable: true))
     }
+
+    @Test("session configuration waits for join to be requested and joined")
+    func sessionConfigurationWaitsForJoinRequestAndJoinedState() {
+        let sessionId = UUID()
+        var lifecycle = SharePlaySessionLifecycle()
+        lifecycle.prepare(sessionId: sessionId)
+
+        let configuredBeforeJoin = lifecycle.didEnterJoinedState(sessionId: sessionId)
+        #expect(!configuredBeforeJoin)
+
+        lifecycle.didRequestJoin(sessionId: sessionId)
+
+        let configuredAfterJoin = lifecycle.didEnterJoinedState(sessionId: sessionId)
+        let configuredTwice = lifecycle.didEnterJoinedState(sessionId: sessionId)
+        #expect(configuredAfterJoin)
+        #expect(!configuredTwice)
+    }
+
+    @Test("events from an old SharePlay session cannot configure a replacement session")
+    func oldSessionEventsCannotConfigureReplacementSession() {
+        let oldSessionId = UUID()
+        let currentSessionId = UUID()
+        var lifecycle = SharePlaySessionLifecycle()
+        lifecycle.prepare(sessionId: oldSessionId)
+        lifecycle.didRequestJoin(sessionId: oldSessionId)
+        lifecycle.prepare(sessionId: currentSessionId)
+
+        #expect(!lifecycle.isCurrent(sessionId: oldSessionId))
+        #expect(lifecycle.isCurrent(sessionId: currentSessionId))
+        let oldSessionConfigured = lifecycle.didEnterJoinedState(sessionId: oldSessionId)
+        #expect(!oldSessionConfigured)
+
+        lifecycle.didRequestJoin(sessionId: currentSessionId)
+
+        let currentSessionConfigured = lifecycle.didEnterJoinedState(sessionId: currentSessionId)
+        #expect(currentSessionConfigured)
+    }
+
+    @Test("removed journal publication becomes publishable again")
+    func removedJournalPublicationBecomesPublishableAgain() {
+        let itemId = UUID()
+        let attachmentId = UUID()
+        var tracker = SharePlayJournalTracker()
+
+        #expect(tracker.shouldPublish(module: .photo, itemId: itemId, version: 2))
+
+        tracker.didPublish(module: .photo, itemId: itemId, version: 2, attachmentId: attachmentId)
+        tracker.reconcile(attachmentIds: [attachmentId])
+
+        #expect(!tracker.shouldPublish(module: .photo, itemId: itemId, version: 2))
+
+        tracker.didRemove(attachmentId: attachmentId)
+
+        #expect(tracker.shouldPublish(module: .photo, itemId: itemId, version: 2))
+    }
+
+    @Test("replacement journal snapshot invalidates the local publication cache")
+    func replacementJournalSnapshotInvalidatesLocalPublicationCache() {
+        let itemId = UUID()
+        let localAttachmentId = UUID()
+        let replacementAttachmentId = UUID()
+        var tracker = SharePlayJournalTracker()
+        tracker.didPublish(module: .pdf, itemId: itemId, version: 4, attachmentId: localAttachmentId)
+        tracker.reconcile(attachmentIds: [localAttachmentId])
+
+        #expect(!tracker.shouldPublish(module: .pdf, itemId: itemId, version: 4))
+
+        tracker.reconcile(attachmentIds: [replacementAttachmentId])
+
+        #expect(tracker.shouldPublish(module: .pdf, itemId: itemId, version: 4))
+    }
+
+    @Test("journal attachment IDs are processed once per current snapshot lifetime")
+    func journalAttachmentIdsAreProcessedOncePerSnapshotLifetime() {
+        let attachmentId = UUID()
+        var tracker = SharePlayJournalTracker()
+        tracker.reconcile(attachmentIds: [attachmentId])
+
+        let processedFirstTime = tracker.shouldProcess(attachmentId: attachmentId)
+        let processedSecondTime = tracker.shouldProcess(attachmentId: attachmentId)
+        #expect(processedFirstTime)
+        #expect(!processedSecondTime)
+
+        tracker.reconcile(attachmentIds: [])
+        tracker.reconcile(attachmentIds: [attachmentId])
+
+        let processedAfterRemoval = tracker.shouldProcess(attachmentId: attachmentId)
+        #expect(processedAfterRemoval)
+    }
 }
 
 private extension SharePlayPackageTransportTests {
