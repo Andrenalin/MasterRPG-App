@@ -17,6 +17,7 @@ struct AdventureSnapshot: Sendable, Identifiable {
     let diceId: UUID?
     let entries: CRDTDataUpdate<[AdventureEntryModel]>
     let parentId: UUID?
+    let groupId: UUID?
 }
 
 extension AdventureSnapshot {
@@ -32,6 +33,7 @@ extension AdventureSnapshot {
         diceId = model.diceId
         entries = model.entries_
         parentId = model.parentId
+        groupId = model.groupId
     }
 
     @MainActor
@@ -46,7 +48,8 @@ extension AdventureSnapshot {
             photoId: photoId,
             diceId: diceId,
             entries: entries,
-            parentId: parentId
+            parentId: parentId,
+            groupId: groupId
         )
     }
 }

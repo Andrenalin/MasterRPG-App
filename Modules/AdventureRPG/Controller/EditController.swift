@@ -83,6 +83,8 @@ extension EditController: EntryDataEditable {
     }
 
     @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
+
+    var canAddGroups: Bool { true }
 }
     
 // MARK: - EntryList editor
@@ -92,10 +94,132 @@ extension EditController {
         true
     }
 
+    @MainActor public func update(itemId: UUID, entryId: UUID, name: String, content: String) {
+        guard let item = editModel(for: itemId) else { return }
+        if let adventureId = item[entryId].adventureId {
+            reset(name: name, itemId: adventureId)
+            reset(description: content, itemId: adventureId)
+        } else {
+            updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false)
+        }
+    }
+
     public var linkModules: [NetworkModules] { [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather] }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
         AdventureEditorRoute.linkSelection(itemRowModel)
+    }
+}
+
+// MARK: - Group Management
+
+extension EditController {
+    @MainActor func addNewGroup(itemId: UUID) async -> UUID {
+        let groupId = await itemController.addNew(type: .item)
+        reset(hidden: true, itemId: groupId)
+        guard let group = editModel(for: groupId) else { return groupId }
+        group.groupId = itemId
+        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
+        var entry = Model.Entry.empty
+        entry.name = group.name
+        entry.adventureId = groupId
+        add(entry: entry, itemId: itemId)
+        return entry.id
+    }
+
+    @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] {
+        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return [] }
+        return item.entries.compactMap {
+            guard $0.id != sourceEntryId, let adventureId = $0.adventureId else { return nil }
+            return FolderRepresentable(id: adventureId, name: $0.name)
+        }
+    }
+
+    @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? {
+        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return nil }
+        let resolvedParentId = item.groupId ?? item.parentId
+        guard let resolvedParentId, let parent = itemControllable.itemSync(for: resolvedParentId) as? Model else { return nil }
+        return FolderRepresentable(id: parent.id, name: parent.name)
+    }
+
+    @MainActor func isOrphanedHidden(itemId: UUID) -> Bool {
+        guard let item = itemControllable.itemSync(for: itemId) as? AdventureModel else { return false }
+        guard item.displayState == 1 && item.parentId == nil else { return false }
+        if let groupId = item.groupId {
+            let parent = itemControllable.itemSync(for: groupId)
+            return parent == nil || parent?.displayState == 2
+        }
+        return true
+    }
+
+    @MainActor func willRepairOrphan(itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        guard item.groupId != nil else { return }
+        item.groupId = nil
+        save(updated: item, message: String(localized: "Repair orphan", bundle: .module).localizedString)
+    }
+
+    @MainActor func willRestore(item: inout AdventureModel) {
+        if let groupId = item.groupId {
+            if let groupItem = editModel(for: groupId) {
+                if groupItem.displayState == 2 {
+                    item.groupId = nil
+                }
+            } else {
+                item.groupId = nil
+            }
+        }
+    }
+
+    @MainActor func willDeleteChildren(of item: AdventureModel) async {
+        guard item.category != .folder else { return }
+        for entry in item.entries {
+            guard let adventureId = entry.adventureId else { continue }
+            await Task.yield()
+            await delete(itemId: adventureId)
+        }
+    }
+}
+
+// MARK: - Duplicate with sub-groups
+
+extension EditController {
+    @MainActor public func duplicate(item: any ItemDataAccessable) async {
+        guard let model = editModel(for: item.id) else { return }
+        let originalParentId = model.parentId
+        let (copies, copyId) = duplicateSubAdventure(model: model, withCopy: true)
+        for copy in copies {
+            itemControllable.replace(model: copy, isInsert: true)
+        }
+        if let parentId = originalParentId {
+            addItem(itemId: copyId, parentId: parentId)
+        }
+        let originalId = item.id
+        for containerId in itemControllable.itemDataModel.items {
+            guard let container = itemControllable.itemSync(for: containerId),
+                  container.category == itemControllable.collectionCategory,
+                  container.entries.contains(where: { $0.childId == originalId }) else { continue }
+            addGroup(itemId: containerId, childId: copyId)
+        }
+    }
+
+    @MainActor private func duplicateSubAdventure(model: AdventureModel, withCopy: Bool) -> ([AdventureModel], UUID) {
+        let copyItem = withCopy ? model.duplicate() : model.duplicateWithoutCopy()
+        var copies: [AdventureModel] = [copyItem]
+        var newEntries: [AdventureEntryModel] = []
+        for entry in model.entries {
+            var duplicatedEntry = entry.duplicate()
+            if let adventureId = entry.adventureId,
+               let childModel = itemControllable.itemSync(for: adventureId) as? AdventureModel {
+                let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false)
+                childCopies.first?.groupId = copyItem.id
+                copies.append(contentsOf: childCopies)
+                duplicatedEntry.adventureId = childCopyId
+            }
+            newEntries.append(duplicatedEntry)
+        }
+        copyItem.entries = newEntries
+        return (copies, copyItem.id)
     }
 }
 

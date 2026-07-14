@@ -29,7 +29,8 @@ extension DataController: CoreDataSnapshotPersistable {
             photoId: CRDT(string: model.photoUUID ?? "", defaultValue: nil),
             diceId: model.diceId,
             entries: CRDTDataUpdate(wrappedValue: map(model.entriesModel), update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
-            parentId: model.parentId
+            parentId: model.parentId,
+            groupId: model.groupId
         )
     }
 
@@ -61,6 +62,7 @@ extension DataController: CoreDataSnapshotPersistable {
             }
         }
         model.parentId <=> snapshot.parentId
+        model.groupId <=> snapshot.groupId
     }
 
 
@@ -87,6 +89,7 @@ extension DataController: CoreDataSnapshotPersistable {
             id: model.uuid ?? UUID(),
             name: CRDT(string: model.name ?? "", defaultValue: ""),
             content: CRDT(string: model.content ?? "", defaultValue: ""),
+            adventureId: CRDT(string: model.adventureUUID ?? "", defaultValue: nil),
             displayState: 0
         )
     }
@@ -95,6 +98,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.uuid = viewModel.id
         model.name = viewModel.$name.rawValue
         model.content = viewModel.$content.rawValue
+        model.adventureUUID = viewModel.$adventureId.rawValue
         model.index = Int16(index)
     }
 }

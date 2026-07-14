@@ -41,7 +41,8 @@ extension SheetController: SheetControllable {
         let nestedCount = countSheets(in: entries)
         totalSheetCount += nestedCount
 
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
+        let showHeader = model.displayState == 0
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
 
         // Report timing only at the root level
         if level == 0 {
@@ -60,10 +61,22 @@ extension SheetController: SheetControllable {
         return sheets
     }
 
+    @MainActor func entryNameDescription(entry: AdventureEntryModel, root: RootManager) -> (name: String, description: String) {
+        if let adventureId = entry.adventureId {
+            let adventure = itemController.reviewAwareItemOrEmpty(root: root, for: adventureId)
+            return (adventure.url(linkNumber: 0), adventure.description)
+        }
+        return (entry.name, entry.content)
+    }
+
     @MainActor private func sheet(entry: AdventureEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
-        let name = entry.name
-        let description = entry.content
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
+        let (name, description) = entryNameDescription(entry: entry, root: root)
+
+        var allSheets: [SheetModel] = []
+        if let adventureId = entry.adventureId {
+            allSheets = [sheet(root: root, itemId: adventureId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)]
+        }
 
         // Measure and compare both link parsing approaches
         let parseStartTime = ContinuousClock.now
@@ -98,8 +111,10 @@ extension SheetController: SheetControllable {
                 return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
             }
         }
+        allSheets.append(contentsOf: linkSheets)
 
-        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: linkSheets)
+        let entryType: SheetModelType = entry.adventureId != nil ? .group : .item
+        return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: entryType, name: name, description: description, entries: allSheets)
     }
 
     @MainActor private func createPhotoInline(photoId: UUID, itemId: UUID, level: Int, isShown: Bool) -> SheetModel {
@@ -157,13 +172,23 @@ extension SheetController: SheetControllable {
         
         for entry in model.entries {
             if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
-                unequalSet(lhs: &existingSheetModel.name, rhs: entry.name) { changed in
+                let (entryName, entryDescription) = entryNameDescription(entry: entry, root: root)
+                unequalSet(lhs: &existingSheetModel.name, rhs: entryName) { changed in
                     existingSheetModel.hasChanged = changed
                     if changed { updatedCount += 1 }
                 }
-                unequalSet(lhs: &existingSheetModel.description, rhs: entry.content) { changed in
+                unequalSet(lhs: &existingSheetModel.description, rhs: entryDescription) { changed in
                     existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
                     if changed { updatedCount += 1 }
+                }
+                // Ensure sub-adventure SheetModel is present for group entries
+                if let adventureId = entry.adventureId,
+                   !existingSheetModel.entries.contains(where: { $0.source.itemId == adventureId && $0.source.entryId == nil }) {
+                    let destination = ItemRowModel(itemId: model.id, entryId: entry.id, typeId: itemController.config.module)
+                    let subSheet = sheet(root: root, itemId: adventureId, destination: destination, level: sheetModel.level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)
+                    existingSheetModel.entries.insert(subSheet, at: 0)
+                    existingSheetModel.hasChanged = true
+                    createdCount += 1
                 }
                 existingSheetModel.entries.forEach { subSheetModel in
                     root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel, isEditor: isEditor)
