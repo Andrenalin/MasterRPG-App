@@ -586,11 +586,11 @@ private extension MapEditor {
     func endAction(_: DragGesture.Value) {
         viewModel.endAction()
     }
-#endif
 
-    func magnifierAction(_ value: CGFloat, isFirst: Bool) {
-        viewModel.updateScale(value, updateLast: isFirst)
+    func magnifierAction(_ value: MagnifyGesture.Value, isFirst: Bool) {
+        viewModel.updateScale(value.magnification, updateLast: isFirst)
     }
+#endif
 
 #if !os(tvOS)
     func handleTileEditorRelease(_ value: DragGesture.Value) {

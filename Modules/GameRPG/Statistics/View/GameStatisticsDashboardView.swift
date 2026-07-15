@@ -3,17 +3,19 @@
 import Charts
 import SwiftUI
 
-private enum GameStatisticsSheet: String, Identifiable {
+#if os(tvOS)
+private enum GameStatisticsDashboardDestination: Hashable {
     case customize
-
-    var id: String { rawValue }
 }
+#endif
 
 struct GameStatisticsDashboardView: View {
     @Bindable var model: GameStatisticsModel
     @Bindable var gameCenterModel: GameCenterModel
     let gameCenterController: GameCenterController
-    @State private var sheet: GameStatisticsSheet?
+#if !os(tvOS)
+    @State private var isCustomizationPresented = false
+#endif
     private let previewSummary = GameStatisticsPreviewController().summary()
 
     var body: some View {
@@ -63,17 +65,37 @@ struct GameStatisticsDashboardView: View {
         .navigationTitle(Text("Game Statistics", bundle: .module))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Customize", systemImage: "slider.horizontal.3") {
-                    sheet = .customize
+#if os(tvOS)
+                NavigationLink(value: GameStatisticsDashboardDestination.customize) {
+                    Label {
+                        Text("Customize", bundle: .module)
+                    } icon: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
                 }
+#else
+                Button("Customize", systemImage: "slider.horizontal.3") {
+                    isCustomizationPresented.toggle()
+                }
+#endif
             }
         }
-        .sheet(item: $sheet) { sheet in
-            switch sheet {
+#if os(iOS) || os(macOS)
+        .inspector(isPresented: $isCustomizationPresented) {
+            GameStatisticsCustomizationInspectorView(model: model)
+        }
+#elseif os(visionOS)
+        .sheet(isPresented: $isCustomizationPresented) {
+            GameStatisticsCustomizationSheetView(model: model)
+        }
+#elseif os(tvOS)
+        .navigationDestination(for: GameStatisticsDashboardDestination.self) { destination in
+            switch destination {
             case .customize:
                 GameStatisticsCustomizationView(model: model)
             }
         }
+#endif
         .sheet(
             item: Binding(
                 get: { gameCenterModel.authenticationRequest },

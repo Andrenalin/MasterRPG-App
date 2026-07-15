@@ -4,88 +4,102 @@ import SwiftUI
 
 struct GameStatisticsCustomizationView: View {
     @Bindable var model: GameStatisticsModel
-    @Environment(\.dismiss) private var dismiss
     @State private var confirmsDeleteAll = false
+    @State private var pendingCollectionState: Bool?
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Toggle(
-                        isOn: Binding(
-                            get: { model.isCollectionEnabled },
-                            set: { enabled in
-                                Task { @MainActor in
-                                    await model.setCollectionEnabled(enabled)
-                                }
-                            }
-                        )
-                    ) {
-                        Label {
+        Form {
+            Section {
+                LabeledContent {
+                    HStack {
+                        if pendingCollectionState != nil {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+
+                        Toggle(isOn: collectionEnabledBinding) {
                             Text("Collect Game Statistics", bundle: .module)
-                        } icon: {
-                            Image(systemName: "chart.bar.doc.horizontal")
                         }
+                        .labelsHidden()
+                        .disabled(pendingCollectionState != nil)
                     }
-                } footer: {
-                    Text("Only activity during a running game is collected. Message contents and media files are never stored.", bundle: .module)
-                }
-
-                Section {
-                    ForEach(model.configuration.sectionOrder) { section in
-                        GameStatisticsCustomizationRow(section: section, model: model)
+                } label: {
+                    Label {
+                        Text("Collect Game Statistics", bundle: .module)
+                    } icon: {
+                        Image(systemName: "chart.bar.doc.horizontal")
                     }
-                } header: {
-                    Text("Dashboard", bundle: .module)
-                } footer: {
-                    Text("Choose which charts appear and arrange them in your preferred order.", bundle: .module)
                 }
+            } footer: {
+                Text("Only activity during a running game is collected. Message contents and media files are never stored.", bundle: .module)
+            }
 
-                Section {
+            Section {
+                ForEach(model.configuration.sectionOrder) { section in
+                    GameStatisticsCustomizationRow(section: section, model: model)
+                }
+            } header: {
+                Text("Dashboard", bundle: .module)
+            } footer: {
+                Text("Choose which charts appear and arrange them in your preferred order.", bundle: .module)
+            }
+
+            Section {
 #if !os(tvOS)
-                    ShareLink(
-                        item: GameStatisticsExportController().text(from: model.summary),
-                        subject: Text("MasterRPG Game Statistics", bundle: .module),
-                        message: Text("A summary of game activity collected during games.", bundle: .module)
-                    ) {
-                        Label {
-                            Text("Export Statistics", bundle: .module)
-                        } icon: {
-                            Image(systemName: "square.and.arrow.up")
-                        }
+                ShareLink(
+                    item: GameStatisticsExportController().text(from: model.summary),
+                    subject: Text("MasterRPG Game Statistics", bundle: .module),
+                    message: Text("A summary of game activity collected during games.", bundle: .module)
+                ) {
+                    Label {
+                        Text("Export Statistics", bundle: .module)
+                    } icon: {
+                        Image(systemName: "square.and.arrow.up")
                     }
+                }
 #endif
-                    Button("Delete All Statistics", systemImage: "trash", role: .destructive) {
-                        confirmsDeleteAll = true
-                    }
-                } footer: {
-                    Text("This removes all locally stored and iCloud-synced game statistics from this database.", bundle: .module)
+                Button("Delete All Statistics", systemImage: "trash", role: .destructive) {
+                    confirmsDeleteAll = true
+                }
+            } header: {
+                Text("Data", bundle: .module)
+            } footer: {
+                Text("This removes all locally stored and iCloud-synced game statistics from this database.", bundle: .module)
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle(Text("Customize Statistics", bundle: .module))
+        .alert(
+            Text("Delete all game statistics?", bundle: .module),
+            isPresented: $confirmsDeleteAll
+        ) {
+            Button("Delete All Statistics", role: .destructive) {
+                Task { @MainActor in
+                    await model.deleteAll()
                 }
             }
-            .navigationTitle(Text("Customize Statistics", bundle: .module))
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", systemImage: "checkmark") {
-                        dismiss()
-                    }
-                }
-            }
-            .confirmationDialog(
-                Text("Delete all game statistics?", bundle: .module),
-                isPresented: $confirmsDeleteAll,
-                titleVisibility: .visible
-            ) {
-                Button("Delete All Statistics", role: .destructive) {
-                    Task { @MainActor in
-                        await model.deleteAll()
-                    }
-                }
-            } message: {
-                Text("This action cannot be undone.", bundle: .module)
-            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This action cannot be undone.", bundle: .module)
         }
     }
 
+    private var collectionEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { pendingCollectionState ?? model.isCollectionEnabled },
+            set: { enabled in
+                guard pendingCollectionState == nil,
+                      enabled != model.isCollectionEnabled
+                else { return }
+
+                pendingCollectionState = enabled
+                Task { @MainActor in
+                    await model.setCollectionEnabled(enabled)
+                    pendingCollectionState = nil
+                }
+            }
+        )
+    }
 }
 
 private struct GameStatisticsCustomizationRow: View {
@@ -93,28 +107,96 @@ private struct GameStatisticsCustomizationRow: View {
     @Bindable var model: GameStatisticsModel
 
     var body: some View {
-        HStack {
-            Toggle(
-                isOn: Binding(
-                    get: { !model.configuration.hiddenSections.contains(section) },
-                    set: { model.setSection(section, isVisible: $0) }
-                )
-            ) {
-                Label(section.title, systemImage: section.systemImage)
-            }
+        LabeledContent {
+            HStack {
+                Toggle(section.title, isOn: sectionVisibilityBinding)
+                    .labelsHidden()
+#if os(macOS)
+                    .controlSize(.mini)
+#endif
 
-            Button("Move Up", systemImage: "chevron.up") {
-                model.moveSection(section, offset: -1)
-            }
-            .labelStyle(.iconOnly)
-            .disabled(model.configuration.sectionOrder.first == section)
+                Menu {
+                    Button("Move Up", systemImage: "arrow.up") {
+                        model.moveSection(section, offset: -1)
+                    }
+                    .disabled(model.configuration.sectionOrder.first == section)
 
-            Button("Move Down", systemImage: "chevron.down") {
-                model.moveSection(section, offset: 1)
+                    Button("Move Down", systemImage: "arrow.down") {
+                        model.moveSection(section, offset: 1)
+                    }
+                    .disabled(model.configuration.sectionOrder.last == section)
+                } label: {
+                    Label {
+                        Text("Reorder", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.up.arrow.down")
+                    }
+                }
+#if os(iOS)
+                .labelStyle(.iconOnly)
+#endif
             }
-            .labelStyle(.iconOnly)
-            .disabled(model.configuration.sectionOrder.last == section)
+        } label: {
+            Label(section.title, systemImage: section.systemImage)
         }
+    }
+
+    private var sectionVisibilityBinding: Binding<Bool> {
+        Binding(
+            get: { !model.configuration.hiddenSections.contains(section) },
+            set: { model.setSection(section, isVisible: $0) }
+        )
+    }
+}
+
+#if os(iOS) || os(macOS)
+struct GameStatisticsCustomizationInspectorView: View {
+    @Bindable var model: GameStatisticsModel
+#if os(iOS)
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
+
+    var body: some View {
+#if os(iOS)
+        NavigationStack {
+            GameStatisticsCustomizationView(model: model)
+                .toolbar {
+                    if horizontalSizeClass == .compact {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done", systemImage: "checkmark") {
+                                dismiss()
+                            }
+                        }
+                    }
+                }
+        }
+        .presentationSizing(.form)
+        .inspectorColumnWidth(min: 340, ideal: 400, max: 480)
+#else
+        GameStatisticsCustomizationView(model: model)
+            .inspectorColumnWidth(min: 340, ideal: 400, max: 480)
+#endif
+    }
+}
+#endif
+
+struct GameStatisticsCustomizationSheetView: View {
+    @Bindable var model: GameStatisticsModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            GameStatisticsCustomizationView(model: model)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done", systemImage: "checkmark") {
+                            dismiss()
+                        }
+                    }
+                }
+        }
+        .presentationSizing(.form)
     }
 }
 

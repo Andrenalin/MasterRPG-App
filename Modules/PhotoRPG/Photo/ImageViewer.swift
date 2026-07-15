@@ -4,261 +4,286 @@ import CoreRPG
 import SwiftUI
 
 struct ImageViewer: View {
-    init(id: UUID, image: AKImage, photoDegrees: Double, containerSize: CGSize, contentMode: ContentMode, toolBarModel: GameToolBarModel?) {
+    init(
+        id: UUID,
+        image: AKImage,
+        photoDegrees: Double,
+        containerSize: CGSize,
+        contentMode: ContentMode,
+        accessibilityLabel: String,
+        accessibilityHint: String?,
+        toolBarModel: GameToolBarModel?
+    ) {
         self.id = id
         self.image = image
+        self.photoDegrees = photoDegrees
         self.containerSize = containerSize
         self.contentMode = contentMode
+        self.accessibilityLabel = accessibilityLabel
+        self.accessibilityHint = accessibilityHint
         self.toolBarModel = toolBarModel
-        toolBarModel?.degrees = photoDegrees
-        
-        let imageSize = ImageViewer.imageSize(image, degrees: photoDegrees)
-        let (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: photoDegrees)
-        self._model = State(wrappedValue: ImageViewerModel(
-            offset: newOffset, 
-            scale: newScale,
-            degrees: photoDegrees,
-            imageSize: imageSize
-        ))
     }
-    
+
     let id: UUID
     let image: AKImage
+    let photoDegrees: Double
     let containerSize: CGSize
     let contentMode: ContentMode
+    let accessibilityLabel: String
+    let accessibilityHint: String?
     let toolBarModel: GameToolBarModel?
-    
-    @State private var model: ImageViewerModel
-    
-    // Computed property to get current degrees from toolbar or model cache
+
+    @State private var viewerState = ImageViewerState()
+
     private var currentDegrees: Double {
-        toolBarModel?.degrees ?? model.degrees
+        toolBarModel?.degrees(for: id, fallback: photoDegrees)
+            ?? ImageViewportGeometry.normalize(photoDegrees)
     }
-        
+
+    private var viewportConfiguration: ImageViewportConfiguration {
+        ImageViewportConfiguration(
+            id: id,
+            imageSize: image.fixedSize,
+            containerSize: containerSize,
+            degrees: currentDegrees
+        )
+    }
+
+    private var geometry: ImageViewportGeometry {
+        ImageViewportGeometry(configuration: viewportConfiguration)
+    }
+
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            Color.clear.ignoresSafeArea()
-
+        Group {
             if contentMode == .fill {
-                Image(akImage: image)
-                    .resizable()
-                    .rotationEffect(Angle(degrees: currentDegrees))
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: containerSize.width, height: containerSize.height, alignment: .center)
+                FilledImageCanvas(
+                    image: image,
+                    geometry: geometry
+                )
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             } else {
-                Image(akImage: image)
-                    .scaleEffect(model.scale)
-                    .rotationEffect(Angle(degrees: currentDegrees))
-                    .offset(x: model.offset.x, y: model.offset.y)
-                    .frame(width: model.currentSize.width, height: model.currentSize.height)
-            }
-        }
-        .frame(width: containerSize.width, height: containerSize.height, alignment: .leading)
+                InteractiveImageCanvas(
+                    image: image,
+                    geometry: geometry,
+                    viewport: viewerState.viewport
+                )
 #if !os(tvOS)
-        .dragTapGesture(pressAction: pressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
+                .dragTapGesture(
+                    doubleTapAction: doubleTapAction(_:),
+                    dragStartAction: dragStartAction(_:),
+                    dragAction: dragAction(_:),
+                    magnifierAction: magnifierAction(_:isFirst:)
+                )
 #endif
-        .onChange(of: toolBarModel?.degrees) { _, _ in
-            resetZoom()
-        }
-        .task(id: id) {
-            resetZoom(withoutAnimation: true)
-        }
-    }
-}
-
-// MARK: - Zooming
-
-private extension ImageViewer {
-    static func zoomToFit(with size: CGSize, image: AKImage, degrees: Double) -> (CGFloat, CGPoint) {
-        let scale = normScale(screenSize: size, image: image, degrees: degrees)
-        let imgSize = imageSize(image, degrees: degrees)
-        let x = (size.width - imgSize.width * scale) / 2.0
-        let y = (size.height - imgSize.height * scale) / 2.0
-        let offset = CGPoint(x: x, y: y)
-        return (scale, offset)
-    }
-    
-    static func normScale(screenSize: CGSize, image: AKImage, degrees: Double) -> CGFloat {
-        let size = imageSize(image, degrees: degrees)
-        let wScale = screenSize.width / size.width
-        let hScale = screenSize.height / size.height
-        return min(wScale, hScale)
-    }
-    
-    static func imageSize(_ image: AKImage, degrees: Double) -> CGSize {
-        let normalised = degrees.truncatingRemainder(dividingBy: 360)
-        return (normalised == 0 || normalised == 180) ? image.fixedSize : CGSize(width: image.size.height, height: image.size.width)
-    }
-
-    func resetZoom(withoutAnimation: Bool = false) {
-        let degrees = currentDegrees
-        let (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: degrees)
-        model.normScale = newScale
-        model.updateDegrees(degrees, originalImageSize: image.fixedSize)
-        zoom(scale: newScale, at: newOffset, withoutAnimation: withoutAnimation)
-    }
-
-    func zooming(on location: CGPoint) {
-        let (newScale, newOffset): (CGFloat, CGPoint)
-        if model.scale != model.normScale {
-            let degrees = currentDegrees
-            (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: degrees)
-        } else {
-            (newScale, newOffset) = zoomIn(at: location)
-        }
-        zoom(scale: newScale, at: newOffset, withoutAnimation: false)
-    }
-
-    func zoom(scale: CGFloat, at offset: CGPoint, withoutAnimation: Bool) {
-        if withoutAnimation {
-            zoom(scale: scale, at: offset)
-        } else {
-            withAnimation {
-                zoom(scale: scale, at: offset)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: accessibilityLabel))
+                .accessibilityHint(Text(verbatim: accessibilityHint ?? ""))
+                .accessibilityAddTraits(.isImage)
+                .accessibilityAction(named: Text("Zoom in", bundle: .module), zoomIn)
+                .accessibilityAction(named: Text("Zoom out", bundle: .module), zoomOut)
+                .accessibilityAction(named: Text("Reset zoom", bundle: .module), resetZoom)
             }
         }
-    }
-
-    func zoom(scale: CGFloat, at offset: CGPoint) {
-        model.scale = scale
-        model.lastScale = model.scale
-        model.offset = offset
-        model.lastOffset = model.offset
-    }
-
-    func zoomIn(at point: CGPoint) -> (CGFloat, CGPoint) {
-        let newScale = max(0.1, model.scale * 4)
-        let offPoint = (point - model.offset) / model.scale
-        
-        updateScale(newScale, updateLast: false)
-        
-        let pswidth = (containerSize.width / newScale) / 2
-        let psHeight = (containerSize.height / newScale) / 2
-        let offset = CGPoint(x: -1 * (offPoint.x - pswidth) * model.scale, y: -1 * (offPoint.y - psHeight) * model.scale)
-        return (newScale, offset)
+        .frame(
+            width: geometry.containerSize.width,
+            height: geometry.containerSize.height
+        )
+        .clipped()
+        .onChange(of: viewportConfiguration, initial: true) { _, configuration in
+            configureViewport(for: configuration)
+        }
     }
 }
 
-// MARK: - Gesture Magnifyer
+// MARK: - Viewport updates
 
 private extension ImageViewer {
-    func updateScale(_ value: CGFloat, updateLast: Bool) {
-        if updateLast {
-            model.lastScale = value
-        }
-        let delta = value / model.lastScale
-        let newScale = model.scale * delta
-        if newScale < 0.1 {
+    func configureViewport(for configuration: ImageViewportConfiguration) {
+        guard viewerState.configuration != configuration else {
             return
         }
-        
-        let scaleDiff = (newScale - model.scale) / 2
-        let imgOff = model.baseImageSize * scaleDiff
-        let newOffsetNew = CGPoint(x: -imgOff.width, y: -imgOff.height)
-        
-        model.lastScale = value
-        model.scale = newScale
-        updateOffset(with: newOffsetNew, firstOffset: model.offset)
+
+        let previousConfiguration = viewerState.configuration
+        let newGeometry = ImageViewportGeometry(configuration: configuration)
+        let shouldAnimate = previousConfiguration?.id == configuration.id
+            && previousConfiguration?.imageSize == configuration.imageSize
+            && previousConfiguration?.containerSize == configuration.containerSize
+            && previousConfiguration?.degrees != configuration.degrees
+
+        var newState = ImageViewerState(
+            configuration: configuration,
+            viewport: newGeometry.fitViewport
+        )
+        newState.dragStartOffset = newState.viewport.offset
+
+        if shouldAnimate {
+            withAnimation(.snappy) {
+                viewerState = newState
+            }
+        } else {
+            viewerState = newState
+        }
     }
-}
 
-// MARK: - Gesture Drag
+    func apply(_ viewport: ImageViewport, animated: Bool) {
+        guard viewerState.viewport != viewport else {
+            return
+        }
 
-private extension ImageViewer {
-    func updateOffset(with newLocation: CGPoint, firstOffset: CGPoint) {
-        let offX = max(300, (containerSize.width - model.currentSize.width) / 2)
-        let offY = max(300, (containerSize.height - model.currentSize.height) / 2)
-        let minX = containerSize.width - model.currentSize.width - offX
-        let minY = containerSize.height - model.currentSize.height - offY
-        
-        var newOffset = firstOffset + newLocation
-        newOffset.x = min(max(newOffset.x, minX), offX)
-        newOffset.y = min(max(newOffset.y, minY), offY)
-        
-        model.lastOffset = firstOffset
-        model.offset = newOffset
+        if animated {
+            withAnimation(.snappy) {
+                viewerState.viewport = viewport
+            }
+        } else {
+            viewerState.viewport = viewport
+        }
     }
-    
-}
 
-// MARK: - Gesture Double Tap
+    func resetZoom() {
+        apply(geometry.fitViewport, animated: true)
+    }
 
-private extension ImageViewer {
-    func onDoubleTapped(with location: CGPoint) {
-        zooming(on: location)
+    func zoomIn() {
+        zoom(by: 2)
+    }
+
+    func zoomOut() {
+        zoom(by: 0.5)
+    }
+
+    func zoom(by factor: CGFloat) {
+        let targetScale = geometry.clampedScale(viewerState.viewport.scale * factor)
+        let targetViewport = geometry.zoomedViewport(
+            from: viewerState.viewport,
+            toScale: targetScale,
+            anchor: CGPoint(
+                x: geometry.containerSize.width / 2,
+                y: geometry.containerSize.height / 2
+            )
+        )
+        apply(targetViewport, animated: true)
     }
 }
 
 #if !os(tvOS)
-// MARK: - Gesture & updates
+// MARK: - Gesture handlers
 
 private extension ImageViewer {
-    func pressAction(_ value: DragGesture.Value) {}
-    
     func doubleTapAction(_ value: DragGesture.Value) {
-        onDoubleTapped(with: value.location)
+        let targetViewport = geometry.doubleTapViewport(
+            from: viewerState.viewport,
+            at: value.location
+        )
+        apply(targetViewport, animated: true)
     }
-    
-    func dragStartAction(_ value: DragGesture.Value) {
-        model.lastOffset = model.offset
+
+    func dragStartAction(_: DragGesture.Value) {
+        viewerState.dragStartOffset = viewerState.viewport.offset
     }
-    
+
     func dragAction(_ value: DragGesture.Value) {
-        updateOffset(with: value.location - value.startLocation, firstOffset: model.lastOffset)
+        let proposedOffset = CGPoint(
+            x: viewerState.dragStartOffset.x + value.translation.width,
+            y: viewerState.dragStartOffset.y + value.translation.height
+        )
+        let clampedOffset = geometry.clampedOffset(
+            proposedOffset,
+            at: viewerState.viewport.scale
+        )
+        viewerState.viewport = ImageViewport(
+            scale: viewerState.viewport.scale,
+            offset: clampedOffset
+        )
     }
-    
-    func dragEndAction(_: DragGesture.Value) {}
-    
-    func endAction(_: DragGesture.Value) {}
-    
-    func magnifierAction(_ value: CGFloat, isFirst: Bool) {
-        updateScale(value, updateLast: isFirst)
+
+    func magnifierAction(_ value: MagnifyGesture.Value, isFirst: Bool) {
+        if isFirst || viewerState.magnificationStartViewport == nil {
+            viewerState.magnificationStartViewport = viewerState.viewport
+        }
+        guard let startViewport = viewerState.magnificationStartViewport else {
+            return
+        }
+
+        viewerState.viewport = geometry.zoomedViewport(
+            from: startViewport,
+            toScale: startViewport.scale * value.magnification,
+            anchor: value.startLocation
+        )
     }
 }
 #endif
 
-@MainActor @Observable
-fileprivate final class ImageViewerModel {
-    init(offset: CGPoint = .zero, scale: CGFloat = 1, degrees: Double = 0, imageSize: CGSize = .zero) {
-        self.offset = offset
-        self.lastOffset = offset
-        self.scale = scale
-        self.lastScale = scale
-        self.normScale = scale
-        self.degrees = degrees
-        self.baseImageSize = imageSize
-    }
-    
-    var offset: CGPoint
-    var lastOffset: CGPoint
-    var scale: CGFloat
-    var lastScale: CGFloat
-    var normScale: CGFloat
-    
-    // Cache computed values
-    var degrees: Double
-    var baseImageSize: CGSize
-    
-    var currentSize: CGSize {
-        baseImageSize * scale
-    }
-    
-    func updateImageSize(_ size: CGSize) {
-        baseImageSize = size
-    }
-    
-    func updateDegrees(_ newDegrees: Double, originalImageSize: CGSize) {
-        degrees = newDegrees
-        let normalised = newDegrees.truncatingRemainder(dividingBy: 360)
-        baseImageSize = (normalised == 0 || normalised == 180)
-            ? originalImageSize
-            : CGSize(width: originalImageSize.height, height: originalImageSize.width)
+private struct ImageViewerState: Equatable {
+    var configuration: ImageViewportConfiguration?
+    var viewport = ImageViewport(scale: 1, offset: .zero)
+    var dragStartOffset = CGPoint.zero
+    var magnificationStartViewport: ImageViewport?
+}
+
+private struct InteractiveImageCanvas: View {
+    let image: AKImage
+    let geometry: ImageViewportGeometry
+    let viewport: ImageViewport
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            Color.clear
+
+            RotatedImage(
+                image: image,
+                originalSize: geometry.originalImageSize,
+                rotatedSize: geometry.rotatedImageSize,
+                degrees: geometry.normalizedDegrees
+            )
+            .scaleEffect(viewport.scale, anchor: .topLeading)
+            .offset(x: viewport.offset.x, y: viewport.offset.y)
+        }
+        .frame(
+            width: geometry.containerSize.width,
+            height: geometry.containerSize.height,
+            alignment: .topLeading
+        )
+        .contentShape(.rect)
+        .clipped()
     }
 }
 
-//import RPGResourcesDebug
-//
-//#Preview {
-//    ImageViewer(image: AKImage(named: ResourcesDebug.adventurePhoto, in: ResourcesDebug.bundle, with: nil)!, photoDegrees: 0, containerSize: CGSize(width: 380, height: 600), toolBarModel: GameToolBarModel())
-//        .border(.red, width: 2)
-//}
+private struct FilledImageCanvas: View {
+    let image: AKImage
+    let geometry: ImageViewportGeometry
+
+    var body: some View {
+        ZStack {
+            Image(akImage: image)
+                .resizable()
+                .frame(
+                    width: geometry.originalImageSize.width * geometry.fillScale,
+                    height: geometry.originalImageSize.height * geometry.fillScale
+                )
+                .rotationEffect(.degrees(geometry.normalizedDegrees))
+        }
+        .frame(
+            width: geometry.containerSize.width,
+            height: geometry.containerSize.height
+        )
+        .clipped()
+    }
+}
+
+private struct RotatedImage: View {
+    let image: AKImage
+    let originalSize: CGSize
+    let rotatedSize: CGSize
+    let degrees: Double
+
+    var body: some View {
+        ZStack {
+            Image(akImage: image)
+                .resizable()
+                .frame(width: originalSize.width, height: originalSize.height)
+                .rotationEffect(.degrees(degrees))
+        }
+        .frame(width: rotatedSize.width, height: rotatedSize.height)
+    }
+}
