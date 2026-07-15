@@ -61,7 +61,7 @@ struct MockRoot {
 
         let task = await root.importController.importUrl(from: url)
         let _ = try await task.value
-        await #expect(root.itemController.itemDataModel.items.count == itemCounter)
+        try await #require(root.itemController.itemDataModel.items.count == itemCounter)
         
         return root
     }

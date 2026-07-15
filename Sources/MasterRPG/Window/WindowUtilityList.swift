@@ -66,6 +66,24 @@ struct WindowUtilityList: Scene {
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.above(SceneId.game.rawValue))
             .restorationBehaviorAll(.disabled)
+
+#if os(macOS) || os(visionOS)
+            BaseWindow("Game Statistics", id: SceneId.gameStatistics.rawValue) {
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    ManagedNavigationStack(name: "Game Statistics") {
+                        GameFactory.statisticsView(root: appModel.gameRoot)
+                    }
+                    .sceneTracker(for: SceneId.gameStatistics)
+                    .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .game))
+                }
+                .environment(appModel.scenesManager)
+                .environment(appModel)
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))
+            .restorationBehaviorAll(.disabled)
+            .defaultLaunchBehavior(.suppressed)
+#endif
             
             BaseWindow("Search", id: SceneId.search.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in

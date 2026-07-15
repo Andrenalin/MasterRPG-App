@@ -29,7 +29,7 @@ struct AppGameTypeDestinationView: View {
             case .gameVisionSetup:
                 AppNavigationRouteType.visionSplit
             case .gameSetup:
-                GameFactory.rootSetupView(root: appModel.gameRoot)
+                GameSetupDestinationView()
             case .editor:
                 TabRootView(appModel: appModel)
             }

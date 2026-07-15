@@ -330,6 +330,7 @@ extension AppModel {
     @MainActor public func setupRootModels(context: NSManagedObjectContext, batchContext: NSManagedObjectContext?, spotlightIndexer: RpgSpotlightIndexerDelegate?, coreDataInitModel: CoreDataInitModel?) {
         tagController.setup(context: context)
         adventureRoot.setUp(root: root, context: context, batchContext: batchContext)
+        gameRoot.setUpStatistics(context: context)
 
         self.rpgSpotlightIndexer = spotlightIndexer
         spotlightIndexer?.observeIndexing()

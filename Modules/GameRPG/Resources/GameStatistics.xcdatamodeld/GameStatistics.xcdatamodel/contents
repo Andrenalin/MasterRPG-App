@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="26400" systemVersion="25G80" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="1">
+    <entity name="RPGGameStatisticSession" representedClassName="RPGGameStatisticSession" syncable="YES" codeGenerationType="class">
+        <attribute name="adventureID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="adventureTitle" attributeType="String" defaultValueString=""/>
+        <attribute name="characterID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="characterName" attributeType="String" defaultValueString=""/>
+        <attribute name="durationSeconds" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="endedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="endedReasonRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isComplete" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isDemo" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="lastActivityAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="localName" attributeType="String" defaultValueString=""/>
+        <attribute name="localParticipantID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="masterID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="masterName" attributeType="String" defaultValueString=""/>
+        <attribute name="maxParticipantCount" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="roleRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="schemaVersion" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="startedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="transportMask" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="events" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGGameStatisticEvent" inverseName="session" inverseEntity="RPGGameStatisticEvent"/>
+        <relationship name="participants" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGGameStatisticParticipant" inverseName="session" inverseEntity="RPGGameStatisticParticipant"/>
+        <fetchIndex name="byUUID">
+            <fetchIndexElement property="uuid" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="byStartedAt">
+            <fetchIndexElement property="startedAt" type="Binary" order="descending"/>
+        </fetchIndex>
+        <fetchIndex name="byCharacterAndStartedAt">
+            <fetchIndexElement property="characterID" type="Binary" order="ascending"/>
+            <fetchIndexElement property="startedAt" type="Binary" order="descending"/>
+        </fetchIndex>
+        <fetchIndex name="byAdventureAndStartedAt">
+            <fetchIndexElement property="adventureID" type="Binary" order="ascending"/>
+            <fetchIndexElement property="startedAt" type="Binary" order="descending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="RPGGameStatisticParticipant" representedClassName="RPGGameStatisticParticipant" syncable="YES" codeGenerationType="class">
+        <attribute name="characterID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="characterName" attributeType="String" defaultValueString=""/>
+        <attribute name="connectedDurationSeconds" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="firstSeenAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isGameMaster" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isConnected" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="isLocal" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="joinCount" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="lastJoinedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastSeenAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="participantID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="roleRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="sessionID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="session" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGGameStatisticSession" inverseName="participants" inverseEntity="RPGGameStatisticSession"/>
+        <fetchIndex name="bySessionAndParticipant">
+            <fetchIndexElement property="sessionID" type="Binary" order="ascending"/>
+            <fetchIndexElement property="participantID" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="byCharacter">
+            <fetchIndexElement property="characterID" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="RPGGameStatisticEvent" representedClassName="RPGGameStatisticEvent" syncable="YES" codeGenerationType="class">
+        <attribute name="actionRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="actorCharacterID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="actorID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="actorName" attributeType="String" defaultValueString=""/>
+        <attribute name="checked" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="dataVersion" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="deduplicationKey" attributeType="String" defaultValueString=""/>
+        <attribute name="directionRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="itemID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="itemName" attributeType="String" defaultValueString=""/>
+        <attribute name="kindRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="messageCounter" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="messageTypeRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="moduleRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="numericValue" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="occurredAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="originRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="outcomeRaw" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="payloadByteCount" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="proxyCounter" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="quantity" attributeType="Integer 32" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="resultValues" attributeType="String" defaultValueString=""/>
+        <attribute name="sessionID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="success" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="targetID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="session" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGGameStatisticSession" inverseName="events" inverseEntity="RPGGameStatisticSession"/>
+        <fetchIndex name="bySessionAndDate">
+            <fetchIndexElement property="sessionID" type="Binary" order="ascending"/>
+            <fetchIndexElement property="occurredAt" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="bySessionAndKind">
+            <fetchIndexElement property="sessionID" type="Binary" order="ascending"/>
+            <fetchIndexElement property="kindRaw" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="byActorCharacter">
+            <fetchIndexElement property="actorCharacterID" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+</model>

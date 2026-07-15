@@ -301,6 +301,9 @@ extension PlayerController {
             root.gameModel.outgoingMessage(counter: outgoingCounter, type: type, subType: subType, asMaster: false, data: updated)
         }
 
+        let origin: GameMessageOrigin = await root.gameModel.gameType == .proxy ? .proxy : .direct(nil)
+        await root.statisticsModel.record(networtData, direction: .outgoing, origin: origin)
+
         let useOnTypeJournal = useJournal || Self.usesFileJournal(for: networtData)
         await sendOriginating(model: networtData, useJournal: useOnTypeJournal)
     }
@@ -517,6 +520,11 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 } else {
                     await gameModel.increaseMessageCounter()
                 }
+                await root.statisticsModel.record(
+                    event.model,
+                    direction: .incoming,
+                    origin: event.origin
+                )
                 await messagePipeline.processed(success: true)
             } catch is CancellationError {
                 await messagePipeline.processed(success: false)

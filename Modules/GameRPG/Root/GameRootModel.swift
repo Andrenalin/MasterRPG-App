@@ -168,6 +168,9 @@ public final class GameRoot {
     let weatherRoot: WeatherRootModel
 
     let gameModel: GameRootModel
+    let statisticsModel: GameStatisticsModel
+    let gameCenterModel: GameCenterModel
+    let gameCenterController: GameCenterController
     private var networkActionTasks: [UUID: Task<Void, Never>] = [:]
     private var demoTask: Task<Void, Never>?
 
@@ -187,9 +190,19 @@ public final class GameRoot {
         self.networkProxyStore = GameNetworkController(proxyName: "Proxy")
         
         self.gameModel = GameRootModel()
+        let statisticsModel = GameStatisticsModel()
+        let gameCenterModel = GameCenterModel()
+        let gameCenterController = GameCenterController(model: gameCenterModel)
+        self.statisticsModel = statisticsModel
+        self.gameCenterModel = gameCenterModel
+        self.gameCenterController = gameCenterController
         
         _viewController = ViewController(root: self)
         _logGameController = LogGameController(root: self, gameModel: gameModel)
+
+        statisticsModel.setAchievementReporter { [weak gameCenterController] summary in
+            await gameCenterController?.reportAchievements(from: summary)
+        }
     }
 
     private(set) var _viewController: ViewController?
@@ -343,6 +356,8 @@ extension GameRoot {
         gameModel.gameConfig.state = .started
         adventureRoot.startGame()
 
+        await beginStatisticsSession(for: .master, at: gameModel.startGameTime)
+
         await gameModel.masterController?.start()
         await diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: gameModel.selectedAdventure!))
         
@@ -427,11 +442,14 @@ extension GameRoot {
             await characterRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)
             await diceRoot.diceGameControllable.setFocusDice(on: characterRoot.valueGameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
         }
+        await beginStatisticsSession(for: type, at: gameModel.startGameTime)
     }
 
     // both
     func stopGame() async {
         cancelOwnedTasks()
+        await statisticsModel.checkpoint(participants: currentStatisticParticipants())
+        await statisticsModel.finishSession()
         gameModel.playerGameStarted = false
         gameModel.gameConfig.state = .stopped
         gameModel.gameConfig = .empty

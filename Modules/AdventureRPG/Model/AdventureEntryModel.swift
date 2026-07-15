@@ -25,6 +25,23 @@ public struct AdventureEntryModel: Identifiable, Equatable, Hashable, Codable, S
     @CRDT public var content: String
     @CRDT public var adventureId: UUID?
     public var displayState: Int
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self._name = try container.decode(CRDT<String>.self, forKey: .name)
+        self._content = try container.decode(CRDT<String>.self, forKey: .content)
+        self._adventureId = try container.decodeIfPresent(CRDT<UUID?>.self, forKey: .adventureId)
+            ?? CRDT(
+                crdtValue: LWWRegister<String, UUID?>(
+                    nil,
+                    actorID: "00000000-0000-0000-0000-000000000000",
+                    timestamp: 0
+                )
+            )
+        self.displayState = try container.decode(Int.self, forKey: .displayState)
+    }
 }
 
 extension AdventureEntryModel: EntryDataAccessable {

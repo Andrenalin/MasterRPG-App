@@ -215,6 +215,11 @@ extension MasterController {
         }
 
         await root.logGameController.addMessage(counter: counter, type: type, subType: subtype, module: updated.type, itemId: updated.id)
+        await root.statisticsModel.record(
+            networtData,
+            direction: .outgoing,
+            origin: asProxy ? .proxy : .direct(connectionId)
+        )
 
         if asProxy {
             if let connectionId {
@@ -250,6 +255,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         Logger.networking.debug("MasterController: Lost Player for \(connectionId, privacy: .public)")
         guard let playerId = await gameModel.connectIDPlayers[connectionId] else { return }
         if await root.gameModel.remove(playerId: playerId) {
+            await root.statisticsModel.participantLeft(id: playerId)
             await resetPlayers()
         }
     }
@@ -288,7 +294,11 @@ extension MasterController: MasterNetworkStoreDelegate {
         // player and must never appear as a player of its own — not in the
         // host's roster and never upstream at the master.
         if asProxy {
-            return await processAsProxy(model)
+            let success = await processAsProxy(model)
+            if success {
+                await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
+            }
+            return success
         }
 
         if !model.sender.isMaster, model.sender.role != .notSet {
@@ -315,6 +325,7 @@ extension MasterController: MasterNetworkStoreDelegate {
                 // forwards messages targeted at someone else to its proxy clients.
                 await send(type: model.type, subtype: model.subType, updated: requestedData, connectionId: event.connectionId, playerId: model.sender.id)
             }
+            await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
             return true
         } catch is CancellationError {
             return false
