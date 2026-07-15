@@ -1,6 +1,6 @@
 # Game Communication Redesign — Implementation Record
 
-Status: implemented and audited against the source on 2026-07-14.
+Status: implemented and audited against the source on 2026-07-15.
 
 This file records the redesign that repaired SharePlay delivery, photo/map
 repair loops, sender ambiguity, and proxy routing. It is a historical change
@@ -102,15 +102,27 @@ The host of a private proxy mirror forwards host-targeted answers downstream
 with the target cleared. Messages targeted at a different ID are forwarded
 unchanged because that ID may be behind the host.
 
-### First Show Of A Version And File Repair
+### Map Asset, Metadata Update, State, And File Repair
 
-- the first map, photo, PDF, or space show of each item version sends the full package
-- same-version shows use the ID/version reference
-- the master tracks sent packages by module, item ID, and version, so changing a
-  map version (including `pinScale`) creates a new full SharePlay journal publication
+- the first photo, PDF, or space show of each item version sends the full package;
+  same-version shows use the ID/version reference
+- a map has two independent versions: `assetVersion` fingerprints its background
+  photo UUID plus that photo's content version, while `contentVersion` fingerprints
+  the complete file-byte-free map metadata snapshot
+- the first map show for an `assetVersion` publishes the full map/background package
+  through the SharePlay journal; only a changed background asset republishes it
+- editor changes such as `pinScale`, `hexMapScale`, rooms, geometry, and pin
+  references send a semantic map update over `.update/.generic`; the update is
+  chunked through the messenger and does not invalidate the journal publication
+- the map-update payload is schema-versioned and contains the complete map metadata
+  plus referenced photo IDs, but no photo bytes
+- `.generic` is deliberately reused instead of adding an enum raw value: shipped
+  V1 clients can decode the envelope and safely ignore the unknown payload shape
+- `mapState` remains the volatile channel for room visibility/focus, pointer, and
+  in-game pin movement
 - `GameControllable.reveal` verifies local backing bytes, not only metadata
 - photo/map repair sets bound repeated requests
-- every applied map-state snapshot rescans all pin photos; newly introduced pin
+- every applied map update or map-state snapshot rescans all pin photos; newly introduced pin
   photos repair through data-less `.store/.store` requests
   only when their IDs exist in neither the photo game controller nor item controller
 - the map background is excluded from pin repair; it is checked separately and
@@ -133,7 +145,8 @@ processing remembers it in a 256-entry window.
 
 Master and player-origin message counters now start at 1 and increase
 independently. ACKs and requests copy the counter they answer. Older
-authoritative master snapshots are ignored.
+authoritative master snapshots and map updates are ignored. A map update that
+arrives before its full base map is retained and applied after the map arrives.
 
 ### SharePlay
 
@@ -154,8 +167,11 @@ authoritative master snapshots are ignored.
   and store/update failures explicitly request bytes through messenger
 - messenger routing is awaited, and one visual presentation-intent sequence per
   master rejects older cross-module/transport payloads and stale repairs
-- map-state updates carry the map version; targeted version-zero companions from
-  older masters are accepted only when they match the current map intent
+- map updates use `.update/.generic` and the ordered chunked messenger; they are
+  not journal attachments or new presentation intents
+- map-state updates remain separate from structural map updates; targeted
+  version-zero companions from older masters are accepted only when they match
+  the current map intent
 - cancelled messenger/journal work checks its session before delivery or mutation
 - targeted non-audio repair payloads use messenger packages
 - full `.store/.store` photo repairs choose packages while targeted, then become
@@ -175,8 +191,9 @@ screens, audio lists, and proxy character announcements are consumed locally.
 
 ### Reconnect
 
-Ready connections receive the current presentation immediately; maps also
-receive current map state. A proxy additionally receives the host's selected
+Ready connections receive the current presentation immediately. For a map, the
+replay order is the current full-asset reference, the latest map update, and then
+the latest map state. A proxy additionally receives the host's selected
 character. Lost connections clear repair/order state so availability and
 identity can be announced again safely.
 
@@ -193,6 +210,9 @@ The implementation is covered by Swift Testing suites for:
 - two-pin mapState repair requesting only the one pin photo absent from both local
   photo controllers, excluding the background from repair
 - first full-map SharePlay broadcast selecting the journal transport
+- scale/editor refresh sending a file-byte-free map update without replacing the
+  journal attachment, while a background change creates a new publication
+- late-join replay ordering the map reference before map update and map state
 - three-player SharePlay photo repair coalescing over messenger packages
 - proxy invisibility, host identity remapping, and host-target forwarding
 - audio availability convergence and targeted pre-play transfers

@@ -231,9 +231,11 @@ created it, and session reset clears incomplete receive assemblies.
 - the message is untargeted, or the module is audio
 
 Automatic file-journal payloads are reveal/store messages for PDF, audio, space,
-photo, and map. A player audio upload (`.update/.generic`) also opts in, and a
-caller can explicitly opt another full payload in (the selected-character upload
-does this).
+photo, and the full map/background asset. A player audio upload
+(`.update/.generic`) also opts in, and a caller can explicitly opt another full
+payload in (the selected-character upload does this). A map metadata update is
+never journaled: its `.update/.generic` envelope goes through the ordered chunked
+messenger.
 
 The journal stores the bytes as the attachment and a metadata-only
 `GameNetworkModel`. There is one current journal publication slot per module.
@@ -260,13 +262,15 @@ finish in either order, each player records one latest visual presentation
 intent per master across map, photo, PDF, space, table, value, and weather. An
 older payload for a different module/item is ignored; delayed bytes are accepted
 only for the intended item and exact expected version (version zero is treated
-as an unknown legacy expectation). Map-state snapshots carry the map's content
-version so their targeted companion update remains compatible with the repaired
-full payload; a targeted version-zero map-state from an older master is accepted
-only for the already intended map. Targeted repairs, including mapState's
-`.reveal/.store`, do not advance intent and are accepted only when they match it.
-Intent state resets with the connection. Messenger and journal handlers verify
-their session before delivery so cancellation cannot publish old-session data.
+as an unknown legacy expectation). Map updates are structural synchronization,
+not presentation intents. They have their own monotonic ordering, and the newest
+update is retained if it arrives before the full base map. `mapState` remains the
+volatile room/pointer/pin channel. A targeted version-zero map state from an older
+master is accepted only for the already intended map. Targeted repairs, including
+mapState's `.reveal/.store`, do not advance intent and are accepted only when they
+match it. Intent state resets with the connection. Messenger and journal handlers
+verify their session before delivery so cancellation cannot publish old-session
+data.
 
 Targeted non-audio repair responses stay on the messenger so they do not replace
 a broadcast attachment while another participant is downloading it. One narrow
@@ -451,6 +455,8 @@ Contains:
 - `id`: item id or event id
 - `type`: `NetworkModules`
 - `version`: item version or `0` for event data
+- `assetVersion`: optional file-asset identity used by map transport
+- `contentVersion`: optional structural-content identity used by map updates
 - `data`: optional binary payload
 
 Important meanings:
@@ -459,6 +465,15 @@ Important meanings:
 - `data != nil`: "Here is importable data or event data."
 - `version == 0`: usually live event/ack, or "any version" checks.
 - `version == -1`: can happen when `createGameData` cannot find a local version.
+
+For maps, the two optional versions intentionally separate expensive file
+publication from metadata synchronization:
+
+- `assetVersion` is a stable fingerprint of the background photo UUID and that
+  photo's content version. It changes when the actual background asset changes.
+- `contentVersion` is a stable fingerprint of the complete file-byte-free map
+  metadata snapshot. Scale, geometry, room, and pin-reference edits change it
+  without changing `assetVersion`.
 
 ## 6. Ordering, Counters, Deduplication, And Logs
 
@@ -550,7 +565,7 @@ the log UI. Other message types are `notTracked`.
 
 | Type | Meaning |
 | --- | --- |
-| `.reveal` | Show/share an item. Map/photo/PDF/space start with a full first-show package; later or other-module reveals can be ID-only and request full data. |
+| `.reveal` | Show/share an item. A map starts with a full package for each background `assetVersion`; photo/PDF/space start with a full first-show package. Later reveals can be ID-only and request full data. |
 | `.store` | Transfer/import item data without necessarily presenting it. Used for background repair/sync. |
 | `.update` | Live event, command, or small state update. |
 
@@ -558,7 +573,7 @@ the log UI. Other message types are `notTracked`.
 
 | Subtype | Meaning |
 | --- | --- |
-| `.generic` | Default live update. Used for dice roll results and generic module updates. |
+| `.generic` | Default live update. Used for dice roll results, versioned map metadata updates, and generic module updates. |
 | `.playAudio` | Audio play/pause request. |
 | `.audioList` | Audio availability/report list. |
 | `.mapState` | Live map room/pointer/pin state. |
@@ -663,16 +678,23 @@ so its private mirrors process the same repair.
 
 ### Pattern A: Master Reveals An Item, Everyone Already Has It
 
-For map, photo, PDF, and space, the first show of each item version exports and
+For photo, PDF, and space, the first show of each item version exports and
 broadcasts the full package immediately. Later shows of that exact item version
-are ID-only. A changed version of the same ID is a new full publication. Other
-modules normally start with an ID-only reference.
+are ID-only. A map uses its background `assetVersion` for this decision: the first
+show of that asset exports the full map/background package, and only a changed
+background UUID or content version creates a new journal publication. Structural
+map edits are delivered separately as a map update and do not make the full asset
+new. Other modules normally start with an ID-only reference.
 
 ```text
 Master -> all:
   .reveal/.show
-  data: full first-show-of-version payload, or an ID/version reference on a
-        same-version reshow
+  data: full first-show-of-asset/version payload, or an ID/version reference on
+        a matching reshow
+
+For a map, after the reveal/reference:
+  .update/.generic
+  data: MapUpdatePayload with complete metadata and photo IDs, no photo bytes
 
 Each player:
   imports the payload or resolves the matching local item/file
@@ -771,7 +793,8 @@ Examples:
 
 - `.update/.playAudio`
 - `.update/.audioList`
-- `.update/.generic` for dice result
+- `.update/.generic` for a dice result
+- `.update/.generic` for a semantic map update
 - `.update/.mapState`
 - `.update/.mapPin`
 - `.update/.valueResult`
@@ -779,6 +802,13 @@ Examples:
 
 Most live updates do not ACK. Reveal/store transfers generally ACK. An ACK or
 request copies the original counter and never echoes the incoming payload bytes.
+
+A semantic map update is distinguished by its schema-versioned
+`MapUpdatePayload`, not by a new `RPGMessageActionType` raw value. This keeps the
+outer envelope decodable by shipped V1 peers: they already understand
+`.update/.generic` and can ignore a payload shape they do not implement. The
+payload is a complete map metadata snapshot containing photo references but no
+photo/file bytes, so SharePlay always sends it through messenger packages.
 
 ## 10. Transport Fan-Out Details
 
@@ -832,7 +862,9 @@ Player messages request SharePlay journal automatically for file-backed
 `.reveal`/`.store` payloads (PDF, audio, space, photo, map) and full
 `.update/.generic` audio uploads. `useJournal == true` can opt in another full
 payload, as used by selected-character upload. The SharePlay controller still
-applies its own journal-availability and targeting rules.
+applies its own journal-availability and targeting rules. Map
+`.update/.generic` payloads contain metadata only and stay on the chunked
+messenger path.
 
 ### Player Receives Master Data
 
@@ -937,8 +969,9 @@ be behind this proxy server.
 ### Proxy Ready
 
 When a proxy client connects to a player's proxy server, the proxy master first
-replays the host's current presentation (and current map state when applicable),
-then sends that player's character payload:
+replays the host's current presentation. For a map it sends the reveal/reference,
+latest map update, and latest map state in that order, then sends that player's
+character payload:
 
 ```text
 type .update
@@ -1084,9 +1117,16 @@ game controller.
 
 Main payload types:
 
-- full exported map item payload
-- live map state string from `mapUpdateResult(for:)`
+- full exported map/background asset payload for `.reveal/.show`
+- schema-versioned `MapUpdatePayload` for `.update/.generic`
+- live map state string for `.update/.mapState`
 - encoded `MapPinModel` for `.mapPin`
+
+`MapUpdatePayload` is a complete metadata snapshot. It includes map editor
+configuration, scales, geometry, rooms, pins, and photo UUID references, but no
+photo or other file bytes. Its `contentVersion` fingerprints that structural
+snapshot. The separate `assetVersion` fingerprints the background photo UUID and
+the photo's content version.
 
 Live map state contains:
 
@@ -1101,11 +1141,15 @@ The final map pin section is JSON for `[pointer] + mapPins`.
 Master handling:
 
 - `.ok`: record report; `.failed` is ignored
-- `.reveal`: create full map payload
+- `.reveal`: create a full map payload when the background asset is new, otherwise
+  reveal by reference; refresh and late-join replay paths send the latest map
+  update separately
 - `.reveal/.mapState`: special recovery path:
   - send targeted `.reveal/.store` with full map data
+  - send the latest targeted `.update/.generic` map update
   - send targeted `.update/.mapState` to the requesting player
 - `.store`: ignored for map itself
+- `.update/.generic` from players: ignored; the master owns map metadata
 - `.update/.mapPin`: update the player's pin/pointer, then broadcast
   `.update/.mapState`
 - `.update/.mapState` from players: ignored
@@ -1115,19 +1159,33 @@ Player handling:
 
 - `.reveal`: clear pending map request, reveal/import map, set current map,
   request missing pin images, ACK or request full data
+- current peers reuse a data-less reveal only when `assetVersion` matches; a
+  mismatching reference requests the full package, while a newly sequenced full
+  payload is imported even when the legacy scale-derived `version` is unchanged
 - if a delivered map still lacks its background, request the full map once; the
   background never falls back to the pin-photo repair path
 - `.store`: import hidden map payload; when it completes a map-state recovery,
-  present the map and repair its missing pin images
+  apply any pending newest map update, present the map, and repair its missing pin
+  images
+- `.update/.generic` with `MapUpdatePayload`: apply the newest complete metadata
+  snapshot in place; if the base map is not present yet, retain the newest update
+  until reveal/store completes
 - `.update/.mapState`: if map exists, apply live room/pointer/pin state, then
   rescan every pin photo reference introduced by the snapshot
 - `.update/.mapState` when map is missing: send one `.reveal/.mapState` request
 - `.update/.mapPin`: ignored on players; only master handles player pin updates
 
+The map-update order is independent from visual presentation ordering, so it
+cannot switch the player away from a newer photo/map presentation. Neither a
+stale update nor a late older Journal payload can roll metadata back. Applying a
+structural snapshot preserves newer volatile pointer/pin state while still
+accepting authoritative pin metadata such as name, photo, color, and size; the
+latest `mapState` remains authoritative for runtime state.
+
 Missing map pin images:
 
-After map reveal or map state update, the player checks all pin photos, including
-ordinary monster/character pins added during the game.
+After map reveal, map update, or map state update, the player checks all pin
+photos, including ordinary monster/character pins added during the game.
 
 The IDs are de-duplicated. For each pin photo absent from both the photo game
 controller and persistent photo item controller, the player sends:
@@ -1141,9 +1199,11 @@ The master responds through the normal photo store path. Local backing-file
 availability is handled by PhotoRPG/iCloud and is not a reason for this map
 reference repair when the photo item already exists.
 
-The map background is checked independently by `hasBackgroundImage`. It is not
-a pin-photo repair candidate because it belongs to the full map payload, whose
-first SharePlay broadcast uses the journal.
+The map background is checked independently by `hasBackgroundImage`. It is never
+inserted into the pin-photo request set, even if its UUID appears in the metadata
+snapshot. The background belongs to the full map payload, whose first SharePlay
+broadcast for an `assetVersion` uses the journal; a missing or mismatched
+background requests that full map asset.
 
 On SharePlay, both legs use the ordered chunked messenger path. The data-less
 request cannot use the journal because it contains no attachment bytes. The
@@ -1404,7 +1464,8 @@ Common UI/module calls:
 | Generic share button | `shareId(gameController.share(id: itemId))` |
 | Audio play/pause | `game(requestPlay(id:), .playAudio, nil)` |
 | Dice roll | `game(diceResult, .generic, nil)` |
-| Map room/pointer state | `game(networkMapUpdate(for:), .mapState, nil)` |
+| Map editor refresh (`EditMapToolBar`) | Send the versioned map-update payload with `.update/.generic` |
+| Map room/pointer state | Send the volatile map-state payload with `.update/.mapState` |
 | Map player pin move | `game(networkPin(...), .mapPin, nil)` |
 | Photo space | `game(result, .photoSpace, nil)` |
 | Table result to character | `game(result, .valueResult, nil)` |
@@ -1439,9 +1500,10 @@ When a connection fails/cancels:
 Stale connection mappings are evicted when a player reconnects.
 
 When a direct or proxy connection becomes ready, its master controller replays
-the current presentation immediately. A current map also gets its live map state.
-A proxy connection additionally receives the host player's selected-character
-payload.
+the current presentation immediately. A current map is replayed in dependency
+order: full-asset reveal/reference first, latest map update second, and latest
+volatile map state last. A proxy connection additionally receives the host
+player's selected-character payload.
 
 ### SharePlay Lost Participant
 
@@ -1506,12 +1568,25 @@ Master:
 ```text
 Master shares map
 Master -> all:
-  first show of a version: .reveal/.show with full map payload (SharePlay journal)
-  same-version reshow: .reveal/.show with map id/version only
+  first show of an assetVersion: .reveal/.show with full map/background payload
+  (SharePlay journal)
+  same-asset reshow: .reveal/.show with map id/version only
 
-Master changes map content that changes its version (for example pinScale)
+Late-join replay -> joining player:
+  .reveal/.show with map id/version only
+  .update/.generic with the latest MapUpdatePayload (chunked messenger)
+  .update/.mapState with the latest volatile game state
+
+Master changes map metadata (for example pinScale or hexMapScale) or taps the
+refresh button in EditMapToolBar
+Master -> all:
+  .update/.generic with complete metadata and photo IDs, no photo bytes
+  the existing journal attachment remains valid
+
+Master changes the background photo UUID or its file content version
 Master -> all:
   new full .reveal/.show publication (SharePlay journal)
+  latest .update/.generic map metadata snapshot
 
 Player has map:
   set current map
@@ -1523,6 +1598,7 @@ Player missing map:
 
 Master:
   requester only: targeted .reveal/.show full map payload
+  targeted latest .update/.generic map metadata snapshot
 
 Later master sends live state:
   .update/.mapState
@@ -1532,7 +1608,11 @@ Player missing map during state update:
 
 Master:
   sends targeted .reveal/.store full map
+  sends targeted latest .update/.generic map update
   sends targeted .update/.mapState to requester
+
+Late join/reconnect:
+  map reveal/reference -> latest map update -> latest map state
 ```
 
 ### Player Map Pin Move
@@ -1598,11 +1678,13 @@ Master:
 - Master direct network fan-out happens before module handling.
 - Player filters block most player-origin messages. Dice and space transforms are
   intentional exceptions.
-- The first map/photo/PDF/space reveal of each version carries a full payload;
-  same-version reveals use references. The sent cache is keyed by module, item
-  ID, and version. A changed map therefore republishes through the SharePlay
-  journal instead of entering a requester-only chunk repair. The full map includes
-  its background. Other modules can still begin ID-only.
+- The first photo/PDF/space reveal of each version carries a full payload;
+  same-version reveals use references. Map full-publication identity is instead
+  its `assetVersion`, which fingerprints the background photo UUID plus content
+  version. Scale and editor changes alter `contentVersion` and send a complete
+  file-byte-free map update over `.update/.generic`; they do not replace the SharePlay
+  journal attachment. A background change does. The full map includes its
+  background. Other modules can still begin ID-only.
 - A missing receiver requests the full payload by returning the same type/subtype
   instead of `.ok`; the master's answer is targeted to that receiver.
 - Logical `targetId` filtering requires a current peer. V1 peers remain protected
@@ -1610,6 +1692,14 @@ Master:
 - File-backed reveal/import validation checks local file data, not only item
   metadata. Map-pin photo-reference discovery excludes the background and requests
   only pin IDs absent from both local photo controllers.
+- Map update is a semantic payload discriminator inside the existing
+  `.update/.generic` action, not a new action enum case. This preserves V1 envelope
+  decoding. The payload is schema-versioned, complete, and contains photo IDs but
+  no photo/file bytes, so it always uses the chunked messenger.
+- A late join receives the map reveal/reference, latest map update, and latest
+  map state in that order. Map-update ordering is independent of presentation
+  intent, and a newest update received before its base map is applied after the
+  map arrives.
 - SharePlay has one current journal publication per module. Targeted non-audio
   repairs use packages; full photo `.store/.store` repairs become coalesced group
   stores on those packages; targeted audio repairs become untargeted stores.
@@ -1624,10 +1714,11 @@ Master:
   is never sent upstream; eligible actions are remapped to the host.
 - Observers receive content but should not mutate master gameplay state.
 - Pin photos absent from both photo controllers are repaired with photo
-  `.store/.store` requests after map reveal/state application. The background
-  remains part of the full journaled map package and is never requested here.
-  SharePlay carries the pin-photo requests and one untargeted, coalesced answer
-  per unique photo ID/version over ordered messenger packages.
+  `.store/.store` requests after map reveal/update/state application. The
+  background remains part of the full journaled map package and is never requested
+  here. Requests are deduplicated locally and SharePlay coalesces replies
+  group-wide, so members with different photo subsets cause one untargeted answer
+  per unique missing photo ID/version rather than duplicate transfers.
 
 ## 19. Suggested Debug Checklist
 
@@ -1640,8 +1731,9 @@ When diagnosing game communication:
 5. For file-backed items, verify `hasLocalFileData(for:)` after import.
 6. Check whether controls contain the local player ID with `show == true`.
 7. Check dice feature gates if dice messages are failing.
-8. For map issues, inspect `pendingMapRequests`, `requestedFullMapIds`, and
-   `requestedRepairIds`, and whether the map existed before `.mapState`.
+8. For map issues, inspect the pending base-map/update state,
+   `requestedFullMapIds`, and `requestedRepairIds`; compare `assetVersion` and
+   `contentVersion`, and confirm whether the map existed before the update/state.
 9. For proxy issues, trace both legs and confirm the upstream sender is the host,
    not the proxy client.
 10. For SharePlay, distinguish chunked messenger, journal metadata, and journal

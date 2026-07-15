@@ -120,5 +120,147 @@ struct GameControllerTests {
         sut.resetGameState()
         #expect(sut.mapGameModel.playerPins.isEmpty)
     }
+
+    @Test func mapContentVersionTracksStructureButIgnoresVolatileGameState() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let entry = MapEntryModel.fixture(
+            name: "Room",
+            coordinates: [
+                CGPoint(x: 0, y: 0),
+                CGPoint(x: 10, y: 0),
+                CGPoint(x: 10, y: 10)
+            ]
+        )
+        let pin = MapPinModel(
+            id: UUID(),
+            name: "Hero",
+            location: CGPoint(x: 2, y: 3),
+            isPlayer: true,
+            timeInterval: 10
+        )
+        let map = MapModel(id: mapId, name: "Dungeon", entries: [entry], mapPins: [pin])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        let gameMap = sut.gameItem(for: mapId)
+        let initialVersion = try #require(
+            await sut.networkMapContentUpdate(for: mapId).contentVersion
+        )
+
+        // When: only live game state changes.
+        gameMap.entries[0].isShown.toggle()
+        gameMap.entries[0].focused.toggle()
+        gameMap.pointer = MapPinModel(
+            id: UUID(),
+            name: "Pointer",
+            location: CGPoint(x: 7, y: 8),
+            isShown: true,
+            timeInterval: 20
+        )
+        gameMap.mapPins[0].location = CGPoint(x: 30, y: 40)
+        gameMap.mapPins[0].isShown.toggle()
+        gameMap.mapPins[0].timeInterval = 30
+        let volatileStateVersion = try #require(
+            await sut.networkMapContentUpdate(for: mapId).contentVersion
+        )
+
+        // Then
+        #expect(volatileStateVersion == initialVersion)
+
+        // When: structural scale, geometry, and pin identity change.
+        gameMap.pinScale += 0.5
+        gameMap.hexMapScale += 0.25
+        let scaleVersion = try #require(
+            await sut.networkMapContentUpdate(for: mapId).contentVersion
+        )
+        gameMap.entries[0].coordinates.append(CGPoint(x: 0, y: 10))
+        let geometryVersion = try #require(
+            await sut.networkMapContentUpdate(for: mapId).contentVersion
+        )
+        gameMap.mapPins.append(MapPinModel(id: UUID(), name: "Monster"))
+        let pinIdentityVersion = try #require(
+            await sut.networkMapContentUpdate(for: mapId).contentVersion
+        )
+
+        // Then
+        #expect(scaleVersion != volatileStateVersion)
+        #expect(geometryVersion != scaleVersion)
+        #expect(pinIdentityVersion != geometryVersion)
+    }
+
+    @Test func applyingMapContentUpdatePreservesPointerAndNewerLocalPlayerPin() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let pinId = UUID()
+        let authoritativePhotoId = UUID()
+        let authoritativePin = MapPinModel(
+            id: pinId,
+            name: "Authoritative Hero",
+            photoId: authoritativePhotoId,
+            location: CGPoint(x: 10, y: 20),
+            size: .large,
+            isPlayer: true,
+            players: [pinId],
+            timeInterval: 10
+        )
+        let map = MapModel(
+            id: mapId,
+            name: "Dungeon",
+            mapPins: [authoritativePin],
+            pinScale: 2,
+            hexMapScale: 0.5
+        )
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        let contentUpdate = await sut.networkMapContentUpdate(for: mapId)
+
+        let playerMap = sut.gameItem(for: mapId)
+        let retainedIdentity = playerMap
+        let localPointer = MapPinModel(
+            id: UUID(),
+            name: "Pointer",
+            location: CGPoint(x: 50, y: 60),
+            isShown: true,
+            timeInterval: 100
+        )
+        let newerLocalPin = MapPinModel(
+            id: pinId,
+            name: "Stale local Hero",
+            photoId: UUID(),
+            location: CGPoint(x: 70, y: 80),
+            size: .tiny,
+            isShown: false,
+            isPlayer: true,
+            timeInterval: 100
+        )
+        playerMap.pointer = localPointer
+        playerMap.mapPins[0] = newerLocalPin
+        playerMap.pinScale = 1
+        playerMap.hexMapScale = 0
+
+        // When
+        let applied = sut.applyMapContentUpdate(for: mapId, with: contentUpdate)
+
+        // Then
+        #expect(applied)
+        #expect(sut.gameItem(for: mapId) === retainedIdentity)
+        #expect(playerMap.pinScale == 2)
+        #expect(playerMap.hexMapScale == 0.5)
+        #expect(playerMap.pointer == localPointer)
+        let appliedPin = try #require(playerMap.mapPins.first { $0.id == pinId })
+        #expect(appliedPin.name == authoritativePin.name)
+        #expect(appliedPin.photoId == authoritativePhotoId)
+        #expect(appliedPin.size == .large)
+        #expect(appliedPin.players == [pinId])
+        #expect(appliedPin.location == newerLocalPin.location)
+        #expect(appliedPin.isShown == newerLocalPin.isShown)
+        #expect(appliedPin.timeInterval == newerLocalPin.timeInterval)
+    }
 }
 #endif

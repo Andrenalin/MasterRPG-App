@@ -217,6 +217,50 @@ struct GameNetworkModelVersionTests {
         #expect(v1Decoded.gameConfig.players.first?.name == "Player - 1")
     }
 
+    @Test func mapContentUpdateKeepsTheV1GenericActionAndPayloadShape() throws {
+        struct LegacyPayload: Decodable {
+            let id: UUID
+            let type: NetworkModules
+            let version: Int
+            let data: Data?
+        }
+        struct LegacyEnvelope: Decodable {
+            let type: RPGMessageType
+            let subType: RPGMessageActionType
+            let data: LegacyPayload
+        }
+
+        // Given
+        let mapId = UUID()
+        var update = masterMessage
+        update.type = .update
+        update.subType = .generic
+        update.data = NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: 14,
+            data: Data("{\"schemaVersion\":1}".utf8),
+            assetVersion: 27,
+            contentVersion: 31
+        )
+
+        // When
+        let encoded = try #require(update.encodeData())
+        let legacy = try JSONDecoder().decode(LegacyEnvelope.self, from: encoded)
+        let current = try #require(GameNetworkModel.decodeData(of: encoded))
+
+        // Then: old peers ignore the two optional version keys instead of
+        // rejecting a new enum raw value, while current peers retain them.
+        #expect(legacy.type == .update)
+        #expect(legacy.subType == .generic)
+        #expect(legacy.data.id == mapId)
+        #expect(legacy.data.type == .map)
+        #expect(legacy.data.version == 14)
+        #expect(legacy.data.data == update.data.data)
+        #expect(current.data.assetVersion == 27)
+        #expect(current.data.contentVersion == 31)
+    }
+
     @Test("V2 gamemaster and V1 player can send dice and photo")
     func v2MasterAndV1PlayerCanSendDiceAndPhoto() throws {
         for payload in Self.compatibilityPayloads {

@@ -11,6 +11,7 @@ struct EditToolBarViewModifier: ViewModifier {
     let isTileEditor: Bool
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.networkActions) private var networkActions
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(MapRootModel.self) private var root
 
@@ -123,6 +124,10 @@ struct EditToolBarViewModifier: ViewModifier {
 
                 ToolbarItem(placement: bottomBarPlacement) {
                     hideScaleButton
+                }
+
+                ToolbarItem(placement: bottomBarPlacement) {
+                    refreshSharedMapButton
                 }
 
 #if !os(visionOS) && !os(tvOS)
@@ -302,6 +307,30 @@ private extension EditToolBarViewModifier {
                     .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Toggle scales")
             }
         }
+    }
+
+    @ViewBuilder var refreshSharedMapButton: some View {
+        if isSharedMap {
+            Button {
+                guard let editedMap = editorModel.workingCopy,
+                      networkActions != nil else { return }
+                mapEditController.commitChanges(editorModel: editorModel)
+                guard root.gameController.refreshSharedMap(from: editedMap) else { return }
+                Task {
+                    let update = await root.gameController.networkMapContentUpdate(for: editedMap.id)
+                    networkActions?.game(update, .generic, nil)
+                }
+            } label: {
+                let symbolName = "arrow.clockwise"
+                Image(systemName: symbolName)
+                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Refresh shared map")
+            }
+        }
+    }
+
+    var isSharedMap: Bool {
+        guard let mapId = editorModel.workingCopy?.id else { return false }
+        return root.gameController.gameModel.itemData[mapId] is MapModel
     }
 
     @ViewBuilder var hexCreationButton: some View {

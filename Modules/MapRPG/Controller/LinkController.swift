@@ -36,7 +36,7 @@ extension LinkController: LinkControllable {
                 return text
             }
             Task { @MainActor in
-                await shareResult?.networkActions?.shareId(root.gameController.share(id: itemId))
+                await shareResult?.networkActions?.shareId(root.gameController.shareMap(id: itemId))
             }
             return text
         } else {

@@ -125,8 +125,8 @@ public final class MapModel: nonisolated Identifiable {
     }
     var photoId_: CRDTDataUpdate<UUID?>
 
-    private(set) public var width: CGFloat = 1200
-    private(set) public var height: CGFloat = 800
+    public internal(set) var width: CGFloat = 1200
+    public internal(set) var height: CGFloat = 800
 
     public var mapPins: [MapPinModel] {
         get { mapPins_.wrappedValue }
@@ -145,7 +145,7 @@ public final class MapModel: nonisolated Identifiable {
     public var scale: CGFloat = 1.0
     public var pointer: MapPinModel = MapPinModel(id: UUID(), name: "Pointer", color: .red, isShown: false)
 
-    private(set) var degrees: Double = 0
+    var degrees: Double = 0
     
     public var parentId: UUID? = nil
 }

@@ -127,8 +127,8 @@ struct SharePlayPhotoRepairTracker: Sendable {
             return model
         }
 
-        guard sentVersions[model.data.id] != model.data.version else { return nil }
-        sentVersions[model.data.id] = model.data.version
+        guard sentVersions[model.data.id] != model.data.effectiveAssetVersion else { return nil }
+        sentVersions[model.data.id] = model.data.effectiveAssetVersion
 
         var broadcast = model
         broadcast.targetId = nil
@@ -276,7 +276,7 @@ extension RPGSharePlayController {
                 guard self.journalTracker.shouldPublish(
                     module: moduleKey,
                     itemId: prepared.model.data.id,
-                    version: prepared.model.data.version
+                    version: prepared.model.data.effectiveAssetVersion
                 ) else {
                     self.recordJournalTransport(
                         state: .succeeded,
@@ -294,7 +294,7 @@ extension RPGSharePlayController {
                     self.journalTracker.didPublish(
                         module: moduleKey,
                         itemId: prepared.model.data.id,
-                        version: prepared.model.data.version,
+                        version: prepared.model.data.effectiveAssetVersion,
                         attachmentId: result.id
                     )
                     self.recordJournalTransport(
@@ -389,7 +389,9 @@ extension RPGSharePlayController {
             id: model.data.id,
             type: model.data.type,
             version: model.data.version,
-            data: nil
+            data: nil,
+            assetVersion: model.data.assetVersion,
+            contentVersion: model.data.contentVersion
         )
         return metadata
     }
@@ -754,7 +756,14 @@ extension RPGSharePlayController {
                 else { return }
                 let size = Self.formattedByteCount(data.count)
                 Logger.sharePlay.debug("Journal ✓: received message \(metadata.counter, privacy: .public) attachment \(attachment.id, privacy: .public), size \(size, privacy: .public)")
-                metadata.data = NetworkCodableDataType(id: metadata.data.id, type: metadata.data.type, version: metadata.data.version, data: data)
+                metadata.data = NetworkCodableDataType(
+                    id: metadata.data.id,
+                    type: metadata.data.type,
+                    version: metadata.data.version,
+                    data: data,
+                    assetVersion: metadata.data.assetVersion,
+                    contentVersion: metadata.data.contentVersion
+                )
                 await delegate?.handleFileUpdate(metadata)
             } catch is CancellationError {
                 return
@@ -794,8 +803,8 @@ extension RPGSharePlayController {
         if lhs.counter != rhs.counter {
             return lhs.counter < rhs.counter
         }
-        if lhs.data.version != rhs.data.version {
-            return lhs.data.version < rhs.data.version
+        if lhs.data.effectiveAssetVersion != rhs.data.effectiveAssetVersion {
+            return lhs.data.effectiveAssetVersion < rhs.data.effectiveAssetVersion
         }
         return lhsAttachmentId.uuidString < rhsAttachmentId.uuidString
     }

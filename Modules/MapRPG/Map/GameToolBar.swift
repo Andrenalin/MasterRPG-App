@@ -216,7 +216,8 @@ struct GameToolBar: View {
         Button {
             guard let mapId = root.gameController.gameModel.currentItemId else { return }
             Task {
-                await networkActions?.shareId(root.gameController.share(id: mapId))
+                let update = await root.gameController.networkMapContentUpdate(for: mapId)
+                networkActions?.game(update, .generic, nil)
             }
             withAnimation {
                 model.resetReshare()
@@ -225,7 +226,7 @@ struct GameToolBar: View {
             let symbolName = "square.and.arrow.up"
             Image(systemName: symbolName)
                 .frame(width: 24, height: 24)
-                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Share")
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Refresh shared map")
         }
         .disabled(!model.canReshare)
         .opacity(hideScales ? 0 : 1)

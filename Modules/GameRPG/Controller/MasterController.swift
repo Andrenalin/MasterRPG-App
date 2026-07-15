@@ -136,6 +136,15 @@ extension MasterController {
             // a joining player's pin only appears on the next unrelated map
             // state update.
             if let mapId = await root.mapRoot.gameControllable.gameModel.currentItemId {
+                // Messenger messages have no history. Replay the latest
+                // photo-free structural snapshot when the roster changes so a
+                // SharePlay participant joining after the Journal publication
+                // receives edits made since that base attachment.
+                await send(
+                    type: .update,
+                    subtype: .generic,
+                    updated: await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
+                )
                 await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId))
             }
         }
@@ -152,6 +161,16 @@ extension MasterController {
 
 extension MasterController {
     func show(for idType: NetworkCodableDataType) async {
+        // Map call sites from older modules/tests still construct the legacy
+        // scale-only reference. Resolve the current background/content
+        // fingerprints here so the Journal cache never falls back to that
+        // mutable version.
+        let resolvedIdType: NetworkCodableDataType
+        if idType.type == .map, idType.assetVersion == nil {
+            resolvedIdType = await root.mapRoot.mapGameControllable.shareMap(id: idType.id)
+        } else {
+            resolvedIdType = idType
+        }
         // File-backed payloads are big (a map package carries background + pin +
         // player photos). The first show of each version ships the whole payload
         // right away — the id-then-request round trip would make every player wait
@@ -159,17 +178,17 @@ extension MasterController {
         // journal as one shared attachment. A same-version reshow sends only the
         // reference; players still holding the item show it from memory, the
         // others request it.
-        if Self.sendsFullPayloadOnFirstShow(idType.type), await !gameModel.hasSentGameItem(type: idType.type, id: idType.id, version: idType.version) {
-            if let fullData = try? await createGameData(for: idType) {
+        if Self.sendsFullPayloadOnFirstShow(resolvedIdType.type), await !gameModel.hasSentGameItem(type: resolvedIdType.type, id: resolvedIdType.id, version: resolvedIdType.effectiveAssetVersion) {
+            if let fullData = try? await createGameData(for: resolvedIdType) {
                 await MainActor.run {
-                    gameModel.markSentGameItem(type: fullData.type, id: fullData.id, version: fullData.version)
+                    gameModel.markSentGameItem(type: fullData.type, id: fullData.id, version: fullData.effectiveAssetVersion)
                 }
                 await send(type: .reveal, subtype: .show, updated: fullData)
                 return
             }
-            Logger.networking.error("MasterController: Cannot create package for \(idType.type.token, privacy: .public) \(idType.id, privacy: .public) — sending reference instead")
+            Logger.networking.error("MasterController: Cannot create package for \(resolvedIdType.type.token, privacy: .public) \(resolvedIdType.id, privacy: .public) — sending reference instead")
         }
-        await send(type: .reveal, subtype: .show, updated: idType)
+        await send(type: .reveal, subtype: .show, updated: resolvedIdType)
     }
 
     static func sendsFullPayloadOnFirstShow(_ type: NetworkModules) -> Bool {
@@ -184,7 +203,7 @@ extension MasterController {
     private func createGameData(for idType: NetworkCodableDataType) async throws -> NetworkCodableDataType? {
         switch idType.type {
         case .map:
-            try await root.mapRoot.gameControllable.createGameData(for: idType.id)
+            try await root.mapRoot.mapGameControllable.createMapGameData(for: idType.id)
         case .photo:
             try await root.photoRoot.gameControllable.createGameData(for: idType.id)
         case .pdf:
@@ -318,7 +337,7 @@ extension MasterController: MasterNetworkStoreDelegate {
                 if requestedData.data != nil {
                     // The full payload went out — a later reshow can rely on
                     // the reference no matter which path delivered first.
-                    await gameModel.markSentGameItem(type: requestedData.type, id: requestedData.id, version: requestedData.version)
+                    await gameModel.markSentGameItem(type: requestedData.type, id: requestedData.id, version: requestedData.effectiveAssetVersion)
                 }
                 // Target the answer at the requester: an untargeted full payload
                 // re-triggered "show" on every peer and flipped everyone's screen.
@@ -519,11 +538,11 @@ extension MasterController {
         
         switch model.type {
         case .reveal:
-            let mapData = try await root.mapRoot.gameControllable.createGameData(for: model.data.id)
+            let mapData = try await root.mapRoot.mapGameControllable.createMapGameData(for: model.data.id)
             // The full package went out through the request path — reshows can
             // rely on the reference no matter which path delivered first.
             await MainActor.run {
-                gameModel.markSentGameItem(type: .map, id: mapData.id, version: mapData.version)
+                gameModel.markSentGameItem(type: .map, id: mapData.id, version: mapData.effectiveAssetVersion)
             }
             if model.subType == .mapState {
                 // Targeted at the recovering player: everyone else already has
@@ -533,6 +552,12 @@ extension MasterController {
                 // Send the live map state (not the request echo, whose data is
                 // nil) so the recovering player syncs room visibility and pins.
                 // Targeted: the other players are already up to date.
+                await send(
+                    type: .update,
+                    subtype: .generic,
+                    updated: await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: model.data.id),
+                    playerId: model.sender.id
+                )
                 await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id), playerId: model.sender.id)
             } else {
                 return mapData
@@ -542,6 +567,12 @@ extension MasterController {
         case .update:
             guard model.senderType != .observer else { return nil }
             switch model.subType {
+            case .generic:
+                // A data-less generic map update is a repair request for the
+                // latest photo-free structural snapshot. The normal response
+                // path targets the small chunked answer at the requester.
+                guard model.data.data == nil else { return nil }
+                return await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: model.data.id)
             case .mapState:
                 // never get from players mapState updates, only as resend from SharePlay?
                 break
@@ -783,7 +814,7 @@ private extension MasterController {
         switch presentation {
         case .map:
             reference = if let id = await root.mapRoot.gameControllable.gameModel.currentItemId {
-                await root.mapRoot.gameControllable.share(id: id)
+                await root.mapRoot.mapGameControllable.shareMap(id: id)
             } else {
                 nil
             }
@@ -836,6 +867,14 @@ private extension MasterController {
             authoritativeMaster: true
         )
         if presentation == .map {
+            let mapUpdate = await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: reference.id)
+            await send(
+                type: .update,
+                subtype: .generic,
+                updated: mapUpdate,
+                connectionId: connectionId,
+                authoritativeMaster: true
+            )
             let mapState = await root.mapRoot.mapGameControllable.networkMapUpdate(for: reference.id)
             await send(
                 type: .update,

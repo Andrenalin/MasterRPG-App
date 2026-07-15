@@ -220,6 +220,10 @@ public extension GameControllable {
     }
 
     func createGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
+        // Persist a deterministic content hash before exporting so the sender's
+        // version and the metadata imported by the receiver describe the same
+        // bytes.
+        await backfillContentHashIfNeeded(itemId: itemId)
         let itemIds = await exportControllable.exporting(ids: Set([itemId]))
 
         let stream = OutputStream.toMemory()
@@ -231,10 +235,18 @@ public extension GameControllable {
         guard let data = stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data else {
             throw ItemGameStorableError.memoryStreamError
         }
-        await backfillContentHashIfNeeded(itemId: itemId)
-        let version = await itemControllable.item(for: itemId)?.version ?? -1
+        let version = await networkVersion(for: itemId)
         let module = itemControllable.config.module
         return NetworkCodableDataType(id: itemId, type: module, version: version, data: data)
+    }
+
+    /// Returns the deterministic version used on the wire, lazily backfilling
+    /// legacy file metadata first. Map networking uses this for its referenced
+    /// background photo without exporting that photo merely to learn its
+    /// version.
+    func networkVersion(for itemId: UUID) async -> Int {
+        await backfillContentHashIfNeeded(itemId: itemId)
+        return await itemControllable.item(for: itemId)?.version ?? -1
     }
 
     /// A file attached through the picker (`EditControllable.resetFile`) never gets a
@@ -261,7 +273,8 @@ public extension GameControllable {
     }
 
     func share(id: UUID) async -> NetworkCodableDataType {
-        await NetworkCodableDataType(id: id, type: itemControllable.config.module, version: itemControllable.item(for: id)?.version ?? -1)
+        let version = await networkVersion(for: id)
+        return NetworkCodableDataType(id: id, type: itemControllable.config.module, version: version)
     }
     
     /// Whether the item's backing file (if any) is available on this device.

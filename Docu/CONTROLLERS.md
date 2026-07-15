@@ -267,7 +267,8 @@ The master handles module-specific messages:
 
 - audio: reveal/store full audio data, play audio, merge/apply audio lists
 - dice: reveal/store dice and record dice results
-- map: reveal maps, resend `mapState`, update pins, broadcast state
+- map: reveal the full background asset, send chunked metadata-only map updates,
+  resend volatile `mapState`, update pins, and broadcast state
 - PDF/photo/table/weather/space/value: reveal/store full payloads and apply updates
 - game: record player screen snapshots
 
@@ -318,7 +319,9 @@ Module game controllers add specifics:
 - Adventure: starts game mode across all modules and supplies game title image.
 - Audio: tracks current players, audio lists, SharePlay-aware playback coordination, and playlist loading.
 - Dice: manages player dice names, dice results, and table result integration.
-- Map: synchronizes map reveal, room state/fog, player pins, missing map images, and visionOS board state.
+- Map: separates full background-asset reveal from complete metadata-only map
+  updates and volatile room/fog/pointer/pin state; it also repairs only genuinely
+  absent pin photos and synchronizes visionOS board state.
 - Photo: synchronizes photo reveal and photo-space state.
 - PDF: synchronizes file-backed PDF reveal/store.
 - Table: reveals linked table data and receives dice/table result values.

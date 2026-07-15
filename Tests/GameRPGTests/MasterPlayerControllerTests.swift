@@ -386,19 +386,23 @@ final class MasterPlayerControllerTests {
         ))
     }
 
-    @Test func changedMapVersionIsRepublishedThroughSharePlayJournal() async throws {
+    @Test func changedMapContentUsesPhotoFreeUpdateWithoutRepublishingSharePlayJournal() async throws {
         try await setUp()
         try await importTestData(into: rootSut)
         rootSut.adventureRoot.startGame()
         rootPlayer.adventureRoot.startGame()
 
         let mapId = try #require(rootSut.mapRoot.itemController.itemDataModel.items.first)
-        let firstReference = await rootSut.mapRoot.gameController.share(id: mapId)
+        let firstReference = await rootSut.mapRoot.gameController.shareMap(id: mapId)
+        let firstAssetVersion = try #require(firstReference.assetVersion)
+        let firstContentVersion = try #require(firstReference.contentVersion)
 
         await sut.show(for: firstReference)
         let firstFullMap = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
-        #expect(firstFullMap.data.data != nil)
+        let fullMapBytes = try #require(firstFullMap.data.data)
         #expect(firstFullMap.targetId == nil)
+        #expect(firstFullMap.data.assetVersion == firstAssetVersion)
+        #expect(firstFullMap.data.contentVersion == firstContentVersion)
         #expect(RPGSharePlayController.usesJournalTransport(
             for: firstFullMap,
             fileJournal: firstFullMap.usesFileJournal,
@@ -407,44 +411,136 @@ final class MasterPlayerControllerTests {
         _ = try #require(try await sutPlayer.handle(firstFullMap))
 
         let masterMap = rootSut.mapRoot.gameController.gameItem(for: mapId)
-        let firstVersion = masterMap.version
         masterMap.pinScale += 0.5
-        let changedVersion = masterMap.version
-        #expect(changedVersion != firstVersion)
+        masterMap.hexMapScale += 0.25
 
-        // Resharing builds a fresh reference. A new version of the same map ID
-        // must be treated as a new full publication, not as an old ID-only
-        // reshow that forces one player onto the chunk-repair path.
-        let changedReference = await rootSut.mapRoot.gameController.share(id: mapId)
-        #expect(changedReference.version == changedVersion)
-        await sut.show(for: changedReference)
+        // Scale edits change only the photo-free content fingerprint. The
+        // background asset still identifies the same Journal attachment.
+        let changedReference = await rootSut.mapRoot.gameController.shareMap(id: mapId)
+        let changedContentVersion = try #require(changedReference.contentVersion)
+        #expect(changedReference.assetVersion == firstAssetVersion)
+        #expect(changedContentVersion != firstContentVersion)
 
-        let changedFullMap = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
-        #expect(changedFullMap.counter > firstFullMap.counter)
-        #expect(changedFullMap.data.id == mapId)
-        #expect(changedFullMap.data.version == changedVersion)
-        #expect(changedFullMap.data.data != nil)
-        #expect(changedFullMap.targetId == nil)
-        #expect(changedFullMap.usesFileJournal)
-        #expect(RPGSharePlayController.usesJournalTransport(
-            for: changedFullMap,
-            fileJournal: changedFullMap.usesFileJournal,
+        let contentUpdate = await rootSut.mapRoot.gameController.networkMapContentUpdate(for: mapId)
+        let updateBytes = try #require(contentUpdate.data)
+        let updateJSON = try #require(String(data: updateBytes, encoding: .utf8))
+        let decodedUpdate = try JSONDecoder().decode(MapUpdatePayload.self, from: updateBytes)
+        #expect(contentUpdate.assetVersion == firstAssetVersion)
+        #expect(contentUpdate.contentVersion == changedContentVersion)
+        #expect(decodedUpdate.schemaVersion == 1)
+        #expect(decodedUpdate.contentVersion == changedContentVersion)
+        #expect(updateBytes.count < fullMapBytes.count / 10)
+        #expect(updateBytes.first == Character("{").asciiValue)
+        #expect(!updateJSON.contains("\"fileUrl\""))
+        #expect(!updateJSON.contains("\"contentHash\""))
+
+        playerStoreAbstractionMock.requestData = nil
+        playerStoreAbstractionMock.requestHistory = []
+        await sut.game(message: contentUpdate, actionType: .generic)
+        let sentUpdate = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(sentUpdate.counter > firstFullMap.counter)
+        #expect(sentUpdate.type == .update)
+        #expect(sentUpdate.subType == .generic)
+        #expect(sentUpdate.data.id == mapId)
+        #expect(sentUpdate.data.assetVersion == firstAssetVersion)
+        #expect(sentUpdate.data.contentVersion == changedContentVersion)
+        #expect(sentUpdate.data.data == updateBytes)
+        #expect(!sentUpdate.usesFileJournal)
+        #expect(!RPGSharePlayController.usesJournalTransport(
+            for: sentUpdate,
+            fileJournal: sentUpdate.usesFileJournal,
             journalAvailable: true
         ))
 
-        let acknowledgment = try #require(try await sutPlayer.handle(changedFullMap))
-        #expect(acknowledgment.subType == .ok)
+        let response = try await sutPlayer.handle(sentUpdate)
+        #expect(response == nil)
         let playerMap = rootPlayer.mapRoot.gameController.gameItem(for: mapId)
-        #expect(playerMap.version == changedVersion)
         #expect(playerMap.pinScale == masterMap.pinScale)
+        #expect(playerMap.hexMapScale == masterMap.hexMapScale)
+        #expect(playerStoreAbstractionMock.requestData == nil)
+        #expect(playerStoreAbstractionMock.requestHistory.isEmpty)
 
-        // Only a repeat of the exact version returns to the lightweight
-        // reference path.
-        await sut.show(for: changedReference)
-        let sameVersionReshow = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
-        #expect(sameVersionReshow.data.version == changedVersion)
-        #expect(sameVersionReshow.data.data == nil)
-        #expect(!sameVersionReshow.usesFileJournal)
+        // The original Journal attachment may finish after the messenger update.
+        // It must still reveal the map, but must not roll its old scales back.
+        _ = try await sutPlayer.handleMap(firstFullMap)
+        #expect(playerMap.pinScale == masterMap.pinScale)
+        #expect(playerMap.hexMapScale == masterMap.hexMapScale)
+    }
+
+    @Test func mapRevealUsesAssetFingerprintInsteadOfLegacyScaleVersion() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let mapId = try #require(rootSut.mapRoot.itemController.itemDataModel.items.first)
+        await sut.show(for: rootSut.mapRoot.gameController.shareMap(id: mapId))
+        let initialFullMap = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        _ = try #require(try await sutPlayer.handleMap(initialFullMap))
+
+        let localAssetVersion = await rootPlayer.mapRoot.gameController.mapAssetVersion(for: mapId)
+        #expect(localAssetVersion == initialFullMap.data.assetVersion)
+
+        // A matching reference reuses the local map without requesting bytes.
+        var matchingReference = initialFullMap
+        matchingReference.counter += 1
+        matchingReference.data = NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: initialFullMap.data.version,
+            assetVersion: localAssetVersion,
+            contentVersion: initialFullMap.data.contentVersion
+        )
+        let matchingResponse = try #require(try await sutPlayer.handleMap(matchingReference))
+        #expect(matchingResponse.subType == .ok)
+
+        // Matching background/scales do not imply matching structural content.
+        // A newly sequenced current-protocol full payload must still be imported.
+        let matchingAssetReplacementName = "Matching asset, newer map"
+        let masterMap = rootSut.mapRoot.gameController.gameItem(for: mapId)
+        masterMap.name = matchingAssetReplacementName
+        let matchingAssetBase = try await rootSut.mapRoot.gameController.createMapGameData(for: mapId)
+        var matchingAssetFull = initialFullMap
+        matchingAssetFull.counter = matchingReference.counter + 1
+        matchingAssetFull.data = matchingAssetBase
+        _ = try #require(try await sutPlayer.handleMap(matchingAssetFull))
+        #expect(rootPlayer.mapRoot.gameController.gameItem(for: mapId).name == matchingAssetReplacementName)
+
+        // The same legacy scale version with a different background fingerprint
+        // is not reusable: a metadata-only reveal must request the full package.
+        let changedAssetVersion = localAssetVersion ^ 1
+        var mismatchingReference = matchingReference
+        mismatchingReference.counter = matchingAssetFull.counter + 1
+        mismatchingReference.data = NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: initialFullMap.data.version,
+            assetVersion: changedAssetVersion,
+            contentVersion: initialFullMap.data.contentVersion
+        )
+        let request = try #require(try await sutPlayer.handleMap(mismatchingReference))
+        #expect(request.subType == .show)
+        #expect(request.data.data == nil)
+
+        // When those replacement bytes arrive, import them even though the
+        // scale-derived legacy version is unchanged.
+        let replacementName = "Replacement background map"
+        masterMap.name = replacementName
+        let replacementBase = try await rootSut.mapRoot.gameController.createMapGameData(for: mapId)
+        #expect(replacementBase.version == initialFullMap.data.version)
+        var replacementFull = initialFullMap
+        replacementFull.counter = mismatchingReference.counter + 1
+        replacementFull.data = NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: replacementBase.version,
+            data: replacementBase.data,
+            assetVersion: changedAssetVersion,
+            contentVersion: replacementBase.contentVersion
+        )
+        let replacementResponse = try #require(try await sutPlayer.handleMap(replacementFull))
+        #expect(replacementResponse.subType == .ok)
+        #expect(rootPlayer.mapRoot.gameController.gameItem(for: mapId).name == replacementName)
     }
 
     @Test func consecutiveSharePlayMapFilesReplaceThePlayerPresentation() async throws {

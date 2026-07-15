@@ -28,6 +28,11 @@ final class PlayerControllerModel: Sendable {
         let version: Int
     }
 
+    private struct PendingMapContentUpdate: Sendable {
+        let data: NetworkCodableDataType
+        let counter: Int
+    }
+
     var gameUpdateType: NetworkModules = .none
     var messageCounter: Int = 0
     private var outgoingMessageCounter: Int = 1
@@ -54,6 +59,13 @@ final class PlayerControllerModel: Sendable {
     // full-map re-request. The background belongs exclusively to the full map
     // package, so the single retry prevents a full-payload request loop.
     var requestedFullMapIds: Set<UUID> = []
+    /// Latest structural update received before its Journal-backed base map.
+    /// Only one value per map is retained, so interleaved chunk streams cannot
+    /// roll a newer editor refresh back.
+    private var pendingMapContentUpdates: [UUID: PendingMapContentUpdate] = [:]
+    private var lastMapContentUpdateCounters: [UUID: Int] = [:]
+    private var lastFullMapContentCounters: [UUID: Int] = [:]
+    private var mapContentVersions: [UUID: Int] = [:]
 
     func increaseMessageCounter() {
         messageCounter += 1
@@ -184,6 +196,76 @@ final class PlayerControllerModel: Sendable {
         presentationIntents.removeAll()
     }
 
+    func queueMapContentUpdate(_ data: NetworkCodableDataType, counter: Int) {
+        let appliedCounter = max(
+            lastMapContentUpdateCounters[data.id] ?? 0,
+            lastFullMapContentCounters[data.id] ?? 0
+        )
+        guard counter == 0 || counter > appliedCounter else { return }
+        if let current = pendingMapContentUpdates[data.id], counter != 0, current.counter >= counter {
+            return
+        }
+        pendingMapContentUpdates[data.id] = PendingMapContentUpdate(data: data, counter: counter)
+    }
+
+    func pendingMapContentUpdate(for itemId: UUID) -> (data: NetworkCodableDataType, counter: Int)? {
+        guard let pending = pendingMapContentUpdates[itemId] else { return nil }
+        return (pending.data, pending.counter)
+    }
+
+    func discardPendingMapContentUpdate(itemId: UUID) {
+        pendingMapContentUpdates[itemId] = nil
+    }
+
+    func shouldApplyMapContentUpdate(itemId: UUID, counter: Int) -> Bool {
+        counter == 0 || counter > max(
+            lastMapContentUpdateCounters[itemId] ?? 0,
+            lastFullMapContentCounters[itemId] ?? 0
+        )
+    }
+
+    /// A Journal-backed full map may finish after a newer messenger mapUpdate.
+    /// Importing that older snapshot would roll structural metadata back even
+    /// though its background asset is still valid.
+    func shouldImportFullMapContent(itemId: UUID, counter: Int) -> Bool {
+        counter == 0 || counter > max(
+            lastMapContentUpdateCounters[itemId] ?? 0,
+            lastFullMapContentCounters[itemId] ?? 0
+        )
+    }
+
+    func markMapContentUpdateApplied(itemId: UUID, counter: Int, contentVersion: Int?) {
+        if counter > 0 {
+            lastMapContentUpdateCounters[itemId] = counter
+        }
+        if let contentVersion {
+            mapContentVersions[itemId] = contentVersion
+        }
+        pendingMapContentUpdates[itemId] = nil
+    }
+
+    func recordFullMapContentVersion(itemId: UUID, contentVersion: Int?, counter: Int) {
+        guard shouldImportFullMapContent(itemId: itemId, counter: counter) else { return }
+        if let contentVersion {
+            mapContentVersions[itemId] = contentVersion
+        }
+        if counter > 0 {
+            lastFullMapContentCounters[itemId] = max(lastFullMapContentCounters[itemId] ?? 0, counter)
+        }
+    }
+
+    func hasMapContentVersion(itemId: UUID, contentVersion: Int?) -> Bool {
+        guard let contentVersion else { return true }
+        return mapContentVersions[itemId] == contentVersion
+    }
+
+    func resetMapContentSequence() {
+        pendingMapContentUpdates.removeAll()
+        lastMapContentUpdateCounters.removeAll()
+        lastFullMapContentCounters.removeAll()
+        mapContentVersions.removeAll()
+    }
+
     func reset(lostMaster: Bool) {
         self.lostMaster = lostMaster
     }
@@ -264,6 +346,7 @@ extension PlayerController {
         gameModel.requestedFullMapIds = []
         gameModel.resetMasterStateSequence()
         gameModel.resetPresentationSequence()
+        gameModel.resetMapContentSequence()
     }
     
     @MainActor
@@ -356,6 +439,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             gameModel.requestedFullMapIds = []
             gameModel.resetMasterStateSequence()
             gameModel.resetPresentationSequence()
+            gameModel.resetMapContentSequence()
         }
         await gameModel.reset(lostMaster: true)
         await gameModel.reset(sendPlayer: false)
@@ -689,7 +773,65 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             await MainActor.run { _ = gameModel.pendingMapRequests.remove(model.data.id) }
-            if try await root.mapRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: false) {
+            let hasBaseMap = await root.mapRoot.gameControllable.hasItem(
+                id: model.data.id,
+                version: 0
+            )
+            let hasMatchingAsset: Bool
+            if hasBaseMap, model.data.assetVersion != nil {
+                hasMatchingAsset = await hasMatchingMapAsset(model.data)
+            } else {
+                hasMatchingAsset = false
+            }
+            let shouldImportFullPayload: Bool
+            if model.data.data == nil {
+                shouldImportFullPayload = true
+            } else {
+                shouldImportFullPayload = await gameModel.shouldImportFullMapContent(
+                    itemId: model.data.id,
+                    counter: model.counter
+                )
+            }
+            let revealed: Bool
+            if model.data.data != nil, model.data.assetVersion != nil {
+                if hasBaseMap, !shouldImportFullPayload {
+                    // A newer full/photo-free update already won. Keep its
+                    // metadata while honoring this reveal as a request to show.
+                    _ = await root.mapRoot.gameControllable.setCurrent(itemId: model.data.id)
+                } else {
+                    // Current-protocol full payloads carry independent asset and
+                    // content fingerprints. Always import a newly sequenced one:
+                    // the background may have changed without the legacy scale
+                    // version changing, or its structural snapshot may be newer
+                    // even though the background still matches.
+                    try await root.mapRoot.gameControllable.updateGame(
+                        data: model.data,
+                        hide: true,
+                        deep: false
+                    )
+                }
+                revealed = true
+            } else if model.data.data == nil, model.data.assetVersion != nil {
+                // Mutable map metadata may have changed while the background
+                // asset stayed the same. Current peers can reuse that asset and
+                // wait for the companion mapUpdate; legacy peers still follow
+                // the original scale-version comparison in reveal().
+                if hasMatchingAsset {
+                    _ = await root.mapRoot.gameControllable.setCurrent(itemId: model.data.id)
+                }
+                // A reference for a different background asset must request the
+                // full Journal/messenger package even when the legacy scale-only
+                // `version` still matches the local MapModel.
+                revealed = hasMatchingAsset
+            } else {
+                revealed = try await root.mapRoot.gameControllable.reveal(
+                    itemId: model.data.id,
+                    data: model.data,
+                    save: false
+                )
+            }
+
+            if revealed {
                 // A map without its background photo is incomplete — ask for the
                 // whole package once instead of putting the background onto the
                 // pin-photo repair path. The single retry bounds payload loops.
@@ -700,6 +842,14 @@ extension PlayerController {
                     }
                 }
                 _ = await root.mapRoot.gameControllable.setCurrent(itemId: model.data.id)
+                if model.data.data != nil {
+                    await gameModel.recordFullMapContentVersion(
+                        itemId: model.data.id,
+                        contentVersion: model.data.contentVersion,
+                        counter: model.counter
+                    )
+                }
+                _ = await applyPendingMapContentUpdate(itemId: model.data.id)
                 await MainActor.run {
                     // Also for players: a reveal means "show the map". Waiting for
                     // the next mapState left the screen behind the black overlay
@@ -731,6 +881,12 @@ extension PlayerController {
         case .store:
             let completesReveal = await MainActor.run { gameModel.pendingMapRequests.remove(model.data.id) != nil }
             try await root.mapRoot.gameControllable.updateGame(data: model.data, hide: true, deep: true)
+            await gameModel.recordFullMapContentVersion(
+                itemId: model.data.id,
+                contentVersion: model.data.contentVersion,
+                counter: model.counter
+            )
+            _ = await applyPendingMapContentUpdate(itemId: model.data.id)
             if completesReveal {
                 // The payload answers a mapState-triggered re-request: the map is
                 // the current presentation, and the mapState that flips the screen
@@ -751,8 +907,10 @@ extension PlayerController {
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
+            case .generic:
+                return await handleMapContentUpdate(model)
             case .mapState:
-                if await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: model.data.version) {
+                if await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: 0) {
                     await root.mapRoot.mapGameControllable.updateMap(for: model.data.id, with: model.data)
                     // mapState carries pin metadata but not newly referenced
                     // photo models. Repair missing pin photos through the normal
@@ -767,6 +925,7 @@ extension PlayerController {
                         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
                     }
                     #endif
+
                 } else {
                     // Re-request the full map once — the master answers a
                     // `.reveal .mapState` with the map data plus the current map
@@ -787,6 +946,91 @@ extension PlayerController {
             }
         }
         return nil
+    }
+
+    func handleMapContentUpdate(_ model: GameNetworkModel) async -> GameNetworkModel? {
+        guard model.sender.isMaster, model.data.data != nil else { return nil }
+        guard await gameModel.shouldApplyMapContentUpdate(
+            itemId: model.data.id,
+            counter: model.counter
+        ) else { return nil }
+
+        let hasBaseMap = await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: 0)
+        let hasMatchingAsset = await hasMatchingMapAsset(model.data)
+        guard hasBaseMap, hasMatchingAsset else {
+            await gameModel.queueMapContentUpdate(model.data, counter: model.counter)
+            let isFirstRequest = await MainActor.run {
+                gameModel.pendingMapRequests.insert(model.data.id).inserted
+            }
+            guard isFirstRequest else { return nil }
+            return await MainActor.run {
+                root.gameModel.outgoingMessage(
+                    counter: model.counter,
+                    proxyCounter: model.proxyCounter,
+                    type: .reveal,
+                    subType: .mapState,
+                    asMaster: false,
+                    data: NetworkCodableDataType(
+                        id: model.data.id,
+                        type: .map,
+                        version: model.data.version,
+                        data: nil,
+                        assetVersion: model.data.assetVersion,
+                        contentVersion: model.data.contentVersion
+                    )
+                )
+            }
+        }
+
+        guard await root.mapRoot.mapGameControllable.applyMapContentUpdate(
+            for: model.data.id,
+            with: model.data
+        ) else { return nil }
+        await gameModel.markMapContentUpdateApplied(
+            itemId: model.data.id,
+            counter: model.counter,
+            contentVersion: model.data.contentVersion
+        )
+        await requestMissingMapImages(itemId: model.data.id)
+
+        #if os(visionOS)
+        let isGameMaster = await root.gameModel.gameConfig.isMaster
+        await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
+        await MainActor.run {
+            root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+        }
+        #endif
+        return nil
+    }
+
+    func applyPendingMapContentUpdate(itemId: UUID) async -> Bool {
+        guard let pending = await gameModel.pendingMapContentUpdate(for: itemId) else { return false }
+        guard await gameModel.shouldApplyMapContentUpdate(
+            itemId: itemId,
+            counter: pending.counter
+        ) else {
+            await gameModel.discardPendingMapContentUpdate(itemId: itemId)
+            return false
+        }
+        guard await root.mapRoot.gameControllable.hasItem(id: itemId, version: 0),
+              await hasMatchingMapAsset(pending.data),
+              await root.mapRoot.mapGameControllable.applyMapContentUpdate(
+                for: itemId,
+                with: pending.data
+              )
+        else { return false }
+
+        await gameModel.markMapContentUpdateApplied(
+            itemId: itemId,
+            counter: pending.counter,
+            contentVersion: pending.data.contentVersion
+        )
+        return true
+    }
+
+    func hasMatchingMapAsset(_ data: NetworkCodableDataType) async -> Bool {
+        guard let expectedAssetVersion = data.assetVersion else { return true }
+        return await root.mapRoot.mapGameControllable.mapAssetVersion(for: data.id) == expectedAssetVersion
     }
 
     /// Requests pin photos absent from both the photo game state and persistent

@@ -20,6 +20,13 @@ final class MapGameModel: Sendable {
 }
 
 public protocol MapGameStorable {
+    func mapAssetVersion(for itemId: UUID) async -> Int
+    @MainActor func mapContentVersion(for itemId: UUID) -> Int
+    func shareMap(id: UUID) async -> NetworkCodableDataType
+    func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType
+    func networkMapContentUpdate(for itemId: UUID) async -> NetworkCodableDataType
+    @MainActor func applyMapContentUpdate(for itemId: UUID, with data: NetworkCodableDataType) -> Bool
+
     @MainActor func setPlayerPin(for playerId: UUID, name: String, characterId: UUID)
     @MainActor func resetPlayerPins(for players: [PlayerGameModel])
     @MainActor func updatePin(itemId: UUID, data: Data?, playerId: UUID)
@@ -83,6 +90,106 @@ extension GameController: GameControllable {
 }
 
 extension GameController: MapGameStorable {
+    func mapAssetVersion(for itemId: UUID) async -> Int {
+        let backgroundPhotoId = await MainActor.run {
+            gameItem(for: itemId).photoId
+        }
+        let backgroundPhotoVersion: Int?
+        if let backgroundPhotoId {
+            backgroundPhotoVersion = await root.photoRoot.gameControllable.networkVersion(for: backgroundPhotoId)
+        } else {
+            backgroundPhotoVersion = nil
+        }
+        return MapAssetFingerprint(
+            mapId: itemId,
+            backgroundPhotoId: backgroundPhotoId,
+            backgroundPhotoVersion: backgroundPhotoVersion
+        ).version
+    }
+
+    @MainActor
+    func mapContentVersion(for itemId: UUID) -> Int {
+        MapUpdatePayload(model: gameItem(for: itemId)).contentVersion
+    }
+
+    func shareMap(id: UUID) async -> NetworkCodableDataType {
+        let metadata = await MainActor.run {
+            let item = gameItem(for: id)
+            return (version: item.version, contentVersion: MapUpdatePayload(model: item).contentVersion)
+        }
+        let assetVersion = await mapAssetVersion(for: id)
+        return NetworkCodableDataType(
+            id: id,
+            type: .map,
+            version: metadata.version,
+            assetVersion: assetVersion,
+            contentVersion: metadata.contentVersion
+        )
+    }
+
+    func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
+        // Compute the referenced photo version first. The generic photo
+        // controller lazily backfills its content hash, and the following full
+        // export then carries that same stable metadata to the receiver.
+        let assetVersion = await mapAssetVersion(for: itemId)
+        let base = try await createGameData(for: itemId)
+        let contentVersion = await mapContentVersion(for: itemId)
+        return NetworkCodableDataType(
+            id: base.id,
+            type: base.type,
+            version: base.version,
+            data: base.data,
+            assetVersion: assetVersion,
+            contentVersion: contentVersion
+        )
+    }
+
+    func networkMapContentUpdate(for itemId: UUID) async -> NetworkCodableDataType {
+        let metadata = await MainActor.run {
+            let item = gameItem(for: itemId)
+            let payload = MapUpdatePayload(model: item)
+            return (
+                version: item.version,
+                contentVersion: payload.contentVersion,
+                data: payload.encodedData()
+            )
+        }
+        let assetVersion = await mapAssetVersion(for: itemId)
+        return NetworkCodableDataType(
+            id: itemId,
+            type: .map,
+            version: metadata.version,
+            data: metadata.data,
+            assetVersion: assetVersion,
+            contentVersion: metadata.contentVersion
+        )
+    }
+
+    @MainActor
+    func applyMapContentUpdate(for itemId: UUID, with data: NetworkCodableDataType) -> Bool {
+        guard data.id == itemId,
+              data.type == .map,
+              let payload = MapUpdatePayload.decodeData(data.data),
+              payload.isSupported,
+              payload.snapshot.id == itemId,
+              data.contentVersion == nil || data.contentVersion == payload.contentVersion,
+              let model = gameModel.itemData[itemId] as? MapModel else {
+            return false
+        }
+        payload.snapshot.apply(to: model)
+        return true
+    }
+
+    /// Commits an editor working copy into the already-observed game map before
+    /// the toolbar creates a structural update. Maps that are not in the active
+    /// game are deliberately left alone.
+    @MainActor
+    func refreshSharedMap(from editedMap: MapModel) -> Bool {
+        guard let gameMap = gameModel.itemData[editedMap.id] as? MapModel else { return false }
+        MapSnapshot(editedMap).apply(to: gameMap)
+        return true
+    }
+
     @MainActor func startGameAsMaster() {
         root.rootModel.gameEditorModel?.displayMode = .master
     }
@@ -245,7 +352,8 @@ extension GameController: MapGameStorable {
             id: itemId,
             type: .map,
             version: item.version,
-            data: mapUpdateResult(for: itemId).data(using: .utf8)
+            data: mapUpdateResult(for: itemId).data(using: .utf8),
+            contentVersion: mapContentVersion(for: itemId)
         )
     }
 

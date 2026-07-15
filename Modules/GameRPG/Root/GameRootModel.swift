@@ -517,7 +517,7 @@ extension GameRoot {
                             return
                         }
                         guard !Task.isCancelled else { return }
-                        let data = await mapRoot.gameControllable.share(id: map)
+                        let data = await mapRoot.mapGameControllable.shareMap(id: map)
                         let gameNetworkModel = gameModel.outgoingMessage(counter: 2, type: .reveal, subType: .show, asMaster: true, data: data)
                         await playerController.receivedProcess(gameNetworkModel)
                         
