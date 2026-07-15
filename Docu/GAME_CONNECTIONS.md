@@ -1,6 +1,6 @@
 # Game Connection And Communication Documentation
 
-Implementation audit: 2026-07-14.
+Implementation audit: 2026-07-15.
 
 This document describes how the game communication layer works in MasterRPG:
 participants, transports, counters, roster/control state, message types, replies,
@@ -215,8 +215,13 @@ Wire framing:
 SharePlay uses the same `GameNetworkModel`.
 
 `GroupSessionMessenger` is the default path. The encoded envelope is split into
-ordered `PackageMessage` chunks of 200,000 bytes, reassembled by package UUID and
-sequence number, and throttled for 200 ms after every 60 packages.
+ordered `PackageMessage` chunks of 64,000 raw bytes, reassembled by package UUID
+and sequence number, and throttled for 200 ms after every 60 packages. The raw
+size leaves room below the 256 KB messenger limit after Codable/Base64 expansion
+and worst-case JSON escaping.
+Each package retries transient send failures twice; a terminal failure is logged
+instead of being silently discarded. A stream stays bound to the messenger that
+created it, and session reset clears incomplete receive assemblies.
 
 `GroupSessionJournal` is used when all of these are true:
 
@@ -264,10 +269,14 @@ Intent state resets with the connection. Messenger and journal handlers verify
 their session before delivery so cancellation cannot publish old-session data.
 
 Targeted non-audio repair responses stay on the messenger so they do not replace
-a broadcast attachment while another participant is downloading it. Targeted
-audio repairs remain journaled, but their metadata is converted to an untargeted
-`.store/.show`; every participant stores the audio without treating the repair
-as a new presentation.
+a broadcast attachment while another participant is downloading it. One narrow
+exception is a full `.store/.store` photo repair: transport is chosen from the
+original targeted message, then SharePlay clears `targetId` and coalesces the
+photo ID/version. Every participant therefore imports one shared chunk stream
+without changing its current presentation. Targeted audio repairs remain
+journaled, but their metadata is converted to an untargeted `.store/.show`;
+every participant stores the audio without treating the repair as a new
+presentation.
 
 If adding an attachment fails, the sender falls back to messenger packages. If
 loading attachment bytes fails after metadata arrived, the metadata-only model
@@ -366,7 +375,9 @@ Compatibility limit: shipped V1 clients do not have `targetId`. They ignore the
 unknown JSON key and cannot apply logical recipient filtering. A repair sent to
 one direct local-network connection remains physically targeted for every
 version. A SharePlay or fallback broadcast carrying `targetId` is only targeted
-for current peers; a V1 peer may still process it.
+for current peers; a V1 peer may still process it. SharePlay photo
+`.store/.store` repairs intentionally clear the target so every version imports
+the shared cache update.
 
 ### `GameNetworkModel`
 
@@ -652,14 +663,16 @@ so its private mirrors process the same repair.
 
 ### Pattern A: Master Reveals An Item, Everyone Already Has It
 
-For map, photo, PDF, and space, the first show in a game exports and broadcasts
-the full package immediately. Later shows of the same item are ID-only. Other
+For map, photo, PDF, and space, the first show of each item version exports and
+broadcasts the full package immediately. Later shows of that exact item version
+are ID-only. A changed version of the same ID is a new full publication. Other
 modules normally start with an ID-only reference.
 
 ```text
 Master -> all:
   .reveal/.show
-  data: full first-show payload, or an ID/version reference on a reshow
+  data: full first-show-of-version payload, or an ID/version reference on a
+        same-version reshow
 
 Each player:
   imports the payload or resolves the matching local item/file
@@ -719,25 +732,36 @@ the actual photo/audio/PDF/space file did not.
 ### Pattern D: Store/Repair Transfer
 
 `.store/.store` is used when the sender wants the receiver to import an item
-without necessarily showing it. Players use this for missing map-related photos:
+without necessarily showing it. Players use this for missing map-pin photos:
 
 ```text
-Player detects missing map background/player-pin photo
+Player detects a map pin photo ID that exists in neither the local
+photo game controller nor the persistent photo item controller
 Player -> master:
   .store/.store, data: photo id/type/version, data nil
 
 Master:
   createGameData(for: photoId)
-  -> requester only: .store/.store, targetId requester, photo payload
+  -> direct connection: requester-only .store/.store photo payload
+  -> SharePlay: one untargeted, coalesced .store/.store chunk stream per
+     photo ID/version
 
-Requesting player:
-  import hidden/background data
+SharePlay participants (or the direct requester):
+  import hidden pin-photo data
   -> .store/.ok
 ```
 
 `requestedRepairIds` permits one photo repair request per item per connection
-lifetime and releases the ID only after local bytes are verified. A permanently
-failing import therefore cannot drive a request/response loop.
+lifetime and releases the ID only after a delivered repair verifies local bytes.
+The initial scan is based on photo-model ownership; a separately unavailable
+iCloud/local binary does not cause another map-pin SharePlay request. SharePlay's
+session-scoped coalescer suppresses overlapping requests from other players and
+resets when a participant joins, so a late joiner can request the same version.
+
+The map background is never added to this repair list. It is embedded in the
+full map package; the first SharePlay map show publishes that package through
+the journal. If the background is unavailable after delivery, the player checks
+it separately and may request the full map once.
 
 ### Pattern E: Live Update
 
@@ -783,7 +807,8 @@ Real-master broadcast sends derive `fileJournal` from the envelope: only
 file-backed `.reveal`/`.store` payloads with bytes opt in automatically. A
 targeted local-network response first tries `sendResponse(..., id:)`; on failure
 it falls back to normal transport fan-out while `targetId` preserves logical
-addressing.
+addressing. At the SharePlay boundary, a full photo `.store/.store` repair is the
+exception: it becomes one untargeted, coalesced group store.
 
 The real master also has a local `PlayerController(asGameMaster: true)`.
 That controller calls `networkStore.setupLocal()`, which marks the direct
@@ -949,6 +974,10 @@ imports and acknowledges the full response. This remains true when several
 players or observers request the same photo: each request gets its own targeted
 answer and never changes another participant's current screen.
 
+That rule is for photo presentation repair (`.reveal/.show`). A map-pin cache
+repair uses `.store/.store`; SharePlay can safely broadcast and coalesce that
+response because storing it does not change the current screen.
+
 For a proxy client, the host first tries to serve the request from its own
 photo/file state. If it cannot, it remaps the request as the host. The master's
 host-targeted answer is then mirrored downstream with the target cleared. Proxy
@@ -1085,34 +1114,48 @@ Master handling:
 Player handling:
 
 - `.reveal`: clear pending map request, reveal/import map, set current map,
-  request missing map images, ACK or request full data
-- if a delivered map still lacks its background, request the full map once before
-  falling back to per-photo repair
+  request missing pin images, ACK or request full data
+- if a delivered map still lacks its background, request the full map once; the
+  background never falls back to the pin-photo repair path
 - `.store`: import hidden map payload; when it completes a map-state recovery,
-  present the map and repair its missing images
-- `.update/.mapState`: if map exists, apply live room/pointer/pin state
+  present the map and repair its missing pin images
+- `.update/.mapState`: if map exists, apply live room/pointer/pin state, then
+  rescan every pin photo reference introduced by the snapshot
 - `.update/.mapState` when map is missing: send one `.reveal/.mapState` request
 - `.update/.mapPin`: ignored on players; only master handles player pin updates
 
-Missing map images:
+Missing map pin images:
 
-After map reveal or map state update, the player checks:
+After map reveal or map state update, the player checks all pin photos, including
+ordinary monster/character pins added during the game.
 
-- map background photo
-- player pin photos
-
-For each missing photo item or missing local file, the player sends:
+The IDs are de-duplicated. For each pin photo absent from both the photo game
+controller and persistent photo item controller, the player sends:
 
 ```text
 .store/.store
 data: photo id/type/version, data nil
 ```
 
-The master responds through the normal photo store path.
+The master responds through the normal photo store path. Local backing-file
+availability is handled by PhotoRPG/iCloud and is not a reason for this map
+reference repair when the photo item already exists.
 
-`pendingMapRequests`, `requestedFullMapIds`, and `requestedRepairIds` bound the
-three recovery paths so bursts or permanently missing binaries cannot create a
-request storm.
+The map background is checked independently by `hasBackgroundImage`. It is not
+a pin-photo repair candidate because it belongs to the full map payload, whose
+first SharePlay broadcast uses the journal.
+
+On SharePlay, both legs use the ordered chunked messenger path. The data-less
+request cannot use the journal because it contains no attachment bytes. The
+full response first selects packages while still targeted, then becomes an
+untargeted `.store/.store` so every member caches it without changing screens.
+Responses for the same photo ID/version are coalesced, so players with different
+photo subsets cause one full group transfer per unique missing photo. The cache
+resets when a participant joins.
+
+`pendingMapRequests`, `requestedFullMapIds`, `requestedRepairIds`, and the
+SharePlay photo-repair coalescer bound the recovery paths so bursts cannot create
+a request storm.
 
 visionOS:
 
@@ -1463,12 +1506,16 @@ Master:
 ```text
 Master shares map
 Master -> all:
-  first show: .reveal/.show with full map payload
-  later show: .reveal/.show with map id/version only
+  first show of a version: .reveal/.show with full map payload (SharePlay journal)
+  same-version reshow: .reveal/.show with map id/version only
+
+Master changes map content that changes its version (for example pinScale)
+Master -> all:
+  new full .reveal/.show publication (SharePlay journal)
 
 Player has map:
   set current map
-  request missing map images if needed
+  request missing pin images if needed
   .ok
 
 Player missing map:
@@ -1504,6 +1551,13 @@ Master:
 
 Players:
   apply map state
+  rescan all pin photo references
+  if a photo ID exists in neither local photo controller:
+    send .store/.store with photo id/type/version and data nil
+
+SharePlay master transport:
+  send one chunked, untargeted .store/.store response per photo ID/version
+  all members import it without changing the current presentation
 ```
 
 ### Space Transform
@@ -1544,15 +1598,21 @@ Master:
 - Master direct network fan-out happens before module handling.
 - Player filters block most player-origin messages. Dice and space transforms are
   intentional exceptions.
-- The first map/photo/PDF/space reveal carries a full payload; later reveals use
-  references. Other modules can still begin ID-only.
+- The first map/photo/PDF/space reveal of each version carries a full payload;
+  same-version reveals use references. The sent cache is keyed by module, item
+  ID, and version. A changed map therefore republishes through the SharePlay
+  journal instead of entering a requester-only chunk repair. The full map includes
+  its background. Other modules can still begin ID-only.
 - A missing receiver requests the full payload by returning the same type/subtype
   instead of `.ok`; the master's answer is targeted to that receiver.
 - Logical `targetId` filtering requires a current peer. V1 peers remain protected
   only when the transport itself sends to one direct connection.
-- File-backed modules must check local file data, not only item metadata.
+- File-backed reveal/import validation checks local file data, not only item
+  metadata. Map-pin photo-reference discovery excludes the background and requests
+  only pin IDs absent from both local photo controllers.
 - SharePlay has one current journal publication per module. Targeted non-audio
-  repairs use packages; targeted audio repairs become untargeted stores.
+  repairs use packages; full photo `.store/.store` repairs become coalesced group
+  stores on those packages; targeted audio repairs become untargeted stores.
 - A replacement attachment is published before old-attachment cleanup, and slow
   cleanup never blocks the next publication for that module.
 - Journal metadata can arrive while its CloudAsset is still `uploadInProgress`.
@@ -1563,8 +1623,11 @@ Master:
 - A normal player is also a proxy server for private local mirrors. Proxy identity
   is never sent upstream; eligible actions are remapped to the host.
 - Observers receive content but should not mutate master gameplay state.
-- Map background/player-pin photos are repaired with photo `.store/.store`
-  requests after map reveal/state application.
+- Pin photos absent from both photo controllers are repaired with photo
+  `.store/.store` requests after map reveal/state application. The background
+  remains part of the full journaled map package and is never requested here.
+  SharePlay carries the pin-photo requests and one untargeted, coalesced answer
+  per unique photo ID/version over ordered messenger packages.
 
 ## 19. Suggested Debug Checklist
 

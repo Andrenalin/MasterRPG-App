@@ -167,7 +167,7 @@ struct RouteRouteDestionationView: View {
                 ExtendedTabBar()
 #endif
             case .game:
-                GameFactory.rootSetupView(root: appModel.gameRoot)
+                GameSetupDestinationView()
             case .generator:
 #if os(tvOS)
                 EmptyView()

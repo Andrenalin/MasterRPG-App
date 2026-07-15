@@ -7,6 +7,10 @@ import Combine
 final class SharePlayPackageReceiver {
     private(set) var receivedPacakges: [UUID: PackageMessageList] = [:]
 
+    func reset() {
+        receivedPacakges.removeAll()
+    }
+
     func received(package: PackageMessage) -> PackageMessage? {
         let packageList: PackageMessageList
         if let list = receivedPacakges[package.uuid] {

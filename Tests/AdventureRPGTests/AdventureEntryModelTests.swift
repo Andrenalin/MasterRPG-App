@@ -60,5 +60,31 @@ struct AdventureEntryModelTests {
         #expect(sut.isSame(a) == false)
         #expect(m1.isSame(m2) == true)
     }
+
+    @Test func decodeLegacyPayloadWithoutAdventureId() throws {
+        let original = AdventureEntryModel(
+            id: UUID(),
+            name: "Legacy Entry",
+            content: "Legacy Content",
+            adventureId: UUID(),
+            displayState: 23
+        )
+        let encodedData = try JSONEncoder().encode(original)
+        var encodedObject = try #require(
+            JSONSerialization.jsonObject(with: encodedData) as? [String: Any]
+        )
+        encodedObject.removeValue(forKey: "adventureId")
+        let legacyData = try JSONSerialization.data(withJSONObject: encodedObject)
+
+        let decoded = try JSONDecoder().decode(AdventureEntryModel.self, from: legacyData)
+        let decodedAgain = try JSONDecoder().decode(AdventureEntryModel.self, from: legacyData)
+
+        #expect(decoded.id == original.id)
+        #expect(decoded.name == original.name)
+        #expect(decoded.content == original.content)
+        #expect(decoded.adventureId == nil)
+        #expect(decoded.displayState == original.displayState)
+        #expect(decoded == decodedAgain)
+    }
 }
 #endif

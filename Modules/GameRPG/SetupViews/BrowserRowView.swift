@@ -76,11 +76,3 @@ private extension BrowserRowView {
         return id != nil && id != model.id
     }
 }
-
-#Preview {
-    BrowserRowView(
-        root: .preview,
-        playerNetworkControllable: PlayerNetworkControllableSpyingStub(),
-        model: BrowserGameModel(id: UUID(), endpointName: "Preview Game.local", connectionMode: .observer)
-    )
-}

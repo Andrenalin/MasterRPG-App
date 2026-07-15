@@ -5,6 +5,7 @@ import SwiftUI
 
 struct GameRootSetupView: View {
     let root: GameRoot
+    let openStatistics: @MainActor () -> Void
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(ScenesManager.self) private var scenesManager
@@ -31,6 +32,12 @@ struct GameRootSetupView: View {
 #endif
 
                 GameOptionView(root: root)
+
+                Button(action: openStatistics) {
+                    GameStatisticsEntryLabel(sessionCount: root.statisticsModel.summary.sessionCount)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding()
             }
         }
         .task {
@@ -46,8 +53,36 @@ struct GameRootSetupView: View {
     }
 }
 
+private struct GameStatisticsEntryLabel: View {
+    let sessionCount: Int
+
+    var body: some View {
+        HStack {
+            Image(systemName: "chart.bar.xaxis")
+                .imageScale(.large)
+
+            VStack(alignment: .leading) {
+                Text("Game Statistics", bundle: .module)
+                    .bold()
+                if sessionCount == 0 {
+                    Text("Explore an example dashboard", bundle: .module)
+                        .font(.caption)
+                } else {
+                    Text("Recorded games: \(sessionCount)", bundle: .module)
+                        .font(.caption)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.forward")
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
 #Preview(traits: .mockData) {
-    GameRootSetupView(root: .preview)
+    GameRootSetupView(root: .preview, openStatistics: {})
         .environment(AppGameStateModel())
         .environment(ScenesManager())
         .environment(AppSettingsModel())

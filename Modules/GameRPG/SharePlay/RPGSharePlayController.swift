@@ -110,6 +110,36 @@ struct SharePlayJournalTracker: Sendable {
     }
 }
 
+/// Coalesces full photo repairs that are physically broadcast by SharePlay.
+/// A `.store/.store` update imports without changing the current presentation,
+/// so clearing its target lets one chunk stream satisfy every participant.
+struct SharePlayPhotoRepairTracker: Sendable {
+    private var sentVersions: [UUID: Int] = [:]
+
+    mutating func prepareMessengerModel(_ model: GameNetworkModel) -> GameNetworkModel? {
+        guard model.sender.isMaster,
+              model.type == .store,
+              model.subType == .store,
+              model.data.type == .photo,
+              model.data.data != nil,
+              model.targetId != nil
+        else {
+            return model
+        }
+
+        guard sentVersions[model.data.id] != model.data.version else { return nil }
+        sentVersions[model.data.id] = model.data.version
+
+        var broadcast = model
+        broadcast.targetId = nil
+        return broadcast
+    }
+
+    mutating func reset() {
+        sentVersions = [:]
+    }
+}
+
 @MainActor @Observable
 final class RPGSharePlayController {
     var groupSession: GroupSession<RPGActivity>?
@@ -135,6 +165,7 @@ final class RPGSharePlayController {
     private var messenger: GroupSessionMessenger?
     private var sessionLifecycle = SharePlaySessionLifecycle()
     private var journalTracker = SharePlayJournalTracker()
+    private var photoRepairTracker = SharePlayPhotoRepairTracker()
     // Session-scoped tasks (state/participant/message/journal loops and in-flight
     // sends), cancelled by reset(). Send tasks remove themselves on completion so
     // the collection stays bounded during a long game.
@@ -171,9 +202,6 @@ final class RPGSharePlayController {
     func setup(gameModel: GameRootModel) {
         Logger.sharePlay.debug("SharePlay: setup")
         self.gameModel = gameModel
-        packageSender = SharePlaySingleQueuePackageSender { [weak self] package in
-            await self?.sendPackage(package)
-        }
 
         eligibilityTask?.cancel()
         eligibilityTask = Task { [weak self] in
@@ -222,12 +250,19 @@ final class RPGSharePlayController {
 extension RPGSharePlayController {
     func sendData(_ gameNetworkModel: GameNetworkModel, fileJournal: Bool) {
         Logger.sharePlay.debug("sendData state: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
-        guard let encodedModel = gameNetworkModel.encodeData() else { return }
         guard messenger != nil, let sessionId = groupSession?.id else { return }
 
-        if Self.usesJournalTransport(for: gameNetworkModel, fileJournal: fileJournal, journalAvailable: journal != nil),
-           let attachmentData = gameNetworkModel.data.data, let journal {
-            let moduleKey = gameNetworkModel.data.type
+        guard let prepared = Self.prepareForTransport(
+            gameNetworkModel,
+            fileJournal: fileJournal,
+            journalAvailable: journal != nil,
+            photoRepairTracker: &photoRepairTracker
+        ), let encodedModel = prepared.model.encodeData()
+        else { return }
+
+        if prepared.usesJournalTransport,
+           let attachmentData = prepared.model.data.data, let journal {
+            let moduleKey = prepared.model.data.type
             journalPublicationQueue.enqueue(for: moduleKey, priority: .userInitiated) { [weak self] in
                 guard let self else { return nil }
                 guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
@@ -235,49 +270,49 @@ extension RPGSharePlayController {
                 self.recordJournalTransport(
                     state: .pending,
                     byteCount: attachmentData.count,
-                    for: gameNetworkModel
+                    for: prepared.model
                 )
-                Logger.sharePlay.debug("Journal: message \(gameNetworkModel.counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
+                Logger.sharePlay.debug("Journal: message \(prepared.model.counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(prepared.model.debugDescription, privacy: .public)")
                 guard self.journalTracker.shouldPublish(
                     module: moduleKey,
-                    itemId: gameNetworkModel.data.id,
-                    version: gameNetworkModel.data.version
+                    itemId: prepared.model.data.id,
+                    version: prepared.model.data.version
                 ) else {
                     self.recordJournalTransport(
                         state: .succeeded,
                         byteCount: attachmentData.count,
-                        for: gameNetworkModel
+                        for: prepared.model
                     )
-                    Logger.sharePlay.debug("Journal ✓: message \(gameNetworkModel.counter, privacy: .public) reused \(attachmentSize, privacy: .public) \(moduleKey.token, privacy: .public) attachment for \(gameNetworkModel.data.id, privacy: .public)")
+                    Logger.sharePlay.debug("Journal ✓: message \(prepared.model.counter, privacy: .public) reused \(attachmentSize, privacy: .public) \(moduleKey.token, privacy: .public) attachment for \(prepared.model.data.id, privacy: .public)")
                     return nil
                 }
-                let model = Self.journalMetadata(for: gameNetworkModel)
+                let model = Self.journalMetadata(for: prepared.model)
                 do {
                     let result = try await journal.add(attachmentData, metadata: model)
                     guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
-                    self.gameModel?.attachments[gameNetworkModel.data.type] = result
+                    self.gameModel?.attachments[prepared.model.data.type] = result
                     self.journalTracker.didPublish(
                         module: moduleKey,
-                        itemId: gameNetworkModel.data.id,
-                        version: gameNetworkModel.data.version,
+                        itemId: prepared.model.data.id,
+                        version: prepared.model.data.version,
                         attachmentId: result.id
                     )
                     self.recordJournalTransport(
                         state: .succeeded,
                         byteCount: attachmentData.count,
-                        for: gameNetworkModel
+                        for: prepared.model
                     )
-                    Logger.sharePlay.debug("Journal ✓: message \(gameNetworkModel.counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public)")
+                    Logger.sharePlay.debug("Journal ✓: message \(prepared.model.counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public)")
                     return result
                 } catch {
                     self.recordJournalTransport(
                         state: .failed,
                         byteCount: attachmentData.count,
-                        for: gameNetworkModel
+                        for: prepared.model
                     )
-                    Logger.sharePlay.error("Journal ✕: message \(gameNetworkModel.counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(gameNetworkModel.data.type.token, privacy: .public) and id: \(gameNetworkModel.data.id, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
+                    Logger.sharePlay.error("Journal ✕: message \(prepared.model.counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(prepared.model.data.type.token, privacy: .public) and id: \(prepared.model.data.id, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
                     if self.sessionLifecycle.isCurrent(sessionId: sessionId), let sender = self.packageSender {
-                        await self.sendChunked(encodedModel, for: gameNetworkModel, using: sender)
+                        await self.sendChunked(encodedModel, for: prepared.model, using: sender)
                     }
                     return nil
                 }
@@ -300,22 +335,41 @@ extension RPGSharePlayController {
             return
         }
 
-        // Targeted answers always ride the messenger — a requester that asks
-        // despite a published attachment demonstrably failed to get it, and the
-        // journal never re-emits an unchanged attachment set.
+        // Messenger photo repairs are normalized to one untargeted store, so
+        // every participant caches the bytes without changing presentation.
         addSendTask { [weak self] in
             guard let self,
                   self.sessionLifecycle.isCurrent(sessionId: sessionId),
                   let sender = self.packageSender
             else { return }
-            await self.sendChunked(encodedModel, for: gameNetworkModel, using: sender)
+            await self.sendChunked(encodedModel, for: prepared.model, using: sender)
         }
+    }
+
+    /// Chooses transport using the original targeted model, then normalizes a
+    /// photo repair for messenger delivery. Choosing again after clearing the
+    /// target would incorrectly move the repair back onto the journal.
+    static func prepareForTransport(
+        _ model: GameNetworkModel,
+        fileJournal: Bool,
+        journalAvailable: Bool,
+        photoRepairTracker: inout SharePlayPhotoRepairTracker
+    ) -> (model: GameNetworkModel, usesJournalTransport: Bool)? {
+        let usesJournal = usesJournalTransport(
+            for: model,
+            fileJournal: fileJournal,
+            journalAvailable: journalAvailable
+        )
+        guard !usesJournal else { return (model, true) }
+        guard let preparedModel = photoRepairTracker.prepareMessengerModel(model) else { return nil }
+        return (preparedModel, false)
     }
 
     /// The journal slot per module carries broadcast content — the master's
     /// current presentation — plus audio, whose targeted repairs are morphed
     /// into untargeted stores. Targeted answers of the other modules ride the
-    /// messenger, so they can never replace (and abort) an attachment that
+    /// messenger; full photo stores are normalized there into one coalesced
+    /// group repair. Neither path can replace (and abort) an attachment that
     /// participants are still downloading.
     static func usesJournalTransport(for model: GameNetworkModel, fileJournal: Bool, journalAvailable: Bool) -> Bool {
         fileJournal && journalAvailable && model.data.data != nil && (model.targetId == nil || model.data.type == .audio)
@@ -358,12 +412,6 @@ extension RPGSharePlayController {
         tasks[key] = task
     }
 
-    private func sendPackage(_ package: PackageMessage) async {
-        if let messenger {
-            try? await messenger.send(package)
-        }
-    }
-
     private func sendChunked(
         _ data: Data,
         for model: GameNetworkModel,
@@ -373,7 +421,16 @@ extension RPGSharePlayController {
         let size = Self.formattedByteCount(data.count)
         recordChunkedTransport(count: packageCount, byteCount: data.count, for: model)
         Logger.sharePlay.debug("Chunked: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public), encoded size \(size, privacy: .public)")
-        await sender.send(data: data)
+        do {
+            try await sender.send(data: data)
+            Logger.sharePlay.debug("Chunked ✓: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public)")
+        } catch is CancellationError {
+            Logger.sharePlay.debug("Chunked cancelled: message \(model.counter, privacy: .public)")
+        } catch {
+            // Missing one package leaves the receiver waiting forever. Keep the
+            // failure visible after the sender has exhausted its bounded retry.
+            Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public), error: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     private func recordJournalTransport(
@@ -416,12 +473,15 @@ extension RPGSharePlayController {
         Logger.sharePlay.debug("SharePlay: reset state: \(self.printState(), privacy: .public)")
         isActive = false
         messenger = nil
+        packageSender = nil
         journal = nil
         sessionLifecycle.reset()
         journalTracker.reset()
+        photoRepairTracker.reset()
         journalPublicationQueue.cancelAll()
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
+        packageReceiver.reset()
         gameModel?.attachments = [:]
         if groupSession != nil {
             groupSession?.leave()
@@ -494,6 +554,12 @@ extension RPGSharePlayController {
         self.groupSession = groupSession
         let messenger = GroupSessionMessenger(session: groupSession)
         self.messenger = messenger
+        // Bind every in-flight package stream to the messenger for this exact
+        // session. A later session replacement must not split one UUID stream
+        // across two GroupSessionMessenger instances.
+        packageSender = SharePlaySingleQueuePackageSender { package in
+            try await messenger.send(package)
+        }
         let journal = GroupSessionJournal(session: groupSession)
         self.journal = journal
 
@@ -546,6 +612,11 @@ extension RPGSharePlayController {
                 let added = activeParticipants.subtracting(previousParticipants)
                 defer { previousParticipants = activeParticipants }
                 Logger.sharePlay.debug("Session Participants active: \(activeParticipants.debugDescription, privacy: .public) added: \(added.debugDescription, privacy: .public) removed: \(removed.debugDescription, privacy: .public)")
+                if !added.isEmpty {
+                    // A joining participant may legitimately lack a photo that
+                    // was repaired for the previous group membership.
+                    self.photoRepairTracker.reset()
+                }
                 for participant in removed {
                     self.delegate?.sharePlayLostPlayer(id: participant.id)
                 }

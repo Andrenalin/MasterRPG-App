@@ -302,7 +302,7 @@ final class MasterPlayerControllerTests {
         rootSut.adventureRoot.startGame()
         rootPlayer.adventureRoot.startGame()
 
-        // send show map — the first show in a game ships the whole package
+        // send show map — the first show of this version ships the whole package
         let mapId = rootSut.mapRoot.itemController.itemDataModel.items[0]
         let photoId = rootSut.mapRoot.itemController.itemOrEmpty(for: mapId).photoId
         #expect(nil != photoId)
@@ -311,6 +311,11 @@ final class MasterPlayerControllerTests {
         let sendedShowMapData = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
         #expect(sendedShowMapData.data.data != nil)
         #expect(sendedShowMapData.usesFileJournal)
+        #expect(RPGSharePlayController.usesJournalTransport(
+            for: sendedShowMapData,
+            fileJournal: sendedShowMapData.usesFileJournal,
+            journalAvailable: true
+        ))
 
         var result = try await sutPlayer.handle(sendedShowMapData)
         #expect(nil != result)
@@ -332,6 +337,21 @@ final class MasterPlayerControllerTests {
         let entry = rootSut.mapRoot.gameController.gameItem(for: mapId).entries[0]
         #expect(!entry.isShown)
         rootSut.mapRoot.gameController.gameItem(for: mapId).toggle(entry.id)
+        let existingPinPhotoId = try #require(photoId)
+        let existingPhotoPin = MapPinModel(
+            id: UUID(),
+            name: "Known Character",
+            photoId: existingPinPhotoId
+        )
+        let missingPinPhotoId = UUID()
+        let missingPhotoPin = MapPinModel(
+            id: UUID(),
+            name: "New Monster",
+            photoId: missingPinPhotoId
+        )
+        rootSut.mapRoot.gameController.gameItem(for: mapId).mapPins.append(contentsOf: [existingPhotoPin, missingPhotoPin])
+        playerStoreAbstractionMock.requestData = nil
+        playerStoreAbstractionMock.requestHistory = []
         #expect(rootSut.mapRoot.gameController.gameItem(for: mapId)[entry.id].isShown)
         await sut.game(message: rootSut.mapRoot.gameController.networkMapUpdate(for: mapId), actionType: .mapState)
         let updatedMapData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
@@ -344,6 +364,87 @@ final class MasterPlayerControllerTests {
         let mapMaster = rootSut.mapRoot.gameController.gameItem(for: mapId)
         #expect(mapPlayer.entries[0].isShown)
         #expect(mapPlayer.entries == mapMaster.entries)
+        #expect(mapPlayer.mapPins.contains { $0.id == existingPhotoPin.id && $0.photoId == existingPinPhotoId })
+        #expect(mapPlayer.mapPins.contains { $0.id == missingPhotoPin.id && $0.photoId == missingPinPhotoId })
+
+        // mapState carries both pin references. The player already owns one
+        // photo and must issue exactly one data-less request for the absent id.
+        let repairRequests = playerStoreAbstractionMock.requestHistory.compactMap { $0 as? GameNetworkModel }
+        #expect(repairRequests.count == 1)
+        let repairRequest = try #require(repairRequests.first)
+        #expect(repairRequest.type == .store)
+        #expect(repairRequest.subType == .store)
+        #expect(repairRequest.data.type == .photo)
+        #expect(repairRequest.data.id == missingPinPhotoId)
+        #expect(repairRequest.data.data == nil)
+        let usesFileJournal = PlayerController.usesFileJournal(for: repairRequest)
+        #expect(!usesFileJournal)
+        #expect(!RPGSharePlayController.usesJournalTransport(
+            for: repairRequest,
+            fileJournal: usesFileJournal,
+            journalAvailable: true
+        ))
+    }
+
+    @Test func changedMapVersionIsRepublishedThroughSharePlayJournal() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let mapId = try #require(rootSut.mapRoot.itemController.itemDataModel.items.first)
+        let firstReference = await rootSut.mapRoot.gameController.share(id: mapId)
+
+        await sut.show(for: firstReference)
+        let firstFullMap = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(firstFullMap.data.data != nil)
+        #expect(firstFullMap.targetId == nil)
+        #expect(RPGSharePlayController.usesJournalTransport(
+            for: firstFullMap,
+            fileJournal: firstFullMap.usesFileJournal,
+            journalAvailable: true
+        ))
+        _ = try #require(try await sutPlayer.handle(firstFullMap))
+
+        let masterMap = rootSut.mapRoot.gameController.gameItem(for: mapId)
+        let firstVersion = masterMap.version
+        masterMap.pinScale += 0.5
+        let changedVersion = masterMap.version
+        #expect(changedVersion != firstVersion)
+
+        // Resharing builds a fresh reference. A new version of the same map ID
+        // must be treated as a new full publication, not as an old ID-only
+        // reshow that forces one player onto the chunk-repair path.
+        let changedReference = await rootSut.mapRoot.gameController.share(id: mapId)
+        #expect(changedReference.version == changedVersion)
+        await sut.show(for: changedReference)
+
+        let changedFullMap = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(changedFullMap.counter > firstFullMap.counter)
+        #expect(changedFullMap.data.id == mapId)
+        #expect(changedFullMap.data.version == changedVersion)
+        #expect(changedFullMap.data.data != nil)
+        #expect(changedFullMap.targetId == nil)
+        #expect(changedFullMap.usesFileJournal)
+        #expect(RPGSharePlayController.usesJournalTransport(
+            for: changedFullMap,
+            fileJournal: changedFullMap.usesFileJournal,
+            journalAvailable: true
+        ))
+
+        let acknowledgment = try #require(try await sutPlayer.handle(changedFullMap))
+        #expect(acknowledgment.subType == .ok)
+        let playerMap = rootPlayer.mapRoot.gameController.gameItem(for: mapId)
+        #expect(playerMap.version == changedVersion)
+        #expect(playerMap.pinScale == masterMap.pinScale)
+
+        // Only a repeat of the exact version returns to the lightweight
+        // reference path.
+        await sut.show(for: changedReference)
+        let sameVersionReshow = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(sameVersionReshow.data.version == changedVersion)
+        #expect(sameVersionReshow.data.data == nil)
+        #expect(!sameVersionReshow.usesFileJournal)
     }
 
     @Test func consecutiveSharePlayMapFilesReplaceThePlayerPresentation() async throws {
@@ -557,7 +658,7 @@ final class MasterPlayerControllerTests {
 
         // A reshow announces the map by reference — simulate the package having
         // gone out earlier in this game.
-        sut.gameModel.markSentGameItem(type: .map, id: mapId)
+        sut.gameModel.markSentGameItem(type: .map, id: mapId, version: mapShareData.version)
 
         await sut.show(for: mapShareData)
         let idOnlyMapReveal = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
@@ -659,7 +760,7 @@ final class MasterPlayerControllerTests {
         #expect(playerStoreAbstractionMock.requestData == nil)
     }
 
-    @Test func mapRevealWithMissingBackgroundRequestsFullMapOnce() async throws {
+    @Test func mapRevealWithMissingBackgroundRequestsOnlyFullMapOnce() async throws {
         try await setUp()
         try await importTestData(into: rootSut)
         rootSut.adventureRoot.startGame()
@@ -692,16 +793,17 @@ final class MasterPlayerControllerTests {
         #expect(fullMapRequest.data.id == mapId)
         #expect(sutPlayer.gameModel.gameUpdateType == .none)
 
-        // The retry is single-shot: the next incomplete delivery shows the map
-        // and heals the background through the per-photo repair instead.
+        // The retry is single-shot. The background never falls through to the
+        // pin-photo `.store/.store` repair path.
         playerStoreAbstractionMock.requestData = nil
+        playerStoreAbstractionMock.requestHistory = []
         let secondReveal = rootSut.gameModel.outgoingMessage(counter: 100, type: .reveal, subType: .show, asMaster: true, data: mapReference)
         let acknowledgment = try #require(try await sutPlayer.handle(secondReveal))
         #expect(acknowledgment.subType == .ok)
         #expect(sutPlayer.gameModel.gameUpdateType == .map)
-        let repairRequest = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)
-        #expect(repairRequest.type == .store)
-        #expect(repairRequest.data.id == backgroundId)
+        #expect(playerStoreAbstractionMock.requestData == nil)
+        #expect(playerStoreAbstractionMock.requestHistory.isEmpty)
+        #expect(!sutPlayer.gameModel.requestedRepairIds.contains(backgroundId))
     }
 
     @Test func stopClearsSentGameMaps() async throws {
@@ -711,7 +813,8 @@ final class MasterPlayerControllerTests {
 
         let mapId = rootSut.mapRoot.itemController.itemDataModel.items[0]
         await sut.show(for: rootSut.mapRoot.gameController.share(id: mapId))
-        #expect(sut.gameModel.hasSentGameItem(type: .map, id: mapId))
+        let version = rootSut.mapRoot.gameController.gameItem(for: mapId).version
+        #expect(sut.gameModel.hasSentGameItem(type: .map, id: mapId, version: version))
 
         await sut.stop()
         #expect(sut.gameModel.sentGameItems.isEmpty)
