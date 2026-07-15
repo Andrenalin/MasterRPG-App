@@ -120,7 +120,9 @@ private extension SpaceViewer {
 
     @MainActor
     func apply(remote transform: SpaceTransformModel?) {
-        guard isImmersiveSpace, let transform, let objectEntity else { return }
+        // Only apply when the shared world origin is established — before that,
+        // incoming positions are in the sender's head-local space and will jump.
+        guard isImmersiveSpace, isSharedPlacement, let transform, let objectEntity else { return }
         guard transform != lastSentTransform else { return }  // echo of our own send
 
         yaw = transform.yaw
@@ -135,14 +137,17 @@ private extension SpaceViewer {
     func sendTransformLoop() async {
         guard isImmersiveSpace, hasLoaded, networkActions != nil else { return }
         while !Task.isCancelled {
-            try? await Task.sleep(for: .milliseconds(300))
+            try? await Task.sleep(for: .milliseconds(50))
             sendTransformIfChanged()
         }
     }
 
     @MainActor
     func sendTransformIfChanged() {
-        guard let objectEntity else { return }
+        // Only send after the shared world origin is established — before that,
+        // objectEntity.position is relative to the head anchor and remote
+        // participants (already in world space) would see the object jump.
+        guard isSharedPlacement, let objectEntity else { return }
         let current = SpaceTransformModel(position: objectEntity.position, scale: objectEntity.scale, yaw: yaw, pitch: pitch)
         guard lastSentTransform != nil else {
             // Baseline after load — don't broadcast the initial pose.
@@ -230,7 +235,9 @@ private extension SpaceViewer {
                 .init(angle: yaw, axis: .upward)
 
             if let nameEntity {
-                nameEntity.setPosition([0, 2, 0], relativeTo: objectEntity)
+                // Use world-space position: nameEntity lives in a separate RealityView
+                // scene and setPosition(relativeTo:) across scenes is unsupported.
+                nameEntity.position = objectEntity.position(relativeTo: nil) + SIMD3<Float>(0, 2, 0)
             }
 #endif
         }
