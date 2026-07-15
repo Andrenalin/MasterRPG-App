@@ -92,7 +92,8 @@ private extension ImageViewer {
     }
     
     static func imageSize(_ image: AKImage, degrees: Double) -> CGSize {
-        (degrees == 0 || degrees == 180) ? image.fixedSize : CGSize(width: image.size.height, height: image.size.width)
+        let normalised = degrees.truncatingRemainder(dividingBy: 360)
+        return (normalised == 0 || normalised == 180) ? image.fixedSize : CGSize(width: image.size.height, height: image.size.width)
     }
 
     func resetZoom(withoutAnimation: Bool = false) {
@@ -260,8 +261,9 @@ fileprivate final class ImageViewerModel {
     
     func updateDegrees(_ newDegrees: Double, originalImageSize: CGSize) {
         degrees = newDegrees
-        baseImageSize = (newDegrees == 0 || newDegrees == 180) 
-            ? originalImageSize 
+        let normalised = newDegrees.truncatingRemainder(dividingBy: 360)
+        baseImageSize = (normalised == 0 || normalised == 180)
+            ? originalImageSize
             : CGSize(width: originalImageSize.height, height: originalImageSize.width)
     }
 }

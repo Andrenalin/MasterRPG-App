@@ -22,21 +22,21 @@ struct ViewerRootView: View {
     var body: some View {
         Group {
             if configuration.addToolbar && !configuration.isGame {
-                contentView
+                ViewerContentView(model: model, toolBarModel: toolBarModel)
                     .toolbar { toolbarContent }
                     .navigationTitle(model.name)
                     .navigationBarTitleDisplayModeAll(.inline)
             } else if configuration.isGame {
-                contentView
+                ViewerContentView(model: model, toolBarModel: toolBarModel)
                     .overlay(alignment: .bottomLeading) {
-                        rotateButton
+                        ViewerRotateButton(toolBarModel: toolBarModel, model: model)
 #if !os(visionOS)
                             .buttonStyle(.glass)
 #endif
                             .padding()
                     }
             } else {
-                contentView
+                ViewerContentView(model: model, toolBarModel: toolBarModel)
             }
         }
         .ignoresSafeArea(.container, edges: [.top, .bottom])
@@ -47,10 +47,30 @@ struct ViewerRootView: View {
     }
 }
 
-// MARK: - Content
+// MARK: - Toolbar
 
 private extension ViewerRootView {
-    var contentView: some View {
+    @ToolbarContentBuilder
+    var toolbarContent: some ToolbarContent {
+        if configuration.closeButton {
+            ToolbarItem(placement: .cancellationAction) {
+                ViewerCloseButton(dismissAction: dismissAction)
+            }
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            ViewerRotateButton(toolBarModel: toolBarModel, model: model)
+        }
+    }
+}
+
+// MARK: - Content
+
+private struct ViewerContentView: View {
+    let model: PhotoModel
+    let toolBarModel: GameToolBarModel
+
+    var body: some View {
         GeometryReader { geo in
             AsyncImageViewer(
                 model: model,
@@ -65,54 +85,59 @@ private extension ViewerRootView {
     }
 }
 
-// MARK: - Toolbar
-
-private extension ViewerRootView {
-    @ToolbarContentBuilder
-    var toolbarContent: some ToolbarContent {
-        if configuration.closeButton {
-            ToolbarItem(placement: .cancellationAction) {
-                closeButton
-            }
-        }
-        
-        ToolbarItem(placement: .primaryAction) {
-            rotateButton
-        }
-    }
-}
-
 // MARK: - Buttons
 
-private extension ViewerRootView {
-    var closeButton: some View {
+private struct ViewerCloseButton: View {
+    let dismissAction: (() -> Void)?
+
+    @Environment(PhotoRootModel.self) private var root
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
         let tintColor = root.config.module.tint
-        return Button {
+        Button {
             if let dismissAction {
                 dismissAction()
             } else {
                 dismiss()
             }
         } label: {
-            Image(systemName: "xmark.circle")
+            Label {
+                Text("Close", bundle: .module)
+            } icon: {
+                Image(systemName: "xmark.circle")
+            }
         }
+        .labelStyle(.iconOnly)
 #if os(macOS)
         .foregroundStyle(tintColor)
 #else
         .tint(tintColor)
 #endif
     }
-    
-    var rotateButton: some View {
+}
+
+private struct ViewerRotateButton: View {
+    let toolBarModel: GameToolBarModel
+    let model: PhotoModel
+
+    @Environment(PhotoRootModel.self) private var root
+
+    var body: some View {
         let tintColor = root.config.module.tint
-        return Button {
+        Button {
             withAnimation {
                 toolBarModel.degrees += 90
             }
         } label: {
-            Image(systemName: "rotate.right")
-                .rotationEffect(Angle(degrees: model.degrees))
+            Label {
+                Text("Rotate", bundle: .module)
+            } icon: {
+                Image(systemName: "rotate.right")
+                    .rotationEffect(Angle(degrees: model.degrees))
+            }
         }
+        .labelStyle(.iconOnly)
         .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
 #if os(macOS)
         .foregroundStyle(tintColor)
@@ -124,7 +149,7 @@ private extension ViewerRootView {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(PhotoRootModel.self) var root
-    
+
     NavigationStack {
         ViewerRootView(
             model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]),

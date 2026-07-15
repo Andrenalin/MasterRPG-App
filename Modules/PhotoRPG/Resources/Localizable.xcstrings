@@ -52,6 +52,9 @@
         }
       }
     },
+    "Close" : {
+
+    },
     "Convert to 3D" : {
       "localizations" : {
         "de" : {
@@ -184,6 +187,9 @@
           }
         }
       }
+    },
+    "Rotate" : {
+
     },
     "Search Photos" : {
       "comment" : "Title of the search photos intent.",
