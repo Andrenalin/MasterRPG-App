@@ -12,14 +12,14 @@ import Testing
 struct SharePlayPackageTransportTests {
 
     @Test("sender reports the correct total for exact-size chunks")
-    func senderReportsCorrectTotalForExactSizeChunks() async {
+    func senderReportsCorrectTotalForExactSizeChunks() async throws {
         let data = Data("abcdefgh".utf8)
         let collector = PackageCollector()
         let sender = SharePlaySingleQueuePackageSender(packageSize: 4) { package in
             await collector.append(package)
         }
 
-        await sender.send(data: data)
+        try await sender.send(data: data)
 
         let packages = await collector.values
         #expect(sender.packageCount(for: data) == 2)
@@ -27,6 +27,39 @@ struct SharePlayPackageTransportTests {
         #expect(packages.map(\.count) == [1, 2])
         #expect(packages.map(\.total) == [2, 2])
         #expect(packages.compactMap(\.data).reduce(Data(), +) == data)
+    }
+
+    @Test("default chunks remain below the encoded messenger limit")
+    func defaultChunksRemainBelowEncodedMessengerLimit() async throws {
+        let data = Data(repeating: 0xFF, count: SharePlaySingleQueuePackageSender.packageSize)
+        let collector = PackageCollector()
+        let sender = SharePlaySingleQueuePackageSender { package in
+            await collector.append(package)
+        }
+
+        try await sender.send(data: data)
+
+        let packages = await collector.values
+        let package = try #require(packages.first)
+        let encodedSize = try JSONEncoder().encode(package).count
+        #expect(packages.count == 1)
+        #expect(encodedSize < SharePlaySingleQueuePackageSender.encodedMessageSizeLimit)
+    }
+
+    @Test("sender retries a transient package failure")
+    func senderRetriesTransientPackageFailure() async throws {
+        let probe = PackageSendRetryProbe(failuresRemaining: 2)
+        let sender = SharePlaySingleQueuePackageSender(
+            packageSize: 4,
+            retryDelays: [.zero, .zero]
+        ) { package in
+            try await probe.send(package)
+        }
+
+        try await sender.send(data: Data("abcd".utf8))
+
+        #expect(await probe.attemptCount == 3)
+        #expect(await probe.sentPackageCount == 1)
     }
 
     @Test("receiver reassembles packages by package number")
@@ -686,6 +719,29 @@ private actor PackageCollector {
     func append(_ package: PackageMessage) {
         storage.append(package)
     }
+}
+
+private actor PackageSendRetryProbe {
+    private var failuresRemaining: Int
+    private(set) var attemptCount = 0
+    private(set) var sentPackageCount = 0
+
+    init(failuresRemaining: Int) {
+        self.failuresRemaining = failuresRemaining
+    }
+
+    func send(_: PackageMessage) throws {
+        attemptCount += 1
+        if failuresRemaining > 0 {
+            failuresRemaining -= 1
+            throw PackageSendProbeError.transient
+        }
+        sentPackageCount += 1
+    }
+}
+
+private enum PackageSendProbeError: Error {
+    case transient
 }
 
 private actor AttachmentLoadRetryProbe {

@@ -215,8 +215,13 @@ Wire framing:
 SharePlay uses the same `GameNetworkModel`.
 
 `GroupSessionMessenger` is the default path. The encoded envelope is split into
-ordered `PackageMessage` chunks of 200,000 bytes, reassembled by package UUID and
-sequence number, and throttled for 200 ms after every 60 packages.
+ordered `PackageMessage` chunks of 64,000 raw bytes, reassembled by package UUID
+and sequence number, and throttled for 200 ms after every 60 packages. The raw
+size leaves room below the 256 KB messenger limit after Codable/Base64 expansion
+and worst-case JSON escaping.
+Each package retries transient send failures twice; a terminal failure is logged
+instead of being silently discarded. A stream stays bound to the messenger that
+created it, and session reset clears incomplete receive assemblies.
 
 `GroupSessionJournal` is used when all of these are true:
 
@@ -658,14 +663,16 @@ so its private mirrors process the same repair.
 
 ### Pattern A: Master Reveals An Item, Everyone Already Has It
 
-For map, photo, PDF, and space, the first show in a game exports and broadcasts
-the full package immediately. Later shows of the same item are ID-only. Other
+For map, photo, PDF, and space, the first show of each item version exports and
+broadcasts the full package immediately. Later shows of that exact item version
+are ID-only. A changed version of the same ID is a new full publication. Other
 modules normally start with an ID-only reference.
 
 ```text
 Master -> all:
   .reveal/.show
-  data: full first-show payload, or an ID/version reference on a reshow
+  data: full first-show-of-version payload, or an ID/version reference on a
+        same-version reshow
 
 Each player:
   imports the payload or resolves the matching local item/file
@@ -1499,8 +1506,12 @@ Master:
 ```text
 Master shares map
 Master -> all:
-  first show: .reveal/.show with full map payload (SharePlay journal)
-  later show: .reveal/.show with map id/version only
+  first show of a version: .reveal/.show with full map payload (SharePlay journal)
+  same-version reshow: .reveal/.show with map id/version only
+
+Master changes map content that changes its version (for example pinScale)
+Master -> all:
+  new full .reveal/.show publication (SharePlay journal)
 
 Player has map:
   set current map
@@ -1587,9 +1598,11 @@ Master:
 - Master direct network fan-out happens before module handling.
 - Player filters block most player-origin messages. Dice and space transforms are
   intentional exceptions.
-- The first map/photo/PDF/space reveal carries a full payload; later reveals use
-  references. The full map includes its background and uses the SharePlay journal
-  for the initial broadcast. Other modules can still begin ID-only.
+- The first map/photo/PDF/space reveal of each version carries a full payload;
+  same-version reveals use references. The sent cache is keyed by module, item
+  ID, and version. A changed map therefore republishes through the SharePlay
+  journal instead of entering a requester-only chunk repair. The full map includes
+  its background. Other modules can still begin ID-only.
 - A missing receiver requests the full payload by returning the same type/subtype
   instead of `.ok`; the master's answer is targeted to that receiver.
 - Logical `targetId` filtering requires a current peer. V1 peers remain protected

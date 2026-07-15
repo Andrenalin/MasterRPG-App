@@ -21,17 +21,18 @@ final class MasterControllerModel: Sendable {
     var asProxy = false
     var pendingAudioPlays: [UUID: NetworkCodableDataType] = [:]
     var audioTransferPlayers: [UUID: Set<UUID>] = [:]
-    /// File-backed items whose full package already went out in the current
-    /// game — the first show sends the whole payload, every reshow only the id
-    /// reference.
-    var sentGameItems: [NetworkModules: Set<UUID>] = [:]
+    /// Latest file-backed item versions whose full package already went out in
+    /// the current game. A changed version must be broadcast in full again;
+    /// otherwise a new map is reduced to a reference and unnecessarily falls
+    /// back to a requester-only SharePlay chunk transfer.
+    var sentGameItems: [NetworkModules: [UUID: Int]] = [:]
 
-    func hasSentGameItem(type: NetworkModules, id: UUID) -> Bool {
-        sentGameItems[type, default: []].contains(id)
+    func hasSentGameItem(type: NetworkModules, id: UUID, version: Int) -> Bool {
+        sentGameItems[type]?[id] == version
     }
 
-    func markSentGameItem(type: NetworkModules, id: UUID) {
-        sentGameItems[type, default: []].insert(id)
+    func markSentGameItem(type: NetworkModules, id: UUID, version: Int) {
+        sentGameItems[type, default: [:]][id] = version
     }
     
     /// Reserves the next counter atomically. Reading and incrementing in separate
@@ -152,14 +153,17 @@ extension MasterController {
 extension MasterController {
     func show(for idType: NetworkCodableDataType) async {
         // File-backed payloads are big (a map package carries background + pin +
-        // player photos). The first show in a game ships the whole payload right
-        // away — the id-then-request round trip would make every player wait one
-        // extra full transfer, and over SharePlay the broadcast rides the journal
-        // as one shared attachment. A reshow sends only the reference; players
-        // still holding the item show it from memory, the others request it.
-        if Self.sendsFullPayloadOnFirstShow(idType.type), await !gameModel.hasSentGameItem(type: idType.type, id: idType.id) {
+        // player photos). The first show of each version ships the whole payload
+        // right away — the id-then-request round trip would make every player wait
+        // one extra full transfer, and over SharePlay the broadcast rides the
+        // journal as one shared attachment. A same-version reshow sends only the
+        // reference; players still holding the item show it from memory, the
+        // others request it.
+        if Self.sendsFullPayloadOnFirstShow(idType.type), await !gameModel.hasSentGameItem(type: idType.type, id: idType.id, version: idType.version) {
             if let fullData = try? await createGameData(for: idType) {
-                await MainActor.run { gameModel.markSentGameItem(type: idType.type, id: idType.id) }
+                await MainActor.run {
+                    gameModel.markSentGameItem(type: fullData.type, id: fullData.id, version: fullData.version)
+                }
                 await send(type: .reveal, subtype: .show, updated: fullData)
                 return
             }
@@ -314,7 +318,7 @@ extension MasterController: MasterNetworkStoreDelegate {
                 if requestedData.data != nil {
                     // The full payload went out — a later reshow can rely on
                     // the reference no matter which path delivered first.
-                    await gameModel.markSentGameItem(type: requestedData.type, id: requestedData.id)
+                    await gameModel.markSentGameItem(type: requestedData.type, id: requestedData.id, version: requestedData.version)
                 }
                 // Target the answer at the requester: an untargeted full payload
                 // re-triggered "show" on every peer and flipped everyone's screen.
@@ -518,7 +522,9 @@ extension MasterController {
             let mapData = try await root.mapRoot.gameControllable.createGameData(for: model.data.id)
             // The full package went out through the request path — reshows can
             // rely on the reference no matter which path delivered first.
-            await MainActor.run { gameModel.markSentGameItem(type: .map, id: model.data.id) }
+            await MainActor.run {
+                gameModel.markSentGameItem(type: .map, id: mapData.id, version: mapData.version)
+            }
             if model.subType == .mapState {
                 // Targeted at the recovering player: everyone else already has
                 // the map, and over SharePlay an untargeted full payload would

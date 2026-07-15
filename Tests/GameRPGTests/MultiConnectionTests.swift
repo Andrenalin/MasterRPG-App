@@ -997,10 +997,10 @@ struct MultiConnectionPhotoTests {
         env.removePhoto(photoId, from: testCase.missingRoles)
 
         let photoShareData = await env.masterRoot.photoRoot.gameController.share(id: photoId)
-        // Exercise the reshow path: the first show in a game ships the full
-        // payload, every later show announces by reference and missing
-        // participants request it — which is what this scenario matrix covers.
-        env.master.gameModel.markSentGameItem(type: .photo, id: photoId)
+        // Exercise the same-version reshow path: the first show of a version
+        // ships the full payload; later shows of that version announce by
+        // reference and missing participants request it.
+        env.master.gameModel.markSentGameItem(type: .photo, id: photoId, version: version)
         await env.master.show(for: photoShareData)
 
         let showCommand = try #require(env.masterNetwork.directMasterSpy.sendResponseData as? GameNetworkModel)

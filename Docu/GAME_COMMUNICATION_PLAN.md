@@ -102,10 +102,12 @@ The host of a private proxy mirror forwards host-targeted answers downstream
 with the target cleared. Messages targeted at a different ID are forwarded
 unchanged because that ID may be behind the host.
 
-### First Show And File Repair
+### First Show Of A Version And File Repair
 
-- the first map, photo, PDF, or space show in a game sends the full package
-- later shows use the ID/version reference
+- the first map, photo, PDF, or space show of each item version sends the full package
+- same-version shows use the ID/version reference
+- the master tracks sent packages by module, item ID, and version, so changing a
+  map version (including `pinScale`) creates a new full SharePlay journal publication
 - `GameControllable.reveal` verifies local backing bytes, not only metadata
 - photo/map repair sets bound repeated requests
 - every applied map-state snapshot rescans all pin photos; newly introduced pin
@@ -139,7 +141,10 @@ authoritative master snapshots are ignored.
 - configuration is gated by the current session ID, requested join, and joined
   state
 - session-scoped tasks are cancelled on reset; the join loop survives for rejoin
-- messenger payloads use ordered 200,000-byte packages
+- messenger payloads use ordered 64,000-byte raw packages so Codable/Base64 plus
+  worst-case JSON escaping remains below the 256 KB message limit
+- transient package-send failures retry twice; terminal failures are logged,
+  streams remain bound to one session messenger, and reset removes partial receives
 - journal publications are serialized per module; a replacement is committed
   before old-attachment cleanup, which runs without blocking later publications
 - journal snapshots load only their newest visual file presentation and await

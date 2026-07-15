@@ -202,9 +202,6 @@ final class RPGSharePlayController {
     func setup(gameModel: GameRootModel) {
         Logger.sharePlay.debug("SharePlay: setup")
         self.gameModel = gameModel
-        packageSender = SharePlaySingleQueuePackageSender { [weak self] package in
-            await self?.sendPackage(package)
-        }
 
         eligibilityTask?.cancel()
         eligibilityTask = Task { [weak self] in
@@ -415,12 +412,6 @@ extension RPGSharePlayController {
         tasks[key] = task
     }
 
-    private func sendPackage(_ package: PackageMessage) async {
-        if let messenger {
-            try? await messenger.send(package)
-        }
-    }
-
     private func sendChunked(
         _ data: Data,
         for model: GameNetworkModel,
@@ -430,7 +421,16 @@ extension RPGSharePlayController {
         let size = Self.formattedByteCount(data.count)
         recordChunkedTransport(count: packageCount, byteCount: data.count, for: model)
         Logger.sharePlay.debug("Chunked: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public), encoded size \(size, privacy: .public)")
-        await sender.send(data: data)
+        do {
+            try await sender.send(data: data)
+            Logger.sharePlay.debug("Chunked ✓: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public)")
+        } catch is CancellationError {
+            Logger.sharePlay.debug("Chunked cancelled: message \(model.counter, privacy: .public)")
+        } catch {
+            // Missing one package leaves the receiver waiting forever. Keep the
+            // failure visible after the sender has exhausted its bounded retry.
+            Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public), error: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     private func recordJournalTransport(
@@ -473,6 +473,7 @@ extension RPGSharePlayController {
         Logger.sharePlay.debug("SharePlay: reset state: \(self.printState(), privacy: .public)")
         isActive = false
         messenger = nil
+        packageSender = nil
         journal = nil
         sessionLifecycle.reset()
         journalTracker.reset()
@@ -480,6 +481,7 @@ extension RPGSharePlayController {
         journalPublicationQueue.cancelAll()
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
+        packageReceiver.reset()
         gameModel?.attachments = [:]
         if groupSession != nil {
             groupSession?.leave()
@@ -552,6 +554,12 @@ extension RPGSharePlayController {
         self.groupSession = groupSession
         let messenger = GroupSessionMessenger(session: groupSession)
         self.messenger = messenger
+        // Bind every in-flight package stream to the messenger for this exact
+        // session. A later session replacement must not split one UUID stream
+        // across two GroupSessionMessenger instances.
+        packageSender = SharePlaySingleQueuePackageSender { package in
+            try await messenger.send(package)
+        }
         let journal = GroupSessionJournal(session: groupSession)
         self.journal = journal
 
