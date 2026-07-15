@@ -51,9 +51,8 @@ final class PlayerControllerModel: Sendable {
     // requested once instead of looping master responses forever.
     var requestedRepairIds: Set<UUID> = []
     // Maps whose background photo was missing after a delivery and triggered one
-    // full-map re-request. A master that cannot inline the background would
-    // otherwise ping-pong full payloads forever; after the single retry the
-    // background heals through the per-photo repair path instead.
+    // full-map re-request. The background belongs exclusively to the full map
+    // package, so the single retry prevents a full-payload request loop.
     var requestedFullMapIds: Set<UUID> = []
 
     func increaseMessageCounter() {
@@ -692,9 +691,8 @@ extension PlayerController {
             await MainActor.run { _ = gameModel.pendingMapRequests.remove(model.data.id) }
             if try await root.mapRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: false) {
                 // A map without its background photo is incomplete — ask for the
-                // whole package once instead of showing a blank board. After that
-                // single retry the background heals via the per-photo repair, so
-                // a master that cannot inline it never causes a payload loop.
+                // whole package once instead of putting the background onto the
+                // pin-photo repair path. The single retry bounds payload loops.
                 if await !root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: model.data.id) {
                     let isFirstFullMapRequest = await MainActor.run { gameModel.requestedFullMapIds.insert(model.data.id).inserted }
                     if isFirstFullMapRequest {
@@ -708,8 +706,8 @@ extension PlayerController {
                     // when that one-shot message was missed.
                     gameModel.gameUpdateType = .map
                 }
-                // Also on a re-reveal from memory: a pin photo may have lost its
-                // local binary (or joined via mapState) since the first show.
+                // Also on a re-reveal from memory: a newer mapState may have
+                // introduced a pin whose photo model is not owned locally.
                 // `requestedRepairIds` keeps this to one request per connection.
                 await requestMissingMapImages(itemId: model.data.id)
                 #if os(visionOS)
@@ -756,6 +754,10 @@ extension PlayerController {
             case .mapState:
                 if await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: model.data.version) {
                     await root.mapRoot.mapGameControllable.updateMap(for: model.data.id, with: model.data)
+                    // mapState carries pin metadata but not newly referenced
+                    // photo models. Repair missing pin photos through the normal
+                    // data-less `.store` request. The background stays with map.
+                    await requestMissingMapImages(itemId: model.data.id)
 
                     // Update fog of war on 3D board
                     #if os(visionOS)
@@ -787,12 +789,12 @@ extension PlayerController {
         return nil
     }
 
-    /// Requests photos the current map needs (background and player pins) whose
-    /// binary is not available locally, via the unconditional `.store` path.
-    /// Each photo is requested once per connection; the id is released when the
-    /// repair delivers a local file, so a failing photo cannot loop.
+    /// Requests pin photos absent from both the photo game state and persistent
+    /// item controller. The map background is delivered with the full map.
+    /// Each photo is requested once per connection; SharePlay turns the first
+    /// full answer into one group store so peers do not transfer it again.
     func requestMissingMapImages(itemId: UUID) async {
-        let missingImages = await root.mapRoot.mapGameControllable.missingPlayerImages(itemId: itemId)
+        let missingImages = await root.mapRoot.mapGameControllable.missingMapImages(itemId: itemId)
         for idType in missingImages {
             let isFirstRequest = await MainActor.run { gameModel.requestedRepairIds.insert(idType.id).inserted }
             guard isFirstRequest else { continue }

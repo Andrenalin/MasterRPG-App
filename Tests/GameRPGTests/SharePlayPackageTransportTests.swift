@@ -105,6 +105,15 @@ struct SharePlayPackageTransportTests {
         let reference = Self.message(type: .reveal, module: .map, data: nil)
         #expect(!RPGSharePlayController.usesJournalTransport(for: reference, fileJournal: true, journalAvailable: true))
 
+        // A mapState-introduced pin image is requested without bytes. Even an
+        // explicit journal preference must therefore use ordered packages.
+        let pinImageRequest = Self.message(type: .store, module: .photo, data: nil)
+        #expect(!RPGSharePlayController.usesJournalTransport(for: pinImageRequest, fileJournal: true, journalAvailable: true))
+
+        var pinImageResponse = Self.message(type: .store, module: .photo, data: Data("pin".utf8))
+        pinImageResponse.targetId = UUID()
+        #expect(!RPGSharePlayController.usesJournalTransport(for: pinImageResponse, fileJournal: true, journalAvailable: true))
+
         // A targeted map answer must never replace the broadcast attachment
         // that other participants are still downloading.
         var targetedMap = Self.message(type: .reveal, module: .map, data: Data("map".utf8))
@@ -116,6 +125,86 @@ struct SharePlayPackageTransportTests {
         var targetedAudio = Self.message(type: .store, module: .audio, data: Data("audio".utf8))
         targetedAudio.targetId = UUID()
         #expect(RPGSharePlayController.usesJournalTransport(for: targetedAudio, fileJournal: true, journalAvailable: true))
+    }
+
+    @Test("three SharePlay players produce one chunked repair per unique photo")
+    func sharePlayPhotoRepairsAreBroadcastAndCoalesced() throws {
+        let photoA = UUID()
+        let photoB = UUID()
+        let player1 = UUID()
+        let player2 = UUID()
+        let player3 = UUID()
+        var tracker = SharePlayPhotoRepairTracker()
+        let responses = [
+            Self.masterPhotoRepair(counter: 10, photoId: photoA, targetId: player1),
+            Self.masterPhotoRepair(counter: 11, photoId: photoB, targetId: player2),
+            Self.masterPhotoRepair(counter: 12, photoId: photoA, targetId: player3),
+            Self.masterPhotoRepair(counter: 13, photoId: photoB, targetId: player3)
+        ]
+        var preparedResponses: [(model: GameNetworkModel, usesJournalTransport: Bool)] = []
+
+        for response in responses {
+            if let prepared = RPGSharePlayController.prepareForTransport(
+                response,
+                fileJournal: true,
+                journalAvailable: true,
+                photoRepairTracker: &tracker
+            ) {
+                preparedResponses.append(prepared)
+            }
+        }
+
+        #expect(preparedResponses.count == 2)
+        #expect(preparedResponses.map(\.model.data.id) == [photoA, photoB])
+        #expect(preparedResponses.allSatisfy { $0.model.targetId == nil })
+        #expect(preparedResponses.allSatisfy { $0.model.type == .store && $0.model.subType == .store })
+        #expect(preparedResponses.allSatisfy { !$0.usesJournalTransport })
+
+        // Transport is intentionally chosen before target normalization. The
+        // normalized full stores would otherwise qualify for the journal.
+        let first = try #require(preparedResponses.first)
+        #expect(RPGSharePlayController.usesJournalTransport(
+            for: first.model,
+            fileJournal: true,
+            journalAvailable: true
+        ))
+    }
+
+    @Test("photo repair coalescing resets for a changed participant set")
+    func sharePlayPhotoRepairCoalescingCanReset() {
+        let photoId = UUID()
+        let targetId = UUID()
+        var tracker = SharePlayPhotoRepairTracker()
+        let version1 = Self.masterPhotoRepair(counter: 20, photoId: photoId, version: 1, targetId: targetId)
+        let version2 = Self.masterPhotoRepair(counter: 22, photoId: photoId, version: 2, targetId: targetId)
+
+        #expect(RPGSharePlayController.prepareForTransport(
+            version1,
+            fileJournal: true,
+            journalAvailable: true,
+            photoRepairTracker: &tracker
+        ) != nil)
+        #expect(RPGSharePlayController.prepareForTransport(
+            version1,
+            fileJournal: true,
+            journalAvailable: true,
+            photoRepairTracker: &tracker
+        ) == nil)
+        #expect(RPGSharePlayController.prepareForTransport(
+            version2,
+            fileJournal: true,
+            journalAvailable: true,
+            photoRepairTracker: &tracker
+        ) != nil)
+
+        tracker.reset()
+
+        #expect(RPGSharePlayController.prepareForTransport(
+            version2,
+            fileJournal: true,
+            journalAvailable: true,
+            photoRepairTracker: &tracker
+        ) != nil)
     }
 
     @Test("session configuration waits for join to be requested and joined")
@@ -553,6 +642,35 @@ private extension SharePlayPackageTransportTests {
             subType: type == .store ? .store : .show,
             gameConfig: GameConfigModel(id: UUID(), state: .started, master: .empty),
             data: NetworkCodableDataType(id: UUID(), type: module, version: 1, data: data)
+        )
+    }
+
+    static func masterPhotoRepair(
+        counter: Int,
+        photoId: UUID,
+        version: Int = 1,
+        targetId: UUID
+    ) -> GameNetworkModel {
+        let masterId = UUID()
+        return GameNetworkModel(
+            counter: counter,
+            proxyCounter: 0,
+            type: .store,
+            subType: .store,
+            masterId: masterId,
+            sender: GameSenderModel(
+                id: masterId,
+                role: .master,
+                name: "Master",
+                characterId: nil
+            ),
+            targetId: targetId,
+            data: NetworkCodableDataType(
+                id: photoId,
+                type: .photo,
+                version: version,
+                data: Data("photo-\(version)".utf8)
+            )
         )
     }
 

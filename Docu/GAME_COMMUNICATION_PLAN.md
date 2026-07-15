@@ -108,12 +108,18 @@ unchanged because that ID may be behind the host.
 - later shows use the ID/version reference
 - `GameControllable.reveal` verifies local backing bytes, not only metadata
 - photo/map repair sets bound repeated requests
+- every applied map-state snapshot rescans all pin photos; newly introduced pin
+  photos repair through data-less `.store/.store` requests
+  only when their IDs exist in neither the photo game controller nor item controller
+- the map background is excluded from pin repair; it is checked separately and
+  remains part of the full map payload sent through the SharePlay journal
+- duplicate photo IDs are removed before requesting
 - responses echo the original counter and strip incoming payload bytes
 - a successful full response is marked sent even when it came through a request
   path
 
 These rules prevent alternating photo responses from flipping every screen and
-prevent a permanently missing file from driving an endless repair loop.
+prevent a missing reference from driving an endless repair loop.
 
 ### Deduplication And Ordering
 
@@ -147,6 +153,9 @@ authoritative master snapshots are ignored.
   older masters are accepted only when they match the current map intent
 - cancelled messenger/journal work checks its session before delivery or mutation
 - targeted non-audio repair payloads use messenger packages
+- full `.store/.store` photo repairs choose packages while targeted, then become
+  untargeted group stores and coalesce by photo ID/version; the cache resets for
+  a joining participant
 - targeted audio journal repairs become untargeted `.store/.show` metadata
 - failed journal publication falls back to packages
 - failed attachment loading still delivers metadata so normal repair can run
@@ -176,6 +185,10 @@ The implementation is covered by Swift Testing suites for:
 - targeted photo repair across players, observers, and proxies
 - metadata/full-payload dedup separation and retry after failed processing
 - SharePlay package reassembly, lifecycle gating, and journal selection
+- two-pin mapState repair requesting only the one pin photo absent from both local
+  photo controllers, excluding the background from repair
+- first full-map SharePlay broadcast selecting the journal transport
+- three-player SharePlay photo repair coalescing over messenger packages
 - proxy invisibility, host identity remapping, and host-target forwarding
 - audio availability convergence and targeted pre-play transfers
 - current-presentation replay after ready

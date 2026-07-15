@@ -6,6 +6,7 @@ import Foundation
 import Testing
 
 @testable import MapRPG
+@testable import PhotoRPG
 
 @MainActor
 struct GameControllerTests {
@@ -69,18 +70,48 @@ struct GameControllerTests {
         sut.updateMap(for: mapId, with: snapshot)
         #expect(sut.gameItem(for: mapId)[roomEntry.id].isShown)
 
-        sut.gameItem(for: mapId).mapPins = [
-            MapPinModel(id: playerId, name: "Hero", photoId: photoId, isPlayer: true, players: [playerId])
-        ]
-        let missingImages = await sut.missingPlayerImages(itemId: mapId)
-        #expect(missingImages.map(\.id) == [photoId])
+        // The first pin photo exists only in the persistent photo controller
+        // and intentionally has no local file. SharePlay must not request it;
+        // the second photo is absent from both photo controllers.
+        let unavailableFile = FileUrl(
+            fileId: UUID(),
+            url: URL.temporaryDirectory.appending(path: "missing-\(UUID().uuidString).jpg"),
+            location: .local,
+            module: NetworkModules.photo.token,
+            relativeUrl: nil
+        )
+        root.photoRoot.itemController.replace(
+            model: PhotoModel(
+                id: photoId,
+                name: "Existing metadata-only photo",
+                fileUrl: unavailableFile
+            ),
+            isInsert: true
+        )
+        #expect(root.photoRoot.gameController.gameModel.itemData[photoId] == nil)
+        #expect(root.photoRoot.itemController.itemSync(for: photoId, noGame: true) != nil)
+        #expect(await !root.photoRoot.gameController.hasLocalFileData(for: photoId))
 
-        // A map without a background photo is trivially complete; an unknown
-        // background photo makes it incomplete.
-        #expect(await sut.hasBackgroundImage(itemId: mapId))
+        let monsterPhotoId = UUID()
+        sut.gameItem(for: mapId).mapPins = [
+            MapPinModel(id: playerId, name: "Hero", photoId: photoId, isPlayer: true, players: [playerId]),
+            MapPinModel(id: UUID(), name: "Monster", photoId: monsterPhotoId)
+        ]
+        let missingBackgroundPhotoId = UUID()
+        sut.gameItem(for: mapId).photoId = missingBackgroundPhotoId
+        let missingImages = await sut.missingMapImages(itemId: mapId)
+        #expect(missingImages.map(\.id) == [monsterPhotoId])
+        #expect(!missingImages.map(\.id).contains(missingBackgroundPhotoId))
+        #expect(root.photoRoot.gameController.gameModel.itemData[photoId] != nil)
+
+        // Background availability is checked separately and never turns into a
+        // pin-photo repair. Both an unknown background and missing local bytes
+        // make the full map incomplete.
+        #expect(await !sut.hasBackgroundImage(itemId: mapId))
         sut.gameItem(for: mapId).photoId = photoId
         #expect(await !sut.hasBackgroundImage(itemId: mapId))
         sut.gameItem(for: mapId).photoId = nil
+        #expect(await sut.hasBackgroundImage(itemId: mapId))
 
         _ = sut.demoNextMap(itemId: mapId, restart: true)
         _ = sut.saveAll()

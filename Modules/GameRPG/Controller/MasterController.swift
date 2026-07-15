@@ -762,7 +762,7 @@ private extension MasterController {
             return await root.spaceRoot.gameControllable.hasLocalFileData(for: data.id)
         case .map:
             guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: data.id) else { return false }
-            return await root.mapRoot.mapGameControllable.missingPlayerImages(itemId: data.id).isEmpty
+            return await root.mapRoot.mapGameControllable.missingMapImages(itemId: data.id).isEmpty
         default:
             return true
         }
