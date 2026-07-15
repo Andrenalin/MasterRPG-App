@@ -77,7 +77,6 @@ private struct ViewerContentView: View {
                 size: geo.size,
                 toolBarModel: toolBarModel
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
 #if !os(visionOS)
             .background(Color.black.gradient)
 #endif

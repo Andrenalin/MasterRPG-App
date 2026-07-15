@@ -39,31 +39,25 @@ struct ImageViewer: View {
         ZStack(alignment: .topLeading) {
             Color.clear.ignoresSafeArea()
 
-            Image(akImage: image)
-                .applyIf(contentMode == .fill) { content in
-                    content
-                        .resizable()
-                        .rotationEffect(Angle(degrees: currentDegrees))
-                        .aspectRatio(contentMode: contentMode)
-                        .frame(width: containerSize.width, height: containerSize.height, alignment: .center)
-                }
-                .applyIf(contentMode != .fill) { content in
-                    content
-                        .scaleEffect(model.scale)
-                        .rotationEffect(Angle(degrees: currentDegrees))
-                        .offset(x: model.offset.x, y: model.offset.y)
-                        .contentMargins(.all, 50)
-                        .frame(width: model.currentSize.width, height: model.currentSize.height)
-                }
+            if contentMode == .fill {
+                Image(akImage: image)
+                    .resizable()
+                    .rotationEffect(Angle(degrees: currentDegrees))
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: containerSize.width, height: containerSize.height, alignment: .center)
+            } else {
+                Image(akImage: image)
+                    .scaleEffect(model.scale)
+                    .rotationEffect(Angle(degrees: currentDegrees))
+                    .offset(x: model.offset.x, y: model.offset.y)
+                    .frame(width: model.currentSize.width, height: model.currentSize.height)
+            }
         }
         .frame(width: containerSize.width, height: containerSize.height, alignment: .leading)
 #if !os(tvOS)
         .dragTapGesture(pressAction: pressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
-        .onChange(of: toolBarModel?.degrees) { _, newDegrees in
-            if let newDegrees {
-                model.updateDegrees(newDegrees, originalImageSize: image.fixedSize)
-            }
+        .onChange(of: toolBarModel?.degrees) { _, _ in
             resetZoom()
         }
         .task(id: id) {
@@ -185,12 +179,6 @@ private extension ImageViewer {
         model.offset = newOffset
     }
     
-    func translate(from location: CGPoint) -> CGPoint {
-        var newOffset = (location - model.offset) / model.scale
-        newOffset.x = min(max(newOffset.x, 0), model.baseImageSize.width)
-        newOffset.y = min(max(newOffset.y, 0), model.baseImageSize.height)
-        return newOffset
-    }
 }
 
 // MARK: - Gesture Double Tap
