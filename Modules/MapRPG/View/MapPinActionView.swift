@@ -58,6 +58,7 @@ struct MapPinActionView: View, Equatable {
     let showActions: Bool
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
+    var tapAction: (() -> Void)? = nil
 
     @Environment(MapRootModel.self) private var root
     @Environment(ScenesManager.self) private var scenesManager
@@ -86,7 +87,7 @@ struct MapPinActionView: View, Equatable {
     }
 
     var body: some View {
-        MapPinView(model: model, pinId: pinId, pinSize: pinSize, isShown: isShown, borderColor: borderColor, canDrag: canDrag, doubleTapAction: doubleTapAction, dragEndAction: dragEndAction)
+        MapPinView(model: model, pinId: pinId, pinSize: pinSize, isShown: isShown, borderColor: borderColor, canDrag: canDrag, doubleTapAction: doubleTapAction, dragEndAction: dragEndAction, tapAction: tapAction)
             .overlay {
                 if showActions {
 #if os(visionOS)

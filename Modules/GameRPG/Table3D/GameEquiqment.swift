@@ -357,10 +357,11 @@ final class PinPawn {
         }
     }
 
-    /// Applies pin state: position, size, tint, and the game-master-only
+    /// Applies pin state: position, size, zoom scale, tint, and the game-master-only
     /// hidden dimming (mirrors the 2D green overlay for hidden pins).
     func update(pin: MapPinModel, position: SIMD3<Float>, hiddenForMaster: Bool) {
         entity.position = position
+        entity.scale = SIMD3<Float>(repeating: pin.isZoom ? 4.0 : 1.0)
         if pin.size != currentSize {
             currentSize = pin.size
             applySize(pin.size)

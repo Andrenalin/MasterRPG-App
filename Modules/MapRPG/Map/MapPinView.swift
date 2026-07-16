@@ -66,6 +66,7 @@ struct MapPinView: View, Equatable {
     let canDrag: Bool
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
+    var tapAction: (() -> Void)? = nil
 
     @Environment(MapRootModel.self) private var root
 
@@ -131,6 +132,7 @@ struct MapPinView: View, Equatable {
         let tapGesture = TapGesture().onEnded {
             withAnimation {
                 model.isExpandedId = model.isExpandedId == pinId ? nil : pinId
+                tapAction?()
             }
         }
         let doubleTap = TapGesture(count: 2).onEnded {

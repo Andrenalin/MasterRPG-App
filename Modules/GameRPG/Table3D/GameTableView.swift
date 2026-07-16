@@ -61,7 +61,9 @@ public struct GameTableView: View {
                 }
                 // Pin drag: the handlers guard permissions — the master moves
                 // every pin, a player only its own.
-                .gesture(
+                // Uses simultaneousGesture so TabletopKit's own gesture recognisers
+                // do not consume the event before it reaches the pin entities.
+                .simultaneousGesture(
                     DragGesture(minimumDistance: 5)
                         .targetedToEntity(where: .has(PinComponent.self))
                         .onChanged { value in
@@ -79,7 +81,7 @@ public struct GameTableView: View {
                 )
                 // Double tap: master hides/shows the pin. Single tap: ×4 zoom
                 // for everyone, like the 2D viewer.
-                .gesture(
+                .simultaneousGesture(
                     TapGesture(count: 2)
                         .targetedToEntity(where: .has(PinComponent.self))
                         .exclusively(before: TapGesture().targetedToEntity(where: .has(PinComponent.self)))

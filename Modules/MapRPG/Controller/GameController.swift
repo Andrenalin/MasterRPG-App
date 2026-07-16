@@ -34,6 +34,7 @@ public protocol MapGameStorable {
     func missingMapImages(itemId: UUID) async -> [NetworkCodableDataType]
     @MainActor func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool
     @MainActor func togglePin(itemId: UUID, pinId: UUID) -> Bool
+    @MainActor func zoomPin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func networkPin(itemId: UUID, pinId: UUID) -> NetworkCodableDataType?
     @MainActor func updateMap(for itemId: UUID, with data: NetworkCodableDataType)
     @MainActor func mapUpdateResult(for itemId: UUID) -> String
@@ -316,6 +317,20 @@ extension GameController: MapGameStorable {
         let item = gameItem(for: itemId)
         guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
         pin.isShown.toggle()
+        pin.timeInterval = Date.now.timeIntervalSince1970
+        item[MapPinId.id, pinId] = pin
+        if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pinId }) {
+            mapGameModel.playerPins[index] = pin
+        }
+        return true
+    }
+
+    /// Toggles a pin's zoom state — visible to all participants via mapState.
+    @MainActor
+    func zoomPin(itemId: UUID, pinId: UUID) -> Bool {
+        let item = gameItem(for: itemId)
+        guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
+        pin.isZoom.toggle()
         pin.timeInterval = Date.now.timeIntervalSince1970
         item[MapPinId.id, pinId] = pin
         if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pinId }) {

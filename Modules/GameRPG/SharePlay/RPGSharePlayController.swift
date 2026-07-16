@@ -668,8 +668,10 @@ extension RPGSharePlayController {
         sessionLifecycle.didRequestJoin(sessionId: groupSession.id)
         playBack?.coordinateWithSession(groupSession)
         #if os(visionOS)
-        tabletopGame?.coordinateWithSession(groupSession)
-
+        Task {
+            await tabletopGame?.coordinateWithSession(groupSession)
+        }
+        
         if tabletopGame != nil {
             if let gameTableModel = gameModel?.gameTableModel {
                 setupSeatAssignment(gameTableModel: gameTableModel)

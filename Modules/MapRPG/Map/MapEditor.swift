@@ -195,8 +195,13 @@ private extension MapEditor {
                     drawPin(id: viewModel.pins.pointer.id)
                 }
 
-                // Expanded pin always on top
-                if let scalePinId = viewModel.pins.isExpandedId {
+                // Zoomed pins always on top (visible to all via mapState)
+                ForEach(viewModel.pins.mapPins.filter { $0.isZoom && (viewModel.displayMode != .player || $0.isShown) }, id: \.id) { pin in
+                    drawPin(id: pin.id)
+                }
+
+                // Edit-mode action-menu expanded pin on very top
+                if viewModel.mapMode == .edit, let scalePinId = viewModel.pins.isExpandedId {
                     drawPin(id: scalePinId)
                 }
 
@@ -313,7 +318,11 @@ extension MapEditor {
 
 extension MapEditor {
     var drawPins: some View {
-        ForEach(viewModel.pins.mapPins.filter({ $0.id != viewModel.pins.isExpandedId && (viewModel.displayMode != .player || $0.isShown) })) { pin in
+        ForEach(viewModel.pins.mapPins.filter({
+            !$0.isZoom
+            && (viewModel.displayMode != .player || $0.isShown)
+            && (viewModel.mapMode != .edit || $0.id != viewModel.pins.isExpandedId)
+        })) { pin in
             drawPin(id: pin.id)
         }
     }
@@ -321,13 +330,25 @@ extension MapEditor {
     @ViewBuilder
     func drawPin(id: UUID) -> some View {
         if let pin = viewModel.pins.pinPointer(for: id) {
-            let scaleFact: CGFloat = viewModel.pins.isExpandedId == id ? 4.0 : 1.0
+            let scaleFact: CGFloat = pin.isZoom ? 4.0 : 1.0
             let pinSize = pin.size.size * viewModel.pinScale * scaleFact
             let location: CGPoint = pin.location - (pinSize / CGFloat(2.0))
             let canDrag = viewModel.mapMode == .edit
                 || viewModel.mapMode == .gameMaster
                 || id == viewModel.playerPinId
                 || id == map.pointer.id
+
+            let tapZoomAction: (() -> Void)? = (viewModel.mapMode == .gameMaster && id != viewModel.pins.pointer.id) ? {
+                guard var updatedPin = viewModel.pins.pinPointer(for: id) else { return }
+                updatedPin.isZoom.toggle()
+                updatedPin.timeInterval = Date.now.timeIntervalSince1970
+                viewModel.pins.setPinPointer(updatedPin: updatedPin)
+                map[MapPinId.id, updatedPin.id] = updatedPin
+                if let idx = root.gameController.mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
+                    root.gameController.mapGameModel.playerPins[idx] = updatedPin
+                }
+                if viewModel.isStreaming { viewModel.sendMapUpdates?() }
+            } : nil
 
             MapPinActionView(
                 model: viewModel.pins,
@@ -337,33 +358,36 @@ extension MapEditor {
                 isShown: pin.isShown,
                 borderColor: borderColorForPin(position: pin),
                 canDrag: canDrag,
-                showActions: viewModel.mapMode == .edit
-            ) {
-                if viewModel.mapMode == .edit {
-                    mapEditController.togglePinVisibility(pinId: pin.id, editorModel: viewModel)
-                } else if viewModel.mapMode == .gameMaster {
-                    guard var updatedPin = viewModel.pins.pinPointer(for: id) else { return }
-                    updatedPin.isShown.toggle()
-                    viewModel.pins.setPinPointer(updatedPin: updatedPin)
-                    map.setPinPointer(updatedPin: updatedPin)
-                    if viewModel.isStreaming { viewModel.sendMapUpdates?() }
-                }
-            } dragEndAction: {
-                guard let updatedPin = viewModel.pins.pinPointer(for: pin.id) else { return }
-                if map.pointer.id == updatedPin.id {
-                    viewModel.updatePointer(location: updatedPin.location, map: map, withOutRelocation: true)
-                } else if viewModel.mapMode == .edit {
-                    mapEditController.updatePinMove(pin: updatedPin, editorModel: viewModel)
-                } else if viewModel.mapMode == .gameMaster || updatedPin.id == viewModel.playerPinId {
-                    map[MapPinId.id, updatedPin.id] = updatedPin
-                    if let idx = root.gameController.mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
-                        root.gameController.mapGameModel.playerPins[idx] = updatedPin
+                showActions: viewModel.mapMode == .edit,
+                doubleTapAction: {
+                    if viewModel.mapMode == .edit {
+                        mapEditController.togglePinVisibility(pinId: pin.id, editorModel: viewModel)
+                    } else if viewModel.mapMode == .gameMaster {
+                        guard var updatedPin = viewModel.pins.pinPointer(for: id) else { return }
+                        updatedPin.isShown.toggle()
+                        viewModel.pins.setPinPointer(updatedPin: updatedPin)
+                        map.setPinPointer(updatedPin: updatedPin)
+                        if viewModel.isStreaming { viewModel.sendMapUpdates?() }
                     }
-                    if viewModel.displayMode == .player || viewModel.isStreaming {
-                        viewModel.sendMapUpdates?()
+                },
+                dragEndAction: {
+                    guard let updatedPin = viewModel.pins.pinPointer(for: pin.id) else { return }
+                    if map.pointer.id == updatedPin.id {
+                        viewModel.updatePointer(location: updatedPin.location, map: map, withOutRelocation: true)
+                    } else if viewModel.mapMode == .edit {
+                        mapEditController.updatePinMove(pin: updatedPin, editorModel: viewModel)
+                    } else if viewModel.mapMode == .gameMaster || updatedPin.id == viewModel.playerPinId {
+                        map[MapPinId.id, updatedPin.id] = updatedPin
+                        if let idx = root.gameController.mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
+                            root.gameController.mapGameModel.playerPins[idx] = updatedPin
+                        }
+                        if viewModel.displayMode == .player || viewModel.isStreaming {
+                            viewModel.sendMapUpdates?()
+                        }
                     }
-                }
-            }
+                },
+                tapAction: tapZoomAction
+            )
             .equatable()
             .opacity(viewModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
             .offset(x: location.x, y: location.y)

@@ -111,8 +111,10 @@ class GameSetup {
         }
 
         var projection: MapTableProjection?
-        if let mapImage, let cgImage = mapImage.cgImage {
-            projection = MapTableProjection(imageSize: CGSize(width: cgImage.width, height: cgImage.height), degrees: degrees)
+        if let mapImage {
+            // Use fixedSize (UIImage.size in points) so the coordinate space matches
+            // the 2D MapEditor overlay, where pin locations are stored in point space.
+            projection = MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
         }
 
         var photoLoads: [UUID: UUID] = [:]
@@ -172,7 +174,6 @@ extension GameTableModel {
             mapModel = mapRoot.itemControllable.itemSync(for: mapId) as? MapModel
         }
         let photoLoads = setup.syncPins(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees, isGameMaster: isGameMaster)
-        applyExpandedScale()
         for (pinId, photoId) in photoLoads {
             Task { [weak self] in
                 await self?.loadPinThumbnail(pinId: pinId, photoId: photoId)

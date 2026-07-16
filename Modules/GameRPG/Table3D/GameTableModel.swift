@@ -28,8 +28,6 @@ final class GameTableModel: Sendable {
     var isGameMaster = false
     /// The local player's own pin id (== the player's game id); nil on the master.
     var playerPinId: UUID?
-    /// Tap-zoomed token, ×4 like the 2D viewer's tap zoom. Local visual state.
-    var expandedPinId: UUID?
     /// Room-visibility signature of the last rendered fog texture — pin moves
     /// broadcast mapState constantly; skip the expensive composite when the
     /// room state did not change.
@@ -212,8 +210,8 @@ final class GameTableModel: Sendable {
     @MainActor
     func pinDragEnded(pinId: UUID, position: SIMD3<Float>) {
         guard canMovePin(pinId), let mapId = currentMapId,
-              let cgImage = currentMapImage?.cgImage else { return }
-        let projection = MapTableProjection(imageSize: CGSize(width: cgImage.width, height: cgImage.height), degrees: currentMapDegrees)
+              let mapImage = currentMapImage else { return }
+        let projection = MapTableProjection(imageSize: mapImage.fixedSize, degrees: currentMapDegrees)
         let location = projection.mapLocation(for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z))
         guard mapRoot.mapGameControllable.movePin(itemId: mapId, pinId: pinId, location: location) else { return }
         if isGameMaster {
@@ -223,13 +221,14 @@ final class GameTableModel: Sendable {
         }
     }
 
-    /// Tap zoom: expands the token ×4, matching the 2D viewer's tap zoom.
-    /// Available to master and players; local visual state, not networked
-    /// (2D parity — `isExpandedId` is local there too).
+    /// Tap zoom: toggles the pin's isZoom state and broadcasts to all participants.
+    /// Master only — zoom is a GM tool for highlighting tokens on the 3D table.
     @MainActor
     func pinTapped(pinId: UUID) {
-        expandedPinId = expandedPinId == pinId ? nil : pinId
-        applyExpandedScale()
+        guard isGameMaster, let mapId = currentMapId else { return }
+        guard mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: pinId) else { return }
+        syncPawnsWithMapPins()
+        networkActions?.game(mapRoot.mapGameControllable.networkMapUpdate(for: mapId), .mapState, nil)
     }
 
     /// Master only: double tap hides/shows the pin and broadcasts the map
@@ -240,13 +239,6 @@ final class GameTableModel: Sendable {
         guard mapRoot.mapGameControllable.togglePin(itemId: mapId, pinId: pinId) else { return }
         syncPawnsWithMapPins()
         networkActions?.game(mapRoot.mapGameControllable.networkMapUpdate(for: mapId), .mapState, nil)
-    }
-
-    @MainActor
-    func applyExpandedScale() {
-        for pawn in setup.pinPawns {
-            pawn.entity.scale = SIMD3<Float>(repeating: pawn.pinId == expandedPinId ? 4.0 : 1.0)
-        }
     }
     
     isolated deinit {

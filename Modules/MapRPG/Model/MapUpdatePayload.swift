@@ -85,6 +85,7 @@ private struct CanonicalMapContent: Codable, Sendable {
                 canonicalPin.location = .zero
                 canonicalPin.isShown = false
                 canonicalPin.timeInterval = 0
+                canonicalPin.isZoom = false
                 canonicalPin.players.sort { $0.uuidString < $1.uuidString }
                 return canonicalPin
             }

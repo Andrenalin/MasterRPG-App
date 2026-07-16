@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
-    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0) {
+    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false) {
         self.id = id
         self.name = name
         self.color = color
@@ -15,6 +15,7 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
         self.isPlayer = isPlayer
         self.players = players
         self.timeInterval = timeInterval
+        self.isZoom = isZoom
     }
     
     public enum MapPinSize: Int, Identifiable, Hashable, Equatable, Codable, CaseIterable, Sendable {
@@ -85,6 +86,7 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
     public var isPlayer: Bool = false
     public var players: [UUID] = []
     public var timeInterval: TimeInterval = 0
+    public var isZoom: Bool = false
 }
 
 extension MapPinModel: Codable {
@@ -99,6 +101,7 @@ extension MapPinModel: Codable {
         case isPlayer
         case players
         case timeInterval
+        case isZoom
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -113,6 +116,7 @@ extension MapPinModel: Codable {
         try container.encode(isPlayer, forKey: .isPlayer)
         try container.encode(players, forKey: .players)
         try container.encode(timeInterval, forKey: .timeInterval)
+        try container.encode(isZoom, forKey: .isZoom)
     }
 
     public init(from decoder: Decoder) throws {
@@ -128,6 +132,7 @@ extension MapPinModel: Codable {
         isPlayer = try values.decodeIfPresent(Bool.self, forKey: .isPlayer) ?? false
         players = try values.decode([UUID].self, forKey: .players)
         timeInterval = try values.decode(TimeInterval.self, forKey: .timeInterval)
+        isZoom = try values.decodeIfPresent(Bool.self, forKey: .isZoom) ?? false
     }
 }
 
