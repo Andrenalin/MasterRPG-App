@@ -5,39 +5,42 @@ import SwiftUI
 
 struct MapPinActionButtons: View {
     let model: MapPinViewModel
-    let pinId: UUID
+    let pin: MapPinModel
     let layoutDown: Bool
+    let context: MapPinActionContext
     let glassNamespace: Namespace.ID
     let photoSpace: Namespace.ID
-    let onRemove: () -> Void
-    let onCopy: () -> Void
-    let onResize: () -> Void
-    let onPhoto: () -> Void
+    var usesGlassEffects: Bool = true
+    let action: (MapPinButtonType) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var isExpanded: Bool { model.isExpandedId == pinId }
+    private var isExpanded: Bool { model.isExpandedId == pin.id }
 
     var body: some View {
         ZStack {
-            pinButton(type: .remove, action: onRemove).zIndex(10)
-            pinButton(type: .copy, action: onCopy).zIndex(10)
-            pinButton(type: .photo, action: onPhoto).zIndex(10)
-            pinButton(type: .resize, action: onResize).zIndex(10)
+            ForEach(context.actions.enumerated(), id: \.element) { index, type in
+                pinButton(type: type, index: index, count: context.actions.count)
+                    .zIndex(10)
+            }
 
             Color.clear
 #if !os(visionOS)
-                .glassEffectID("menu", in: glassNamespace)
+                .applyIf(usesGlassEffects) {
+                    $0.glassEffectID("menu", in: glassNamespace)
+                }
 #endif
         }
     }
 
-    private func pinButton(type: MapPinButtonType, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    private func pinButton(type: MapPinButtonType, index: Int, count: Int) -> some View {
+        Button {
+            action(type)
+        } label: {
             Label {
-                Text(type.localizedLabel)
+                Text(type.localizedLabel(for: pin))
             } icon: {
-                Image(systemName: type.systemImage)
+                Image(systemName: type.systemImage(for: pin))
             }
                 .labelStyle(.iconOnly)
                 .frame(width: 50, height: 50)
@@ -45,14 +48,16 @@ struct MapPinActionButtons: View {
         .borderLessTVBottonStyle()
         .foregroundStyle(.white)
 #if !os(visionOS)
-        .applyIf(isExpanded) {
+        .applyIf(usesGlassEffects && isExpanded) {
             $0.glassEffect(.regular.tint(NetworkModules.map.tint.opacity(0.75)).interactive())
         }
-        .glassEffectID(type.label, in: glassNamespace)
+        .applyIf(usesGlassEffects) {
+            $0.glassEffectID(type.label, in: glassNamespace)
+        }
 #endif
-        .offset(type.offset(expanded: isExpanded, layoutDown: layoutDown))
+        .offset(type.offset(at: index, count: count, expanded: isExpanded, layoutDown: layoutDown))
         .animation(
-            reduceMotion ? nil : .spring(duration: type.duration * 3, bounce: 0.2),
+            reduceMotion ? nil : .spring(duration: (0.3 + CGFloat(index) * 0.1) * 3, bounce: 0.2),
             value: model.isExpandedId
         )
         .opacity(isExpanded ? 1 : 0)
@@ -68,13 +73,11 @@ struct MapPinActionButtons: View {
     @Previewable @Namespace var photoSpace
     MapPinActionButtons(
         model: model,
-        pinId: MapModel.previewId,
+        pin: .empty(MapModel.previewId),
         layoutDown: true,
+        context: .editor,
         glassNamespace: glassNamespace,
         photoSpace: photoSpace,
-        onRemove: {},
-        onCopy: {},
-        onResize: {},
-        onPhoto: {}
+        action: { _ in }
     )
 }

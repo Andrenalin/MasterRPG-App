@@ -59,6 +59,7 @@ final class MapEditorModel {
     var isStreaming: Bool = false
     var isPointing: Bool = false
     var sendMapUpdates: (() -> Void)? = nil
+    var sendPinUpdate: ((UUID) -> Void)? = nil
     var focusedCallback: (() -> Void)? = nil
 
     var iconDisplayMode: String {
@@ -440,8 +441,12 @@ final class MapEditorModel {
             map.pointer.location = location
         } else {
             map.pointer.location = (location - imageModel.offset) / imageModel.scale
-            pins.setPinPointer(updatedPin: map.pointer)
         }
+        map.pointer.timeInterval = max(
+            Date.now.timeIntervalSince1970,
+            map.pointer.timeInterval.nextUp
+        )
+        pins.setPinPointer(updatedPin: map.pointer)
         if mapMode == .gameMaster {
             map.pointer.isShown = isPointing
             pins.setPinPointer(updatedPin: map.pointer)

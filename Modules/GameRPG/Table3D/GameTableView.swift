@@ -38,6 +38,11 @@ public struct GameTableView: View {
                             loadedGame.pinTapped(pinId: pinId)
                         }
                         accessibilitySubscriptions.append(subscription)
+                        let zoomSubscription = gameScene.subscribe(to: AccessibilityEvents.CustomAction.self) { event in
+                            guard let pinId = event.entity.components[PinComponent.self]?.pinId else { return }
+                            loadedGame.pinDoubleTapped(pinId: pinId)
+                        }
+                        accessibilitySubscriptions.append(zoomSubscription)
                     }
 
                     // Place the table on the actual floor of the volume. The volume is
@@ -51,6 +56,10 @@ public struct GameTableView: View {
                         loadedGame.renderer.root.addChild(panel)
                     }
 
+                    if let pinMenu = attachments.entity(for: "pin-menu") {
+                        loadedGame.registerPinMenuAttachment(pinMenu)
+                    }
+
                     // ✅ Debug logging
                     #if DEBUG
                     print("✅ Root added with \(loadedGame.renderer.root.children.count) children")
@@ -62,9 +71,13 @@ public struct GameTableView: View {
                     // Re-anchor to the volume floor when the user resizes the volume.
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
+                    loadedGame.updatePinMenuAttachmentPosition()
                 } attachments: {
                     Attachment(id: "toolbar") {
                         GameTableToolbar(game: loadedGame)
+                    }
+                    Attachment(id: "pin-menu") {
+                        GamePinActionMenu(game: loadedGame)
                     }
                 }
                 .tabletopGame(loadedGame.tabletopGame, parent: loadedGame.renderer.root) { _ in
@@ -90,8 +103,10 @@ public struct GameTableView: View {
                             loadedGame.pinDragEnded(pinId: pinId, position: position)
                         }
                 )
-                // Double tap: master hides/shows the pin. Single tap: ×4 zoom
-                // for everyone, like the 2D viewer.
+                // Double tap toggles shared zoom for both roles. Single tap
+                // opens the master's local menu or toggles a shared player
+                // highlight. Exclusivity prevents a double tap also firing the
+                // single-tap action.
                 .simultaneousGesture(
                     TapGesture(count: 2)
                         .targetedToEntity(where: .has(PinComponent.self))

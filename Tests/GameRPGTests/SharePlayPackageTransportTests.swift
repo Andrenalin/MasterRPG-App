@@ -160,6 +160,93 @@ struct SharePlayPackageTransportTests {
         #expect(RPGSharePlayController.usesJournalTransport(for: targetedAudio, fileJournal: true, journalAvailable: true))
     }
 
+    @Test("recent full map publication suppresses matching recovery for 30 seconds")
+    func recentMapPublicationSuppressesRecoveryForThirtySeconds() {
+        let clock = ContinuousClock()
+        let sentAt = clock.now
+        let mapId = UUID()
+        var tracker = SharePlayMapRecoveryTracker()
+        let presentation = Self.masterMapPresentation(mapId: mapId, version: 7, assetVersion: 700)
+        let request = Self.playerMapRecoveryRequest(mapId: mapId, version: 7)
+
+        tracker.recordFullMapPresentation(presentation, at: sentAt)
+        let suppressesBeforeBoundary = tracker.shouldSuppressRecoveryRequest(
+            request,
+            at: sentAt.advanced(by: .milliseconds(29_999))
+        )
+        let suppressesAtBoundary = tracker.shouldSuppressRecoveryRequest(
+            request,
+            at: sentAt.advanced(by: .seconds(30))
+        )
+
+        #expect(suppressesBeforeBoundary)
+        #expect(!suppressesAtBoundary)
+    }
+
+    @Test("map recovery suppression is scoped to the published map version")
+    func mapRecoverySuppressionIsScopedToMapVersion() {
+        let now = ContinuousClock().now
+        let mapId = UUID()
+        var tracker = SharePlayMapRecoveryTracker()
+        tracker.recordFullMapPresentation(
+            Self.masterMapPresentation(mapId: mapId, version: 3, assetVersion: 300),
+            at: now
+        )
+        let suppressesDifferentMap = tracker.shouldSuppressRecoveryRequest(
+            Self.playerMapRecoveryRequest(mapId: UUID(), version: 3),
+            at: now
+        )
+        let suppressesDifferentVersion = tracker.shouldSuppressRecoveryRequest(
+            Self.playerMapRecoveryRequest(mapId: mapId, version: 4),
+            at: now
+        )
+        let suppressesLegacyRequest = tracker.shouldSuppressRecoveryRequest(
+            Self.playerMapRecoveryRequest(mapId: mapId, version: 0),
+            at: now
+        )
+        let suppressesMatchingAsset = tracker.shouldSuppressRecoveryRequest(
+            Self.playerMapRecoveryRequest(mapId: mapId, version: 99, assetVersion: 300),
+            at: now
+        )
+        let suppressesDifferentAsset = tracker.shouldSuppressRecoveryRequest(
+            Self.playerMapRecoveryRequest(mapId: mapId, version: 3, assetVersion: 301),
+            at: now
+        )
+
+        #expect(!suppressesDifferentMap)
+        #expect(!suppressesDifferentVersion)
+        #expect(suppressesLegacyRequest)
+        #expect(suppressesMatchingAsset)
+        #expect(!suppressesDifferentAsset)
+
+        tracker.reset()
+        let suppressesAfterReset = tracker.shouldSuppressRecoveryRequest(
+            Self.playerMapRecoveryRequest(mapId: mapId, version: 0),
+            at: now
+        )
+        #expect(!suppressesAfterReset)
+    }
+
+    @Test("explicit map transfer failure repair is never suppressed")
+    func explicitMapTransferFailureRepairIsNeverSuppressed() {
+        let now = ContinuousClock().now
+        let mapId = UUID()
+        var tracker = SharePlayMapRecoveryTracker()
+        tracker.recordFullMapPresentation(
+            Self.masterMapPresentation(mapId: mapId, version: 1),
+            at: now
+        )
+        var explicitRepair = Self.playerMapRecoveryRequest(mapId: mapId, version: 1)
+        explicitRepair.type = .store
+        explicitRepair.subType = .store
+        let suppressesExplicitRepair = tracker.shouldSuppressRecoveryRequest(
+            explicitRepair,
+            at: now
+        )
+
+        #expect(!suppressesExplicitRepair)
+    }
+
     @Test("three SharePlay players produce one chunked repair per unique photo")
     func sharePlayPhotoRepairsAreBroadcastAndCoalesced() throws {
         let photoA = UUID()
@@ -703,6 +790,63 @@ private extension SharePlayPackageTransportTests {
                 type: .photo,
                 version: version,
                 data: Data("photo-\(version)".utf8)
+            )
+        )
+    }
+
+    static func masterMapPresentation(
+        mapId: UUID,
+        version: Int,
+        assetVersion: Int? = nil
+    ) -> GameNetworkModel {
+        let masterId = UUID()
+        return GameNetworkModel(
+            counter: 10,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: masterId,
+            sender: GameSenderModel(
+                id: masterId,
+                role: .master,
+                name: "Master",
+                characterId: nil
+            ),
+            targetId: nil,
+            data: NetworkCodableDataType(
+                id: mapId,
+                type: .map,
+                version: version,
+                data: Data("map".utf8),
+                assetVersion: assetVersion
+            )
+        )
+    }
+
+    static func playerMapRecoveryRequest(
+        mapId: UUID,
+        version: Int,
+        assetVersion: Int? = nil
+    ) -> GameNetworkModel {
+        GameNetworkModel(
+            counter: 11,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .mapState,
+            masterId: UUID(),
+            sender: GameSenderModel(
+                id: UUID(),
+                role: .player,
+                name: "Player",
+                characterId: nil
+            ),
+            targetId: nil,
+            data: NetworkCodableDataType(
+                id: mapId,
+                type: .map,
+                version: version,
+                data: nil,
+                assetVersion: assetVersion
             )
         )
     }

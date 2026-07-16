@@ -15,6 +15,7 @@ struct GameStatisticsCustomizationRow: View {
                     .controlSize(.mini)
 #endif
 
+#if os(tvOS)
                 Menu {
                     Button {
                         model.moveSection(section, offset: -1)
@@ -44,8 +45,6 @@ struct GameStatisticsCustomizationRow: View {
                         Image(systemName: "arrow.up.arrow.down")
                     }
                 }
-#if os(iOS)
-                .labelStyle(.iconOnly)
 #endif
             }
         } label: {
@@ -62,7 +61,7 @@ struct GameStatisticsCustomizationRow: View {
 }
 
 #Preview {
-    Form {
+    List {
         GameStatisticsCustomizationRow(section: .activity, model: .previewFixture())
     }
 }

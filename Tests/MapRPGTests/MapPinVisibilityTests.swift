@@ -12,6 +12,52 @@ import Testing
 struct MapPinVisibilityTests {
     let square = [CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 0), CGPoint(x: 100, y: 100), CGPoint(x: 0, y: 100)]
 
+    @Test func pinCodableRoundTripAndLegacyDefaults() throws {
+        // Given
+        let pin = MapPinModel(
+            id: UUID(),
+            name: "Fallen Hero",
+            isDead: true,
+            isHighlighted: true
+        )
+
+        // When
+        let encoded = try JSONEncoder().encode(pin)
+        let decoded = try JSONDecoder().decode(MapPinModel.self, from: encoded)
+        let encodedObject = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        var missingDeadObject = encodedObject
+        missingDeadObject.removeValue(forKey: "isDead")
+        let missingDeadPin = try JSONDecoder().decode(
+            MapPinModel.self,
+            from: JSONSerialization.data(withJSONObject: missingDeadObject)
+        )
+        var missingHighlightObject = encodedObject
+        missingHighlightObject.removeValue(forKey: "isHighlighted")
+        let missingHighlightPin = try JSONDecoder().decode(
+            MapPinModel.self,
+            from: JSONSerialization.data(withJSONObject: missingHighlightObject)
+        )
+        var legacyObject = encodedObject
+        legacyObject.removeValue(forKey: "isDead")
+        legacyObject.removeValue(forKey: "isHighlighted")
+        let legacyPin = try JSONDecoder().decode(
+            MapPinModel.self,
+            from: JSONSerialization.data(withJSONObject: legacyObject)
+        )
+
+        // Then
+        #expect(decoded.isDead)
+        #expect(decoded.isHighlighted)
+        #expect(!missingDeadPin.isDead)
+        #expect(missingDeadPin.isHighlighted)
+        #expect(missingHighlightPin.isDead)
+        #expect(!missingHighlightPin.isHighlighted)
+        #expect(!legacyPin.isDead)
+        #expect(!legacyPin.isHighlighted)
+    }
+
     @Test func entryContainsPoint() {
         let entry = MapEntryModel(id: UUID(), name: "Room", content: "", coordinates: square)
 
@@ -85,6 +131,49 @@ struct MapPinVisibilityTests {
         #expect(itemPin?.isShown == false)
         #expect((itemPin?.timeInterval ?? 0) > 1)
         #expect(!sut.togglePin(itemId: mapId, pinId: UUID()))
+    }
+
+    @Test func deadResizeHighlightAndZoomUpdateGameAndSessionState() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let pinId = UUID()
+        let pin = MapPinModel(
+            id: pinId,
+            name: "Hero",
+            size: .normal,
+            isPlayer: true,
+            players: [pinId],
+            timeInterval: 1
+        )
+        let map = MapModel(id: mapId, name: "Dungeon", mapPins: [pin])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        sut.mapGameModel.playerPins = [pin]
+
+        // When
+        #expect(sut.toggleDeadPin(itemId: mapId, pinId: pinId))
+        #expect(sut.resizePin(itemId: mapId, pinId: pinId))
+        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: pinId))
+        #expect(sut.zoomPin(itemId: mapId, pinId: pinId))
+
+        // Then
+        let itemPin = try #require(sut.gameItem(for: mapId).mapPins.first { $0.id == pinId })
+        let sessionPin = try #require(sut.mapGameModel.playerPins.first { $0.id == pinId })
+        #expect(itemPin.isDead)
+        #expect(itemPin.size == .large)
+        #expect(itemPin.isHighlighted)
+        #expect(itemPin.isZoom)
+        #expect(itemPin.timeInterval > 1)
+        #expect(sessionPin == itemPin)
+
+        let unknownPinId = UUID()
+        #expect(!sut.toggleDeadPin(itemId: mapId, pinId: unknownPinId))
+        #expect(!sut.resizePin(itemId: mapId, pinId: unknownPinId))
+        #expect(!sut.toggleHighlightPin(itemId: mapId, pinId: unknownPinId))
+        #expect(!sut.zoomPin(itemId: mapId, pinId: unknownPinId))
     }
 
     @Test func networkPinEncodesCurrentPinState() async throws {

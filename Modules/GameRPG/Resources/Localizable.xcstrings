@@ -785,12 +785,12 @@
         }
       }
     },
-    "Finish your first game to replace this preview with your own story." : {
+    "Finish a game lasting at least 15 minutes to replace this preview with your own story." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beende dein erstes Spiel, um diese Vorschau durch deine eigene Geschichte zu ersetzen."
+            "value" : "Beende ein mindestens 15 Minuten dauerndes Spiel, um diese Vorschau durch deine eigene Geschichte zu ersetzen."
           }
         }
       }
@@ -1364,12 +1364,12 @@
         }
       }
     },
-    "Only activity during a running game is collected. Message contents and media files are never stored." : {
+    "Only activity during a running game is collected. Games shorter than 15 minutes are excluded. Message contents and media files are never stored." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Es werden nur Aktivitäten während eines laufenden Spiels erfasst. Nachrichteninhalte und Mediendateien werden niemals gespeichert."
+            "value" : "Es werden nur Aktivitäten während eines laufenden Spiels erfasst. Spiele unter 15 Minuten werden nicht berücksichtigt. Nachrichteninhalte und Mediendateien werden niemals gespeichert."
           }
         }
       }

@@ -133,7 +133,12 @@ struct GameToolBar: View {
     @ViewBuilder
     var barButtonViews: some View {
         Button {
-            withAnimation(reduceMotion ? nil : .default) { model.isStreaming.toggle() }
+            withAnimation(reduceMotion ? nil : .default) {
+                model.isStreaming.toggle()
+            }
+            if model.isStreaming {
+                model.sendMapUpdates?()
+            }
         } label: {
             let symbolName = "person.2\(model.isStreaming ? ".fill" : ".slash")"
             Image(systemName: symbolName)

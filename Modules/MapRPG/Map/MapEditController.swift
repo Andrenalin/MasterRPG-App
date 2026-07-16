@@ -49,6 +49,46 @@ extension MapEditController {
     }
 }
 
+// MARK: - Tile Editor
+
+extension MapEditController {
+    @MainActor
+    func prepareTileWorkingCopy(from map: MapModel, editorModel: MapEditorModel) {
+        prepareWorkingCopy(from: map, editorModel: editorModel)
+
+        let tileEntry = MapEntryModel(
+            id: map.displayConfig.id,
+            name: String(localized: "Tile", bundle: .module),
+            content: "",
+            coordinates: map.displayConfig.tileCoordinates,
+            isShown: true
+        )
+        editorModel.editEntries.resetEntries(mapId: map.id, entries: [tileEntry])
+    }
+
+    @MainActor
+    func addTileCoordinate(_ coordinate: CGPoint, editorModel: MapEditorModel) {
+        guard var tileEntry = editorModel.editEntries.entries.first else { return }
+        tileEntry.coordinates.append(coordinate)
+        editorModel.editEntries.setEntry(entry: tileEntry)
+        syncTileCoordinates(tileEntry.coordinates, editorModel: editorModel)
+    }
+
+    @MainActor
+    func addTileCoordinateFromCanvas(_ coordinate: CGPoint, editorModel: MapEditorModel) {
+        defer { editorModel.editEntries.eaten = false }
+        guard editorModel.isTapping != .nothing,
+              !editorModel.editEntries.eaten else { return }
+
+        addTileCoordinate(coordinate, editorModel: editorModel)
+    }
+
+    @MainActor
+    func syncTileCoordinates(_ coordinates: [CGPoint], editorModel: MapEditorModel) {
+        editorModel.workingCopy?.displayConfig.tileCoordinates = coordinates
+    }
+}
+
 // MARK: - External Sync (CloudKit / other windows)
 
 extension MapEditController {
@@ -145,6 +185,7 @@ extension MapEditController {
         editorModel: MapEditorModel,
         hasEditableEntry: Bool
     ) {
+        defer { editorModel.editEntries.eaten = false }
         guard editorModel.isTapping != .nothing else { return }
         guard hasEditableEntry else { return }
         let roomPin = (value.location - editorModel.imageModel.offset) / editorModel.imageModel.scale

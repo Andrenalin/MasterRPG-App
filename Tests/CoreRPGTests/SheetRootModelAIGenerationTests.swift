@@ -487,8 +487,8 @@ struct SheetRootModelAIGenerationTests {
     func remainingPreviewsUseEffectiveAcceptedPlacement() throws {
         // Given
         let fixture = try makeFixture()
-        seedEditableItem(for: fixture.rootSheet.source.itemId)
-        defer { removeSeededItem(fixture.rootSheet.source.itemId) }
+        seedEditableItem(for: fixture.rootSheet.source.itemId, in: fixture.itemDataModel)
+        defer { removeSeededItem(fixture.rootSheet.source.itemId, from: fixture.itemDataModel) }
 
         let request = try #require(
             fixture.rootModel.queueGeneration(
@@ -615,6 +615,7 @@ struct SheetRootModelAIGenerationTests {
 private extension SheetRootModelAIGenerationTests {
     struct Fixture {
         let rootModel: SheetRootModel
+        let itemDataModel: ItemDataModel
         let rootSheet: SheetModel
         let topEntry: SheetModel
         let nestedSheet: SheetModel
@@ -695,7 +696,8 @@ private extension SheetRootModelAIGenerationTests {
             inlineEntries: [emptyInlineWrapper],
             entries: [topEntry, emptyEntry, generatedEntry]
         )
-        let rootManager = try #require(ItemRootController.fake.rootManager)
+        let itemRootController = ItemRootController.fake
+        let rootManager = try #require(itemRootController.rootManager)
         let rootModel = SheetRootModel(
             rootManager: rootManager,
             linkControllable: FakeLinkController.fake,
@@ -705,6 +707,7 @@ private extension SheetRootModelAIGenerationTests {
         )
         return Fixture(
             rootModel: rootModel,
+            itemDataModel: itemRootController.itemControllable.itemDataModel,
             rootSheet: rootSheet,
             topEntry: topEntry,
             nestedSheet: nestedSheet,
@@ -719,16 +722,16 @@ private extension SheetRootModelAIGenerationTests {
         [snapshot.id] + snapshot.children.flatMap(flattenedIDs)
     }
 
-    func seedEditableItem(for itemID: UUID) {
-        FakeItemController.fake.itemDataModel.itemData[itemID] = FakeItemModel(
+    func seedEditableItem(for itemID: UUID, in itemDataModel: ItemDataModel) {
+        itemDataModel.itemData[itemID] = FakeItemModel(
             id: itemID,
             name: "Root",
             entries: []
         )
     }
 
-    func removeSeededItem(_ itemID: UUID) {
-        FakeItemController.fake.itemDataModel.itemData[itemID] = nil
+    func removeSeededItem(_ itemID: UUID, from itemDataModel: ItemDataModel) {
+        itemDataModel.itemData[itemID] = nil
     }
 
     nonisolated static func deterministicUUID(_ finalByte: UInt8) -> UUID {

@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(visionOS)
+
 import CharacterRPG
 import CoreRPG
 import SnapshotTesting
@@ -97,3 +99,5 @@ private enum GameRPGDynamicPreviewSnapshotFixtureCache {
         return container
     }
 }
+
+#endif

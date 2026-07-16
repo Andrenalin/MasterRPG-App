@@ -96,11 +96,15 @@ extension MapSnapshot {
                 return incomingPin
             }
             // The timestamp sequences live map state, not editor metadata. Keep
-            // only the newer runtime fields; name/photo/color/size/ownership from
-            // this structural update remain authoritative.
+            // every newer live field while name/photo/color/ownership from this
+            // structural update remain authoritative.
             var updatedPin = incomingPin
             updatedPin.location = localPin.location
             updatedPin.isShown = localPin.isShown
+            updatedPin.size = localPin.size
+            updatedPin.isZoom = localPin.isZoom
+            updatedPin.isDead = localPin.isDead
+            updatedPin.isHighlighted = localPin.isHighlighted
             updatedPin.timeInterval = localPin.timeInterval
             return updatedPin
         }

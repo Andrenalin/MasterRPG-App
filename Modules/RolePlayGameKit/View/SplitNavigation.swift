@@ -163,7 +163,7 @@ private extension SplitNavigation {
         }
     }
     
-    func contentView(tab: RootRoute) -> some View {
+    @ViewBuilder func contentView(tab: RootRoute) -> some View {
         ManagedPresentationView(name: tab.title) {
             tab
         }

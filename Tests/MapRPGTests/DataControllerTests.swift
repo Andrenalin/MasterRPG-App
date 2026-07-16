@@ -18,6 +18,10 @@ struct DataControllerTests {
             MapRPG.Resources.bundle
         ])
         let sut = DataController(context: store.context, batchContext: store.batchContext, token: NetworkModules.map.token)
+        let pinEntity = try #require(store.container.managedObjectModel.entitiesByName["RPGMapPin"])
+        let deadAttribute = try #require(pinEntity.attributesByName["isDead"])
+        #expect(!deadAttribute.isOptional)
+        #expect((deadAttribute.defaultValue as? NSNumber)?.boolValue == false)
 
         let itemId = UUID()
         let parentId = UUID()
@@ -50,7 +54,9 @@ struct DataControllerTests {
             photoId: UUID(),
             location: CGPoint(x: 13, y: 14),
             size: .large,
-            isShown: true
+            isShown: true,
+            isDead: true,
+            isHighlighted: true
         )
         let secondPin = MapPinModel(
             id: UUID(),
@@ -101,6 +107,8 @@ struct DataControllerTests {
         #expect(fetchedOriginal.mapPins.first?.size == .large)
         #expect(fetchedOriginal.mapPins.first?.photoId == firstPin.photoId)
         #expect(fetchedOriginal.mapPins.first?.isShown == true)
+        #expect(fetchedOriginal.mapPins.first?.isDead == true)
+        #expect(fetchedOriginal.mapPins.first?.isHighlighted == false)
         #expect(fetchedOriginal.pinScale == 2)
         #expect(fetchedOriginal.hexMapScale == 25)
         #expect(fetchedOriginal.parentId == parentId)
@@ -125,7 +133,8 @@ struct DataControllerTests {
             photoId: nil,
             location: CGPoint(x: 24, y: 25),
             size: .huge,
-            isShown: true
+            isShown: true,
+            isDead: false
         )
         let updated = MapModel(
             id: itemId,
@@ -168,6 +177,7 @@ struct DataControllerTests {
         #expect(fetchedUpdated.mapPins.first?.location == updatedPin.location)
         #expect(fetchedUpdated.mapPins.first?.size == .huge)
         #expect(fetchedUpdated.mapPins.first?.isShown == true)
+        #expect(fetchedUpdated.mapPins.first?.isDead == false)
         #expect(fetchedUpdated.pinScale == 1.5)
         #expect(fetchedUpdated.hexMapScale == 10)
         #expect(fetchedUpdated.parentId == nil)

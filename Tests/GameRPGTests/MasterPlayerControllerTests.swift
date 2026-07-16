@@ -18,6 +18,7 @@ import Testing
 @testable import CharacterRPG
 @testable import WeatherRPG
 
+@Suite(.serialized)
 @MainActor
 final class MasterPlayerControllerTests {
     private var sut: MasterController!
@@ -306,7 +307,7 @@ final class MasterPlayerControllerTests {
         let mapId = rootSut.mapRoot.itemController.itemDataModel.items[0]
         let photoId = rootSut.mapRoot.itemController.itemOrEmpty(for: mapId).photoId
         #expect(nil != photoId)
-        let mapShareData = await rootSut.mapRoot.gameController.share(id: mapId)
+        let mapShareData = await rootSut.mapRoot.gameController.shareMap(id: mapId)
         await sut.show(for: mapShareData)
         let sendedShowMapData = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
         #expect(sendedShowMapData.data.data != nil)
@@ -384,6 +385,85 @@ final class MasterPlayerControllerTests {
             fileJournal: usesFileJournal,
             journalAvailable: true
         ))
+    }
+
+    @Test func delayedFullMapAppliesMapStateThatArrivedFirst() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let mapId = try #require(rootSut.mapRoot.itemController.itemDataModel.items.first)
+        await sut.show(for: rootSut.mapRoot.gameController.shareMap(id: mapId))
+        let delayedFullMap = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(delayedFullMap.data.data != nil)
+
+        let masterMap = rootSut.mapRoot.gameController.gameItem(for: mapId)
+        let entryId = try #require(masterMap.entries.first?.id)
+        let originalVisibility = masterMap[entryId].isShown
+        masterMap.toggle(entryId)
+        let updatedVisibility = masterMap[entryId].isShown
+        #expect(updatedVisibility != originalVisibility)
+
+        await sut.game(
+            message: rootSut.mapRoot.gameController.networkMapUpdate(for: mapId),
+            actionType: .mapState
+        )
+        let earlyMapState = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        let recoveryRequest = try #require(try await sutPlayer.handle(earlyMapState))
+        #expect(recoveryRequest.type == .reveal)
+        #expect(recoveryRequest.subType == .mapState)
+        #expect(recoveryRequest.data.version == earlyMapState.data.version)
+        #expect(await !rootPlayer.mapRoot.gameControllable.hasItem(id: mapId, version: 0))
+
+        let acknowledgement = try #require(try await sutPlayer.handle(delayedFullMap))
+        #expect(acknowledgement.subType == .ok)
+
+        let playerMap = rootPlayer.mapRoot.gameController.gameItem(for: mapId)
+        let playerEntry = try #require(playerMap.entries.first(where: { $0.id == entryId }))
+        #expect(playerEntry.isShown == updatedVisibility)
+        #expect(playerEntry.isShown != originalVisibility)
+        #expect(sutPlayer.gameModel.gameUpdateType == .map)
+        #expect(!sutPlayer.gameModel.pendingMapRequests.contains(mapId))
+    }
+
+    @Test func localPlayerMapRecoveryStillReceivesFullMapImmediately() async throws {
+        try await setUp()
+        try await importTestData(into: rootSut)
+        rootSut.adventureRoot.startGame()
+        rootPlayer.adventureRoot.startGame()
+
+        let mapId = try #require(rootSut.mapRoot.itemController.itemDataModel.items.first)
+        let mapReference = await rootSut.mapRoot.gameController.shareMap(id: mapId)
+        await sut.show(for: mapReference)
+        masterStoreAbstractionMock.sendResponseHistory = []
+
+        let request = rootPlayer.gameModel.outgoingMessage(
+            counter: 50,
+            type: .reveal,
+            subType: .mapState,
+            asMaster: false,
+            data: NetworkCodableDataType(
+                id: mapId,
+                type: .map,
+                version: mapReference.version,
+                data: nil,
+                assetVersion: mapReference.assetVersion,
+                contentVersion: mapReference.contentVersion
+            )
+        )
+
+        await sut.receivedProcess(request, connectionId: UUID())
+
+        let responses = masterStoreAbstractionMock.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
+        let fullMap = responses.first {
+            $0.type == .reveal &&
+                $0.subType == .store &&
+                $0.data.id == mapId &&
+                $0.data.data != nil
+        }
+        #expect(fullMap != nil)
+        #expect(fullMap?.targetId == gameConfigModelPlayer.id)
     }
 
     @Test func changedMapContentUsesPhotoFreeUpdateWithoutRepublishingSharePlayJournal() async throws {
@@ -750,13 +830,19 @@ final class MasterPlayerControllerTests {
 
         let mapId = rootSut.mapRoot.itemController.itemDataModel.items[0]
         let version = rootSut.mapRoot.itemController.itemOrEmpty(for: mapId).version
-        let mapShareData = await rootSut.mapRoot.gameController.share(id: mapId)
+        let firstMapShareData = await rootSut.mapRoot.gameController.shareMap(id: mapId)
 
-        // A reshow announces the map by reference — simulate the package having
-        // gone out earlier in this game.
-        sut.gameModel.markSentGameItem(type: .map, id: mapId, version: mapShareData.version)
+        // Prime the exact production state used by a reshow. Building the first
+        // package may normalize file metadata, so manually seeding the pre-export
+        // fingerprint makes this test depend on whichever test imported the same
+        // shared fixture immediately before it.
+        await sut.show(for: firstMapShareData)
+        let firstMapReveal = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(firstMapReveal.data.data != nil)
 
-        await sut.show(for: mapShareData)
+        masterStoreAbstractionMock.sendResponseData = nil
+        let reshowMapShareData = await rootSut.mapRoot.gameController.shareMap(id: mapId)
+        await sut.show(for: reshowMapShareData)
         let idOnlyMapReveal = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
         #expect(idOnlyMapReveal.type == .reveal)
         #expect(idOnlyMapReveal.subType == .show)
@@ -908,9 +994,15 @@ final class MasterPlayerControllerTests {
         rootSut.adventureRoot.startGame()
 
         let mapId = rootSut.mapRoot.itemController.itemDataModel.items[0]
-        await sut.show(for: rootSut.mapRoot.gameController.share(id: mapId))
-        let version = rootSut.mapRoot.gameController.gameItem(for: mapId).version
-        #expect(sut.gameModel.hasSentGameItem(type: .map, id: mapId, version: version))
+        let mapShareData = await rootSut.mapRoot.gameController.shareMap(id: mapId)
+        await sut.show(for: mapShareData)
+        #expect(
+            sut.gameModel.hasSentGameItem(
+                type: .map,
+                id: mapId,
+                version: mapShareData.effectiveAssetVersion
+            )
+        )
 
         await sut.stop()
         #expect(sut.gameModel.sentGameItems.isEmpty)
@@ -956,13 +1048,25 @@ final class MasterPlayerControllerTests {
         let mapId = rootPlayer.mapRoot.itemController.itemDataModel.items[0]
         _ = await rootPlayer.mapRoot.gameController.setCurrent(itemId: mapId)
         let remoteId = UUID()
-        let pin = MapPinModel(id: UUID(), name: "Proxy Pin", location: CGPoint(x: 5, y: 6), isPlayer: true, players: [remoteId], timeInterval: 99)
+        let pinId = gameConfigModelPlayer.id
+        let currentPin = MapPinModel(
+            id: pinId,
+            name: "Proxy Pin",
+            isPlayer: true,
+            players: [pinId],
+            timeInterval: 1
+        )
+        rootPlayer.mapRoot.gameController.gameItem(for: mapId).mapPins.append(currentPin)
+        rootPlayer.mapRoot.gameController.mapGameModel.playerPins.append(currentPin)
+        var pin = currentPin
+        pin.location = CGPoint(x: 5, y: 6)
+        pin.timeInterval = 99
         let pinData = NetworkCodableDataType(id: mapId, type: .map, version: 0, data: pin.encodeData())
 
         await proxyMaster.receivedServerProxy(proxyMessage(type: .update, subType: .mapPin, data: pinData, remoteId: remoteId))
 
         // The host's own map updates first, then the same pin leaves as the host's update.
-        #expect(rootPlayer.mapRoot.gameController.gameItem(for: mapId).mapPins.contains { $0.id == pin.id })
+        #expect(rootPlayer.mapRoot.gameController.gameItem(for: mapId).mapPins.first { $0.id == pin.id }?.location == pin.location)
         let forwarded = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)
         #expect(forwarded.subType == .mapPin)
         #expect(forwarded.sender.id == gameConfigModelPlayer.id)

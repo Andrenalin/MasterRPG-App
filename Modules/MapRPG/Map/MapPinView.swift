@@ -55,15 +55,21 @@ final class MapPinViewModel {
         updatedPin.size = updatedPin.size.nextSize()
         setPinPointer(updatedPin: updatedPin)
     }
+
+    func toggleDeadPin(id: UUID) {
+        guard var updatedPin = pinPointer(for: id) else { return }
+        updatedPin.isDead.toggle()
+        setPinPointer(updatedPin: updatedPin)
+    }
 }
 
 struct MapPinView: View, Equatable {
     let model: MapPinViewModel
-    let pinId: UUID
+    let pin: MapPinModel
     let pinSize: CGSize
-    let isShown: Bool
-    let borderColor: Color
     let canDrag: Bool
+    let opensActionMenu: Bool
+    let doubleTapAccessibilityLabel: LocalizedStringResource
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
     var tapAction: (() -> Void)? = nil
@@ -73,18 +79,15 @@ struct MapPinView: View, Equatable {
 
     @GestureState private var isDragging = false
     @State private var isDraggingStarts = false
+    @State private var dragStartLocation: CGPoint?
 
     static func == (lhs: MapPinView, rhs: MapPinView) -> Bool {
-        guard lhs.pinId == rhs.pinId,
-              lhs.pinSize == rhs.pinSize,
-              lhs.isShown == rhs.isShown,
-              lhs.borderColor == rhs.borderColor,
-              lhs.canDrag == rhs.canDrag else { return false }
-        let lp = lhs.model.pinPointer(for: lhs.pinId)
-        let rp = rhs.model.pinPointer(for: rhs.pinId)
-        return lp?.location == rp?.location
-            && lp?.size == rp?.size
-            && lp?.photoId == rp?.photoId
+        lhs.pin == rhs.pin
+            && lhs.model.isExpandedId == rhs.model.isExpandedId
+            && lhs.pinSize == rhs.pinSize
+            && lhs.canDrag == rhs.canDrag
+            && lhs.opensActionMenu == rhs.opensActionMenu
+            && lhs.doubleTapAccessibilityLabel == rhs.doubleTapAccessibilityLabel
     }
 
     var body: some View {
@@ -96,24 +99,49 @@ struct MapPinView: View, Equatable {
     }
 
     private var position: MapPinModel? {
-        model.pinPointer(for: pinId)
+        model.pinPointer(for: pin.id)
     }
 
     private var pinView: some View {
-        VStack {
-            if let position {
-                root.photoRoot.viewController.mapImage(root: root.photoRoot, for: position.photoId, size: pinSize, color: position.color)
+        root.photoRoot.viewController.mapImage(
+            root: root.photoRoot,
+            for: pin.photoId,
+            size: pinSize,
+            color: pin.color
+        )
+        .frame(width: pinSize.width, height: pinSize.height)
+        .overlay {
+            if !pin.isShown {
+                Circle()
+                    .fill(.green.opacity(0.5))
+                    .accessibilityHidden(true)
             }
         }
         .clipShape(.circle)
-        .padding(2)
-        .frame(width: pinSize.width, height: pinSize.height)
-        .padding(2)
-        .background(borderColor)
         .overlay {
-            isShown ? Color.clear : .green.opacity(0.5)
+            Circle()
+                .strokeBorder(pin.isDead ? .black : .gray, lineWidth: pin.isDead ? 5 : 2)
+                .accessibilityHidden(true)
         }
-        .clipShape(.circle)
+        .overlay {
+            if pin.isDead {
+                Image(systemName: "xmark")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(min(pinSize.width, pinSize.height) * 0.24)
+                    .foregroundStyle(.white)
+                    .shadow(color: .black, radius: 1, x: 1, y: 1)
+                    .accessibilityHidden(true)
+            }
+        }
+        .overlay {
+            if pin.isHighlighted {
+                Circle()
+                    .stroke(.red, lineWidth: 4)
+                    .padding(-4)
+                    .accessibilityHidden(true)
+            }
+        }
         .shadow(color: .black, radius: 4, x: 4, y: 4)
 #if os(visionOS)
         .hoverEffect(.highlight)
@@ -124,14 +152,12 @@ struct MapPinView: View, Equatable {
         .highPriorityGesture(combinedGesture)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(pinAccessibilityLabel)
-        .accessibilityValue(
-            Text(isShown ? "Visible to Players" : "Hidden from Players", bundle: .module)
-        )
+        .accessibilityValue(pinAccessibilityValue)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction {
-            toggleExpandedState()
+            handleTap()
         }
-        .accessibilityAction(named: Text("Toggle Player Visibility", bundle: .module)) {
+        .accessibilityAction(named: Text(doubleTapAccessibilityLabel)) {
             guard let doubleTapAction else { return }
             withAnimation(reduceMotion ? nil : .default) {
                 doubleTapAction()
@@ -152,17 +178,16 @@ struct MapPinView: View, Equatable {
         }
 #endif
         .onChange(of: isDragging) {
-            guard !isDragging else { return }
+            guard !isDragging, isDraggingStarts else { return }
             isDraggingStarts = false
+            dragStartLocation = nil
             dragEndAction?()
         }
     }
 
     private var combinedGesture: some Gesture {
         let tapGesture = TapGesture().onEnded {
-            withAnimation {
-                toggleExpandedState()
-            }
+            handleTap()
         }
         let doubleTap = TapGesture(count: 2).onEnded {
             withAnimation(reduceMotion ? nil : .default) { doubleTapAction?() }
@@ -178,16 +203,24 @@ struct MapPinView: View, Equatable {
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: 3)
             .updating($isDragging) { _, state, _ in
+                guard canDrag else { return }
                 state = true
             }
             .onChanged { value in
                 guard canDrag, var pos = position else { return }
                 isDraggingStarts = true
+                let startLocation = dragStartLocation ?? pos.location
+                if dragStartLocation == nil {
+                    dragStartLocation = startLocation
+                }
                 pos.location = CGPoint(
-                    x: pos.location.x + (value.location.x - value.startLocation.x),
-                    y: pos.location.y + (value.location.y - value.startLocation.y)
+                    x: startLocation.x + (value.location.x - value.startLocation.x),
+                    y: startLocation.y + (value.location.y - value.startLocation.y)
                 )
-                pos.timeInterval = Date.now.timeIntervalSince1970
+                pos.timeInterval = max(
+                    Date.now.timeIntervalSince1970,
+                    pos.timeInterval.nextUp
+                )
                 model.setPinPointer(updatedPin: pos)
             }
     }
@@ -196,22 +229,44 @@ struct MapPinView: View, Equatable {
         guard canDrag, var updatedPin = position else { return }
         updatedPin.location.x += x
         updatedPin.location.y += y
-        updatedPin.timeInterval = Date.now.timeIntervalSince1970
+        updatedPin.timeInterval = max(
+            Date.now.timeIntervalSince1970,
+            updatedPin.timeInterval.nextUp
+        )
         model.setPinPointer(updatedPin: updatedPin)
         dragEndAction?()
     }
 #endif
 
     private var pinAccessibilityLabel: Text {
-        guard let name = position?.name, !name.isEmpty else {
+        guard !pin.name.isEmpty else {
             return Text("Map Pin", bundle: .module)
         }
-        return Text(verbatim: name)
+        return Text(verbatim: pin.name)
     }
 
-    private func toggleExpandedState() {
+    private var pinAccessibilityValue: Text {
+        Text(pinAccessibilityValueResource)
+    }
+
+    private var pinAccessibilityValueResource: LocalizedStringResource {
+        switch (pin.isShown, pin.isDead, pin.isHighlighted) {
+        case (true, false, false): LocalizedStringResource("Visible to Players, Alive, Not Highlighted", bundle: .module)
+        case (true, false, true): LocalizedStringResource("Visible to Players, Alive, Highlighted", bundle: .module)
+        case (true, true, false): LocalizedStringResource("Visible to Players, Dead, Not Highlighted", bundle: .module)
+        case (true, true, true): LocalizedStringResource("Visible to Players, Dead, Highlighted", bundle: .module)
+        case (false, false, false): LocalizedStringResource("Hidden from Players, Alive, Not Highlighted", bundle: .module)
+        case (false, false, true): LocalizedStringResource("Hidden from Players, Alive, Highlighted", bundle: .module)
+        case (false, true, false): LocalizedStringResource("Hidden from Players, Dead, Not Highlighted", bundle: .module)
+        case (false, true, true): LocalizedStringResource("Hidden from Players, Dead, Highlighted", bundle: .module)
+        }
+    }
+
+    private func handleTap() {
         withAnimation(reduceMotion ? nil : .default) {
-            model.isExpandedId = model.isExpandedId == pinId ? nil : pinId
+            if opensActionMenu {
+                model.isExpandedId = model.isExpandedId == pin.id ? nil : pin.id
+            }
             tapAction?()
         }
     }
@@ -220,7 +275,14 @@ struct MapPinView: View, Equatable {
 #Preview {
     @Previewable var model: MapPinViewModel = MapPinViewModel(mapPins: [MapPinModel.empty(MapModel.previewId), MapPinModel.empty(UUID())], pointer: .empty(UUID()))
 
-    MapPinView(model: model, pinId: MapModel.previewId, pinSize: model.mapPins[0].size == .normal ? CGSize(width: 64, height: 64) : CGSize(width: 128, height: 128), isShown: false, borderColor: .yellow, canDrag: true) {
+    MapPinView(
+        model: model,
+        pin: model.mapPins[0],
+        pinSize: model.mapPins[0].size == .normal ? CGSize(width: 64, height: 64) : CGSize(width: 128, height: 128),
+        canDrag: true,
+        opensActionMenu: true,
+        doubleTapAccessibilityLabel: LocalizedStringResource("Toggle Player Visibility", bundle: .module)
+    ) {
         var pin = model.mapPins[0]
         pin.isShown.toggle()
         model.setPinPointer(updatedPin: pin)

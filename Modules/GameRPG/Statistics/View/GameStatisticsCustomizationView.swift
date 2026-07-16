@@ -8,7 +8,7 @@ struct GameStatisticsCustomizationView: View {
     @State private var pendingCollectionState: Bool?
 
     var body: some View {
-        Form {
+        List {
             Section {
                 LabeledContent {
                     HStack {
@@ -31,13 +31,16 @@ struct GameStatisticsCustomizationView: View {
                     }
                 }
             } footer: {
-                Text("Only activity during a running game is collected. Message contents and media files are never stored.", bundle: .module)
+                Text("Only activity during a running game is collected. Games shorter than 15 minutes are excluded. Message contents and media files are never stored.", bundle: .module)
             }
 
             Section {
                 ForEach(model.configuration.sectionOrder) { section in
                     GameStatisticsCustomizationRow(section: section, model: model)
                 }
+#if !os(tvOS)
+                .onMove(perform: model.moveSections)
+#endif
             } header: {
                 Text("Dashboard", bundle: .module)
             } footer: {
@@ -73,7 +76,12 @@ struct GameStatisticsCustomizationView: View {
                 Text("This removes all locally stored and iCloud-synced game statistics from this database.", bundle: .module)
             }
         }
-        .formStyle(.grouped)
+#if os(iOS) || os(visionOS)
+        .listStyle(.insetGrouped)
+        .environment(\.editMode, .constant(.active))
+#elseif os(macOS)
+        .listStyle(.inset)
+#endif
         .navigationTitle(Text("Customize Statistics", bundle: .module))
         .alert(
             Text("Delete all game statistics?", bundle: .module),

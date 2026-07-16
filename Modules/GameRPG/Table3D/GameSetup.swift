@@ -169,11 +169,9 @@ extension GameTableModel {
     /// pins then line up outside the map area) and loads missing pin photos.
     @MainActor
     func syncPawnsWithMapPins() {
-        var mapModel: MapModel?
-        if let mapId = currentMapId {
-            mapModel = mapRoot.itemControllable.itemSync(for: mapId) as? MapModel
-        }
+        let mapModel = currentMapModel()
         let photoLoads = setup.syncPins(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees, isGameMaster: isGameMaster)
+        updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {
             Task { [weak self] in
                 await self?.loadPinThumbnail(pinId: pinId, photoId: photoId)

@@ -138,6 +138,14 @@ struct GameCenterAchievementEvaluator: Sendable {
         static let epicSession = "de.andretrettin.masterrpg.achievement.epic-session"
     }
 
+    private enum DurationGoal {
+        // Four hours is a typical game: ten GM games earn Storyteller,
+        // twenty-five games with one character earn Loyal Hero, and eight hours is a long session.
+        static let storyteller: TimeInterval = 40 * 3_600
+        static let loyalHero: TimeInterval = 100 * 3_600
+        static let epicSession: TimeInterval = 8 * 3_600
+    }
+
     func progress(from summary: GameStatisticsSummary) -> [GameCenterAchievementProgress] {
         let longestCharacterDuration = summary.characters.map(\.value).max() ?? 0
         let longestAdventureCount = summary.adventures.map(\.count).max() ?? 0
@@ -148,8 +156,8 @@ struct GameCenterAchievementEvaluator: Sendable {
             progress(Identifier.firstGame, current: Double(summary.sessionCount), goal: 1),
             progress(Identifier.regularAdventurer, current: Double(summary.sessionCount), goal: 10),
             progress(Identifier.veteranAdventurer, current: Double(summary.sessionCount), goal: 50),
-            progress(Identifier.storyteller, current: summary.gameMasterDuration, goal: 10 * 3_600),
-            progress(Identifier.loyalHero, current: longestCharacterDuration, goal: 25 * 3_600),
+            progress(Identifier.storyteller, current: summary.gameMasterDuration, goal: DurationGoal.storyteller),
+            progress(Identifier.loyalHero, current: longestCharacterDuration, goal: DurationGoal.loyalHero),
             progress(Identifier.campaigner, current: Double(longestAdventureCount), goal: 10),
             progress(Identifier.wellTravelled, current: Double(summary.adventures.count), goal: 5),
             progress(Identifier.diceInitiate, current: Double(summary.diceRollCount), goal: 100),
@@ -158,7 +166,7 @@ struct GameCenterAchievementEvaluator: Sendable {
             progress(Identifier.unluckyHero, current: Double(summary.fumbleCount), goal: 1),
             progress(Identifier.multimediaMaestro, current: Double(sharedModuleCount), goal: 5),
             progress(Identifier.fullParty, current: Double(largestParty), goal: 5),
-            progress(Identifier.epicSession, current: summary.longestDuration, goal: 4 * 3_600)
+            progress(Identifier.epicSession, current: summary.longestDuration, goal: DurationGoal.epicSession)
         ]
     }
 
