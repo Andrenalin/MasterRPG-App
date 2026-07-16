@@ -5,12 +5,6 @@
       "comment" : "Bundle display name",
       "extractionState" : "stale",
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Master RPG"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -29,12 +23,6 @@
       "comment" : "Bundle name",
       "extractionState" : "stale",
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -52,12 +40,6 @@
     "MasterRPG Document" : {
       "extractionState" : "stale",
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG-Dokument"
-          }
-        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69,12 +51,6 @@
     "MasterRPG Save Game" : {
       "extractionState" : "stale",
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG-Spielstand"
-          }
-        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83,16 +59,82 @@
         }
       }
     },
+    "NSCameraUsageDescription" : {
+      "comment" : "Privacy - Camera Usage Description",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the camera to take photos for the photo module and other modules to show photos and maps"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้กล้องเพื่อถ่ายภาพสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
+          }
+        }
+      }
+    },
+    "NSDesktopFolderUsageDescription" : {
+      "comment" : "Privacy - Desktop Folder Usage Description",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์เดสก์ท็อปเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
+          }
+        }
+      }
+    },
+    "NSDocumentsFolderUsageDescription" : {
+      "comment" : "Privacy - Documents Folder Usage Description",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์เอกสารเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
+          }
+        }
+      }
+    },
+    "NSDownloadsFolderUsageDescription" : {
+      "comment" : "Privacy - Downloads Folder Usage Description",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์ดาวน์โหลดเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
+          }
+        }
+      }
+    },
     "NSHandsTrackingUsageDescription" : {
       "comment" : "Privacy - Hands Tracking Usage Description",
       "extractionState" : "stale",
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG verwendet Handerkennung, um während des Spiels die Würfel zu rollen."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -107,16 +149,64 @@
         }
       }
     },
+    "NSHumanReadableCopyright" : {
+      "comment" : "Copyright (human-readable)",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription" : {
+      "comment" : "Privacy - Local Network Usage Description",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้เครือข่ายท้องถิ่นเพื่อเชื่อมต่อกับผู้เล่นคนอื่น ๆ รอบตัวคุณเพื่อแชร์แผนที่จาก GameMaster"
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription" : {
+      "comment" : "Privacy - Photo Library Usage Description",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้คลังภาพเพื่อนำเข้าภาพถ่ายสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
+          }
+        }
+      }
+    },
     "NSWorldSensingUsageDescription" : {
       "comment" : "Privacy - World Sensing Usage Description",
       "extractionState" : "stale",
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG verwendet Welterkennungsdaten, um Tische für das Würfeln während des Spiels zu erkennen."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
