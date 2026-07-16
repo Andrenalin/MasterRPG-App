@@ -318,6 +318,8 @@ final class PinPawn {
     let entity: Entity
     private let baseModel: ModelEntity
     private let photoPlane: ModelEntity
+    private let highlightModel: ModelEntity
+    private let deathMarkModels: [ModelEntity]
     var loadedPhotoId: UUID?
     private var currentSize: MapPinModel.MapPinSize
 
@@ -330,16 +332,55 @@ final class PinPawn {
         var baseMaterial = UnlitMaterial()
         baseMaterial.color = .init(tint: UIColor(pin.color))
         baseModel = ModelEntity(mesh: .generateCylinder(height: 0.005, radius: radius), materials: [baseMaterial])
+        baseModel.name = "PinBase"
+
+        var highlightMaterial = UnlitMaterial()
+        highlightMaterial.color = .init(tint: .systemRed)
+        let highlight = ModelEntity(
+            mesh: .generateCylinder(height: 0.001, radius: radius * 1.18),
+            materials: [highlightMaterial]
+        )
+        highlight.name = "PinHighlightRing"
+        highlight.position.y = -0.002
+        highlight.isEnabled = false
+        highlightModel = highlight
 
         var photoMaterial = UnlitMaterial()
         photoMaterial.color = .init(tint: UIColor(pin.color))
         photoPlane = ModelEntity(mesh: .generatePlane(width: diameter, depth: diameter, cornerRadius: diameter / 2), materials: [photoMaterial])
+        photoPlane.name = "PinPhotoPlane"
         photoPlane.position.y = 0.004
+
+        var deathMaterial = UnlitMaterial()
+        deathMaterial.color = .init(tint: .white)
+        let deathBarLength = diameter * 0.72
+        let deathBarThickness = max(diameter * 0.10, 0.0015)
+        let firstDeathBar = ModelEntity(
+            mesh: .generateBox(width: deathBarLength, height: 0.001, depth: deathBarThickness),
+            materials: [deathMaterial]
+        )
+        firstDeathBar.name = "PinDeathMarkFirstBar"
+        firstDeathBar.position.y = 0.006
+        firstDeathBar.orientation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
+        firstDeathBar.isEnabled = false
+
+        let secondDeathBar = ModelEntity(
+            mesh: .generateBox(width: deathBarLength, height: 0.001, depth: deathBarThickness),
+            materials: [deathMaterial]
+        )
+        secondDeathBar.name = "PinDeathMarkSecondBar"
+        secondDeathBar.position.y = 0.006
+        secondDeathBar.orientation = simd_quatf(angle: -.pi / 4, axis: SIMD3<Float>(0, 1, 0))
+        secondDeathBar.isEnabled = false
+        deathMarkModels = [firstDeathBar, secondDeathBar]
 
         let pinEntity = Entity()
         pinEntity.name = "Pin-\(pin.name)"
+        pinEntity.addChild(highlight)
         pinEntity.addChild(baseModel)
         pinEntity.addChild(photoPlane)
+        pinEntity.addChild(firstDeathBar)
+        pinEntity.addChild(secondDeathBar)
         pinEntity.components.set(PinComponent(pinId: pin.id))
         pinEntity.components.set(InputTargetComponent())
         pinEntity.components.set(CollisionComponent(shapes: [.generateBox(width: diameter, height: 0.02, depth: diameter)]))
@@ -347,7 +388,9 @@ final class PinPawn {
         var accessibility = AccessibilityComponent()
         accessibility.isAccessibilityElement = true
         accessibility.label = LocalizedStringResource("Map pin \(pin.name)", bundle: .module)
+        accessibility.value = Self.accessibilityValue(for: pin)
         accessibility.systemActions = .activate
+        accessibility.customActions = [LocalizedStringResource("Toggle Pin Zoom", bundle: .module)]
         pinEntity.components.set(accessibility)
         entity = pinEntity
     }
@@ -363,8 +406,9 @@ final class PinPawn {
         }
     }
 
-    /// Applies pin state: position, size, zoom scale, tint, and the game-master-only
-    /// hidden dimming (mirrors the 2D green overlay for hidden pins).
+    /// Applies pin state without recreating the entity. The highlight is a red
+    /// disc behind the token, so only its outer edge is visible as a ring. Dead
+    /// pins use the base as a black inner border while the photo remains opaque.
     func update(pin: MapPinModel, position: SIMD3<Float>, hiddenForMaster: Bool) {
         entity.position = position
         entity.scale = SIMD3<Float>(repeating: pin.isZoom ? 4.0 : 1.0)
@@ -373,13 +417,16 @@ final class PinPawn {
             applySize(pin.size)
         }
         var baseMaterial = UnlitMaterial()
-        baseMaterial.color = .init(tint: UIColor(pin.color))
+        baseMaterial.color = .init(tint: pin.isDead ? .black : UIColor(pin.color))
         baseModel.model?.materials = [baseMaterial]
+        highlightModel.isEnabled = pin.isHighlighted
+        deathMarkModels.forEach { $0.isEnabled = pin.isDead }
         if hiddenForMaster {
             entity.components.set(OpacityComponent(opacity: 0.5))
         } else {
             entity.components.remove(OpacityComponent.self)
         }
+        updateAccessibility(for: pin)
     }
 
     /// Puts the pin's photo (thumbnail) onto the token face.
@@ -395,8 +442,34 @@ final class PinPawn {
         let radius = Self.baseRadius * Self.scaleForPinSize(size)
         let diameter = radius * 1.8
         baseModel.model?.mesh = .generateCylinder(height: 0.005, radius: radius)
+        highlightModel.model?.mesh = .generateCylinder(height: 0.001, radius: radius * 1.18)
         photoPlane.model?.mesh = .generatePlane(width: diameter, depth: diameter, cornerRadius: diameter / 2)
+        let deathBarLength = diameter * 0.72
+        let deathBarThickness = max(diameter * 0.10, 0.0015)
+        deathMarkModels.forEach {
+            $0.model?.mesh = .generateBox(width: deathBarLength, height: 0.001, depth: deathBarThickness)
+        }
         entity.components.set(CollisionComponent(shapes: [.generateBox(width: diameter, height: 0.02, depth: diameter)]))
+    }
+
+    private func updateAccessibility(for pin: MapPinModel) {
+        guard var accessibility = entity.components[AccessibilityComponent.self] else { return }
+        accessibility.label = LocalizedStringResource("Map pin \(pin.name)", bundle: .module)
+        accessibility.value = Self.accessibilityValue(for: pin)
+        entity.components.set(accessibility)
+    }
+
+    private static func accessibilityValue(for pin: MapPinModel) -> LocalizedStringResource {
+        switch (pin.isShown, pin.isDead, pin.isHighlighted) {
+        case (true, false, false): LocalizedStringResource("Visible, Alive, Not Highlighted", bundle: .module)
+        case (true, false, true): LocalizedStringResource("Visible, Alive, Highlighted", bundle: .module)
+        case (true, true, false): LocalizedStringResource("Visible, Dead, Not Highlighted", bundle: .module)
+        case (true, true, true): LocalizedStringResource("Visible, Dead, Highlighted", bundle: .module)
+        case (false, false, false): LocalizedStringResource("Hidden, Alive, Not Highlighted", bundle: .module)
+        case (false, false, true): LocalizedStringResource("Hidden, Alive, Highlighted", bundle: .module)
+        case (false, true, false): LocalizedStringResource("Hidden, Dead, Not Highlighted", bundle: .module)
+        case (false, true, true): LocalizedStringResource("Hidden, Dead, Highlighted", bundle: .module)
+        }
     }
 }
 

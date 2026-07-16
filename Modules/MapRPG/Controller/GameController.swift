@@ -29,12 +29,15 @@ public protocol MapGameStorable {
 
     @MainActor func setPlayerPin(for playerId: UUID, name: String, characterId: UUID)
     @MainActor func resetPlayerPins(for players: [PlayerGameModel])
-    @MainActor func updatePin(itemId: UUID, data: Data?, playerId: UUID)
+    @MainActor func updatePin(itemId: UUID, data: Data?, playerId: UUID) -> Bool
     func hasBackgroundImage(itemId: UUID) async -> Bool
     func missingMapImages(itemId: UUID) async -> [NetworkCodableDataType]
     @MainActor func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool
     @MainActor func togglePin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func zoomPin(itemId: UUID, pinId: UUID) -> Bool
+    @MainActor func toggleDeadPin(itemId: UUID, pinId: UUID) -> Bool
+    @MainActor func resizePin(itemId: UUID, pinId: UUID) -> Bool
+    @MainActor func toggleHighlightPin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func networkPin(itemId: UUID, pinId: UUID) -> NetworkCodableDataType?
     @MainActor func updateMap(for itemId: UUID, with data: NetworkCodableDataType)
     @MainActor func mapUpdateResult(for itemId: UUID) -> String
@@ -233,31 +236,63 @@ extension GameController: MapGameStorable {
     }
 
     @MainActor
-    func updatePin(itemId: UUID, data: Data?, playerId: UUID) {
-        guard let data, let pin = MapPinModel.decodeData(of: data) else {
-            fatalError("MapPinModel expected")
-        }
-        if gameItem(for: itemId).pointer.id == pin.id {
-            if gameItem(for: itemId).pointer.isShown {
-                gameItem(for: itemId).pointer.location = pin.location
-            }
-            return
-        }
-        if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pin.id }) {
-            if pin.timeInterval > mapGameModel.playerPins[index].timeInterval {
-                mapGameModel.playerPins[index] = pin
-            }
-        } else {
-            mapGameModel.playerPins.append(pin)
+    func updatePin(itemId: UUID, data: Data?, playerId: UUID) -> Bool {
+        guard let data, let incomingPin = MapPinModel.decodeData(of: data) else { return false }
+        let now = Date.now.timeIntervalSince1970
+        guard incomingPin.timeInterval.isFinite,
+              incomingPin.timeInterval <= now + Self.maximumFuturePinTimestampSkew else {
+            return false
         }
 
-        if let pinIndex = gameItem(for: itemId).mapPins.firstIndex(where: { $0.id == pin.id }) {
-            if pin.timeInterval > gameItem(for: itemId).mapPins[pinIndex].timeInterval {
-                gameItem(for: itemId)[MapPinId.id, pin.id] = pin
+        // Player-origin updates are valid only for maps registered in the
+        // active game. Falling back to the persistent editor item here would
+        // let a forged map id mutate content that was never shared.
+        guard let item = gameModel.itemData[itemId] as? MapModel else { return false }
+        if item.pointer.id == incomingPin.id {
+            guard item.pointer.isShown,
+                  incomingPin.timeInterval > item.pointer.timeInterval,
+                  incomingPin.location != item.pointer.location else {
+                return false
             }
-        } else {
-            gameItem(for: itemId).mapPins.append(pin)
+            // The pointer is never a regular pin: players may move it while it
+            // is visible, but none of its other fields are accepted.
+            item.pointer.location = incomingPin.location
+            item.pointer.timeInterval = incomingPin.timeInterval
+            return true
         }
+
+        guard let pinIndex = item.mapPins.firstIndex(where: { $0.id == incomingPin.id }) else {
+            // Player updates may never create map pins or session-player pins.
+            return false
+        }
+        let currentPin = item.mapPins[pinIndex]
+        guard incomingPin.timeInterval > currentPin.timeInterval else { return false }
+
+        let isOwnedPlayerPin = currentPin.isPlayer && currentPin.id == playerId
+        guard isOwnedPlayerPin || currentPin.isShown else { return false }
+
+        var authorizedPin = currentPin
+        if isOwnedPlayerPin {
+            authorizedPin.location = incomingPin.location
+        }
+        // Zoom and highlight are the only shared interactions permitted on a
+        // visible foreign pin. All metadata and game-master state stay intact.
+        authorizedPin.isZoom = incomingPin.isZoom
+        authorizedPin.isHighlighted = incomingPin.isHighlighted
+
+        guard authorizedPin.location != currentPin.location
+                || authorizedPin.isZoom != currentPin.isZoom
+                || authorizedPin.isHighlighted != currentPin.isHighlighted else {
+            return false
+        }
+
+        authorizedPin.timeInterval = incomingPin.timeInterval
+        item[MapPinId.id, authorizedPin.id] = authorizedPin
+        if authorizedPin.isPlayer,
+           let playerPinIndex = mapGameModel.playerPins.firstIndex(where: { $0.id == authorizedPin.id }) {
+            mapGameModel.playerPins[playerPinIndex] = authorizedPin
+        }
+        return true
     }
 
     /// Whether the map's background photo is usable on this device. A map
@@ -299,44 +334,50 @@ extension GameController: MapGameStorable {
     /// conflicts — the 3D-table equivalent of the 2D game-master drag.
     @MainActor
     func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool {
-        let item = gameItem(for: itemId)
-        guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
-        pin.location = location
-        pin.timeInterval = Date.now.timeIntervalSince1970
-        item[MapPinId.id, pinId] = pin
-        if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pinId }) {
-            mapGameModel.playerPins[index] = pin
+        updatePinState(itemId: itemId, pinId: pinId) { pin in
+            pin.location = location
         }
-        return true
     }
 
     /// Toggles a pin's visibility as the game master — the 3D-table
     /// equivalent of the 2D game-master double tap.
     @MainActor
     func togglePin(itemId: UUID, pinId: UUID) -> Bool {
-        let item = gameItem(for: itemId)
-        guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
-        pin.isShown.toggle()
-        pin.timeInterval = Date.now.timeIntervalSince1970
-        item[MapPinId.id, pinId] = pin
-        if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pinId }) {
-            mapGameModel.playerPins[index] = pin
+        updatePinState(itemId: itemId, pinId: pinId) { pin in
+            pin.isShown.toggle()
         }
-        return true
     }
 
     /// Toggles a pin's zoom state — visible to all participants via mapState.
     @MainActor
     func zoomPin(itemId: UUID, pinId: UUID) -> Bool {
-        let item = gameItem(for: itemId)
-        guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
-        pin.isZoom.toggle()
-        pin.timeInterval = Date.now.timeIntervalSince1970
-        item[MapPinId.id, pinId] = pin
-        if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pinId }) {
-            mapGameModel.playerPins[index] = pin
+        updatePinState(itemId: itemId, pinId: pinId) { pin in
+            pin.isZoom.toggle()
         }
-        return true
+    }
+
+    /// Toggles the persistent death marker as an authoritative game-master action.
+    @MainActor
+    func toggleDeadPin(itemId: UUID, pinId: UUID) -> Bool {
+        updatePinState(itemId: itemId, pinId: pinId) { pin in
+            pin.isDead.toggle()
+        }
+    }
+
+    /// Cycles through the same pin sizes offered by the full map editor.
+    @MainActor
+    func resizePin(itemId: UUID, pinId: UUID) -> Bool {
+        updatePinState(itemId: itemId, pinId: pinId) { pin in
+            pin.size = pin.size.nextSize()
+        }
+    }
+
+    /// Optimistically toggles a shared player highlight before `.mapPin` is sent.
+    @MainActor
+    func toggleHighlightPin(itemId: UUID, pinId: UUID) -> Bool {
+        updatePinState(itemId: itemId, pinId: pinId) { pin in
+            pin.isHighlighted.toggle()
+        }
     }
 
     /// Encodes the current state of a single pin for a `.mapPin` message —
@@ -400,6 +441,8 @@ extension GameController: MapGameStorable {
 }
 
 private extension GameController {
+    static let maximumFuturePinTimestampSkew: TimeInterval = 5 * 60
+
     @MainActor
     private func updateMap(for itemId: UUID, with result: String) {
         let model = gameItem(for: itemId)
@@ -413,16 +456,22 @@ private extension GameController {
                     model.pointer = pointer
                 }
                 let incoming = Array(mapPins.dropFirst())
-                // For player pins, keep the local version when it is newer than the
-                // received snapshot — prevents a stale master broadcast from overwriting
-                // a pin that the player has already moved.
+                // Preserve only fields a player may optimistically change while
+                // awaiting the authoritative round trip. Visibility, size, death,
+                // and metadata always come from the game-master mapState.
                 model.mapPins = incoming.map { incomingPin in
-                    if incomingPin.isPlayer,
-                       let local = model.mapPins.first(where: { $0.id == incomingPin.id }),
-                       local.timeInterval > incomingPin.timeInterval {
-                        return local
+                    guard let local = model.mapPins.first(where: { $0.id == incomingPin.id }),
+                          local.timeInterval > incomingPin.timeInterval else {
+                        return incomingPin
                     }
-                    return incomingPin
+                    var mergedPin = incomingPin
+                    if incomingPin.isPlayer {
+                        mergedPin.location = local.location
+                    }
+                    mergedPin.isZoom = local.isZoom
+                    mergedPin.isHighlighted = local.isHighlighted
+                    mergedPin.timeInterval = local.timeInterval
+                    return mergedPin
                 }
             }
         }
@@ -438,5 +487,25 @@ private extension GameController {
             entries[entryIndex].focused = focused
         }
         model.entries = entries
+    }
+
+    /// Applies a local pin mutation and gives it a monotonic timestamp. This is
+    /// used by both authoritative master actions and optimistic player actions.
+    @MainActor
+    private func updatePinState(
+        itemId: UUID,
+        pinId: UUID,
+        mutation: (inout MapPinModel) -> Void
+    ) -> Bool {
+        let item = gameItem(for: itemId)
+        guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
+        mutation(&pin)
+        pin.timeInterval = max(Date.now.timeIntervalSince1970, pin.timeInterval.nextUp)
+        item[MapPinId.id, pinId] = pin
+        if pin.isPlayer,
+           let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pinId }) {
+            mapGameModel.playerPins[index] = pin
+        }
+        return true
     }
 }

@@ -577,8 +577,18 @@ extension MasterController {
                 // never get from players mapState updates, only as resend from SharePlay?
                 break
             case .mapPin:
-                await root.mapRoot.mapGameControllable.updatePin(itemId: model.data.id, data: model.data.data, playerId: model.sender.id)
-                await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id))
+                if await root.mapRoot.mapGameControllable.updatePin(
+                    itemId: model.data.id,
+                    data: model.data.data,
+                    playerId: model.sender.id
+                ) {
+                    #if os(visionOS)
+                    await MainActor.run {
+                        root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+                    }
+                    #endif
+                    await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id))
+                }
             default:
                 break
             }
@@ -738,7 +748,13 @@ private extension MasterController {
         if model.data.type == .map, model.type == .update, model.subType == .mapPin {
             // Update the host's own map first, then tell the master.
             let hostId = await root.gameModel.gameConfig.id
-            await root.mapRoot.mapGameControllable.updatePin(itemId: model.data.id, data: model.data.data, playerId: hostId)
+            guard await root.mapRoot.mapGameControllable.updatePin(
+                itemId: model.data.id,
+                data: model.data.data,
+                playerId: hostId
+            ) else {
+                return true
+            }
             await remapUpstream(model)
             return true
         }

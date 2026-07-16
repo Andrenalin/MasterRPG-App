@@ -28,6 +28,11 @@ final class GameTableModel: Sendable {
     var isGameMaster = false
     /// The local player's own pin id (== the player's game id); nil on the master.
     var playerPinId: UUID?
+    /// The game master's local menu selection. Highlighting is intentionally
+    /// not represented here because multiple shared pins may be highlighted.
+    private(set) var selectedPinId: UUID?
+    private(set) var selectedPin: MapPinModel?
+    private var pinMenuAttachment: Entity?
     /// Room-visibility signature of the last rendered fog texture — pin moves
     /// broadcast mapState constantly; skip the expensive composite when the
     /// room state did not change.
@@ -86,11 +91,12 @@ final class GameTableModel: Sendable {
 
         // Only update if the map actually changed
         guard currentItemId != currentMapId else { return }
+        clearPinSelection()
         currentMapId = currentItemId
         fogSignature = nil
 
         // Get the current map model from game controller
-        guard let mapModel = await mapRoot.itemControllable.item(for: currentItemId) as? MapModel else {
+        guard let mapModel = await mapModel(for: currentItemId) else {
             Logger.gameTable.error("Current item is not a MapModel")
             return
         }
@@ -139,7 +145,7 @@ final class GameTableModel: Sendable {
             return
         }
 
-        guard let mapModel = await mapRoot.itemControllable.item(for: currentItemId) as? MapModel else {
+        guard let mapModel = await mapModel(for: currentItemId) else {
             Logger.gameTable.error("Current item is not a MapModel")
             return
         }
@@ -195,11 +201,58 @@ final class GameTableModel: Sendable {
         isGameMaster || pinId == playerPinId
     }
 
+    /// Registers the SwiftUI attachment used for the game-master pin menu.
+    /// It remains parented to the table root rather than the pawn so pin size
+    /// and zoom transforms never scale the controls.
+    func registerPinMenuAttachment(_ attachment: Entity) {
+        pinMenuAttachment = attachment
+        attachment.components.set(BillboardComponent())
+        if attachment.parent == nil {
+            renderer.root.addChild(attachment)
+        }
+        updatePinMenuAttachmentPosition()
+    }
+
+    func updateSelectedPinState(mapModel: MapModel?) {
+        guard isGameMaster,
+              let selectedPinId,
+              let pin = mapModel?.mapPins.first(where: { $0.id == selectedPinId }),
+              setup.pinPawns.contains(where: { $0.pinId == selectedPinId }) else {
+            clearPinSelection()
+            return
+        }
+        selectedPin = pin
+        updatePinMenuAttachmentPosition()
+    }
+
+    func clearPinSelection() {
+        selectedPinId = nil
+        selectedPin = nil
+        pinMenuAttachment?.isEnabled = false
+    }
+
+    func updatePinMenuAttachmentPosition() {
+        guard isGameMaster,
+              selectedPin != nil,
+              let selectedPinId,
+              let attachment = pinMenuAttachment,
+              let pawn = setup.pinPawns.first(where: { $0.pinId == selectedPinId }) else {
+            pinMenuAttachment?.isEnabled = false
+            return
+        }
+        let pinPosition = pawn.entity.position
+        attachment.position = SIMD3<Float>(pinPosition.x, pinPosition.y + 0.09, pinPosition.z)
+        attachment.isEnabled = true
+    }
+
     /// Pin drag: follow the finger on the board plane.
     @MainActor
     func pinDragChanged(pinId: UUID, position: SIMD3<Float>) {
         guard canMovePin(pinId), let pawn = setup.pinPawns.first(where: { $0.pinId == pinId }) else { return }
         pawn.entity.position = SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)
+        if selectedPinId == pinId {
+            updatePinMenuAttachmentPosition()
+        }
     }
 
     /// Pin drop: write the move back into the map model, then network it.
@@ -214,31 +267,98 @@ final class GameTableModel: Sendable {
         let projection = MapTableProjection(imageSize: mapImage.fixedSize, degrees: currentMapDegrees)
         let location = projection.mapLocation(for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z))
         guard mapRoot.mapGameControllable.movePin(itemId: mapId, pinId: pinId, location: location) else { return }
+        syncPawnsWithMapPins()
         if isGameMaster {
-            networkActions?.game(mapRoot.mapGameControllable.networkMapUpdate(for: mapId), .mapState, nil)
-        } else if let pinData = mapRoot.mapGameControllable.networkPin(itemId: mapId, pinId: pinId) {
-            networkActions?.game(pinData, .mapPin, nil)
+            broadcastMapState(for: mapId)
+        } else {
+            sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
         }
     }
 
-    /// Tap zoom: toggles the pin's isZoom state and broadcasts to all participants.
-    /// Master only — zoom is a GM tool for highlighting tokens on the 3D table.
+    /// A game-master tap opens the local action menu. A player tap toggles the
+    /// pin's shared highlight state and asks the master to authorize it.
     @MainActor
     func pinTapped(pinId: UUID) {
-        guard isGameMaster, let mapId = currentMapId else { return }
-        guard mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: pinId) else { return }
+        guard let mapId = currentMapId,
+              setup.pinPawns.contains(where: { $0.pinId == pinId }) else { return }
+        if isGameMaster {
+            if selectedPinId == pinId {
+                clearPinSelection()
+            } else {
+                selectedPinId = pinId
+                updateSelectedPinState(mapModel: currentMapModel())
+            }
+            return
+        }
+
+        guard mapRoot.mapGameControllable.toggleHighlightPin(itemId: mapId, pinId: pinId) else { return }
         syncPawnsWithMapPins()
+        sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
+    }
+
+    /// Double tap toggles shared zoom for both roles. Player changes travel as
+    /// `.mapPin`; the master rebroadcasts the accepted authoritative mapState.
+    @MainActor
+    func pinDoubleTapped(pinId: UUID) {
+        guard let mapId = currentMapId,
+              setup.pinPawns.contains(where: { $0.pinId == pinId }),
+              mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: pinId) else { return }
+        syncPawnsWithMapPins()
+        if isGameMaster {
+            broadcastMapState(for: mapId)
+        } else {
+            sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
+        }
+    }
+
+    func toggleSelectedPinDead() {
+        guard isGameMaster, let mapId = currentMapId, let selectedPinId,
+              mapRoot.mapGameControllable.toggleDeadPin(itemId: mapId, pinId: selectedPinId) else { return }
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
+    func toggleSelectedPinVisibility() {
+        guard isGameMaster, let mapId = currentMapId, let selectedPinId,
+              mapRoot.mapGameControllable.togglePin(itemId: mapId, pinId: selectedPinId) else { return }
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
+    func resizeSelectedPin() {
+        guard isGameMaster, let mapId = currentMapId, let selectedPinId,
+              mapRoot.mapGameControllable.resizePin(itemId: mapId, pinId: selectedPinId) else { return }
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
+    func toggleSelectedPinZoom() {
+        guard isGameMaster, let mapId = currentMapId, let selectedPinId,
+              mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: selectedPinId) else { return }
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
+    private func mapModel(for mapId: UUID) async -> MapModel? {
+        if let liveMap = mapRoot.mapGameControllable.gameModel.itemData[mapId] as? MapModel {
+            return liveMap
+        }
+        return await mapRoot.itemControllable.item(for: mapId) as? MapModel
+    }
+
+    func currentMapModel() -> MapModel? {
+        guard let currentMapId else { return nil }
+        return (mapRoot.mapGameControllable.gameModel.itemData[currentMapId] as? MapModel)
+            ?? (mapRoot.itemControllable.itemSync(for: currentMapId) as? MapModel)
+    }
+
+    private func broadcastMapState(for mapId: UUID) {
         networkActions?.game(mapRoot.mapGameControllable.networkMapUpdate(for: mapId), .mapState, nil)
     }
 
-    /// Master only: double tap hides/shows the pin and broadcasts the map
-    /// state (2D game-master double-tap parity).
-    @MainActor
-    func pinDoubleTapped(pinId: UUID) {
-        guard isGameMaster, let mapId = currentMapId else { return }
-        guard mapRoot.mapGameControllable.togglePin(itemId: mapId, pinId: pinId) else { return }
-        syncPawnsWithMapPins()
-        networkActions?.game(mapRoot.mapGameControllable.networkMapUpdate(for: mapId), .mapState, nil)
+    private func sendPlayerPinUpdate(mapId: UUID, pinId: UUID) {
+        guard let pinData = mapRoot.mapGameControllable.networkPin(itemId: mapId, pinId: pinId) else { return }
+        networkActions?.game(pinData, .mapPin, nil)
     }
     
     isolated deinit {

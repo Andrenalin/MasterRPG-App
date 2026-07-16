@@ -46,6 +46,7 @@
     <entity name="RPGMapPin" representedClassName="RPGMapPin" syncable="YES" codeGenerationType="class">
         <attribute name="color" attributeType="String" defaultValueString=""/>
         <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isDead" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="isShown" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <attribute name="name" attributeType="String" defaultValueString=""/>
         <attribute name="photoUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>

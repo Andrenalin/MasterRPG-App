@@ -33,6 +33,11 @@ final class PlayerControllerModel: Sendable {
         let counter: Int
     }
 
+    private struct PendingMapState: Sendable {
+        let data: NetworkCodableDataType
+        let counter: Int
+    }
+
     var gameUpdateType: NetworkModules = .none
     var messageCounter: Int = 0
     private var outgoingMessageCounter: Int = 1
@@ -63,6 +68,7 @@ final class PlayerControllerModel: Sendable {
     /// Only one value per map is retained, so interleaved chunk streams cannot
     /// roll a newer editor refresh back.
     private var pendingMapContentUpdates: [UUID: PendingMapContentUpdate] = [:]
+    private var pendingMapStates: [UUID: PendingMapState] = [:]
     private var lastMapContentUpdateCounters: [UUID: Int] = [:]
     private var lastFullMapContentCounters: [UUID: Int] = [:]
     private var mapContentVersions: [UUID: Int] = [:]
@@ -217,6 +223,23 @@ final class PlayerControllerModel: Sendable {
         pendingMapContentUpdates[itemId] = nil
     }
 
+    func queueMapState(_ data: NetworkCodableDataType, counter: Int) {
+        if let current = pendingMapStates[data.id],
+           counter != 0,
+           current.counter >= counter {
+            return
+        }
+        pendingMapStates[data.id] = PendingMapState(data: data, counter: counter)
+    }
+
+    func pendingMapState(for itemId: UUID) -> NetworkCodableDataType? {
+        pendingMapStates[itemId]?.data
+    }
+
+    func discardPendingMapState(itemId: UUID) {
+        pendingMapStates[itemId] = nil
+    }
+
     func shouldApplyMapContentUpdate(itemId: UUID, counter: Int) -> Bool {
         counter == 0 || counter > max(
             lastMapContentUpdateCounters[itemId] ?? 0,
@@ -261,6 +284,7 @@ final class PlayerControllerModel: Sendable {
 
     func resetMapContentSequence() {
         pendingMapContentUpdates.removeAll()
+        pendingMapStates.removeAll()
         lastMapContentUpdateCounters.removeAll()
         lastFullMapContentCounters.removeAll()
         mapContentVersions.removeAll()
@@ -850,6 +874,7 @@ extension PlayerController {
                     )
                 }
                 _ = await applyPendingMapContentUpdate(itemId: model.data.id)
+                _ = await applyPendingMapState(itemId: model.data.id)
                 await MainActor.run {
                     // Also for players: a reveal means "show the map". Waiting for
                     // the next mapState left the screen behind the black overlay
@@ -887,6 +912,7 @@ extension PlayerController {
                 counter: model.counter
             )
             _ = await applyPendingMapContentUpdate(itemId: model.data.id)
+            _ = await applyPendingMapState(itemId: model.data.id)
             if completesReveal {
                 // The payload answers a mapState-triggered re-request: the map is
                 // the current presentation, and the mapState that flips the screen
@@ -930,9 +956,24 @@ extension PlayerController {
                     // Re-request the full map once — the master answers a
                     // `.reveal .mapState` with the map data plus the current map
                     // state. A plain `.ok` is only an ACK and would dead-end here.
+                    await gameModel.queueMapState(model.data, counter: model.counter)
                     let isFirstRequest = await MainActor.run { gameModel.pendingMapRequests.insert(model.data.id).inserted }
                     return await MainActor.run {
-                        root.gameModel.outgoingMessage(counter: model.counter, proxyCounter: model.proxyCounter, type: .reveal, subType: isFirstRequest ? .mapState : .ok, asMaster: false, data: NetworkCodableDataType(id: model.data.id, type: model.data.type, version: 0, data: nil))
+                        root.gameModel.outgoingMessage(
+                            counter: model.counter,
+                            proxyCounter: model.proxyCounter,
+                            type: .reveal,
+                            subType: isFirstRequest ? .mapState : .ok,
+                            asMaster: false,
+                            data: NetworkCodableDataType(
+                                id: model.data.id,
+                                type: model.data.type,
+                                version: model.data.version,
+                                data: nil,
+                                assetVersion: model.data.assetVersion,
+                                contentVersion: model.data.contentVersion
+                            )
+                        )
                     }
                 }
             case .mapPin:
@@ -1025,6 +1066,16 @@ extension PlayerController {
             counter: pending.counter,
             contentVersion: pending.data.contentVersion
         )
+        return true
+    }
+
+    func applyPendingMapState(itemId: UUID) async -> Bool {
+        guard let pending = await gameModel.pendingMapState(for: itemId),
+              await root.mapRoot.gameControllable.hasItem(id: itemId, version: 0)
+        else { return false }
+
+        await root.mapRoot.mapGameControllable.updateMap(for: itemId, with: pending)
+        await gameModel.discardPendingMapState(itemId: itemId)
         return true
     }
 

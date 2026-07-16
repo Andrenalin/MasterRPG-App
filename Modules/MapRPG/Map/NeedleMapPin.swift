@@ -9,10 +9,30 @@ struct NeedleMapPin: View {
     let index: Int
     let map: MapModel
     let mapEditController: MapEditController
+    let coordinatesChanged: ([CGPoint]) -> Void
+    let usesGlassEffects: Bool
+
+    init(
+        entries: MapEntryViewerModel,
+        entryId: UUID,
+        index: Int,
+        map: MapModel,
+        mapEditController: MapEditController,
+        coordinatesChanged: @escaping ([CGPoint]) -> Void = { _ in },
+        usesGlassEffects: Bool = true
+    ) {
+        self.entries = entries
+        self.entryId = entryId
+        self.index = index
+        self.map = map
+        self.mapEditController = mapEditController
+        self.coordinatesChanged = coordinatesChanged
+        self.usesGlassEffects = usesGlassEffects
+    }
 
     @Namespace var glassNamespace
-    @GestureState private var isDragging = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var dragStartCoordinate: CGPoint?
 
     private var isSelected: Bool {
         entries.isSelected(index: index)
@@ -39,7 +59,9 @@ struct NeedleMapPin: View {
                 .frame(width: 22, height: 22)
                 .allowsHitTesting(false)
 #if !os(visionOS)
-                .glassEffectID("menu", in: glassNamespace)
+                .applyIf(usesGlassEffects) {
+                    $0.glassEffectID("menu", in: glassNamespace)
+                }
 #endif
         }
     }
@@ -64,16 +86,19 @@ struct NeedleMapPin: View {
         .borderLessTVBottonStyle()
         .foregroundStyle(.white)
 #if !os(visionOS)
-        .applyIf(isSelected) {
+        .applyIf(usesGlassEffects && isSelected) {
             $0.glassEffect(.regular.tint(NetworkModules.map.tint.opacity(0.75)).interactive())
         }
-        .glassEffectID(type.label, in: glassNamespace)
+        .applyIf(usesGlassEffects) {
+            $0.glassEffectID(type.label, in: glassNamespace)
+        }
 #endif
         .offset(type.offset(expanded: isSelected, layoutDown: true))
         .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: isSelected)
         .opacity(isSelected ? 1 : 0)
         .allowsHitTesting(isSelected)
         .accessibilityHidden(!isSelected)
+        .simultaneousGesture(canvasConsumptionGesture)
     }
 
     var needleView: some View {
@@ -113,7 +138,11 @@ struct NeedleMapPin: View {
         #if os(visionOS)
                         actionButtons
         #else
-                        GlassEffectContainer {
+                        if usesGlassEffects {
+                            GlassEffectContainer {
+                                actionButtons
+                            }
+                        } else {
                             actionButtons
                         }
         #endif
@@ -123,15 +152,19 @@ struct NeedleMapPin: View {
     }
 
     func addPin() {
+        consumeCanvasInteraction()
         withAnimation(.bouncy) {
             mapEditController.addNeedlePoint(at: index, entryId: entryId, entries: entries, map: map)
         }
+        notifyCoordinatesChanged()
     }
 
     func removePin() {
+        consumeCanvasInteraction()
         withAnimation(.bouncy) {
             mapEditController.removeNeedlePoint(at: index, entryId: entryId, entries: entries, map: map)
         }
+        notifyCoordinatesChanged()
     }
 
     var needHead: some View {
@@ -140,6 +173,7 @@ struct NeedleMapPin: View {
             .frame(width: 44, height: 44)
             .zIndex(2)
             .gesture(combinedGesture)
+            .simultaneousGesture(canvasConsumptionGesture)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(
                 Text("Map Area Point \(index + 1)", bundle: .module)
@@ -163,15 +197,11 @@ struct NeedleMapPin: View {
                 movePointBy(x: 0, y: 10)
             }
 #endif
-            .onChange(of: isDragging) {
-                guard !isDragging else { return }
-                entries.selectedNeedleCoordinate = nil
-                updateCoordinate()
-            }
     }
 
     func updateCoordinate() {
         mapEditController.updateNeedleCoordinate(entryId: entryId, entries: entries, map: map)
+        notifyCoordinatesChanged()
     }
 
     var combinedGesture: some Gesture {
@@ -188,19 +218,27 @@ struct NeedleMapPin: View {
 #if !os(tvOS)
     var dragGesture: some Gesture {
         DragGesture(minimumDistance: 3)
-            .updating($isDragging) { _, state, _ in
-                state = true
-            }
             .onChanged { value in
-                var position = coordinate
-                position.x += value.location.x - value.startLocation.x
-                position.y += value.location.y - value.startLocation.y
+                consumeCanvasInteraction()
+                let startCoordinate = dragStartCoordinate ?? coordinate
+                if dragStartCoordinate == nil {
+                    dragStartCoordinate = startCoordinate
+                }
+                let position = CGPoint(
+                    x: startCoordinate.x + value.location.x - value.startLocation.x,
+                    y: startCoordinate.y + value.location.y - value.startLocation.y
+                )
                 entries.update(coordinate: position, for: entryId, at: index)
                 entries.selectedNeedleCoordinate = position
             }
+            .onEnded { _ in
+                dragStartCoordinate = nil
+                entries.selectedNeedleCoordinate = nil
+                updateCoordinate()
+            }
     }
 
-    private func movePointBy(x: CGFloat, y: CGFloat) {
+    func movePointBy(x: CGFloat, y: CGFloat) {
         entries.update(
             coordinate: CGPoint(x: coordinate.x + x, y: coordinate.y + y),
             for: entryId,
@@ -218,9 +256,26 @@ struct NeedleMapPin: View {
     }
 
     private func toggleSelection() {
+        consumeCanvasInteraction()
         withAnimation(reduceMotion ? nil : .bouncy) {
             entries.selectedNeedleIndex = isSelected ? nil : index
         }
+    }
+
+    private func consumeCanvasInteraction() {
+        entries.addedNewNeedlePoint = nil
+        entries.eaten = true
+    }
+
+    private var canvasConsumptionGesture: some Gesture {
+        LongPressGesture(minimumDuration: 0)
+            .onChanged { _ in
+                consumeCanvasInteraction()
+            }
+    }
+
+    private func notifyCoordinatesChanged() {
+        coordinatesChanged(entries.entry(entryId).coordinates)
     }
 
     private static let needlePath: Path = {

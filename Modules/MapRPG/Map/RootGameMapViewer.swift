@@ -25,6 +25,7 @@ struct RootGameMapViewer: View {
             mapMode: mode == .player ? .player : .gameMaster,
             playerPinId: playerPinId,
             sendMapUpdates: sendMapUpdates,
+            sendPinUpdate: sendPinUpdate,
             focused: focused
         )
         .id(itemId)
@@ -42,6 +43,12 @@ struct RootGameMapViewer: View {
         } else if let pin = mapModel.mapPins.first(where: { $0.id == playerPinId }) {
             networkActions?.game(root.gameController.networkPin(itemId: itemId, position: pin), .mapPin, nil)
         }
+    }
+
+    private func sendPinUpdate(_ pinId: UUID) {
+        guard mode == .player,
+              let update = root.gameController.networkPin(itemId: itemId, pinId: pinId) else { return }
+        networkActions?.game(update, .mapPin, nil)
     }
 
     private func focused() {

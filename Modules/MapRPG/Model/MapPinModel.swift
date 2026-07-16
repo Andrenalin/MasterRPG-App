@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
-    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false) {
+    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false, isDead: Bool = false, isHighlighted: Bool = false) {
         self.id = id
         self.name = name
         self.color = color
@@ -16,6 +16,8 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
         self.players = players
         self.timeInterval = timeInterval
         self.isZoom = isZoom
+        self.isDead = isDead
+        self.isHighlighted = isHighlighted
     }
     
     public enum MapPinSize: Int, Identifiable, Hashable, Equatable, Codable, CaseIterable, Sendable {
@@ -87,6 +89,8 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
     public var players: [UUID] = []
     public var timeInterval: TimeInterval = 0
     public var isZoom: Bool = false
+    public var isDead: Bool = false
+    public var isHighlighted: Bool = false
 }
 
 extension MapPinModel: Codable {
@@ -102,6 +106,8 @@ extension MapPinModel: Codable {
         case players
         case timeInterval
         case isZoom
+        case isDead
+        case isHighlighted
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -117,6 +123,8 @@ extension MapPinModel: Codable {
         try container.encode(players, forKey: .players)
         try container.encode(timeInterval, forKey: .timeInterval)
         try container.encode(isZoom, forKey: .isZoom)
+        try container.encode(isDead, forKey: .isDead)
+        try container.encode(isHighlighted, forKey: .isHighlighted)
     }
 
     public init(from decoder: Decoder) throws {
@@ -133,6 +141,8 @@ extension MapPinModel: Codable {
         players = try values.decode([UUID].self, forKey: .players)
         timeInterval = try values.decode(TimeInterval.self, forKey: .timeInterval)
         isZoom = try values.decodeIfPresent(Bool.self, forKey: .isZoom) ?? false
+        isDead = try values.decodeIfPresent(Bool.self, forKey: .isDead) ?? false
+        isHighlighted = try values.decodeIfPresent(Bool.self, forKey: .isHighlighted) ?? false
     }
 }
 

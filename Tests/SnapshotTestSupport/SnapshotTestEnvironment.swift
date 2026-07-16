@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(visionOS)
+
 import Foundation
 import SnapshotTesting
 import SwiftUI
@@ -209,3 +211,5 @@ extension View {
         modifier(DeterministicSnapshotEnvironmentModifier())
     }
 }
+
+#endif

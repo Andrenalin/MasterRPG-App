@@ -140,6 +140,78 @@ struct SharePlayPhotoRepairTracker: Sendable {
     }
 }
 
+/// Prevents a messenger map-state race from starting a second full map transfer
+/// while the original SharePlay publication is still arriving. The tracker is
+/// session-scoped and uses a monotonic clock so wall-clock changes cannot extend
+/// or shorten the suppression window.
+struct SharePlayMapRecoveryTracker: Sendable {
+    static let suppressionInterval: Duration = .seconds(30)
+
+    private struct Publication: Sendable {
+        let version: Int
+        let assetVersion: Int
+        let sentAt: ContinuousClock.Instant
+    }
+
+    private var publications: [UUID: Publication] = [:]
+
+    mutating func recordFullMapPresentation(
+        _ model: GameNetworkModel,
+        at now: ContinuousClock.Instant? = nil
+    ) {
+        guard model.sender.isMaster,
+              model.type == .reveal,
+              model.subType == .show,
+              model.data.type == .map,
+              model.data.data != nil,
+              model.targetId == nil
+        else { return }
+
+        let now = now ?? ContinuousClock().now
+        removeExpired(at: now)
+        publications[model.data.id] = Publication(
+            version: model.data.version,
+            assetVersion: model.data.effectiveAssetVersion,
+            sentAt: now
+        )
+    }
+
+    mutating func shouldSuppressRecoveryRequest(
+        _ model: GameNetworkModel,
+        at now: ContinuousClock.Instant? = nil
+    ) -> Bool {
+        guard !model.sender.isMaster,
+              model.type == .reveal,
+              model.subType == .mapState,
+              model.data.type == .map,
+              model.data.data == nil
+        else { return false }
+
+        let now = now ?? ContinuousClock().now
+        removeExpired(at: now)
+        guard let publication = publications[model.data.id] else { return false }
+
+        // A mapState normally has no asset fingerprint, so current players
+        // preserve its model version in the request. Structural updates include
+        // an asset fingerprint and use the stronger comparison when available.
+        if let requestedAssetVersion = model.data.assetVersion {
+            return requestedAssetVersion == publication.assetVersion
+        }
+        return model.data.version == 0 || model.data.version == publication.version
+    }
+
+    mutating func reset() {
+        publications = [:]
+    }
+
+    private mutating func removeExpired(at now: ContinuousClock.Instant) {
+        publications = publications.filter { _, publication in
+            let age = publication.sentAt.duration(to: now)
+            return age >= .zero && age < Self.suppressionInterval
+        }
+    }
+}
+
 @MainActor @Observable
 final class RPGSharePlayController {
     var groupSession: GroupSession<RPGActivity>?
@@ -166,6 +238,7 @@ final class RPGSharePlayController {
     private var sessionLifecycle = SharePlaySessionLifecycle()
     private var journalTracker = SharePlayJournalTracker()
     private var photoRepairTracker = SharePlayPhotoRepairTracker()
+    private var mapRecoveryTracker = SharePlayMapRecoveryTracker()
     // Session-scoped tasks (state/participant/message/journal loops and in-flight
     // sends), cancelled by reset(). Send tasks remove themselves on completion so
     // the collection stays bounded during a long game.
@@ -259,6 +332,8 @@ extension RPGSharePlayController {
             photoRepairTracker: &photoRepairTracker
         ), let encodedModel = prepared.model.encodeData()
         else { return }
+
+        mapRecoveryTracker.recordFullMapPresentation(prepared.model)
 
         if prepared.usesJournalTransport,
            let attachmentData = prepared.model.data.data, let journal {
@@ -480,6 +555,7 @@ extension RPGSharePlayController {
         sessionLifecycle.reset()
         journalTracker.reset()
         photoRepairTracker.reset()
+        mapRecoveryTracker.reset()
         journalPublicationQueue.cancelAll()
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
@@ -553,6 +629,7 @@ extension RPGSharePlayController {
         Logger.sharePlay.debug("Configure Session \(groupSession.description, privacy: .public) state: \(self.printState(), privacy: .public)")
 
         sessionLifecycle.prepare(sessionId: groupSession.id)
+        mapRecoveryTracker.reset()
         self.groupSession = groupSession
         let messenger = GroupSessionMessenger(session: groupSession)
         self.messenger = messenger
@@ -640,6 +717,10 @@ extension RPGSharePlayController {
                     guard !Task.isCancelled,
                           self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
                     else { return }
+                    if self.mapRecoveryTracker.shouldSuppressRecoveryRequest(gameModel) {
+                        Logger.sharePlay.debug("Ignored recent map recovery request for \(gameModel.data.id, privacy: .public) from \(context.source.id, privacy: .public)")
+                        continue
+                    }
                     await self.delegate?.handleUpdate(gameModel, id: context.source.id)
                 }
             }

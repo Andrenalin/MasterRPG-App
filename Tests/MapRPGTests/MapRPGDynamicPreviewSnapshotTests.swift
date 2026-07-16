@@ -84,21 +84,29 @@ struct MapRPGDynamicPreviewSnapshotTests {
     // snapshot-root: MapRPG::MapPinView
     @Test("MapPinView")
     func mapPinView() async throws {
-        let pin = MapPinModel.empty(MapRPGDynamicPreviewFixtures.pinID)
-        let model = MapPinViewModel(mapPins: [pin], pointer: .empty(MapRPGDynamicPreviewFixtures.pointerID))
+        let pins = MapRPGDynamicPreviewFixtures.presentationPins
+        let model = MapPinViewModel(mapPins: pins, pointer: .empty(MapRPGDynamicPreviewFixtures.pointerID))
 
         try await assertDynamicSnapshot("MapPinView") {
-            MapPinView(
-                model: model,
-                pinId: pin.id,
-                pinSize: CGSize(width: 64, height: 64),
-                isShown: true,
-                borderColor: .yellow,
-                canDrag: true,
-                doubleTapAction: {},
-                dragEndAction: {}
-            )
-            .padding()
+            VStack(spacing: 24) {
+                ForEach(pins) { pin in
+                    HStack {
+                        Text(verbatim: pin.name)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        MapPinView(
+                            model: model,
+                            pin: pin,
+                            pinSize: CGSize(width: 64, height: 64),
+                            canDrag: true,
+                            opensActionMenu: false,
+                            doubleTapAccessibilityLabel: "Toggle Pin Zoom",
+                            doubleTapAction: {},
+                            dragEndAction: {}
+                        )
+                    }
+                }
+            }
+            .padding(40)
         }
     }
 
@@ -126,6 +134,7 @@ struct MapRPGDynamicPreviewSnapshotTests {
             mapId: MapModel.previewId,
             entries: [.previewGreatHall]
         )
+        entries.selectedNeedleIndex = 0
 
         try await assertDynamicSnapshot("NeedleMapPin") {
             ZStack(alignment: .topLeading) {
@@ -135,7 +144,8 @@ struct MapRPGDynamicPreviewSnapshotTests {
                     entryId: MapEntryModel.previewGreatHall.id,
                     index: 0,
                     map: .preview,
-                    mapEditController: MapEditController(editController: root.editController)
+                    mapEditController: MapEditController(editController: root.editController),
+                    usesGlassEffects: false
                 )
                 .padding(80)
             }
@@ -240,14 +250,13 @@ struct MapRPGDynamicPreviewSnapshotTests {
             MapRPGDoubleNamespaceSnapshotHarness { glassNamespace, photoSpace in
                 MapPinActionButtons(
                     model: model,
-                    pinId: pinID,
+                    pin: .empty(pinID),
                     layoutDown: true,
+                    context: .editor,
                     glassNamespace: glassNamespace,
                     photoSpace: photoSpace,
-                    onRemove: {},
-                    onCopy: {},
-                    onResize: {},
-                    onPhoto: {}
+                    usesGlassEffects: false,
+                    action: { _ in }
                 )
                 .frame(width: 300, height: 300)
                 .background(.blue)
@@ -270,13 +279,44 @@ struct MapRPGDynamicPreviewSnapshotTests {
                 Color.blue
                 MapPinActionView(
                     model: model,
-                    pinId: pinID,
+                    pin: .empty(pinID),
                     layoutDown: true,
                     pinSize: CGSize(width: 80, height: 80),
-                    isShown: true,
-                    borderColor: .red,
                     canDrag: true,
-                    showActions: true,
+                    actionContext: .editor,
+                    doubleTapAccessibilityLabel: "Toggle Player Visibility",
+                    usesGlassEffects: false,
+                    doubleTapAction: {},
+                    dragEndAction: {}
+                )
+            }
+        }
+    }
+
+    @Test("MapPinGameMasterActionView")
+    func mapPinGameMasterActionView() async throws {
+        let pinID = MapRPGDynamicPreviewFixtures.pinID
+        var pin = MapPinModel.empty(pinID)
+        pin.isDead = true
+        pin.isHighlighted = true
+        let model = MapPinViewModel(
+            mapPins: [pin],
+            pointer: .empty(MapRPGDynamicPreviewFixtures.pointerID)
+        )
+        model.isExpandedId = pinID
+
+        try await assertDynamicSnapshot("MapPinGameMasterActionView") {
+            ZStack {
+                Color.blue
+                MapPinActionView(
+                    model: model,
+                    pin: pin,
+                    layoutDown: true,
+                    pinSize: CGSize(width: 80, height: 80),
+                    canDrag: true,
+                    actionContext: .gameMaster,
+                    doubleTapAccessibilityLabel: "Toggle Pin Zoom",
+                    usesGlassEffects: false,
                     doubleTapAction: {},
                     dragEndAction: {}
                 )
@@ -332,6 +372,26 @@ private struct MapRPGDoubleNamespaceSnapshotHarness<Content: View>: View {
 private enum MapRPGDynamicPreviewFixtures {
     static let pinID = UUID(uuid: (0xB1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
     static let pointerID = UUID(uuid: (0xB1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
+
+    static let presentationPins: [MapPinModel] = {
+        var alive = MapPinModel.empty(UUID(uuid: (0xB1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)))
+        alive.name = "Alive"
+
+        var dead = MapPinModel.empty(UUID(uuid: (0xB1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4)))
+        dead.name = "Dead"
+        dead.isDead = true
+
+        var highlighted = MapPinModel.empty(UUID(uuid: (0xB1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5)))
+        highlighted.name = "Highlighted"
+        highlighted.isHighlighted = true
+
+        var combined = MapPinModel.empty(UUID(uuid: (0xB1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6)))
+        combined.name = "Dead + Highlighted"
+        combined.isDead = true
+        combined.isHighlighted = true
+
+        return [alive, dead, highlighted, combined]
+    }()
 }
 
 @MainActor

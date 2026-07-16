@@ -17,6 +17,7 @@ struct MapEditor: View {
         playerPinId: UUID? = nil,
         closeAction: (() -> Void)? = nil,
         sendMapUpdates: (() -> Void)? = nil,
+        sendPinUpdate: ((UUID) -> Void)? = nil,
         focused: (() -> Void)? = nil
     ) {
         self.editController = editController
@@ -28,6 +29,7 @@ struct MapEditor: View {
         self.containerSize = containerSize
         self.closeAction = closeAction
         self.sendMapUpdatesAction = sendMapUpdates
+        self.sendPinUpdateAction = sendPinUpdate
         self.focusedAction = focused
         self.mapEditController = MapEditController(editController: editController)
 
@@ -47,11 +49,11 @@ struct MapEditor: View {
     let containerSize: CGSize
     let closeAction: (() -> Void)?
     let sendMapUpdatesAction: (() -> Void)?
+    let sendPinUpdateAction: ((UUID) -> Void)?
     let focusedAction: (() -> Void)?
     let mapEditController: MapEditController
 
     @State private var viewModel: MapEditorModel
-    @State private var tileEntry: MapEntryModel?
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(MapRootModel.self) private var root
@@ -128,6 +130,7 @@ struct MapEditor: View {
             }
             .onAppear {
                 viewModel.sendMapUpdates = sendMapUpdatesAction
+                viewModel.sendPinUpdate = sendPinUpdateAction
                 viewModel.focusedCallback = focusedAction
                 if viewModel.mapMode != .edit {
                     // Copy persistent game state from the previous map session
@@ -166,7 +169,7 @@ private extension MapEditor {
     var overlayMap: some View {
         ZStack(alignment: .topLeading) {
             // Tile Editor Mode: Only show tile entry for editing
-            if isTileEditor, let tileEntry = tileEntry {
+            if isTileEditor, let tileEntry = viewModel.editEntries.entries.first {
                 drawEntryView(entries: viewModel.editEntries, entry: tileEntry)
                 
                 if viewModel.displayMode == .master || viewModel.displayMode == .reader {
@@ -196,12 +199,16 @@ private extension MapEditor {
                 }
 
                 // Zoomed pins always on top (visible to all via mapState)
-                ForEach(viewModel.pins.mapPins.filter { $0.isZoom && (viewModel.displayMode != .player || $0.isShown) }, id: \.id) { pin in
+                ForEach(viewModel.pins.mapPins.filter {
+                    $0.isZoom
+                        && (viewModel.displayMode != .player || $0.isShown)
+                        && (!showsPinActionMenus || $0.id != viewModel.pins.isExpandedId)
+                }, id: \.id) { pin in
                     drawPin(id: pin.id)
                 }
 
-                // Edit-mode action-menu expanded pin on very top
-                if viewModel.mapMode == .edit, let scalePinId = viewModel.pins.isExpandedId {
+                // Keep the active editor/game-master menu above every map layer.
+                if showsPinActionMenus, let scalePinId = viewModel.pins.isExpandedId {
                     drawPin(id: scalePinId)
                 }
 
@@ -233,6 +240,10 @@ private extension MapEditor {
         12 / MapEditorGeometry.imageSize(image, degrees: photoDegrees).width
     }
 
+    var showsPinActionMenus: Bool {
+        viewModel.mapMode == .edit || viewModel.mapMode == .gameMaster
+    }
+
     func dropPin() {
         guard !dropPinModel.items.isEmpty else { return }
         if viewModel.mapMode == .edit {
@@ -249,21 +260,7 @@ private extension MapEditor {
     }
     
     func setupTileEditor() {
-        // Create a temporary entry from tileCoordinates
-        let tileId = UUID()
-        let entry = MapEntryModel(
-            id: tileId,
-            name: String(localized: "Tile", bundle: .module),
-            content: "",
-            coordinates: map.displayConfig.tileCoordinates,
-            isShown: true
-        )
-        
-        tileEntry = entry
-        viewModel.editEntries.setEntry(entry: entry)
-        
-        // Create a working copy for the tile editor
-        mapEditController.prepareWorkingCopy(from: map, editorModel: viewModel)
+        mapEditController.prepareTileWorkingCopy(from: map, editorModel: viewModel)
     }
 }
 
@@ -321,7 +318,7 @@ extension MapEditor {
         ForEach(viewModel.pins.mapPins.filter({
             !$0.isZoom
             && (viewModel.displayMode != .player || $0.isShown)
-            && (viewModel.mapMode != .edit || $0.id != viewModel.pins.isExpandedId)
+            && (!showsPinActionMenus || $0.id != viewModel.pins.isExpandedId)
         })) { pin in
             drawPin(id: pin.id)
         }
@@ -330,6 +327,8 @@ extension MapEditor {
     @ViewBuilder
     func drawPin(id: UUID) -> some View {
         if let pin = viewModel.pins.pinPointer(for: id) {
+            let isPointer = id == viewModel.pins.pointer.id
+            let presentedPin = pinForPresentation(pin, isPointer: isPointer)
             let scaleFact: CGFloat = pin.isZoom ? 4.0 : 1.0
             let pinSize = pin.size.size * viewModel.pinScale * scaleFact
             let location: CGPoint = pin.location - (pinSize / CGFloat(2.0))
@@ -338,55 +337,43 @@ extension MapEditor {
                 || id == viewModel.playerPinId
                 || id == map.pointer.id
 
-            let tapZoomAction: (() -> Void)? = (viewModel.mapMode == .gameMaster && id != viewModel.pins.pointer.id) ? {
-                guard var updatedPin = viewModel.pins.pinPointer(for: id) else { return }
-                updatedPin.isZoom.toggle()
-                updatedPin.timeInterval = Date.now.timeIntervalSince1970
-                viewModel.pins.setPinPointer(updatedPin: updatedPin)
-                map[MapPinId.id, updatedPin.id] = updatedPin
-                if let idx = root.gameController.mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
-                    root.gameController.mapGameModel.playerPins[idx] = updatedPin
-                }
-                if viewModel.isStreaming { viewModel.sendMapUpdates?() }
-            } : nil
-
             MapPinActionView(
                 model: viewModel.pins,
-                pinId: id,
+                pin: presentedPin,
                 layoutDown: true,
                 pinSize: pinSize,
-                isShown: pin.isShown,
-                borderColor: borderColorForPin(position: pin),
                 canDrag: canDrag,
-                showActions: viewModel.mapMode == .edit,
+                actionContext: pinActionContext(isPointer: isPointer),
+                doubleTapAccessibilityLabel: doubleTapAccessibilityLabel(isPointer: isPointer),
                 doubleTapAction: {
-                    if viewModel.mapMode == .edit {
-                        mapEditController.togglePinVisibility(pinId: pin.id, editorModel: viewModel)
-                    } else if viewModel.mapMode == .gameMaster {
-                        guard var updatedPin = viewModel.pins.pinPointer(for: id) else { return }
-                        updatedPin.isShown.toggle()
-                        viewModel.pins.setPinPointer(updatedPin: updatedPin)
-                        map.setPinPointer(updatedPin: updatedPin)
-                        if viewModel.isStreaming { viewModel.sendMapUpdates?() }
-                    }
+                    handlePinDoubleTap(pinId: pin.id, isPointer: isPointer)
                 },
                 dragEndAction: {
-                    guard let updatedPin = viewModel.pins.pinPointer(for: pin.id) else { return }
-                    if map.pointer.id == updatedPin.id {
-                        viewModel.updatePointer(location: updatedPin.location, map: map, withOutRelocation: true)
-                    } else if viewModel.mapMode == .edit {
-                        mapEditController.updatePinMove(pin: updatedPin, editorModel: viewModel)
-                    } else if viewModel.mapMode == .gameMaster || updatedPin.id == viewModel.playerPinId {
-                        map[MapPinId.id, updatedPin.id] = updatedPin
-                        if let idx = root.gameController.mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
-                            root.gameController.mapGameModel.playerPins[idx] = updatedPin
-                        }
-                        if viewModel.displayMode == .player || viewModel.isStreaming {
-                            viewModel.sendMapUpdates?()
-                        }
+                    handlePinDragEnd(pinId: pin.id, isPointer: isPointer)
+                },
+                tapAction: {
+                    handlePinSingleTap(pinId: pin.id, isPointer: isPointer)
+                },
+                onToggleDead: {
+                    performGameMasterMutation(pinId: pin.id) {
+                        root.gameController.toggleDeadPin(itemId: map.id, pinId: pin.id)
                     }
                 },
-                tapAction: tapZoomAction
+                onToggleVisibility: {
+                    performGameMasterMutation(pinId: pin.id) {
+                        root.gameController.togglePin(itemId: map.id, pinId: pin.id)
+                    }
+                },
+                onResize: {
+                    performGameMasterMutation(pinId: pin.id) {
+                        root.gameController.resizePin(itemId: map.id, pinId: pin.id)
+                    }
+                },
+                onToggleZoom: {
+                    performGameMasterMutation(pinId: pin.id) {
+                        root.gameController.zoomPin(itemId: map.id, pinId: pin.id)
+                    }
+                }
             )
             .equatable()
             .opacity(viewModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
@@ -396,8 +383,113 @@ extension MapEditor {
         }
     }
 
-    func borderColorForPin(position: MapPinModel) -> Color {
-        position.location != map.mapPins.first(where: { $0.id == position.id })?.location ? .red : .gray
+    func pinActionContext(isPointer: Bool) -> MapPinActionContext {
+        guard !isPointer else { return .none }
+        return switch viewModel.mapMode {
+        case .edit: .editor
+        case .gameMaster: .gameMaster
+        case .player, .viewer: .none
+        }
+    }
+
+    func pinForPresentation(_ pin: MapPinModel, isPointer: Bool) -> MapPinModel {
+        guard isPointer else { return pin }
+        var presentedPin = pin
+        presentedPin.isDead = false
+        presentedPin.isHighlighted = false
+        return presentedPin
+    }
+
+    func doubleTapAccessibilityLabel(isPointer: Bool) -> LocalizedStringResource {
+        if isPointer || viewModel.mapMode == .edit {
+            return LocalizedStringResource("Toggle Player Visibility", bundle: .module)
+        }
+        return LocalizedStringResource("Toggle Pin Zoom", bundle: .module)
+    }
+
+    func handlePinSingleTap(pinId: UUID, isPointer: Bool) {
+        guard viewModel.mapMode == .player, !isPointer else { return }
+        performPlayerMutation(pinId: pinId) {
+            root.gameController.toggleHighlightPin(itemId: map.id, pinId: pinId)
+        }
+    }
+
+    func handlePinDoubleTap(pinId: UUID, isPointer: Bool) {
+        if isPointer {
+            if viewModel.mapMode == .edit {
+                mapEditController.togglePinVisibility(pinId: pinId, editorModel: viewModel)
+            } else if viewModel.mapMode == .gameMaster {
+                togglePointerVisibility(pinId: pinId)
+            }
+            return
+        }
+
+        switch viewModel.mapMode {
+        case .edit:
+            mapEditController.togglePinVisibility(pinId: pinId, editorModel: viewModel)
+        case .gameMaster:
+            performGameMasterMutation(pinId: pinId) {
+                root.gameController.zoomPin(itemId: map.id, pinId: pinId)
+            }
+        case .player:
+            performPlayerMutation(pinId: pinId) {
+                root.gameController.zoomPin(itemId: map.id, pinId: pinId)
+            }
+        case .viewer:
+            break
+        }
+    }
+
+    func handlePinDragEnd(pinId: UUID, isPointer: Bool) {
+        guard let updatedPin = viewModel.pins.pinPointer(for: pinId) else { return }
+        if isPointer {
+            viewModel.updatePointer(location: updatedPin.location, map: map, withOutRelocation: true)
+        } else if viewModel.mapMode == .edit {
+            mapEditController.updatePinMove(pin: updatedPin, editorModel: viewModel)
+        } else if viewModel.mapMode == .gameMaster {
+            performGameMasterMutation(pinId: pinId) {
+                root.gameController.movePin(itemId: map.id, pinId: pinId, location: updatedPin.location)
+            }
+        } else if viewModel.mapMode == .player, pinId == viewModel.playerPinId {
+            performPlayerMutation(pinId: pinId) {
+                root.gameController.movePin(itemId: map.id, pinId: pinId, location: updatedPin.location)
+            }
+        }
+    }
+
+    func performPlayerMutation(pinId: UUID, mutation: () -> Bool) {
+        guard viewModel.mapMode == .player,
+              viewModel.pins.pinPointer(for: pinId)?.isShown == true,
+              mutation() else { return }
+        synchronizePinFromMap(pinId: pinId)
+        viewModel.sendPinUpdate?(pinId)
+    }
+
+    func performGameMasterMutation(pinId: UUID, mutation: () -> Bool) {
+        guard viewModel.mapMode == .gameMaster, mutation() else { return }
+        synchronizePinFromMap(pinId: pinId)
+        if viewModel.isStreaming {
+            viewModel.sendMapUpdates?()
+        }
+    }
+
+    func synchronizePinFromMap(pinId: UUID) {
+        guard let updatedPin = map.mapPins.first(where: { $0.id == pinId }) else { return }
+        viewModel.pins.setPinPointer(updatedPin: updatedPin)
+    }
+
+    func togglePointerVisibility(pinId: UUID) {
+        guard var updatedPointer = viewModel.pins.pinPointer(for: pinId) else { return }
+        updatedPointer.isShown.toggle()
+        updatedPointer.timeInterval = max(
+            Date.now.timeIntervalSince1970,
+            updatedPointer.timeInterval.nextUp
+        )
+        viewModel.pins.setPinPointer(updatedPin: updatedPointer)
+        map.setPinPointer(updatedPin: updatedPointer)
+        if viewModel.mapMode == .gameMaster, viewModel.isStreaming {
+            viewModel.sendMapUpdates?()
+        }
     }
 }
 
@@ -416,16 +508,16 @@ private extension MapEditor {
     
     @ViewBuilder
     func drawTileEntryPins() -> some View {
-        if let entry = tileEntry {
+        if let entry = viewModel.editEntries.entries.first {
             ForEach(entry.coordinates.indexed(), id: \.index) { (index, point) in
-                TileNeedleMapPin(
+                NeedleMapPin(
                     entries: viewModel.editEntries,
                     entryId: entry.id,
                     index: index,
-                    onUpdate: { updatedCoordinates in
-                        tileEntry?.coordinates = updatedCoordinates
-                        // Sync to working copy's displayConfig
-                        viewModel.workingCopy?.displayConfig.tileCoordinates = updatedCoordinates
+                    map: map,
+                    mapEditController: mapEditController,
+                    coordinatesChanged: { updatedCoordinates in
+                        mapEditController.syncTileCoordinates(updatedCoordinates, editorModel: viewModel)
                     }
                 )
                 .offset(x: point.x - 22, y: point.y - 110)
@@ -497,12 +589,14 @@ private extension MapEditor {
 private extension MapEditor {
 #if !os(tvOS)
     func pressAction(_ value: DragGesture.Value) {
+        if isTileEditor {
+            viewModel.editEntries.eaten = false
+        }
         viewModel.pressAction(value)
     }
 
     func releaseAction(_ value: DragGesture.Value) {
         if isTileEditor {
-            // In tile editor mode, handle adding/removing points
             handleTileEditorRelease(value)
         } else if viewModel.mapMode == .edit {
             let hasEditableEntry = !viewModel.editEntries.entries.isEmpty
@@ -541,26 +635,8 @@ private extension MapEditor {
 
 #if !os(tvOS)
     func handleTileEditorRelease(_ value: DragGesture.Value) {
-        guard var entry = tileEntry else { return }
-        
         let location = (value.location - viewModel.imageModel.offset) / viewModel.imageModel.scale
-        
-        // Check if clicking near an existing point to remove it
-        let threshold: CGFloat = 20 / viewModel.imageModel.scale
-        if let nearbyIndex = entry.coordinates.firstIndex(where: { point in
-            abs(point.x - location.x) < threshold && abs(point.y - location.y) < threshold
-        }) {
-            entry.coordinates.remove(at: nearbyIndex)
-        } else {
-            // Add new point
-            entry.coordinates.append(location)
-        }
-        
-        tileEntry = entry
-        viewModel.editEntries.setEntry(entry: entry)
-        
-        // Sync to working copy's displayConfig
-        viewModel.workingCopy?.displayConfig.tileCoordinates = entry.coordinates
+        mapEditController.addTileCoordinateFromCanvas(location, editorModel: viewModel)
     }
     #endif
 }

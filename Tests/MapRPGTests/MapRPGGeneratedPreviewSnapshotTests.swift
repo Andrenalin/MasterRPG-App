@@ -84,19 +84,6 @@ struct MapRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: MapRPG::TileNeedleMapPin
-    @Test("TileNeedleMapPin")
-    func snapshotTileNeedleMapPin() async throws {
-        try await assertPreviewSnapshot("TileNeedleMapPin") {
-            MapRPG.TileNeedleMapPin(
-                entries: MapEntryViewerModel(mapId: MapModel.previewId, entries: [.previewGreatHall]),
-                entryId: MapEntryModel.previewGreatHall.id,
-                index: 0,
-                onUpdate: { _ in }
-            )
-        }
-    }
-
     // snapshot-root: MapRPG::LinkRootView
     @Test("LinkRootView")
     func snapshotLinkRootView() async throws {

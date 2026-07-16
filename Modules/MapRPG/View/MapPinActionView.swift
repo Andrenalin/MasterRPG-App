@@ -3,51 +3,66 @@
 import CoreRPG
 import SwiftUI
 
-enum MapPinButtonType: String {
-    case remove, copy, photo, resize
+enum MapPinActionContext: Equatable {
+    case none
+    case editor
+    case gameMaster
 
-    var systemImage: String {
+    var actions: [MapPinButtonType] {
+        switch self {
+        case .none:
+            []
+        case .editor:
+            [.remove, .copy, .photo, .resize, .dead]
+        case .gameMaster:
+            [.dead, .visibility, .resize, .zoom]
+        }
+    }
+}
+
+enum MapPinButtonType: String, Hashable {
+    case remove, copy, photo, resize, dead, visibility, zoom
+
+    func systemImage(for pin: MapPinModel) -> String {
         switch self {
         case .remove: return "trash"
         case .copy:   return "document.on.document"
         case .photo:  return "photo"
         case .resize: return "square.resize"
+        case .dead: return pin.isDead ? "heart.fill" : "xmark.circle"
+        case .visibility: return pin.isShown ? "eye.slash" : "eye"
+        case .zoom: return pin.isZoom ? "minus.magnifyingglass" : "plus.magnifyingglass"
         }
     }
 
     var label: String { rawValue.capitalized }
 
-    var localizedLabel: LocalizedStringResource {
+    func localizedLabel(for pin: MapPinModel) -> LocalizedStringResource {
         switch self {
         case .remove: LocalizedStringResource("Remove Pin", bundle: .module)
         case .copy: LocalizedStringResource("Copy Pin", bundle: .module)
         case .photo: LocalizedStringResource("Choose Pin Photo", bundle: .module)
         case .resize: LocalizedStringResource("Resize Pin", bundle: .module)
+        case .dead:
+            pin.isDead
+                ? LocalizedStringResource("Revive Pin", bundle: .module)
+                : LocalizedStringResource("Mark Pin Dead", bundle: .module)
+        case .visibility:
+            pin.isShown
+                ? LocalizedStringResource("Hide Pin", bundle: .module)
+                : LocalizedStringResource("Show Pin", bundle: .module)
+        case .zoom:
+            pin.isZoom
+                ? LocalizedStringResource("Reset Pin Zoom", bundle: .module)
+                : LocalizedStringResource("Zoom Pin", bundle: .module)
         }
     }
 
-    var duration: CGFloat {
-        switch self {
-        case .remove: return 0.3
-        case .copy:   return 0.4
-        case .photo:  return 0.5
-        case .resize: return 0.6
-        }
-    }
-
-    func offset(expanded: Bool, layoutDown: Bool) -> CGSize {
+    func offset(at index: Int, count: Int, expanded: Bool, layoutDown: Bool) -> CGSize {
         guard expanded else { return .zero }
-        switch self {
-        case .remove: return offset(atIndex: 0, layoutDown: layoutDown)
-        case .copy:   return offset(atIndex: 1, layoutDown: layoutDown)
-        case .photo:  return offset(atIndex: 2, layoutDown: layoutDown)
-        case .resize: return offset(atIndex: 3, layoutDown: layoutDown)
-        }
-    }
-
-    private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
         let radius: CGFloat = 120
-        let angleDeg = -180.0 + Double(index) * (90.0 / 3.0)
+        let divisor = max(1, count - 1)
+        let angleDeg = -180.0 + Double(index) * (90.0 / Double(divisor))
         let angleRad = angleDeg * .pi / 180
         return CGSize(
             width: cos(angleRad) * radius,
@@ -58,16 +73,20 @@ enum MapPinButtonType: String {
 
 struct MapPinActionView: View, Equatable {
     let model: MapPinViewModel
-    let pinId: UUID
+    let pin: MapPinModel
     let layoutDown: Bool
     let pinSize: CGSize
-    let isShown: Bool
-    let borderColor: Color
     let canDrag: Bool
-    let showActions: Bool
+    let actionContext: MapPinActionContext
+    let doubleTapAccessibilityLabel: LocalizedStringResource
+    var usesGlassEffects: Bool = true
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
     var tapAction: (() -> Void)? = nil
+    var onToggleDead: (() -> Void)? = nil
+    var onToggleVisibility: (() -> Void)? = nil
+    var onResize: (() -> Void)? = nil
+    var onToggleZoom: (() -> Void)? = nil
 
     @Environment(MapRootModel.self) private var root
     @Environment(ScenesManager.self) private var scenesManager
@@ -80,35 +99,44 @@ struct MapPinActionView: View, Equatable {
 
     // Resolve pointer once — avoids 6 linear scans in ==
     static func == (lhs: MapPinActionView, rhs: MapPinActionView) -> Bool {
-        guard lhs.pinId == rhs.pinId,
-              lhs.layoutDown == rhs.layoutDown,
-              lhs.model.isExpandedId == rhs.model.isExpandedId,
-              lhs.pinSize == rhs.pinSize,
-              lhs.isShown == rhs.isShown,
-              lhs.borderColor == rhs.borderColor,
-              lhs.canDrag == rhs.canDrag,
-              lhs.showActions == rhs.showActions else { return false }
-        let lp = lhs.model.pinPointer(for: lhs.pinId)
-        let rp = rhs.model.pinPointer(for: rhs.pinId)
-        return lp?.location == rp?.location
-            && lp?.size == rp?.size
-            && lp?.photoId == rp?.photoId
+        lhs.pin == rhs.pin
+            && lhs.layoutDown == rhs.layoutDown
+            && lhs.model.isExpandedId == rhs.model.isExpandedId
+            && lhs.pinSize == rhs.pinSize
+            && lhs.canDrag == rhs.canDrag
+            && lhs.actionContext == rhs.actionContext
+            && lhs.usesGlassEffects == rhs.usesGlassEffects
+            && lhs.doubleTapAccessibilityLabel == rhs.doubleTapAccessibilityLabel
     }
 
     var body: some View {
-        MapPinView(model: model, pinId: pinId, pinSize: pinSize, isShown: isShown, borderColor: borderColor, canDrag: canDrag, doubleTapAction: doubleTapAction, dragEndAction: dragEndAction, tapAction: tapAction)
+        MapPinView(
+            model: model,
+            pin: pin,
+            pinSize: pinSize,
+            canDrag: canDrag,
+            opensActionMenu: actionContext != .none,
+            doubleTapAccessibilityLabel: doubleTapAccessibilityLabel,
+            doubleTapAction: doubleTapAction,
+            dragEndAction: dragEndAction,
+            tapAction: tapAction
+        )
             .overlay {
-                if showActions {
+                if actionContext != .none {
 #if os(visionOS)
                     actionButtons
 #else
-                    GlassEffectContainer {
+                    if usesGlassEffects {
+                        GlassEffectContainer {
+                            actionButtons
+                        }
+                    } else {
                         actionButtons
                     }
 #endif
                 }
             }
-            .sheet(isPresented: showActions ? $showPhotoSelection : .constant(false)) {
+            .sheet(isPresented: actionContext == .editor ? $showPhotoSelection : .constant(false)) {
                 ManagedPresentationView {
                     root.viewController.photoSelection(root: root, selectionModel: selectedPhoto)
 #if !os(macOS)
@@ -117,8 +145,10 @@ struct MapPinActionView: View, Equatable {
                 }
             }
             .onChange(of: showPhotoSelection) {
-                guard showActions, !showPhotoSelection, !selectedPhoto.selection.isEmpty else { return }
-                withAnimation { model.replacePhoto(pinId: pinId, itemId: selectedPhoto.itemId) }
+                guard actionContext == .editor,
+                      !showPhotoSelection,
+                      !selectedPhoto.selection.isEmpty else { return }
+                withAnimation { model.replacePhoto(pinId: pin.id, itemId: selectedPhoto.itemId) }
                 selectedPhoto.resetSelection(itemId: nil, entryId: nil)
             }
     }
@@ -127,21 +157,45 @@ struct MapPinActionView: View, Equatable {
     private var actionButtons: some View {
         MapPinActionButtons(
             model: model,
-            pinId: pinId,
+            pin: pin,
             layoutDown: layoutDown,
+            context: actionContext,
             glassNamespace: glassNamespace,
             photoSpace: photoSpace,
-            onRemove: { model.removePin(id: pinId) },
-            onCopy: { model.copyPin(id: pinId) },
-            onResize: { model.resizePin(id: pinId) },
-            onPhoto: {
-#if os(macOS)
-                scenesManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
-#else
-                showPhotoSelection.toggle()
-#endif
-            }
+            usesGlassEffects: usesGlassEffects,
+            action: performAction
         )
+    }
+
+    private func performAction(_ type: MapPinButtonType) {
+        switch type {
+        case .remove:
+            model.removePin(id: pin.id)
+        case .copy:
+            model.copyPin(id: pin.id)
+        case .photo:
+#if os(macOS)
+            scenesManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
+#else
+            showPhotoSelection.toggle()
+#endif
+        case .resize:
+            if actionContext == .editor {
+                model.resizePin(id: pin.id)
+            } else {
+                onResize?()
+            }
+        case .dead:
+            if actionContext == .editor {
+                model.toggleDeadPin(id: pin.id)
+            } else {
+                onToggleDead?()
+            }
+        case .visibility:
+            onToggleVisibility?()
+        case .zoom:
+            onToggleZoom?()
+        }
     }
 }
 
@@ -150,7 +204,15 @@ struct MapPinActionView: View, Equatable {
     @Previewable @State var model = MapPinViewModel(mapPins: [], pointer: .empty)
     ZStack {
         Color.blue
-        MapPinActionView(model: model, pinId: id, layoutDown: true, pinSize: CGSize(width: 80, height: 80), isShown: true, borderColor: .red, canDrag: true, showActions: true) {
+        MapPinActionView(
+            model: model,
+            pin: .empty(id),
+            layoutDown: true,
+            pinSize: CGSize(width: 80, height: 80),
+            canDrag: true,
+            actionContext: .editor,
+            doubleTapAccessibilityLabel: LocalizedStringResource("Toggle Player Visibility", bundle: .module)
+        ) {
             print("double tap")
         } dragEndAction: {
             print("end move")
