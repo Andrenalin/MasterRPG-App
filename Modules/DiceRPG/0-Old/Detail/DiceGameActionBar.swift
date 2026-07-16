@@ -21,7 +21,6 @@ struct DiceGameActionBar: View {
     var body: some View {
         HStack(spacing: 8) {
             if !root.gameController.isPlayerDice(itemId: itemId) {
-                
                 if !hideOwnDice {
                     Button {
                         withAnimation(reduceMotion ? nil : .default) {
@@ -35,11 +34,11 @@ struct DiceGameActionBar: View {
                                 Text("Edit dice", bundle: .module)
                             }
                         } icon: {
-                            Image(systemName: "square.and.pencil.circle\(diceDisplayModel.isEditing ? ".fill" : "")")
+                            Image(systemName: "square.and.pencil\(diceDisplayModel.isEditing ? ".fill" : "")")
                                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                         }
                         .labelStyle(.iconOnly)
-                        .frame(minWidth: 44, minHeight: 44)
+                        .frame(minWidth: 32, minHeight: 32)
                     }
 #if !os(tvOS)
                     .buttonStyle(.borderedProminent)
@@ -151,8 +150,11 @@ struct DiceGameActionBar: View {
     }
 }
 
-#Preview {
-    DiceGameActionBar(itemId: DiceModel.previewId, showFocusButton: true, canShowPlayer: false, hideOwnDice: true)
-        .environment(DiceRootModel.preview)
-        .environment(DiceDisplayModel())
+#Preview(traits: .mockData) {
+    ZStack {
+        Color.black
+        
+        DiceGameActionBar(itemId: DiceModel.previewId, showFocusButton: true, canShowPlayer: true, hideOwnDice: false)
+
+    }
 }

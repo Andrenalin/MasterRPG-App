@@ -213,4 +213,5 @@ struct GameWindowButtonAppearance: ViewModifier {
         playerController: PlayerController(root: root, asGameMaster: true),
         adventureId: GamePreviewData.adventureID
     )
+    .preferredColorScheme(.dark)
 }

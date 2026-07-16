@@ -195,6 +195,9 @@
 		8E6F3F332BC4C7FC00600556 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */; };
 		8E6F3F342BC4C7FC00600556 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */; };
 		8E6F3F352BC4C7FC00600556 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */; };
+		8E7093AE3008B8F000BB7EED /* AppShortcuts.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E7093AC3008B8F000BB7EED /* AppShortcuts.xcstrings */; };
+		8E7093B03008B8F000BB7EED /* InfoTV-InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E7093AD3008B8F000BB7EED /* InfoTV-InfoPlist.xcstrings */; };
+		8E7093B93008B8F000BB7EED /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E7093B73008B8F000BB7EED /* InfoPlist.xcstrings */; };
 		8E79C46D2E6AD4EF00893928 /* CharacterRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA5A7D32E6A8EDB00E70E9C /* CharacterRPG.framework */; };
 		8E79C4752E6ADD8400893928 /* PdfRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EEF8E052E3639E200393DAD /* PdfRPG.framework */; };
 		8E79C4BD2E6AEE9500893928 /* CharacterRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA5A7D32E6A8EDB00E70E9C /* CharacterRPG.framework */; };
@@ -1531,6 +1534,9 @@
 		8E6BC9D12AFB0B2400E5E098 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8E6BC9FD2AFB0D9300E5E098 /* MasterTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MasterTV.entitlements; sourceTree = "<group>"; };
 		8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8E7093AC3008B8F000BB7EED /* AppShortcuts.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = AppShortcuts.xcstrings; sourceTree = "<group>"; };
+		8E7093AD3008B8F000BB7EED /* InfoTV-InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = "InfoTV-InfoPlist.xcstrings"; sourceTree = "<group>"; };
+		8E7093B73008B8F000BB7EED /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		8E79C4822E6AEDD500893928 /* MapRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MapRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E79C4A22E6AEE0400893928 /* AdventureRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AdventureRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E81B0D22C26E4A0005B7B6F /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
@@ -2097,6 +2103,7 @@
 		8E13A3FF2BCE88BB00B2FCD4 /* RPGShare */ = {
 			isa = PBXGroup;
 			children = (
+				8E7093B83008B8F000BB7EED /* Resources */,
 				8E13A4052BCE88BB00B2FCD4 /* Info.plist */,
 				8E5104EC2BD2440300F10E87 /* ItemProviderImporter.swift */,
 				59DC213C2BD75537001140B1 /* Localizable.xcstrings */,
@@ -2119,6 +2126,14 @@
 				8E6BC9D12AFB0B2400E5E098 /* Assets.xcassets */,
 			);
 			path = MasterTV;
+			sourceTree = "<group>";
+		};
+		8E7093B83008B8F000BB7EED /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				8E7093B73008B8F000BB7EED /* InfoPlist.xcstrings */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		8E8EEC3E2CD8EC3A0010A25B /* Modules */ = {
@@ -2260,6 +2275,8 @@
 				8E8809CF2BC8B49200186C7A /* InfoTV.plist */,
 				8E8809CC2BC8B45E00186C7A /* InfoTVPlist.xcstrings */,
 				8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */,
+				8E7093AC3008B8F000BB7EED /* AppShortcuts.xcstrings */,
+				8E7093AD3008B8F000BB7EED /* InfoTV-InfoPlist.xcstrings */,
 				8EC4E48E28DDAAF300D0279F /* MasterRPG.entitlements */,
 				8E6BC9FD2AFB0D9300E5E098 /* MasterTV.entitlements */,
 				8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */,
@@ -3482,6 +3499,7 @@
 				en,
 				Base,
 				de,
+				th,
 			);
 			mainGroup = 8EC4E46028DDA29600D0279F;
 			packageReferences = (
@@ -3578,6 +3596,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8E7093B93008B8F000BB7EED /* InfoPlist.xcstrings in Resources */,
 				59DC213D2BD75537001140B1 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3600,6 +3619,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8E7093AE3008B8F000BB7EED /* AppShortcuts.xcstrings in Resources */,
 				8EED76CE2B941F7000721CA8 /* InfoPlist.xcstrings in Resources */,
 				8E190DA82B9008630084B0F4 /* Localizable.xcstrings in Resources */,
 				8E6F3F352BC4C7FC00600556 /* PrivacyInfo.xcprivacy in Resources */,
@@ -3629,6 +3649,7 @@
 				8E8809CE2BC8B45E00186C7A /* InfoTVPlist.xcstrings in Resources */,
 				8E6F3F342BC4C7FC00600556 /* PrivacyInfo.xcprivacy in Resources */,
 				8E6BC9D22AFB0B2400E5E098 /* Assets.xcassets in Resources */,
+				8E7093B03008B8F000BB7EED /* InfoTV-InfoPlist.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

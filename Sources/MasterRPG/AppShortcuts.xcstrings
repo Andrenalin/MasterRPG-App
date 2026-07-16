@@ -17,6 +17,15 @@
               "Add a section to an adventure in ${applicationName}"
             ]
           }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "เพิ่มส่วนในการผจญภัยใน ${applicationName}",
+              "เพิ่มตอนเข้าในการผจญภัยใน ${applicationName}"
+            ]
+          }
         }
       }
     },
@@ -34,6 +43,15 @@
             "state" : "new",
             "values" : [
               "Create a new adventure in ${applicationName}"
+            ]
+          }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "สร้างการผจญภัยใหม่ใน ${applicationName}",
+              "เริ่มการผจญภัยใหม่ใน ${applicationName}"
             ]
           }
         }
@@ -55,6 +73,15 @@
               "Delete an adventure in ${applicationName}"
             ]
           }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "ลบการผจญภัยใน ${applicationName}",
+              "ลบการผจญภัยออกจาก ${applicationName}"
+            ]
+          }
         }
       }
     },
@@ -72,6 +99,15 @@
             "state" : "new",
             "values" : [
               "Navigate around ${applicationName}"
+            ]
+          }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "นำทางใน ${applicationName}",
+              "เปิดไปยังหน้าใดใน ${applicationName}"
             ]
           }
         }
@@ -93,6 +129,15 @@
               "Open an adventure in ${applicationName}"
             ]
           }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "เปิดการผจญภัยใน ${applicationName}",
+              "เข้าไปยังการผจญภัยใน ${applicationName}"
+            ]
+          }
         }
       }
     },
@@ -110,6 +155,15 @@
             "state" : "new",
             "values" : [
               "Roll a D6 in ${applicationName}"
+            ]
+          }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "ทอย D6 ใน ${applicationName}",
+              "โยน D6 ใน ${applicationName}"
             ]
           }
         }
@@ -131,6 +185,15 @@
               "Roll a D20 in ${applicationName}"
             ]
           }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "ทอย D20 ใน ${applicationName}",
+              "โยน D20 ใน ${applicationName}"
+            ]
+          }
         }
       }
     },
@@ -148,6 +211,15 @@
             "state" : "new",
             "values" : [
               "Roll my dice in ${applicationName}"
+            ]
+          }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "ทอยลูกเต๋าของฉันใน ${applicationName}",
+              "โยนลูกเต๋าใน ${applicationName}"
             ]
           }
         }
@@ -169,6 +241,15 @@
               "Search adventures in ${applicationName}"
             ]
           }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "ค้นหาการผจญภัยใน ${applicationName}",
+              "หาการผจญภัยใน ${applicationName}"
+            ]
+          }
         }
       }
     },
@@ -188,9 +269,18 @@
               "Start an adventure in ${applicationName}"
             ]
           }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "เริ่มการผจญภัยใน ${applicationName}",
+              "เริ่มเกมการผจญภัยใน ${applicationName}"
+            ]
+          }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version" : "1.3"
 }

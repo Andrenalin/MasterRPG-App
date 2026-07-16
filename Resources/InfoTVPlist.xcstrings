@@ -16,6 +16,12 @@
             "state" : "new",
             "value" : "Master RPG"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Master RPG"
+          }
         }
       }
     },
@@ -34,6 +40,12 @@
             "state" : "new",
             "value" : "MasterRPG"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG"
+          }
         }
       }
     },
@@ -45,6 +57,12 @@
             "state" : "translated",
             "value" : "MasterRPG-Dokument"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG เอกสาร"
+          }
         }
       }
     },
@@ -55,6 +73,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "MasterRPG-Spielstand"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG บันทึกเกม"
           }
         }
       }
@@ -74,6 +98,12 @@
             "state" : "new",
             "value" : "MasterRPG uses hand tracking to roll dice during the game."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้การติดตามมือเพื่อทอยลูกเต๋าระหว่างเกม"
+          }
         }
       }
     },
@@ -92,9 +122,15 @@
             "state" : "new",
             "value" : "MasterRPG uses the world sensing data to detect tables for the dice rolling during the game."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้ข้อมูลการรับรู้โลกเพื่อตรวจจับโต๊ะสำหรับการทอยลูกเต๋าระหว่างเกม"
+          }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version" : "1.3"
 }

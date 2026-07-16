@@ -22,7 +22,7 @@ struct RootDiceOverlay: View {
 }
 
 #Preview(traits: .mockData) {
-    Color.red.opacity(0.3).ignoresSafeArea()
+    Rectangle().fill(Color.red.gradient.opacity(0.5)).ignoresSafeArea()
         .overlay {
             RootDiceOverlay(hideDice: false)
         }

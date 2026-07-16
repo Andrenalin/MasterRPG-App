@@ -52,7 +52,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {
 
 #Preview(traits: .defaultLayout) {
     ZStack {
-        Color.brown
+        Rectangle().fill(Color.black.gradient)
             .ignoresSafeArea()
         
         OverlayGameLayout(root: .preview, hideDice: false) {
@@ -66,7 +66,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {
 #endif
             }
         } sideOverlay: {
-            Color.red
+            RoundedRectangle(cornerRadius: 16).fill(Color.red.gradient)
                 .frame(width: 200)
         } toolBarOverlay: {
             Button { } label: {
@@ -78,5 +78,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {
         }
         .environment(GameScreenModel())
         .environment(DiceDisplayModel())
+        .environment(AppGameStateModel())
+        .preferredColorScheme(.dark)
     }
 }

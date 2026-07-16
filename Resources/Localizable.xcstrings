@@ -8,6 +8,12 @@
             "state" : "translated",
             "value" : "%@-Verknüpfung"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ลิงก์"
+          }
         }
       }
     },
@@ -18,6 +24,12 @@
             "state" : "translated",
             "value" : "%@-Anzeige"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ตัวดู"
+          }
         }
       }
     },
@@ -27,6 +39,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Über MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกี่ยวกับ MasterRPG"
           }
         }
       }
@@ -40,6 +58,12 @@
             "state" : "translated",
             "value" : "Abenteuerabschnitt hinzufügen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มส่วนการผจญภัย"
+          }
         }
       }
     },
@@ -51,6 +75,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abenteuer erstellen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างการผจญภัย"
           }
         }
       }
@@ -64,6 +94,12 @@
             "state" : "translated",
             "value" : "Abenteuer löschen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบการผจญภัย"
+          }
         }
       }
     },
@@ -72,6 +108,12 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Editor"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : "Editor"
           }
         }
@@ -84,6 +126,12 @@
             "state" : "translated",
             "value" : "Spiel"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกม"
+          }
         }
       }
     },
@@ -94,6 +142,12 @@
             "state" : "translated",
             "value" : "Spiel läuft nicht"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมไม่ได้ทำงาน"
+          }
         }
       }
     },
@@ -103,6 +157,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spielstatistik"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สถิติเกม"
           }
         }
       }
@@ -116,6 +176,12 @@
             "state" : "translated",
             "value" : "Abenteuer generieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวสร้างการผจญภัย"
+          }
         }
       }
     },
@@ -125,6 +191,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Protokolle"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ล็อก"
+          }
+        }
+      }
+    },
+    "Many thanks to my long-running test party: Karsten, Roman, and Timo." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vielen Dank an meine langjährige Testgruppe: Karsten, Roman und Timo."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ขอบคุณมากสำหรับกลุ่มทดสอบที่ยาวนานของฉัน: Karsten, Roman และ Timo"
           }
         }
       }
@@ -138,6 +226,12 @@
             "state" : "translated",
             "value" : "Karteneditor"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวแก้ไขแผนที่"
+          }
         }
       }
     },
@@ -150,15 +244,11 @@
             "state" : "translated",
             "value" : "Kartenkachel-Editor"
           }
-        }
-      }
-    },
-    "Many thanks to my long-running test party: Karsten, Roman, and Timo." : {
-      "localizations" : {
-        "de" : {
+        },
+        "th" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vielen Dank an meine langjährige Testgruppe: Karsten, Roman und Timo."
+            "state" : "machine_translated",
+            "value" : "ตัวแก้ไขไทล์แผนที่"
           }
         }
       }
@@ -169,6 +259,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Musik in MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพลงใน MasterRPG"
           }
         }
       }
@@ -182,6 +278,12 @@
             "state" : "translated",
             "value" : "Navigieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำทาง"
+          }
         }
       }
     },
@@ -193,6 +295,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kein Abenteuer ausgewählt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยังไม่ได้เลือกการผจญภัย"
           }
         }
       }
@@ -206,6 +314,12 @@
             "state" : "translated",
             "value" : "Abenteuer öffnen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดการผจญภัย"
+          }
         }
       }
     },
@@ -217,6 +331,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "D6 würfeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอย D6"
           }
         }
       }
@@ -230,6 +350,12 @@
             "state" : "translated",
             "value" : "D20 würfeln"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอย D20"
+          }
         }
       }
     },
@@ -242,6 +368,12 @@
             "state" : "translated",
             "value" : "Würfeln"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอยลูกเต๋า"
+          }
         }
       }
     },
@@ -251,6 +383,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suchen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค้นหา"
           }
         }
       }
@@ -264,6 +402,12 @@
             "state" : "translated",
             "value" : "Abenteuer suchen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค้นหาการผจญภัย"
+          }
         }
       }
     },
@@ -275,6 +419,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wähle ein Abenteuer aus, bevor du den KI-Assistenten öffnest."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกการผจญภัยก่อนเปิดผู้ช่วย AI"
           }
         }
       }
@@ -288,9 +438,15 @@
             "state" : "translated",
             "value" : "Abenteuerspiel starten"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มเกมการผจญภัย"
+          }
         }
       }
     }
   },
-  "version" : "1.1"
+  "version" : "1.3"
 }

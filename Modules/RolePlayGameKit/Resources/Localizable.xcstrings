@@ -211,22 +211,22 @@
         }
       }
     },
-    "First Launch" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erster Start"
-          }
-        }
-      }
-    },
     "Failed to initialize the database for the share extension." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Datenbank für die Teilen-Erweiterung konnte nicht initialisiert werden."
+          }
+        }
+      }
+    },
+    "First Launch" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erster Start"
           }
         }
       }
@@ -401,16 +401,6 @@
         }
       }
     },
-    "Navigation Option" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Navigationsoption"
-          }
-        }
-      }
-    },
     "Navigate to ${navigationOption}" : {
       "localizations" : {
         "de" : {
@@ -429,6 +419,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zu Abschnitt navigieren"
+          }
+        }
+      }
+    },
+    "Navigation Option" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigationsoption"
           }
         }
       }
@@ -623,6 +623,16 @@
         }
       }
     },
+    "The database context is not available." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Datenbankkontext ist nicht verfügbar."
+          }
+        }
+      }
+    },
     "The database could not be loaded. Underlying error: %@. The app can recover by removing the database file, but all data will be lost." : {
       "localizations" : {
         "de" : {
@@ -659,16 +669,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Datenbankmodelle konnten nicht geladen werden. Die App-Installation ist möglicherweise beschädigt. Lösche die App und installiere sie erneut. Eine Wiederherstellung ist nicht möglich."
-          }
-        }
-      }
-    },
-    "The database context is not available." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Datenbankkontext ist nicht verfügbar."
           }
         }
       }

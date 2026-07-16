@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "... and %lld more" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "… und %lld weitere"
+          }
+        }
+      }
+    },
     "%@" : {
       "localizations" : {
         "de" : {
@@ -61,42 +71,32 @@
         }
       }
     },
-    "... and %lld more" : {
+    "^[%lld Item](inflect: true)" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "… und %lld weitere"
+            "value" : "^[%lld Element](inflect: true)"
           }
         }
       }
     },
-    "AI Generation Failed" : {
+    "🔧 Calling tool: %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "KI-Generierung fehlgeschlagen"
+            "value" : "🔧 Tool wird aufgerufen: %@"
           }
         }
       }
     },
-    "AI did not generate usable sheet content." : {
+    "🔧 Tool result: %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die KI hat keinen verwendbaren Datenblattinhalt generiert."
-          }
-        }
-      }
-    },
-    "Add Generator Note" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generatornotiz hinzufügen"
+            "value" : "🔧 Tool-Ergebnis: %@"
           }
         }
       }
@@ -107,6 +107,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Referenzcharakter hinzufügen"
+          }
+        }
+      }
+    },
+    "Add Generator Note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generatornotiz hinzufügen"
           }
         }
       }
@@ -157,6 +167,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abenteuer: %@"
+          }
+        }
+      }
+    },
+    "AI did not generate usable sheet content." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die KI hat keinen verwendbaren Datenblattinhalt generiert."
+          }
+        }
+      }
+    },
+    "AI Generation Failed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KI-Generierung fehlgeschlagen"
           }
         }
       }
@@ -251,16 +281,6 @@
         }
       }
     },
-    "Apple Intelligence Not available" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Intelligence nicht verfügbar"
-          }
-        }
-      }
-    },
     "Apple Intelligence is not available. PDF summary analysis requires it." : {
       "localizations" : {
         "de" : {
@@ -291,6 +311,16 @@
         }
       }
     },
+    "Apple Intelligence is unavailable: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ist nicht verfügbar: %@"
+          }
+        }
+      }
+    },
     "Apple Intelligence is unavailable." : {
       "localizations" : {
         "de" : {
@@ -301,12 +331,12 @@
         }
       }
     },
-    "Apple Intelligence is unavailable: %@" : {
+    "Apple Intelligence Not available" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple Intelligence ist nicht verfügbar: %@"
+            "value" : "Apple Intelligence nicht verfügbar"
           }
         }
       }
@@ -561,22 +591,22 @@
         }
       }
     },
-    "Create Generator" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generator erstellen"
-          }
-        }
-      }
-    },
     "Create a new campaign for DungeonSlayer under the mountain in an old deserted dwarven empire." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Erstelle eine neue DungeonSlayer-Kampagne unter dem Berg in einem alten, verlassenen Zwergenreich."
+          }
+        }
+      }
+    },
+    "Create Generator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generator erstellen"
           }
         }
       }
@@ -611,6 +641,16 @@
         }
       }
     },
+    "Delete answers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antworten löschen"
+          }
+        }
+      }
+    },
     "Delete Answers" : {
       "localizations" : {
         "de" : {
@@ -627,16 +667,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Generator löschen"
-          }
-        }
-      }
-    },
-    "Delete answers" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Antworten löschen"
           }
         }
       }
@@ -751,6 +781,16 @@
         }
       }
     },
+    "Extract adventure blocks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuerblöcke extrahieren"
+          }
+        }
+      }
+    },
     "Extract Information" : {
       "localizations" : {
         "de" : {
@@ -767,16 +807,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PDF-Text extrahieren"
-          }
-        }
-      }
-    },
-    "Extract adventure blocks" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abenteuerblöcke extrahieren"
           }
         }
       }
@@ -1151,22 +1181,22 @@
         }
       }
     },
-    "Not Supported" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nicht unterstützt"
-          }
-        }
-      }
-    },
     "Not selected" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht ausgewählt"
+          }
+        }
+      }
+    },
+    "Not Supported" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht unterstützt"
           }
         }
       }
@@ -1231,6 +1261,16 @@
         }
       }
     },
+    "Page %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seite %lld"
+          }
+        }
+      }
+    },
     "PDF content is too large for processing. Try a smaller document or fewer pages." : {
       "localizations" : {
         "de" : {
@@ -1257,16 +1297,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das PDF-Zusammenfassungsschema enthält eine nicht unterstützte Einschränkung: %@. Dies ist ein Entwicklungsfehler."
-          }
-        }
-      }
-    },
-    "Page %lld" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seite %lld"
           }
         }
       }
@@ -1591,6 +1621,26 @@
         }
       }
     },
+    "The language model is not ready yet. Please try again later." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Sprachmodell ist noch nicht bereit. Versuche es später erneut."
+          }
+        }
+      }
+    },
+    "The language model is unavailable for an unknown reason." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Sprachmodell ist aus einem unbekannten Grund nicht verfügbar."
+          }
+        }
+      }
+    },
     "The PDF content is too large. Processing only the first portion." : {
       "localizations" : {
         "de" : {
@@ -1617,26 +1667,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Sprache des PDFs wird von Apple Intelligence nicht unterstützt."
-          }
-        }
-      }
-    },
-    "The language model is not ready yet. Please try again later." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Sprachmodell ist noch nicht bereit. Versuche es später erneut."
-          }
-        }
-      }
-    },
-    "The language model is unavailable for an unknown reason." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Sprachmodell ist aus einem unbekannten Grund nicht verfügbar."
           }
         }
       }
@@ -2007,36 +2037,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aktuelle Sprache: %@"
-          }
-        }
-      }
-    },
-    "^[%lld Item](inflect: true)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld Element](inflect: true)"
-          }
-        }
-      }
-    },
-    "🔧 Calling tool: %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🔧 Tool wird aufgerufen: %@"
-          }
-        }
-      }
-    },
-    "🔧 Tool result: %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🔧 Tool-Ergebnis: %@"
           }
         }
       }

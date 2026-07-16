@@ -1,436 +1,592 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "CFBundleDisplayName": {
-      "comment": "Bundle display name",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Master RPG"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Master RPG"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Master RPG"
-          }
-        }
-      }
-    },
-    "CFBundleName": {
-      "comment": "Bundle name",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG"
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Master RPG"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG"
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Master RPG"
           }
         }
       }
     },
-    "MasterRPG Adventure Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Adventure Link"
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Abenteuer-Link"
-          }
-        }
-      }
-    },
-    "MasterRPG Audio Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Audio Link"
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Audio-Link"
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG"
           }
         }
       }
     },
-    "MasterRPG Character Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Character Link"
+    "MasterRPG Adventure Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Abenteuer-Link"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Charakter-Link"
-          }
-        }
-      }
-    },
-    "MasterRPG Dice Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Dice Link"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Adventure Link"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Würfel-Link"
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์การผจญภัย"
           }
         }
       }
     },
-    "MasterRPG Document": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG-Dokument"
-          }
-        }
-      }
-    },
-    "MasterRPG Entry Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Entry Link"
+    "MasterRPG Audio Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Audio-Link"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Eintrags-Link"
-          }
-        }
-      }
-    },
-    "MasterRPG Map Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Map Link"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Audio Link"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Karten-Link"
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์เสียง"
           }
         }
       }
     },
-    "MasterRPG PDF Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG PDF Link"
+    "MasterRPG Character Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Charakter-Link"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG PDF-Link"
-          }
-        }
-      }
-    },
-    "MasterRPG Photo Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Photo Link"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Character Link"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Foto-Link"
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์ตัวละคร"
           }
         }
       }
     },
-    "MasterRPG Save Game": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG-Spielstand"
-          }
-        }
-      }
-    },
-    "MasterRPG Space Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Space Link"
+    "MasterRPG Dice Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Würfel-Link"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG 3D-Link"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Dice Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์ลูกเต๋า"
           }
         }
       }
     },
-    "MasterRPG Table Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Table Link"
+    "MasterRPG Document" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG-Dokument"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Tabellen-Link"
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG เอกสาร"
           }
         }
       }
     },
-    "MasterRPG Weather Link": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Weather Link"
+    "MasterRPG Entry Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Eintrags-Link"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG Wetter-Link"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Entry Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์รายการ"
           }
         }
       }
     },
-    "NSCameraUsageDescription": {
-      "comment": "Privacy - Camera Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG benutzt die Kamera um Fotos aufzunehmen und im Foto Modul hinzu zufügen. Diese Fotos können dann als Charakterbilder, Karten oder im Abenteuer verwendet werden."
+    "MasterRPG Map Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Karten-Link"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG uses the camera to take photos for the photo module and other modules to show photos and maps"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Map Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์แผนที่"
           }
         }
       }
     },
-    "NSDesktopFolderUsageDescription": {
-      "comment": "Privacy - Desktop Folder Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG möchte auf die Dateien von deinem Schreibtisch zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+    "MasterRPG PDF Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG PDF-Link"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game."
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG PDF Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์ PDF"
           }
         }
       }
     },
-    "NSDocumentsFolderUsageDescription": {
-      "comment": "Privacy - Documents Folder Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG möchte auf die Dateien von deinem Dokumenten Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+    "MasterRPG Photo Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Foto-Link"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game."
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Photo Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์รูปภาพ"
           }
         }
       }
     },
-    "NSDownloadsFolderUsageDescription": {
-      "comment": "Privacy - Downloads Folder Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG möchte auf die Dateien von deinem Download Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+    "MasterRPG Save Game" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG-Spielstand"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game."
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG บันทึกเกม"
           }
         }
       }
     },
-    "NSHandsTrackingUsageDescription": {
-      "comment": "Privacy - Hands Tracking Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG uses hand tracking to let you resize the 3D game table by pinching with both hands."
+    "MasterRPG Space Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG 3D-Link"
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG verwendet Handerkennung, damit du den 3D-Spieltisch durch Zusammenkneifen beider Hände in der Größe verändern kannst."
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Space Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์ 3D"
           }
         }
       }
     },
-    "NSHumanReadableCopyright": {
-      "comment": "Copyright (human-readable)",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "© Copyright 2024-2026, Andre Trettin"
+    "MasterRPG Table Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Tabellen-Link"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "© Copyright 2024-2026, Andre Trettin"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Table Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์ตาราง"
           }
         }
       }
     },
-    "NSLocalNetworkUsageDescription": {
-      "comment": "Privacy - Local Network Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG möchte auf dein lokales Netzwerk zugreifen um ein Spiel als Spielleiter anzukündigen. Andere Spieler von anderen Geräten können dann einem Spiel im lokalen Netzwerk beitreten."
+    "MasterRPG Weather Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Wetter-Link"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Weather Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ลิงก์สภาพอากาศ"
           }
         }
       }
     },
-    "NSMicrophoneUsageDescription": {
-      "comment": "Privacy - Microphone Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG needs microphone access to enable voice commands and speech recognition features."
+    "NSCameraUsageDescription" : {
+      "comment" : "Privacy - Camera Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG benutzt die Kamera um Fotos aufzunehmen und im Foto Modul hinzu zufügen. Diese Fotos können dann als Charakterbilder, Karten oder im Abenteuer verwendet werden."
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG benötigt Mikrofonzugriff für Sprachbefehle und Spracherkennungsfunktionen."
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the camera to take photos for the photo module and other modules to show photos and maps"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้กล้องเพื่อถ่ายภาพสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
           }
         }
       }
     },
-    "NSPhotoLibraryUsageDescription": {
-      "comment": "Privacy - Photo Library Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG möchte auf deine Fotos in der Fotobibliothek zugreifen. Die ausgewählten Fotos können dann als Charakterbilder, Karten oder in Abenteuern verwendet werden."
+    "NSDesktopFolderUsageDescription" : {
+      "comment" : "Privacy - Desktop Folder Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf die Dateien von deinem Schreibtisch zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps"
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์เดสก์ท็อปเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
           }
         }
       }
     },
-    "NSSpeechRecognitionUsageDescription": {
-      "comment": "Privacy - Speech Recognition Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature."
+    "NSDocumentsFolderUsageDescription" : {
+      "comment" : "Privacy - Documents Folder Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf die Dateien von deinem Dokumenten Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG verwendet Spracherkennung, um deine Sprachbefehle für den Sprachassistenten in Text umzuwandeln."
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์เอกสารเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
           }
         }
       }
     },
-    "NSWorldSensingUsageDescription": {
-      "comment": "Privacy - World Sensing Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "MasterRPG uses the world sensing data to detect tables for the dice rolling during the game."
+    "NSDownloadsFolderUsageDescription" : {
+      "comment" : "Privacy - Downloads Folder Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf die Dateien von deinem Download Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
           }
         },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MasterRPG verwendet Welterkennungsdaten, um Tische für das Würfeln während des Spiels zu erkennen."
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์ดาวน์โหลดเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
+          }
+        }
+      }
+    },
+    "NSHandsTrackingUsageDescription" : {
+      "comment" : "Privacy - Hands Tracking Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG verwendet Handerkennung, damit du den 3D-Spieltisch durch Zusammenkneifen beider Hände in der Größe verändern kannst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses hand tracking to let you resize the 3D game table by pinching with both hands."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้การติดตามมือเพื่อให้คุณปรับขนาดโต๊ะเกม 3D ได้โดยการหยิกด้วยมือทั้งสองข้าง"
+          }
+        }
+      }
+    },
+    "NSHumanReadableCopyright" : {
+      "comment" : "Copyright (human-readable)",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription" : {
+      "comment" : "Privacy - Local Network Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf dein lokales Netzwerk zugreifen um ein Spiel als Spielleiter anzukündigen. Andere Spieler von anderen Geräten können dann einem Spiel im lokalen Netzwerk beitreten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้เครือข่ายในพื้นที่เพื่อเชื่อมต่อกับผู้เล่นคนอื่นรอบตัวคุณ เพื่อแชร์แผนที่จากเกมมาสเตอร์"
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy - Microphone Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG benötigt Mikrofonzugriff für Sprachbefehle und Spracherkennungsfunktionen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG needs microphone access to enable voice commands and speech recognition features."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ต้องการการเข้าถึงไมโครโฟนเพื่อเปิดใช้งานคำสั่งเสียงและฟีเจอร์การจดจำเสียงพูด"
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription" : {
+      "comment" : "Privacy - Photo Library Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf deine Fotos in der Fotobibliothek zugreifen. Die ausgewählten Fotos können dann als Charakterbilder, Karten oder in Abenteuern verwendet werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้คลังภาพเพื่อนำเข้าภาพถ่ายสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "comment" : "Privacy - Speech Recognition Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG verwendet Spracherkennung, um deine Sprachbefehle für den Sprachassistenten in Text umzuwandeln."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้การจดจำเสียงพูดเพื่อแปลงคำสั่งเสียงของคุณเป็นข้อความสำหรับฟีเจอร์ผู้ช่วยเสียง"
+          }
+        }
+      }
+    },
+    "NSWorldSensingUsageDescription" : {
+      "comment" : "Privacy - World Sensing Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG verwendet Welterkennungsdaten, um Tische für das Würfeln während des Spiels zu erkennen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the world sensing data to detect tables for the dice rolling during the game."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้ข้อมูลการรับรู้โลกเพื่อตรวจจับโต๊ะสำหรับการทอยลูกเต๋าระหว่างเกม"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.3"
 }

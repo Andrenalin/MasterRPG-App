@@ -40,6 +40,12 @@
             "state" : "translated",
             "value" : "Hinzufügen Würfel"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มลูกเต๋า"
+          }
         }
       }
     },
@@ -61,6 +67,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Link hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มลิงก์"
           }
         }
       }
@@ -144,6 +156,12 @@
             "state" : "translated",
             "value" : "Foto ändern"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนรูปภาพ"
+          }
         }
       }
     },
@@ -154,6 +172,12 @@
             "state" : "translated",
             "value" : "Werttyp ändern"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนประเภทค่า"
+          }
         }
       }
     },
@@ -163,6 +187,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charakter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละคร"
           }
         }
       }
@@ -175,6 +205,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charaktere"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละคร"
           }
         }
       }
@@ -222,6 +258,12 @@
             "state" : "translated",
             "value" : "Charakter mit dem Namen ${name} erstellen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละครชื่อ ${name}"
+          }
         }
       }
     },
@@ -233,6 +275,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "„%@“ erstellt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้าง “%@” แล้ว"
           }
         }
       }
@@ -255,6 +303,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charakter löschen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบตัวละคร"
           }
         }
       }
@@ -279,6 +333,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Beschreibung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำอธิบาย"
           }
         }
       }
@@ -312,6 +372,12 @@
             "state" : "translated",
             "value" : "Ordner duplizieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทำซ้ำโฟลเดอร์"
+          }
         }
       }
     },
@@ -334,6 +400,12 @@
             "state" : "translated",
             "value" : "Eintragsname"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชื่อรายการ"
+          }
         }
       }
     },
@@ -354,6 +426,12 @@
             "state" : "translated",
             "value" : "Gegenstände gesendet vom Spielleiter"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการที่ส่งจากเกมมาสเตอร์"
+          }
         }
       }
     },
@@ -363,6 +441,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลิงก์"
           }
         }
       }
@@ -375,6 +459,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Name"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชื่อ"
           }
         }
       }
@@ -399,6 +489,12 @@
             "state" : "translated",
             "value" : "Charakter öffnen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดตัวละคร"
+          }
         }
       }
     },
@@ -421,6 +517,12 @@
             "state" : "translated",
             "value" : "Gruppe vorbereiten"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เตรียมกลุ่ม"
+          }
         }
       }
     },
@@ -430,6 +532,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Schnell Editor"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวแก้ไขด่วน"
           }
         }
       }
@@ -441,6 +549,12 @@
             "state" : "translated",
             "value" : "Entfernen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำออก"
+          }
         }
       }
     },
@@ -450,6 +564,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aus Favoriten entfernen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำออกจากรายการโปรด"
           }
         }
       }
@@ -470,6 +590,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charaktereintrag reparieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อมแซมรายการตัวละคร"
           }
         }
       }
@@ -523,6 +649,12 @@
             "state" : "translated",
             "value" : "Unterwerte repariert"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อมแซมค่าย่อยแล้ว"
+          }
         }
       }
     },
@@ -532,6 +664,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gruppeneintrag reparieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังซ่อมแซมรายการกลุ่ม"
           }
         }
       }
@@ -545,6 +683,12 @@
             "state" : "translated",
             "value" : "Charaktere durchsuchen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค้นหาตัวละคร"
+          }
         }
       }
     },
@@ -554,6 +698,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Auswahl"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การเลือก"
           }
         }
       }
@@ -577,6 +727,12 @@
             "state" : "translated",
             "value" : "Dezimalzahl aktualisieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดตทศนิยม"
+          }
         }
       }
     },
@@ -586,6 +742,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Einträge aktualisieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดตรายการ"
           }
         }
       }
@@ -599,6 +761,12 @@
             "state" : "translated",
             "value" : "Zahl aktualisieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดตตัวเลข"
+          }
         }
       }
     },
@@ -611,6 +779,12 @@
             "state" : "translated",
             "value" : "Auswahl aktualisieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดตการเลือก"
+          }
         }
       }
     },
@@ -622,6 +796,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wert aktualisieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดตค่า"
           }
         }
       }
@@ -695,5 +875,5 @@
       }
     }
   },
-  "version" : "1.1"
+  "version" : "1.3"
 }
