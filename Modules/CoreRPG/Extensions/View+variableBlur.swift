@@ -184,20 +184,20 @@ public extension View {
 	VStack(alignment: .center) {
 		Spacer()
 			.frame(maxWidth: .infinity)
-		Text("This is a snowflake")
+		Text(verbatim: "This is a snowflake")
 			.font(.headline)
 			.fontWidth(.expanded)
-		Text("With a variable blur powered by Metal.")
+		Text(verbatim: "With a variable blur powered by Metal.")
 		HStack() {
 			Button { } label: {
-				Text("Let It Snow")
+				Text(verbatim: "Let It Snow")
 			}
 			Button { } label: {
-				Text("Don't Let It Snow")
+				Text(verbatim: "Don't Let It Snow")
 			}
 		}
 		.padding(8)
-		Text("Plot twist: nothing really happens when you press these buttons.")
+		Text(verbatim: "Plot twist: nothing really happens when you press these buttons.")
 			.textScale(.secondary)
 			.opacity(0.6)
 		#if !os(macOS)

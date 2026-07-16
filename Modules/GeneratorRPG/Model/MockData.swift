@@ -1,53 +1,43 @@
 // @copyright André Trettin
 
 import CoreRPG
-import RPGResources
 import SwiftUI
 import SwiftData
 
 struct MockData: PreviewModifier {
-    nonisolated static let previewId = UUID()
-    nonisolated static let previewId2 = UUID()
-    nonisolated static let previewId3 = UUID()
-    
-    static var previewRoot: GeneratorRootModel?
-
     func body(content: Content, context: ModelContainer) -> some View {
         content
-            .modifier(MockRootViewModifier(modelContext: context.mainContext))
+            .modifier(MockRootViewModifier())
             .modelContainer(context)
     }
+
     static func makeSharedContext() async throws -> ModelContainer {
-        let container = try! ModelContainer(
+        try ModelContainer(
             for: LinkDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
-        
-        let bundle = RPGResources.Resources.bundle
-        guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-            print("url nil ")
-            return container
-        }
-
-        let root = GeneratorRootModel.preview
-        let task = root.importController.importUrl(from: url)
-        let _ = try await task.value
-
-        return container
     }
 }
 
 struct MockRootViewModifier: ViewModifier {
-    init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: GeneratorRootModel.preview)
-    }
-    
     @State private var root: GeneratorRootModel
-    
+    @State private var appGameStateModel: AppGameStateModel
+    @State private var appNavigationModel: AppNavigationModel
+
+    init(root: GeneratorRootModel = .previewFixture()) {
+        let appGameStateModel = AppGameStateModel()
+        self._root = State(wrappedValue: root)
+        self._appGameStateModel = State(wrappedValue: appGameStateModel)
+        self._appNavigationModel = State(
+            wrappedValue: AppNavigationModel(appGameStateModel: appGameStateModel)
+        )
+    }
+
     func body(content: Content) -> some View {
         content
             .environment(root)
-            .environment(AppGameStateModel())
+            .environment(appGameStateModel)
+            .environment(appNavigationModel)
             .environment(AppWindowSizeModel())
             .environment(CacheItemListModel())
             .environment(ScenesManager())
@@ -56,7 +46,6 @@ struct MockRootViewModifier: ViewModifier {
 #endif
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
-
     }
 }
 

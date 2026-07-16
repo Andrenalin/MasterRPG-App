@@ -19,8 +19,8 @@ public struct ContentBlocksView: View {
         Form {
             Section {
                 ForEach(content) { block in
-                    Text(block.title)
-                    Text(block.content)
+                    Text(verbatim: block.title)
+                    Text(verbatim: block.content)
                 }
             }
         }

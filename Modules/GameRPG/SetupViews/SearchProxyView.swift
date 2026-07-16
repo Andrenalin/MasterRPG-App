@@ -5,6 +5,12 @@ import SwiftUI
 
 struct SearchProxyView: View {
     let root: GameRoot
+    private let startsServices: Bool
+
+    init(root: GameRoot, startsServices: Bool = true) {
+        self.root = root
+        self.startsServices = startsServices
+    }
 
     var body: some View {
         ScrollView {
@@ -39,6 +45,7 @@ struct SearchProxyView: View {
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .onAppear {
+            guard startsServices else { return }
             root.networkStore.model.playerStore?.browserManager.start()
             root.networkProxyStore.model.playerStore?.browserManager.start()
         }
@@ -56,5 +63,5 @@ private extension SearchProxyView {
 }
 
 #Preview {
-    SearchProxyView(root: .preview)
+    SearchProxyView(root: .preview, startsServices: false)
 }

@@ -2,17 +2,9 @@
 
 import SwiftUI
 
-#Preview("Tags") {
-    TagDisplayView(tags: ["Dungeon", "Encounter", "Important"], category: .folder, collectionCategory: .folder)
-        .padding()
-}
-
-#Preview("Many tags") {
-    TwoLineTagView(tags: ["Dungeon", "Encounter", "Important", "Combat", "Boss"], category: .folder, collectionCategory: .folder)
-        .padding()
-}
-
 public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     public init(root: any ItemRootControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, isSelected: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.root = root
         self.model = model
@@ -71,7 +63,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
             specialAddIcon
         }
         .fixedSize(horizontal: false, vertical: true)
-        .animation(.smooth, value: listDisplayModel.displayMode)
+        .animation(accessibilityReduceMotion ? nil : .smooth, value: listDisplayModel.displayMode)
     }
 }
 
@@ -115,47 +107,14 @@ private extension ItemRowView {
     }
 }
 
-// MARK: - Supporting Views
 
-private struct TagDisplayView: View {
-    let tags: [String]
-    let category: ItemListCategory
-    let collectionCategory: ItemListCategory
-
-    var body: some View {
-        if tags.count > 4 {
-            TwoLineTagView(tags: tags, category: category, collectionCategory: collectionCategory)
-        } else {
-            HStack(spacing: 4) {
-                TagItemRow(tags: tags)
-            }
-        }
-    }
-}
-
-private struct TwoLineTagView: View {
-    let tags: [String]
-    let category: ItemListCategory
-    let collectionCategory: ItemListCategory
-
-    var body: some View {
-        let half = tags.count / 2
-
-        VStack(alignment: .leading, spacing: 4) {
-            if half > 0 {
-                HStack(spacing: 4) {
-                    if category != .folder && category != collectionCategory {
-                        CategoryItemRow(category: category)
-                    }
-                    TagItemRow(tags: Array(tags[0..<half]))
-                }
-            }
-
-            if half < tags.count {
-                HStack(spacing: 4) {
-                    TagItemRow(tags: Array(tags[half...]))
-                }
-            }
-        }
-    }
+#Preview("Item row") {
+    ItemRowView(
+        root: ItemRootController.fake,
+        model: FakeItemModel(id: .fixture1, name: "Goblin Ambush", description: "A narrow bridge guarded by goblins.", tags: ["Encounter", "Dungeon"]),
+        cacheItemListModel: CacheItemListModel(),
+        listDisplayModel: ListDisplayModel(),
+        searchModel: .preview()
+    )
+    .padding()
 }

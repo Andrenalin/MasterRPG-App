@@ -79,7 +79,13 @@ private extension TextIntEditor{
     @ViewBuilder var sliderView: some View {
         @Bindable var model = model
 #if !os(tvOS)
-        Slider(value: $model.value, in: range, step: 1, minimumValueLabel: Text("\(Int(range.lowerBound))"), maximumValueLabel: Text("\(Int(range.upperBound))")) {
+        Slider(
+            value: $model.value,
+            in: range,
+            step: 1,
+            minimumValueLabel: Text(Int(range.lowerBound), format: .number),
+            maximumValueLabel: Text(Int(range.upperBound), format: .number)
+        ) {
             Text(title, bundle: bundle)
         }
         .labelsHidden()
@@ -90,11 +96,12 @@ private extension TextIntEditor{
 }
 
 #Preview {
+    let title = LocalizedStringKey(String("Count"))
     TextIntEditor(
         model: EditIdentifierModel(value: 12.0),
-        title: "Count",
+        title: title,
         icon: "number",
-        prompt: "Count",
+        prompt: title,
         bundle: nil,
         range: 0...20
     )

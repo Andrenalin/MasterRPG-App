@@ -21,7 +21,7 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
     
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
-            name: LocalizedStringResource("Navigation Option", table: "AppIntents"),
+            name: "Navigation Option",
             numericFormat: "\(placeholder: .int) navigation options"
         )
     }

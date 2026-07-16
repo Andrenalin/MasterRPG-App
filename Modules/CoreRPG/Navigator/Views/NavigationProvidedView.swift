@@ -78,3 +78,9 @@ public struct NavigationProvidedView<D: NavigationDestination, P: View>: View {
         "Missing Provider for \(type(of: self)).\(self)"
     }
 }
+
+#Preview {
+    NavigationProvidedView(for: InternalRoute.removeAlert) {
+        Text(verbatim: "Navigation placeholder")
+    }
+}

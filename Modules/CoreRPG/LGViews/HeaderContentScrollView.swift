@@ -10,6 +10,8 @@ final class HeaderScrollModel {
 }
 
 struct HeaderContentScrollView<Header: View, Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let model: HeaderScrollModel
     let header: Header
     let content: Content
@@ -78,7 +80,7 @@ struct HeaderContentScrollView<Header: View, Content: View>: View {
             return
         }
         
-        withAnimation(animation) {
+        withAnimation(accessibilityReduceMotion ? nil : animation) {
             model.headerOffset = targetOffset
         }
     }
@@ -120,8 +122,8 @@ struct HeaderContentScrollView<Header: View, Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .overlay {
-            Text("Apple Store")
-                .fontWeight(.semibold)
+            Text(verbatim: "Apple Store")
+                .font(.headline)
         }
         .padding(15)
     } content: {

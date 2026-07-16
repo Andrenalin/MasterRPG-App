@@ -20,10 +20,6 @@ extension Logger {
     Scanner3DRootView()
 }
 
-#Preview {
-    CircularProgressView()
-}
-
 struct Scanner3DRootView: View {
     @State private var appModel: AppDataModel = AppDataModel.instance
 
@@ -60,7 +56,10 @@ struct Scanner3DRootView: View {
             }
         }
         .alert(
-            "Failed:  " + (appModel.error != nil  ? "\(String(describing: appModel.error!))" : ""),
+            Text(
+                "Failed: \(appModel.error.map { String(describing: $0) } ?? "")",
+                bundle: .module
+            ),
             isPresented: $showErrorAlert,
             actions: {
                 Button { appModel.state = .restart; Logger.scanner3D.log("Calling restart...") } label: { Text("OK", bundle: .module) }
@@ -68,23 +67,6 @@ struct Scanner3DRootView: View {
             message: {}
         )
         .environment(appModel)
-    }
-}
-
-private struct CircularProgressView: View {
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        VStack {
-            Spacer()
-            ZStack {
-                Spacer()
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: colorScheme == .light ? .black : .white))
-                Spacer()
-            }
-            Spacer()
-        }
     }
 }
 

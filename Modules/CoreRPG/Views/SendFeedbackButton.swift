@@ -3,6 +3,8 @@
 import SwiftUI
 
 struct SendFeedbackButton: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let allReported: Bool
     let secondActionIcon: String?
     let action: () -> Void
@@ -26,7 +28,7 @@ struct SendFeedbackButton: View {
     var buttonView: some View {
         Button {
             guard !isSending else { return }
-            withAnimation {
+            withAnimation(accessibilityReduceMotion ? nil : .default) {
                 isSending.toggle()
                 if let secondAction, allReported == true {
                     secondAction()
@@ -35,7 +37,7 @@ struct SendFeedbackButton: View {
                 }
             }
         } label: {
-            Image(systemName: allReported && secondActionIcon != nil ? secondActionIcon! : "square.and.arrow.up")
+            Image(systemName: allReported ? secondActionIcon ?? "square.and.arrow.up" : "square.and.arrow.up")
                 .imageScale(.large)
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(allReported ? .teal : .white, .white)
@@ -46,12 +48,20 @@ struct SendFeedbackButton: View {
                         .symbolEffect(.disappear, isActive: !isSending)
                 }
         }
+        .frame(minWidth: 44, minHeight: 44)
+        .accessibilityLabel(
+            allReported && secondAction != nil
+                ? Text("Perform follow-up action", bundle: .module)
+                : Text("Share", bundle: .module)
+        )
         .onChange(of: isSending) {
             guard isSending else { return }
-            Task {
-                await changeVariableValue()
+            if !accessibilityReduceMotion {
+                Task {
+                    await changeVariableValue()
+                }
             }
-            withAnimation { isUpdating = true }
+            withAnimation(accessibilityReduceMotion ? nil : .default) { isUpdating = true }
         }
         .onChange(of: isUpdating) {
             guard isUpdating else { return }
@@ -62,7 +72,7 @@ struct SendFeedbackButton: View {
     }
     
     func changeVariableValue() async {
-        while !Task.isCancelled {
+        while isSending && !Task.isCancelled {
             if value >= 1 { value = 0 }
             try? await Task.sleep(for: .seconds(0.25))
             value += 0.25

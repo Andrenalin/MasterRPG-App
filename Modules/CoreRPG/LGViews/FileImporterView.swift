@@ -23,10 +23,15 @@ public struct FileImporterView: View {
         GlassButton(isProminent: isProminent) {
             showImporter.toggle()
         } label: {
-            Image(systemName: "folder")
-                .symbolVariant(showImporter ? .fill : .none)
-                .imageScale(isProminent ? .large : .medium)
-                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+            Label {
+                Text("Import File", bundle: .module)
+            } icon: {
+                Image(systemName: "folder")
+                    .symbolVariant(showImporter ? .fill : .none)
+                    .imageScale(isProminent ? .large : .medium)
+                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+            }
+            .labelStyle(.iconOnly)
         }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: fileTypes) { result in
             guard let url = try? result.get() else { return }

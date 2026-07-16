@@ -3,6 +3,8 @@
 import SwiftUI
 
 struct ShareItemViewModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let isActive: Bool
     let allReported: Bool
     let feedBackEnabled: Bool
@@ -29,7 +31,7 @@ struct ShareItemViewModifier: ViewModifier {
             content
                 .contentShape(.rect)
         }
-        .animation(.default, value: isActive)
+        .animation(accessibilityReduceMotion ? nil : .default, value: isActive)
     }
     
     private var buttonView: some View {
@@ -40,14 +42,20 @@ struct ShareItemViewModifier: ViewModifier {
                 action()
             }
         } label: {
-            Image(systemName: allReported && secondActionIcon != nil ? secondActionIcon! : "square.and.arrow.up")
+            Image(systemName: allReported ? secondActionIcon ?? "square.and.arrow.up" : "square.and.arrow.up")
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(allReported ? .teal : .white, .white)
             #if !os(macOS)
                 .frame(height: 24)
             #endif
         }
+        .frame(minWidth: 44, minHeight: 44)
         .contentShape(.rect)
+        .accessibilityLabel(
+            allReported && secondAction != nil
+                ? Text("Perform follow-up action", bundle: .module)
+                : Text("Share", bundle: .module)
+        )
     }
 }
 

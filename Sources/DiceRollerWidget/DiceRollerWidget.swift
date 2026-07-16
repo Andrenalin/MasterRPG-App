@@ -88,68 +88,6 @@ struct DiceRollerAccessoryWidget: Widget {
     }
 }
 
-struct AccessoryDiceView: View {
-    @Environment(\.widgetFamily) var family
-    let entry: DiceRollerEntry
-    
-    var body: some View {
-        switch family {
-        case .accessoryCircular:
-            ZStack {
-                AccessoryWidgetBackground()
-                VStack(spacing: 2) {
-                    if let lastRoll = entry.snapshot.lastRoll {
-                        Image(systemName: diceSymbol(for: lastRoll.dice.sides))
-                            .font(.system(size: 18))
-                    }
-                    Text("\(entry.snapshot.lastRoll?.sum ?? 0)")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                }
-            }
-            
-        case .accessoryRectangular:
-            HStack(spacing: 8) {
-                if let lastRoll = entry.snapshot.lastRoll {
-                    Image(systemName: diceSymbol(for: lastRoll.dice.sides))
-                        .font(.system(size: 20))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(lastRoll.dice.name)
-                            .font(.headline)
-                        Text("\(lastRoll.sum)")
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                    }
-                } else {
-                    Image(systemName: "dice.fill")
-                    Text("No rolls yet")
-                        .font(.caption)
-                }
-                Spacer()
-            }
-            
-        case .accessoryInline:
-            if let lastRoll = entry.snapshot.lastRoll {
-                Text("🎲 \(lastRoll.dice.name): \(lastRoll.sum)")
-            } else {
-                Text("🎲 Tap to roll")
-            }
-            
-        default:
-            EmptyView()
-        }
-    }
-    
-    private func diceSymbol(for sides: Int) -> String {
-        switch sides {
-        case 4: return "triangle.fill"
-        case 6: return "square.fill"
-        case 8: return "diamond.fill"
-        case 10: return "pentagon.fill"
-        case 12: return "hexagon.fill"
-        case 20: return "circle.hexagonpath.fill"
-        default: return "die.face.\(min(sides, 6)).fill"
-        }
-    }
-}
 #endif
 
 // MARK: - Control Widget (iOS 18+)
@@ -159,7 +97,11 @@ struct DiceRollerControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: DiceWidgetKind.control) {
             ControlWidgetButton(action: RollDiceIntent(diceType: IntentDiceType.d20)) {
-                Label("Roll D20", systemImage: "dice.fill")
+                Label {
+                    Text("Roll D20", bundle: .main)
+                } icon: {
+                    Image(systemName: "dice.fill")
+                }
             }
         }
         .displayName("Quick Roll D20")

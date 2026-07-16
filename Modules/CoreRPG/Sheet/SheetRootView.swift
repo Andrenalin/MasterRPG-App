@@ -64,5 +64,6 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
 }
 
 #Preview {
-    SheetRootView(root: ItemRootController.fake, rootModel: .fake, linkTypes: EmptyLinkTransferable.self)
+    let fixture = FakeItemRootControllerFixture()
+    SheetRootView(root: fixture.root, rootModel: fixture.sheetRootModel, linkTypes: EmptyLinkTransferable.self)
 }

@@ -17,6 +17,7 @@ public struct GameShareView<Content: View>: View {
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
     @Environment(\.sharingControlActions) private var sharingControlActions
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     public var body: some View {
         // Computed once per render — avoids re-deriving the same list for the
@@ -98,7 +99,7 @@ private extension GameShareView {
             }
         }
             .font(.caption)
-            .animation(.default, value: statuses.map(\.reported))
+            .animation(accessibilityReduceMotion ? nil : .default, value: statuses.map(\.reported))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(playerReportAccessibilityLabel(for: statuses))
     }
@@ -140,54 +141,52 @@ private struct PlayerReportStatus {
 }
 
 #Preview {
-    GameShareView(root: ItemRootController.fake, itemId: UUID()) {
-        Label("Share item", systemImage: "square.and.arrow.up")
+    GameShareView(root: ItemRootController.previewFixture(), itemId: .fixture1) {
+        Label {
+            Text(verbatim: "Share item")
+        } icon: {
+            Image(systemName: "square.and.arrow.up")
+        }
     }
     .environment(AppGameStateModel())
 }
 
 #Preview("Master with player report status") {
-    let itemId = UUID()
-    let confirmedPlayer = UUID()
-    let missingPlayer = UUID()
-    // ItemRootController.fake defaults to sharingViewType .none, which skips
-    // the share button (and this row) entirely — swap in .share for the demo.
-    let root = ItemRootController(
-        config: FakeModuleConfiguration(),
-        navigationModel: ModuleNavigationModel(),
-        inspectorEditorLinkModel: nil,
-        openFileWindowModel: OpenFileWindowModel(),
-        itemSelectionModel: ItemSelectionModel(),
-        removeEntryListModel: RemoveEntryListModel(),
-        cacheControllable: nil,
-        editControllable: FakeEditController.fake,
-        exportControllable: FakeExportController.fake,
-        gameControllable: FakeGameController.fake,
-        importControllable: FakeImportController.fake,
-        itemControllable: FakeItemController.fake,
-        linkControllable: FakeLinkController.fake,
-        folderListControllable: FakeFolderListController.fake,
-        folderLinkControllable: FakeFolderListController.fake,
-        searchControllable: FakeSearchController.fake,
-        sheetControllable: FakeSheetController.fake,
-        viewControllable: FakeViewController(sharingViewType: .share)
-    )
-    root.gameControllable.report(itemId: itemId, for: confirmedPlayer)
+    let fixture = {
+        let itemId = UUID.fixture1
+        let confirmedPlayer = UUID.fixture2
+        let missingPlayer = UUID.fixture3
+        let fixture = FakeItemRootControllerFixture(sharingViewType: .share)
+        let root = fixture.root
+        root.gameControllable.report(itemId: itemId, for: confirmedPlayer)
 
-    let gameState = AppGameStateModel()
-    gameState.gameModus = .master
-    gameState.isGameRunning = true
+        let gameState = AppGameStateModel()
+        gameState.gameModus = .master
+        gameState.isGameRunning = true
 
-    return GameShareView(root: root, itemId: itemId) {
-        Label("Share item", systemImage: "square.and.arrow.up")
+        return (
+            itemId: itemId,
+            confirmedPlayer: confirmedPlayer,
+            missingPlayer: missingPlayer,
+            root: root,
+            gameState: gameState
+        )
+    }()
+
+    GameShareView(root: fixture.root, itemId: fixture.itemId) {
+        Label {
+            Text(verbatim: "Share item")
+        } icon: {
+            Image(systemName: "square.and.arrow.up")
+        }
     }
     .padding()
-    .environment(gameState)
+    .environment(fixture.gameState)
     .environment(\.sharingControlActions, SharingControlActions(
         control: {
             [
-                SharingControlModel(id: confirmedPlayer, name: "Arin", show: true),
-                SharingControlModel(id: missingPlayer, name: "Zara", show: true)
+                SharingControlModel(id: fixture.confirmedPlayer, name: "Arin", show: true),
+                SharingControlModel(id: fixture.missingPlayer, name: "Zara", show: true)
             ]
         },
         update: { _ in }

@@ -13,6 +13,8 @@ final class HeaderFooterScrollModel {
 }
 
 struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, Background: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     init(model: HeaderFooterScrollModel, @ViewBuilder header: () -> Header, @ViewBuilder content: () -> Content, @ViewBuilder footer: () -> Footer, @ViewBuilder background: () -> Background) {
         self.model = model
         self.header = header()
@@ -40,7 +42,7 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
                 let direction = (newValue - oldValue) > 0 ? true : false
                 if abs(newValue - oldValue) > 20 && model.scrollUp != direction {
                     model.scrollUp = direction
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2)) {
                         if model.scrollUp {
                             model.headerOffset = model.headerSize
                             model.footerOffset = model.footerSize
@@ -113,8 +115,8 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .overlay {
-            Text("Apple Store")
-                .fontWeight(.semibold)
+            Text(verbatim: "Apple Store")
+                .font(.headline)
         }
         .padding(15)
     } content: {
@@ -146,7 +148,7 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
             }
 #endif
         }.overlay(alignment: .bottom) {
-            Text("Bottom")
+            Text(verbatim: "Bottom")
                 .padding()
                 //.glassEffect(.regular.interactive())
                 .padding(120)
@@ -154,7 +156,7 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
     } footer: {
         VStack {
             Label {
-                Text("Mage")
+                Text(verbatim: "Mage")
                     .font(.largeTitle)
             } icon: {
                 Image(systemName: "gear")
@@ -167,13 +169,13 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
         Rectangle().fill(Color.orange.gradient)
     }
     .overlay(alignment: .bottom) {
-        Text("Bottom")
+        Text(verbatim: "Bottom")
             .padding()
             //.glassEffect(.regular.interactive())
             .safeAreaInset(edge: .bottom) {
                 VStack {
                     Label {
-                        Text("Mage")
+                        Text(verbatim: "Mage")
                             .font(.largeTitle)
                     } icon: {
                         Image(systemName: "gear")

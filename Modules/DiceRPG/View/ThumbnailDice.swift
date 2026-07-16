@@ -13,8 +13,16 @@ struct ThumbnailDice: View {
             .aspectRatio(contentMode: .fit)
             .frame(width: 44, height: 44)
             .rotation3DEffect(.degrees(withoutResult ? 0 : die.rotation), axis: (x: 0, y: 0, z: 1))
-
             .padding(4)
+            .accessibilityLabel(Text("\(die.die.text) die", bundle: .module))
+            .accessibilityValue(accessibilityValue)
+    }
+
+    private var accessibilityValue: Text {
+        if withoutResult || die.result.isEmpty {
+            return Text("Not rolled", bundle: .module)
+        }
+        return Text(verbatim: die.result.map(String.init).joined(separator: ", "))
     }
 }
 

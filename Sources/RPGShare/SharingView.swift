@@ -17,6 +17,8 @@ extension Logger {
 /// - Clear separation of concerns
 /// - Efficient module loading
 struct SharingView: View {
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     // MARK: - Properties
     
@@ -35,6 +37,8 @@ struct SharingView: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var errorMessage: String?
+
+    private let performsInitialization: Bool
     
     // MARK: - Initialization
     
@@ -42,11 +46,25 @@ struct SharingView: View {
     init(
         itemProviders: [NSItemProvider],
         extensionContext: NSExtensionContext? = nil,
-        useCloudKit: Bool = AppModel.shared.settingsModel.useCloudKit
+        useCloudKit: Bool = AppModel.shared.settingsModel.useCloudKit,
+        previewContent: (name: String, text: String, module: NetworkModules)? = nil
     ) {
         self.itemProviders = itemProviders
         self.extensionContext = extensionContext
         self._databaseService = State(wrappedValue: ShareExtensionDatabaseService(useCloudKit: useCloudKit))
+        self.performsInitialization = previewContent == nil
+
+        if let previewContent {
+            let inputModel = InputModel()
+            inputModel.name = previewContent.name
+            inputModel.text = previewContent.text
+            _inputModel = State(initialValue: inputModel)
+
+            let moduleChooserModel = ModuleChooserModel()
+            moduleChooserModel.currentModule = previewContent.module
+            _moduleChooserModel = State(initialValue: moduleChooserModel)
+            _isLoading = State(initialValue: false)
+        }
     }
     
     // MARK: - Body
@@ -62,6 +80,7 @@ struct SharingView: View {
             }
         }
         .task {
+            guard performsInitialization else { return }
             await initialize()
         }
     }
@@ -71,8 +90,10 @@ struct SharingView: View {
     private var loadingView: some View {
         VStack(spacing: 16) {
             ProgressView()
-            Text("Loading...")
+                .accessibilityLabel(Text("Loading…", bundle: .main))
+            Text("Loading…", bundle: .main)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -82,19 +103,24 @@ struct SharingView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
                 .foregroundStyle(.red)
+                .accessibilityHidden(true)
             
-            Text("Error")
+            Text("Error", bundle: .main)
                 .font(.headline)
+                .accessibilityAddTraits(.isHeader)
             
-            Text(message)
+            Text(verbatim: message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             
-            Button("Close") {
+            Button {
                 close()
+            } label: {
+                Text("Close", bundle: .main)
             }
             .buttonStyle(.bordered)
+            .frame(minHeight: 44)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -115,12 +141,13 @@ struct SharingView: View {
                 
                 Spacer(minLength: 0)
             }
-            .animation(.bouncy, value: moduleChooserModel.showPhotoWarning)
-            .animation(.bouncy, value: imageListModel.images)
+            .animation(reduceMotion ? nil : .bouncy, value: moduleChooserModel.showPhotoWarning)
+            .animation(reduceMotion ? nil : .bouncy, value: imageListModel.images)
         }
         .keyboardAvoiding()
         .padding()
         .disabled(isSaving)
+        .accessibilityHidden(isSaving)
         .overlay {
             if isSaving {
                 savingOverlay
@@ -136,7 +163,7 @@ struct SharingView: View {
         } label: {
             HStack {
                 Image(systemName: "square.and.arrow.down")
-                Text("Save")
+                Text("Save", bundle: .main)
             }
             .frame(maxWidth: .infinity)
         }
@@ -148,11 +175,14 @@ struct SharingView: View {
         ZStack {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
+                .accessibilityHidden(true)
             
             VStack(spacing: 16) {
                 ProgressView()
-                Text("Saving...")
+                    .accessibilityLabel(Text("Saving…", bundle: .main))
+                Text("Saving…", bundle: .main)
                     .foregroundStyle(.white)
+                    .accessibilityHidden(true)
             }
             .padding()
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -238,4 +268,16 @@ struct SharingView: View {
     private func close() {
         extensionContext?.completeRequest(returningItems: [])
     }
+}
+
+#Preview("Share an adventure") {
+    SharingView(
+        itemProviders: [],
+        useCloudKit: false,
+        previewContent: (
+            name: "The Verdant Vault",
+            text: "A moss-covered stair descends beneath the ruined observatory.",
+            module: .adventure
+        )
+    )
 }

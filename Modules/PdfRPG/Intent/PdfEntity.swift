@@ -64,8 +64,8 @@ extension PdfEntity: Transferable {
 //                Image(landmark.landmark.backgroundImageName)
 //                    .resizable()
 //                    .aspectRatio(contentMode: .fit)
-                Text(item.name)
-                Text(item.description)
+                Text(verbatim: item.name)
+                Text(verbatim: item.description)
             }.frame(width: 600))
 
             renderer.render { size, renderer in

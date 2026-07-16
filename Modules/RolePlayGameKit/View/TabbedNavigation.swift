@@ -5,17 +5,17 @@ import CoreRPG
 import SwiftUI
 import AdventureRPG
 
-#Preview {
-    ModuleTabLabel(route: .game)
-        .padding()
-}
-
 struct TabbedNavigation: View {
-    @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
-
     @Environment(AppModel.self) private var appModel
+    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
     @Environment(AppWindowSizeModel.self) private var appSizeModel
-        
+
+    private let restoresState: Bool
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
+
     var body: some View {
         @Bindable var appModel = appModel
         
@@ -42,13 +42,8 @@ struct TabbedNavigation: View {
             }
         }
 #endif
-        .syncOptionalState(
-            source: $storedTab,
-            destination: $appModel.selectedModule
-        ) { newValue in
-            if appModel.menuSelectedModule != newValue.module {
-                appModel.menuSelectedModule = newValue.module
-            }
+        .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+            $0.modifier(TabbedNavigationRestorationModifier(appModel: appModel))
         }
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive { (route: RootRoute, navigator) in
@@ -80,28 +75,28 @@ struct TabbedNavigation: View {
 }
 
 #Preview {
-    TabbedNavigation()
+    TabbedNavigation(restoresState: false)
+        .environment(AppModel.previewWithoutDatabase)
+        .environment(AppWindowSizeModel())
 }
 
-struct ModuleTabLabel: View {
-    let title: String
-    let icon: String
-    let color: Color
+private struct TabbedNavigationRestorationModifier: ViewModifier {
+    @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
 
-    init(route: RootRoute, color: Color? = nil) {
-        title = route.title
-        icon = route.icon
-        self.color = color ?? route.module.tint
-    }
+    let appModel: AppModel
 
-    var body: some View {
-        Label {
-            Text(title)
-        } icon: {
-            Image(systemName: icon)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(color)
-        }
+    func body(content: Content) -> some View {
+        @Bindable var appModel = appModel
+
+        content
+            .syncOptionalState(
+                source: $storedTab,
+                destination: $appModel.selectedModule
+            ) { newValue in
+                if appModel.menuSelectedModule != newValue.module {
+                    appModel.menuSelectedModule = newValue.module
+                }
+            }
     }
 }
 

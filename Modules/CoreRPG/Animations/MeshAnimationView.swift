@@ -3,9 +3,19 @@
 import SwiftUI
 
 public struct MeshAnimationView: View {
-    public init() {}
+    public init(animates: Bool = true) {
+        self.animates = animates
+        self._colors = State(initialValue: animates ? Self.randomColors() : Self.staticColors)
+    }
 
     private static let meshColors: [Color] = [.red, .purple, .cyan, .mint, .teal, .indigo, .blue, .green, .orange]
+    private static let staticColors: [Color] = [
+        .red, .purple, .cyan, .mint, .teal,
+        .indigo, .blue, .green, .orange, .red,
+        .purple, .cyan, .mint, .teal, .indigo,
+        .blue, .green, .orange, .red, .purple,
+        .cyan, .mint, .teal, .indigo, .blue
+    ]
     private static let points: [SIMD2<Float>] = [
         .init(0.00, 0.00), .init(0.25, 0.00), .init(0.50, 0.00), .init(0.75, 0.00), .init(1.00, 0.00),
         .init(0.00, 0.25), .init(0.25, 0.25), .init(0.50, 0.25), .init(0.75, 0.25), .init(1.00, 0.25),
@@ -18,11 +28,22 @@ public struct MeshAnimationView: View {
         (0..<25).map { _ in meshColors.randomElement() ?? .blue }
     }
 
-    @State private var colors: [Color] = MeshAnimationView.randomColors()
+    private let animates: Bool
+    @Environment(\.meshAnimationEnabled) private var meshAnimationEnabled
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @State private var colors: [Color]
 
     public var body: some View {
-        MeshGradient(width: 5, height: 5, points: Self.points, colors: colors)
-            .task {
+        let shouldAnimate = animates && meshAnimationEnabled && !accessibilityReduceMotion
+
+        MeshGradient(
+            width: 5,
+            height: 5,
+            points: Self.points,
+            colors: shouldAnimate ? colors : Self.staticColors
+        )
+            .task(id: shouldAnimate) {
+                guard shouldAnimate else { return }
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .seconds(15))
                     guard !Task.isCancelled else { break }
@@ -35,6 +56,23 @@ public struct MeshAnimationView: View {
 }
 
 #Preview {
-    MeshAnimationView()
+    MeshAnimationView(animates: false)
         .ignoresSafeArea()
+}
+
+private struct MeshAnimationEnabledKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+public extension EnvironmentValues {
+    var meshAnimationEnabled: Bool {
+        get { self[MeshAnimationEnabledKey.self] }
+        set { self[MeshAnimationEnabledKey.self] = newValue }
+    }
+}
+
+public extension View {
+    func meshAnimationEnabled(_ isEnabled: Bool) -> some View {
+        environment(\.meshAnimationEnabled, isEnabled)
+    }
 }

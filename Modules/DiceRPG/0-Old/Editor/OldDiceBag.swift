@@ -9,7 +9,7 @@ struct OldDiceBag: View {
     @Environment(DiceRootModel.self) private var root
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        ScrollView(.horizontal) {
             HStack(spacing: 8) {
                 ForEach(root.itemController.diceBag.dice) { die in
                     Button {
@@ -18,10 +18,13 @@ struct OldDiceBag: View {
                         DieViewerView(gameController: root.gameController, diceId: UUID(), die: die, withoutResult: true, resultColor: [])
                             .padding(4)
                     }
+                    .accessibilityLabel(Text("Add \(die.die.text) die", bundle: .module))
+                    .frame(minWidth: 44, minHeight: 44)
                     .borderLessTVBottonStyle()
                 }
             }
         }
+        .scrollIndicators(.hidden)
     }
 
     private func generateDie(from bag: RawDie) -> DieModel {

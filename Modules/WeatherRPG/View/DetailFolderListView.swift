@@ -33,6 +33,8 @@ struct DetailFolderListView: View {
             .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
                 OverlayViewer(model: model, animate: $animate)
                     .opacity(0)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
             .overlay(alignment: .bottom) {
                 OverlayViewer(model: model, animate: $animate)

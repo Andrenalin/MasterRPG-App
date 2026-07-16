@@ -128,5 +128,5 @@ struct GameRootViewer: View {
 }
 
 #Preview {
-    GameRootViewer(root: .preview, playerController: .preview, emptyTitle: "Hello RPG world", contentType: .master)
+    GameRootViewer(root: .preview, playerController: .preview, emptyTitle: "Game is running", contentType: .master)
 }

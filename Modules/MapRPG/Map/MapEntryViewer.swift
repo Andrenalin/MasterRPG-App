@@ -56,18 +56,37 @@ struct MapEntryViewer: View {
 
     var body: some View {
         let path = entryPath
-        switch displayMode {
-        case .master:
-            path.fill(.green.opacity(entry.isShown ? 0.1 : 0.5))
-                .stroke(.green.opacity(0.8), style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
-                .applyIf(activateGestures, transform: gestureModifier)
-        case .player:
-            playerCoverView(for: path)
-                .opacity(entry.isShown ? 0 : 1)
-                .applyIf(activateGestures, transform: gestureModifier)
-        case .reader:
-            path.stroke(.green.opacity(0.8), style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
-                .applyIf(activateGestures, transform: gestureModifier)
+        Group {
+            switch displayMode {
+            case .master:
+                path.fill(.green.opacity(entry.isShown ? 0.1 : 0.5))
+                    .stroke(.green.opacity(0.8), style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
+                    .applyIf(activateGestures, transform: gestureModifier)
+            case .player:
+                playerCoverView(for: path)
+                    .opacity(entry.isShown ? 0 : 1)
+                    .applyIf(activateGestures, transform: gestureModifier)
+            case .reader:
+                path.stroke(.green.opacity(0.8), style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
+                    .applyIf(activateGestures, transform: gestureModifier)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            entry.name.isEmpty
+                ? Text("Map Area", bundle: .module)
+                : Text(verbatim: entry.name)
+        )
+        .accessibilityValue(
+            Text(entry.isShown ? "Visible to Players" : "Hidden from Players", bundle: .module)
+        )
+        .accessibilityAction(named: Text("Toggle Player Visibility", bundle: .module)) {
+            guard activateGestures else { return }
+            doubleTapAction()
+        }
+        .accessibilityAction(named: Text("Focus Map Area", bundle: .module)) {
+            guard activateGestures else { return }
+            longPressAction()
         }
     }
 

@@ -55,7 +55,7 @@ private extension CachePhotoView {
                 .tint(Color.accentColor)
         } else {
             Image(systemName: model.fileUrl == nil ? "photo" : "photo.badge.arrow.down")
-                .font(.system(size: 32))
+                .font(.title2)
                 .frame(width: size.width, height: size.height)
                 .overlay {
                     RoundedRectangle(cornerRadius: 20).stroke(Color.accentColor.secondary, lineWidth: 2)

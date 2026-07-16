@@ -5,6 +5,7 @@
 //  Created by Paul Hudson on 12/11/2021.
 //
 
+import Foundation
 import SwiftUI
 
 public class Cloud {
@@ -15,20 +16,20 @@ public class Cloud {
             rawValue
         }
         
-        var localizedTitle: LocalizedStringKey {
+        var localizedTitle: LocalizedStringResource {
             switch self {
             case .none:
-                return "None"
+                return LocalizedStringResource("None", bundle: .module)
             case .thin:
-                return "Thin"
+                return LocalizedStringResource("Thin", bundle: .module)
             case .light:
-                return "Light"
+                return LocalizedStringResource("Light", bundle: .module)
             case .regular:
-                return "Regular"
+                return LocalizedStringResource("Regular", bundle: .module)
             case .thick:
-                return "Thick"
+                return LocalizedStringResource("Thick", bundle: .module)
             case .ultra:
-                return "Ultra"
+                return LocalizedStringResource("Ultra", bundle: .module)
             }
         }
     }

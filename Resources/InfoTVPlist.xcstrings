@@ -43,7 +43,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MasterRPG Dokument"
+            "value" : "MasterRPG-Dokument"
           }
         }
       }
@@ -54,133 +54,43 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MasterRPG Spielstand"
+            "value" : "MasterRPG-Spielstand"
           }
         }
       }
     },
-    "NSCameraUsageDescription" : {
-      "comment" : "Privacy - Camera Usage Description",
+    "NSHandsTrackingUsageDescription" : {
+      "comment" : "Privacy - Hands Tracking Usage Description",
       "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MasterRPG benutzt die Kamera um Fotos aufzunehmen und im Foto Modul hinzu zufügen. Diese Fotos können dann als Charakterbilder, Karten oder im Abenteuer verwendet werden."
+            "value" : "MasterRPG verwendet Handerkennung, um während des Spiels die Würfel zu rollen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "MasterRPG uses the camera to take photos for the photo module and other modules to show photos and maps"
+            "value" : "MasterRPG uses hand tracking to roll dice during the game."
           }
         }
       }
     },
-    "NSDesktopFolderUsageDescription" : {
-      "comment" : "Privacy - Desktop Folder Usage Description",
+    "NSWorldSensingUsageDescription" : {
+      "comment" : "Privacy - World Sensing Usage Description",
       "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MasterRPG möchte auf die Dateien von deinem Schreibtisch zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+            "value" : "MasterRPG verwendet Welterkennungsdaten, um Tische für das Würfeln während des Spiels zu erkennen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game."
-          }
-        }
-      }
-    },
-    "NSDocumentsFolderUsageDescription" : {
-      "comment" : "Privacy - Documents Folder Usage Description",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG möchte auf die Dateien von deinem Dokumenten Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game."
-          }
-        }
-      }
-    },
-    "NSDownloadsFolderUsageDescription" : {
-      "comment" : "Privacy - Downloads Folder Usage Description",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG möchte auf die Dateien von deinem Download Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game."
-          }
-        }
-      }
-    },
-    "NSHumanReadableCopyright" : {
-      "comment" : "Copyright (human-readable)",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "© Copyright 2024, Andre Trettin"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "© Copyright 2024, Andre Trettin"
-          }
-        }
-      }
-    },
-    "NSLocalNetworkUsageDescription" : {
-      "comment" : "Privacy - Local Network Usage Description",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG möchte auf dein lokales Netzwerk zugreifen um ein Spiel als Spielleiter anzukündigen. Andere Spieler von anderen Geräten können dann einem Spiel im lokalen Netzwerk beitreten."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster"
-          }
-        }
-      }
-    },
-    "NSPhotoLibraryUsageDescription" : {
-      "comment" : "Privacy - Photo Library Usage Description",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG möchte auf deine Fotos in der Fotobibliothek zugreifen. Die ausgewählten Fotos können dann als Charakterbilder, Karten oder in Abenteuern verwendet werden."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps"
+            "value" : "MasterRPG uses the world sensing data to detect tables for the dice rolling during the game."
           }
         }
       }

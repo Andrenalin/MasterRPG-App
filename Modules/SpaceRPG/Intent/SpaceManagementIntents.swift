@@ -133,7 +133,10 @@ struct DeleteSpaceIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: SpaceEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) 3D object](inflect: true).")
+        let message = AttributedString(
+            localized: "Deleted ^[\(count) 3D object](inflect: true).",
+            bundle: .module
+        )
         return .result(dialog: "\(message)")
     }
 }

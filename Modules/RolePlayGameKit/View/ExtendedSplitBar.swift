@@ -6,21 +6,48 @@ import CoreRPG
 import SwiftUI
 
 struct ExtendedSplitBar: View {
-    @SceneStorage("ExtendedTabRoute") var currentModule: ExtendedTabRoute?
-
     @Environment(AppModel.self) private var appModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
+    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
+
+    private let restoresState: Bool
 
     @State private var tabSelectedModule: NetworkModules = .map
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
     
     var body: some View {
         allCustomTabs
             .navigationAutoReceive(ExtendedTabRoute.self)
             .focusedSceneValue(\.selectedModule, $tabSelectedModule)
+            .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+                $0.modifier(ExtendedSplitBarRestorationModifier(
+                    appModel: appModel,
+                    tabSelectedModule: $tabSelectedModule
+                ))
+            }
+    }
+}
+
+#Preview {
+    ExtendedSplitBar(restoresState: false)
+        .environment(AppModel.previewWithoutDatabase)
+}
+
+private struct ExtendedSplitBarRestorationModifier: ViewModifier {
+    @SceneStorage("ExtendedTabRoute") private var currentModule: ExtendedTabRoute?
+
+    let appModel: AppModel
+    @Binding var tabSelectedModule: NetworkModules
+
+    func body(content: Content) -> some View {
+        content
             .onChange(of: appModel.selectedExtendedModule) {
                 guard appModel.selectedExtendedModule != currentModule else { return }
                 currentModule <=> appModel.selectedExtendedModule
@@ -37,16 +64,14 @@ struct ExtendedSplitBar: View {
     }
 }
 
-#Preview {
-    ExtendedSplitBar()
-}
-
 private extension ExtendedSplitBar {
     var allCustomTabs: some View {
         ZStack {
             ForEach(ExtendedTabRoute.limitedTabs) { tab in
                 tabView(tab: tab)
                     .opacity(appModel.selectedExtendedModule == tab ? 1 : 0)
+                    .allowsHitTesting(appModel.selectedExtendedModule == tab)
+                    .accessibilityHidden(appModel.selectedExtendedModule != tab)
             }
         }
 #if os(visionOS)
@@ -70,34 +95,6 @@ private extension ExtendedSplitBar {
             tab
         }
         .environment(appModel.itemRootController(for: tab.module))
-    }
-}
-
-private struct ExtendedSplitWithDetailView: View {
-    let tab: ExtendedTabRoute
-    @Binding var column: NavigationSplitViewVisibility
-    @Binding var preferredCompactColumn: NavigationSplitViewColumn
-    let appModel: AppModel
-
-    @State private var fallbackNavigationModel = ModuleNavigationModel()
-    
-    var body: some View {
-        let controller = appModel.itemRootController(for: tab.module)
-        @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
-        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            ManagedPresentationView {
-                tab
-            }
-            .environment(controller)
-        } detail: {
-            SplitDetailView(isExtendedRoutes: true)
-                .environment(controller)
-        }
-        .inspectorAll(isPresented: $model.showInspector) {
-            if model.showInspector {
-                AppInspectorView(isExtendedRoutes: true)
-            }
-        }
     }
 }
 

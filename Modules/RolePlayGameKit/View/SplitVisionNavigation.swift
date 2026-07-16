@@ -4,13 +4,18 @@ import CoreRPG
 import SwiftUI
 
 struct SplitVisionNavigation: View {
-    @SceneStorage("GameRoute") private var storedTab: RootRoute = .game
-    
     @Environment(AppModel.self) private var appModel
+    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
     @Environment(ScenesManager.self) private var scenesManager
+
+    private let restoresState: Bool
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
     
     var body: some View {
         @Bindable var appModel = appModel
@@ -22,13 +27,8 @@ struct SplitVisionNavigation: View {
                 }
             }
         }
-        .syncOptionalState(
-            source: $storedTab,
-            destination: $appModel.selectedModule
-        ) { newValue in
-            if appModel.menuSelectedModule != newValue.module {
-                appModel.menuSelectedModule = newValue.module
-            }
+        .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+            $0.modifier(SplitVisionNavigationRestorationModifier(appModel: appModel))
         }
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive { (route: RootRoute, navigator) in
@@ -110,5 +110,29 @@ struct SplitVisionNavigation: View {
 }
 
 #Preview {
-    SplitVisionNavigation()
+    let appModel = AppModel.previewWithoutDatabase
+
+    SplitVisionNavigation(restoresState: false)
+        .environment(appModel)
+        .environment(appModel.scenesManager)
+}
+
+private struct SplitVisionNavigationRestorationModifier: ViewModifier {
+    @SceneStorage("GameRoute") private var storedTab: RootRoute = .game
+
+    let appModel: AppModel
+
+    func body(content: Content) -> some View {
+        @Bindable var appModel = appModel
+
+        content
+            .syncOptionalState(
+                source: $storedTab,
+                destination: $appModel.selectedModule
+            ) { newValue in
+                if appModel.menuSelectedModule != newValue.module {
+                    appModel.menuSelectedModule = newValue.module
+                }
+            }
+    }
 }

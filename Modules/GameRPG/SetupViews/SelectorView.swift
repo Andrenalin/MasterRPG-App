@@ -5,6 +5,12 @@ import SwiftUI
 
 struct SelectorView: View {
     let root: GameRoot
+    private let previewSelection: GameType?
+
+    init(root: GameRoot, previewSelection: GameType? = nil) {
+        self.root = root
+        self.previewSelection = previewSelection
+    }
     
     enum GameType: Int, Hashable, CaseIterable, Identifiable {
 #if !os(tvOS)
@@ -38,7 +44,7 @@ struct SelectorView: View {
     
     var body: some View {
         VStack {
-            Picker(selection: $selected) {
+            Picker(selection: selection) {
                 ForEach(GameType.allCases) { gameType in
                     Text(gameType.text, bundle: .module)
                         .tag(gameType)
@@ -50,7 +56,7 @@ struct SelectorView: View {
             .labelsHidden()
             
             Group {
-                switch selected {
+                switch activeSelection {
 #if !os(tvOS)
                 case .player:
                     playerView
@@ -62,6 +68,14 @@ struct SelectorView: View {
                 }
             }
         }
+    }
+
+    private var activeSelection: GameType {
+        previewSelection ?? selected
+    }
+
+    private var selection: Binding<GameType> {
+        previewSelection.map(Binding.constant) ?? $selected
     }
     
     private var playerView: some View {
@@ -92,6 +106,10 @@ struct SelectorView: View {
 
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
-        SelectorView(root: .preview)
+#if os(tvOS)
+        SelectorView(root: .preview, previewSelection: .proxy)
+#else
+        SelectorView(root: .preview, previewSelection: .player)
+#endif
     }
 }

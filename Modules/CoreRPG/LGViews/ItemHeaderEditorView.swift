@@ -25,6 +25,7 @@ public struct ItemHeaderEditorView: View {
     let needsNavigationStack: Bool
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     enum FocusField {
         case name
@@ -67,6 +68,7 @@ public struct ItemHeaderEditorView: View {
                 } label: {
                     Image(systemName: "xmark")
                 }
+                .accessibilityLabel(Text("Cancel", bundle: .module))
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button {
@@ -75,9 +77,10 @@ public struct ItemHeaderEditorView: View {
                     Image(systemName: "checkmark")
                 }
                 .disabled(!isNameValid)
+                .accessibilityLabel(Text("Save", bundle: .module))
             }
         }
-        .animation(.snappy, value: currentFocus)
+        .animation(accessibilityReduceMotion ? nil : .snappy, value: currentFocus)
         .onAppear {
 #if !os(tvOS)
             currentFocus = .name
@@ -148,7 +151,11 @@ private extension ItemHeaderEditorView {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.secondary)
             }
+            .frame(minWidth: 44, minHeight: 44)
+            .disabled(name.isEmpty)
             .opacity(name.isEmpty ? 0 : 1)
+            .accessibilityHidden(name.isEmpty)
+            .accessibilityLabel(Text("Clear name", bundle: .module))
             .contentTransition(.symbolEffect(.automatic))
         }
         .padding(.bottom, 6)
@@ -205,10 +212,17 @@ private extension ItemHeaderEditorView {
     }
 }
 
-#Preview {
-    Color.blue.sheet(isPresented: .constant(true)) {
-        ItemHeaderEditorView(editControllable: FakeEditController.fake, model: FakeItemModel(id: UUID(), name: "My great name", category: .album, description: "Log description here", tags: ["One", "2"], displayState: 0, isGroupHiddenToggle: false))
-            .tint(NetworkModules.space.tint)
-    }
-    .environment(AppSettingsModel())
+#Preview("Item Header Editor") {
+    ItemHeaderEditorView(
+        editControllable: FakeEditController.fake,
+        model: FakeItemModel(
+            id: .fixture1,
+            name: "Ancient Map",
+            category: .album,
+            description: "A weathered map showing the road to the lost keep.",
+            tags: ["Map", "Quest"]
+        )
+    )
+    .tint(NetworkModules.space.tint)
+    .environment(AppSettingsModel.previewFixture())
 }

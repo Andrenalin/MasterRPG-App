@@ -8,6 +8,7 @@ struct QuickEntryEditor: View {
     let model: TableModel
 
     @Environment(TableRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
 
@@ -31,7 +32,7 @@ struct QuickEntryEditor: View {
             entryId: nil,
             configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false, aiExtractor: true),
             onTextExtracted: { text in
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     // Append to existing text or replace based on user preference
                     if referenceText.input.isEmpty {
                         referenceText.input = text
@@ -41,7 +42,9 @@ struct QuickEntryEditor: View {
                 }
             }
         ) {
-            withAnimation { root.editController.tableEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil) }
+            withAnimation(reduceMotion ? nil : .default) {
+                root.editController.tableEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil)
+            }
         }
         .background(.primary)
     }

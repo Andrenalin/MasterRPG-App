@@ -19,9 +19,15 @@ struct InlineRowViewer: View, Equatable {
                 Button {
                     actionHandler()
                 } label: {
-                    Image(systemName: root.configurable.module.icon)
-                        .imageScale(.large)
+                    Label {
+                        Text("Open 3D Object", bundle: .module)
+                    } icon: {
+                        Image(systemName: root.configurable.module.icon)
+                    }
+                    .labelStyle(.iconOnly)
+                    .imageScale(.large)
                 }
+                .frame(minWidth: 44, minHeight: 44)
                 .padding()
             }
     }

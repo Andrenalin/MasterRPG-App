@@ -3,6 +3,8 @@
 import SwiftUI
 
 struct TableSheetView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let root: ItemRootController
     let model: SheetRootModel
     var addSearchable: Bool = true
@@ -22,7 +24,7 @@ private extension TableSheetView {
         ScrollView {
             LazyVStack(spacing: 4) {
                 SheetRootView(root: root, rootModel: model)
-                    .animation(.default, value: model.searchText)
+                    .animation(accessibilityReduceMotion ? nil : .default, value: model.searchText)
             }
         }
 #if os(iOS)

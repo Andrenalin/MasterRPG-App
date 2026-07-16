@@ -4,18 +4,34 @@ import SwiftUI
 
 #Preview("Front") {
     FlipView {
-        Label("Front", systemImage: "rectangle.front.fill")
+        Label {
+            Text(verbatim: "Front")
+        } icon: {
+            Image(systemName: "rectangle.front.fill")
+        }
     } back: {
-        Label("Back", systemImage: "rectangle.back.fill")
+        Label {
+            Text(verbatim: "Back")
+        } icon: {
+            Image(systemName: "rectangle.back.fill")
+        }
     }
     .padding()
 }
 
 #Preview("Back") {
     FlipView(isFlipped: true) {
-        Label("Front", systemImage: "rectangle.front.fill")
+        Label {
+            Text(verbatim: "Front")
+        } icon: {
+            Image(systemName: "rectangle.front.fill")
+        }
     } back: {
-        Label("Back", systemImage: "rectangle.back.fill")
+        Label {
+            Text(verbatim: "Back")
+        } icon: {
+            Image(systemName: "rectangle.back.fill")
+        }
     }
     .padding()
 }

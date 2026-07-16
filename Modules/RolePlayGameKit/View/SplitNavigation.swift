@@ -6,26 +6,25 @@ import CoreRPG
 import SwiftUI
 
 struct SplitNavigation: View {
-    @AppStorage("MasterRPGCustomization") private var customization: TabViewCustomization
-    @SceneStorage("RootRoute") private var storedTab: RootRoute = SplitNavigation.defaultTab
-    
     @Environment(AppModel.self) private var appModel
+    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
+
+    private let restoresState: Bool
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .content
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var appModel = appModel
 
         allTabs
-            .syncOptionalState(
-                source: $storedTab,
-                destination: $appModel.selectedModule
-            ) { newValue in
-                if appModel.menuSelectedModule != newValue.module {
-                    appModel.menuSelectedModule = newValue.module
-                }
+            .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+                $0.modifier(SplitNavigationRestorationModifier(appModel: appModel))
             }
             .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
             .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
@@ -39,7 +38,34 @@ struct SplitNavigation: View {
 }
 
 #Preview {
-    SplitNavigation()
+    let appModel = AppModel.previewWithoutDatabase
+
+    SplitNavigation(restoresState: false)
+        .environment(appModel)
+        .environment(appModel.appNavigationModel)
+        .environment(AppWindowSizeModel())
+}
+
+private struct SplitNavigationRestorationModifier: ViewModifier {
+    @AppStorage("MasterRPGCustomization") private var customization: TabViewCustomization
+    @SceneStorage("RootRoute") private var storedTab: RootRoute = SplitNavigation.defaultTab
+
+    let appModel: AppModel
+
+    func body(content: Content) -> some View {
+        @Bindable var appModel = appModel
+
+        content
+            .tabViewCustomization($customization)
+            .syncOptionalState(
+                source: $storedTab,
+                destination: $appModel.selectedModule
+            ) { newValue in
+                if appModel.menuSelectedModule != newValue.module {
+                    appModel.menuSelectedModule = newValue.module
+                }
+            }
+    }
 }
 
 private extension SplitNavigation {
@@ -113,7 +139,6 @@ private extension SplitNavigation {
             .customizationID("Tab.Util")
             
         }
-        .tabViewCustomization($customization)
         .tabViewStyle(.sidebarAdaptable)
 #if os(iOS)
         .navigationSplitViewColumnWidth(min: 150, ideal: 150, max: 180)
@@ -151,46 +176,6 @@ private extension SplitNavigation {
             preferredCompactColumn: $preferredCompactColumn,
             appModel: appModel
         )
-    }
-}
-
-private struct SplitWithDetailView: View {
-    let tab: RootRoute
-    @Binding var column: NavigationSplitViewVisibility
-    @Binding var preferredCompactColumn: NavigationSplitViewColumn
-    let appModel: AppModel
-
-    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
-    @Environment(AppNavigationModel.self) private var appNavigationModel
-    @State private var fallbackNavigationModel = ModuleNavigationModel()
-
-    var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-        
-        let controller = appModel.itemRootController(for: tab.module)
-        @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
-        let canShow = appNavigationModel.canShowInspector(appSizeModel: appWindowSizeModel)
-        let inspectorBinding = Binding(
-            get: { canShow && model.showInspector },
-            set: { if canShow { model.showInspector = $0 } }
-        )
-        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            ManagedPresentationView {
-                tab
-            }
-            .environment(controller)
-#if os(iOS)
-            .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 800)
-#endif
-        } detail: {
-            SplitDetailView(isExtendedRoutes: false)
-                .environment(controller)
-        }
-        .inspectorAll(isPresented: inspectorBinding) {
-            if canShow && model.showInspector {
-                AppInspectorView(isExtendedRoutes: false)
-            }
-        }
     }
 }
 

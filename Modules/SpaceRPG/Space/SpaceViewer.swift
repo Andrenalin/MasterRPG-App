@@ -29,6 +29,7 @@ struct SpaceViewer: View {
     @Environment(ScenesManager.self) private var scenesManager
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var rootEntity: Entity?
     @State private var objectEntity: Entity?
@@ -165,6 +166,8 @@ private extension SpaceViewer {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             .progressViewStyle(.circular)
             .opacity(hasLoaded ? 0 : 1)
+            .allowsHitTesting(!hasLoaded)
+            .accessibilityHidden(hasLoaded)
     }
 
     func errorView(message: String) -> some View {
@@ -174,7 +177,7 @@ private extension SpaceViewer {
                 .foregroundStyle(.red)
             Text("Failed to Load 3D Model", bundle: .module)
                 .font(.headline)
-            Text(message)
+            Text(verbatim: message)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -242,6 +245,44 @@ private extension SpaceViewer {
         // entities steal from .orbit — orbit handles both rotation and zoom natively.
         .realityViewCameraControls(.orbit)
 #endif
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spaceAccessibilityLabel)
+        .accessibilityValue(
+            Text(
+                "Yaw \(Angle.radians(Double(yaw)).degrees, format: .number.precision(.fractionLength(0))) degrees, pitch \(Angle.radians(Double(pitch)).degrees, format: .number.precision(.fractionLength(0))) degrees",
+                bundle: .module
+            )
+        )
+        .accessibilityAction(named: Text("Rotate Left", bundle: .module)) {
+            rotate(yawDelta: -.pi / 6)
+        }
+        .accessibilityAction(named: Text("Rotate Right", bundle: .module)) {
+            rotate(yawDelta: .pi / 6)
+        }
+        .accessibilityAction(named: Text("Tilt Up", bundle: .module)) {
+            rotate(pitchDelta: .pi / 12)
+        }
+        .accessibilityAction(named: Text("Tilt Down", bundle: .module)) {
+            rotate(pitchDelta: -.pi / 12)
+        }
+        .accessibilityAction(named: Text("Move Left", bundle: .module)) {
+            moveObject(x: -0.1)
+        }
+        .accessibilityAction(named: Text("Move Right", bundle: .module)) {
+            moveObject(x: 0.1)
+        }
+        .accessibilityAction(named: Text("Move Up", bundle: .module)) {
+            moveObject(y: 0.1)
+        }
+        .accessibilityAction(named: Text("Move Down", bundle: .module)) {
+            moveObject(y: -0.1)
+        }
+        .accessibilityAction(named: Text("Move Forward", bundle: .module)) {
+            moveObject(z: 0.1)
+        }
+        .accessibilityAction(named: Text("Move Backward", bundle: .module)) {
+            moveObject(z: -0.1)
+        }
     }
 
     @MainActor
@@ -251,7 +292,10 @@ private extension SpaceViewer {
 
         do {
             guard let url = await root.itemController.loadableUrl(itemId: id) else {
-                loadError = "Failed to get loadable URL for item: \(id)"
+                loadError = String(
+                    localized: "Could not access the 3D model file for item \(id.uuidString).",
+                    bundle: .module
+                )
                 hasLoaded = true
                 return
             }
@@ -270,7 +314,7 @@ private extension SpaceViewer {
 
             // Validate the loaded entity has content
             guard loadedEntity.children.count > 0 || loadedEntity.components.count > 0 else {
-                loadError = "Loaded model appears to be empty"
+                loadError = String(localized: "The 3D model is empty.", bundle: .module)
                 hasLoaded = true
                 return
             }
@@ -350,10 +394,16 @@ private extension SpaceViewer {
             self.loadedItemId = id
 
         } catch let error as DecodingError {
-            loadError = "Model format error: \(error.localizedDescription)"
+            loadError = String(
+                localized: "The 3D model format could not be read: \(error.localizedDescription)",
+                bundle: .module
+            )
             print("Decoding error loading 3D entity: \(error)")
         } catch {
-            loadError = "Failed to load model: \(error.localizedDescription)"
+            loadError = String(
+                localized: "The 3D model could not be loaded: \(error.localizedDescription)",
+                bundle: .module
+            )
             print("Error loading 3D entity from URL: \(error)")
         }
 
@@ -383,7 +433,10 @@ private extension SpaceViewer {
                         }
                     } label: {
                         Label {
-                            Text(root.itemController.nameSync(itemId: id))
+                            Text(
+                                "Close \(root.itemController.nameSync(itemId: id))",
+                                bundle: .module
+                            )
                         } icon: {
                             Image(systemName: "xmark")
                         }
@@ -397,6 +450,26 @@ private extension SpaceViewer {
 #else
         EmptyView()
 #endif
+    }
+
+    var spaceAccessibilityLabel: Text {
+        let name = root.itemController.nameSync(itemId: id)
+        return name.isEmpty
+            ? Text("3D Model", bundle: .module)
+            : Text(verbatim: name)
+    }
+
+    func rotate(yawDelta: Float = 0, pitchDelta: Float = 0) {
+        guard !canDrag else { return }
+        withAnimation(reduceMotion ? nil : .spring) {
+            yaw += yawDelta
+            pitch += pitchDelta
+        }
+    }
+
+    func moveObject(x: Float = 0, y: Float = 0, z: Float = 0) {
+        guard canDrag, let objectEntity else { return }
+        objectEntity.position += SIMD3(x, y, z)
     }
 }
 
@@ -448,6 +521,7 @@ private struct DragRotationModifier: ViewModifier {
 
     @State var baseYaw: Float
     @State var basePitch: Float
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         content
@@ -463,7 +537,7 @@ private struct DragRotationModifier: ViewModifier {
 
                     // Use an interactive spring animation that becomes
                     // a spring animation when the gesture ends below.
-                    withAnimation(.interactiveSpring) {
+                    withAnimation(reduceMotion ? nil : .interactiveSpring) {
                         yaw = spin(displacement: delta.x, base: baseYaw, limit: yawLimit)
                         pitch = spin(displacement: -delta.y, base: basePitch, limit: pitchLimit)
                     }
@@ -481,7 +555,7 @@ private struct DragRotationModifier: ViewModifier {
                         let predictedDelta = predictedEndLocation3D - location3D
 
                         // Set the final spin value using a spring animation.
-                        withAnimation(.spring) {
+                        withAnimation(reduceMotion ? nil : .spring) {
                             yaw = finalSpin(
                                 displacement: delta.x,
                                 predictedDisplacement: predictedDelta.x,
@@ -500,13 +574,13 @@ private struct DragRotationModifier: ViewModifier {
                 }
             )
             .onChange(of: axRotateClockwise) {
-                withAnimation(.spring) {
+                withAnimation(reduceMotion ? nil : .spring) {
                     yaw -= (.pi / 6)
                     baseYaw = yaw
                 }
             }
             .onChange(of: axRotateCounterClockwise) {
-                withAnimation(.spring) {
+                withAnimation(reduceMotion ? nil : .spring) {
                     yaw += (.pi / 6)
                     baseYaw = yaw
                 }

@@ -19,10 +19,15 @@ struct SpaceQuickLook: View {
     @State private var selected: URL?
     
     var body: some View {
-        ImageOverlayButton(icon: root.itemController.config.module.icon) {
+        ImageOverlayButton(
+            icon: root.itemController.config.module.icon,
+            accessibilityLabel: LocalizedStringResource("Open 3D Object", bundle: .module)
+        ) {
             loader()
         }
         .opacity(gameMode ? 0.01 : 1)
+        .allowsHitTesting(!gameMode)
+        .accessibilityHidden(gameMode)
         .onChange(of: startLoading, initial: true) {
             guard startLoading == true else { return }
             loader()

@@ -15,6 +15,7 @@ struct DiceOverlay: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(DiceDisplayModel.self) var diceDisplayModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var overlayHeight: CGFloat = 100
 
@@ -26,13 +27,15 @@ struct DiceOverlay: View {
         AnyLayout(diceLayout) {
             diceViews
         }
-        .animation(.spring(), value: diceDisplayModel.showDiceValueEditor)
+        .animation(reduceMotion ? nil : .spring(), value: diceDisplayModel.showDiceValueEditor)
         .onChange(of: diceDisplayModel.isEditing) {
             guard diceDisplayModel.isEditing else { return }
-            withAnimation { diceDisplayModel.showDiceValueEditor <=> false }
+            withAnimation(reduceMotion ? nil : .default) {
+                diceDisplayModel.showDiceValueEditor <=> false
+            }
         }
         .onAppear {
-            withAnimation {
+            withAnimation(reduceMotion ? nil : .default) {
                 if canShowPlayer && !root.gameController.gameModel.items.isEmpty {
                     diceDisplayModel.showPlayerDice <=> true
                 }

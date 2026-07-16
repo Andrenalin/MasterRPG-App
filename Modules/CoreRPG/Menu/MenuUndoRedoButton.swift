@@ -17,46 +17,4 @@ public struct MenuUndoRedoButton: View {
     }
 }
 
-struct UndoButton: View {
-    let root: any ItemRootControllable
-    
-    var body: some View {
-        Button {
-            withAnimation { root.editControllable.undo() }
-        } label: {
-            Label {
-                Text("Undo \(root.editControllable.undoTitle)", bundle: .module)
-            } icon: {
-                Image(systemName: "arrow.uturn.backward")
-            }
-        }
-#if !os(tvOS)
-        .keyboardShortcut("Z", modifiers: [.command])
-#endif
-        .disabled(!root.editControllable.canUndo)
-    }
-}
-
-struct RedoButton: View {
-    let root: any ItemRootControllable
-
-    var body: some View {
-        Button {
-            withAnimation { root.editControllable.redo() }
-        } label: {
-            Label {
-                Text("Redo \(root.editControllable.redoTitle)", bundle: .module)
-            } icon: {
-                Image(systemName: "arrow.uturn.forward")
-            }
-        }
-#if !os(tvOS)
-        .keyboardShortcut("Z", modifiers: [.command, .shift])
-#endif
-        .disabled(!root.editControllable.canRedo)
-    }
-}
-
 #Preview { MenuUndoRedoButton(root: ItemRootController.fake) }
-#Preview { UndoButton(root: ItemRootController.fake) }
-#Preview { RedoButton(root: ItemRootController.fake) }

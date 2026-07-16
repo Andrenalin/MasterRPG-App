@@ -101,9 +101,15 @@ struct GeneratorController: Sendable {
                 // Clean cancellation - don't set error
                 return
             } catch let error as LanguageModelSession.GenerationError {
-                model.errorMessage = "Generation Error: \(error.localizedDescription)"
+                model.errorMessage = String(
+                    localized: "Generation Error: \(error.localizedDescription)",
+                    bundle: .module
+                )
             } catch let error as LanguageModelSession.ToolCallError {
-                model.errorMessage = "Tool Call Error: \(error.tool)"
+                model.errorMessage = String(
+                    localized: "Tool Call Error: \(String(describing: error.tool))",
+                    bundle: .module
+                )
             } catch {
                 model.errorMessage = error.localizedDescription
             }
@@ -136,9 +142,15 @@ struct GeneratorController: Sendable {
             // Clean cancellation
             return
         } catch let error as LanguageModelSession.GenerationError {
-            model.errorMessage = "Generation Error: \(error.localizedDescription)"
+            model.errorMessage = String(
+                localized: "Generation Error: \(error.localizedDescription)",
+                bundle: .module
+            )
         } catch let error as LanguageModelSession.ToolCallError {
-            model.errorMessage = "Tool Call Error: \(error.tool)"
+            model.errorMessage = String(
+                localized: "Tool Call Error: \(String(describing: error.tool))",
+                bundle: .module
+            )
         } catch {
             model.errorMessage = error.localizedDescription
         }
@@ -181,9 +193,15 @@ struct GeneratorController: Sendable {
             // Clean cancellation
             return
         } catch let error as LanguageModelSession.GenerationError {
-            model.errorMessage = "Generation Error: \(error.localizedDescription)"
+            model.errorMessage = String(
+                localized: "Generation Error: \(error.localizedDescription)",
+                bundle: .module
+            )
         } catch let error as LanguageModelSession.ToolCallError {
-            model.errorMessage = "Tool Call Error: \(error.tool)"
+            model.errorMessage = String(
+                localized: "Tool Call Error: \(String(describing: error.tool))",
+                bundle: .module
+            )
         } catch {
             model.errorMessage = error.localizedDescription
         }

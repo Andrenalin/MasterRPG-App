@@ -4,6 +4,21 @@ import SwiftUI
 
 @MainActor
 struct FakeFolderListController: FolderListControllable {
+    init(
+        itemControllable: any ItemControllable = FakeItemController.fake,
+        listModel: FolderListModel = FolderListModel(navigationModel: ModuleNavigationModel()),
+        listDisplayModel: ListDisplayModel = ListDisplayModel(),
+        searchModel: SearchModel = .preview(),
+        searchRootControllable: any SearchRootControllable = FakeSearchController.fake,
+        cacheListItemModel: CacheItemListModel = CacheItemListModel()
+    ) {
+        self.itemControllable = itemControllable
+        self.listModel = listModel
+        self.listDisplayModel = listDisplayModel
+        self.searchModel = searchModel
+        self.searchRootControllable = searchRootControllable
+        self.cacheListItemModel = cacheListItemModel
+    }
     
     func copy(listModel: FolderListModel) -> FakeFolderListController {
         FakeFolderListController()
@@ -25,12 +40,12 @@ struct FakeFolderListController: FolderListControllable {
         InternalRoute.export(ids: [itemId])
     }
     
-    let itemControllable: any ItemControllable = FakeItemController.fake
-    let listModel: FolderListModel = FolderListModel(navigationModel: ModuleNavigationModel())
-    let listDisplayModel: ListDisplayModel = ListDisplayModel()
-    let searchModel: SearchModel = .preview()
-    let searchRootControllable: any SearchRootControllable = FakeSearchController.fake
-    let cacheListItemModel = CacheItemListModel()
+    let itemControllable: any ItemControllable
+    let listModel: FolderListModel
+    let listDisplayModel: ListDisplayModel
+    let searchModel: SearchModel
+    let searchRootControllable: any SearchRootControllable
+    let cacheListItemModel: CacheItemListModel
 
 
     static let fake = FakeFolderListController()

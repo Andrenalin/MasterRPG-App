@@ -27,7 +27,9 @@ struct AsyncImageViewer: View {
                     photoDegrees: model.degrees,
                     containerSize: size,
                     contentMode: contentMode,
-                    accessibilityLabel: model.name,
+                    accessibilityLabel: model.name.isEmpty
+                        ? String(localized: "Photo", bundle: .module)
+                        : model.name,
                     accessibilityHint: model.description.isEmpty ? nil : model.description,
                     toolBarModel: toolBarModel
                 )
@@ -48,8 +50,10 @@ struct AsyncImageViewer: View {
                 VStack(alignment: .center, spacing: 20) {
                     Spacer()
                     Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 64))
+                        .font(.largeTitle)
+                        .imageScale(.large)
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     
                     Text("Failed to load image", bundle: .module)
                         .font(.title2)

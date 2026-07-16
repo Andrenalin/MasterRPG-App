@@ -6,8 +6,9 @@ import SwiftUI
 struct PackageProducts: View {
     var body: some View {
         VStack {
-            Text("Welcome to RPG Pacakges")
+            Text(verbatim: "Welcome to RPG Packages")
                 .font(.title)
+                .accessibilityAddTraits(.isHeader)
 
             StoreView(ids: ["de.andretrettin.free.dungeonslayers.german", "de.andretrettin.free.dungeonslayers.english"])
         }

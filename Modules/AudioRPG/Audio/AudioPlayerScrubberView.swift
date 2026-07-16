@@ -15,8 +15,8 @@ struct AudioPlayerScrubberView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(elapsedText)
-                .font(.system(size: 10, weight: .medium))
+            Text(verbatim: elapsedText)
+                .font(.caption2)
                 .foregroundStyle(.primary)
                 .monospacedDigit()
                 .frame(minWidth: 38)
@@ -35,8 +35,8 @@ struct AudioPlayerScrubberView: View {
             .accessibilityValue(accessibilityTimeValue)
 #endif
 
-            Text(formattedTotalTime)
-                .font(.system(size: 10, weight: .medium))
+            Text(verbatim: formattedTotalTime)
+                .font(.caption2)
                 .foregroundStyle(.primary)
                 .monospacedDigit()
                 .frame(minWidth: 38)
@@ -61,8 +61,11 @@ struct AudioPlayerScrubberView: View {
         formatTime(totalDuration)
     }
 
-    private var accessibilityTimeValue: String {
-        "\(formatAccessibilityTime(currentTime)) seconds of \(formatAccessibilityTime(totalDuration)) seconds"
+    private var accessibilityTimeValue: Text {
+        Text(
+            "\(Int(clampedCurrentTime.rounded())) seconds of \(Int(sliderRange.upperBound.rounded())) seconds",
+            bundle: .module
+        )
     }
 
     private func formatTime(_ time: Double) -> String {
@@ -70,18 +73,9 @@ struct AudioPlayerScrubberView: View {
 
         let totalSeconds = Int(ceil(max(time, 0)))
         let hours = totalSeconds / 3600
-        let minutes = (totalSeconds % 3600) / 60
-        let seconds = totalSeconds % 60
-
-        if hours > 0 {
-            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            return String(format: "%02d:%02d", minutes, seconds)
-        }
-    }
-
-    private func formatAccessibilityTime(_ time: Double) -> String {
-        guard !time.isNaN && time.isFinite else { return "0" }
-        return "\(Int(time.rounded()))"
+        let pattern: Duration.TimeFormatStyle.Pattern = hours > 0
+            ? .hourMinuteSecond(padHourToLength: 2)
+            : .minuteSecond(padMinuteToLength: 2)
+        return Duration.seconds(totalSeconds).formatted(.time(pattern: pattern))
     }
 }

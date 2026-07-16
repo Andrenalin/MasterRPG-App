@@ -10,6 +10,11 @@ import Network
 
 struct GameBrowserView: View {
     @State private var browserManager: BrowserManager = BrowserManager()
+    private let startsServices: Bool
+
+    init(startsServices: Bool = true) {
+        self.startsServices = startsServices
+    }
 
     var body: some View {
         VStack {
@@ -18,15 +23,21 @@ struct GameBrowserView: View {
                 Divider()
             }
             ForEach(browserManager.games) { game in
-                Text("Got - \(game.deviceName)")
+                Text("Found game: \(game.deviceName)", bundle: .module)
             }
         }
         .padding()
-        .onAppear { browserManager.start() }
-        .onDisappear { browserManager.stop() }
+        .onAppear {
+            guard startsServices else { return }
+            browserManager.start()
+        }
+        .onDisappear {
+            guard startsServices else { return }
+            browserManager.stop()
+        }
     }
 }
 
 #Preview(traits: .mockData) {
-    GameBrowserView()
+    GameBrowserView(startsServices: false)
 }

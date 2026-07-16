@@ -3,20 +3,23 @@
 import SwiftUI
 
 #Preview {
-    BlurText(text: "Critical hit!", color: .red)
+    BlurText(text: "Critical hit!", color: .red, animates: false)
         .padding()
 }
 
 public struct BlurText: View {
-    public init(text: String, color: Color) {
+    public init(text: String, color: Color, animates: Bool = true) {
         self.text = text
         self.color = color
+        self.animates = animates
+        self._shown = State(initialValue: !animates)
     }
     
     public let text: String
     public let color: Color
+    private let animates: Bool
     
-    @State private var shown = false
+    @State private var shown: Bool
     
     public var body: some View {
         Group {
@@ -30,6 +33,7 @@ public struct BlurText: View {
             }
         }
         .onChange(of: shown, initial: true) {
+            guard animates else { return }
             Task {
                 let wait = shown ? 10 : 2
                 try? await Task.sleep(for: .seconds(wait))

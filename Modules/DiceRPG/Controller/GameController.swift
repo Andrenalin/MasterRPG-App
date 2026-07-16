@@ -520,7 +520,9 @@ extension GameController {
     @MainActor
     func resultText(itemId: UUID) -> String {
         let diceResult = result(itemId: itemId)
-        guard diceResult.result != .notRolled else { return String(localized: diceResult.result.localizedTitle).localizedString }
+        guard diceResult.result != .notRolled else {
+            return String(localized: diceResult.result.localizedTitle)
+        }
         let item = gameItem(for: itemId)
         var compareText = ""
         if item.compareOption != .off {
@@ -529,7 +531,7 @@ extension GameController {
         var text = "\(diceResult.values)\(compareText)"
         var specialText = ""
         if diceResult.result == .coup || diceResult.result == .fumble {
-            specialText = " \(String(localized: diceResult.result.localizedTitle).localizedString)"
+            specialText = " \(String(localized: diceResult.result.localizedTitle))"
         }
         if diceResult.result == .fumble {
             text += specialText

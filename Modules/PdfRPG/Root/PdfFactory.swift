@@ -10,7 +10,7 @@ public enum PdfFactory {
         PdfRootModel(tagController: tagController)
     }
     
-    public static func rootView() -> some View {
+    @MainActor public static func rootView() -> some View {
         PdfRootView()
     }
     

@@ -12,45 +12,77 @@ struct LightningView: View {
     var timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     var frequency: Double = 0.0
     var lightning: Lightning
+    let trigger: Int
+
+    @Environment(\.accessibilityDimFlashingLights) private var accessibilityDimFlashingLights
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            Canvas { context, size in
-                lightning.update(date: timeline.date, in: size)
+        Button(action: strike) {
+            TimelineView(.animation(paused: shouldSuppressLightning)) { timeline in
+                Canvas { context, size in
+                    guard !shouldSuppressLightning else { return }
 
-                let fullScreen = Path(CGRect(origin: .zero, size: size))
-                context.fill(fullScreen, with: .color(.white.opacity(lightning.flashOpacity)))
+                    lightning.update(date: timeline.date, in: size)
 
-                for _ in 0 ..< 2 {
-                    for bolt in lightning.bolts {
-                        var path = Path()
-                        path.addLines(bolt.points)
-                        context.stroke(path, with: .color(.white), lineWidth: bolt.width)
+                    let fullScreen = Path(CGRect(origin: .zero, size: size))
+                    context.fill(fullScreen, with: .color(.white.opacity(lightning.flashOpacity)))
+
+                    for _ in 0 ..< 2 {
+                        for bolt in lightning.bolts {
+                            var path = Path()
+                            path.addLines(bolt.points)
+                            context.stroke(path, with: .color(.white), lineWidth: bolt.width)
+                        }
+
+                        context.addFilter(.blur(radius: 5))
                     }
-
-                    context.addFilter(.blur(radius: 5))
                 }
             }
         }
+        .buttonStyle(.plain)
+        .accessibilityHidden(true)
         .ignoresSafeArea()
         .onReceive(timer) { _ in
             if frequency < 1 {
                 timer.upstream.connect().cancel()
             } else {
-                lightning.strike()
+                strike()
             }
         }
-        .onTapGesture { lightning.strike() }
+        .onChange(of: trigger) {
+            strike()
+        }
+        .onChange(of: shouldSuppressLightning) { _, shouldSuppressLightning in
+            if shouldSuppressLightning {
+                lightning.stop()
+            }
+        }
     }
 
-    init(frequency: Double = 0.0, maximumBolts: Int = 4, forkProbability: Int = 20) {
+    init(
+        frequency: Double = 0.0,
+        maximumBolts: Int = 4,
+        forkProbability: Int = 20,
+        trigger: Int = 0
+    ) {
         lightning = Lightning(maximumBolts: maximumBolts, forkProbability: forkProbability)
         self.frequency = frequency
+        self.trigger = trigger
         if frequency < 1 {
             timer.upstream.connect().cancel()
         } else {
             timer = Timer.publish(every: 60.0 / frequency, on: .main, in: .common).autoconnect()
         }
+    }
+
+    private var shouldSuppressLightning: Bool {
+        accessibilityReduceMotion || accessibilityDimFlashingLights
+    }
+
+    private func strike() {
+        guard !shouldSuppressLightning else { return }
+        lightning.strike()
     }
 }
 

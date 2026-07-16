@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if os(visionOS)
+import Combine
 import Foundation
 import GroupActivities
 import RealityKit
@@ -15,6 +16,7 @@ public struct GameTableView: View {
     @State private var game: GameTableModel?
     @State private var activityManager: GroupActivityManager?
     @State private var scaleController = TableScaleGestureController()
+    @State private var accessibilitySubscriptions: [any Cancellable] = []
 
     public init(root: GameRoot) {
         self.root = root
@@ -28,6 +30,15 @@ public struct GameTableView: View {
                     content.add(loadedGame.renderer.root)
                     content.add(loadedGame.renderer.portalWorld)
                     content.add(loadedGame.renderer.portal)
+
+                    if accessibilitySubscriptions.isEmpty,
+                       let gameScene = loadedGame.renderer.root.scene {
+                        let subscription = gameScene.subscribe(to: AccessibilityEvents.Activate.self) { event in
+                            guard let pinId = event.entity.components[PinComponent.self]?.pinId else { return }
+                            loadedGame.pinTapped(pinId: pinId)
+                        }
+                        accessibilitySubscriptions.append(subscription)
+                    }
 
                     // Place the table on the actual floor of the volume. The volume is
                     // flatter than Apple's 1.5 m sample (and the system may clamp the
@@ -143,6 +154,9 @@ public struct GameTableView: View {
             print("   ActivityManager: \(String(describing: activityManager))")
             print("   SharePlay active: \(root.networkStore.sharePlayStore.isActive)")
             #endif
+        }
+        .onDisappear {
+            accessibilitySubscriptions.removeAll()
         }
         .task {
             await scaleController.start()

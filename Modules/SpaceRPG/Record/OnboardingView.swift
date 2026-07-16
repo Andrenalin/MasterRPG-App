@@ -31,6 +31,7 @@ struct OnboardingView: View {
         }
         .interactiveDismissDisabled(appModel.objectCaptureSession?.userCompletedScanPass ?? false)
         .allowsHitTesting(!isFinishingOrCompleted)
+        .accessibilityHidden(isFinishingOrCompleted)
     }
 
     private var isFinishingOrCompleted: Bool {

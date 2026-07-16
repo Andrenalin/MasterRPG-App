@@ -7,6 +7,7 @@ struct FumbleEditor: View {
     let model: DiceModel
 
     @Environment(DiceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var isDiceValueFumble = false
     @State private var fumbleValue: Double = 0.0
@@ -45,7 +46,9 @@ private extension FumbleEditor {
                 HStack(spacing: 8) {
                     ForEach(model.fumbleValues) { fumble in
                         Button {
-                            withAnimation(.easeInOut) { root.editController.remove(fumble: fumble, itemId: model.id) }
+                            withAnimation(reduceMotion ? nil : .easeInOut) {
+                                root.editController.remove(fumble: fumble, itemId: model.id)
+                            }
                         } label: {
                             HStack(spacing: 4) {
                                 Label(fumble.text, systemImage: fumble.icon)
@@ -71,10 +74,15 @@ private extension FumbleEditor {
                 Button {
                     addCurrentFumble()
                 } label: {
-                    Image(systemName: "plus")
-                        .imageScale(.large)
+                    Label {
+                        Text("Add fumble", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus")
+                    }
+                    .labelStyle(.iconOnly)
+                    .imageScale(.large)
                 }
-                .padding(.horizontal, 16)
+                .frame(minWidth: 44, minHeight: 44)
                 .disabled(fumbleValue == 0)
 
                 TextIntEditor(value: $fumbleValue, title: "Fumble Dice Value", icon: "plus", prompt: "fumble", bundle: .module, range: model.minValue...model.maxValue)
@@ -86,7 +94,7 @@ private extension FumbleEditor {
     }
 
     func addCurrentFumble() {
-        withAnimation(.easeInOut) {
+        withAnimation(reduceMotion ? nil : .easeInOut) {
             root.editController.add(fumble: Int(fumbleValue), isDiceValueFumble: isDiceValueFumble, itemId: model.id)
             fumbleValue = 0.0
         }

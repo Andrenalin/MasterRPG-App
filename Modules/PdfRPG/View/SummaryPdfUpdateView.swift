@@ -28,7 +28,7 @@ public struct SummaryPdfUpdateView: View {
             Section {
                 Toggle(isOn: $selectedProperties.applyTitle) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(content.title)
+                        Text(verbatim: content.title)
                             .font(.body)
                             .foregroundStyle(.primary)
                     }
@@ -40,7 +40,7 @@ public struct SummaryPdfUpdateView: View {
             Section{
                 Toggle(isOn: $selectedProperties.applyDescription) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(content.summary)
+                        Text(verbatim: content.summary)
                             .font(.body)
                             .foregroundStyle(.primary)
                             .lineLimit(3)
@@ -56,7 +56,7 @@ public struct SummaryPdfUpdateView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             FlowLayout(spacing: 8) {
                                 ForEach(content.tags, id: \.self) { tag in
-                                    Text(tag)
+                                    Text(verbatim: tag)
                                         .font(.caption)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 6)
@@ -82,9 +82,9 @@ public struct SummaryPdfUpdateView: View {
                         ForEach(content.sections) { section in
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
-                                    Text(section.heading)
+                                    Text(verbatim: section.heading)
                                         .font(.subheadline)
-                                        .fontWeight(.medium)
+                                        .bold()
                                     Spacer()
                                     if let pageNumber = section.pageNumber {
                                         Text("Page \(pageNumber)", bundle: .module)
@@ -92,7 +92,7 @@ public struct SummaryPdfUpdateView: View {
                                             .foregroundStyle(.secondary)
                                     }
                                 }
-                                Text(section.summary)
+                                Text(verbatim: section.summary)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(2)

@@ -7,10 +7,11 @@ struct DiceInlineEditor: View {
     var itemId: UUID
 
     @Environment(DiceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: 8) {
                     ForEach(root.gameController.gameItem(for: itemId).dice) { die in
                         Button {
@@ -23,25 +24,26 @@ struct DiceInlineEditor: View {
                                 Image(systemName: "x.circle.fill")
                                     .offset(x: -8, y: 4)
                                     .foregroundStyle(.red)
+                                    .accessibilityHidden(true)
                             }
                         }
+                        .accessibilityLabel(Text("Remove \(die.die.text) die", bundle: .module))
+                        .frame(minWidth: 44, minHeight: 44)
                         .borderLessTVBottonStyle()
                     }
                 }
             }
+            .scrollIndicators(.hidden)
 
-            Button {} label: {
-                Text("Add Die from Bag", bundle: .module)
-                    .bold()
-            }
-#if !os(tvOS)
-            .buttonStyle(.borderedProminent)
-#endif
-            .opacity(0.75)
-            .padding(.top)
+            Text("Add Die from Bag", bundle: .module)
+                .bold()
+                .foregroundStyle(.secondary)
+                .padding(.top)
 
             OldDiceBag { die in
-                withAnimation { root.gameController.gameItem(for: itemId).dice.append(die) }
+                withAnimation(reduceMotion ? nil : .default) {
+                    root.gameController.gameItem(for: itemId).dice.append(die)
+                }
             }
         }
     }

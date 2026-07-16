@@ -13,7 +13,7 @@ struct IntelligenceUnavailableView: View {
                 Image(systemName: NetworkModules.generator.icon)
             }
         } description: {
-            Text(manager.notAvailableReason)
+            Text(verbatim: manager.notAvailableReason)
         } actions: {
             Button {
                 manager.checkIsAvailable()

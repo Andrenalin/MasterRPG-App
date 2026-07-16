@@ -17,6 +17,7 @@ struct AddtionalEntryRow: View, Equatable {
                 Image(systemName: typeIcon)
                     .imageScale(.small)
                     .foregroundStyle(.foreground, .tint)
+                    .accessibilityHidden(true)
                     .padding(4)
                     .background {
                         Circle().stroke(

@@ -110,7 +110,9 @@ final class CaptureFolderManager {
 
     // Returns the basename for file with the given `id`.
     static func imageIdString(for id: UInt32) -> String {
-        return String(format: "%@%04d", imageStringPrefix, id)
+        let rawIdentifier = String(id)
+        let padding = String(repeating: "0", count: max(0, 4 - rawIdentifier.count))
+        return imageStringPrefix + padding + rawIdentifier
     }
 
     /// Returns the file URL for the HEIC image that matches the specified

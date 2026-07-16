@@ -1,0 +1,37 @@
+# One simulator-unavailable view per line, qualified as Module::ViewType.
+# Every exclusion must include a durable reason after ` # `.
+# Example:
+# SpaceRPG::ObjectCaptureView # Requires a LiDAR-capable physical iOS device.
+SpaceRPG::BoundingBoxGuidanceView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::CaptureButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::CaptureCancelButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::CaptureFilesButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::CaptureHelpButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::CaptureNextButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::CaptureOverlayView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::CapturePrimaryView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::CircularProgressView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::EnvironmentHelpPageView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::FeedbackView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::GradientBackground # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::HelpPageView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::ManualShotButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::ModelView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::NegativeLabel # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::NumOfImagesButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::ObjectHelpPageView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::OnboardingButtonView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::OnboardingCancelButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::OnboardingCreateButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::OnboardingTutorialView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::OnboardingView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::PositiveLabel # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::ProConListView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::ProgressBarView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::ReconstructionPrimaryView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::ReconstructionProgressView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::ReconstructionTitleView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::ResetBoundingBoxButton # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::Scanner3DRootView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::TutorialPageView # RealityKit Object Capture requires a supported physical iOS device.
+SpaceRPG::TutorialVideoView # RealityKit Object Capture requires a supported physical iOS device.

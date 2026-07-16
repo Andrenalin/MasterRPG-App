@@ -103,12 +103,16 @@ private extension AudioPlayerMiniBarView {
     }
 }
 
-//#Preview(traits: .mockData) {
-//    ZStack {
-//        // Simulate window background
-//        LinearGradient(gradient: Gradient(colors: [.blue.opacity(0.13), .purple.opacity(0.13)]), startPoint: .topLeading, endPoint: .bottomTrailing)
-//            .ignoresSafeArea()
-//        AudioPlayerMiniBarView()
-//            .padding()
-//    }
-//}
+#Preview(traits: .mockData) {
+    ZStack {
+        LinearGradient(
+            colors: [.blue.opacity(0.13), .purple.opacity(0.13)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+
+        AudioPlayerMiniBarView()
+            .padding()
+    }
+}

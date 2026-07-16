@@ -3,6 +3,8 @@
 import SwiftUI
 
 public struct LinkItemListView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     init(root: any ItemRootControllable, type: LinkRootType, selectionModel: ItemSelectionModel, parentModel: (any ItemDataAccessable)?) {
         self.root = root
         self.type = type
@@ -76,7 +78,7 @@ public struct LinkItemListView: View {
                             }
                             listModel.scrollId = savedScroll
                             if let savedPosition = listModel.scrollId {
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                                withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2)) {
                                     scrollPosition = savedPosition
                                 }
                             }
@@ -108,7 +110,7 @@ public struct LinkItemListView: View {
                         content
                             .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true)
                             .searchItemList(listControllable: root.folderLinkControllable)
-                            .navigationTitle(root.configurable.module.title)
+                            .navigationTitle(Text(verbatim: root.configurable.module.title))
                     }
                     .applyIf(type == .inspector) { content in
                         content
@@ -162,7 +164,7 @@ private extension LinkItemListView {
 
         listView(items: items)
             .frame(minWidth: 150, idealWidth: 250)
-            .animation(.smooth, value: items.count)
+            .animation(accessibilityReduceMotion ? nil : .smooth, value: items.count)
             .scrollIndicatorsFlash(onAppear: true)
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
@@ -197,216 +199,6 @@ private extension LinkItemListView {
         .scrollPosition(id: $scrollPosition, anchor: .top)
         .onChange(of: scrollPosition) { _, newValue in
             listModel.scrollId = newValue
-        }
-    }
-}
-
-// MARK: - InspectorRowView
-// Extracted from LinkItemListView so SwiftUI can skip body evaluation for rows
-// whose inputs (item, selection state) have not changed.
-
-private struct InspectorRowView: View {
-    let root: any ItemRootControllable
-    let item: FolderListItemModel
-    let selectionModel: ItemSelectionModel
-    let type: LinkRootType
-    let showListModeControls: Bool
-
-    @Binding var showDetails: Bool
-    @Binding var showDetailsView: (any NavigationDestination)?
-
-#if os(macOS)
-    @Environment(ScenesManager.self) private var scenesManager
-#endif
-
-    var body: some View {
-        // Use the pre-resolved model from FolderListItemModel (set by mapResult via itemSync).
-        // This is always correct for entry rows: model points to the item whose entry is displayed,
-        // e.g. the sub-value model for group entries — no extra itemSync needed in the view.
-        let model = item.model
-
-        HStack(spacing: 0) {
-            rowContent(model: model)
-                .selectListItem(isActive: isSelectionActive(model: model)) {
-                    selectionModel.toggleSelection(
-                        itemId: item.source.itemId,
-                        entryId: item.source.entryId,
-                        isCollection: model?.specialCategory ?? false
-                    )
-                } isSelected: {
-                    selectionModel.selection.contains(where: {
-                        $0.itemId == item.source.itemId && $0.entryId == item.source.entryId
-                    })
-                }
-        }
-        .padding(.leading, CGFloat(item.level * 4 + 8))
-        .padding(.trailing, 8)
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(backgroundForLevel(item.level))
-        .contentShape(.rect)
-    }
-
-    // MARK: Row content
-
-    @ViewBuilder
-    private func rowContent(model: (any ItemDataAccessable)?) -> some View {
-        // Only render as an entry row when the entry genuinely belongs to this item's model.
-        // Folder children also carry a non-nil `source.entryId` — it's the parent folder's
-        // membership entry UUID used for SwiftUI identity (`FolderListItemModel.id`).
-        // That entry lives in the parent's model, not the child's, so `model[membershipId]`
-        // returns nil/empty → blank row. Checking model.entries avoids this.
-        if let entryId = item.source.entryId,
-           model?.entries.contains(where: { $0.id == entryId }) == true {
-            entryRow(model: model, entryId: entryId)
-        } else {
-            standardItemRow(model: model)
-        }
-    }
-
-    private func entryRow(model: (any ItemDataAccessable)?, entryId: UUID) -> some View {
-        HStack {
-            LinkEntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
-            folderChevron
-        }
-        .contextMenu { rowContextMenu(model: model) }
-        .draggableWithOverlay(
-            for: root.configurable.module,
-            itemId: item.source.itemId,
-            entryId: entryId,
-            name: model?[entryId].name.withoutLink() ?? ""
-        )
-    }
-
-    private func standardItemRow(model: (any ItemDataAccessable)?) -> some View {
-        itemRowView(model: model)
-            .onTapGesture(count: 2) { openDetail(model: model) }
-            .accessibilityHint(Text("Double-tap to open details", bundle: .module))
-            .contextMenu { rowContextMenu(model: model) }
-    }
-
-    private func itemRowView(model: (any ItemDataAccessable)?) -> some View {
-        let resolved = model ?? root.itemControllable.itemOrEmpty(for: item.source.itemId)
-        return ItemRowView(
-            root: root,
-            model: resolved,
-            cacheItemListModel: root.folderLinkControllable.cacheListItemModel,
-            listDisplayModel: root.folderLinkControllable.listDisplayModel,
-            searchModel: root.folderLinkControllable.searchModel,
-            isSelected: false
-        ) {
-            if root.viewControllable.thumbnailRowViewType == .custom {
-                root.viewControllable.thumbnailRowView(for: item.source.itemId)
-            } else if root.viewControllable.thumbnailRowViewType == .photo,
-                      let cacheController = root.cacheControllable {
-                ThumbnailRowPhotoView(
-                    cacheController: cacheController,
-                    model: resolved,
-                    listDisplayModel: root.folderLinkControllable.listDisplayModel
-                )
-            }
-        }
-        .draggableWithOverlay(
-            for: selectionModel.onlyEntrySelection ? .none : root.configurable.module,
-            itemId: item.source.itemId,
-            entryId: nil,
-            name: resolved.name.withoutLink()
-        )
-        .overlay(alignment: .trailing) { folderChevron }
-    }
-
-    // MARK: Folder chevron
-
-    @ViewBuilder
-    private var folderChevron: some View {
-        // Same three-way condition as SpecialCategoryFolderIndicator — see that struct for rationale.
-        if item.canOpen || item.isOpen || item.wasExplicitlyClosed {
-            Button {
-                root.folderLinkControllable.toggleFolder(item: item)
-            } label: {
-                Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
-                    .imageScale(.small)
-                    .foregroundStyle(.red)
-                    .contentShape(.circle)
-                    .frame(width: 32, height: 32)
-#if !os(visionOS)
-                    .glassEffect(.clear.interactive())
-#endif
-            }
-            .borderLessTVBottonStyle()
-            .padding(.trailing, 4)
-        }
-    }
-
-    // MARK: Helpers
-
-    private func isSelectionActive(model: (any ItemDataAccessable)?) -> Bool {
-        (type == .selection || type == .selectionInline) &&
-        selectionModel.canSelect(
-            isCollection: model?.specialCategory ?? false,
-            entryId: item.source.entryId
-        )
-    }
-
-    private func openDetail(model: (any ItemDataAccessable)?) {
-#if os(macOS)
-        guard model?.specialCategory != true else { return }
-        scenesManager.openWindow(
-            SceneId.viewerId(for: root.configurable.module),
-            selection: WindowItemSelection(itemId: item.source.itemId)
-        )
-#else
-        if model?.specialCategory == true {
-            showDetailsView = root.folderLinkControllable.detailDestination(for: item.source.itemId)
-        } else {
-            showDetailsView = root.folderLinkControllable.viewerDestination(for: item.source.itemId)
-        }
-        showDetails.toggle()
-#endif
-    }
-
-    @ViewBuilder
-    private func rowContextMenu(model: (any ItemDataAccessable)?) -> some View {
-        Button {
-            openDetail(model: model)
-        } label: {
-            Label { Text("Open Details", bundle: .module) } icon: { Image(systemName: "arrow.up.right.square") }
-        }
-
-        ControlGroup {
-            CompactDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-            MediumDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-            RegularDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-        }
-
-        if showListModeControls {
-            ControlGroup {
-                ListModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-                FolderModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
-            }
-        }
-
-        if item.source.entryId != nil {
-            Button {
-                withAnimation { root.folderLinkControllable.toggleParentFolder(item: item) }
-            } label: {
-                Label {
-                    Text("Close parent folder", bundle: .module)
-                } icon: {
-                    Image(systemName: "folder.circle")
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func backgroundForLevel(_ level: Int) -> some View {
-        if level > 0 {
-            if level % 2 == 1 {
-                Color.secondary.opacity(0.2)
-            } else {
-                Color.primary.opacity(0.2)
-            }
         }
     }
 }

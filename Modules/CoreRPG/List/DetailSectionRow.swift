@@ -81,7 +81,7 @@ struct CompactSectionRowViewModifier<Header: View>: ViewModifier {
 }
 
 #Preview {
-    Text("Row Content").detailSectionRow(color: .yellow) {
-        Text("Title of this section")
+    Text(verbatim: "Row Content").detailSectionRow(color: .yellow) {
+        Text(verbatim: "Title of this section")
     }
 }

@@ -21,6 +21,7 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     
     @FocusState private var currentFocus: EntryEditorFocusField?
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var editModel: TextEditModel
 
@@ -51,14 +52,16 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
             }
         }
         .background {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    // Dismiss on background tap
-                    withAnimation {
+            Button {
+                withAnimation(reduceMotion ? nil : .default) {
                         editorModel.entryId = nil
-                    }
                 }
+            } label: {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+            }
+            .buttonStyle(.plain)
+            .accessibilityHidden(true)
         }
         .task {
 #if !os(tvOS)

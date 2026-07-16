@@ -74,49 +74,49 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
 
     public var localizedTitle: LocalizedStringResource {
         switch self {
-            case .all: "All"
-            case .hide: "Hide"
+            case .all: LocalizedStringResource("All", bundle: .module)
+            case .hide: LocalizedStringResource("Hide", bundle: .module)
 
-            case .drop: "Drop"
-            case .folder: "Folder"
-            case .entry: "Entry"
+            case .drop: LocalizedStringResource("Drop", bundle: .module)
+            case .folder: LocalizedStringResource("Folder", bundle: .module)
+            case .entry: LocalizedStringResource("Entry", bundle: .module)
 
-            case .album: "Album"
-            case .bookshelf: "Bookshelf"
-            case .collection: "Collection"
-            case .diceBag: "Dice Bag"
-            case .models: "Models"
-            case .playlist: "Playlist"
+            case .album: LocalizedStringResource("Album", bundle: .module)
+            case .bookshelf: LocalizedStringResource("Bookshelf", bundle: .module)
+            case .collection: LocalizedStringResource("Collection", bundle: .module)
+            case .diceBag: LocalizedStringResource("Dice Bag", bundle: .module)
+            case .models: LocalizedStringResource("Models", bundle: .module)
+            case .playlist: LocalizedStringResource("Playlist", bundle: .module)
 
-            case .adventure: "Adventure"
-            case .audio: "Audio"
-            case .building: "Building"
-            case .campaign: "Campaign"
-            case .character: "Character"
-            case .dice: "Dice"
-            case .dungeon: "Dungeon"
-            case .game: "Game"
-            case .gameMaster: "Game Master"
-            case .generator: "Generator"
-            case .item: "Item"
-            case .loot: "Loot"
-            case .map: "Map"
-            case .monster: "Monster"
-            case .music: "Music"
-            case .pdf: "Pdf"
-            case .photo: "Photo"
-            case .rules: "Rules"
-            case .scenario: "Scenario"
-            case .sound: "Sound"
-            case .supplement: "Supplement"
-            case .table: "Table"
-            case .value: "Character"
-            case .weather: "Weather"
+            case .adventure: LocalizedStringResource("Adventure", bundle: .module)
+            case .audio: LocalizedStringResource("Audio", bundle: .module)
+            case .building: LocalizedStringResource("Building", bundle: .module)
+            case .campaign: LocalizedStringResource("Campaign", bundle: .module)
+            case .character: LocalizedStringResource("Character", bundle: .module)
+            case .dice: LocalizedStringResource("Dice", bundle: .module)
+            case .dungeon: LocalizedStringResource("Dungeon", bundle: .module)
+            case .game: LocalizedStringResource("Game", bundle: .module)
+            case .gameMaster: LocalizedStringResource("Game Master", bundle: .module)
+            case .generator: LocalizedStringResource("Generator", bundle: .module)
+            case .item: LocalizedStringResource("Item", bundle: .module)
+            case .loot: LocalizedStringResource("Loot", bundle: .module)
+            case .map: LocalizedStringResource("Map", bundle: .module)
+            case .monster: LocalizedStringResource("Monster", bundle: .module)
+            case .music: LocalizedStringResource("Music", bundle: .module)
+            case .pdf: LocalizedStringResource("Pdf", bundle: .module)
+            case .photo: LocalizedStringResource("Photo", bundle: .module)
+            case .rules: LocalizedStringResource("Rules", bundle: .module)
+            case .scenario: LocalizedStringResource("Scenario", bundle: .module)
+            case .sound: LocalizedStringResource("Sound", bundle: .module)
+            case .supplement: LocalizedStringResource("Supplement", bundle: .module)
+            case .table: LocalizedStringResource("Table", bundle: .module)
+            case .value: LocalizedStringResource("Character", bundle: .module)
+            case .weather: LocalizedStringResource("Weather", bundle: .module)
         }
     }
 
     public var title: String {
-        String(localized: localizedTitle).localizedString
+        String(localized: localizedTitle)
     }
 
     public var icon: String {

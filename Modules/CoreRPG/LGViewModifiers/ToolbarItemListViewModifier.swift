@@ -109,6 +109,8 @@ private extension ToolbarItemListViewModifier {
         // tree stable across selection mode changes and navigation transitions.
         MenuSelectionButtonView(listDisplayModel: listDisplayModel)
             .opacity(!listDisplayModel.isSelectionMode && modal == false ? 1 : 0)
+            .allowsHitTesting(!listDisplayModel.isSelectionMode && modal == false)
+            .accessibilityHidden(listDisplayModel.isSelectionMode || modal)
         if parentModel == nil && modal == false {
             ControlGroup {
                 addItemButton(for: .item)
@@ -176,5 +178,6 @@ private extension ToolbarItemListViewModifier {
         } label: {
             Image(systemName: "checkmark")
         }
+        .accessibilityLabel(Text("Done", bundle: .module))
     }
 }

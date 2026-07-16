@@ -5,11 +5,13 @@ import SwiftUI
 #Preview {
     List {
         SectionGroupEditorView {
-            Toggle("Visible to players", isOn: .constant(true))
+            Toggle(isOn: .constant(true)) {
+                Text(verbatim: "Visible to players")
+            }
         } header: {
-            Text("Sharing")
+            Text(verbatim: "Sharing")
         } footer: {
-            Text("This setting is synced to joined players.")
+            Text(verbatim: "This setting is synced to joined players.")
         }
     }
 }

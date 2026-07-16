@@ -6,11 +6,7 @@ public protocol ExampleUrlProvider {
     @MainActor func urlExampleData(isGerman: Bool) -> URL?
 }
 
-#Preview {
-    ImportInformationSection()
-}
-
-private enum ImportOutcome: Equatable, Sendable {
+enum ImportOutcome: Equatable, Sendable {
     case notStarted
     case running
     case cancelled
@@ -158,7 +154,6 @@ private extension ImportProgressPanelView {
             return
         }
         if itemModel.decision == .existing {
-            // Keep the local data untouched unless single properties or entries were overridden
             guard itemModel.hasOverrides, itemModel.item.existing != nil else { return }
         }
         guard let model = itemModel.materializedItem() as? any Observable & ItemDataAccessable else { return }
@@ -167,133 +162,13 @@ private extension ImportProgressPanelView {
     }
 }
 
-private struct ImportProgressSection: View {
-    let importModel: ItemDataImportModel
-
-    var body: some View {
-        if importModel.isImportRunning && importModel.totalImportingItems > 0 {
-            ProgressView(
-                value: Double(importModel.importedItems),
-                total: Double(importModel.totalImportingItems)
-            )
-            .tint(Color.accentColor)
-            .accessibilityLabel(Text("Import progress", bundle: .module))
-        }
-    }
-}
-
-private struct ImportStatusSection: View {
-    let outcome: ImportOutcome
-    let importModel: ItemDataImportModel
-    @Binding var showImportFileChooser: Bool
-    @Binding var loadUrl: URL?
-    let urlProvider: (any ExampleUrlProvider)?
-    let isSaveGame: Bool
-
-    var body: some View {
-        VStack {
-            switch outcome {
-            case .notStarted:
-                ImportChooseUrlView(
-                    showImportFileChooser: $showImportFileChooser,
-                    loadUrl: $loadUrl,
-                    urlProvider: urlProvider,
-                    isSaveGame: isSaveGame,
-                    importModel: importModel
-                )
-            case .running:
-                Text("Importing \(importModel.importedItems) of \(importModel.totalImportingItems)", bundle: .module)
-            case .finished:
-                Text("Import is finished, \(importModel.importedItems) are successfully imported.", bundle: .module)
-            case .cancelled:
-                Text("Import is cancelled, but \(importModel.importedItems) are successfully imported.", bundle: .module)
-            case .failed(let message):
-                Text(message)
-            }
-        }
-    }
-}
-
-private struct ImportChooseUrlView: View {
-    @Binding var showImportFileChooser: Bool
-    @Binding var loadUrl: URL?
-    let urlProvider: (any ExampleUrlProvider)?
-    let isSaveGame: Bool
-    @Bindable var importModel: ItemDataImportModel
-
-    var body: some View {
-        VStack(spacing: 20) {
-            Button {
-                showImportFileChooser = true
-            } label: {
-                Label {
-                    Text("Choose file", bundle: .module)
-                } icon: {
-                    Image(systemName: "doc.text")
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.bottom, 20)
-
-            if !isSaveGame {
-                GroupBoxTV {
-                    VStack(spacing: 20) {
-                        Button {
-                            loadUrl = urlProvider?.urlExampleData(isGerman: false)
-                        } label: {
-                            Label { Text("English Data", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
-                        }
-                        .padding(.top, 12)
-
-                        Button {
-                            loadUrl = urlProvider?.urlExampleData(isGerman: true)
-                        } label: {
-                            Label { Text("German Data", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
-                        }
-
-                        Text("Explanation data packages to see how the app works. It explain with real data how to use and add data.", bundle: .module)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } label: {
-                    Text("Import Prebundled Examples", bundle: .module)
-                }
-                .padding(.bottom, 20)
-
-                Picker(selection: $importModel.importMode) {
-                    Label { Text("Merge", bundle: .module) } icon: { Image(systemName: "arrow.triangle.merge") }
-                        .tag(ImportMode.merge)
-                    Label { Text("Overwrite", bundle: .module) } icon: { Image(systemName: "exclamationmark.triangle") }
-                        .tag(ImportMode.overwrite)
-                    Label { Text("Manual", bundle: .module) } icon: { Image(systemName: "list.bullet.clipboard") }
-                        .tag(ImportMode.manual)
-                } label: {
-                    Text("Import Mode", bundle: .module)
-                }
-                .pickerStyle(.menu)
-            }
-        }
-        .disabled(showImportFileChooser)
-    }
-}
-
-private struct ImportInformationSection: View {
-    var body: some View {
-        GroupBoxTV {
-            VStack(spacing: 16) {
-                Text("Use the Free Support [Page](https://github.com/Andrenalin/MasterRPG)", bundle: .module)
-                Text("These are free packages ready to use. They will add tables with rules, photos, characters and adventures for a certain rule system.", bundle: .module)
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-            }
-        } label: {
-            Text("Download free game bundles", bundle: .module)
-        }
-    }
-}
-
 #Preview {
-    ImportProgressPanelView(rootManager: nil, urlProvider: FakeExampleUrlProvider(), importController: FakeImportController.fake, saveDeferredHandler: nil)
+    ImportProgressPanelView(
+        rootManager: nil,
+        urlProvider: FakeExampleUrlProvider(),
+        importController: FakeImportController.fake,
+        saveDeferredHandler: nil
+    )
 }
 
 struct FakeExampleUrlProvider: ExampleUrlProvider {

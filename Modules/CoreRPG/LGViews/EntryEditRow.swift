@@ -69,14 +69,15 @@ private extension EntryEditRow {
 }
 
 #Preview {
+    let fixture = FakeItemRootControllerFixture()
     EntryEditRow(
-        root: ItemRootController.fake,
-        editController: FakeEditController.fake,
-        itemId: UUID(),
+        root: fixture.root,
+        editController: fixture.editController,
+        itemId: .fixture1,
         entry: FakeEntryModel.empty,
         cacheItemListModel: CacheItemListModel(),
         listDisplayModel: ListDisplayModel(),
-        searchModel: FakeSearchController.fake.searchModel
+        searchModel: fixture.searchController.searchModel
     )
     .padding()
 }

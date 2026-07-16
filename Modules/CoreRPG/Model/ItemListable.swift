@@ -62,7 +62,7 @@ public protocol ItemDuplicatable {
 
 public extension ItemDuplicatable {
     func duplicateName(from original: String) -> String {
-        let copyKey: LocalizedStringResource = "Copy"
+        let copyKey = LocalizedStringResource("Copy", bundle: .module)
         let copyString = String(localized: copyKey).localizedString
         return "\(original) \(copyString)"
     }

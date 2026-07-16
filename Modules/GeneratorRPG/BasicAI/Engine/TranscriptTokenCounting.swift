@@ -19,8 +19,12 @@ extension Transcript.Entry {
             }
         case .toolOutput(let output):
             return output.segments.reduce(0) { $0 + $1.foundationLabEstimatedTokenCount } + 3
+#if compiler(>=6.4)
+        case .reasoning(let reasoning):
+            return reasoning.segments.reduce(0) { $0 + $1.foundationLabEstimatedTokenCount }
+#endif
         @unknown default:
-            return 0
+            return foundationLabEstimateTokens(String(describing: self))
         }
     }
 
@@ -45,8 +49,14 @@ extension Transcript.Segment {
             return foundationLabEstimateTokens(textSegment.content)
         case .structure(let structuredSegment):
             return foundationLabEstimateStructuredTokens(structuredSegment.content)
+#if compiler(>=6.4)
+        case .attachment(let attachmentSegment):
+            return foundationLabEstimateTokens(attachmentSegment.label ?? "") + 16
+        case .custom:
+            return 16
+#endif
         @unknown default:
-            return 0
+            return foundationLabEstimateTokens(String(describing: self))
         }
     }
 }

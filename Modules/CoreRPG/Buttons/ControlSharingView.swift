@@ -104,6 +104,8 @@ private struct SharingControlPresentation: ViewModifier {
             .overlay(alignment: alignment) {
                 SendControlView(controls: controls)
                     .opacity(isPresented ? 1 : 0)
+                    .allowsHitTesting(isPresented)
+                    .accessibilityHidden(!isPresented)
                     .fixedSize()
                     .onGeometryChange(for: CGSize.self) { proxy in
                         proxy.size
@@ -128,6 +130,8 @@ private struct SharingControlPresentation: ViewModifier {
                 .overlay(alignment: alignment) {
                     SendControlView(controls: controls)
                         .opacity(isPresented ? 1 : 0)
+                        .allowsHitTesting(isPresented)
+                        .accessibilityHidden(!isPresented)
                         .fixedSize()
                         .onGeometryChange(for: CGSize.self) { proxy in
                             proxy.size
@@ -157,51 +161,12 @@ private struct SharingControlButtonStyle: ViewModifier {
     }
 }
 
-public struct SendControlView: View {
-    public init(controls: Binding<[SharingControlModel]>) {
-        self._controls = controls
-    }
-    
-    @Binding var controls: [SharingControlModel]
-    @Environment(\.sharingControlActions) private var sharingControlActions
-
-    public var body: some View {
-        VStack {
-            HStack(spacing: 4) {
-                ForEach($controls) { $control in
-                    VStack(alignment: .center, spacing: 4) {
-                        Button {
-                            $control.wrappedValue.show.toggle()
-                        } label: {
-                            Label {
-                                Text(control.show ? "Sharing Enabled" : "Sharing Disabled", bundle: .module)
-                            } icon: {
-                                Image(systemName: control.show ? "square.and.arrow.up" : "square.slash")
-                            }
-                            .labelStyle(.iconOnly)
-                        }
-                        .accessibilityLabel(Text("\(control.name): \(control.show ? String(localized: "Enabled", bundle: .module) : String(localized: "Disabled", bundle: .module))"))
-                        .accessibilityHint(Text("Toggle sharing for \(control.name)", bundle: .module))
-                        .contentTransition(.symbolEffect(.automatic))
-                        //.selectedBorderedStype(isSelected: control.show)
-
-                        Text(control.name)
-                    }
-                    .rowColorBackground(isSelected: false)
-                }
-            }
-            Text("Selected Players get updates", bundle: .module)
-        }
-        .rowEditColor(backgroundColor: .black)
-    }
-}
-
 struct SharingControlActionsKey: EnvironmentKey {
     nonisolated(unsafe) static let defaultValue = SharingControlActions(control: nil, update: nil)
 }
 
 #Preview {
-    @Previewable @State var controls: [SharingControlModel] = [SharingControlModel(id: UUID(), name: "Mega", show: true)]
+    @Previewable @State var controls: [SharingControlModel] = [SharingControlModel(id: .fixture1, name: "Mega", show: true)]
     NavigationStack {
         Color.blue
             .toolbar {
@@ -211,12 +176,4 @@ struct SharingControlActionsKey: EnvironmentKey {
                 .environment(\.sharingControlActions, SharingControlActions(control: { controls }, update: { updated in controls = updated }))
             }
     }
-}
-
-#Preview("Sharing controls") {
-    @Previewable @State var controls = [
-        SharingControlModel(id: UUID(), name: "Alice", show: true),
-        SharingControlModel(id: UUID(), name: "Bob", show: false)
-    ]
-    SendControlView(controls: $controls)
 }

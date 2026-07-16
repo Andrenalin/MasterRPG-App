@@ -110,5 +110,9 @@ struct SplitEditorNavigation: View {
 }
 
 #Preview {
+    let appModel = AppModel()
+
     SplitEditorNavigation()
+        .environment(appModel)
+        .environment(appModel.scenesManager)
 }

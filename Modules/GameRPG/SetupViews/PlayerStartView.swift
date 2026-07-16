@@ -13,6 +13,7 @@ struct PlayerStartView: View {
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     @State private var startSharePlayAnimation: Bool = false
     
@@ -38,11 +39,15 @@ struct PlayerStartView: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.accentColor, lineWidth: 4)
-                            .scaleEffect(startSharePlayAnimation ? 2 : 1)
-                            .opacity(startSharePlayAnimation ? 0 : 1)
+                            .scaleEffect(startSharePlayAnimation && !accessibilityReduceMotion ? 2 : 1)
+                            .opacity(startSharePlayAnimation && !accessibilityReduceMotion ? 0 : 1)
+                            .accessibilityHidden(true)
                     )
-                    .animation(.easeOut(duration: 0.6).delay(1).repeatForever(autoreverses: false), value: startSharePlayAnimation)
-                    .onAppear { startSharePlayAnimation.toggle() }
+                    .animation(
+                        accessibilityReduceMotion ? nil : .easeOut(duration: 0.6).delay(1).repeatForever(autoreverses: false),
+                        value: startSharePlayAnimation
+                    )
+                    .onAppear { startSharePlayAnimation = true }
 #if os(tvOS)
                     .padding(.top, 24)
 #endif

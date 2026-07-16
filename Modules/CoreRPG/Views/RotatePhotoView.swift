@@ -3,6 +3,8 @@
 import SwiftUI
 
 public struct RotatePhotoView<Overlay: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     public init(image: AKImage? = nil, degrees: Double, size: CGSize? = nil, useFullWidth: Bool = false, @ViewBuilder overlay: @escaping () -> Overlay) {
         self.image = image
         self.degrees = degrees
@@ -50,7 +52,10 @@ public struct RotatePhotoView<Overlay: View>: View {
                     .rotationEffect(Angle(degrees: degrees))
             } else {
                 Image(systemName: "photo")
-                    .font(.system(size: 96))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 96, maxHeight: 96)
+                    .accessibilityLabel(Text("Photo", bundle: .module))
             }
         }
         .frame(maxWidth: .infinity)        
@@ -69,7 +74,7 @@ public struct RotatePhotoView<Overlay: View>: View {
         }
         .frame(height: height(for: imageWidth) ?? 220.0)
         .animation(nil, value: imageWidth)
-        .animation(.bouncy, value: degrees)
+        .animation(accessibilityReduceMotion ? nil : .bouncy, value: degrees)
     }
     
     private func height(for width: CGFloat) -> CGFloat? {

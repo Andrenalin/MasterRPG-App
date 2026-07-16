@@ -15,6 +15,7 @@ struct PlayListView: View {
     
     @Environment(\.networkActions) private var networkActions
     @Environment(AppGameStateModel.self) private var appGameStateModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         @Bindable var model = root.audioController.model
@@ -29,13 +30,15 @@ struct PlayListView: View {
                         }
                     } label: {
                         HStack {
-                            Text(audio.title)
+                            Text(verbatim: audio.title)
                                 .font(.caption)
 
                             Spacer()
 
-                            Text(PlayerTime(elapsedTime: audio.duration.seconds, remainingTime: 0).elapsedText)
-                                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                            Text(verbatim: PlayerTime(elapsedTime: audio.duration.seconds, remainingTime: 0).elapsedText)
+                                .font(.caption)
+                                .bold()
+                                .monospaced()
                         }
                         .rowEditColor(backgroundColor: model.currentId == audio.id ? .teal : .blue)
                     }
@@ -45,12 +48,20 @@ struct PlayListView: View {
                         if appGameStateModel.isGameRunning && root.audioController.model.isPlaying && root.audioController.model.currentId == audio.id {
                             networkActions?.game(root.gameController.requestPlay(id: audio.id), .generic, nil)
                         }
-                        withAnimation { root.audioController.removeAudio(id: audio.id) }
+                        withAnimation(reduceMotion ? nil : .default) {
+                            root.audioController.removeAudio(id: audio.id)
+                        }
                     } label: {
-                        Image(systemName: "trash")
-                            .imageScale(.large)
-                            .foregroundStyle(.red)
+                        Label {
+                            Text("Delete Audio", bundle: .module)
+                        } icon: {
+                            Image(systemName: "trash")
+                        }
+                        .labelStyle(.iconOnly)
+                        .imageScale(.large)
+                        .foregroundStyle(.red)
                     }
+                    .frame(minWidth: 44, minHeight: 44)
                     .borderLessTVBottonStyle()
                 }
             }

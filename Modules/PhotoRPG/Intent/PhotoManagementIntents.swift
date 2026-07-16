@@ -132,7 +132,10 @@ struct DeletePhotoIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: PhotoEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) photo](inflect: true).")
+        let message = AttributedString(
+            localized: "Deleted ^[\(count) photo](inflect: true).",
+            bundle: .module
+        )
         return .result(dialog: "\(message)")
     }
 }

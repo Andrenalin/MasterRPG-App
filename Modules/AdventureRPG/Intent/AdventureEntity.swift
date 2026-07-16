@@ -64,8 +64,8 @@ extension AdventureEntity: Transferable {
 //                Image(landmark.landmark.backgroundImageName)
 //                    .resizable()
 //                    .aspectRatio(contentMode: .fit)
-                Text(landmark.name)
-                Text(landmark.description)
+                Text(verbatim: landmark.name)
+                Text(verbatim: landmark.description)
             }.frame(width: 600))
 
             renderer.render { size, renderer in

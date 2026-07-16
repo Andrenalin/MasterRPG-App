@@ -302,15 +302,16 @@ private extension ListRootContextMenu {
 }
 
 #Preview {
+    let fixture = FakeItemRootControllerFixture()
     ListRootContextMenu(
-        root: ItemRootController.fake,
+        root: fixture.root,
         controller: ContextMenuMultiController(
-            editController: FakeEditController.fake,
-            itemController: FakeItemController.fake,
-            listModel: FakeFolderListController.fake.listModel
+            editController: fixture.editController,
+            itemController: fixture.itemController,
+            listModel: fixture.folderListController.listModel
         ),
         parentItem: nil,
-        listController: FakeFolderListController.fake
+        listController: fixture.folderListController
     )
     .padding()
 }

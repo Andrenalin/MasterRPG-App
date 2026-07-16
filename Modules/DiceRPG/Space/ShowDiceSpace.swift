@@ -12,6 +12,7 @@ struct ShowDiceSpace: View {
 
     @Environment(\.openImmersiveSpace) private var openImmersiveSpace
     @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @MainActor
     var areControlsShowing: Bool {
@@ -40,6 +41,13 @@ struct ShowDiceSpace: View {
             if areControlsShowing {
                 HStack { Text("Scale", bundle: .module)
                     Slider(value: $viewModel.contentScaleSliderValue)
+                        .accessibilityLabel(Text("Dice scale", bundle: .module))
+                        .accessibilityValue(
+                            Text(
+                                Double(viewModel.contentScaleSliderValue),
+                                format: .percent.precision(.fractionLength(0))
+                            )
+                        )
                         .onChange(of: viewModel.contentScaleSliderValue) { _, _ in
                             viewModel.updateScale()
                         }
@@ -55,7 +63,7 @@ struct ShowDiceSpace: View {
                 }
             }
         }
-        .animation(.default, value: areControlsShowing)
+        .animation(reduceMotion ? nil : .default, value: areControlsShowing)
     }
 
 }

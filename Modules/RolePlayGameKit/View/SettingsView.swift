@@ -54,7 +54,11 @@ public struct SettingsView: View {
             }
 
             SectionGroupEditorView {
-                Text(store.rpgSpotlightIndexer?.model.message ?? "Not yet finished")
+                if let message = store.rpgSpotlightIndexer?.model.message {
+                    Text(verbatim: message)
+                } else {
+                    Text("Not yet finished", bundle: .module)
+                }
                 
                 if let model = store.coreDataInitModel {
                     CloudKitSyncStatusView(syncState: model.cloudKitSyncState, lastSync: model.lastSuccessfulSync)

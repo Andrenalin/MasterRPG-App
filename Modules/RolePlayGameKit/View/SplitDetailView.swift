@@ -57,7 +57,13 @@ struct SplitDetailView: View {
             WeatherRootFactory.detailView(root: appModel.weatherRoot)
         case .setting: EmptyView()
         default:
-            ContentUnavailableView(selectedModule.title, image: selectedModule.icon)
+            ContentUnavailableView {
+                Label {
+                    Text(verbatim: selectedModule.title)
+                } icon: {
+                    Image(systemName: selectedModule.icon)
+                }
+            }
         }
     }
 
@@ -69,4 +75,5 @@ struct SplitDetailView: View {
 
 #Preview {
     SplitDetailView(isExtendedRoutes: false)
+        .environment(AppModel())
 }

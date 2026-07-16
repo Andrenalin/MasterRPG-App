@@ -115,6 +115,12 @@
   },
   "testTargets" : [
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8E8EE8502CD8EA5D0010A25B",
@@ -122,6 +128,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBECE642CD8EE9D004E7103",
@@ -129,6 +141,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8E4B218C2CD78EF3009AB4D1",
@@ -136,6 +154,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBECD972CD8EDED004E7103",
@@ -143,6 +167,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBED0B52CD8EF94004E7103",
@@ -150,6 +180,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "599DCAD72E8E30C00056E46C",
@@ -157,6 +193,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBED0D62CD8EFA5004E7103",
@@ -164,6 +206,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8E8EE87A2CD8EB430010A25B",
@@ -171,6 +219,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8E8EE89B2CD8EB620010A25B",
@@ -178,6 +232,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBECE222CD8EE85004E7103",
@@ -185,6 +245,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBECE432CD8EE92004E7103",
@@ -192,6 +258,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBECE852CD8EEA9004E7103",
@@ -199,6 +271,12 @@
       }
     },
     {
+      "skippedTags" : {
+        "mode" : "or",
+        "tags" : [
+          ".snapshot"
+        ]
+      },
       "target" : {
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBED0942CD8EF68004E7103",

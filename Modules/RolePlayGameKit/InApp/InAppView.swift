@@ -12,10 +12,15 @@ public struct InAppView: View {
     
     public var body: some View {
         VStack {
-            Text("Purchased items: \(inAppController.model.activeTransactions.count)")
+            Text(
+                "Purchased items: \(inAppController.model.activeTransactions.count)",
+                bundle: .module
+            )
             
             if inAppController.model.products.isEmpty {
-                ProgressView()
+                ProgressView {
+                    Text("Loading purchases", bundle: .module)
+                }
             } else {
                 if inAppController.model.activeTransactions.isEmpty {
                     ForEach(inAppController.model.products, id: \.id) { product in

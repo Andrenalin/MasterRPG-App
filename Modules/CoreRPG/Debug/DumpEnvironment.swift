@@ -33,7 +33,7 @@ public struct DumpingEnvironment<Content: View>: View {
 
 #Preview {
     DumpingEnvironment(optimized: true) {
-        Text("Environment content")
+        Text(verbatim: "Environment content")
     }
 }
 

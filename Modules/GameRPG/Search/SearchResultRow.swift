@@ -29,7 +29,7 @@ struct SearchResultRow: View {
                 Text(result.itemName)
                     .font(.headline)
 
-                Text("·")
+                Text(verbatim: "·")
                     .foregroundStyle(.secondary)
                 Image(systemName: result.category.icon)
                         .font(.caption)
@@ -38,7 +38,7 @@ struct SearchResultRow: View {
 
             if let entryName = result.entryName,
                let matchedContent = result.matchedContent {
-                Text("\(entryName): \(matchedContent)")
+                Text(verbatim: "\(entryName): \(matchedContent)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -59,7 +59,7 @@ struct SearchResultRow: View {
     List {
         SearchResultRow(
             result: SearchResult(
-                itemId: UUID(),
+                itemId: GamePreviewData.searchItemID,
                 itemName: "Dragon's Lair",
                 module: .adventure,
                 category: .entry,
@@ -68,7 +68,7 @@ struct SearchResultRow: View {
                 matchedContent: "A dangerous cave filled with treasure and a fearsome dragon guarding its hoard.",
                 relevanceScore: 85
             ),
-            root: GameRoot.preview
+            root: .previewFixture()
         )
     }
 }
@@ -77,25 +77,26 @@ struct SearchResultRow: View {
     List {
         SearchResultRow(
             result: SearchResult(
-                itemId: UUID(),
+                itemId: GamePreviewData.searchItemID,
                 itemName: "Spellbook of Mysteries",
                 module: .pdf,
                 category: .collection,
-                entryId: UUID(),
+                entryId: GamePreviewData.searchEntryID,
                 entryName: "Fireball Spell",
                 matchedContent: "A devastating fire spell that creates an explosion dealing massive damage to all creatures in the area.",
                 relevanceScore: 92
             ),
-            root: GameRoot.preview
+            root: .previewFixture()
         )
     }
 }
 
 #Preview("Multiple Results") {
+    let root = GameRoot.previewFixture()
     List {
         SearchResultRow(
             result: SearchResult(
-                itemId: UUID(),
+                itemId: GamePreviewData.searchItemID,
                 itemName: "Ancient Map",
                 module: .map,
                 category: .entry,
@@ -104,26 +105,26 @@ struct SearchResultRow: View {
                 matchedContent: nil,
                 relevanceScore: 65
             ),
-            root: GameRoot.preview
+            root: root
         )
 
         SearchResultRow(
             result: SearchResult(
-                itemId: UUID(),
+                itemId: GamePreviewData.secondSearchItemID,
                 itemName: "Character Sheet",
                 module: .value,
                 category: .folder,
-                entryId: UUID(),
+                entryId: GamePreviewData.secondSearchEntryID,
                 entryName: "Strength Score",
                 matchedContent: "Base strength value: 16",
                 relevanceScore: 78
             ),
-            root: GameRoot.preview
+            root: root
         )
 
         SearchResultRow(
             result: SearchResult(
-                itemId: UUID(),
+                itemId: GamePreviewData.photoID,
                 itemName: "Battle Music",
                 module: .audio,
                 category: .collection,
@@ -132,7 +133,7 @@ struct SearchResultRow: View {
                 matchedContent: "Epic orchestral music for combat encounters",
                 relevanceScore: 50
             ),
-            root: GameRoot.preview
+            root: root
         )
     }
 }

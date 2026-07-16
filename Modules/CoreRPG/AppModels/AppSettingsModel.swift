@@ -6,8 +6,24 @@ import SwiftUI
 @MainActor @Observable
 public final class AppSettingsModel: Sendable {
     public init() {
-        initSettings()
+        self.defaults = .standard
+        initSettings(from: .standard)
     }
+
+    private init(previewValues: PreviewValues) {
+        self.defaults = nil
+        firstLaunch = previewValues.firstLaunch
+        appColorScheme = previewValues.appColorScheme
+        autoShowMasterMainTab = previewValues.autoShowMasterMainTab
+        autoShowPlayerMainTab = previewValues.autoShowPlayerMainTab
+        masterMainTabDisplayMode = previewValues.masterMainTabDisplayMode
+        playerMainTabDisplayMode = previewValues.playerMainTabDisplayMode
+        showGameTableVolume = previewValues.showGameTableVolume
+        needsValidateDatabase = previewValues.needsValidateDatabase
+        useCloudKit = previewValues.useCloudKit
+    }
+
+    private let defaults: UserDefaults?
 
     public enum AppColorScheme: Int, Hashable, CaseIterable, Identifiable, Codable {
         public var id: Int {
@@ -35,56 +51,56 @@ public final class AppSettingsModel: Sendable {
     public var firstLaunch: Bool = true {
         didSet {
             guard oldValue != firstLaunch else { return }
-            UserDefaults.standard.set(firstLaunch, forKey: AppSettingsModel.firstLunchKey)
+            defaults?.set(firstLaunch, forKey: AppSettingsModel.firstLunchKey)
         }
     }
     
     public var appColorScheme: AppColorScheme = .system {
         didSet {
             guard oldValue != appColorScheme else { return }
-            UserDefaults.standard.set(appColorScheme.rawValue, forKey: AppSettingsModel.appColorSchemeKey)
+            defaults?.set(appColorScheme.rawValue, forKey: AppSettingsModel.appColorSchemeKey)
         }
     }
     
     public var autoShowMasterMainTab: Bool = true {
         didSet {
             guard oldValue != autoShowMasterMainTab else { return }
-            UserDefaults.standard.set(autoShowMasterMainTab, forKey: AppSettingsModel.autoShowMasterMainTabKey)
+            defaults?.set(autoShowMasterMainTab, forKey: AppSettingsModel.autoShowMasterMainTabKey)
         }
     }
     
     public var autoShowPlayerMainTab: Bool = true {
         didSet {
             guard oldValue != autoShowPlayerMainTab else { return }
-            UserDefaults.standard.set(autoShowPlayerMainTab, forKey: AppSettingsModel.autoShowPlayerMainTabKey)
+            defaults?.set(autoShowPlayerMainTab, forKey: AppSettingsModel.autoShowPlayerMainTabKey)
         }
     }
     
     public var masterMainTabDisplayMode: Int = 0 {
         didSet {
             guard oldValue != masterMainTabDisplayMode else { return }
-            UserDefaults.standard.set(masterMainTabDisplayMode, forKey: AppSettingsModel.masterMainTabDisplayModeKey)
+            defaults?.set(masterMainTabDisplayMode, forKey: AppSettingsModel.masterMainTabDisplayModeKey)
         }
     }
     
     public var playerMainTabDisplayMode: Int = 0 {
         didSet {
             guard oldValue != playerMainTabDisplayMode else { return }
-            UserDefaults.standard.set(playerMainTabDisplayMode, forKey: AppSettingsModel.playerMainTabDisplayModeKey)
+            defaults?.set(playerMainTabDisplayMode, forKey: AppSettingsModel.playerMainTabDisplayModeKey)
         }
     }
     
     public var showGameTableVolume: Bool = false {
         didSet {
             guard oldValue != showGameTableVolume else { return }
-            UserDefaults.standard.set(showGameTableVolume, forKey: AppSettingsModel.showGameTableVolumeKey)
+            defaults?.set(showGameTableVolume, forKey: AppSettingsModel.showGameTableVolumeKey)
         }
     }
 
     public var needsValidateDatabase: Bool = true {
         didSet {
             guard oldValue != needsValidateDatabase else { return }
-            UserDefaults.standard.set(needsValidateDatabase, forKey: AppSettingsModel.needsValidateDatabaseKey)
+            defaults?.set(needsValidateDatabase, forKey: AppSettingsModel.needsValidateDatabaseKey)
         }
     }
 
@@ -93,7 +109,7 @@ public final class AppSettingsModel: Sendable {
     public private(set) var useCloudKit: Bool = false {
         didSet {
             guard oldValue != useCloudKit else { return }
-            UserDefaults.standard.set(useCloudKit, forKey: AppSettingsModel.useCloudKitKey)
+            defaults?.set(useCloudKit, forKey: AppSettingsModel.useCloudKitKey)
         }
     }
     
@@ -106,21 +122,47 @@ public final class AppSettingsModel: Sendable {
     
     // MARK: - Init Settings
     
-    private func initSettings() {
-        firstLaunch = UserDefaults.standard.value(forKey: AppSettingsModel.firstLunchKey) as? Bool ?? true
-        appColorScheme = AppColorScheme(rawValue: UserDefaults.standard.integer(forKey: AppSettingsModel.appColorSchemeKey)) ?? .system
+    private func initSettings(from defaults: UserDefaults) {
+        firstLaunch = defaults.value(forKey: AppSettingsModel.firstLunchKey) as? Bool ?? true
+        appColorScheme = AppColorScheme(rawValue: defaults.integer(forKey: AppSettingsModel.appColorSchemeKey)) ?? .system
         
-        autoShowMasterMainTab = UserDefaults.standard.value(forKey: AppSettingsModel.autoShowMasterMainTabKey) as? Bool ?? true
-        autoShowPlayerMainTab = UserDefaults.standard.value(forKey: AppSettingsModel.autoShowPlayerMainTabKey) as? Bool ?? true
+        autoShowMasterMainTab = defaults.value(forKey: AppSettingsModel.autoShowMasterMainTabKey) as? Bool ?? true
+        autoShowPlayerMainTab = defaults.value(forKey: AppSettingsModel.autoShowPlayerMainTabKey) as? Bool ?? true
         
-        masterMainTabDisplayMode = UserDefaults.standard.integer(forKey: AppSettingsModel.masterMainTabDisplayModeKey)
-        playerMainTabDisplayMode = UserDefaults.standard.integer(forKey: AppSettingsModel.playerMainTabDisplayModeKey)
+        masterMainTabDisplayMode = defaults.integer(forKey: AppSettingsModel.masterMainTabDisplayModeKey)
+        playerMainTabDisplayMode = defaults.integer(forKey: AppSettingsModel.playerMainTabDisplayModeKey)
         
-        showGameTableVolume = UserDefaults.standard.bool(forKey: AppSettingsModel.showGameTableVolumeKey)
-        needsValidateDatabase = UserDefaults.standard.value(forKey: AppSettingsModel.needsValidateDatabaseKey) as? Bool ?? true
+        showGameTableVolume = defaults.bool(forKey: AppSettingsModel.showGameTableVolumeKey)
+        needsValidateDatabase = defaults.value(forKey: AppSettingsModel.needsValidateDatabaseKey) as? Bool ?? true
 
         // shared App groups
-        useCloudKit = UserDefaults.standard.bool(forKey: AppSettingsModel.useCloudKitKey)
+        useCloudKit = defaults.bool(forKey: AppSettingsModel.useCloudKitKey)
+    }
+
+    public static func previewFixture(
+        firstLaunch: Bool = false,
+        appColorScheme: AppColorScheme = .system,
+        useCloudKit: Bool = false
+    ) -> AppSettingsModel {
+        AppSettingsModel(
+            previewValues: PreviewValues(
+                firstLaunch: firstLaunch,
+                appColorScheme: appColorScheme,
+                useCloudKit: useCloudKit
+            )
+        )
+    }
+
+    private struct PreviewValues {
+        var firstLaunch = false
+        var appColorScheme: AppColorScheme = .system
+        var autoShowMasterMainTab = true
+        var autoShowPlayerMainTab = true
+        var masterMainTabDisplayMode = 0
+        var playerMainTabDisplayMode = 0
+        var showGameTableVolume = false
+        var needsValidateDatabase = false
+        var useCloudKit = false
     }
     
     // MARK: - Keys

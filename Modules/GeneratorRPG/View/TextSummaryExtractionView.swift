@@ -100,7 +100,10 @@ public struct TextSummaryExtractionView: View {
     }
 
     private var navigationTitle: String {
-        "\(String(localized: module.localizedTitle)) \(String(localized: "Analysis", bundle: .module))"
+        String(
+            localized: "\(String(localized: module.localizedTitle)) Analysis",
+            bundle: .module
+        )
     }
 
     private func applyAndClose() {
@@ -120,66 +123,6 @@ public struct TextSummaryExtractionView: View {
     }
 }
 
-// MARK: - Update Form
-
-struct TextSummaryUpdateView: View {
-
-    let content: TableSummaryAnalysis
-    let module: NetworkModules
-    @Binding var selectedProperties: TextSummaryPropertySelection
-
-    var body: some View {
-        Form {
-            Section {
-                Text("Select which extracted values to apply on the \(String(localized: module.localizedTitle).lowercased()).", bundle: .module)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Toggle(isOn: $selectedProperties.applyTitle) {
-                    Text(content.title)
-                        .font(.body)
-                }
-            } header: {
-                Text("Title", bundle: .module)
-            }
-
-            Section {
-                Toggle(isOn: $selectedProperties.applyDescription) {
-                    Text(content.description)
-                        .font(.body)
-                        .lineLimit(3)
-                }
-            } header: {
-                Text("Description", bundle: .module)
-            }
-
-            if !content.tags.isEmpty {
-                Section {
-                    Toggle(isOn: $selectedProperties.applyTags) {
-                        FlowLayout(spacing: 8) {
-                            ForEach(content.tags, id: \.self) { tag in
-                                Text(tag)
-                                    .font(.caption)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.accentColor.opacity(0.2))
-                                    .clipShape(.capsule)
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Tags", bundle: .module)
-                }
-            }
-        }
-#if os(macOS)
-        .formStyle(.grouped)
-#endif
-    }
-}
-
 #Preview {
     NavigationStack {
         TextSummaryExtractionView(
@@ -187,20 +130,6 @@ struct TextSummaryUpdateView: View {
             entriesText: "A moss-covered altar stands in the center of the chamber."
         ) { _, _ in }
     }
-}
-
-#Preview {
-    @Previewable @State var selectedProperties = TextSummaryPropertySelection()
-
-    TextSummaryUpdateView(
-        content: TableSummaryAnalysis(
-            title: "Forgotten Shrine Encounters",
-            description: "Potential discoveries and dangers within an ancient shrine.",
-            tags: ["ruins", "mystery"]
-        ),
-        module: .table,
-        selectedProperties: $selectedProperties
-    )
 }
 
 #endif

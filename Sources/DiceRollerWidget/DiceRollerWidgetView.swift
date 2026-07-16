@@ -44,12 +44,12 @@ struct DiceRollerWidgetView: View {
             }
 
             // Dice type label
-            Text(entry.snapshot.selectedDice.name)
+            Text(verbatim: entry.snapshot.selectedDice.name)
                 .font(.caption)
-                .fontWeight(.medium)
                 .widgetAccentable()
         }
         .padding()
+        .accessibilityElement(children: .combine)
     }
     
     // MARK: - Medium Widget
@@ -69,7 +69,7 @@ struct DiceRollerWidgetView: View {
                 } else {
                     dieImageView(entry.snapshot.selectedDice, size: 50)
 
-                    Text(entry.snapshot.selectedDice.name)
+                    Text(verbatim: entry.snapshot.selectedDice.name)
                         .font(.headline)
                         .widgetAccentable()
                 }
@@ -82,13 +82,13 @@ struct DiceRollerWidgetView: View {
             // Otherwise always show quick roll
             VStack(spacing: 4) {
                 if shouldShowFavorites {
-                    Text("Favorites")
+                    Text("Favorites", bundle: .main)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
                     favoriteDiceGrid
                 } else {
-                    Text("Quick Roll")
+                    Text("Quick Roll", bundle: .main)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -106,7 +106,7 @@ struct DiceRollerWidgetView: View {
         VStack(spacing: 16) {
             // Header
             HStack {
-                Text("Dice Roller")
+                Text("Dice Roller", bundle: .main)
                     .font(.headline)
                     .widgetAccentable()
 
@@ -123,15 +123,15 @@ struct DiceRollerWidgetView: View {
             if let lastRoll = entry.snapshot.lastRoll {
                 diceResultView(lastRoll)
 
-                Text("Last Roll")
+                Text("Last Roll", bundle: .main)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
                 dieImageView(entry.snapshot.selectedDice, size: 60)
 
-                Text(entry.snapshot.selectedDice.name)
+                Text(verbatim: entry.snapshot.selectedDice.name)
                     .font(.title2)
-                    .fontWeight(.semibold)
+                    .bold()
                     .widgetAccentable()
             }
 
@@ -140,13 +140,13 @@ struct DiceRollerWidgetView: View {
             // Dice selection grid - Show favorites only if game is active AND we have favorites
             // Otherwise always show quick roll
             if shouldShowFavorites {
-                Text("Favorite Dice")
+                Text("Favorite Dice", bundle: .main)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 favoriteDiceGrid
             } else {
-                Text("Quick Roll")
+                Text("Quick Roll", bundle: .main)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -167,6 +167,7 @@ struct DiceRollerWidgetView: View {
             .frame(width: size, height: size)
             // Don't apply widgetAccentable to images - they should stay in full color
             .unredacted() // Ensure images always render
+            .accessibilityHidden(true)
     }
 
     private func diceResultView(_ result: DiceWidgetRoll) -> some View {
@@ -183,10 +184,12 @@ struct DiceRollerWidgetView: View {
             }
             .widgetAccentable() // Mark the entire result as accentable content
 
-            Text(result.dice.name)
+            Text(verbatim: result.dice.name)
                 .font(.caption)
-                .fontWeight(.medium)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: result.dice.name))
+        .accessibilityValue(Text(verbatim: "\(result.sum)"))
     }
 
     private var quickDiceGrid: some View {
@@ -200,14 +203,17 @@ struct DiceRollerWidgetView: View {
                             size: 32
                         )
 
-                        Text(diceType.rawValue)
-                            .font(.system(size: 8))
+                        Text(verbatim: diceType.rawValue)
+                            .font(.caption2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 4)
                 }
                 .buttonStyle(.plain)
                 .invalidatableContent() // iOS 18: Auto-updates on tap
+                .accessibilityLabel(Text("Roll \(diceType.rawValue)", bundle: .main))
             }
         }
     }
@@ -219,8 +225,8 @@ struct DiceRollerWidgetView: View {
                     VStack(spacing: 2) {
                         dieImageView(favorite.dice, size: 32)
                         
-                        Text(favorite.name)
-                            .font(.system(size: 8))
+                        Text(verbatim: favorite.name)
+                            .font(.caption2)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }
@@ -228,6 +234,7 @@ struct DiceRollerWidgetView: View {
                     .padding(.vertical, 4)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text("Roll \(favorite.name)", bundle: .main))
             }
         }
     }
@@ -247,6 +254,16 @@ struct DiceRollerWidgetView: View {
 }
 
 // MARK: - Previews
+
+#Preview("Dice roller view") {
+    DiceRollerWidgetView(
+        entry: DiceRollerEntry(
+            date: Date(timeIntervalSinceReferenceDate: 800_000_000),
+            snapshot: .preview
+        )
+    )
+    .containerBackground(for: .widget) { }
+}
 
 #Preview("Small", as: .systemSmall) {
     DiceRollerWidget()

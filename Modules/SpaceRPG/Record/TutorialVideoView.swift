@@ -18,6 +18,7 @@ struct TutorialVideoView: View {
     private let textDelay: TimeInterval = 0.3
     private let animationDuration: TimeInterval = 4
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,6 +30,7 @@ struct TutorialVideoView: View {
                 shouldLoop: false
             )
             .opacity(isShowing ? 1 : 0)
+            .accessibilityLabel(Text("Scanning tutorial", bundle: .module))
             .overlay(alignment: .bottom) {
                 if !isInReviewSheet {
                     Text(appModel.orbit.feedbackString(isObjectFlippable: appModel.isObjectFlippable))
@@ -44,8 +46,10 @@ struct TutorialVideoView: View {
         .foregroundStyle(.white)
         .onAppear {
             Task { @MainActor in
-                try? await Task.sleep(for: .seconds(textDelay))
-                withAnimation {
+                if !reduceMotion {
+                    try? await Task.sleep(for: .seconds(textDelay))
+                }
+                withAnimation(reduceMotion ? nil : .default) {
                     isShowing = true
                 }
             }

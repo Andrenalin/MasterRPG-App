@@ -15,8 +15,14 @@ struct CheckLanguageSupport: View {
                 HStack {
                     Image(systemName: manager.isLanguageSupported ? "checkmark.circle.fill" : "xmark.circle.fill")
                         .foregroundStyle(manager.isLanguageSupported ? .green : .red)
-                    Text(manager.isLanguageSupported ? "Supported" : "Not Supported", bundle: .module)
-                        .fontWeight(.medium)
+                    Group {
+                        if manager.isLanguageSupported {
+                            Text("Supported", bundle: .module)
+                        } else {
+                            Text("Not Supported", bundle: .module)
+                        }
+                    }
+                    .bold()
                 }
             }
         }

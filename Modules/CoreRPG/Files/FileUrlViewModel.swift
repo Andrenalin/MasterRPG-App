@@ -33,7 +33,9 @@ struct FileUrlViewModel: Equatable, Hashable, Identifiable, Sendable {
     }
 
     var hasDataLabel: LocalizedStringResource {
-        hasData ? "Yes" : "No"
+        hasData
+            ? LocalizedStringResource("Yes", bundle: .module)
+            : LocalizedStringResource("No", bundle: .module)
     }
 
     var isDownloadedIcon: String {

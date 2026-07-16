@@ -51,7 +51,12 @@ struct TableSummaryAnalyzer {
               let title = partial.title,
               let description = partial.description,
               let tags = partial.tags else {
-            throw PdfSummaryAnalysisError.generationFailed("Streaming completed but no content received")
+            throw PdfSummaryAnalysisError.generationFailed(
+                String(
+                    localized: "Streaming completed but no content was received.",
+                    bundle: .module
+                )
+            )
         }
 
         return TableSummaryAnalysis(title: title, description: description, tags: tags)
@@ -75,25 +80,49 @@ struct TableSummaryAnalyzer {
     private func handleGenerationError(_ error: LanguageModelSession.GenerationError) -> String {
         switch error {
         case .exceededContextWindowSize:
-            return "Table content is too large. Try a table with fewer entries."
+            return String(
+                localized: "Table content is too large. Try a table with fewer entries.",
+                bundle: .module
+            )
         case .guardrailViolation:
-            return "Content policy prevented analysis."
+            return String(localized: "Content policy prevented analysis.", bundle: .module)
         case .unsupportedLanguageOrLocale:
-            return "The table language is not supported by Apple Intelligence."
+            return String(
+                localized: "The table language is not supported by Apple Intelligence.",
+                bundle: .module
+            )
         case .assetsUnavailable(let reason):
-            return "Model assets unavailable: \(reason). Ensure Apple Intelligence is downloaded."
+            return String(
+                localized: "Model assets unavailable: \(String(describing: reason)). Ensure Apple Intelligence is downloaded.",
+                bundle: .module
+            )
         case .unsupportedGuide(let guide):
-            return "Schema contains unsupported constraint: \(guide)."
+            return String(
+                localized: "Schema contains unsupported constraint: \(String(describing: guide)).",
+                bundle: .module
+            )
         case .decodingFailure(let reason):
-            return "Failed to decode result: \(reason)."
+            return String(
+                localized: "Failed to decode result: \(String(describing: reason)).",
+                bundle: .module
+            )
         case .rateLimited(let retryAfter):
-            return "Rate limit exceeded. Try again in \(retryAfter) seconds."
+            return String(
+                localized: "Rate limit exceeded. Try again in \(String(describing: retryAfter)) seconds.",
+                bundle: .module
+            )
         case .concurrentRequests(let maxCount):
-            return "Too many concurrent requests (max \(maxCount)). Please wait."
+            return String(
+                localized: "Too many concurrent requests (max \(String(describing: maxCount))). Please wait.",
+                bundle: .module
+            )
         case .refusal(let reason, let category):
-            return "Analysis refused: \(reason) (category: \(category))."
+            return String(
+                localized: "Analysis refused: \(String(describing: reason)) (category: \(String(describing: category))).",
+                bundle: .module
+            )
         @unknown default:
-            return "Unexpected error: \(error.localizedDescription)"
+            return String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .module)
         }
     }
 

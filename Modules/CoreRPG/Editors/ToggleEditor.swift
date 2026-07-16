@@ -49,6 +49,7 @@ private extension ToggleEditor {
 }
 
 #Preview {
-    ToggleEditor(model: EditIdentifierModel(value: true), title: "Visible", bundle: nil, icon: "eye")
+    let title = LocalizedStringKey(String("Visible"))
+    ToggleEditor(model: EditIdentifierModel(value: true), title: title, bundle: nil, icon: "eye")
         .padding()
 }

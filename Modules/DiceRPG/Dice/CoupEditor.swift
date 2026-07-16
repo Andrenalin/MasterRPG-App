@@ -7,6 +7,7 @@ struct CoupEditor: View {
     let model: DiceModel
     
     @Environment(DiceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var isDiceValueCoup = false
     @State private var coupValue = 0.0
@@ -43,7 +44,9 @@ struct CoupEditor: View {
                 HStack(spacing: 8) {
                     ForEach(model.coupValues) { coup in
                         Button {
-                            withAnimation { root.editController.remove(coup: coup, itemId: model.id) }
+                            withAnimation(reduceMotion ? nil : .default) {
+                                root.editController.remove(coup: coup, itemId: model.id)
+                            }
                         } label: {
                             HStack(spacing: 4) {
                                 Label(coup.text, systemImage: coup.icon)
@@ -79,17 +82,22 @@ struct CoupEditor: View {
         Button {
             addCurrentCoup()
         } label: {
-            Image(systemName: "plus")
-                .imageScale(.large)
+            Label {
+                Text("Add coup", bundle: .module)
+            } icon: {
+                Image(systemName: "plus")
+            }
+            .labelStyle(.iconOnly)
+            .imageScale(.large)
         }
-        .padding(.horizontal, 16)
+        .frame(minWidth: 44, minHeight: 44)
         .disabled(coupValue == 0)
 
         TextIntEditor(value: $coupValue, title: "Coup Dice Value", icon: "plus", prompt: "coup", bundle: .module, range: model.minValue...model.maxValue)
     }
 
     func addCurrentCoup() {
-        withAnimation(.easeInOut) {
+        withAnimation(reduceMotion ? nil : .easeInOut) {
             root.editController.add(coup: Int(coupValue), isDiceValueCoup: isDiceValueCoup, itemId: model.id)
             coupValue = 0.0
         }

@@ -63,9 +63,7 @@ final class TimedMessageList {
             dispatchPrecondition(condition: .onQueue(.main))
 
             if activeMessage?.message != messages.first?.message {
-                withAnimation {
-                    activeMessage = messages.first
-                }
+                activeMessage = messages.first
             }
         }
     }
@@ -132,9 +130,7 @@ final class TimedMessageList {
     private func cullExpired() {
         dispatchPrecondition(condition: .onQueue(.main))
 
-        withAnimation {
-            messages.removeAll(where: { $0.hasExpired() })
-        }
+        messages.removeAll(where: { $0.hasExpired() })
     }
 
     @objc

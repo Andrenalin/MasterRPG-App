@@ -104,7 +104,7 @@ extension LinkHighlightTextModel {
                     endRanges.removeFirst()
                 }
                 if let endRange {
-                    result.append(HighlightedTextComponent(text: Text("\(Image(systemName: "arrowshape.right.fill"))")
+                    result.append(HighlightedTextComponent(text: Text(Image(systemName: "arrowshape.right.fill"))
                             .customAttribute(LinkIconExpandedAttribute(isStart: true)), string: LinkExpandHighLightValues.begin.rawValue, range: index..<nextIndex))
                     result.append(contentsOf: components(for: text, range: nextIndex..<endRange.lowerBound, links: links, boldRange: &boldRange, deep: deep + 1))
                     //print("Link End:\(text[nextIndex..<endRange.lowerBound])")
@@ -153,12 +153,12 @@ extension LinkHighlightTextModel {
                     let previousRange = lastIndex..<index
                     result.append(contentsOf: hightlight(text: text, range: previousRange, isBold: boldRange != nil, deep: deep))
                 }
-                result.append(HighlightedTextComponent(text: Text("\(Image(systemName: link.icon))")
+                result.append(HighlightedTextComponent(text: Text(Image(systemName: link.icon))
                     .customAttribute(LinkIconAttribute(linkModel: link))
                     .bold(boldRange != nil), string: link.icon, range: link.range))
                 
                 result.append(contentsOf: hightlight(text: "\(link.name)", range: link.name.startIndex..<link.name.endIndex, isBold: boldRange != nil, deep: deep, custom: [LinkHighlightAttribute(linkModel: link)]))
-                result.append(HighlightedTextComponent(text: Text("  ")
+                result.append(HighlightedTextComponent(text: Text(verbatim: "  ")
                     .customAttribute(LinkIconExpandedAttribute(isStart: false)), string: LinkExpandHighLightValues.space.rawValue, range: link.name.startIndex..<link.name.endIndex))
 
                 lastIndex = link.range.upperBound

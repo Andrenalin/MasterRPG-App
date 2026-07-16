@@ -9,6 +9,7 @@ struct DropChooseView: View {
     let selectionModel: ItemSelectionModel
 
     @Environment(DiceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         DropItemModuleArea(module: root.configurable.module, contentView: {
@@ -33,7 +34,7 @@ struct DropChooseView: View {
         .padding(1)
         .overlay(alignment: .topTrailing) {
             Button(role: .destructive) {
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     selectionModel.selection = []
                 }
             } label: {
@@ -43,12 +44,14 @@ struct DropChooseView: View {
             }
             .accessibilityLabel(Text("Remove", bundle: .module))
             .borderLessTVBottonStyle()
-            .padding(4)
+            .frame(minWidth: 44, minHeight: 44)
             .contentShape(.circle)
 #if !os(visionOS)
             .glassEffect(.regular.interactive())
 #endif
             .opacity(selectionModel.itemId != nil ? 1.0 : 0.0)
+            .allowsHitTesting(selectionModel.itemId != nil)
+            .accessibilityHidden(selectionModel.itemId == nil)
         }
     }
 
@@ -62,50 +65,8 @@ struct DropChooseView: View {
     }
 }
 
-private struct EmptyDropButton: View {
-    let selectionModel: ItemSelectionModel
-
-    @Environment(DiceRootModel.self) private var root
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-    @Environment(\.navigator) private var navigator
-    @Environment(ScenesManager.self) private var scenesManager
-
-    var body: some View {
-        Button {
-            root.itemSelectionModel = selectionModel
-#if os(macOS)
-            scenesManager.openWindow(SceneId(rawValue: NetworkModules.dice.linkWindowId))
-#else
-            // we need module specific SelectionRoute, cannot use generic one (itemSelection will not work)
-            navigator.navigate(to: SelectionRoute.selection, method: .managedSheet)
-#endif
-        } label: {
-            VStack {
-                if appSizeModel.mode == .regular {
-                    Text("Drop \(root.configurable.module.title)", bundle: .module)
-
-                    Image(systemName: "square.and.arrow.down")
-                        .imageScale(.large)
-                }
-                Text(chooseText, bundle: .module)
-            }
-            .padding(.horizontal, 12)
-        }
-        .contentShape(.rect)
-    }
-
-    private var chooseText: LocalizedStringKey {
-#if os(macOS)
-        "Open \(root.configurable.module.title)"
-#else
-        "Choose \(root.configurable.module.title)"
-#endif
-    }
-}
-
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
         DropChooseView(selectionModel: ItemSelectionModel())
-        EmptyDropButton(selectionModel: ItemSelectionModel())
     }
 }

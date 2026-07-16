@@ -16,16 +16,30 @@ struct DiceGameActionBar: View {
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         HStack(spacing: 8) {
             if !root.gameController.isPlayerDice(itemId: itemId) {
                 
                 if !hideOwnDice {
-                    Button { withAnimation { diceDisplayModel.isEditing.toggle() } } label: {
-                        Image(systemName: "square.and.pencil.circle\(diceDisplayModel.isEditing ? ".fill" : "")")
-                            .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                            .frame(height: 24)
+                    Button {
+                        withAnimation(reduceMotion ? nil : .default) {
+                            diceDisplayModel.isEditing.toggle()
+                        }
+                    } label: {
+                        Label {
+                            if diceDisplayModel.isEditing {
+                                Text("Finish editing dice", bundle: .module)
+                            } else {
+                                Text("Edit dice", bundle: .module)
+                            }
+                        } icon: {
+                            Image(systemName: "square.and.pencil.circle\(diceDisplayModel.isEditing ? ".fill" : "")")
+                                .contentTransition(.symbolEffect(.replace.wholeSymbol))
+                        }
+                        .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
                     }
 #if !os(tvOS)
                     .buttonStyle(.borderedProminent)
@@ -41,13 +55,22 @@ struct DiceGameActionBar: View {
                     
                     Button {
                         if diceDisplayModel.isEditing {
-                            withAnimation { diceDisplayModel.isEditing = false }
+                            withAnimation(reduceMotion ? nil : .default) {
+                                diceDisplayModel.isEditing = false
+                            }
                         }
-                        withAnimation { root.gameController.rollDice(itemId: itemId, networkActions: networkActions) }
+                        withAnimation(reduceMotion ? nil : .default) {
+                            root.gameController.rollDice(itemId: itemId, networkActions: networkActions)
+                        }
                     } label: {
-                        Image(systemName: diceIcon)
-                            .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                            .frame(height: 24)
+                        Label {
+                            Text("Roll dice", bundle: .module)
+                        } icon: {
+                            Image(systemName: diceIcon)
+                                .contentTransition(.symbolEffect(.replace.wholeSymbol))
+                        }
+                        .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
                     }
 #if !os(tvOS)
                     .buttonStyle(.borderedProminent)
@@ -56,9 +79,22 @@ struct DiceGameActionBar: View {
 
                 if canShowPlayer {
                     if !root.gameController.diceGameModel.playerDice.isEmpty {
-                        Button { withAnimation { diceDisplayModel.showPlayerDice.toggle() } } label: {
-                            Image(systemName: "person.2")
-                                .frame(height: 24)
+                        Button {
+                            withAnimation(reduceMotion ? nil : .default) {
+                                diceDisplayModel.showPlayerDice.toggle()
+                            }
+                        } label: {
+                            Label {
+                                if diceDisplayModel.showPlayerDice {
+                                    Text("Hide player dice", bundle: .module)
+                                } else {
+                                    Text("Show player dice", bundle: .module)
+                                }
+                            } icon: {
+                                Image(systemName: "person.2")
+                            }
+                            .labelStyle(.iconOnly)
+                            .frame(minWidth: 44, minHeight: 44)
                         }
                         .buttonStyle(.borderedProminent)
                     }
@@ -67,11 +103,18 @@ struct DiceGameActionBar: View {
                 if appGameStateModel.gameModus == .player && root.gameController.gameModel.focusItemIds.count > 1 {
                     Button {
                         if let last = root.gameController.gameModel.focusItemIds.last {
-                            withAnimation { root.gameController.gameModel.focusItemIds = [last] }
+                            withAnimation(reduceMotion ? nil : .default) {
+                                root.gameController.gameModel.focusItemIds = [last]
+                            }
                         }
                     } label: {
-                        Image(systemName: "switch.2")
-                            .frame(height: 24)
+                        Label {
+                            Text("Show focused dice", bundle: .module)
+                        } icon: {
+                            Image(systemName: "switch.2")
+                        }
+                        .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
                     }
 #if !os(tvOS)
                     .buttonStyle(.borderedProminent)
@@ -81,9 +124,18 @@ struct DiceGameActionBar: View {
                 if showFocusButton && !root.gameController.isFocusedDice(itemId: itemId) {
                     Spacer()
 
-                    Button { withAnimation { root.gameController.gameModel.focusItemIds = [itemId] } } label: {
-                        Image(systemName: "house")
-                            .frame(height: 24)
+                    Button {
+                        withAnimation(reduceMotion ? nil : .default) {
+                            root.gameController.gameModel.focusItemIds = [itemId]
+                        }
+                    } label: {
+                        Label {
+                            Text("Set as focused dice", bundle: .module)
+                        } icon: {
+                            Image(systemName: "house")
+                        }
+                        .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
                     }
 #if !os(tvOS)
                     .buttonStyle(.borderedProminent)

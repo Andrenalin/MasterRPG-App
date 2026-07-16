@@ -221,53 +221,13 @@ public struct OptionKeyPressedButton<Content: View>: View {
     }
 }
 
-public struct AltOpenWindowButton: View {
-    public init(module: NetworkModules) {
-        self.module = module
-    }
-    
-    let module: NetworkModules
-    
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
-    @Environment(ScenesManager.self) private var scenesManager
-
-    public var body: some View {
-        if supportsMultipleWindows {
-            OptionKeyPressedButton { isPressed in
-#if !os(tvOS)
-                withAnimation {
-                    if isPressed {
-                        scenesManager.openWindow(SceneId(rawValue: module.linkAltWindowId))
-                    } else {
-                        scenesManager.openWindow(SceneId(rawValue: module.linkWindowId))
-                    }
-                }
-#endif
-            } label: { isPressed in
-                Image(systemName: module.icon)
-                    .overlay(alignment: .top) {
-                        Image(systemName: "plus")
-                            .imageScale(.small)
-                            .foregroundStyle(.green)
-                            .padding(2)
-                            .background(.ultraThinMaterial, in: Circle())
-                            .offset(x: 8, y: -8)
-                            .opacity(isPressed ? 1 : 0)
-                    }
-            }
-        }
-    }
-}
-
 #Preview {
     OptionKeyPressedButton(action: { _ in }) { isPressed in
-        Label(isPressed ? "Alternate action" : "Primary action", systemImage: "option")
+        Label {
+            Text(verbatim: isPressed ? "Alternate action" : "Primary action")
+        } icon: {
+            Image(systemName: "option")
+        }
     }
     .environment(OptionKeyDownModel())
-}
-
-#Preview {
-    AltOpenWindowButton(module: .adventure)
-        .environment(ScenesManager())
-        .environment(OptionKeyDownModel())
 }

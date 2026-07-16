@@ -43,10 +43,12 @@ public struct PdfSummaryAnalysisView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()
-            Picker("", selection: $selectedLanguage) {
+            Picker(selection: $selectedLanguage) {
                 ForEach(OutputLanguage.supported) { language in
-                    Text(language.displayName).tag(language)
+                    Text(verbatim: language.displayName).tag(language)
                 }
+            } label: {
+                Text("Output Language", bundle: .module)
             }
             .labelsHidden()
         }
@@ -102,16 +104,26 @@ public struct PdfSummaryAnalysisView: View {
                         Image(systemName: progress.title == nil ? "xmark.circle" : "checkmark.circle.fill")
                             .foregroundStyle(progress.title == nil ? .red : .green)
                             .contentTransition(.symbolEffect(.automatic))
-                        Text("Title: \(progress.title ?? "<none>")", bundle: .module)
-                            .font(.subheadline)
+                        if let title = progress.title {
+                            Text("Title: \(title)", bundle: .module)
+                                .font(.subheadline)
+                        } else {
+                            Text("Title unavailable", bundle: .module)
+                                .font(.subheadline)
+                        }
                     }
 
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(progress.summary == nil ? .red : .green)
                             .contentTransition(.symbolEffect(.automatic))
-                        Text("Summary \(progress.summary == nil ? "...." : "extracted")", bundle: .module)
-                            .font(.subheadline)
+                        if progress.summary == nil {
+                            Text("Summary pending", bundle: .module)
+                                .font(.subheadline)
+                        } else {
+                            Text("Summary extracted", bundle: .module)
+                                .font(.subheadline)
+                        }
                     }
 
                     HStack {
@@ -145,7 +157,7 @@ public struct PdfSummaryAnalysisView: View {
             Image(systemName: "exclamationmark.circle.fill")
                 .foregroundStyle(.red)
 
-            Text(error)
+            Text(verbatim: error)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -172,6 +184,6 @@ public struct PdfSummaryAnalysisView: View {
             print("Analyzed: \(content.title)")
         }
     } else {
-        Text("No sample PDF available", bundle: .module)
+        Text(verbatim: "No sample PDF available")
     }
 }

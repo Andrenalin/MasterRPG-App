@@ -77,9 +77,13 @@ private extension WeatherThunderEditor {
     @ViewBuilder var lightningFrequencyEditorView: some View {
         LabeledContent {
 #if os(tvOS)
-            Text("\(model.lightningFrequency)")
+            Text(model.lightningFrequency, format: .number.precision(.fractionLength(0)))
 #else
             Slider(value: $lightningFrequency.value, in: 0 ... 100)
+                .accessibilityLabel(Text("Frequency", bundle: .module))
+                .accessibilityValue(
+                    Text(lightningFrequency.value, format: .number.precision(.fractionLength(0)))
+                )
 #endif
         } label: {
             Text("Frequency", bundle: .module)
@@ -94,9 +98,13 @@ private extension WeatherThunderEditor {
     @ViewBuilder var lightningMaxBoltsEditorView: some View {
         LabeledContent {
 #if os(tvOS)
-            Text("\(model.lightningMaxBolts)")
+            Text(model.lightningMaxBolts, format: .number.precision(.fractionLength(0)))
 #else
             Slider(value: $lightningMaxBolts.value, in: 0 ... 10)
+                .accessibilityLabel(Text("Max Bolts", bundle: .module))
+                .accessibilityValue(
+                    Text(lightningMaxBolts.value, format: .number.precision(.fractionLength(0)))
+                )
 #endif
         } label: {
             Text("Max Bolts", bundle: .module)
@@ -111,9 +119,13 @@ private extension WeatherThunderEditor {
     @ViewBuilder var lightningForkEditorView: some View {
         LabeledContent {
 #if os(tvOS)
-            Text("\(model.lightningForkProbability)")
+            Text(model.lightningForkProbability, format: .number.precision(.fractionLength(0)))
 #else
             Slider(value: $lightningForkProbability.value, in: 0 ... 100)
+                .accessibilityLabel(Text("Fork %", bundle: .module))
+                .accessibilityValue(
+                    Text(lightningForkProbability.value / 100, format: .percent.precision(.fractionLength(0)))
+                )
 #endif
         } label: {
             Text("Fork %", bundle: .module)

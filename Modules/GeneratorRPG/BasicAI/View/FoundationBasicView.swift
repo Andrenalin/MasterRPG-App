@@ -30,7 +30,7 @@ struct FoundationBasicView<Content: View>: View {
 
 #Preview {
     FoundationBasicView {
-        Text("Test")
+        Text(verbatim: "Test")
     }
     .environment(\.locale, Locale(identifier: "de"))
 }

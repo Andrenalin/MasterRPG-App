@@ -81,9 +81,11 @@ extension WeatherEntity: Transferable {
         }
 
         DataRepresentation(exportedContentType: .plainText) {
-            """
-            Name: \($0.name)
-            Description: \($0.description)
+            let nameLabel = String(localized: "Name", bundle: .module)
+            let descriptionLabel = String(localized: "Description", bundle: .module)
+            return """
+            \(nameLabel): \($0.name)
+            \(descriptionLabel): \($0.description)
             """.data(using: .utf8)!
         }
     }

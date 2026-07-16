@@ -44,27 +44,27 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
 
     public var localizedTitle: LocalizedStringResource {
         switch self {
-        case .adventure: "Adventure"
-        case .audio: "Audio"
-        case .dice: "Dice"
-        case .editor: "Editors"
-        case .game: "Game"
-        case .generator: "Generator"
-        case .map: "Map"
-        case .none: "ERROR"
-        case .pdf: "Pdf"
-        case .photo: "Photo"
-        case .search: "Search"
-        case .setting: "Settings"
-        case .space: "Space"
-        case .table: "Table"
-        case .value: "Character"
-        case .weather: "Weather"
+        case .adventure: LocalizedStringResource("Adventure", bundle: .module)
+        case .audio: LocalizedStringResource("Audio", bundle: .module)
+        case .dice: LocalizedStringResource("Dice", bundle: .module)
+        case .editor: LocalizedStringResource("Editors", bundle: .module)
+        case .game: LocalizedStringResource("Game", bundle: .module)
+        case .generator: LocalizedStringResource("Generator", bundle: .module)
+        case .map: LocalizedStringResource("Map", bundle: .module)
+        case .none: LocalizedStringResource("ERROR", bundle: .module)
+        case .pdf: LocalizedStringResource("Pdf", bundle: .module)
+        case .photo: LocalizedStringResource("Photo", bundle: .module)
+        case .search: LocalizedStringResource("Search", bundle: .module)
+        case .setting: LocalizedStringResource("Settings", bundle: .module)
+        case .space: LocalizedStringResource("Space", bundle: .module)
+        case .table: LocalizedStringResource("Table", bundle: .module)
+        case .value: LocalizedStringResource("Character", bundle: .module)
+        case .weather: LocalizedStringResource("Weather", bundle: .module)
         }
     }
 
     public var title: String {
-        String(localized: localizedTitle).localizedString
+        String(localized: localizedTitle)
     }
     
     public var icon: String {

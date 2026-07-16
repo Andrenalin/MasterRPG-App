@@ -4,7 +4,11 @@ import SwiftUI
 
 #Preview {
     DropItemModuleArea(module: .adventure) {
-        Label("Drop an adventure here", systemImage: "tray.and.arrow.down")
+        Label {
+            Text(verbatim: "Drop an adventure here")
+        } icon: {
+            Image(systemName: "tray.and.arrow.down")
+        }
     } dropAction: { _, _, _ in }
     .padding()
 }

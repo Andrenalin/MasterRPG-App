@@ -8,13 +8,23 @@
 import SwiftUI
 
 struct StarsView: View {
-    @State private var starField = StarField()
+    init(deterministic: Bool = false) {
+        self._starField = State(initialValue: StarField(deterministic: deterministic))
+        self.snapshotDate = deterministic ? Date(timeIntervalSinceReferenceDate: 0) : nil
+    }
+
+    @State private var starField: StarField
+    let snapshotDate: Date?
+
+    @Environment(\.accessibilityDimFlashingLights) private var accessibilityDimFlashingLights
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(paused: shouldPauseAnimation)) { timeline in
             Canvas { context, size in
-                let timeInterval = timeline.date.timeIntervalSince1970
-                starField.update(date: timeline.date, size: size)
+                let renderingDate = snapshotDate ?? timeline.date
+                let timeInterval = renderingDate.timeIntervalSince1970
+                starField.update(date: renderingDate, size: size)
                 context.addFilter(.blur(radius: 0.3))
 
                 for (index, star) in starField.stars.enumerated() {
@@ -59,13 +69,17 @@ struct StarsView: View {
         )
 //        .frame(width: size.width, height: size.height)
     }
+
+    private var shouldPauseAnimation: Bool {
+        accessibilityReduceMotion || accessibilityDimFlashingLights
+    }
 }
 
 #Preview {
     Group {
-        StarsView()
+        StarsView(deterministic: true)
             .frame(width: 300, height: 150)
-        StarsView()
+        StarsView(deterministic: true)
             .frame(width: 600, height: 150)
     }
     .background(.black)

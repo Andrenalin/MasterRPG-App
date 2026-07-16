@@ -6,6 +6,7 @@ struct EntryNameEditor: View {
     @Bindable var editModel: TextEditModel
     @FocusState.Binding var currentFocus: EntryEditorFocusField?
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -33,6 +34,7 @@ struct EntryNameEditor: View {
                             .imageScale(.medium)
                     }
                     .buttonStyle(.plain)
+                    .frame(minWidth: 44, minHeight: 44)
                     .accessibilityLabel(Text("Clear name", bundle: .module))
                     .transition(.scale.combined(with: .opacity))
                 }
@@ -45,7 +47,7 @@ struct EntryNameEditor: View {
                     .strokeBorder(strokeColor, lineWidth: 1)
             }
         }
-        .animation(.snappy(duration: 0.2), value: editModel.name.isEmpty)
+        .animation(accessibilityReduceMotion ? nil : .snappy(duration: 0.2), value: editModel.name.isEmpty)
     }
     
     private var adaptiveBackgroundColor: Color {

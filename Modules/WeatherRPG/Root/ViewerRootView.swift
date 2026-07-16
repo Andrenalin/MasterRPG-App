@@ -11,6 +11,7 @@ struct ViewerRootView: View {
     @Environment(WeatherRootModel.self) private var root
     
     @Environment(AppWindowSizeModel.self) private var appSizeModel
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     
@@ -37,7 +38,9 @@ struct ViewerRootView: View {
         .environment(root.editController.cacheItemListModel)
         .onAppear {
             guard configuration.isGame else { return }
-            withAnimation { isAnimating = true }
+            withAnimation(accessibilityReduceMotion ? nil : .default) {
+                isAnimating = true
+            }
         }
     }
 }
@@ -62,10 +65,20 @@ private extension ViewerRootView {
 
     var animateButton: some View {
         Button {
-            withAnimation { isAnimating.toggle() }
+            withAnimation(accessibilityReduceMotion ? nil : .default) {
+                isAnimating.toggle()
+            }
         } label: {
-            Image(systemName: "film\(isAnimating ? ".fill" : "")")
+            Label {
+                Text("Animate", bundle: .module)
+            } icon: {
+                Image(systemName: "film\(isAnimating ? ".fill" : "")")
+            }
         }
+        .labelStyle(.iconOnly)
+        .accessibilityValue(
+            isAnimating ? Text("On", bundle: .module) : Text("Off", bundle: .module)
+        )
         .contentTransition(.symbolEffect(.replace.wholeSymbol))
 #if os(macOS)
                 .foregroundStyle(root.config.module.tint)
@@ -82,8 +95,13 @@ private extension ViewerRootView {
                 dismiss()
             }
         } label: {
-            Image(systemName: "xmark.circle")
+            Label {
+                Text("Close", bundle: .module)
+            } icon: {
+                Image(systemName: "xmark.circle")
+            }
         }
+        .labelStyle(.iconOnly)
 #if os(macOS)
                 .foregroundStyle(root.config.module.tint)
 #else

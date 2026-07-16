@@ -4,13 +4,21 @@ import SwiftUI
 
 #Preview("Regular") {
     GlassButton(action: {}) {
-        Label("Continue", systemImage: "arrow.right")
+        Label {
+            Text(verbatim: "Continue")
+        } icon: {
+            Image(systemName: "arrow.right")
+        }
     }
 }
 
 #Preview("Prominent") {
     GlassButton(isProminent: true, action: {}) {
-        Label("Continue", systemImage: "arrow.right")
+        Label {
+            Text(verbatim: "Continue")
+        } icon: {
+            Image(systemName: "arrow.right")
+        }
     }
 }
 

@@ -76,3 +76,9 @@ public struct ManagedPresentationView<Content: View>: View {
     }
 
 }
+
+#Preview {
+    ManagedPresentationView(name: "Preview") {
+        Text(verbatim: "Managed presentation")
+    }
+}

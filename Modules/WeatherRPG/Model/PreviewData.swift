@@ -63,50 +63,172 @@ extension WeatherRootModel: RootExportControllable {
 }
 
 extension WeatherModel {
-    static let uuid = UUID()
+    nonisolated static let previewId = fixtureID(1)
 
     static var `default`: WeatherModel {
-        WeatherModel(id: uuid, name: "Storm", description: "Strom with Rain and Thunder in the night. This is the right weather for a typical horror scenario.", tags: ["Rain", "Storm", "Horror"], time: 0.0, cloudThickness: .ultra, stormType: .rain, rainAngle: 90, rainIntensity: 500.0, lightningFrequency: 60, lightningMaxBolts: 120, lightningForkProbability: 80, photoId: nil)
+        WeatherModel(
+            id: previewId,
+            name: "Storm",
+            description: "Storm with rain and thunder in the night. This is the right weather for a typical horror scenario.",
+            tags: ["Rain", "Storm", "Horror"],
+            weatherUpdate: fixtureID(0x81),
+            time: 0,
+            cloudThickness: .ultra,
+            stormType: .rain,
+            rainAngle: 90,
+            rainIntensity: 500,
+            lightningFrequency: 60,
+            lightningMaxBolts: 120,
+            lightningForkProbability: 80,
+            photoId: nil
+        )
     }
 
     static var nice: WeatherModel {
-        WeatherModel(id: UUID(), name: "Sunny", description: "A nice weather with a few clouds", tags: ["Sheep Clouds", "Sunny", "Normal"], time: 0.0, cloudThickness: .thin, stormType: .none, rainAngle: 0, rainIntensity: 10, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
+        WeatherModel(
+            id: fixtureID(2),
+            name: "Sunny",
+            description: "Nice weather with a few clouds.",
+            tags: ["Sheep Clouds", "Sunny", "Normal"],
+            weatherUpdate: fixtureID(0x82),
+            time: 0,
+            cloudThickness: .thin,
+            stormType: .none,
+            rainAngle: 0,
+            rainIntensity: 10,
+            lightningFrequency: 0,
+            lightningMaxBolts: 0,
+            lightningForkProbability: 0,
+            photoId: nil
+        )
     }
 
     static var snow: WeatherModel {
-        WeatherModel(id: UUID(), name: "Snow", description: "Snow Strom in the mountains", tags: ["Montains", "Storm", "Snow"], time: 0.0, cloudThickness: .thick, stormType: .snow, rainAngle: -30, rainIntensity: 1000.0, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
+        WeatherModel(
+            id: fixtureID(3),
+            name: "Snow",
+            description: "Snow storm in the mountains.",
+            tags: ["Mountains", "Storm", "Snow"],
+            weatherUpdate: fixtureID(0x83),
+            time: 0,
+            cloudThickness: .thick,
+            stormType: .snow,
+            rainAngle: -30,
+            rainIntensity: 1_000,
+            lightningFrequency: 0,
+            lightningMaxBolts: 0,
+            lightningForkProbability: 0,
+            photoId: nil
+        )
     }
 
     static var light: WeatherModel {
-        WeatherModel(id: UUID(), name: "Light", description: "Light cloudy but overall nice weather", tags: ["Sommer", "Day"], time: 12 * 60 * 60, cloudThickness: .light, stormType: .none, rainAngle: 0, rainIntensity: 10, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
+        WeatherModel(
+            id: fixtureID(4),
+            name: "Light",
+            description: "Lightly cloudy but overall pleasant weather.",
+            tags: ["Summer", "Day"],
+            weatherUpdate: fixtureID(0x84),
+            time: 12 * 60 * 60,
+            cloudThickness: .light,
+            stormType: .none,
+            rainAngle: 0,
+            rainIntensity: 10,
+            lightningFrequency: 0,
+            lightningMaxBolts: 0,
+            lightningForkProbability: 0,
+            photoId: nil
+        )
     }
 
     static var regular: WeatherModel {
-        WeatherModel(id: UUID(), name: "Regular", description: "Some clouds but still dry weather", tags: ["Sommer", "Night"], time: 20 * 60 * 60, cloudThickness: .regular, stormType: .none, rainAngle: 0, rainIntensity: 100, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
+        WeatherModel(
+            id: fixtureID(5),
+            name: "Regular",
+            description: "Some clouds but still dry weather.",
+            tags: ["Summer", "Night"],
+            weatherUpdate: fixtureID(0x85),
+            time: 20 * 60 * 60,
+            cloudThickness: .regular,
+            stormType: .none,
+            rainAngle: 0,
+            rainIntensity: 100,
+            lightningFrequency: 0,
+            lightningMaxBolts: 0,
+            lightningForkProbability: 0,
+            photoId: nil
+        )
     }
 
     static var heavy: WeatherModel {
-        WeatherModel(id: UUID(), name: "Heavy", description: "Heavy clouds but still mostly weather", tags: ["Sommer", "Night"], time: 17 * 60 * 60, cloudThickness: .thick, stormType: .rain, rainAngle: -10, rainIntensity: 200, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
+        WeatherModel(
+            id: fixtureID(6),
+            name: "Heavy",
+            description: "Heavy clouds with steady rain.",
+            tags: ["Summer", "Night"],
+            weatherUpdate: fixtureID(0x86),
+            time: 17 * 60 * 60,
+            cloudThickness: .thick,
+            stormType: .rain,
+            rainAngle: -10,
+            rainIntensity: 200,
+            lightningFrequency: 0,
+            lightningMaxBolts: 0,
+            lightningForkProbability: 0,
+            photoId: nil
+        )
     }
 
     static var snowRegular: WeatherModel {
-        WeatherModel(id: UUID(), name: "Regular Snow", description: "Heavy clouds but still mostly weather", tags: ["Winter", "Night"], time: 20 * 60 * 60, cloudThickness: .thick, stormType: .snow, rainAngle: -10, rainIntensity: 200, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
+        WeatherModel(
+            id: fixtureID(7),
+            name: "Regular Snow",
+            description: "Heavy clouds with regular snow.",
+            tags: ["Winter", "Night"],
+            weatherUpdate: fixtureID(0x87),
+            time: 20 * 60 * 60,
+            cloudThickness: .thick,
+            stormType: .snow,
+            rainAngle: -10,
+            rainIntensity: 200,
+            lightningFrequency: 0,
+            lightningMaxBolts: 0,
+            lightningForkProbability: 0,
+            photoId: nil
+        )
     }
 
     static var thunder: WeatherModel {
-        WeatherModel(id: UUID(), name: "Thunder", description: "A cloud thunder storm", tags: ["Thunder", "Night"], time: 20 * 60 * 60, cloudThickness: .thick, stormType: .none, rainAngle: 0, rainIntensity: 200, lightningFrequency: 100, lightningMaxBolts: 2000, lightningForkProbability: 100, photoId: nil)
+        WeatherModel(
+            id: fixtureID(8),
+            name: "Thunder",
+            description: "A powerful nighttime thunderstorm.",
+            tags: ["Thunder", "Night"],
+            weatherUpdate: fixtureID(0x88),
+            time: 20 * 60 * 60,
+            cloudThickness: .thick,
+            stormType: .none,
+            rainAngle: 0,
+            rainIntensity: 200,
+            lightningFrequency: 100,
+            lightningMaxBolts: 2_000,
+            lightningForkProbability: 100,
+            photoId: nil
+        )
+    }
+
+    @MainActor
+    static var preview: WeatherModel {
+        .default
+    }
+
+    nonisolated private static func fixtureID(_ value: UInt8) -> UUID {
+        UUID(uuid: (0xB6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, value))
     }
 }
 
-// MARK: Preview - Test
-extension WeatherModel {
-    nonisolated static let previewId = UUID()
-    
-    @MainActor static let preview = WeatherRootModel.previewWithData.itemController.itemOrEmpty(for: WeatherRootModel.previewWithData.itemController.itemDataModel.items.first!)
-}
-
 extension ItemRowTreeModel {
-    static let preview = ItemRowTreeModel(itemId: WeatherModel.snow.id, typeId: .weather)
+    static let preview = ItemRowTreeModel(itemId: WeatherModel.previewId, typeId: .weather)
     @MainActor
     static func previewWithData(id: UUID) -> ItemRowTreeModel {
         ItemRowTreeModel(itemId: id, entryId: nil, typeId: .weather)

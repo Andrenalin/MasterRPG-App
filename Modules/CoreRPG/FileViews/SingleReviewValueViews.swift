@@ -34,69 +34,7 @@ struct SingleReviewAlternativeBlock: View {
     }
 }
 
-// Review text can contain RPG:// markdown links; render them read-only, no toggling.
-struct SingleReviewLinkText: View {
-    init(text: String) {
-        self.text = text
-        _model = State(initialValue: LinkHighlightTextModel(linkControllable: nil, text: text))
-    }
-
-    let text: String
-    @State private var model: LinkHighlightTextModel
-
-    var body: some View {
-        LinkHighlightTextView(model: model)
-            .onChange(of: text) { _, newText in
-                model.reset(text: newText)
-            }
-    }
-}
-
-struct SingleReviewValueView: View {
-    let kind: SingleReviewKind
-    let value: String?
-    var lineLimit: Int? = nil
-
-    var body: some View {
-        switch kind {
-        case .tags:
-            SingleReviewTagValue(tags: value.reviewTags)
-        case .text, .sublist:
-            SingleReviewLinkText(text: value ?? "—")
-                .lineLimit(lineLimit)
-        case .picker(options: _), .binary, .link:
-            Text(value ?? "—")
-                .lineLimit(lineLimit)
-        }
-    }
-}
-
-private struct SingleReviewTagValue: View {
-    let tags: [String]
-
-    var body: some View {
-        if tags.isEmpty {
-            Text("—")
-        } else if tags.count > 4 {
-            let half = tags.count / 2
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    TagItemRow(tags: Array(tags[..<half]))
-                }
-                HStack(spacing: 4) {
-                    TagItemRow(tags: Array(tags[half...]))
-                }
-            }
-        } else {
-            HStack(spacing: 4) {
-                TagItemRow(tags: tags)
-            }
-        }
-    }
-}
-
-private extension Optional where Wrapped == String {
+extension Optional where Wrapped == String {
     var reviewTags: [String] {
         guard let value = self else { return [] }
         return value
@@ -114,7 +52,3 @@ private extension Optional where Wrapped == String {
     )
     .padding()
 }
-
-#Preview { SingleReviewLinkText(text: "Visit [the shrine](RPG://ADVENTURE/preview).") }
-#Preview { SingleReviewValueView(kind: .tags, value: "dungeon, mystery, undead") }
-#Preview { SingleReviewTagValue(tags: ["dungeon", "mystery", "undead"]) }

@@ -4,11 +4,21 @@ import FoundationModels
 
 extension Array where Element == Transcript.Segment {
     func textContentJoined() -> String? {
-        let text = compactMap { segment in
-            if case .text(let textSegment) = segment {
+        let text = compactMap { segment -> String? in
+            switch segment {
+            case .text(let textSegment):
                 return textSegment.content
+            case .structure(let structuredSegment):
+                return structuredSegment.description
+#if compiler(>=6.4)
+            case .attachment(let attachmentSegment):
+                return attachmentSegment.label
+            case .custom(let customSegment):
+                return String(describing: customSegment)
+#endif
+            @unknown default:
+                return String(describing: segment)
             }
-            return nil
         }.joined(separator: " ")
 
         return text.isEmpty ? nil : text

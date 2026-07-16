@@ -390,6 +390,8 @@ extension MapEditor {
             )
             .equatable()
             .opacity(viewModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
+            .allowsHitTesting(viewModel.displayMode != .player || pin.isShown)
+            .accessibilityHidden(viewModel.displayMode == .player && !pin.isShown)
             .offset(x: location.x, y: location.y)
         }
     }
@@ -430,85 +432,6 @@ private extension MapEditor {
             }
         }
     }
-}
-
-// MARK: - Tile Needle Map Pin
-
-private struct TileNeedleMapPin: View {
-    let entries: MapEntryViewerModel
-    let entryId: UUID
-    let index: Int
-    let onUpdate: ([CGPoint]) -> Void
-    
-    @GestureState private var isDragging = false
-    
-    var coordinate: CGPoint {
-        let entry = entries.entry(entryId)
-        guard index >= 0 && index < entry.coordinates.count else { return .zero }
-        return entry.coordinates[index]
-    }
-    
-    var body: some View {
-        needleView
-    }
-    
-    var needleView: some View {
-        VStack(alignment: .center, spacing: 0) {
-            Circle()
-                .fill(Color.blue)
-                .frame(width: 44, height: 44)
-                .overlay {
-                    Circle()
-                        .stroke(Color.white, lineWidth: 2)
-                }
-            
-            needlePath
-                .stroke(Color.black, lineWidth: 1, antialiased: true)
-                .fill(Color.blue)
-                .frame(width: 4, height: 60)
-        }
-#if !os(tvOS)
-        .gesture(dragGesture)
-    #endif
-    }
-    #if !os(tvOS)
-    var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 3)
-            .updating($isDragging) { _, state, _ in
-                state = true
-            }
-            .onChanged { value in
-                var position = coordinate
-                position.x += value.location.x - value.startLocation.x
-                position.y += value.location.y - value.startLocation.y
-                entries.update(coordinate: position, for: entryId, at: index)
-                entries.selectedNeedleCoordinate = position
-            }
-            .onEnded { _ in
-                let updatedEntry = entries.entry(entryId)
-                onUpdate(updatedEntry.coordinates)
-            }
-    }
-    #endif
-    
-    private var needlePath: Path {
-        var p = Path()
-        p.move(to: CGPoint(x: 0, y: 0))
-        p.addLine(to: CGPoint(x: 4, y: 0))
-        p.addLine(to: CGPoint(x: 4, y: 60))
-        p.addLine(to: CGPoint(x: 0, y: 60))
-        p.closeSubpath()
-        return p
-    }
-}
-
-#Preview {
-    TileNeedleMapPin(
-        entries: MapEntryViewerModel(mapId: MapModel.previewId, entries: [.previewGreatHall]),
-        entryId: MapEntryModel.previewGreatHall.id,
-        index: 0,
-        onUpdate: { _ in }
-    )
 }
 
 // MARK: - Magnifier glass with Crosshair
@@ -647,9 +570,9 @@ private extension MapEditor {
 
     Group {
 #if os(macOS)
-        MapEditor(editController: root.editController, image: AKImage(named: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, containerSize: CGSize(width: 300, height: 800))
+        MapEditor(editController: root.editController, image: AKImage(named: "photo") ?? AKImage(), photoDegrees: 0, map: MapModel.preview, viewMode: .master, containerSize: CGSize(width: 300, height: 800), mapMode: .viewer)
 #else
-        MapEditor(editController: root.editController, image: AKImage(systemName: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, containerSize: CGSize(width: 300, height: 800))
+        MapEditor(editController: root.editController, image: AKImage(systemName: "photo") ?? AKImage(), photoDegrees: 0, map: MapModel.preview, viewMode: .master, containerSize: CGSize(width: 300, height: 800), mapMode: .viewer)
 #endif
     }
     .onAppear {

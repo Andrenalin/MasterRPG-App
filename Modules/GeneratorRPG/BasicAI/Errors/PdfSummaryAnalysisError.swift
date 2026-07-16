@@ -15,15 +15,24 @@ public enum PdfSummaryAnalysisError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .emptyDocument:
-            return "The PDF document is empty or contains no readable text."
+            return String(
+                localized: "The PDF document is empty or contains no readable text.",
+                bundle: .module
+            )
         case .textExtractionFailed:
-            return "Failed to extract text from the PDF document."
+            return String(localized: "Failed to extract text from the PDF document.", bundle: .module)
         case .contentTooLarge:
-            return "The PDF content is too large. Processing only the first portion."
+            return String(
+                localized: "The PDF content is too large. Processing only the first portion.",
+                bundle: .module
+            )
         case .modelUnavailable:
-            return "Apple Intelligence is not available. PDF summary analysis requires it."
+            return String(
+                localized: "Apple Intelligence is not available. PDF summary analysis requires it.",
+                bundle: .module
+            )
         case .generationFailed(let details):
-            return "Failed to generate summary analysis: \(details)"
+            return String(localized: "Failed to generate summary analysis: \(details)", bundle: .module)
         }
     }
 }

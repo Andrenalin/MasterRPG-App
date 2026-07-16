@@ -44,6 +44,7 @@ struct DiceQuickEditor: View {
                 .numericInput($value, includeDecimal: false)
                 .textFieldStyle(.plain)
                 .labelsHidden()
+                .accessibilityLabel(Text("Compare Value", bundle: .module))
                 .padding(4)
                 .focused($isFocused)
                 .submitLabel(.done)
@@ -58,9 +59,15 @@ struct DiceQuickEditor: View {
                         await action(Int(value) ?? 0)
                     }
                 } label: {
-                    Image(systemName: "return")
+                    Label {
+                        Text("Apply compare value", bundle: .module)
+                    } icon: {
+                        Image(systemName: "return")
+                    }
+                    .labelStyle(.iconOnly)
                 }
                 .buttonStyle(.bordered)
+                .frame(minWidth: 44, minHeight: 44)
             }
             .rowEditColor()
         }

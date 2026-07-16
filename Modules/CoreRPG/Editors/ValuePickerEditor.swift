@@ -49,17 +49,18 @@ public struct ValuePickerEditor<Value: Hashable, Content: View>: View where Valu
     }
 }
 
-private enum ValuePickerPreviewOption: String, CaseIterable, Identifiable {
+enum ValuePickerPreviewOption: String, CaseIterable, Identifiable {
     case novice, veteran, legendary
 
     var id: Self { self }
 }
 
 #Preview {
+    let title = LocalizedStringKey(String("Rank"))
     ValuePickerEditor(
         model: EditIdentifierModel(value: ValuePickerPreviewOption.veteran),
         allCategories: ValuePickerPreviewOption.allCases,
-        title: "Rank",
+        title: title,
         bundle: nil
     ) { option in
         Text(option.rawValue.capitalized)

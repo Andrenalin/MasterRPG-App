@@ -9,6 +9,8 @@ public extension View {
 }
 
 struct SelectListItemViewModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let isActive: Bool
     let hide: Bool
     let action: () -> Void
@@ -34,13 +36,20 @@ struct SelectListItemViewModifier: ViewModifier {
                         .opacity(hide ? 0 : 1)
                 }
                 .borderLessTVBottonStyle()
+                .frame(minWidth: 44, minHeight: 44)
                 .padding(.horizontal, 8)
                 .contentShape(.rect)
-                    .disabled(hide)
+                .disabled(hide)
+                .accessibilityHidden(hide)
+                .accessibilityLabel(
+                    isSelected()
+                        ? Text("Deselect item", bundle: .module)
+                        : Text("Select item", bundle: .module)
+                )
             }
 
             content
         }
-        .animation(.default, value: isActive)
+        .animation(accessibilityReduceMotion ? nil : .default, value: isActive)
     }
 }

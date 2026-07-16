@@ -3,6 +3,8 @@
 import SwiftUI
 
 struct SingleReviewFilePropertyRow: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let model: SingleItemImportModel
     let property: SingleReviewItemProperty
     let root: (any ItemRootControllable)?
@@ -34,7 +36,7 @@ struct SingleReviewFilePropertyRow: View {
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 Button {
-                    withAnimation(.spring(duration: 0.3)) { isExpanded.toggle() }
+                    withAnimation(accessibilityReduceMotion ? nil : .spring(duration: 0.3)) { isExpanded.toggle() }
                 } label: {
                     VStack(alignment: .leading, spacing: 5) {
                         HStack(spacing: 5) {
@@ -69,7 +71,7 @@ struct SingleReviewFilePropertyRow: View {
                             SingleReviewFileAlternativeBlock(decision: decision, value: value(for: decision)) {
                                 thumbnail(for: decision)
                             } onSelect: {
-                                withAnimation(.spring(duration: 0.3)) {
+                                withAnimation(accessibilityReduceMotion ? nil : .spring(duration: 0.3)) {
                                     model.setPropertyDecision(decision, propertyID: property.id)
                                     isExpanded = false
                                 }
@@ -158,51 +160,8 @@ extension FileUrl {
     }
 }
 
-private struct SingleReviewFileAlternativeBlock<Thumbnail: View>: View {
-    let decision: SingleReviewDecision
-    let value: String?
-    @ViewBuilder let thumbnail: () -> Thumbnail
-    let onSelect: () -> Void
-
-    var body: some View {
-        Button(action: onSelect) {
-            HStack(alignment: .top, spacing: 10) {
-                thumbnail()
-                VStack(alignment: .leading, spacing: 5) {
-                    Label(decision.title, systemImage: decision.systemImage)
-                        .font(.caption2)
-                        .bold()
-                        .foregroundStyle(decision.tint)
-                    Text(value ?? "-")
-                        .font(.callout)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .foregroundStyle(.primary)
-                }
-            }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(decision.tint.opacity(0.08))
-            .clipShape(.rect(cornerRadius: 8))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(decision.tint.opacity(0.2), lineWidth: 1)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(Text("Choose this file version", bundle: .module))
-    }
-}
-
 #Preview("File Property") {
     let model = SingleItemImportModel.preview
     SingleReviewFilePropertyRow(model: model, property: model.properties[0], root: nil)
         .padding()
-}
-
-#Preview("File Alternative") {
-    SingleReviewFileAlternativeBlock(decision: .imported, value: "mara.png") {
-        Image(systemName: "photo")
-            .frame(width: 44, height: 44)
-    } onSelect: {}
-    .padding()
 }

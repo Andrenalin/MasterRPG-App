@@ -125,7 +125,13 @@ private extension TextDoubleEditor {
     @ViewBuilder var sliderView: some View {
         @Bindable var model = model
 #if !os(tvOS)
-        Slider(value: $model.value, in: range, step: 1, minimumValueLabel: Text("\(Int(range.lowerBound))"), maximumValueLabel: Text("\(Int(range.upperBound))")) {
+        Slider(
+            value: $model.value,
+            in: range,
+            step: 1,
+            minimumValueLabel: Text(Int(range.lowerBound), format: .number),
+            maximumValueLabel: Text(Int(range.upperBound), format: .number)
+        ) {
             Text(title, bundle: bundle)
         }
         .labelsHidden()
@@ -140,11 +146,12 @@ private extension TextDoubleEditor {
 }
 
 #Preview {
+    let title = LocalizedStringKey(String("Scale"))
     TextDoubleEditor(
         model: EditIdentifierModel(value: 2.5),
-        title: "Scale",
+        title: title,
         icon: "slider.horizontal.3",
-        prompt: "Scale",
+        prompt: title,
         bundle: nil,
         range: 0...5
     )

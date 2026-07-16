@@ -6,11 +6,18 @@ import SwiftUI
 struct DiceRootView: View {
     @Environment(DiceRootModel.self) private var root
     @Environment(\.navigator) private var navigator
+    private let restoresState: Bool
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
 
     var body: some View {
         ItemRootView(root: root.rootController)
             .overlay {
-                ItemStateRestorationView<DiceRoute, DiceRootModel>(root: root, keyPrefix: "Dice")
+                if restoresState {
+                    ItemStateRestorationView<DiceRoute, DiceRootModel>(root: root, keyPrefix: "Dice")
+                }
             }
             .onNavigationReceive { (route: DiceRoute, navigator) in
                 guard let itemId = route.detail() else { return .cancel }
@@ -22,6 +29,6 @@ struct DiceRootView: View {
 
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
-        DiceRootView()
+        DiceRootView(restoresState: false)
     }
 }

@@ -2,6 +2,7 @@
 
 #if os(visionOS)
 import CoreRPG
+import Foundation
 import GroupActivities
 import MapRPG
 import TabletopKit
@@ -343,6 +344,11 @@ final class PinPawn {
         pinEntity.components.set(InputTargetComponent())
         pinEntity.components.set(CollisionComponent(shapes: [.generateBox(width: diameter, height: 0.02, depth: diameter)]))
         pinEntity.components.set(HoverEffectComponent())
+        var accessibility = AccessibilityComponent()
+        accessibility.isAccessibilityElement = true
+        accessibility.label = LocalizedStringResource("Map pin \(pin.name)", bundle: .module)
+        accessibility.systemActions = .activate
+        pinEntity.components.set(accessibility)
         entity = pinEntity
     }
 

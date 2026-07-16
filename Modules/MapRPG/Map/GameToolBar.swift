@@ -13,6 +13,7 @@ struct GameToolBar: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.networkActions) private var networkActions
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Environment(ScenesManager.self) private var scenesManager
 
@@ -35,37 +36,48 @@ struct GameToolBar: View {
                         .padding([.horizontal, .bottom])
                 }
                 .offset(x: hideScales || !showToolBar ? -500 : 0)
-                .animation(.bouncy, value: hideScales)
+                .allowsHitTesting(!hideScales && showToolBar)
+                .accessibilityHidden(hideScales || !showToolBar)
+                .animation(reduceMotion ? nil : .bouncy, value: hideScales)
             } else {
 #if os(macOS)
                 Divider()
                     .opacity(0)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
 #endif
             }
 
         HStack {
             if isMaster {
                 Button {
-                    withAnimation { showToolBar.toggle() }
+                    withAnimation(reduceMotion ? nil : .default) { showToolBar.toggle() }
                 } label: {
                     Image(systemName: showToolBar ? "arrow.left.square.fill" : "arrow.right.square")
                         .contentTransition(.symbolEffect(.replace.downUp))
                         .frame(height: 24)
-                        .accessibilityLabel(AccessibilityLabelCache.shared.label(for: showToolBar ? "arrow.left.square.fill" : "arrow.right.square") ?? "Toggle toolbar")
+                        .accessibilityLabel(
+                            showToolBar
+                                ? Text("Hide Toolbar", bundle: .module)
+                                : Text("Show Toolbar", bundle: .module)
+                        )
                 }
+                .frame(minWidth: 44, minHeight: 44)
             }
             HStack {
                 if showToolBar {
                     HStack {
                         if isMaster {
                             Button {
-                                withAnimation { model.toggleDisplayMode() }
+                                withAnimation(reduceMotion ? nil : .default) { model.toggleDisplayMode() }
                             } label: {
                                 Image(systemName: model.iconDisplayMode)
                                     .contentTransition(.symbolEffect(.replace.byLayer))
                                     .frame(width: 28, height: 24)
-                                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: model.iconDisplayMode) ?? "Display mode")
+                                    .accessibilityLabel(Text("Display Mode", bundle: .module))
+                                    .accessibilityValue(displayModeAccessibilityValue)
                             }
+                            .frame(minWidth: 44, minHeight: 44)
 
                             barButtonViews
 
@@ -93,7 +105,10 @@ struct GameToolBar: View {
         }
         }
         .padding(.horizontal)
-        .animation(.bouncy.delay(hideScales ? 0 : 0.25), value: showToolBar)
+        .animation(
+            reduceMotion ? nil : .bouncy.delay(hideScales ? 0 : 0.25),
+            value: showToolBar
+        )
         .buttonStyle(.borderedProminent)
         .sheet(isPresented: $showPinSelection) {
             ManagedPresentationView {
@@ -107,7 +122,7 @@ struct GameToolBar: View {
             guard !newValue, !selectedPin.selection.isEmpty else { return }
             let map = root.gameController.currentItem()
             let monsters = selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }
-            withAnimation(.bouncy) {
+            withAnimation(reduceMotion ? nil : .bouncy) {
                 root.editController.addMonsters(map: map, entryId: nil, location: nil, monsters: monsters, number: 1)
             }
             if model.isStreaming { model.sendMapUpdates?() }
@@ -118,14 +133,20 @@ struct GameToolBar: View {
     @ViewBuilder
     var barButtonViews: some View {
         Button {
-            withAnimation { model.isStreaming.toggle() }
+            withAnimation(reduceMotion ? nil : .default) { model.isStreaming.toggle() }
         } label: {
             let symbolName = "person.2\(model.isStreaming ? ".fill" : ".slash")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .frame(height: 24)
-                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Streaming")
+                .accessibilityLabel(Text("Share Map", bundle: .module))
+                .accessibilityValue(
+                    model.isStreaming
+                        ? Text("Enabled", bundle: .module)
+                        : Text("Disabled", bundle: .module)
+                )
         }
+        .frame(minWidth: 44, minHeight: 44)
 
         Button {
 #if os(macOS)
@@ -138,19 +159,26 @@ struct GameToolBar: View {
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .frame(width: 24, height: 24)
-                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Pin selection")
+                .accessibilityLabel(Text("Choose Map Pins", bundle: .module))
         }
+        .frame(minWidth: 44, minHeight: 44)
         .matchedTransitionSource(id: "gamePin", in: pinSpace)
 
         Button {
-            withAnimation { model.isPointing.toggle() }
+            withAnimation(reduceMotion ? nil : .default) { model.isPointing.toggle() }
         } label: {
             let symbolName = "hand.point.up.left\(model.isPointing ? ".fill" : "")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.offUp))
                 .frame(height: 24)
-                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Pointing")
+                .accessibilityLabel(Text("Pointing Mode", bundle: .module))
+                .accessibilityValue(
+                    model.isPointing
+                        ? Text("Enabled", bundle: .module)
+                        : Text("Disabled", bundle: .module)
+                )
         }
+        .frame(minWidth: 44, minHeight: 44)
     }
 
     @ViewBuilder
@@ -164,9 +192,16 @@ struct GameToolBar: View {
                 Text("Pin Scale", bundle: .module)
             }
             .labelsHidden()
+            .accessibilityValue(
+                Double(model.pinScale).formatted(
+                    FloatingPointFormatStyle<Double>.number.precision(.fractionLength(1))
+                )
+            )
 #endif
         }
         .opacity(hideScales ? 0 : 1)
+        .allowsHitTesting(!hideScales)
+        .accessibilityHidden(hideScales)
     }
 
     @ViewBuilder
@@ -175,7 +210,7 @@ struct GameToolBar: View {
         HStack {
 #if !os(tvOS)
             Button {
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     let map = root.gameController.currentItem()
                     let _ = editController.toggleHexMap(for: map)
                     model.hexScale = map.hexMapScale
@@ -186,17 +221,26 @@ struct GameToolBar: View {
                 Image(systemName: symbolName)
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
                     .frame(width: 24, height: 24)
-                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Hex map")
+                    .accessibilityLabel(Text("Hex Grid", bundle: .module))
+                    .accessibilityValue(
+                        model.isHexMap
+                            ? Text("Enabled", bundle: .module)
+                            : Text("Disabled", bundle: .module)
+                    )
             }
+            .frame(minWidth: 44, minHeight: 44)
             Text("Hex Map Scale", bundle: .module)
 
             Slider(value: $model.hexScale, in: 20 ... 200) {
                 Text("Hex Map Scale", bundle: .module)
             }
             .labelsHidden()
+            .accessibilityValue(model.hexScale.formatted(.number.precision(.fractionLength(0))))
 #endif
         }
         .opacity(hideScales ? 0 : 1)
+        .allowsHitTesting(!hideScales)
+        .accessibilityHidden(hideScales)
     }
 
     @ViewBuilder
@@ -207,8 +251,9 @@ struct GameToolBar: View {
             let symbolName = "square.arrowtriangle.4.outward"
             Image(systemName: symbolName)
                 .frame(width: 24, height: 24)
-                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Toggle scales")
+                .accessibilityLabel(Text("Toggle Scale Controls", bundle: .module))
         }
+        .frame(minWidth: 44, minHeight: 44)
     }
 
     @ViewBuilder
@@ -219,17 +264,31 @@ struct GameToolBar: View {
                 let update = await root.gameController.networkMapContentUpdate(for: mapId)
                 networkActions?.game(update, .generic, nil)
             }
-            withAnimation {
+            withAnimation(reduceMotion ? nil : .default) {
                 model.resetReshare()
             }
         } label: {
             let symbolName = "square.and.arrow.up"
             Image(systemName: symbolName)
                 .frame(width: 24, height: 24)
-                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Refresh shared map")
+                .accessibilityLabel(Text("Refresh Shared Map", bundle: .module))
         }
         .disabled(!model.canReshare)
         .opacity(hideScales ? 0 : 1)
+        .allowsHitTesting(!hideScales)
+        .accessibilityHidden(hideScales)
+        .frame(minWidth: 44, minHeight: 44)
+    }
+
+    private var displayModeAccessibilityValue: Text {
+        switch model.displayMode {
+        case .master:
+            Text("Master", bundle: .module)
+        case .player:
+            Text("Player", bundle: .module)
+        case .reader:
+            Text("Reader", bundle: .module)
+        }
     }
 }
 

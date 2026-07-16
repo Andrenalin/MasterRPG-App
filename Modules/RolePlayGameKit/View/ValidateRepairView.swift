@@ -130,17 +130,43 @@ struct ValidateRepairView: View {
     
     var body: some View {
         VStack {
-            Text("\(controller.model.current) / \(controller.model.total)")
+            ProgressView(
+                value: Double(controller.model.current),
+                total: max(Double(controller.model.total), 1)
+            )
+            .accessibilityLabel(Text("Validation progress", bundle: .module))
+
+            Text(
+                "\(controller.model.current) / \(controller.model.total)",
+                bundle: .module
+            )
                 .fontDesign(.monospaced)
                 .font(.title)
                 .padding()
-            Text(controller.model.currentPhase.title)
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-            Text("\(controller.model.currentModule == .none ? "Module not selected" : controller.model.currentModule.localizedTitle)")
-                .font(.headline)
-            Text("\(controller.model.currentSection.isEmpty ? "Section not started" : controller.model.currentSection)")
-                .foregroundStyle(.secondary)
+            switch controller.model.currentPhase {
+            case .repairFolders:
+                Text("Repair Folders", bundle: .module)
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+            case .validateLinks:
+                Text("Validate Links", bundle: .module)
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+            }
+            if controller.model.currentModule == .none {
+                Text("Module not selected", bundle: .module)
+                    .font(.headline)
+            } else {
+                Text(controller.model.currentModule.localizedTitle)
+                    .font(.headline)
+            }
+            if controller.model.currentSection.isEmpty {
+                Text("Section not started", bundle: .module)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(verbatim: controller.model.currentSection)
+                    .foregroundStyle(.secondary)
+            }
         }
         .onAppear {
             converterTask = Task(priority: .userInitiated) {

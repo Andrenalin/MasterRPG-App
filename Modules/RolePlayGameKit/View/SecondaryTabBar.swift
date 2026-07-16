@@ -6,6 +6,7 @@ import SwiftUI
 
 struct SecondaryTabBar: View {
     @Namespace private var hoverEffectNameSpace
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -17,7 +18,7 @@ struct SecondaryTabBar: View {
         .fixedSize()
         .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
         .hoverEffect(in: HoverEffectGroup(hoverEffectNameSpace)) { effect, isActive, proxy in
-            effect.animation(.default.delay(isActive ? 0.8 : 0.2)) {
+            effect.animation(reduceMotion ? nil : .default.delay(isActive ? 0.8 : 0.2)) {
                 $0.clipShape(
                     .rect(cornerRadius: 28, style: .continuous).size(width: isActive ? proxy.size.width : 64, height: proxy.size.height, anchor: .leading)
                 )
@@ -26,58 +27,30 @@ struct SecondaryTabBar: View {
     }
 }
 
-struct SecondaryTabBarExtButton: View {
-    let tab: ExtendedTabRoute
-    let hoverGroup: HoverEffectGroup?
-
-    @Environment(AppModel.self) var appModel
-    
-    var body: some View {
-        Button {
-            withAnimation {
-                appModel.selectedExtendedModule = tab
-            }
-        } label: {
-            HStack(spacing: 12) {
-                menuIconView(for: tab.icon)
-                menuDetailView(for: tab.title)
-                    .hoverEffect(FadeEffect(), in: hoverGroup)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(BarButtonWithHoverEffectStyle(isSelected: appModel.selectedExtendedModule == tab, hoverGroup: hoverGroup))
-        .hoverEffect(.lift, isEnabled: appModel.selectedExtendedModule == tab)
-    }
-    
-    func menuIconView(for icon: String) -> some View {
-        Image(systemName: icon)
-    }
-
-    func menuDetailView(for title: String) -> some View {
-        Text(title)
-    }
-}
-
-#Preview {
-    @Previewable @State var otherSplitTab: RootRoute = .game
-    @Previewable @State var tabId = UUID()
-
+#Preview("Secondary tab bar") {
     TabView {
-        Tab("Adventure", systemImage: "photo") {
+        Tab {
             VStack(alignment: .leading) {
                 SecondaryTabBar()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Label {
+                Text(verbatim: "Adventure")
+            } icon: {
+                Image(systemName: "photo")
+            }
         }
-        Tab("Setting", systemImage: "gear") {
-            Text("Nothing")
+        Tab {
+            Text(verbatim: "Nothing")
+        } label: {
+            Label {
+                Text(verbatim: "Setting")
+            } icon: {
+                Image(systemName: "gear")
+            }
         }
     }
-}
-
-#Preview("Secondary tab button") {
-    SecondaryTabBarExtButton(tab: .maps, hoverGroup: nil)
-        .environment(AppModel())
-        .padding()
+    .environment(AppModel())
 }
 #endif

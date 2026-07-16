@@ -132,7 +132,10 @@ struct DeleteAudioIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: AudioEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) audio item](inflect: true).")
+        let message = AttributedString(
+            localized: "Deleted ^[\(count) audio item](inflect: true).",
+            bundle: .module
+        )
         return .result(dialog: "\(message)")
     }
 }

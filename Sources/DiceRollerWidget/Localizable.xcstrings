@@ -1,0 +1,886 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "🎲 %@: %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🎲 %@: %lld"
+          }
+        }
+      }
+    },
+    "🎲 Tap to roll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🎲 Zum Würfeln tippen"
+          }
+        }
+      }
+    },
+    "4-sided die" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4-seitiger Würfel"
+          }
+        }
+      }
+    },
+    "6-sided die" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6-seitiger Würfel"
+          }
+        }
+      }
+    },
+    "8-sided die" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8-seitiger Würfel"
+          }
+        }
+      }
+    },
+    "10-sided die" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10-seitiger Würfel"
+          }
+        }
+      }
+    },
+    "12-sided die" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "12-seitiger Würfel"
+          }
+        }
+      }
+    },
+    "20-sided die" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "20-seitiger Würfel"
+          }
+        }
+      }
+    },
+    "100-sided die" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "100-seitiger Würfel"
+          }
+        }
+      }
+    },
+    "About" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Info"
+          }
+        }
+      }
+    },
+    "Active" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktiv"
+          }
+        }
+      }
+    },
+    "Add" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen"
+          }
+        }
+      }
+    },
+    "Add Favorite" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorit hinzufügen"
+          }
+        }
+      }
+    },
+    "Add Favorite Dice" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoritenwürfel hinzufügen"
+          }
+        }
+      }
+    },
+    "Add Widget to Home Screen" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widget zum Home-Bildschirm hinzufügen"
+          }
+        }
+      }
+    },
+    "Attack Roll" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angriffswurf"
+          }
+        }
+      }
+    },
+    "Available Dice" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verfügbare Würfel"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        }
+      }
+    },
+    "Clear" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löschen"
+          }
+        }
+      }
+    },
+    "Clear dice roll history" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfelwurfverlauf löschen"
+          }
+        }
+      }
+    },
+    "Clear History" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verlauf löschen"
+          }
+        }
+      }
+    },
+    "Compact dice roller for Lock Screen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kompakter Würfelroller für den Sperrbildschirm"
+          }
+        }
+      }
+    },
+    "Configure Dice Widget" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel-Widget konfigurieren"
+          }
+        }
+      }
+    },
+    "Critical Failure!" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kritischer Fehlschlag!"
+          }
+        }
+      }
+    },
+    "Critical Success!" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kritischer Erfolg!"
+          }
+        }
+      }
+    },
+    "Current: %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuell: %@"
+          }
+        }
+      }
+    },
+    "Customize your dice widget appearance" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passe das Erscheinungsbild deines Würfel-Widgets an"
+          }
+        }
+      }
+    },
+    "D4" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D4"
+          }
+        }
+      }
+    },
+    "D6" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D6"
+          }
+        }
+      }
+    },
+    "D8" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D8"
+          }
+        }
+      }
+    },
+    "D10" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D10"
+          }
+        }
+      }
+    },
+    "D12" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D12"
+          }
+        }
+      }
+    },
+    "D20" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D20"
+          }
+        }
+      }
+    },
+    "D100" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D100"
+          }
+        }
+      }
+    },
+    "Damage" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schaden"
+          }
+        }
+      }
+    },
+    "Dice Configuration" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfelkonfiguration"
+          }
+        }
+      }
+    },
+    "Dice configurations from your character and game settings." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfelkonfigurationen aus deinen Charakter- und Spieleinstellungen."
+          }
+        }
+      }
+    },
+    "Dice ID" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel-ID"
+          }
+        }
+      }
+    },
+    "Dice Roller" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfelroller"
+          }
+        }
+      }
+    },
+    "Dice Type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfeltyp"
+          }
+        }
+      }
+    },
+    "Dice Widget" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel-Widget"
+          }
+        }
+      }
+    },
+    "Enable Live Activity" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live-Aktivität aktivieren"
+          }
+        }
+      }
+    },
+    "Favorite Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoritenwürfel"
+          }
+        }
+      }
+    },
+    "Favorite Name" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoritenname"
+          }
+        }
+      }
+    },
+    "Favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten"
+          }
+        }
+      }
+    },
+    "Favorites Only" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur Favoriten"
+          }
+        }
+      }
+    },
+    "Game Name" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielname"
+          }
+        }
+      }
+    },
+    "Give this dice configuration a memorable name" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib dieser Würfelkonfiguration einen einprägsamen Namen"
+          }
+        }
+      }
+    },
+    "History" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verlauf"
+          }
+        }
+      }
+    },
+    "Last Roll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letzter Wurf"
+          }
+        }
+      }
+    },
+    "Liquid Glass Design" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liquid-Glass-Design"
+          }
+        }
+      }
+    },
+    "Live Activity" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live-Aktivität"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "No rolls yet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Würfe"
+          }
+        }
+      }
+    },
+    "Not selected" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht ausgewählt"
+          }
+        }
+      }
+    },
+    "Quick Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnellwürfel"
+          }
+        }
+      }
+    },
+    "Quick Roll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnellwurf"
+          }
+        }
+      }
+    },
+    "Quick Roll D20" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D20 schnell würfeln"
+          }
+        }
+      }
+    },
+    "Quickly roll dice for your RPG game with Liquid Glass design" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfle schnell für dein Rollenspiel – im Liquid-Glass-Design"
+          }
+        }
+      }
+    },
+    "Reload Dice Widgets" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel-Widgets neu laden"
+          }
+        }
+      }
+    },
+    "Roll %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ würfeln"
+          }
+        }
+      }
+    },
+    "Roll a D20 from Control Center" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einen D20 im Kontrollzentrum würfeln"
+          }
+        }
+      }
+    },
+    "Roll a dice and show the result" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einen Würfel werfen und das Ergebnis anzeigen"
+          }
+        }
+      }
+    },
+    "Roll a favorite dice configuration" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine bevorzugte Würfelkonfiguration würfeln"
+          }
+        }
+      }
+    },
+    "Roll D%lld" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D%lld würfeln"
+          }
+        }
+      }
+    },
+    "Roll D20" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D20 würfeln"
+          }
+        }
+      }
+    },
+    "Roll Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfeln"
+          }
+        }
+      }
+    },
+    "Roll Favorite Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoritenwürfel würfeln"
+          }
+        }
+      }
+    },
+    "Roll: %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wurf: %lld"
+          }
+        }
+      }
+    },
+    "Select Dice" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel auswählen"
+          }
+        }
+      }
+    },
+    "Select dice from your character sheet or create custom dice configurations." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle Würfel aus deinem Charakterbogen aus oder erstelle eigene Würfelkonfigurationen."
+          }
+        }
+      }
+    },
+    "Select from character dice configurations" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus Charakterwürfelkonfigurationen auswählen"
+          }
+        }
+      }
+    },
+    "Selected" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählt"
+          }
+        }
+      }
+    },
+    "Show dice rolls in Dynamic Island and Lock Screen during gameplay" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfelwürfe während des Spiels in der Dynamic Island und auf dem Sperrbildschirm anzeigen"
+          }
+        }
+      }
+    },
+    "Show Favorites Only" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur Favoriten anzeigen"
+          }
+        }
+      }
+    },
+    "Skill Check" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fertigkeitsprobe"
+          }
+        }
+      }
+    },
+    "Sneak Attack" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinterhältiger Angriff"
+          }
+        }
+      }
+    },
+    "Standard Dice Roller" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard-Würfelroller"
+          }
+        }
+      }
+    },
+    "Tap to roll" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Würfeln tippen"
+          }
+        }
+      }
+    },
+    "The dice roller widget uses Apple's new Liquid Glass design, which creates a beautiful glass-like effect that blurs content behind it and reflects surrounding colors." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Würfel-Widget verwendet Apples neues Liquid-Glass-Design. Es erzeugt einen glasartigen Effekt, der Inhalte dahinter weichzeichnet und Farben aus der Umgebung aufnimmt."
+          }
+        }
+      }
+    },
+    "The widget displays your last rolled dice configuration" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Widget zeigt deine zuletzt gewürfelte Würfelkonfiguration an"
+          }
+        }
+      }
+    },
+    "These dice will appear in the widget during active gameplay. Tap Edit to reorder." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Würfel erscheinen während eines aktiven Spiels im Widget. Tippe zum Sortieren auf „Bearbeiten“."
+          }
+        }
+      }
+    },
+    "Widget Management" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widget-Verwaltung"
+          }
+        }
+      }
+    },
+    "Widget Settings" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widget-Einstellungen"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

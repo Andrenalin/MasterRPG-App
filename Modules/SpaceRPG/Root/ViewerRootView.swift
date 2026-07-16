@@ -25,7 +25,7 @@ struct ViewerRootView: View {
             $0.toolbar {
                 toolbarContent
             }
-            .navigationTitle(Text(model.name))
+            .navigationTitle(Text(verbatim: model.name))
             .navigationBarTitleDisplayModeAll(.inline)
         }
 #if !os(visionOS)
@@ -53,7 +53,12 @@ private extension ViewerRootView {
                 dismiss()
             }
         } label: {
-            Image(systemName: "xmark.circle")
+            Label {
+                Text("Close", bundle: .module)
+            } icon: {
+                Image(systemName: "xmark.circle")
+            }
+            .labelStyle(.iconOnly)
         }
 #if os(macOS)
                 .foregroundStyle(root.config.module.tint)

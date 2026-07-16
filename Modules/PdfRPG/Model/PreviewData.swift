@@ -111,16 +111,35 @@ extension LinkController {
 }
 
 extension PdfModel {
-    nonisolated static let previewId = UUID(uuidString: "F5AC90DF-36F2-3152-B283-F0CF9D0BAC35")!
+    nonisolated static let previewId = UUID.fixture("F5AC90DF-36F2-3152-B283-F0CF9D0BAC35")
+    nonisolated static let previewEmptyId = UUID(uuid: (0xB2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
     @MainActor
     static let preview = PdfModel(id: PdfModel.previewId, name: "Rulebook", description: "Here is a rule book", tags: ["Fanatasy", "DS"], entries: [.preview])
+
+    /// A deterministic PDF record without a file or bookmarks.
+    @MainActor
+    static let previewEmpty = PdfModel(
+        id: previewEmptyId,
+        name: "Empty Rulebook",
+        description: "A PDF fixture with no imported document.",
+        tags: ["Preview"],
+        entries: []
+    )
 }
 
 extension PdfEntryModel {
-    nonisolated static let previewId = UUID(uuidString: "A5AC90DF-36F2-3152-B283-F0CF9D0BAC35")!
+    nonisolated static let previewId = UUID.fixture("A5AC90DF-36F2-3152-B283-F0CF9D0BAC35")
     
     @MainActor
     static let preview = PdfEntryModel(id: PdfModel.previewId, name: "First Bookmark", content: "Some Text from the pdf on a page", pageNumber: "3", bounds: .zero)
 }
 
+private extension UUID {
+    nonisolated static func fixture(_ value: String) -> UUID {
+        guard let id = UUID(uuidString: value) else {
+            preconditionFailure("Invalid deterministic preview UUID: \(value)")
+        }
+        return id
+    }
+}

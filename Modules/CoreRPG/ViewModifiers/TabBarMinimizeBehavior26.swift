@@ -73,7 +73,7 @@ public typealias GlassEffectContainerAll = GlassEffectContainerView
 
 #Preview {
     GlassEffectContainerView {
-        Text("Glass content")
+        Text(verbatim: "Glass content")
             .padding()
     }
 }

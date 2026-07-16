@@ -67,7 +67,7 @@ struct WeatherStormEditor: View {
 private extension WeatherStormEditor {
     @ViewBuilder var precipitationEditorView: some View {
         ValuePickerEditor(model: stormEditModel, allCategories: Storm.Contents.allCases, title: "Precipitation", bundle: .module) { stormType in
-            Text(stormType.localizedTitle, bundle: .module)
+            Text(stormType.localizedTitle)
         }
     }
 
@@ -76,9 +76,13 @@ private extension WeatherStormEditor {
 
         LabeledContent {
 #if os(tvOS)
-            Text("\(model.rainIntensity)")
+            Text(model.rainIntensity, format: .number.precision(.fractionLength(0)))
 #else
             Slider(value: $model.rainIntensity, in: 0 ... 1000)
+                .accessibilityLabel(Text("Intensity", bundle: .module))
+                .accessibilityValue(
+                    Text(model.rainIntensity, format: .number.precision(.fractionLength(0)))
+                )
 #endif
         } label: {
             Text("Intensity", bundle: .module)
@@ -90,9 +94,15 @@ private extension WeatherStormEditor {
 
         LabeledContent {
 #if os(tvOS)
-            Text("\(model.rainAngle)")
+            Text(model.rainAngle, format: .number.precision(.fractionLength(0)))
 #else
             Slider(value: $model.rainAngle, in: -90 ... 90)
+                .accessibilityLabel(Text("Angle", bundle: .module))
+                .accessibilityValue(
+                    Text(
+                        verbatim: "\(model.rainAngle.formatted(.number.precision(.fractionLength(0))))°"
+                    )
+                )
 #endif
         } label: {
             Text("Angle", bundle: .module)

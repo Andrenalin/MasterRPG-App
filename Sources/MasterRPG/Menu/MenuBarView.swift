@@ -10,7 +10,8 @@ struct MenuBarView: View {
     var body: some View {
         DataBaseAppStoreAvailable(appModel: appModel) { appModel in
             VStack {
-                Text("Music in MasterRPG")
+                Text("Music in MasterRPG", bundle: .main)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Divider()
                 
