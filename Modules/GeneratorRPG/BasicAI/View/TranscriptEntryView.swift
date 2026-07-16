@@ -13,7 +13,7 @@ struct TranscriptEntryView: View {
             entryContent
 
             if let tokenCount {
-                Text("\(tokenCount) tokens")
+                Text("\(tokenCount) tokens", bundle: .module)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .frame(
@@ -45,10 +45,13 @@ struct TranscriptEntryView: View {
             }
 
         case .toolCalls(let toolCalls):
-            ForEach(Array(toolCalls.enumerated()), id: \.offset) { index, toolCall in
+            ForEach(toolCalls.enumerated(), id: \.offset) { index, toolCall in
                 MessageBubbleView(message: ChatMessage(
                     entryID: entry.id,
-                    content: "🔧 Calling tool: \(toolCall.toolName)",
+                    content: String(
+                        localized: "🔧 Calling tool: \(toolCall.toolName)",
+                        bundle: .module
+                    ),
                     isFromUser: false
                 ))
                 .id("\(entry.id)-tool-\(index)")
@@ -58,7 +61,7 @@ struct TranscriptEntryView: View {
             if let text = toolOutput.segments.textContentJoined() {
                 MessageBubbleView(message: ChatMessage(
                     entryID: entry.id,
-                    content: "🔧 Tool result: \(text)",
+                    content: String(localized: "🔧 Tool result: \(text)", bundle: .module),
                     isFromUser: false
                 ))
                 .id(entry.id)
@@ -67,8 +70,32 @@ struct TranscriptEntryView: View {
         case .instructions:
             EmptyView()
 
+#if compiler(>=6.4)
+        case .reasoning(let reasoning):
+            if let text = reasoning.segments.textContentJoined() {
+                MessageBubbleView(message: ChatMessage(
+                    entryID: entry.id,
+                    content: String(localized: "Reasoning: \(text)", bundle: .module),
+                    isFromUser: false
+                ))
+                .id(entry.id)
+            } else {
+                MessageBubbleView(message: ChatMessage(
+                    entryID: entry.id,
+                    content: String(describing: reasoning),
+                    isFromUser: false
+                ))
+                .id(entry.id)
+            }
+#endif
+
         @unknown default:
-            EmptyView()
+            MessageBubbleView(message: ChatMessage(
+                entryID: entry.id,
+                content: String(describing: entry),
+                isFromUser: false
+            ))
+            .id(entry.id)
         }
     }
 

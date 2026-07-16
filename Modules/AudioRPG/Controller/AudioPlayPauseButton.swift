@@ -19,7 +19,7 @@ struct AudioPlayPauseButton: View, Equatable {
             handlePlayPause()
         } label: {
             Image(systemName: iconName)
-                .font(.system(size: imageSize))
+                .font(.title)
                 .foregroundStyle(iconColor)
                 .contentShape(.circle)
         }
@@ -68,10 +68,6 @@ struct AudioPlayPauseButton: View, Equatable {
     
     private var iconColor: Color {
         isCurrentlyPlaying ? .primary : .secondary
-    }
-    
-    private var imageSize: CGFloat {
-        32
     }
     
     // MARK: - Accessibility

@@ -43,10 +43,12 @@ public struct TableSummaryAnalysisView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()
-            Picker("", selection: $selectedLanguage) {
+            Picker(selection: $selectedLanguage) {
                 ForEach(OutputLanguage.supported) { language in
-                    Text(language.displayName).tag(language)
+                    Text(verbatim: language.displayName).tag(language)
                 }
+            } label: {
+                Text("Output Language", bundle: .module)
             }
             .labelsHidden()
         }
@@ -78,17 +80,29 @@ public struct TableSummaryAnalysisView: View {
 
             if let progress = model.resultModel.analysisProgress {
                 VStack(alignment: .leading, spacing: 8) {
-                    progressRow(
-                        ready: progress.title != nil,
-                        label: "Title: \(progress.title ?? "<none>")"
-                    )
+                    if let title = progress.title {
+                        progressRow(
+                            ready: true,
+                            label: LocalizedStringResource("Title: \(title)", bundle: .module)
+                        )
+                    } else {
+                        progressRow(
+                            ready: false,
+                            label: LocalizedStringResource("Title unavailable", bundle: .module)
+                        )
+                    }
                     progressRow(
                         ready: progress.description != nil,
-                        label: progress.description == nil ? "Description ...." : "Description extracted"
+                        label: progress.description == nil
+                            ? LocalizedStringResource("Description pending", bundle: .module)
+                            : LocalizedStringResource("Description extracted", bundle: .module)
                     )
                     progressRow(
                         ready: !(progress.tags?.isEmpty ?? true),
-                        label: "Found \(progress.tags?.count ?? 0) tags"
+                        label: LocalizedStringResource(
+                            "Found \(progress.tags?.count ?? 0) tags",
+                            bundle: .module
+                        )
                     )
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -99,7 +113,7 @@ public struct TableSummaryAnalysisView: View {
         }
     }
 
-    private func progressRow(ready: Bool, label: String) -> some View {
+    private func progressRow(ready: Bool, label: LocalizedStringResource) -> some View {
         HStack {
             Image(systemName: ready ? "checkmark.circle.fill" : "xmark.circle")
                 .foregroundStyle(ready ? .green : .red)
@@ -113,7 +127,7 @@ public struct TableSummaryAnalysisView: View {
         HStack {
             Image(systemName: "exclamationmark.circle.fill")
                 .foregroundStyle(.red)
-            Text(error)
+            Text(verbatim: error)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()

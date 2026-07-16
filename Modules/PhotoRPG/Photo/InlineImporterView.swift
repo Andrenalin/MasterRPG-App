@@ -28,8 +28,17 @@ enum PhotoImporterButtonType: String {
         }
     }
     
-    var label: String {
-        self.rawValue.capitalized
+    var localizedLabel: LocalizedStringResource {
+        switch self {
+        case .file:
+            LocalizedStringResource("File", bundle: .module)
+        case .library:
+            LocalizedStringResource("Photo Library", bundle: .module)
+        case .camera:
+            LocalizedStringResource("Camera", bundle: .module)
+        case .playground:
+            LocalizedStringResource("Image Playground", bundle: .module)
+        }
     }
     
     var duration: CGFloat {
@@ -90,6 +99,7 @@ struct InlineImporterView: View, Equatable {
     let layoutDown: Bool
     
     @Environment(PhotoRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 #if !os(tvOS)
     @Environment(\.supportsImagePlayground) private var supportsImagePlayground
     @State private var selectedItem: PhotosPickerItem? = nil
@@ -123,7 +133,7 @@ struct InlineImporterView: View, Equatable {
             button(type: .playground)
             
             Button {
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     isExpanded.toggle()
                 }
             } label: {
@@ -144,7 +154,10 @@ struct InlineImporterView: View, Equatable {
                 await root.editController.resetFile(url: url, itemId: itemId)
             }
         }
-        .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
+        .imagePlaygroundSheet(
+            isPresented: $showImagePlayground,
+            concept: String(localized: "Create a portrait of a fantasy character", bundle: .module)
+        ) { url in
             Task {
                 await root.editController.resetFile(url: url, itemId: itemId)
             }
@@ -188,18 +201,27 @@ struct InlineImporterView: View, Equatable {
                 showImagePlayground.toggle()
             }
         } label: {
-            Label(type.label, systemImage: type.systemImage)
+            Label {
+                Text(type.localizedLabel)
+            } icon: {
+                Image(systemName: type.systemImage)
+            }
                 .labelStyle(.iconOnly)
                 .frame(width: 50, height: 50)
                 .opacity(isExpanded ? 1 : 0)
         }
+        .allowsHitTesting(isExpanded)
+        .accessibilityHidden(!isExpanded)
         .borderLessTVBottonStyle()
 #if !os(visionOS)
         .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
-        .glassEffectID(type.label, in: glassNamespace)
+        .glassEffectID(type.rawValue, in: glassNamespace)
 #endif
         .offset(type.offset(expanded: isExpanded, layoutDown: layoutDown))
-        .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: isExpanded)
+        .animation(
+            reduceMotion ? nil : .spring(duration: type.duration * 3, bounce: 0.2),
+            value: isExpanded
+        )
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

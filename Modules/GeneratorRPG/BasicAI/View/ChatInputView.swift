@@ -11,12 +11,17 @@ struct ChatInputView: View {
     var prepareForRequestAction: () -> Void = {}
     var sendMessageAction: ((String) -> Void)?
     @Namespace private var glassNamespace
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
 #if os(iOS) || os(macOS)
         GlassEffectContainer(spacing: 12) {
             HStack(spacing: 12) {
-                TextField("Type your message...", text: $messageText, axis: .vertical)
+                TextField(
+                    LocalizedStringResource("Type your message...", bundle: .module),
+                    text: $messageText,
+                    axis: .vertical
+                )
                     .textFieldStyle(.plain)
                     .focused($isTextFieldFocused)
                     .onSubmit {
@@ -36,8 +41,8 @@ struct ChatInputView: View {
                         .font(.headline)
                         .foregroundStyle(.white)
                 }
-                .accessibilityLabel("Send message")
-                .padding(12)
+                .accessibilityLabel(Text("Send message", bundle: .module))
+                .frame(minWidth: 44, minHeight: 44)
                 .glassEffect(
                     .regular
                         .tint(.blue)
@@ -53,7 +58,11 @@ struct ChatInputView: View {
         .padding()
 #else
         HStack(spacing: 12) {
-            TextField("Type your message...", text: $messageText, axis: .vertical)
+            TextField(
+                LocalizedStringResource("Type your message...", bundle: .module),
+                text: $messageText,
+                axis: .vertical
+            )
                 .textFieldStyle(.plain)
                 .focused($isTextFieldFocused)
                 .onSubmit {
@@ -70,9 +79,9 @@ struct ChatInputView: View {
                         messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .gray : Color.accentColor
                     )
             }
-            .accessibilityLabel("Send message")
+            .accessibilityLabel(Text("Send message", bundle: .module))
             .buttonStyle(.plain)
-            .padding(8)
+            .frame(minWidth: 44, minHeight: 44)
             .disabled(
                 messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
                 generatorController.model.isLoading ||
@@ -81,7 +90,10 @@ struct ChatInputView: View {
             )
         }
         .padding()
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: messageText.isEmpty)
+        .animation(
+            reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.8),
+            value: messageText.isEmpty
+        )
 #endif
     }
     

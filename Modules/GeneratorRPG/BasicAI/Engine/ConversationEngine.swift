@@ -146,7 +146,9 @@ private extension ConversationEngine {
     func validatedPrompt(from content: String) throws -> String {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            throw FoundationModelCoreError.invalidRequest("Missing prompt")
+            throw FoundationModelCoreError.invalidRequest(
+                String(localized: "Missing prompt", bundle: .module)
+            )
         }
         return trimmed
     }

@@ -53,7 +53,7 @@
 		<string>_gamemasterproxyclient._tcp</string>
 	</array>
 	<key>NSHandsTrackingUsageDescription</key>
-	<string>MasterRPG uses handtracking for rolling the dice during the game.</string>
+	<string>MasterRPG uses hand tracking to roll dice during the game.</string>
 	<key>NSUbiquitousContainers</key>
 	<dict>
 		<key>iCloud.de.andretrettin.gamemaster</key>

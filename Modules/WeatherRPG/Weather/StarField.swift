@@ -10,21 +10,35 @@ import Foundation
 
 class StarField {
     var stars = [Star]()
+    let deterministic: Bool
     let leftEdge = -50.0
     var rightEdge = 350.0
     var lastUpdate = Date.now
     var lastSize = CGSize.zero
 
-    init() {}
+    init(deterministic: Bool = false) {
+        self.deterministic = deterministic
+    }
 
     func change(size: CGSize) {
         rightEdge = size.width + 50
         stars = []
         let starCount = Int(size.width * size.height / 1000)
-        for _ in 1 ... starCount {
-            let x = Double.random(in: leftEdge ... rightEdge)
-            let y = Double.random(in: 0 ... size.height)
-            let starSize = Double.random(in: 1 ... 3)
+        for index in 0 ..< starCount {
+            let x: Double
+            let y: Double
+            let starSize: Double
+            if deterministic {
+                let horizontalFraction = Double((index * 47) % 997) / 996
+                let verticalFraction = Double((index * 83) % 991) / 990
+                x = leftEdge + (rightEdge - leftEdge) * horizontalFraction
+                y = size.height * verticalFraction
+                starSize = 1 + Double(index % 2)
+            } else {
+                x = Double.random(in: leftEdge ... rightEdge)
+                y = Double.random(in: 0 ... size.height)
+                starSize = Double.random(in: 1 ... 3)
+            }
             let star = Star(x: x, y: y, size: starSize)
             stars.append(star)
         }
@@ -36,6 +50,7 @@ class StarField {
         if lastSize != size {
             change(size: size)
         }
+        guard !deterministic else { return }
         let delta = date.timeIntervalSince1970 - lastUpdate.timeIntervalSince1970
 
         for star in stars {

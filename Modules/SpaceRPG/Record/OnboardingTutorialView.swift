@@ -35,8 +35,16 @@ struct OnboardingTutorialView: View {
                         ForEach(AppDataModel.Orbit.allCases) { orbit in
                             if let orbitImageName = getOrbitImageName(orbit: orbit) {
                                 Text(Image(systemName: orbitImageName))
-                                    .font(.system(size: 28))
+                                    .font(.title2)
                                     .foregroundStyle(.gray)
+                                    .accessibilityLabel(
+                                        Text("Scan pass \(orbit.rawValue + 1)", bundle: .module)
+                                    )
+                                    .accessibilityValue(
+                                        orbit < appModel.orbit || session.userCompletedScanPass
+                                            ? Text("Complete", bundle: .module)
+                                            : Text("Pending", bundle: .module)
+                                    )
                             }
                         }
                     }
@@ -129,7 +137,7 @@ struct OnboardingTutorialView: View {
     }
 
     private let onboardingStateTodetailTextMap: [OnboardingState: String] = [
-        .tooFewImages: String(format: LocalizedString.tooFewImagesDetailText, LocString.minNumImages),
+        .tooFewImages: LocalizedString.tooFewImagesDetailText,
         .firstSegmentNeedsWork: LocalizedString.firstSegmentNeedsWorkDetailText,
         .firstSegmentComplete: LocalizedString.firstSegmentCompleteDetailText,
         .secondSegmentNeedsWork: LocalizedString.secondSegmentNeedsWorkDetailText,

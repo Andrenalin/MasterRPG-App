@@ -2,27 +2,7 @@
 
 
 import CoreRPG
-import AdventureRPG
-import AudioRPG
-import DiceRPG
-import GameRPG
-import MapRPG
-import PdfRPG
-import PhotoRPG
-import SpaceRPG
-import TableRPG
-import CharacterRPG
-import WeatherRPG
 import SwiftUI
-
-#Preview {
-    ExtendedTabRouteDestionationView(route: .settings)
-        .environment(AppModel())
-}
-
-#if !os(tvOS)
-import GeneratorRPG
-#endif
 
 public enum ExtendedTabRoute: String, Hashable, Codable {
     case audios
@@ -88,41 +68,5 @@ extension ExtendedTabRoute: NavigationDestination {
     
     static var limitedTabs: [ExtendedTabRoute] {
         [.tables, .maps, .photos, .audios, .space, .weathers, .dice]
-    }
-}
-
-struct ExtendedTabRouteDestionationView: View {
-    let route: ExtendedTabRoute
-    let tabId = KnownRoutes.mainTabId
-    
-    @Environment(AppModel.self) private var appModel
-    
-    var body: some View {
-        switch route {
-        case .audios:
-            AudioFactory.rootView()
-        case .dice:
-            DiceFactory.rootView()
-        case .generator:
-#if os(tvOS)
-            EmptyView()
-#else
-            GeneratorRootFactory.rootView()
-#endif
-        case .maps:
-            MapRootFactory.rootView()
-        case .pdfs:
-            PdfFactory.rootView()
-        case .photos:
-            PhotoFactory.rootView()
-        case .space:
-            SpaceFactory.rootView()
-        case .tables:
-            TableFactory.rootView()
-        case .weathers:
-            WeatherRootFactory.rootView()
-        case .settings:
-            SettingsView(store: appModel)
-        }
     }
 }

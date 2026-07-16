@@ -10,10 +10,11 @@ public struct MenuWindowButtonView: View {
     let valueType: NetworkModules
     
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     public var body: some View {
         Button {
-            withAnimation(.easeInOut) {
+            withAnimation(accessibilityReduceMotion ? nil : .easeInOut) {
                 if scenesManager.getSceneState(for: SceneId.sceneId(for: valueType)) == .opened {
                     scenesManager.dismissWindow(SceneId.sceneId(for: valueType))
                 } else {
@@ -23,6 +24,8 @@ public struct MenuWindowButtonView: View {
         } label: {
             Image(systemName: valueType.icon)
         }
+        .frame(minWidth: 44, minHeight: 44)
+        .accessibilityLabel(Text(valueType.localizedTitle))
         #if !os(visionOS)
         .selectedBorderedStype(isSelected: scenesManager.getSceneState(for: SceneId.sceneId(for: valueType)) == .opened)
         #endif

@@ -3,11 +3,16 @@
 import Foundation
 
 struct FakeGameController: GameControllable {
-    @MainActor init() {
-        self.itemControllable = FakeItemController.fake
-        self.exportControllable = FakeExportController.fake
-        self.importControllable = FakeImportController.fake
-        self.gameModel = ItemGameModel(itemDataModel: ItemDataModel(categoryTags: []))
+    @MainActor init(
+        itemControllable: any ItemControllable = FakeItemController.fake,
+        exportControllable: any ExportControllable = FakeExportController.fake,
+        importControllable: any ImportControllable = FakeImportController.fake,
+        gameModel: ItemGameModel = ItemGameModel(itemDataModel: ItemDataModel(categoryTags: []))
+    ) {
+        self.itemControllable = itemControllable
+        self.exportControllable = exportControllable
+        self.importControllable = importControllable
+        self.gameModel = gameModel
     }
     
     var itemControllable: any ItemControllable

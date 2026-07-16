@@ -4,7 +4,7 @@ import SwiftUI
 
 #Preview {
     VStack {
-        Text("Content")
+        Text(verbatim: "Content")
         BottomSafetyView()
     }
 }

@@ -64,30 +64,10 @@ public struct GroupBoxTV<Label: View, Content: View>: View {
 
 #Preview {
     GroupBoxTV {
-        Text("Inside")
+        Text(verbatim: "Inside")
     } label: {
-        Text("Header")
+        Text(verbatim: "Header")
     }
-}
-
-#Preview("Disclosure group") {
-    @Previewable @State var isExpanded = true
-    DisclosureGroupTV(isExpanded: $isExpanded) {
-        Text("The party has entered the dungeon.")
-    } label: {
-        Label("Adventure notes", systemImage: "book.closed")
-    }
-    .padding()
-}
-
-#Preview("Menu") {
-    MenuTV {
-        Button("Edit", action: {})
-        Button("Duplicate", action: {})
-    } label: {
-        Label("Actions", systemImage: "ellipsis.circle")
-    }
-    .padding()
 }
 
 #if !os(tvOS)
@@ -104,65 +84,3 @@ struct CardGroupBoxStyle: GroupBoxStyle {
 }
 
 #endif
-
-public struct DisclosureGroupTV<Label: View, Content: View>: View {
-    @Binding public var isExpanded: Bool
-    public let content: () -> Content
-    public let label: () -> Label
-    private let hasExpanded: Bool
-
-    public init(@ViewBuilder content: @escaping () -> Content, @ViewBuilder label: @escaping () -> Label) {
-        self.content = content
-        self.label = label
-        hasExpanded = false
-        _isExpanded = .constant(false)
-    }
-
-    public init(isExpanded: Binding<Bool>, @ViewBuilder content: @escaping () -> Content, @ViewBuilder label: @escaping () -> Label) {
-        self.content = content
-        self.label = label
-        hasExpanded = true
-        _isExpanded = isExpanded
-    }
-
-    public var body: some View {
-        #if os(tvOS)
-            Group {
-                label()
-                content()
-            }
-        #else
-            if hasExpanded {
-                DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
-            } else {
-                DisclosureGroup(content: content, label: label)
-            }
-        #endif
-    }
-}
-
-public struct MenuTV<Label: View, Content: View>: View {
-    public let content: () -> Content
-    public let label: () -> Label
-    public let primaryAction: (() -> Void)?
-
-    public init(@ViewBuilder content: @escaping () -> Content, @ViewBuilder label: @escaping () -> Label, primaryAction: (() -> Void)? = nil) {
-        self.content = content
-        self.label = label
-        self.primaryAction = primaryAction
-    }
-
-    public var body: some View {
-        #if os(tvOS)
-            HStack(spacing: 16) {
-                content()
-            }
-        #else
-            if let primaryAction {
-                Menu(content: content, label: label, primaryAction: primaryAction)
-            } else {
-                Menu(content: content, label: label)
-            }
-        #endif
-    }
-}

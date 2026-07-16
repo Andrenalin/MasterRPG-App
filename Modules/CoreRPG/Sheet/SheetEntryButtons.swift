@@ -24,6 +24,8 @@ struct SheetEntryEditButton: View {
             } icon: {
                 Image(systemName: "square.and.pencil")
                     .opacity(0)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
                     .imageScale(.large)
                     .overlay {
                         Image(systemName: entryModel.isEditing ? "square.and.pencil" : "pencil")
@@ -41,116 +43,15 @@ struct SheetEntryEditButton: View {
     }
 }
 
-struct SheetEntryQuickEditButton: View {
-    let rootModel: SheetRootModel
-    let entryModel: SheetModel
-    let parentModel: SheetModel
-    let onlyIcon: Bool
-    
-    @Environment(\.navigator) private var navigator
-    
-    var body: some View {
-        
-        Button {
-            if let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
-                navigator.navigate(to: entryDataEditable.quickEditorDestination(itemRowModel: entryModel.source))
-                rootModel.editorModel.parentModel = parentModel
-            }
-        } label: {
-            Label {
-                Text("Quick Editor for \(parentModel.name.withoutLink())", bundle: .module)
-            } icon: {
-                Image(systemName: "table.badge.more")
-                    .imageScale(.large)
-                    .foregroundStyle(.foreground, .tint)
-            }
-            .applyIf(onlyIcon) {
-                $0.labelStyle(.iconOnly)
-            }
-
-        }
-        .borderLessTVBottonStyle()
-    }
-}
-
-struct SheetEntryDeleteButton: View {
-    let rootModel: SheetRootModel
-    let parentModel: SheetModel
-    let entryModel: SheetModel
-    let onlyIcon: Bool
-    
-    var body: some View {
-        Button(role: .destructive) {
-            withAnimation {
-                rootModel.removeEntry(entryModel: entryModel, from: parentModel)
-            }
-        } label: {
-            Label {
-                Text("Delete \(entryModel.name.withoutLink())", bundle: .module)
-            } icon: {
-                Image(systemName: "minus.circle.fill")
-                    .imageScale(.large)
-                    .foregroundStyle(.white, .red, .red)
-            }
-            .applyIf(onlyIcon) {
-                $0.labelStyle(.iconOnly)
-            }
-        }
-        .foregroundStyle(.white, .red, .red)
-        .borderLessTVBottonStyle()
-        .keyboardShortcutAll("r", modifiers: .shift)
-    }
-}
-
-struct SheetEntryAddButton: View {
-    let rootModel: SheetRootModel
-    let parentModel: SheetModel
-    let onlyIcon: Bool
-    
-    var body: some View {
-        if entryDataEditable != nil {
-            Button {
-                var entryId: UUID?
-                withAnimation {
-                    entryId = rootModel.addNewEntry(in: parentModel)
-                    rootModel.updateParent(parentModel)
-                } completion: {
-                    rootModel.setScrollEntryId(source: parentModel.source, entryId: entryId)
-                }
-            } label: {
-                Label {
-                    Text("New entry in \(parentModel.name.withoutLink())", bundle: .module)
-                } icon: {
-                    Image(systemName: "note.text.badge.plus")
-                        .imageScale(.large)
-                        .foregroundStyle(.foreground, .tint)
-                }
-                .applyIf(onlyIcon) {
-                    $0.labelStyle(.iconOnly)
-                }
-            }
-            .applyIf(onlyIcon) {
-                $0.borderLessTVBottonStyle()
-                    .padding(4)
-                    .contentShape(.circle)
-            }
-        }
-    }
-    
-    var entryDataEditable: (any EntryDataEditable)? {
-        rootModel.entryDataEditable(for: parentModel.source)
-    }
-}
-
-@MainActor private enum SheetButtonPreviewData {
+@MainActor enum SheetButtonPreviewData {
     static let parent = SheetModel(
-        source: ItemRowModel(itemId: UUID(), typeId: .none),
+        source: ItemRowModel(itemId: .fixture1, typeId: .none),
         name: "Character",
         description: "Preview item",
         entries: []
     )
     static let entry = SheetModel(
-        source: ItemRowModel(itemId: parent.source.itemId, entryId: UUID(), typeId: .none),
+        source: ItemRowModel(itemId: parent.source.itemId, entryId: .fixture2, typeId: .none),
         name: "Background",
         description: "A wandering ranger.",
         entries: []
@@ -158,21 +59,12 @@ struct SheetEntryAddButton: View {
 }
 
 #Preview("Edit Entry") {
-    SheetEntryEditButton(rootModel: .fake, entryModel: SheetButtonPreviewData.entry, parentModel: SheetButtonPreviewData.parent, isEditor: true, onlyIcon: false)
-        .padding()
-}
-
-#Preview("Quick Edit Entry") {
-    SheetEntryQuickEditButton(rootModel: .fake, entryModel: SheetButtonPreviewData.entry, parentModel: SheetButtonPreviewData.parent, onlyIcon: false)
-        .padding()
-}
-
-#Preview("Delete Entry") {
-    SheetEntryDeleteButton(rootModel: .fake, parentModel: SheetButtonPreviewData.parent, entryModel: SheetButtonPreviewData.entry, onlyIcon: false)
-        .padding()
-}
-
-#Preview("Add Entry") {
-    SheetEntryAddButton(rootModel: .fake, parentModel: SheetButtonPreviewData.parent, onlyIcon: false)
-        .padding()
+    SheetEntryEditButton(
+        rootModel: .fake,
+        entryModel: SheetButtonPreviewData.entry,
+        parentModel: SheetButtonPreviewData.parent,
+        isEditor: true,
+        onlyIcon: false
+    )
+    .padding()
 }

@@ -10,6 +10,7 @@ struct ViewerRootView: View {
 
     @Environment(PhotoRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
 #if os(visionOS)
     @Environment(\.openImmersiveSpace) private var openSpace
@@ -121,7 +122,7 @@ private extension ViewerRootView {
     var rotateButton: some View {
         let tintColor = root.config.module.tint
         return Button {
-            withAnimation {
+            withAnimation(reduceMotion ? nil : .default) {
                 toolBarModel.configure(photoId: model.id, degrees: model.degrees)
                 toolBarModel.rotateClockwise()
             }
@@ -137,6 +138,11 @@ private extension ViewerRootView {
             .labelStyle(.iconOnly)
         }
         .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+        .transaction { transaction in
+            if reduceMotion {
+                transaction.animation = nil
+            }
+        }
 #if os(macOS)
         .foregroundStyle(tintColor)
 #else

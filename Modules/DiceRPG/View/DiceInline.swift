@@ -13,6 +13,7 @@ struct DiceInline: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingControlActions) private var playerSharingActions
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var showResult = false
 
@@ -20,13 +21,13 @@ struct DiceInline: View {
         HStack {
             if !appGameStateModel.isGameRunning || player {
                 Button {
-                    withAnimation {
+                    withAnimation(reduceMotion ? nil : .default) {
                         root.gameController.gameModel.focusItemIds <=> [itemId]
                     }
                     roleAndShareDiceResult()
                 } label: {
                     HStack {
-                        Text(root.gameController.gameItem(for: itemId).inlineText)
+                        Text(verbatim: root.gameController.gameItem(for: itemId).inlineText)
                     }
                     .padding(4)
                     .foregroundStyle(.white)
@@ -34,6 +35,7 @@ struct DiceInline: View {
                         RoundedRectangle(cornerRadius: 8).fill(Color.accentColor)
                     }
                 }
+                .frame(minHeight: 44)
                 .borderLessTVBottonStyle()
             } else {
                 MenuTV {
@@ -44,7 +46,9 @@ struct DiceInline: View {
                     }
 
                     Button {
-                        withAnimation { root.gameController.gameModel.focusItemIds = [itemId] }
+                        withAnimation(reduceMotion ? nil : .default) {
+                            root.gameController.gameModel.focusItemIds = [itemId]
+                        }
                     } label: {
                         Label { Text("Add as focus", bundle: .module) } icon: { Image(systemName: "house") }
                     }
@@ -74,7 +78,7 @@ struct DiceInline: View {
                     }
 
                     Button(role: .destructive) {
-                        withAnimation {
+                        withAnimation(reduceMotion ? nil : .default) {
                             root.gameController.reset(for: itemId)
                             showResult = false
                         }
@@ -83,7 +87,7 @@ struct DiceInline: View {
                     }
                 } label: {
                     HStack {
-                        Text(root.gameController.gameItem(for: itemId).inlineText)
+                        Text(verbatim: root.gameController.gameItem(for: itemId).inlineText)
                     }
                     .padding(4)
                     .foregroundStyle(.white)
@@ -91,6 +95,7 @@ struct DiceInline: View {
                         RoundedRectangle(cornerRadius: 8).fill(Color.accentColor)
                     }
                 }
+                .frame(minHeight: 44)
                 #if !os(tvOS)
                 .menuStyle(.borderlessButton)
                 #endif
@@ -99,8 +104,12 @@ struct DiceInline: View {
                 #endif
             }
             if showResult {
-                Text("\(Image(systemName: root.itemController.config.module.icon))\(root.gameController.resultText(itemId: itemId))")
-                    .animation(.bouncy, value: showResult)
+                Label {
+                    Text(verbatim: root.gameController.resultText(itemId: itemId))
+                } icon: {
+                    Image(systemName: root.itemController.config.module.icon)
+                }
+                    .animation(reduceMotion ? nil : .bouncy, value: showResult)
             }
         }
     }
@@ -114,7 +123,7 @@ struct DiceInline: View {
     }
 
     private func roleAndShareDiceResult() {
-        withAnimation {
+        withAnimation(reduceMotion ? nil : .default) {
             root.gameController.rollDice(itemId: itemId, networkActions: networkActions, resultCategopry: resultCategory)
             showResult <=> true
         }

@@ -18,7 +18,7 @@ struct LinkEntryRowView: View {
             if let editController {
                 EntryEditRow(root: root, editController: editController, itemId: item.source.itemId, entry: itemModel[entryId], cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: listDisplayModel, searchModel: root.folderLinkControllable.searchModel)
             } else {
-                Text("\(itemModel[entryId].name): \(itemModel[entryId].content)")
+                Text(verbatim: "\(itemModel[entryId].name): \(itemModel[entryId].content)")
             }
         }
     }

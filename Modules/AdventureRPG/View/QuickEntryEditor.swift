@@ -8,6 +8,7 @@ struct QuickEntryEditor: View {
     let model: AdventureModel
     
     @Environment(AdventureRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
 
@@ -31,7 +32,7 @@ struct QuickEntryEditor: View {
             entryId: nil,
             configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false, aiExtractor: true),
             onTextExtracted: { text in
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     if referenceText.input.isEmpty {
                         referenceText.input = text
                     } else {
@@ -40,14 +41,18 @@ struct QuickEntryEditor: View {
                 }
             }
         ) {
-            withAnimation { root.editController.adventureEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil) }
+            withAnimation(reduceMotion ? nil : .default) {
+                root.editController.adventureEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil)
+            }
         }
         .background(.primary)
         .pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
     }
 
     private func usePdfSelection(selection: NSAttributedString) {
-        withAnimation { referenceText.input.append(selection.string) }
+        withAnimation(reduceMotion ? nil : .default) {
+            referenceText.input.append(selection.string)
+        }
     }
 }
 

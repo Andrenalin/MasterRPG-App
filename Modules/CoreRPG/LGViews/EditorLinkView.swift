@@ -115,11 +115,12 @@ private extension EditorLinkView {
 }
 
 #Preview {
+    let fixture = FakeItemRootControllerFixture()
     EditorLinkView(
-        root: .fake,
+        root: fixture.root,
         model: FakeItemModel.empty,
         editorLinkModel: EditorLinkModel(
-            folderListController: FakeFolderListController.fake,
+            folderListController: fixture.folderListController,
             firstRow: [.none],
             selection: .none
         )

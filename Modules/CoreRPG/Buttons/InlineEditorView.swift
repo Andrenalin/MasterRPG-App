@@ -100,13 +100,17 @@ private extension InlineEditorView {
     }
 }
 
-//#Preview {
-//    HStack {
-//        InlineEditorView(root: ItemRootController.fake, entry: SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .value), editType: .selection, name: "Kletter As", description: "I", entries: []))
-//        
-//        Text("Kletter As")
-//            .frame(maxWidth: .infinity, alignment: .leading)
-//    }
-//    
-//    InlineEditorView(root: .fake, entry: SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .value), editType: .number, name: "Kletter Off", description: "", entries: []))
-//}
+#Preview {
+    InlineEditorView(
+        entryDataEditable: FakeEditController.fake,
+        updateHandler: { _ in },
+        entry: SheetModel(
+            source: ItemRowModel(itemId: .fixture1, entryId: .fixture2, typeId: .none),
+            editType: .number,
+            name: "Armor Class",
+            description: "A deterministic inline editor.",
+            entries: []
+        )
+    )
+    .padding()
+}

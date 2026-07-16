@@ -11,7 +11,7 @@ import SwiftUI
 struct OpenGeneratorIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open Generator"
 
-    @Parameter(title: "Generator", requestValueDialog: "Which generator intructions?")
+    @Parameter(title: "Generator", requestValueDialog: "Which generator instructions?")
     var target: GeneratorEntity
 
     @Dependency var navigator: Navigator

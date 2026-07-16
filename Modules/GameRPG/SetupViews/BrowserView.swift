@@ -3,8 +3,21 @@
 import SwiftUI
 
 struct BrowserView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let root: GameRoot
     let playerNetworkControllable: any PlayerNetworkControllable
+    private let startsServices: Bool
+
+    init(
+        root: GameRoot,
+        playerNetworkControllable: any PlayerNetworkControllable,
+        startsServices: Bool = true
+    ) {
+        self.root = root
+        self.playerNetworkControllable = playerNetworkControllable
+        self.startsServices = startsServices
+    }
 
     var body: some View {
         VStack(spacing: 20) {
@@ -16,10 +29,11 @@ struct BrowserView: View {
             }
         }
         .onAppear {
+            guard startsServices else { return }
             playerNetworkControllable.browserManager.start()
         }
-        .animation(.default, value: playerNetworkControllable.networkModel.isConnected)
-        .animation(.default, value: playerNetworkControllable.browserManager.isBrowsing)
+        .animation(accessibilityReduceMotion ? nil : .default, value: playerNetworkControllable.networkModel.isConnected)
+        .animation(accessibilityReduceMotion ? nil : .default, value: playerNetworkControllable.browserManager.isBrowsing)
     }
 }
 
@@ -34,5 +48,9 @@ extension EnvironmentValues {
 }
 
 #Preview {
-    BrowserView(root: .preview, playerNetworkControllable: PlayerNetworkController(name: "Test"))
+    BrowserView(
+        root: .preview,
+        playerNetworkControllable: PlayerNetworkController(name: "Test"),
+        startsServices: false
+    )
 }

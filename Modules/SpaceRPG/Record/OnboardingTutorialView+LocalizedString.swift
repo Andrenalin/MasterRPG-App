@@ -18,11 +18,10 @@ extension OnboardingTutorialView {
             comment: "Feedback title for when user has less than the minimum images required."
         )
 
-        static let tooFewImagesDetailText = NSLocalizedString(
-            "You need at least \(LocString.minNumImages) images of your object to create a model. (Review, Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "You need at least %d images of your object to create a model.",
-            comment: "Feedback for when user has less than the minimum images required."
+        static let tooFewImagesDetailText = String(
+            localized: "You need at least \(LocString.minNumImages) images of your object to create a model.",
+            bundle: .module,
+            comment: "Feedback for when the user has fewer than the minimum required images."
         )
 
         static let firstSegmentNeedsWorkTitle = NSLocalizedString(

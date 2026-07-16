@@ -68,6 +68,7 @@ struct MapPinView: View, Equatable {
     let dragEndAction: (() -> Void)?
 
     @Environment(MapRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @GestureState private var isDragging = false
     @State private var isDraggingStarts = false
@@ -120,6 +121,35 @@ struct MapPinView: View, Equatable {
         }
 #endif
         .highPriorityGesture(combinedGesture)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(pinAccessibilityLabel)
+        .accessibilityValue(
+            Text(isShown ? "Visible to Players" : "Hidden from Players", bundle: .module)
+        )
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction {
+            toggleExpandedState()
+        }
+        .accessibilityAction(named: Text("Toggle Player Visibility", bundle: .module)) {
+            guard let doubleTapAction else { return }
+            withAnimation(reduceMotion ? nil : .default) {
+                doubleTapAction()
+            }
+        }
+#if !os(tvOS)
+        .accessibilityAction(named: Text("Move Left", bundle: .module)) {
+            movePinBy(x: -10, y: 0)
+        }
+        .accessibilityAction(named: Text("Move Right", bundle: .module)) {
+            movePinBy(x: 10, y: 0)
+        }
+        .accessibilityAction(named: Text("Move Up", bundle: .module)) {
+            movePinBy(x: 0, y: -10)
+        }
+        .accessibilityAction(named: Text("Move Down", bundle: .module)) {
+            movePinBy(x: 0, y: 10)
+        }
+#endif
         .onChange(of: isDragging) {
             guard !isDragging else { return }
             isDraggingStarts = false
@@ -129,12 +159,10 @@ struct MapPinView: View, Equatable {
 
     private var combinedGesture: some Gesture {
         let tapGesture = TapGesture().onEnded {
-            withAnimation {
-                model.isExpandedId = model.isExpandedId == pinId ? nil : pinId
-            }
+            toggleExpandedState()
         }
         let doubleTap = TapGesture(count: 2).onEnded {
-            withAnimation { doubleTapAction?() }
+            withAnimation(reduceMotion ? nil : .default) { doubleTapAction?() }
         }
 #if os(tvOS)
         return doubleTap.exclusively(before: tapGesture)
@@ -160,7 +188,29 @@ struct MapPinView: View, Equatable {
                 model.setPinPointer(updatedPin: pos)
             }
     }
+
+    private func movePinBy(x: CGFloat, y: CGFloat) {
+        guard canDrag, var updatedPin = position else { return }
+        updatedPin.location.x += x
+        updatedPin.location.y += y
+        updatedPin.timeInterval = Date.now.timeIntervalSince1970
+        model.setPinPointer(updatedPin: updatedPin)
+        dragEndAction?()
+    }
 #endif
+
+    private var pinAccessibilityLabel: Text {
+        guard let name = position?.name, !name.isEmpty else {
+            return Text("Map Pin", bundle: .module)
+        }
+        return Text(verbatim: name)
+    }
+
+    private func toggleExpandedState() {
+        withAnimation(reduceMotion ? nil : .default) {
+            model.isExpandedId = model.isExpandedId == pinId ? nil : pinId
+        }
+    }
 }
 
 #Preview {

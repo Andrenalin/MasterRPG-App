@@ -8,7 +8,16 @@
 import SwiftUI
 
 struct AnimatorView: View {
-    @State private var showOne = false
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    init(animates: Bool = true) {
+        self.animates = animates
+        self._showOne = State(initialValue: !animates)
+    }
+
+    private let animates: Bool
+    @State private var showOne: Bool
+
     var body: some View {
         VStack {
             if showOne {
@@ -22,18 +31,20 @@ struct AnimatorView: View {
                 }
                 .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing)))
                 .task {
-                    try? await Task.sleep(nanoseconds: 3*1_000_000_000)
-                    withAnimation { showOne = false }
+                    guard animates else { return }
+                    try? await Task.sleep(for: .seconds(3))
+                    withAnimation(accessibilityReduceMotion ? nil : .default) { showOne = false }
                 }
             }
         }
-        .animation(.easeInOut(duration: 2).delay(1), value: showOne)
+        .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 2).delay(1), value: showOne)
         .onAppear {
-            withAnimation { showOne = true }
+            guard animates else { return }
+            withAnimation(accessibilityReduceMotion ? nil : .default) { showOne = true }
         }
     }
 }
 
 #Preview {
-    AnimatorView()
+    AnimatorView(animates: false)
 }

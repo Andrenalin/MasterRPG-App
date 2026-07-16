@@ -12,6 +12,7 @@ struct SearchBar: View {
     
     @State private var showThumbnail = false
     @Environment(\.isSearching) private var isSearching
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         if !searchModel.matches.isEmpty {
@@ -19,7 +20,9 @@ struct SearchBar: View {
                 .padding()
                 .onChange(of: isSearching) {
                     guard !isSearching else { return }
-                    withAnimation { searchModel.matches = [] }
+                    withAnimation(reduceMotion ? nil : .default) {
+                        searchModel.matches = []
+                    }
                 }
         }
     }
@@ -30,15 +33,19 @@ private extension SearchBar {
     var searchResults: some View {
         HStack(spacing: 12) {
             Button {
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     searchModel.previousMatch()
                 }
             } label: {
-                Image(systemName: "arrow.left")
-                    .padding(8)
-                    .clipShape(.circle)
+                Label {
+                    Text("Previous search result", bundle: .module)
+                } icon: {
+                    Image(systemName: "arrow.left")
+                }
+                .labelStyle(.iconOnly)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(.circle)
             }
-            .padding(.horizontal, 8)
             .disabled(searchModel.disabledPrev())
 #if !os(visionOS)
             .glassEffect(.regular.interactive())
@@ -53,15 +60,19 @@ private extension SearchBar {
 #endif
             
             Button {
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     searchModel.nextMatch()
                 }
             } label: {
-                Image(systemName: "arrow.right")
-                    .padding(8)
-                    .clipShape(.circle)
+                Label {
+                    Text("Next search result", bundle: .module)
+                } icon: {
+                    Image(systemName: "arrow.right")
+                }
+                .labelStyle(.iconOnly)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(.circle)
             }
-            .padding(.horizontal, 8)
             .disabled(searchModel.disabledNext())
 #if !os(visionOS)
             .glassEffect(.regular.interactive())

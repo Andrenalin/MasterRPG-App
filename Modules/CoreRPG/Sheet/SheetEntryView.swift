@@ -83,8 +83,8 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
         .contentShape(.rect)
         .zIndex(entryModel.isGeneratedAnswer ? 1 : 0)
         .animation(accessibilityReduceMotion ? nil : .smooth, value: entryModel.isGeneratedAnswer)
-        .animation(.easeInOut(duration: 0.2), value: entryModel.isGeneratedSelected)
-        .animation(.easeInOut(duration: 0.2), value: entryModel.isSelected)
+        .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2), value: entryModel.isGeneratedSelected)
+        .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2), value: entryModel.isSelected)
         .onChange(of: entryModel.name) {
             rootModel.updateParent(parentModel)
         }
@@ -192,13 +192,20 @@ private extension SheetEntryView {
             }
 
             if !entryModel.isGeneratedAnswer, let detailAction, canGoDeeper {
-                Button("Next Question", systemImage: "questionmark.bubble") {
+                Button {
                     detailAction(entryModel)
+                } label: {
+                    Label {
+                        Text("Next Question", bundle: .module)
+                    } icon: {
+                        Image(systemName: "questionmark.bubble")
+                    }
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
+                .frame(minWidth: 44, minHeight: 44)
                 .disabled(!hasDetailContent)
-                .help("Next question")
+                .help(Text("Next question", bundle: .module))
             }
         }
     }
@@ -293,11 +300,16 @@ private extension SheetEntryView {
                     ProgressView()
                         .controlSize(.small)
                 } else {
-                    Label("Refine with AI", systemImage: "sparkles")
+                    Label {
+                        Text("Refine with AI", bundle: .module)
+                    } icon: {
+                        Image(systemName: "sparkles")
+                    }
                         .labelStyle(.iconOnly)
                 }
             }
             .buttonStyle(.borderless)
+            .frame(minWidth: 44, minHeight: 44)
             .disabled(rootModel.pendingGenerationRequest != nil)
             .accessibilityLabel(Text("Refine with AI", bundle: .module))
             .accessibilityValue(
@@ -305,7 +317,7 @@ private extension SheetEntryView {
                     ? Text("Generating", bundle: .module)
                     : Text("Ready", bundle: .module)
             )
-            .help("Refine this content with AI")
+            .help(Text("Refine this content with AI", bundle: .module))
             .transition(.scale(scale: 0.9).combined(with: .opacity))
         }
     }
@@ -315,18 +327,32 @@ private extension SheetEntryView {
     }
 
     var generatedTakeOverButton: some View {
-        Button("Take Over", systemImage: "sparkles", action: takeOverGeneratedEntry)
+        Button(action: takeOverGeneratedEntry) {
+            Label {
+                Text("Take Over", bundle: .module)
+            } icon: {
+                Image(systemName: "sparkles")
+            }
+        }
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
+            .frame(minWidth: 44, minHeight: 44)
             .foregroundStyle(.green)
-            .help("Take over generated content")
+            .help(Text("Take over generated content", bundle: .module))
     }
 
     var generatedDeleteButton: some View {
-        Button("Delete Generated Content", systemImage: "trash", role: .destructive, action: deleteGeneratedEntry)
+        Button(role: .destructive, action: deleteGeneratedEntry) {
+            Label {
+                Text("Delete Generated Content", bundle: .module)
+            } icon: {
+                Image(systemName: "trash")
+            }
+        }
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
-            .help("Delete generated content")
+            .frame(minWidth: 44, minHeight: 44)
+            .help(Text("Delete generated content", bundle: .module))
     }
 
     @ViewBuilder var generatedSelectionBorder: some View {
@@ -389,7 +415,7 @@ private extension SheetEntryView {
     }
 
     func toggleGeneratedSelection() {
-        withAnimation {
+        withAnimation(accessibilityReduceMotion ? nil : .smooth) {
             entryModel.isGeneratedSelected.toggle()
         }
     }
@@ -462,31 +488,11 @@ private extension SheetEntryView {
     }
 
     var generatedSelectionAccessibilityValue: Text {
-        guard entryModel.isGeneratedAnswer && !isEditor else { return Text("") }
+        guard entryModel.isGeneratedAnswer && !isEditor else { return Text(verbatim: "") }
         return entryModel.isGeneratedSelected
             ? Text("Selected", bundle: .module)
             : Text("Not selected", bundle: .module)
     }
-}
-
-private struct SheetEntryPreview: View {
-    @Namespace private var namespace
-
-    var body: some View {
-        SheetEntryView(
-            rootModel: .fake,
-            parentModel: .empty,
-            entryModel: .empty,
-            isEditor: true,
-            linkTypes: EmptyLinkTransferable.self,
-            generatedAcceptanceNamespace: namespace,
-            detailContent: { _ in EmptyView() }
-        )
-    }
-}
-
-#Preview {
-    SheetEntryPreview()
 }
 
 #Preview("Sheet Entry Direct") {

@@ -9,6 +9,7 @@ struct AdventureChatRootView: View {
     var dismissAction: (() -> Void)? = nil
 
     private let usesAvailabilityGate: Bool
+    private let runsAutomaticGeneration: Bool
     private let previewBlocks: [AdventureChatBlockSnapshot]?
 
     @Environment(GeneratorRootModel.self) private var root
@@ -30,11 +31,13 @@ struct AdventureChatRootView: View {
         sheetModel: SheetModel,
         dismissAction: (() -> Void)? = nil,
         usesAvailabilityGate: Bool = true,
+        runsAutomaticGeneration: Bool = true,
         previewBlocks: [AdventureChatBlockSnapshot]? = nil
     ) {
         self.sheetModel = sheetModel
         self.dismissAction = dismissAction
         self.usesAvailabilityGate = usesAvailabilityGate
+        self.runsAutomaticGeneration = runsAutomaticGeneration
         self.previewBlocks = previewBlocks
     }
 
@@ -67,11 +70,19 @@ struct AdventureChatRootView: View {
 #endif
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Close", systemImage: "xmark", action: close)
+                Button(
+                    LocalizedStringResource("Close", bundle: .module),
+                    systemImage: "xmark",
+                    action: close
+                )
             }
 
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save", systemImage: "checkmark", action: commitSelection)
+                Button(
+                    LocalizedStringResource("Save", bundle: .module),
+                    systemImage: "checkmark",
+                    action: commitSelection
+                )
                     .disabled(acceptedGeneratedEntries.isEmpty && !sheetModel.hasChanged)
             }
         }
@@ -82,8 +93,15 @@ struct AdventureChatRootView: View {
     }
 }
 
-#Preview {
-    AdventureNoBlocksView()
+#Preview("Adventure Chat", traits: .mockData) {
+    NavigationStack {
+        AdventureChatRootView(
+            sheetModel: AdventureChatPreviewData.sheetModel,
+            usesAvailabilityGate: false,
+            runsAutomaticGeneration: false,
+            previewBlocks: AdventureChatPreviewData.blocks
+        )
+    }
 }
 
 private extension AdventureChatRootView {
@@ -113,14 +131,15 @@ private extension AdventureChatRootView {
             }
         }
         .alert(
-            "Error",
+            Text("Error", bundle: .module),
             isPresented: $model.showError,
             actions: { Button { model.dismissError() } label: { Text("OK", bundle: .module) } },
-            message: { Text(model.responseErrorContent) }
+            message: { Text(verbatim: model.responseErrorContent) }
         )
         .task {
             prepareChatSheetRootModelIfNeeded()
             installPreviewBlocksIfNeeded()
+            guard runsAutomaticGeneration else { return }
             generatorController.generateExtractor()
             await generatorController.generate()
             try? await Task.sleep(for: .seconds(0.5))
@@ -130,6 +149,7 @@ private extension AdventureChatRootView {
             updateActiveAnswerBatch()
         }
         .onDisappear {
+            guard runsAutomaticGeneration else { return }
             generatorController.tearDown()
         }
     }
@@ -140,7 +160,7 @@ private extension AdventureChatRootView {
 
     var navigationTitle: String {
         let title = sheetModel.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return title.isEmpty ? "Adventure" : title
+        return title.isEmpty ? String(localized: "Adventure", bundle: .module) : title
     }
 
     var sheetModule: NetworkModules {
@@ -182,7 +202,8 @@ private extension AdventureChatRootView {
         commitAcceptedGeneratedEntries()
 
         if sheetModel.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            sheetModel.name = acceptedEntries.first?.name ?? "Generated Adventure"
+            sheetModel.name = acceptedEntries.first?.name
+                ?? String(localized: "Generated Adventure", bundle: .module)
         }
 
         if sheetModel.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -415,426 +436,6 @@ private extension AdventureChatRootView {
     }
 }
 
-struct ChatSheetRootView: View {
-    let sheetRootController: ItemRootController
-    let sheetRootModel: SheetRootModel
-    let sheetModel: SheetModel
-    @Bindable var model: AdventureSessionModel
-    let generatorController: AdventureGeneratorController
-    let activeAnswerParentSource: ItemRowModel?
-    @Binding var prompt: String
-    @FocusState.Binding var isTextFieldFocused: Bool
-
-    let prepareForRequestAction: () -> Void
-    let requestBlocksAction: (String) -> Void
-    let extractAction: () -> Void
-    let requestSheetDetailAction: (SheetModel) -> Void
-
-    private var seedBlocks: [AdventureChatSeedBlock] {
-        AdventureSheetContextBuilder.seedBlocks(from: sheetModel)
-    }
-
-    private var sourceBlocks: [AdventureChatBlockSnapshot] {
-        AdventureSheetContextBuilder.sourceBlocks(from: sheetModel)
-    }
-
-    private var generatedCount: Int {
-        sheetModel.generatedAnswerCount
-    }
-
-    private var selectedCount: Int {
-        sheetModel.selectedGeneratedAnswerCount
-    }
-
-    private var canExtractLatestAnswer: Bool {
-        !(model.adventureChat?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) || !model.session.transcript.isEmpty
-    }
-
-    private var currentAnswer: String {
-        model.adventureChat?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    }
-
-    private var isWorking: Bool {
-        model.session.isResponding || model.extractSession.isResponding || model.isSummarizing || model.isApplyingWindow
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            TokenUsageBar(
-                currentTokenCount: model.currentTokenCount,
-                maxContextSize: model.maxContextSize,
-                tokenUsageFraction: model.tokenUsageFraction
-            )
-
-            AdventureChatHeaderView(
-                seedBlocks: seedBlocks,
-                sourceCount: sourceBlocks.count,
-                generatedCount: generatedCount,
-                selectedCount: selectedCount
-            )
-
-            Divider()
-
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 12) {
-                    SheetRootView(
-                        root: sheetRootController,
-                        rootModel: sheetRootModel,
-                        detailAction: requestSheetDetailAction
-                    ) { sheet in
-                        answerSection(for: sheet)
-                    }
-                }
-                .padding()
-            }
-            .background(.regularMaterial)
-            .overlay {
-                if showsEmptyState {
-                    AdventureNoBlocksView()
-                }
-            }
-        }
-        .safeAreaInset(edge: .bottom) {
-            AdventureChatComposerBar(
-                prompt: $prompt,
-                generatorController: generatorController,
-                isTextFieldFocused: $isTextFieldFocused,
-                canExtract: canExtractLatestAnswer,
-                isExtracting: model.extractSession.isResponding,
-                prepareForRequestAction: prepareForRequestAction,
-                requestBlocksAction: requestBlocksAction,
-                extractAction: extractAction
-            )
-        }
-    }
-
-    @ViewBuilder private func answerSection(for sheet: SheetModel) -> some View {
-        let answers = directGeneratedAnswers(in: sheet)
-        let selectedCount = selectedCount(in: answers)
-        let isTaken = hasHiddenAnswers(in: answers)
-
-        if !answers.isEmpty || showsWorking(for: sheet.source) || showsCurrentAnswer(for: sheet.source) {
-            AdventureBlockListSectionHeader(
-                title: resultSectionTitle,
-                count: answers.count,
-                systemImage: "sparkles",
-                isWorking: showsWorking(for: sheet.source),
-                selectedCount: selectedCount == 0 ? nil : selectedCount,
-                isTaken: isTaken,
-                canTake: selectedCount > 0,
-                takeAction: { takeSelectedAnswers(in: sheet) },
-                restoreAction: { restoreAnswers(in: sheet) },
-                deleteAction: { deleteAnswers(in: sheet) }
-            )
-        }
-
-        if directVisibleGeneratedAnswers(in: sheet).isEmpty && showsCurrentAnswer(for: sheet.source) {
-            AdventureCurrentAnswerCard(text: currentAnswer)
-        }
-    }
-
-    private var resultSectionTitle: String {
-        "Answers / Ideas"
-    }
-
-    private var showsEmptyState: Bool {
-        sourceBlocks.isEmpty && generatedCount == 0 && currentAnswer.isEmpty && !isWorking
-    }
-
-    private func showsWorking(for parentSource: ItemRowModel) -> Bool {
-        isWorking && activeAnswerParentSource == parentSource
-    }
-
-    private func showsCurrentAnswer(for parentSource: ItemRowModel) -> Bool {
-        activeAnswerParentSource == parentSource && !currentAnswer.isEmpty
-    }
-
-    private func directGeneratedAnswers(in sheet: SheetModel) -> [SheetModel] {
-        sheet.entries.filter(\.isGeneratedAnswer)
-    }
-
-    private func directVisibleGeneratedAnswers(in sheet: SheetModel) -> [SheetModel] {
-        directGeneratedAnswers(in: sheet).filter { !$0.isGeneratedHidden }
-    }
-
-    private func selectedCount(in answers: [SheetModel]) -> Int {
-        answers.filter { $0.isGeneratedSelected && !$0.isGeneratedHidden }.count
-    }
-
-    private func hasHiddenAnswers(in answers: [SheetModel]) -> Bool {
-        answers.contains(where: \.isGeneratedHidden)
-    }
-
-    private func takeSelectedAnswers(in sheet: SheetModel) {
-        let answers = directGeneratedAnswers(in: sheet)
-        let selectedIDs = Set(answers.filter { $0.isGeneratedSelected && !$0.isGeneratedHidden }.map(\.id))
-        guard !selectedIDs.isEmpty else { return }
-
-        withAnimation {
-            for answer in answers {
-                if selectedIDs.contains(answer.id) {
-                    answer.isGeneratedAccepted = true
-                    answer.isGeneratedSelected = true
-                    answer.isGeneratedHidden = false
-                } else {
-                    answer.isGeneratedHidden = true
-                    answer.isGeneratedSelected = false
-                }
-            }
-        }
-    }
-
-    private func restoreAnswers(in sheet: SheetModel) {
-        withAnimation {
-            for answer in directGeneratedAnswers(in: sheet) {
-                answer.isGeneratedHidden = false
-                if !answer.isGeneratedAccepted {
-                    answer.isGeneratedSelected = false
-                }
-            }
-        }
-    }
-
-    private func deleteAnswers(in sheet: SheetModel) {
-        withAnimation {
-            sheet.entries.removeAll { $0.isGeneratedAnswer }
-        }
-    }
-}
-
-private extension SheetModel {
-    var generatedAnswerCount: Int {
-        entries.reduce(0) { count, entry in
-            count + (entry.isGeneratedAnswer ? 1 : 0) + entry.generatedAnswerCount
-        }
-    }
-
-    var selectedGeneratedAnswerCount: Int {
-        entries.reduce(0) { count, entry in
-            count + (entry.isGeneratedSelected && !entry.isGeneratedHidden ? 1 : 0) + entry.selectedGeneratedAnswerCount
-        }
-    }
-}
-
-struct AdventureChatHeaderView: View {
-    let seedBlocks: [AdventureChatSeedBlock]
-    let sourceCount: Int
-    let generatedCount: Int
-    let selectedCount: Int
-
-    var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                AdventureChatMetricPill(value: seedBlocks.count, label: "Context", systemImage: "doc.text")
-                AdventureChatMetricPill(value: sourceCount, label: "Sheet Blocks", systemImage: "text.book.closed")
-                AdventureChatMetricPill(value: generatedCount, label: "Blocks", systemImage: "square.stack.3d.up")
-                AdventureChatMetricPill(value: selectedCount, label: "Selected", systemImage: "checkmark.circle")
-            }
-            .padding(.vertical, 1)
-        }
-        .scrollIndicators(.hidden)
-        .padding()
-    }
-}
-
-struct AdventureChatMetricPill: View {
-    let value: Int
-    let label: String
-    let systemImage: String
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: systemImage)
-            Text(value, format: .number)
-            Text(label)
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(.thinMaterial, in: .rect(cornerRadius: 8))
-    }
-}
-
-struct AdventureChatComposerBar: View {
-    @Binding var prompt: String
-    let generatorController: AdventureGeneratorController
-    @FocusState.Binding var isTextFieldFocused: Bool
-    let canExtract: Bool
-    let isExtracting: Bool
-    let prepareForRequestAction: () -> Void
-    let requestBlocksAction: (String) -> Void
-    let extractAction: () -> Void
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            ChatInputView(
-                messageText: $prompt,
-                generatorController: generatorController,
-                isTextFieldFocused: $isTextFieldFocused,
-                prepareForRequestAction: prepareForRequestAction,
-                sendMessageAction: requestBlocksAction
-            )
-
-            Button("Extract", systemImage: "list.bullet.clipboard", action: extractAction)
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .disabled(!canExtract || isExtracting)
-                .padding(.trailing)
-                .padding(.bottom)
-                .help("Extract adventure blocks")
-        }
-        .background(.bar)
-    }
-}
-
-struct AdventureBlockListSectionHeader: View {
-    let title: String
-    let count: Int
-    let systemImage: String
-    let isWorking: Bool
-    let selectedCount: Int?
-    let isTaken: Bool
-    let canTake: Bool
-    let takeAction: () -> Void
-    let restoreAction: () -> Void
-    let deleteAction: () -> Void
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Label(title, systemImage: systemImage)
-                .font(.headline)
-
-            if isWorking {
-                ProgressView()
-                    .controlSize(.small)
-            }
-
-            Spacer(minLength: 0)
-
-            if canTake {
-                Button("Take", systemImage: "checkmark.circle", action: takeAction)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-            }
-
-            if isTaken {
-                Button("Restore", systemImage: "arrow.uturn.backward", action: restoreAction)
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-            }
-
-            if count > 0 {
-                Button("Delete Answers", systemImage: "trash", action: deleteAction)
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .controlSize(.small)
-                    .tint(.red)
-                    .help("Delete answers")
-            }
-
-            Text(count, format: .number)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if let selectedCount {
-                Label("\(selectedCount)", systemImage: "checkmark.circle")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .labelStyle(.titleAndIcon)
-            }
-        }
-    }
-}
-
-struct AdventureCurrentAnswerCard: View {
-    let text: String
-
-    var body: some View {
-        Text(text.markDown())
-            .font(.callout)
-            .textSelection(.enabled)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(.thinMaterial, in: .rect(cornerRadius: 8))
-    }
-}
-
-struct AdventureGeneratedBlockRow: View {
-    let block: AdventureChatBlockSnapshot
-    let isSelected: Bool
-    let toggleSelectionAction: () -> Void
-
-    private var title: String {
-        block.titleForSheet(index: block.index)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button(action: toggleSelectionAction) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(isSelected ? .green : .secondary)
-
-                        Text(title)
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                        if block.isPending {
-                            ProgressView()
-                                .controlSize(.small)
-                        }
-                    }
-
-                    if !block.content.isEmpty {
-                        Text(block.content.markDown())
-                            .font(.body)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.thinMaterial, in: .rect(cornerRadius: 8))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(borderColor, lineWidth: isSelected ? 2 : 1)
-        }
-        .animation(.easeInOut(duration: 0.2), value: isSelected)
-    }
-
-    private var borderColor: Color {
-        if isSelected {
-            return .green
-        }
-        return .secondary.opacity(0.25)
-    }
-}
-
-#Preview {
-    AdventureGeneratedBlockRow(
-        block: AdventureChatPreviewData.blocks[0],
-        isSelected: true,
-        toggleSelectionAction: {}
-    )
-    .padding()
-}
-
-struct AdventureNoBlocksView: View {
-    var body: some View {
-        ContentUnavailableView(
-            "No Blocks",
-            systemImage: "square.stack.3d.up",
-            description: Text("Sheet blocks and generated blocks will appear here.")
-        )
-    }
-}
-
 enum AdventureChatBlockOrigin: Hashable {
     case sheet
     case generated
@@ -861,7 +462,7 @@ struct AdventureChatBlockSnapshot: Identifiable, Hashable {
 
     func titleForSheet(index: Int) -> String {
         if title.isEmpty {
-            return "Adventure Block \(index + 1)"
+            return String(localized: "Adventure Block \(index + 1)", bundle: .module)
         }
         return title
     }
@@ -922,7 +523,9 @@ enum AdventureSheetContextBuilder {
                 blocks.append(
                     AdventureChatSeedBlock(
                         id: "root",
-                        title: title.isEmpty ? "Adventure" : title,
+                        title: title.isEmpty
+                            ? String(localized: "Adventure", bundle: .module)
+                            : title,
                         content: content,
                         depth: 0,
                         source: sheetModel.source
@@ -1002,7 +605,9 @@ enum AdventureSheetContextBuilder {
             blocks.append(
                 AdventureChatSeedBlock(
                     id: path,
-                    title: title.isEmpty ? "Untitled" : title,
+                    title: title.isEmpty
+                        ? String(localized: "Untitled", bundle: .module)
+                        : title,
                     content: content,
                     depth: depth,
                     source: sheetModel.source
@@ -1036,7 +641,12 @@ enum AdventureSheetContextBuilder {
                 blocks.append(
                     AdventureChatSeedBlock(
                         id: entryPath,
-                        title: title.isEmpty ? "Adventure Block \(blocks.count + 1)" : title,
+                        title: title.isEmpty
+                            ? String(
+                                localized: "Adventure Block \(blocks.count + 1)",
+                                bundle: .module
+                            )
+                            : title,
                         content: content,
                         depth: depth,
                         source: sheet.source
@@ -1059,29 +669,20 @@ enum AdventureSheetContextBuilder {
     }
 }
 
-#Preview("Studio - iPhone", traits: .mockData) {
-    NavigationStack {
-        AdventureChatPreviewHarness()
-            .frame(width: 430, height: 780)
-    }
-}
-
-struct AdventureChatPreviewHarness: View {
-    var body: some View {
-        AdventureChatRootView(
-            sheetModel: AdventureChatPreviewData.sheetModel,
-            usesAvailabilityGate: false,
-            previewBlocks: AdventureChatPreviewData.blocks
-        )
-    }
-}
-
 enum AdventureChatPreviewData {
+    nonisolated static let rootItemID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x90, 0x01))
+    nonisolated static let rubyItemID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x90, 0x02))
+    nonisolated static let verdantItemID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x90, 0x03))
+    nonisolated static let indigoItemID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x90, 0x04))
+    nonisolated static let rubyEntryID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x90, 0x12))
+    nonisolated static let verdantEntryID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x90, 0x13))
+    nonisolated static let indigoEntryID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x90, 0x14))
+
     @MainActor static var sheetModel: SheetModel {
-        let firstEntrySource = ItemRowModel(itemId: UUID(), entryId: UUID(), typeId: .adventure)
-        let secondEntrySource = ItemRowModel(itemId: UUID(), entryId: UUID(), typeId: .adventure)
-        let thirdEntrySource = ItemRowModel(itemId: UUID(), entryId: UUID(), typeId: .adventure)
-        let rootSource = ItemRowModel(itemId: UUID(), typeId: .adventure)
+        let firstEntrySource = ItemRowModel(itemId: rubyItemID, entryId: rubyEntryID, typeId: .adventure)
+        let secondEntrySource = ItemRowModel(itemId: verdantItemID, entryId: verdantEntryID, typeId: .adventure)
+        let thirdEntrySource = ItemRowModel(itemId: indigoItemID, entryId: indigoEntryID, typeId: .adventure)
+        let rootSource = ItemRowModel(itemId: rootItemID, typeId: .adventure)
         return SheetModel(
             source: rootSource,
             level: 0,

@@ -20,10 +20,18 @@ struct DetailEditorView: View {
                 itemId: model.id
             )
 
-            Text(model.url?.path(percentEncoded: false) ?? "No file is set")
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Group {
+                if let url = model.url {
+                    Text(verbatim: url.path(percentEncoded: false))
+                } else {
+                    Text("No file is set", bundle: .module)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .opacity(model.specialCategory ? 0 : 1)
+        .allowsHitTesting(!model.specialCategory)
+        .accessibilityHidden(model.specialCategory)
         .padding()
     }
 }

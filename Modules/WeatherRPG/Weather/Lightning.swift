@@ -96,4 +96,11 @@ class Lightning {
         guard state == .waiting else { return }
         state = .preparing
     }
+
+    func stop() {
+        state = .waiting
+        bolts.removeAll(keepingCapacity: true)
+        flashOpacity = 0
+        lastUpdate = .now
+    }
 }

@@ -32,6 +32,8 @@ struct DiceRoll: View {
                         }
                         .frame(height: root.viewController.height(for: root.gameController.gameItem(for: itemId)))
                     }
+                    .accessibilityLabel(Text("Roll \(die.die.text) die", bundle: .module))
+                    .frame(minWidth: 44, minHeight: 44)
                     .borderLessTVBottonStyle()
                 }
             }

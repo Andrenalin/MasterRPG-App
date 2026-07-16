@@ -27,4 +27,5 @@ struct TabRootView: View {
 
 #Preview {
     TabRootView(appModel: .preview)
+        .environment(AppWindowSizeModel())
 }

@@ -65,7 +65,10 @@ final class ItemProviderImporter {
 }
 
 @MainActor
-fileprivate let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "ItemProviderImporter")
+fileprivate let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "RPGShare",
+    category: "ItemProviderImporter"
+)
 
 private extension ItemProviderImporter {
     enum LoadedItem: Sendable {

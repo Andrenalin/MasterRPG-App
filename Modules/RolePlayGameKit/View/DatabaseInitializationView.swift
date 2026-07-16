@@ -5,9 +5,16 @@ import SwiftUI
 
 struct DatabaseInitializationView: View {
     @Environment(AppModel.self) private var appModel
+    @Environment(\.rolePlayDatabaseInitializationEnabled) private var databaseInitializationEnabled
 
     @State private var showDeleteAlert = false
     @State private var showAccountAlert = false
+
+    private let performsInitialization: Bool
+
+    init(performsInitialization: Bool = true) {
+        self.performsInitialization = performsInitialization
+    }
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -20,20 +27,24 @@ struct DatabaseInitializationView: View {
             } else {
                 // Fix #4: ProgressView with a label provides automatic
                 // accessibility description — no separate Text needed.
-                ProgressView("Setting up your database...")
+                ProgressView {
+                    Text("Setting up your database...", bundle: .module)
+                }
                     .progressViewStyle(.circular)
             }
         }
         .padding()
         .task {
+            guard performsInitialization && databaseInitializationEnabled else { return }
             await initializeDatabase()
         }
-        .alert("iCloud Account Issues", isPresented: $showAccountAlert) {
+        .alert(Text("iCloud Account Issues", bundle: .module), isPresented: $showAccountAlert) {
             Button { appModel.databaseModel.setup() } label: { Text("Continue Anyway", bundle: .module) }
         } message: {
             Text("The iCloud account is not available. Please check your iCloud settings. If you continue, data cannot be synced between devices.", bundle: .module)
         }
         .task(id: appModel.databaseModel.context) {
+            guard performsInitialization && databaseInitializationEnabled else { return }
             await setupRootModels()
         }
     }
@@ -46,17 +57,22 @@ struct DatabaseInitializationView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.largeTitle)
                 .foregroundStyle(.red)
-                .accessibilityLabel(Text("Database error", bundle: .module))
+                .accessibilityHidden(true)
 
-            Text(appModel.databaseModel.errorMessage)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+            Text("Database error", bundle: .module)
+                .font(.headline)
+
+            if let errorMessage = appModel.databaseModel.errorMessage {
+                Text(verbatim: errorMessage)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+            }
 
             Button(role: .destructive) { showDeleteAlert = true } label: {
                 Label { Text("Delete Database", bundle: .module) } icon: { Image(systemName: "trash") }
             }
         }
-        .alert("Delete Database?", isPresented: $showDeleteAlert) {
+        .alert(Text("Delete Database?", bundle: .module), isPresented: $showDeleteAlert) {
             Button(role: .cancel) { } label: { Text("Cancel", bundle: .module) }
             Button(role: .destructive) { appModel.databaseModel.deleteDatabase() } label: { Text("Delete", bundle: .module) }
         } message: {
@@ -89,5 +105,23 @@ struct DatabaseInitializationView: View {
 }
 
 #Preview {
-    DatabaseInitializationView()
+    DatabaseInitializationView(performsInitialization: false)
+        .environment(AppModel.previewWithoutDatabase)
+}
+
+private struct RolePlayDatabaseInitializationEnabledKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var rolePlayDatabaseInitializationEnabled: Bool {
+        get { self[RolePlayDatabaseInitializationEnabledKey.self] }
+        set { self[RolePlayDatabaseInitializationEnabledKey.self] = newValue }
+    }
+}
+
+extension View {
+    func rolePlayDatabaseInitializationEnabled(_ isEnabled: Bool) -> some View {
+        environment(\.rolePlayDatabaseInitializationEnabled, isEnabled)
+    }
 }

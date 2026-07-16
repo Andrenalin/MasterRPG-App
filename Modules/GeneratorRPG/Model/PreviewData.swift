@@ -7,15 +7,26 @@ import SwiftData
 
 public extension GeneratorRootModel {
     @MainActor
-    static let preview: GeneratorRootModel = {
+    static let preview: GeneratorRootModel = previewFixture()
+
+    @MainActor
+    static func previewFixture() -> GeneratorRootModel {
+        previewFixture(models: GeneratorModel.previewFixtures)
+    }
+
+    @MainActor
+    internal static func previewFixture(models: [GeneratorModel]) -> GeneratorRootModel {
         let root = GeneratorRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let realRootManager = RootManager.preview(fake: root.rootController)
         root.setUp(context: nil, batchContext: nil, rootManager: realRootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: realRootManager))
+        for model in models {
+            root.itemController.replace(model: model, isInsert: true)
+        }
         root.editController.setCurrentItem(to: .preview)
         return root
-    }()
+    }
     
     @MainActor
     static let previewWithData: GeneratorRootModel = {
@@ -59,8 +70,15 @@ extension GeneratorRootModel: RootExportControllable {
 
 // MARK: Preview - Test
 extension GeneratorModel {
-    nonisolated static let previewId = UUID(uuidString: "5F6D6D52-3DDB-4B20-8D45-DFB543799417")!
-    static let preview = testViewModel
+    nonisolated static let previewId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x81))
+    nonisolated static let previewCharacterId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x82))
+    nonisolated static let previewExtractorId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x83))
+
+    static var preview: GeneratorModel { testViewModel }
+
+    static var previewFixtures: [GeneratorModel] {
+        [testViewModel, testViewModel2, testViewModel3]
+    }
 }
 
 extension ItemRowTreeModel {
@@ -112,32 +130,48 @@ extension LinkController {
 }
 
 extension UUID {
-    nonisolated static let previewId = UUID(uuidString: "70E57E66-3FCE-4E8E-B032-5C79A2322EB8")!
-    static let previewEntryId = UUID(uuidString: "70E57E66-3FCE-4E8E-B032-5C79A2322EB8")!
+    nonisolated static let previewId = UUID(
+        uuid: (0x70, 0xE5, 0x7E, 0x66, 0x3F, 0xCE, 0x4E, 0x8E, 0xB0, 0x32, 0x5C, 0x79, 0xA2, 0x32, 0x2E, 0xB8)
+    )
+    nonisolated static let previewEntryId = UUID(
+        uuid: (0x70, 0xE5, 0x7E, 0x66, 0x3F, 0xCE, 0x4E, 0x8E, 0xB0, 0x32, 0x5C, 0x79, 0xA2, 0x32, 0x2E, 0xB9)
+    )
 }
 
 extension GeneratorModel {
+    static var testViewModel: GeneratorModel {
+        GeneratorModel(
+            id: previewId,
+            name: "Adventure Creator",
+            description: "Create a playable adventure from campaign notes.",
+            tags: ["AI", "Adventure"],
+            displayState: 0,
+            entries: [],
+            genType: .adventure
+        )
+    }
     
-    static let uuid = UUID(uuidString: "5F6D6D52-3DDB-4B20-8D45-DFB543799417")!
-    static let entryUuid = UUID()
-    static let testViewModel = GeneratorModel(
-        id: uuid,
-        name: "Adventure Creator",
-        description: "Create an adventure",
-        tags: ["DS"],
-        displayState: 0, entries: [], genType: .adventure
-    )
+    static var testViewModel2: GeneratorModel {
+        GeneratorModel(
+            id: previewCharacterId,
+            name: "Character Generator",
+            description: "Create a character with motives, traits, and game-ready details.",
+            tags: ["AI", "Character"],
+            displayState: 0,
+            entries: [],
+            genType: .character
+        )
+    }
     
-    static let uuid2 = UUID(uuidString: "8C94288B-4CDB-4109-B0AD-75B12530ED84")!
-    static let testViewModel2 = GeneratorModel(
-        id: uuid2,
-        name: "Character Generator",
-        description: "Create an Character",
-        tags: ["DS", "Character"],
-        displayState: 0, entries: [], genType: .character
-    )
-    
-    static let uuid3 = UUID()
-    static let testViewModel3 = GeneratorModel(id: uuid3, name: "Extractor", description: "Uses Text to build", displayState: 0, entries: [], genType: .extractor)
+    static var testViewModel3: GeneratorModel {
+        GeneratorModel(
+            id: previewExtractorId,
+            name: "Extractor",
+            description: "Turn unstructured notes into reusable RPG content.",
+            tags: ["AI", "Extraction"],
+            displayState: 0,
+            entries: [],
+            genType: .extractor
+        )
+    }
 }
-

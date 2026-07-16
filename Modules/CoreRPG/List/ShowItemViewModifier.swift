@@ -3,6 +3,8 @@
 import SwiftUI
 
 struct ShowItemViewModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let isActive: Bool
     let isShown: Bool
     let action: () -> Void
@@ -28,10 +30,10 @@ struct ShowItemViewModifier: ViewModifier {
                 }
                 .contentShape(Rectangle())
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                .animation(.default, value: isShown)
+                .animation(accessibilityReduceMotion ? nil : .default, value: isShown)
             }
         }
-        .animation(.default, value: isActive)
+        .animation(accessibilityReduceMotion ? nil : .default, value: isActive)
     }
 
     var showButton: some View {
@@ -39,6 +41,12 @@ struct ShowItemViewModifier: ViewModifier {
             Image(systemName: "eye\(isShown ? "" : ".slash")")
                 .imageScale(.large)
         }
+        .frame(minWidth: 44, minHeight: 44)
+        .accessibilityLabel(
+            isShown
+                ? Text("Hide", bundle: .module)
+                : Text("Show", bundle: .module)
+        )
     }
 }
 
@@ -47,4 +55,3 @@ public extension View {
         modifier(ShowItemViewModifier(isActive: isActive, isShown: isShown, action: action))
     }
 }
-

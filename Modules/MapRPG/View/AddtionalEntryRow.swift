@@ -47,8 +47,14 @@ struct AddtionalEntryRow: View, Equatable {
     }
 }
 
-//#Preview(traits: .mockData) {
-//    @Previewable @Environment(MapRootModel.self) var root
-//
-//    AddtionalEntryRow(entryId: root.editController.model.entries[0].id)
-//}
+#Preview(traits: .mockData) {
+    AddtionalEntryRow(
+        source: ItemRowModel(
+            itemId: MapModel.previewId,
+            entryId: MapEntryModel.previewId,
+            typeId: .map
+        ),
+        entry: MapEntryModel.preview
+    )
+    .environment(MapRootModel.previewFixture())
+}

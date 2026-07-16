@@ -22,10 +22,16 @@ struct InlineRowViewer: View, Equatable {
                 Button {
                     actionHandler()
                 } label: {
-                    Image(systemName: root.configurable.module.icon)
-                        .imageScale(.large)
+                    Label {
+                        Text("Open PDF", bundle: .module)
+                    } icon: {
+                        Image(systemName: root.configurable.module.icon)
+                    }
+                    .labelStyle(.iconOnly)
+                    .imageScale(.large)
                 }
                 .font(source.entryId == nil ? .largeTitle : .default)
+                .frame(minWidth: 44, minHeight: 44)
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }

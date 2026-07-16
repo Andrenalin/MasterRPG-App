@@ -3,6 +3,8 @@
 import SwiftUI
 
 public struct RemoveTagsEditor: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     public init(tags: Binding<[String]>) {
         self._tags = tags
     }
@@ -16,10 +18,10 @@ public struct RemoveTagsEditor: View {
 
 private extension RemoveTagsEditor {
     var tagsView: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        ScrollView(.horizontal) {
             HStack {
                 ForEach(tags, id: \.self) { tag in
-                    Text(tag)
+                    Text(verbatim: tag)
                         .rowColoredTag(backgroundColor: Color.accentColor)
                         .removeItemImage {
                             remove(tag: tag)
@@ -28,28 +30,12 @@ private extension RemoveTagsEditor {
                 }
             }
         }
+        .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
     }
 
     func remove(tag: String) {
-        withAnimation(.bouncy) { tags.removeAll(where: { $0 == tag }) }
-    }
-}
-
-public struct AddTagsEditor: View {
-    public init(tags: Binding<[String]>, prompt: LocalizedStringKey = "New tag") {
-        self._tags = tags
-        self.prompt = prompt
-    }
-    
-    @Binding var tags: [String]
-    let prompt: LocalizedStringKey
-    
-    @FocusState var focusState: Bool
-    @State private var currentTag: String = ""
-    
-    public var body: some View {
-        addTagView
+        withAnimation(accessibilityReduceMotion ? nil : .bouncy) { tags.removeAll(where: { $0 == tag }) }
     }
 }
 
@@ -57,50 +43,4 @@ public struct AddTagsEditor: View {
     @Previewable @State var tags = ["Dungeon", "Mystery", "Undead"]
     RemoveTagsEditor(tags: $tags)
         .padding()
-}
-
-#Preview {
-    @Previewable @State var tags = ["Dungeon"]
-    AddTagsEditor(tags: $tags)
-        .padding()
-}
-
-private extension AddTagsEditor {
-    var addTagView: some View {
-        HStack {
-            TextField(text: $currentTag, prompt: Text(prompt, bundle: .module)) {
-                Text("Tag", bundle: .module)
-            }
-#if os(iOS) || os(visionOS)
-            .autocapitalization(.none)
-            .textContentType(.name)
-#endif
-            .disableAutocorrection(true)
-            .focused($focusState)
-            .onSubmit {
-                addCurrentTag()
-                focusState = true
-            }
-            
-            Button { addCurrentTag() } label: {
-                Image(systemName: "plus")
-                    .imageScale(.large)
-            }
-            .padding(.horizontal, self.valueFor(iOS: 16, macOS: 8, tvOS: 16, visionOS: 16))
-            .disabled(currentTag.isEmpty)
-            .buttonStyle(.borderedProminent)
-        }
-    }
-    
-    func addCurrentTag() {
-        let tag = currentTag.localizedUppercase
-        guard !tags.contains(where: { $0 == tag }) else { return }
-        var updatedTags = tags
-        updatedTags.append(tag)
-        updatedTags = updatedTags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
-        withAnimation(.bouncy(duration: 0.5, extraBounce: 0.4)) {
-            tags = updatedTags
-            currentTag = ""
-        }
-    }
 }

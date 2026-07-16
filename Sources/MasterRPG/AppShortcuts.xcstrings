@@ -1,0 +1,106 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Add a section to an adventure in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einem Abenteuer in ${applicationName} einen Abschnitt hinzufügen"
+          }
+        }
+      }
+    },
+    "Create a new adventure in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein neues Abenteuer in ${applicationName} erstellen"
+          }
+        }
+      }
+    },
+    "Delete an adventure in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Abenteuer in ${applicationName} löschen"
+          }
+        }
+      }
+    },
+    "Navigate around ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durch ${applicationName} navigieren"
+          }
+        }
+      }
+    },
+    "Open an adventure in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Abenteuer in ${applicationName} öffnen"
+          }
+        }
+      }
+    },
+    "Roll a D6 in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einen D6 in ${applicationName} würfeln"
+          }
+        }
+      }
+    },
+    "Roll a D20 in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einen D20 in ${applicationName} würfeln"
+          }
+        }
+      }
+    },
+    "Roll my dice in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meine Würfel in ${applicationName} würfeln"
+          }
+        }
+      }
+    },
+    "Search adventures in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In ${applicationName} nach Abenteuern suchen"
+          }
+        }
+      }
+    },
+    "Start an adventure in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Abenteuer in ${applicationName} starten"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

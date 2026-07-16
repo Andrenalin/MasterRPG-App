@@ -249,15 +249,30 @@ struct AdventureGeneratorController: Sendable {
             } catch let error as LanguageModelSession.GenerationError {
                 switch error {
                 case .guardrailViolation(let context):
-                    model.responseErrorContent = "Guardrail Violation: \(context.debugDescription)"
+                    model.responseErrorContent = String(
+                        localized: "Guardrail Violation: \(context.debugDescription)",
+                        bundle: .module
+                    )
                 case .decodingFailure(let context):
-                    model.responseErrorContent = "Decoding Failure: \(context.debugDescription)"
+                    model.responseErrorContent = String(
+                        localized: "Decoding Failure: \(context.debugDescription)",
+                        bundle: .module
+                    )
                 case .rateLimited(let context):
-                    model.responseErrorContent = "Rate Limit exceeded: \(context.debugDescription)"
+                    model.responseErrorContent = String(
+                        localized: "Rate Limit exceeded: \(context.debugDescription)",
+                        bundle: .module
+                    )
                 case .exceededContextWindowSize(let context):
-                    model.responseErrorContent = "Memory exceeded: \(context.debugDescription)"
+                    model.responseErrorContent = String(
+                        localized: "Memory exceeded: \(context.debugDescription)",
+                        bundle: .module
+                    )
                 default:
-                    model.responseErrorContent = "Other error: \(error.localizedDescription)"
+                    model.responseErrorContent = String(
+                        localized: "Other error: \(error.localizedDescription)",
+                        bundle: .module
+                    )
                 }
                 if let failureReason = error.failureReason {
                     model.responseErrorContent += "\n\(failureReason)"

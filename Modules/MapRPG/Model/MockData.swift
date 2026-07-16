@@ -1,16 +1,14 @@
 // @copyright André Trettin
 
 import CoreRPG
-import RPGResources
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import SwiftUI
 import SwiftData
 
 struct MockData: PreviewModifier {
-    nonisolated static let previewId = UUID()
-    nonisolated static let previewId2 = UUID()
-    nonisolated static let previewId3 = UUID()
-    
-    static var previewRoot: MapRootModel?
+    nonisolated static let previewId = UUID(uuid: (0xA1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
     func body(content: Content, context: ModelContainer) -> some View {
         content
@@ -18,36 +16,44 @@ struct MockData: PreviewModifier {
             .modelContainer(context)
     }
     static func makeSharedContext() async throws -> ModelContainer {
-        let container = try! ModelContainer(
+        try ModelContainer(
             for: LinkDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
-        
-        let bundle = RPGResources.Resources.bundle
-        guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-            print("url nil ")
-            return container
-        }
-
-        let root = MapRootModel.preview
-        let task = root.importController.importUrl(from: url)
-        let _ = try await task.value
-
-        return container
     }
 }
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: MapRootModel.preview)
+        let appGameStateModel = AppGameStateModel()
+        self._root = State(wrappedValue: MapRootModel.previewFixture())
+        self._dropPinModel = State(wrappedValue: DropPinModel())
+#if !os(tvOS)
+        self._generatorRoot = State(wrappedValue: GeneratorRootModel.preview)
+#endif
+        self._appGameStateModel = State(wrappedValue: appGameStateModel)
+        self._appNavigationModel = State(
+            wrappedValue: AppNavigationModel(appGameStateModel: appGameStateModel)
+        )
     }
 
     @State private var root: MapRootModel
+    @State private var dropPinModel: DropPinModel
+#if !os(tvOS)
+    @State private var generatorRoot: GeneratorRootModel
+#endif
+    @State private var appGameStateModel: AppGameStateModel
+    @State private var appNavigationModel: AppNavigationModel
 
     func body(content: Content) -> some View {
         content
             .environment(root)
-            .environment(AppGameStateModel())
+            .environment(dropPinModel)
+#if !os(tvOS)
+            .environment(generatorRoot)
+#endif
+            .environment(appGameStateModel)
+            .environment(appNavigationModel)
             .environment(AppWindowSizeModel())
             .environment(CacheItemListModel())
             .environment(ScenesManager())

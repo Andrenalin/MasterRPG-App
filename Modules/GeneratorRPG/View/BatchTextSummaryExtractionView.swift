@@ -54,7 +54,7 @@ public struct BatchTextSummaryExtractionView: View {
                             itemRow(for: id)
                         }
                     } header: {
-                        Text("\(ids.count) Items", bundle: .module)
+                        Text("^[\(ids.count) Item](inflect: true)", bundle: .module)
                     }
                     if let progress = resultModel.analysisProgress, isRunning {
                         analysisProgressSection(progress)
@@ -102,10 +102,12 @@ public struct BatchTextSummaryExtractionView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()
-            Picker("", selection: $selectedLanguage) {
+            Picker(selection: $selectedLanguage) {
                 ForEach(OutputLanguage.supported) { language in
-                    Text(language.displayName).tag(language)
+                    Text(verbatim: language.displayName).tag(language)
                 }
+            } label: {
+                Text("Output Language", bundle: .module)
             }
             .labelsHidden()
         }
@@ -116,7 +118,7 @@ public struct BatchTextSummaryExtractionView: View {
         let status = statuses[id] ?? .pending
         return HStack(spacing: 12) {
             statusIcon(for: status)
-            Text(name.isEmpty ? id.uuidString : name)
+            Text(verbatim: name.isEmpty ? id.uuidString : name)
             Spacer()
             statusLabel(for: status)
         }
@@ -155,7 +157,7 @@ public struct BatchTextSummaryExtractionView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case .failed(let error):
-            Text(error)
+            Text(verbatim: error)
                 .font(.caption)
                 .foregroundStyle(.red)
                 .lineLimit(1)
@@ -165,18 +167,36 @@ public struct BatchTextSummaryExtractionView: View {
     @ViewBuilder
     private func analysisProgressSection(_ progress: TableSummaryAnalysisProgress) -> some View {
         Section {
-            progressRow(ready: progress.title != nil, label: "Title: \(progress.title ?? "...")")
+            if let title = progress.title {
+                progressRow(
+                    ready: true,
+                    label: LocalizedStringResource("Title: \(title)", bundle: .module)
+                )
+            } else {
+                progressRow(
+                    ready: false,
+                    label: LocalizedStringResource("Title pending", bundle: .module)
+                )
+            }
             progressRow(
                 ready: progress.description != nil,
-                label: progress.description == nil ? "Description..." : "Description extracted"
+                label: progress.description == nil
+                    ? LocalizedStringResource("Description pending", bundle: .module)
+                    : LocalizedStringResource("Description extracted", bundle: .module)
             )
-            progressRow(ready: !(progress.tags?.isEmpty ?? true), label: "Found \(progress.tags?.count ?? 0) tags")
+            progressRow(
+                ready: !(progress.tags?.isEmpty ?? true),
+                label: LocalizedStringResource(
+                    "Found \(progress.tags?.count ?? 0) tags",
+                    bundle: .module
+                )
+            )
         } header: {
             Text("Analyzing...", bundle: .module)
         }
     }
 
-    private func progressRow(ready: Bool, label: String) -> some View {
+    private func progressRow(ready: Bool, label: LocalizedStringResource) -> some View {
         HStack {
             Image(systemName: ready ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(ready ? .green : .secondary)

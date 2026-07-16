@@ -12,17 +12,29 @@ final class DropPinModel {
 }
 
 struct RootCanvasMap: View {
-    init(root: MapRootModel, itemId: UUID, mode: MapDisplayMode, playerPinId: UUID? = nil) {
+    init(
+        root: MapRootModel,
+        itemId: UUID,
+        mode: MapDisplayMode,
+        playerPinId: UUID? = nil,
+        initialImage: AKImage? = nil,
+        initialDegrees: Double = 0,
+        loadsImage: Bool = true
+    ) {
         self.root = root
         self.itemId = itemId
         self.mode = mode
         self.playerPinId = playerPinId
+        self.loadsImage = loadsImage
+        self._image = State(wrappedValue: initialImage)
+        self._degrees = State(wrappedValue: initialDegrees)
     }
 
     let root: MapRootModel
     let itemId: UUID
     let mode: MapDisplayMode
     let playerPinId: UUID?
+    private let loadsImage: Bool
 
     @Environment(\.networkActions) private var networkActions
 
@@ -40,13 +52,15 @@ struct RootCanvasMap: View {
             }
         }
         .onChange(of: mapModel.id, initial: true) {
+            guard loadsImage else { return }
             Task { await reloadImage() }
         }
         .onChange(of: mapModel.entries, initial: false) {
-            guard image == nil else { return }
+            guard loadsImage, image == nil else { return }
             Task { await reloadImage() }
         }
         .onChange(of: photoFileUrl, initial: false) {
+            guard loadsImage else { return }
             // The background photo can arrive after the map (game re-request) —
             // reload when its file lands or changes, or the map stays black.
             Task { await reloadImage() }
@@ -84,70 +98,13 @@ private extension RootCanvasMap {
     }
 }
 
-#Preview {
-    RootCanvasMap(root: .previewWithData, itemId: MapModel.previewId, mode: .master, playerPinId: nil)
-        .environment(MapRootModel.previewWithData)
-}
-
-
-struct RootGameMapViewer: View {
-    init(root: MapRootModel, itemId: UUID, mode: MapDisplayMode, playerPinId: UUID?, image: AKImage, degrees: Double, containerSize: CGSize) {
-        self.root = root
-        self.itemId = itemId
-        self.mode = mode
-        self.playerPinId = playerPinId
-        self.image = image
-        self.degrees = degrees
-        self.containerSize = containerSize
-    }
-
-    let root: MapRootModel
-    let itemId: UUID
-    let mode: MapDisplayMode
-    let playerPinId: UUID?
-    let image: AKImage
-    let degrees: Double
-    let containerSize: CGSize
-
-    @Environment(\.networkActions) private var networkActions
-
-    var body: some View {
-        MapEditor(
-            editController: root.editController,
-            image: image,
-            photoDegrees: degrees,
-            map: mapModel,
-            viewMode: mode == .player ? .player : .master,
-            containerSize: containerSize,
-            mapMode: mode == .player ? .player : .gameMaster,
-            playerPinId: playerPinId,
-            sendMapUpdates: sendMapUpdates,
-            focused: focused
-        )
-        .id(itemId)
-    }
-}
-
-private extension RootGameMapViewer {
-    var mapModel: MapModel {
-        root.gameController.gameItem(for: itemId)
-    }
-
-    func sendMapUpdates() {
-        if mode == .master {
-            networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
-        } else {
-            if mapModel.pointer.isShown {
-                networkActions?.game(root.gameController.networkPin(itemId: itemId, position: mapModel.pointer), .mapPin, nil)
-            } else {
-                if let pin = mapModel.mapPins.first(where: { $0.id == playerPinId }) {
-                    networkActions?.game(root.gameController.networkPin(itemId: itemId, position: pin), .mapPin, nil)
-                }
-            }
-        }
-    }
-
-    func focused() {
-        networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
-    }
+#Preview(traits: .mockData) {
+    RootCanvasMap(
+        root: .previewFixture(),
+        itemId: MapModel.previewId,
+        mode: .master,
+        playerPinId: nil,
+        initialImage: AKImage(),
+        loadsImage: false
+    )
 }

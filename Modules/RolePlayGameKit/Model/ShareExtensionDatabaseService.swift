@@ -2,6 +2,7 @@
 
 import CoreRPG
 import CoreData
+import Foundation
 import os.log
 
 // Import ALL module bundles - we need the complete database for proper saving
@@ -132,13 +133,25 @@ public enum ShareExtensionError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .databaseInitializationFailed:
-            return "Failed to initialize database for share extension"
+            return String(
+                localized: "Failed to initialize the database for the share extension.",
+                bundle: .module
+            )
         case .databaseError(let error):
-            return "Database error: \(error)"
+            return String(
+                localized: "Database error: \(String(describing: error))",
+                bundle: .module
+            )
         case .contextNotAvailable:
-            return "Database context is not available"
+            return String(
+                localized: "The database context is not available.",
+                bundle: .module
+            )
         case .moduleNotSupported:
-            return "The selected module is not supported in the share extension"
+            return String(
+                localized: "The selected module is not supported in the share extension.",
+                bundle: .module
+            )
         }
     }
 }

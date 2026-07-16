@@ -5,15 +5,20 @@ import CoreRPG
 import SwiftUI
 
 struct ExtendedTabBar: View {
-    @SceneStorage("ExtendedTabRoute") var currentModule: ExtendedTabRoute?
-
     @Environment(AppModel.self) private var appModel
+    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
+
+    private let restoresState: Bool
 
     @Namespace private var zoomNamespace
 
     @State private var tabSelectedModule: NetworkModules = .game
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
 
     var body: some View {
         ScrollView {
@@ -32,7 +37,7 @@ struct ExtendedTabBar: View {
                 }
             }
         }
-        .navigationTitle(Text(NetworkModules.editor.title))
+        .navigationTitle(Text(verbatim: NetworkModules.editor.title))
         .navigationBarTitleDisplayModeAll(.inline)
         .navigationModifier { destination in
             if let extened = destination as? ExtendedTabRoute {
@@ -43,23 +48,44 @@ struct ExtendedTabBar: View {
             }
         }
         .navigationAutoReceive(ExtendedTabRoute.self)
-        .onAppear {
-            appModel.selectedExtendedModule <=> currentModule
-            guard let currentModule else { return }
-            tabSelectedModule = currentModule.module
+        .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+            $0.modifier(ExtendedTabBarRestorationModifier(
+                appModel: appModel,
+                tabSelectedModule: $tabSelectedModule
+            ))
         }
         .focusedSceneValue(\.selectedModule, $tabSelectedModule)
     }
 }
 
 #Preview {
-    ExtendedTabBar()
+    ExtendedTabBar(restoresState: false)
+        .environment(AppModel.previewWithoutDatabase)
+}
+
+private struct ExtendedTabBarRestorationModifier: ViewModifier {
+    @SceneStorage("ExtendedTabRoute") private var currentModule: ExtendedTabRoute?
+
+    let appModel: AppModel
+    @Binding var tabSelectedModule: NetworkModules
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: appModel.selectedExtendedModule) {
+                guard appModel.selectedExtendedModule != currentModule else { return }
+                currentModule <=> appModel.selectedExtendedModule
+            }
+            .onAppear {
+                appModel.selectedExtendedModule <=> currentModule
+                guard let currentModule else { return }
+                tabSelectedModule = currentModule.module
+            }
+    }
 }
 
 private extension ExtendedTabBar {
     func gridButtonView(for route: ExtendedTabRoute, in navigator: Navigator) -> some View {
         Button {
-            currentModule = route
             appModel.selectedExtendedModule = route
             navigator.navigate(to: route)
         } label: {

@@ -10,6 +10,7 @@ struct MasterStartView: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.navigator) private var navigator
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     var sharePlayStore: RPGSharePlayController {
         root.networkStore.sharePlayStore
@@ -30,7 +31,10 @@ struct MasterStartView: View {
             .overlay {
                 overlayAnimation
             }
-            .animation(.easeOut(duration: 0.6).delay(1).repeatForever(autoreverses: false), value: startSharePlayAnimation)
+            .animation(
+                accessibilityReduceMotion ? nil : .easeOut(duration: 0.6).delay(1).repeatForever(autoreverses: false),
+                value: startSharePlayAnimation
+            )
             .onChange(of: sharePlayStore.canActivateSharePlay, initial: true) {
                 startSharePlayAnimation = sharePlayStore.canActivateSharePlay
             }
@@ -38,6 +42,8 @@ struct MasterStartView: View {
 #if !os(tvOS)
             SharePlayButton("Play RPG Online", activity: RPGActivity())
                 .opacity(startSharePlayAnimation ? 0 : 1)
+                .allowsHitTesting(!startSharePlayAnimation)
+                .accessibilityHidden(startSharePlayAnimation)
 #endif
             
             Button {
@@ -51,8 +57,9 @@ struct MasterStartView: View {
     private var overlayAnimation: some View {
         Capsule()
             .stroke(Color.accentColor, lineWidth: 4)
-            .scaleEffect(startSharePlayAnimation ? 2 : 1)
-            .opacity(startSharePlayAnimation ? 0 : 1)
+            .scaleEffect(startSharePlayAnimation && !accessibilityReduceMotion ? 2 : 1)
+            .opacity(startSharePlayAnimation && !accessibilityReduceMotion ? 0 : 1)
+            .accessibilityHidden(true)
     }
     
     @MainActor

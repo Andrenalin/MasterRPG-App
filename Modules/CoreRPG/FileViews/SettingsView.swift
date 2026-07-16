@@ -70,7 +70,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
 }
 
 @MainActor
-private final class SettingsPreviewStore: StoreManiplable {
+final class SettingsPreviewStore: StoreManiplable {
     func resetData() async {}
     func validate() {}
 }
@@ -81,8 +81,10 @@ private final class SettingsPreviewStore: StoreManiplable {
         exportController: FakeExportController.fake,
         importController: FakeImportController.fake
     ) {
-        Section("Import") {
-            Text("Import data from a file")
+        Section {
+            Text(verbatim: "Import data from a file")
+        } header: {
+            Text(verbatim: "Import")
         }
     }
 }

@@ -6,11 +6,18 @@ import SwiftUI
 struct MapRootView: View {
     @Environment(MapRootModel.self) private var root
     @Environment(\.navigator) private var navigator
+    private let restoresState: Bool
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
 
     var body: some View {
         ItemRootView(root: root.rootController)
             .overlay {
-                ItemStateRestorationView<MapRoute, MapRootModel>(root: root, keyPrefix: "Map")
+                if restoresState {
+                    ItemStateRestorationView<MapRoute, MapRootModel>(root: root, keyPrefix: "Map")
+                }
             }
             .onNavigationReceive { (route: MapRoute, navigator) in
                 guard let itemId = route.detail() else { return .cancel }
@@ -22,6 +29,6 @@ struct MapRootView: View {
 
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
-        MapRootView()
+        MapRootView(restoresState: false)
     }
 }

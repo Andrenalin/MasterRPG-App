@@ -7,6 +7,8 @@ struct TokenUsageBar: View {
     let maxContextSize: Int
     let tokenUsageFraction: Double
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         if currentTokenCount > 0 {
             VStack(spacing: 2) {
@@ -18,15 +20,15 @@ struct TokenUsageBar: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text("\(Int(tokenUsageFraction * 100))%")
+                    Text(tokenUsageFraction, format: .percent.precision(.fractionLength(0)))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
             .padding(.horizontal)
             .padding(.vertical, 4)
-            .transition(.move(edge: .top).combined(with: .opacity))
-            .animation(.easeInOut(duration: 0.3), value: currentTokenCount)
+            .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: currentTokenCount)
         }
     }
 

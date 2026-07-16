@@ -4,6 +4,8 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     public init(rootManager: RootManager, editorModel: SheetEditorModel, linkTypes: LinkType.Type) {
         self.rootManager = rootManager
         self.editorModel = editorModel
@@ -33,7 +35,7 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
             )
             .id(itemId)
             .transition(.scale)
-            .animation(.bouncy, value: editorModel.entryId)
+            .animation(accessibilityReduceMotion ? nil : .bouncy, value: editorModel.entryId)
         }
     }
 }

@@ -14,18 +14,18 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
     
     var localizedTitle: LocalizedStringResource {
         switch self {
-        case .photoImmersive: "Immersive"
-        case .play: "Play"
-        case .remove: "Remove"
-        case .roll: "Roll"
-        case .share: "Share"
-        case .show: "Show"
-        case .favorite: "Favorite"
+        case .photoImmersive: LocalizedStringResource("Immersive", bundle: .module)
+        case .play: LocalizedStringResource("Play", bundle: .module)
+        case .remove: LocalizedStringResource("Remove", bundle: .module)
+        case .roll: LocalizedStringResource("Roll", bundle: .module)
+        case .share: LocalizedStringResource("Share", bundle: .module)
+        case .show: LocalizedStringResource("Show", bundle: .module)
+        case .favorite: LocalizedStringResource("Favorite", bundle: .module)
         }
     }
     
     var title: String {
-        String(localized: localizedTitle).localizedString
+        String(localized: localizedTitle)
     }
     
     var icon: String {

@@ -131,7 +131,10 @@ struct DeleteWeatherIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: WeatherEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) weather item](inflect: true).")
+        let message = AttributedString(
+            localized: "Deleted ^[\(count) weather item](inflect: true).",
+            bundle: .module
+        )
         return .result(dialog: "\(message)")
     }
 }

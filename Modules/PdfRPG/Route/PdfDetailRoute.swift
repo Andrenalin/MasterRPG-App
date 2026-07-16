@@ -92,3 +92,7 @@ struct PdfDetailRouteDestinationView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) {
+    PdfDetailRouteDestinationView(route: .folder(PdfModel.previewId))
+}

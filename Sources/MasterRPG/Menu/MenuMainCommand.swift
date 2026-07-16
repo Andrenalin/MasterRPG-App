@@ -10,7 +10,13 @@ struct MenuMainCommand: Commands {
     var body: some Commands {
         
 #if os(macOS)
-        AboutPanelCommand(title: "Master RPG", credits: "Many thanks to my long running test party: Karsten, Roman and Timo.")
+        AboutPanelCommand(
+            title: String(localized: "About MasterRPG", bundle: .main),
+            credits: String(
+                localized: "Many thanks to my long-running test party: Karsten, Roman, and Timo.",
+                bundle: .main
+            )
+        )
         ImportFromDevicesCommands()
 #endif
         SidebarCommands()

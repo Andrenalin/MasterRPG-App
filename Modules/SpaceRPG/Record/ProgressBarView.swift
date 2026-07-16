@@ -22,12 +22,9 @@ struct ProgressBarView: View {
 
     private var formattedEstimatedRemainingTime: String? {
         guard let estimatedRemainingTime = estimatedRemainingTime else { return nil }
-
-        let formatter = DateComponentsFormatter()
-        formatter.zeroFormattingBehavior = .pad
-        formatter.unitsStyle = .positional
-        formatter.allowedUnits = [.minute, .second]
-        return formatter.string(from: estimatedRemainingTime)
+        return Duration.seconds(estimatedRemainingTime).formatted(
+            .time(pattern: .minuteSecond(padMinuteToLength: 2))
+        )
     }
 
     private var numOfImages: Int {
@@ -56,29 +53,36 @@ struct ProgressBarView: View {
                 .font(.body)
 
                 ProgressView(value: progress)
+                    .accessibilityLabel(Text("Reconstruction progress", bundle: .module))
+                    .accessibilityValue(Text(progress, format: .percent.precision(.fractionLength(0))))
             }
 
             HStack(alignment: .center, spacing: 0) {
                 VStack(alignment: .center) {
                     Image(systemName: "photo")
 
-                    Text(String(numOfImages))
+                    Text(verbatim: numOfImages.formatted())
                         .frame(alignment: .bottom)
                         .hidden()
                         .overlay {
-                            Text(String(numOfImages))
+                            Text(verbatim: numOfImages.formatted())
                                 .font(.caption)
                                 .bold()
                         }
                 }
                 .font(.subheadline)
                 .padding(.trailing, 16)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("Captured images", bundle: .module))
+                .accessibilityValue(Text(verbatim: numOfImages.formatted()))
 
                 VStack(alignment: .leading) {
                     Text(LocalizedString.processingModelDescription)
 
-                    Text(String.localizedStringWithFormat(LocalizedString.estimatedRemainingTime,
-                                                          formattedEstimatedRemainingTime ?? LocalizedString.calculating))
+                    Text(
+                        "Estimated time remaining: \(formattedEstimatedRemainingTime ?? LocalizedString.calculating)",
+                        bundle: .module
+                    )
                 }
                 .font(.subheadline)
             }
@@ -99,13 +103,6 @@ struct ProgressBarView: View {
             bundle: LocString.bundleForLocalizedStrings,
             value: "Keep app running while processing.",
             comment: "Description displayed while processing models."
-        )
-
-        static let estimatedRemainingTime = NSLocalizedString(
-            "Estimated time remaining: %@ (Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Estimated time remaining: %@",
-            comment: "Estimated processing time to reconstruct object."
         )
 
         static let calculating = NSLocalizedString(

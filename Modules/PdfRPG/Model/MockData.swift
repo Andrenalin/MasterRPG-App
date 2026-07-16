@@ -6,11 +6,7 @@ import SwiftUI
 import SwiftData
 
 struct MockData: PreviewModifier {
-    nonisolated static let previewId = UUID()
-    nonisolated static let previewId2 = UUID()
-    nonisolated static let previewId3 = UUID()
-    
-    static var previewRoot: PdfRootModel?
+    nonisolated static let previewId = UUID(uuid: (0xA2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
     func body(content: Content, context: ModelContainer) -> some View {
         content
@@ -18,7 +14,7 @@ struct MockData: PreviewModifier {
             .modelContainer(context)
     }
     static func makeSharedContext() async throws -> ModelContainer {
-        let container = try! ModelContainer(
+        let container = try ModelContainer(
             for: LinkDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
@@ -31,7 +27,7 @@ struct MockData: PreviewModifier {
 
         let root = PdfRootModel.preview
         let task = root.importController.importUrl(from: url)
-        let _ = try await task.value
+        _ = try await task.value
 
         return container
     }
@@ -39,15 +35,23 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
+        let appGameStateModel = AppGameStateModel()
         self._root = State(wrappedValue: PdfRootModel.preview)
+        self._appGameStateModel = State(wrappedValue: appGameStateModel)
+        self._appNavigationModel = State(
+            wrappedValue: AppNavigationModel(appGameStateModel: appGameStateModel)
+        )
     }
 
     @State private var root: PdfRootModel
+    @State private var appGameStateModel: AppGameStateModel
+    @State private var appNavigationModel: AppNavigationModel
 
     func body(content: Content) -> some View {
         content
             .environment(root)
-            .environment(AppGameStateModel())
+            .environment(appGameStateModel)
+            .environment(appNavigationModel)
             .environment(AppWindowSizeModel())
             .environment(CacheItemListModel())
             .environment(ScenesManager())

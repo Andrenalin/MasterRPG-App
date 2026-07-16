@@ -6,9 +6,20 @@ import SwiftUI
 struct GameRootSetupView: View {
     let root: GameRoot
     let openStatistics: @MainActor () -> Void
+    private let startsServices: Bool
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(ScenesManager.self) private var scenesManager
+
+    init(
+        root: GameRoot,
+        openStatistics: @escaping @MainActor () -> Void,
+        startsServices: Bool = true
+    ) {
+        self.root = root
+        self.openStatistics = openStatistics
+        self.startsServices = startsServices
+    }
     
     var body: some View {
         ZStack {
@@ -41,6 +52,7 @@ struct GameRootSetupView: View {
             }
         }
         .task {
+            guard startsServices else { return }
             root.networkStore.setup(gameModel: root.gameModel)
         }
         .onChange(of: root.gameModel.gameConfig.state, initial: true) { _, newState in
@@ -53,38 +65,6 @@ struct GameRootSetupView: View {
     }
 }
 
-private struct GameStatisticsEntryLabel: View {
-    let sessionCount: Int
-
-    var body: some View {
-        HStack {
-            Image(systemName: "chart.bar.xaxis")
-                .imageScale(.large)
-
-            VStack(alignment: .leading) {
-                Text("Game Statistics", bundle: .module)
-                    .bold()
-                if sessionCount == 0 {
-                    Text("Explore an example dashboard", bundle: .module)
-                        .font(.caption)
-                } else {
-                    Text("Recorded games: \(sessionCount)", bundle: .module)
-                        .font(.caption)
-                }
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.forward")
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
 #Preview(traits: .mockData) {
-    GameRootSetupView(root: .preview, openStatistics: {})
-        .environment(AppGameStateModel())
-        .environment(ScenesManager())
-        .environment(AppSettingsModel())
-        .environment(AppNavigationModel(appGameStateModel: AppGameStateModel()))
+    GameRootSetupView(root: .preview, openStatistics: {}, startsServices: false)
 }

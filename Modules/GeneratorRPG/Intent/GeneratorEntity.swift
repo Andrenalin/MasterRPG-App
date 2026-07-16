@@ -12,7 +12,7 @@ import PDFKit
 struct GeneratorEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
-            name: LocalizedStringResource("Generator"),
+            name: "Generator",
             numericFormat: "\(placeholder: .int) Instructions"
         )
     }

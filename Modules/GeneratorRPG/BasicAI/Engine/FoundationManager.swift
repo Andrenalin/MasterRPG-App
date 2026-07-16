@@ -2,12 +2,14 @@
 
 import Foundation
 import FoundationModels
-import SwiftUI
 
 @Observable
 @MainActor
 final class FoundationManager {
-    private(set) var notAvailableReason: LocalizedStringKey = "Checking model availability..."
+    private(set) var notAvailableReason = String(
+        localized: "Checking model availability...",
+        bundle: .module
+    )
     
     var isModelAvailable: Bool = false
     var isLanguageSupported = false
@@ -24,13 +26,22 @@ final class FoundationManager {
             notAvailableReason = ""
             isModelAvailable = true
         case .unavailable(.deviceNotEligible):
-            notAvailableReason = "Upgrade to use Apple Intelligence"
+            notAvailableReason = String(localized: "Upgrade to use Apple Intelligence", bundle: .module)
         case .unavailable(.appleIntelligenceNotEnabled):
-            notAvailableReason = "Enable Apple Intelligence in System Settings."
+            notAvailableReason = String(
+                localized: "Enable Apple Intelligence in System Settings.",
+                bundle: .module
+            )
         case .unavailable(.modelNotReady):
-            notAvailableReason = "Model not ready. Downloading or temporarily unavailable. Please wait, ensure sufficient battery and Wi-Fi."
+            notAvailableReason = String(
+                localized: "Model not ready. Downloading or temporarily unavailable. Please wait, ensure sufficient battery and Wi-Fi.",
+                bundle: .module
+            )
         case.unavailable(let unknownReason):
-            notAvailableReason = "Model unavailable: \(String(describing: unknownReason))"
+            notAvailableReason = String(
+                localized: "Model unavailable: \(String(describing: unknownReason))",
+                bundle: .module
+            )
         }
         return isModelAvailable
     }

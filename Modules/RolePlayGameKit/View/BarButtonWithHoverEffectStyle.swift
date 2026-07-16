@@ -18,15 +18,7 @@ struct BarButtonWithHoverEffectStyle: ButtonStyle {
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
                         .fill(.thinMaterial)
-                        .hoverEffect(reduceMotion ? HoverEffect(FadeEffect()) : HoverEffect(.empty), in: hoverGroup)
                         .hoverEffect(.highlight)
-
-                    if reduceMotion {
-                        Circle()
-                            .fill(.thinMaterial)
-                            .hoverEffect(.highlight)
-                            .hoverEffect(FadeEffect(from: 1, to: 0), in: hoverGroup)
-                    }
                 }
                 .hoverEffect(in: HoverEffectGroup(hoverEffectNamespace)) { effect, isActive, proxy in
                     effect.opacity(isActive ? 1 : (isSelected ? 1 : 0.0))
@@ -47,19 +39,6 @@ struct ExpandEffect: CustomHoverEffect {
                     height: proxy.size.height, anchor: .leading)
                 )
                 .scaleEffect(isActive ? 1.05 : 1.0)
-            }
-        }
-    }
-}
-
-struct FadeEffect: CustomHoverEffect {
-    var from: Double = 0
-    var to: Double = 1
-
-    func body(content: Content) -> some CustomHoverEffect {
-        content.hoverEffect { effect, isActive, _ in
-            effect.animation(.default.delay(isActive ? 0.8 : 0.2)) {
-                $0.opacity(isActive ? to : from)
             }
         }
     }

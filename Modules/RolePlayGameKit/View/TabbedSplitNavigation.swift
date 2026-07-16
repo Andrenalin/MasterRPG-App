@@ -7,11 +7,18 @@ struct TabbedSplitNavigation: View {
     @Environment(AppModel.self) private var appModel
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     @Environment(AppNavigationModel.self) private var appNavigationModel
+    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
+
+    private let restoresState: Bool
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
 
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
 
-    @AppStorage("contentColumnWidth") private var contentColumnWidth: Double = 350
+    @State private var contentColumnWidth: Double = 350
     @State private var fallbackNavigationModel = ModuleNavigationModel()
 
     var body: some View {
@@ -25,7 +32,7 @@ struct TabbedSplitNavigation: View {
         )
 
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
-            TabSidebar()
+            TabSidebar(restoresState: restoresState)
                 .navigationSplitViewColumnWidth(min: 96, ideal: 140, max: 180)
         } content: {
             ManagedPresentationView {
@@ -54,6 +61,11 @@ struct TabbedSplitNavigation: View {
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive(assign: $appModel.selectedModule)
         .navigationSplitViewStyle(.prominentDetail)
+        .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+            $0.modifier(TabbedSplitNavigationRestorationModifier(
+                contentColumnWidth: $contentColumnWidth
+            ))
+        }
     }
     
     var selectedModule: NetworkModules {
@@ -62,65 +74,43 @@ struct TabbedSplitNavigation: View {
 }
 
 #Preview {
-    TabbedSplitNavigation()
+    let appModel = AppModel.previewWithoutDatabase
+
+    TabbedSplitNavigation(restoresState: false)
+        .environment(appModel)
+        .environment(appModel.appNavigationModel)
+        .environment(AppWindowSizeModel())
 }
 
-#Preview {
-    TabSidebar()
+private struct TabbedSplitNavigationRestorationModifier: ViewModifier {
+    @AppStorage("contentColumnWidth") private var storedContentColumnWidth: Double = 350
+
+    @Binding var contentColumnWidth: Double
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: storedContentColumnWidth, initial: true) {
+                contentColumnWidth <=> storedContentColumnWidth
+            }
+            .onChange(of: contentColumnWidth) {
+                storedContentColumnWidth <=> contentColumnWidth
+            }
+    }
 }
 
-struct TabSidebar: View {
-    @SceneStorage("RootRoute") private var storedTab: RootRoute = .adventures
+private struct RolePlayStateRestorationEnabledKey: EnvironmentKey {
+    static let defaultValue = true
+}
 
-    @Environment(AppModel.self) private var appModel
+extension EnvironmentValues {
+    var rolePlayStateRestorationEnabled: Bool {
+        get { self[RolePlayStateRestorationEnabledKey.self] }
+        set { self[RolePlayStateRestorationEnabledKey.self] = newValue }
+    }
+}
 
-    var body: some View {
-        @Bindable var appModel = appModel
-        List(selection: $appModel.selectedModule) {
-            allTabs
-        }
-        .onAppear {
-            guard storedTab != appModel.selectedModule else { return }
-            appModel.selectedModule = storedTab
-        }
-        .onChange(of: appModel.selectedModule) {
-            guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
-            storedTab = selectedModule
-        }
-    }
-    
-    @ViewBuilder var allTabs: some View {
-        Section {
-            tabView(tab: .adventures)
-            tabView(tab: .values)
-            tabView(tab: .maps)
-            tabView(tab: .weathers)
-        } header: {
-            Text("Library", bundle: .module)
-        }
-        
-        Section {
-            tabView(tab: .pdfs)
-            tabView(tab: .tables)
-        } header: {
-            Text("References", bundle: .module)
-        }
-        
-        Section {
-            tabView(tab: .audios)
-            tabView(tab: .dice)
-            tabView(tab: .photos)
-            tabView(tab: .space)
-        } header: {
-            Text("Material", bundle: .module)
-        }
-    }
-    
-    @ViewBuilder func tabView(tab: RootRoute) -> some View {
-        NavigationLink(to: tab) {
-            ModuleTabLabel(route: tab)
-        }
-        .listItemTint(tab.module.tint)
-        .tag(tab)
+extension View {
+    func rolePlayStateRestorationEnabled(_ enabled: Bool) -> some View {
+        environment(\.rolePlayStateRestorationEnabled, enabled)
     }
 }

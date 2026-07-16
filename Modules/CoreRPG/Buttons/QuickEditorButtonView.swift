@@ -25,7 +25,7 @@ public struct QuickEditorButtonView<Value: Numeric>: View {
                 }
             }
         } label: {
-            Text("\(isAddition ? "+" : "-")\(title)")
+            Text(verbatim: "\(isAddition ? "+" : "-")\(title)")
         }
 #if os(iOS)
         .fixedSize()
@@ -75,4 +75,3 @@ public struct QuickAddButtonStyle: ButtonStyle {
     }
     .padding()
 }
-

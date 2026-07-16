@@ -10,8 +10,10 @@ import SwiftUI
 struct ResidueView: View {
     let residue: Residue
 
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     var body: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(paused: accessibilityReduceMotion)) { timeline in
             Canvas { context, size in
                 residue.update(date: timeline.date, size: size)
 

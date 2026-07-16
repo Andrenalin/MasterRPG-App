@@ -11,13 +11,13 @@ enum FoundationModelCoreError: LocalizedError, Sendable, Equatable {
     var errorDescription: String? {
         switch self {
         case .invalidRequest(let message):
-            return "Invalid request: \(message)"
+            return String(localized: "Invalid request: \(message)", bundle: .module)
         case .unavailableCapability(let message):
-            return "Unavailable capability: \(message)"
+            return String(localized: "Unavailable capability: \(message)", bundle: .module)
         case .providerFailure(let message):
-            return "Provider failure: \(message)"
+            return String(localized: "Provider failure: \(message)", bundle: .module)
         case .unsupportedEnvironment(let message):
-            return "Unsupported environment: \(message)"
+            return String(localized: "Unsupported environment: \(message)", bundle: .module)
         }
     }
 }

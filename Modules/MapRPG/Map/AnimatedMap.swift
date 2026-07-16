@@ -4,6 +4,20 @@ import CoreRPG
 import SwiftUI
 
 struct AnimatedMap: View {
+    init(
+        itemId: UUID,
+        image: AKImage,
+        date: Date,
+        size: CGSize,
+        initialEntryId: UUID = UUID()
+    ) {
+        self.itemId = itemId
+        self.image = image
+        self.date = date
+        self.size = size
+        self._entryId = State(wrappedValue: initialEntryId)
+    }
+
     let itemId: UUID
     let image: AKImage
     let date: Date
@@ -11,7 +25,7 @@ struct AnimatedMap: View {
 
     @Environment(MapRootModel.self) private var root
 
-    @State private var entryId = UUID()
+    @State private var entryId: UUID
     @State private var dropPinModel = DropPinModel()
 
     var body: some View {
@@ -37,5 +51,11 @@ struct AnimatedMap: View {
 }
 
 #Preview(traits: .mockData) {
-    AnimatedMap(itemId: MapModel.previewId, image: AKImage(), date: .now, size: CGSize(width: 320, height: 240))
+    AnimatedMap(
+        itemId: MapModel.previewId,
+        image: AKImage(),
+        date: Date(timeIntervalSince1970: 1_700_000_000),
+        size: CGSize(width: 320, height: 240),
+        initialEntryId: MapEntryModel.previewId
+    )
 }

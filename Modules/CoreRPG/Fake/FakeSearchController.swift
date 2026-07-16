@@ -4,7 +4,15 @@ import SwiftUI
 
 @MainActor
 struct FakeSearchController: SearchControllable, SearchRootControllable {
-    let searchModel: SearchModel = .preview()
+    init(
+        searchModel: SearchModel = .preview(),
+        itemControllable: any ItemControllable = FakeItemController.fake
+    ) {
+        self.searchModel = searchModel
+        self.itemControllable = itemControllable
+    }
+
+    let searchModel: SearchModel
 
     func results(text: String) async -> [SearchResult] { [] }
 
@@ -17,5 +25,5 @@ struct FakeSearchController: SearchControllable, SearchRootControllable {
     var itemControllable: any ItemControllable
 
     @MainActor
-    static let fake = FakeSearchController(itemControllable: FakeItemController.fake)
+    static let fake = FakeSearchController()
 }

@@ -1,0 +1,551 @@
+// @copyright André Trettin
+
+import Foundation
+import SnapshotTesting
+import SwiftUI
+import Testing
+@testable import CoreRPG
+
+@MainActor
+@Suite(.serialized, .snapshots, .tags(.snapshot))
+struct CoreRPGDynamicPreviewSnapshotTests {
+    // snapshot-root: CoreRPG::ControlSharingView
+    @Test("ControlSharingView")
+    func controlSharingView() {
+        let controls = [
+            SharingControlModel(id: .fixture1, name: "Mega", show: true)
+        ]
+
+        assertCoreSnapshot("ControlSharingView") {
+            NavigationStack {
+                Color.blue
+                    .toolbar {
+                        ControlSharingView(alignment: .bottomTrailing, action: {})
+                            .environment(
+                                \.sharingControlActions,
+                                SharingControlActions(
+                                    control: { controls },
+                                    update: { _ in }
+                                )
+                            )
+                    }
+            }
+            .environment(AppGameStateModel())
+        }
+    }
+
+    // snapshot-root: CoreRPG::QuickEditorButtonView
+    @Test("QuickEditorButtonView")
+    func quickEditorButtonView() {
+        assertCoreSnapshot("QuickEditorButtonView") {
+            VStack(spacing: 25) {
+                QuickEditorButtonView(number: .constant(1), value: 1, title: "1", isAddition: true)
+                QuickEditorButtonView(number: .constant(2), value: 2, title: "2", isAddition: true)
+                QuickEditorButtonView(number: .constant(5), value: 5, title: "5", isAddition: true)
+                QuickEditorButtonView(number: .constant(10), value: 10, title: "10", isAddition: false)
+            }
+            .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::QuickEditorDoubleView
+    @Test("QuickEditorDoubleView")
+    func quickEditorDoubleView() {
+        assertCoreSnapshot("QuickEditorDoubleView") {
+            QuickEditorDoubleView(number: .constant(12.5))
+                .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::QuickEditorIntView
+    @Test("QuickEditorIntView")
+    func quickEditorIntView() {
+        assertCoreSnapshot("QuickEditorIntView") {
+            QuickEditorIntView(number: .constant(12))
+                .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::SendControlView
+    @Test("SendControlView")
+    func sendControlView() {
+        assertCoreSnapshot("SendControlView") {
+            SendControlView(
+                controls: .constant([
+                    SharingControlModel(id: .fixture1, name: "Alice", show: true),
+                    SharingControlModel(id: .fixture2, name: "Bob", show: false)
+                ])
+            )
+        }
+    }
+
+    // snapshot-root: CoreRPG::CustomNavBarInternalView
+    @Test("CustomNavBarInternalView")
+    func customNavBarInternalView() {
+        assertCoreSnapshot("CustomNavBarInternalView") {
+            CustomNavBarInternalView({
+                Text("Adventure")
+            }, leading: {
+                Image(systemName: "chevron.left")
+            }, trailing: {
+                Image(systemName: "ellipsis")
+            }, background: {
+                Color.blue.opacity(0.2)
+            }, offset: .constant(0))
+        }
+    }
+
+    // snapshot-root: CoreRPG::NavBarBackground
+    @Test("NavBarBackground")
+    func navBarBackground() {
+        assertCoreSnapshot("NavBarBackground") {
+            NavBarBackground {
+                LinearGradient(
+                    colors: [.pink.opacity(0.8), .blue.opacity(0.5)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+            .frame(height: 120)
+        }
+    }
+
+    // snapshot-root: CoreRPG::AddTagsEditor
+    @Test("AddTagsEditor")
+    func addTagsEditor() {
+        assertCoreSnapshot("AddTagsEditor") {
+            AddTagsEditor(tags: .constant(["Dungeon"]))
+                .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::QuickLinkEditor
+    @Test("QuickLinkEditor")
+    func quickLinkEditor() {
+        let entries = [
+            QuickLinkPreviewEntry(textLinkContent: "The forgotten shrine awaits.")
+        ]
+
+        assertCoreSnapshot("QuickLinkEditor") {
+            QuickLinkEditor(
+                editController: FakeEditController.fake,
+                linkController: FakeLinkController.fake,
+                model: .constant(entries),
+                title: "Quick Links"
+            ) { afterEntries in
+                Button("Scan Links") {
+                    afterEntries.wrappedValue = [
+                        QuickLinkPreviewEntry(
+                            textLinkContent: "The [forgotten shrine](RPG://ADVENTURE/preview) awaits."
+                        )
+                    ]
+                }
+                .padding()
+            }
+        }
+    }
+
+    // snapshot-root: CoreRPG::RemoveTagsEditor
+    @Test("RemoveTagsEditor")
+    func removeTagsEditor() {
+        assertCoreSnapshot("RemoveTagsEditor") {
+            RemoveTagsEditor(tags: .constant(["Dungeon", "Mystery", "Undead"]))
+                .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::EntryContentEditor
+    @Test("EntryContentEditor")
+    func entryContentEditor() {
+        let model = TextEditModel(linkRegisterController: nil)
+        model.text = "Sample content with [link](test)"
+        model.resetAttributedText()
+
+        assertCoreSnapshot("EntryContentEditor") {
+            CoreRPGFocusSnapshotHarness(EntryEditorFocusField.self) { focus in
+                EntryContentEditor(editModel: model, currentFocus: focus)
+                    .padding()
+            }
+            .background(Color.adaptiveBackground)
+            .preferredColorScheme(.light)
+        }
+    }
+
+    // snapshot-root: CoreRPG::EntryEditorHeaderView
+    @Test("EntryEditorHeaderView")
+    func entryEditorHeaderView() {
+        let editModel = TextEditModel(linkRegisterController: LinkRegisterController.fake)
+
+        assertCoreSnapshot("EntryEditorHeaderView") {
+            EntryEditorHeaderView(
+                editController: FakeEditController.fake,
+                editorModel: SheetEditorModel(),
+                itemId: .fixture1,
+                editModel: editModel,
+                entry: FakeEntryModel.empty,
+                linkTypes: EmptyLinkTransferable.self
+            )
+        }
+    }
+
+    // snapshot-root: CoreRPG::EntryNameEditor
+    @Test("EntryNameEditor")
+    func entryNameEditor() {
+        let model = TextEditModel(linkRegisterController: nil)
+
+        assertCoreSnapshot("EntryNameEditor") {
+            CoreRPGFocusSnapshotHarness(EntryEditorFocusField.self) { focus in
+                EntryNameEditor(editModel: model, currentFocus: focus)
+                    .padding()
+            }
+            .background(Color.black)
+            .preferredColorScheme(.dark)
+        }
+    }
+
+    // snapshot-root: CoreRPG::TextEditorLinkView
+    @Test("TextEditorLinkView")
+    func textEditorLinkView() {
+        let model = TextEditModel(linkRegisterController: .fake)
+        model.name = "Hello"
+        model.text = "Long Text"
+        model.resetAttributedText()
+
+        assertCoreSnapshot("TextEditorLinkView") {
+            Color.clear
+                .background {
+                    Rectangle().fill(Color.blue.gradient)
+                }
+                .overlay {
+                    TextEditorLinkView(model: model, maxHeight: 200)
+                        .padding()
+                }
+        }
+    }
+
+    // snapshot-root: CoreRPG::FileBrowserPickerView
+    @Test("FileBrowserPickerView")
+    func fileBrowserPickerView() {
+        assertCoreSnapshot("FileBrowserPickerView") {
+            FileBrowserPickerView(
+                shown: .constant(false),
+                pickerType: .open,
+                fileNameSuggestion: "adventure.pdf",
+                handler: { _ in }
+            )
+        }
+    }
+
+    // snapshot-root: CoreRPG::ImportChooseUrlView
+    @Test("ImportChooseUrlView")
+    func importChooseUrlView() {
+        assertCoreSnapshot("ImportChooseUrlView") {
+            ImportChooseUrlView(
+                showImportFileChooser: .constant(false),
+                loadUrl: .constant(nil),
+                urlProvider: FakeExampleUrlProvider(),
+                isSaveGame: false,
+                importModel: ItemDataImportModel()
+            )
+            .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::ImportReviewItemListView
+    @Test("ImportReviewItemListView")
+    func importReviewItemListView() throws {
+        let module = try #require(ImportReviewModel.preview.modules.first)
+
+        assertCoreSnapshot("ImportReviewItemListView") {
+            ImportReviewItemListView(module: module, selectedID: .constant(nil))
+        }
+    }
+
+    // snapshot-root: CoreRPG::ImportStatusSection
+    @Test("ImportStatusSection")
+    func importStatusSection() {
+        assertCoreSnapshot("ImportStatusSection") {
+            ImportStatusSection(
+                outcome: .notStarted,
+                importModel: ItemDataImportModel(),
+                showImportFileChooser: .constant(false),
+                loadUrl: .constant(nil),
+                urlProvider: FakeExampleUrlProvider(),
+                isSaveGame: false
+            )
+            .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::ItemDetailContentView
+    @Test("ItemDetailContentView")
+    func itemDetailContentView() {
+        assertCoreSnapshot("ItemDetailContentView") {
+            CoreRPGNamespaceSnapshotHarness { namespace in
+                ItemDetailContentView<Text, EmptyLinkTransferable>(
+                    root: ItemRootController.fake,
+                    model: FakeItemModel.empty,
+                    configuration: .init(),
+                    editor: Text("Editor content"),
+                    headerModel: HeaderScrollModel(),
+                    folderListController: FakeFolderListController.fake,
+                    editingItem: .constant(nil),
+                    editSheetNamespace: namespace
+                )
+            }
+            .environment(AppGameStateModel())
+        }
+    }
+
+    // snapshot-root: CoreRPG::ModalPresentCloseButton
+    @Test("ModalPresentCloseButton")
+    func modalPresentCloseButton() {
+        assertCoreSnapshot("ModalPresentCloseButton") {
+            ModalPresentCloseButton(isPresented: .constant(true))
+        }
+    }
+
+    // snapshot-root: CoreRPG::QuickEditorAction
+    @Test("QuickEditorAction")
+    func quickEditorAction() {
+        assertCoreSnapshot("QuickEditorAction") {
+            QuickEditorAction(
+                configs: [
+                    QuickLinkConfig(
+                        module: .adventure,
+                        title: "Adventure",
+                        name: { _ in "Preview adventure" }
+                    )
+                ],
+                bundle: nil,
+                afterEntries: .constant([String]()),
+                scanner: { _, _, _, _ in ["Scanned entry"] }
+            ) { _, _, _ in
+                Text("Link selection")
+            }
+            .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::HeaderContentScrollView
+    @Test("HeaderContentScrollView")
+    func headerContentScrollView() {
+        assertCoreSnapshot("HeaderContentScrollView") {
+            HeaderContentScrollView(
+                model: HeaderScrollModel(),
+                backgroundColor: .orange
+            ) {
+                HStack {
+                    Image(systemName: "chevron.left")
+                    Spacer()
+                    Text("Apple Store")
+                }
+                .padding()
+            } content: {
+                Form {
+                    ForEach(1...12, id: \.self) { index in
+                        Text("Adventure row \(index)")
+                    }
+                }
+            }
+        }
+    }
+
+    // snapshot-root: CoreRPG::HeaderFooterContentScrollView
+    @Test("HeaderFooterContentScrollView")
+    func headerFooterContentScrollView() {
+        assertCoreSnapshot("HeaderFooterContentScrollView") {
+            HeaderFooterContentScrollView(model: HeaderFooterScrollModel()) {
+                HStack {
+                    Image(systemName: "chevron.left")
+                    Spacer()
+                    Text("Apple Store")
+                }
+                .padding()
+            } content: {
+                Form {
+                    ForEach(1...12, id: \.self) { index in
+                        Text("Adventure row \(index)")
+                    }
+                }
+            } footer: {
+                Label("Mage", systemImage: "gear")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            } background: {
+                Rectangle().fill(Color.orange.gradient)
+            }
+        }
+    }
+
+    // snapshot-root: CoreRPG::NameItemNewRow
+    @Test("NameItemNewRow")
+    func nameItemNewRow() {
+        assertCoreSnapshot("NameItemNewRow") {
+            NameItemNewRow(
+                itemId: .fixture1,
+                name: "**Super cool Name** cool and more **cool**",
+                cacheItemListModel: CacheItemListModel(),
+                listDisplayModel: ListDisplayModel(),
+                searchModel: SearchModel.preview(search: "cool")
+            )
+            .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::LinkHighlightTextView
+    @Test("LinkHighlightTextView")
+    func linkHighlightTextView() {
+        let text = "**Mega** nice with a [map link](RPG://MAPS/0/00000000-0000-0000-0000-000000000001)."
+        let model = LinkHighlightTextModel(
+            linkControllable: FakeLinkController.fake,
+            text: text,
+            highlightedText: "in"
+        )
+
+        assertCoreSnapshot("LinkHighlightTextView") {
+            LinkHighlightTextView(model: model)
+                .frame(width: 300)
+                .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::ExpandableBaseView
+    @Test("ExpandableBaseView")
+    func expandableBaseView() {
+        assertCoreSnapshot("ExpandableBaseView") {
+            List {
+                ExpandableBaseView(animatableData: 1) {
+                    Text("Adventure notes")
+                        .bold()
+                        .padding()
+                } content: {
+                    Text("The party entered the forgotten shrine beneath the mountain.")
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding()
+                }
+                .background(.background.secondary)
+                .clipShape(.rect(cornerRadius: 8))
+            }
+        }
+    }
+
+    // snapshot-root: CoreRPG::GeneratedSheetEntryTreeView
+    @Test("GeneratedSheetEntryTreeView")
+    func generatedSheetEntryTreeView() {
+        assertCoreSnapshot("GeneratedSheetEntryTreeView") {
+            CoreRPGNamespaceSnapshotHarness { namespace in
+                GeneratedSheetEntryTreeView(
+                    rootModel: .fake,
+                    parentModel: .empty,
+                    entryModel: .empty,
+                    isEditor: true,
+                    linkTypes: EmptyLinkTransferable.self,
+                    generatedAcceptanceNamespace: namespace,
+                    detailAction: nil,
+                    detailContent: { _ in EmptyView() }
+                )
+            }
+            .environment(AppGameStateModel())
+        }
+    }
+
+    // snapshot-root: CoreRPG::SheetEntryView
+    @Test("SheetEntryView")
+    func sheetEntryView() {
+        assertCoreSnapshot("SheetEntryView") {
+            CoreRPGNamespaceSnapshotHarness { namespace in
+                SheetEntryView(
+                    rootModel: .fake,
+                    parentModel: .empty,
+                    entryModel: .empty,
+                    isEditor: true,
+                    linkTypes: EmptyLinkTransferable.self,
+                    generatedAcceptanceNamespace: namespace,
+                    detailContent: { _ in EmptyView() }
+                )
+            }
+            .environment(AppGameStateModel())
+        }
+    }
+
+    // snapshot-root: CoreRPG::SheetView
+    @Test("SheetView")
+    func sheetView() {
+        assertCoreSnapshot("SheetView") {
+            CoreRPGNamespaceSnapshotHarness { namespace in
+                SheetView(
+                    root: ItemRootController.fake,
+                    rootModel: .fake,
+                    sheetModel: .empty,
+                    isEditor: true,
+                    linkTypes: EmptyLinkTransferable.self,
+                    generatedAcceptanceNamespace: namespace,
+                    detailContent: { _ in EmptyView() }
+                )
+            }
+            .environment(AppGameStateModel())
+        }
+    }
+
+    // snapshot-root: CoreRPG::DisclosureGroupTV
+    @Test("DisclosureGroupTV")
+    func disclosureGroupTV() {
+        assertCoreSnapshot("DisclosureGroupTV") {
+            DisclosureGroupTV(isExpanded: .constant(true)) {
+                Text("The party has entered the dungeon.")
+            } label: {
+                Label("Adventure notes", systemImage: "book.closed")
+            }
+            .padding()
+        }
+    }
+
+#if os(iOS)
+    // snapshot-root: CoreRPG::HideKeyboardFocusView
+    @Test("HideKeyboardFocusView")
+    func hideKeyboardFocusView() {
+        assertCoreSnapshot("HideKeyboardFocusView") {
+            CoreRPGFocusSnapshotHarness(Int.self) { focus in
+                HideKeyboardFocusView(enabled: true, focusedField: focus)
+                    .padding()
+            }
+        }
+    }
+#endif
+
+    private func assertCoreSnapshot<Content: View>(
+        _ name: String,
+        @ViewBuilder content: () -> Content
+    ) {
+        let appGameStateModel = AppGameStateModel()
+        assertRepositorySnapshot(
+            of: content()
+                .environment(appGameStateModel)
+                .environment(AppNavigationModel(appGameStateModel: appGameStateModel))
+                .environment(AppSettingsModel.previewFixture())
+                .environment(AppWindowSizeModel())
+                .environment(ScenesManager())
+                .environment(OptionKeyDownModel())
+                .environment(GroupItemSelectionModel())
+                .environment(ItemRootController.previewFixture())
+                .cloudKitAccountChecksEnabled(false)
+                .itemStateRestorationEnabled(false)
+                .navigationSceneRestorationEnabled(false)
+                .meshAnimationEnabled(false)
+                .deterministicSnapshotEnvironment()
+                .transaction { transaction in
+                    transaction.animation = nil
+                    transaction.disablesAnimations = true
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.background),
+            as: .image(
+                precision: 0.98,
+                perceptualPrecision: 0.98,
+                layout: .fixed(width: 390, height: 844)
+            ),
+            named: name
+        )
+    }
+}

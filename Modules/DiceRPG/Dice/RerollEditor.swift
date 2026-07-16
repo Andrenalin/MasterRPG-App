@@ -7,6 +7,7 @@ struct RerollEditor: View {
     let model: DiceModel
 
     @Environment(DiceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var rerollValue = 0.0
     @State private var replaceValue = 0.0
@@ -47,7 +48,9 @@ private extension RerollEditor {
                 HStack(spacing: 8) {
                     ForEach(model.rerollOptions) { reroll in
                         Button {
-                            withAnimation(.easeInOut) { root.editController.remove(reroll: reroll, itemId: model.id) }
+                            withAnimation(reduceMotion ? nil : .easeInOut) {
+                                root.editController.remove(reroll: reroll, itemId: model.id)
+                            }
                         } label: {
                             HStack(spacing: 4) {
                                 Label {
@@ -84,10 +87,15 @@ private extension RerollEditor {
                 Button {
                     addCurrentReroll()
                 } label: {
-                    Image(systemName: "plus")
-                        .imageScale(.large)
+                    Label {
+                        Text("Add reroll", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus")
+                    }
+                    .labelStyle(.iconOnly)
+                    .imageScale(.large)
                 }
-                .padding(.horizontal, 16)
+                .frame(minWidth: 44, minHeight: 44)
                 .disabled(!isMaxDiceValue && rerollValue == 0)
 
                 TextIntEditor(value: $rerollValue, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minValue...model.maxValue)
@@ -99,7 +107,7 @@ private extension RerollEditor {
     }
 
     func addCurrentReroll() {
-        withAnimation(.easeInOut) {
+        withAnimation(reduceMotion ? nil : .easeInOut) {
             root.editController.add(reroll: Int(rerollValue), value: Int(replaceValue), isMaxDiceValue: isMaxDiceValue, itemId: model.id)
             rerollValue = 0.0
             replaceValue = 0.0
@@ -113,10 +121,15 @@ private extension RerollEditor {
                 Button {
                     addCurrentReroll()
                 } label: {
-                    Image(systemName: "plus")
-                        .imageScale(.large)
+                    Label {
+                        Text("Add replacement", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus")
+                    }
+                    .labelStyle(.iconOnly)
+                    .imageScale(.large)
                 }
-                .padding(.horizontal, 16)
+                .frame(minWidth: 44, minHeight: 44)
                 .disabled(rerollValue == 0 && replaceValue == 0)
 
                 TextIntEditor(value: $replaceValue, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minValue...model.maxValue)

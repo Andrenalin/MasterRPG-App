@@ -233,10 +233,12 @@ extension TableModel: nonisolated ItemDiffComparable {
 extension TableModel {
     @MainActor public var reviewProperties: [ReviewCustomProperty] {
         [
-            ReviewCustomProperty(displayName: "Table Type") {
+            ReviewCustomProperty(displayName: String(localized: "Table Type", bundle: .module)) {
                 .option("\(($0 as? TableModel)?.tableType ?? TableType.list)")
             },
-            ReviewCustomProperty(displayName: "Dice") { ReviewPropertyValue(diceId: ($0 as? TableModel)?.diceId) }
+            ReviewCustomProperty(displayName: String(localized: "Dice", bundle: .module)) {
+                ReviewPropertyValue(diceId: ($0 as? TableModel)?.diceId)
+            }
         ]
     }
 }

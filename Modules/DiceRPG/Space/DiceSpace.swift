@@ -84,6 +84,16 @@ public struct DiceSpace: View {
                 diceEntity.setPosition(newPosition, relativeTo: dragEnd.entity)
             }
         )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Dice space", bundle: .module))
+        .accessibilityAction(named: Text("Roll first die", bundle: .module)) {
+            guard let dice = viewModel.diceSixEntity else { return }
+            viewModel.rollDice(diceEntity: dice)
+        }
+        .accessibilityAction(named: Text("Roll second die", bundle: .module)) {
+            guard let dice = viewModel.diceTwoEntity else { return }
+            viewModel.rollDice(diceEntity: dice)
+        }
         .task {
             await gestureModel.start()
         }

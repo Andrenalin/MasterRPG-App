@@ -4,6 +4,8 @@ import SwiftUI
 
 /// Shows CloudKit sync status to user during restore/sync operations
 public struct CloudKitSyncStatusView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     let syncState: CloudKitSyncState
     let lastSync: Date?
 
@@ -23,8 +25,7 @@ public struct CloudKitSyncStatusView: View {
                     ProgressView()
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Syncing with iCloud", bundle: .module)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                            .font(.headline)
                         Text("Restoring your data...", bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -56,9 +57,8 @@ public struct CloudKitSyncStatusView: View {
                         .foregroundStyle(.orange)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Sync Issue", bundle: .module)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Text(error)
+                            .font(.headline)
+                        Text(verbatim: error)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
@@ -69,7 +69,7 @@ public struct CloudKitSyncStatusView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
-        .animation(.easeInOut, value: syncState)
+        .animation(accessibilityReduceMotion ? nil : .easeInOut, value: syncState)
     }
 }
 

@@ -22,26 +22,12 @@ struct PlayerTime: Equatable, Hashable, Sendable {
     }
 
     private static func formatted(time: Double) -> String {
-        guard !time.isNaN else { return "--:--" }
-        var seconds = Int(ceil(time))
-        var hours = 0
-        var mins = 0
-
-        if seconds > TimeConstant.secsPerHour {
-            hours = seconds / TimeConstant.secsPerHour
-            seconds -= hours * TimeConstant.secsPerHour
-        }
-
-        if seconds > TimeConstant.secsPerMin {
-            mins = seconds / TimeConstant.secsPerMin
-            seconds -= mins * TimeConstant.secsPerMin
-        }
-
-        if hours > 0 {
-            return String(format: "%02d:%02d:%02d", hours, mins, seconds)
-        } else {
-            return String(format: "%02d:%02d", mins, seconds)
-        }
+        guard time.isFinite else { return "--:--" }
+        let totalSeconds = Int(ceil(max(time, 0)))
+        let pattern: Duration.TimeFormatStyle.Pattern = totalSeconds >= TimeConstant.secsPerHour
+            ? .hourMinuteSecond(padHourToLength: 2)
+            : .minuteSecond(padMinuteToLength: 2)
+        return Duration.seconds(totalSeconds).formatted(.time(pattern: pattern))
     }
 }
 

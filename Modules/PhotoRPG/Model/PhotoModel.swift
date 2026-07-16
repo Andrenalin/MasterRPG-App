@@ -189,7 +189,7 @@ extension PhotoModel: nonisolated ItemDuplicatable {
 extension PhotoModel {
     @MainActor public var reviewProperties: [ReviewCustomProperty] {
         [
-            ReviewCustomProperty(displayName: "Rotation") {
+            ReviewCustomProperty(displayName: String(localized: "Rotation", bundle: .module)) {
                 ReviewPropertyValue(($0 as? PhotoModel)?.degrees ?? 0)
             }
         ]

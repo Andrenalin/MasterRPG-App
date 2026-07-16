@@ -11,6 +11,7 @@ struct PdfContentView: View {
     let entry: PdfEntryModel?
     
     @Environment(PdfRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showThumbnail = false
     
     var body: some View {
@@ -50,10 +51,21 @@ struct PdfContentView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    withAnimation { showThumbnail.toggle() }
+                    withAnimation(reduceMotion ? nil : .default) {
+                        showThumbnail.toggle()
+                    }
                 } label: {
-                    Image(systemName: showThumbnail ? "rectangle.stack" : "rectangle.stack.fill")
-                        .contentTransition(.symbolEffect(.automatic))
+                    Label {
+                        if showThumbnail {
+                            Text("Hide thumbnails", bundle: .module)
+                        } else {
+                            Text("Show thumbnails", bundle: .module)
+                        }
+                    } icon: {
+                        Image(systemName: showThumbnail ? "rectangle.stack" : "rectangle.stack.fill")
+                            .contentTransition(.symbolEffect(.automatic))
+                    }
+                    .labelStyle(.iconOnly)
                 }
 #if os(macOS)
                 .foregroundStyle(root.config.module.tint)

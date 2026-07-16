@@ -12,10 +12,6 @@ enum SelectionRoute: Equatable, Hashable, Codable {
     SelectionDestinationView()
 }
 
-#Preview(traits: .mockData) {
-    MultiSelectionDestinationView()
-}
-
 extension SelectionRoute: NavigationDestination {
     public var body: some View {
         switch self {
@@ -32,14 +28,5 @@ struct SelectionDestinationView: View {
     
     var body: some View {
         LinkRootView(type: .selection, itemSelectionModel: root.itemSelectionModel)
-    }
-}
-
-struct MultiSelectionDestinationView: View {
-    @Environment(PhotoRootModel.self) private var root
-    @Environment(ItemSelectionModel.self) private var itemSelectionModel
-    
-    var body: some View {
-        LinkRootView(type: .selection, itemSelectionModel: itemSelectionModel)
     }
 }

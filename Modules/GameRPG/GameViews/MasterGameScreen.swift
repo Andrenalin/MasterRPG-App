@@ -16,6 +16,7 @@ struct MasterGameScreen: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(AppSettingsModel.self) private var appSettingsModel
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     @State private var gameScreenModel = GameScreenModel()
     @State private var diceShowOptionModel = DiceDisplayModel()
@@ -42,7 +43,9 @@ struct MasterGameScreen: View {
         }
         .alert(Text("Save Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
             Button {
-                withAnimation { gameScreenModel.showExport.toggle() }
+                withAnimation(accessibilityReduceMotion ? nil : .default) {
+                    gameScreenModel.showExport.toggle()
+                }
             } label: {
                 Text("Save and Quit", bundle: .module)
             }
@@ -113,15 +116,6 @@ struct MasterGameScreen: View {
     }
 }
 
-#if os(macOS) || os(visionOS)
-    #Preview(traits: .mockData) {
-        MasterSideMenu(adventureId: UUID())
-            .environment(AppSettingsModel())
-            .environment(GameScreenModel())
-            .environment(ScenesManager())
-    }
-#endif
-
 private extension MasterGameScreen {
     func prepareWindows() async {
         do {
@@ -136,13 +130,13 @@ private extension MasterGameScreen {
 
         switch savedMode {
         case .hidden:
-            withAnimation { gameScreenModel.showMainTab = .none }
+            withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.showMainTab = .none }
 
         case .inline:
-            withAnimation { gameScreenModel.showMainTab = .game }
+            withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.showMainTab = .game }
 
         case .window:
-            withAnimation { gameScreenModel.showMainTab = .none }
+            withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.showMainTab = .none }
             scenesManager.openWindow(
                 SceneId.viewerId(for: .adventure),
                 selection: WindowItemSelection(itemId: adventureId)
@@ -153,9 +147,9 @@ private extension MasterGameScreen {
         gameScreenModel.showMainTabIOS = isShown
 
         if isShown {
-            withAnimation { gameScreenModel.showMainTab = .game }
+            withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.showMainTab = .game }
         } else {
-            withAnimation { gameScreenModel.showMainTab = .none }
+            withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.showMainTab = .none }
         }
 #endif
 
@@ -170,164 +164,6 @@ private extension MasterGameScreen {
         appGameStateModel.isGameRunning = false
         Task {
             await root.stopGame()
-        }
-    }
-}
-
-private struct MasterSideMenu: View {
-    let adventureId: UUID
-
-    var body: some View {
-        MasterModuleWindowMenu(adventureId: adventureId)
-    }
-}
-
-private struct MasterModuleWindowMenu: View {
-    let adventureId: UUID
-
-    private static let modules: [NetworkModules] = [
-        .game,
-        .adventure,
-        .audio,
-        .dice,
-        .map,
-        .pdf,
-        .photo,
-        .space,
-        .table,
-        .value,
-        .weather
-    ]
-
-    var body: some View {
-        GlassEffectContainerAll {
-            VStack(spacing: 8) {
-                ForEach(Self.modules, id: \.self) { module in
-                    if module == .game {
-                        MasterGameWindowButtonView(adventureId: adventureId)
-                    } else {
-                        MasterModuleWindowButtonView(valueType: module)
-                    }
-                }
-
-                GameWindowButtonView(
-                    title: String(localized: "Logs", bundle: .module),
-                    systemImage: "doc.text.magnifyingglass",
-                    tint: NetworkModules.game.tint,
-                    sceneId: .logs
-                )
-            }
-        }
-#if os(macOS)
-        .padding(.trailing, 8)
-#else
-        .padding()
-#endif
-    }
-}
-
-private struct MasterGameWindowButtonView: View {
-    let adventureId: UUID
-
-    @Environment(AppSettingsModel.self) private var appSettingsModel
-    @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(ScenesManager.self) private var scenesManager
-
-    var body: some View {
-        let isWindowPresented = scenesManager.getSceneState(for: gameWindowScene).isPresentedInGameMenu
-
-        Button(NetworkModules.game.title, systemImage: NetworkModules.game.icon) {
-            toggleGameWindow(isPresented: isWindowPresented)
-        }
-        .labelStyle(.iconOnly)
-        .imageScale(.large)
-        .padding(8)
-        .contentShape(.circle)
-        .modifier(
-            GameWindowButtonAppearance(
-                tint: NetworkModules.game.tint,
-                isWindowPresented: isWindowPresented
-            )
-        )
-        .help(NetworkModules.game.title)
-        .accessibilityValue(
-            Text(isWindowPresented ? "Window open" : "Window closed", bundle: .module)
-        )
-    }
-
-    private var gameWindowScene: SceneId {
-        SceneId.viewerId(for: .adventure)
-    }
-
-    private func toggleGameWindow(isPresented: Bool) {
-        if isPresented {
-            scenesManager.dismissWindow(gameWindowScene)
-            gameScreenModel.gameMainTabDisplayMode = .hidden
-            appSettingsModel.masterMainTabDisplayMode = GameMainTabDisplayMode.hidden.rawValue
-        } else {
-            withAnimation {
-                gameScreenModel.showMainTab = .none
-                gameScreenModel.gameMainTabDisplayMode = .window
-            }
-            appSettingsModel.masterMainTabDisplayMode = GameMainTabDisplayMode.window.rawValue
-            scenesManager.openWindow(
-                gameWindowScene,
-                selection: WindowItemSelection(itemId: adventureId)
-            )
-        }
-    }
-}
-
-private struct MasterModuleWindowButtonView: View {
-    let valueType: NetworkModules
-
-    var body: some View {
-        GameWindowButtonView(
-            title: valueType.title,
-            systemImage: valueType.icon,
-            tint: valueType.tint,
-            sceneId: SceneId.sceneId(for: valueType)
-        )
-    }
-}
-
-struct GameWindowButtonView: View {
-    let title: String
-    let systemImage: String
-    let tint: Color
-    let sceneId: SceneId
-
-    @Environment(ScenesManager.self) private var scenesManager
-
-    var body: some View {
-        let isWindowPresented = scenesManager.getSceneState(for: sceneId).isPresentedInGameMenu
-
-        Button(title, systemImage: systemImage) {
-            toggleWindow(sceneId, isPresented: isWindowPresented)
-        }
-        .labelStyle(.iconOnly)
-        .imageScale(.large)
-        .padding(8)
-        .contentShape(.circle)
-        .modifier(
-            GameWindowButtonAppearance(
-                tint: tint,
-                isWindowPresented: isWindowPresented
-            )
-        )
-        .help(title)
-        .accessibilityValue(
-            Text(isWindowPresented ? "Window open" : "Window closed", bundle: .module)
-        )
-    }
-
-    private func toggleWindow(_ sceneId: SceneId, isPresented: Bool) {
-        withAnimation(.easeInOut) {
-            if isPresented {
-                scenesManager.dismissWindow(sceneId)
-            } else {
-                scenesManager.openWindow(sceneId)
-            }
         }
     }
 }
@@ -370,50 +206,11 @@ struct GameWindowButtonAppearance: ViewModifier {
     }
 }
 
-private struct MasterOverlayMenu: View {
-    let root: GameRoot
-    let adventureId: UUID
-    let playerController: PlayerController
-
-    var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-        OverlayGameLayout(root: root, hideDice: false) {
-#if os(visionOS) || os(macOS)
-            EmptyView()
-#else
-            OverlayGameMenu(root: root, playerController: nil, isMaster: true)
-#endif
-        } sideOverlay: {
-            OverlayMasterTabBar(root: root, adventureId: adventureId)
-        } toolBarOverlay: {
-            OverlayToolBar(root: root, playerController: playerController, isMaster: true)
-        }
-#if os(macOS)
-        .toolbar {
-            GameToolbarContent(root: root, role: .master, playerController: nil)
-        }
-#endif
-
-        .padding(.leading, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
-        .id("masterOverlayLayout")
-    }
-}
-
-#Preview("iPad") {
-    MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())
-}
-
-#Preview("MacMenu") {
-    ZStack(alignment: .trailing) {
-        NetworkModules.map.color
-        MasterSideMenu(adventureId: UUID())
-    }
-    .environment(AppSettingsModel())
-    .environment(GameScreenModel())
-    .environment(ScenesManager())
-}
-
-#Preview {
-    MasterOverlayMenu(root: .preview, adventureId: UUID(), playerController: .preview)
-        .environment(GameScreenModel())
+#Preview("iPad", traits: .mockData) {
+    let root = GameRoot.previewFixture()
+    MasterGameScreen(
+        root: root,
+        playerController: PlayerController(root: root, asGameMaster: true),
+        adventureId: GamePreviewData.adventureID
+    )
 }

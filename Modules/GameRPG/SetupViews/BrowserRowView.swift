@@ -76,3 +76,15 @@ private extension BrowserRowView {
         return id != nil && id != model.id
     }
 }
+
+#Preview {
+    BrowserRowView(
+        root: .previewFixture(game: .player),
+        playerNetworkControllable: PlayerNetworkController(name: "Aria"),
+        model: BrowserGameModel(
+            id: GamePreviewData.masterID,
+            endpointName: "Morgan.MasterRPG",
+            connectionMode: .observer
+        )
+    )
+}

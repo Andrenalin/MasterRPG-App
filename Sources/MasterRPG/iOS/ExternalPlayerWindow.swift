@@ -16,9 +16,10 @@ struct ExternalPlayerWindow: View {
             } else {
                 Color.blue
                     .overlay {
-                        Text("Game is not running")
+                        Text("Game is not running", bundle: .main)
                             .foregroundStyle(.white)
                             .font(.largeTitle)
+                            .accessibilityAddTraits(.isHeader)
                     }
             }
         }
@@ -26,4 +27,14 @@ struct ExternalPlayerWindow: View {
         .ignoresSafeArea()
         .preferredColorScheme(.dark)
     }
+}
+
+#Preview("Game not running") {
+    let appModel = {
+        let model = AppModel()
+        model.appNavigationModel.initialRouteType = .initializing
+        return model
+    }()
+
+    ExternalPlayerWindow(appModel: appModel)
 }

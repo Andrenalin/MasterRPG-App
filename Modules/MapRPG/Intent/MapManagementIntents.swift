@@ -130,7 +130,10 @@ struct DeleteMapIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: MapEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) map](inflect: true).")
+        let message = AttributedString(
+            localized: "Deleted ^[\(count) map](inflect: true).",
+            bundle: .module
+        )
         return .result(dialog: "\(message)")
     }
 }

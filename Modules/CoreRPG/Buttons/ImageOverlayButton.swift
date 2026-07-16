@@ -4,20 +4,37 @@ import SwiftUI
 
 #Preview {
     HStack {
-        ImageOverlayButton(icon: "pencil", action: {})
-        ImageOverlayButton(icon: "trash", disabled: true, action: {})
+        ImageOverlayButton(
+            icon: "pencil",
+            accessibilityLabel: LocalizedStringResource("Edit", bundle: .module),
+            action: {}
+        )
+        ImageOverlayButton(
+            icon: "trash",
+            accessibilityLabel: LocalizedStringResource("Delete", bundle: .module),
+            disabled: true,
+            action: {}
+        )
     }
 }
 
 public struct ImageOverlayButton: View {
-    public init(icon: String, disabled: Bool = false, withoutButton: Bool = false, action: @escaping () -> Void) {
+    public init(
+        icon: String,
+        accessibilityLabel: LocalizedStringResource,
+        disabled: Bool = false,
+        withoutButton: Bool = false,
+        action: @escaping () -> Void
+    ) {
         self.icon = icon
+        self.accessibilityLabel = accessibilityLabel
         self.disabled = disabled
         self.withoutButton = withoutButton
         self.action = action
     }
     
     let icon: String
+    let accessibilityLabel: LocalizedStringResource
     let disabled: Bool
     let withoutButton: Bool
     let action: () -> Void
@@ -25,9 +42,15 @@ public struct ImageOverlayButton: View {
     public var body: some View {
         if withoutButton {
             buttonImage
+                .accessibilityLabel(Text(accessibilityLabel))
         } else {
             Button(action: action) {
-                buttonImage
+                Label {
+                    Text(accessibilityLabel)
+                } icon: {
+                    buttonImage
+                }
+                .labelStyle(.iconOnly)
             }
 #if os(macOS)
             .applyIf(disabled) { content in

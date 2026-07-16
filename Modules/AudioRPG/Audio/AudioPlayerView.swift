@@ -9,9 +9,7 @@ struct AudioPlayerView: View {
     
     @Environment(\.networkActions) private var networkActions
     @Environment(AppGameStateModel.self) private var appGameStateModel
-    
-    @State private var name: String = String(localized: "No song currently loaded", bundle: .module)
-    @State private var playerTime = PlayerTime.zero
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var currentTime = 0.0
     @State private var isEditingCurrentTime = false
@@ -25,16 +23,9 @@ struct AudioPlayerView: View {
             
             PlayListView(root: root)
         }
-        .onChange(of: model.currentId, initial: true) {
-            guard let id = model.currentId else { return }
-            withAnimation(.easeInOut) {
-                name <=> root.gameController.gameItem(for: id).name
-            }
-        }
         .onChange(of: model.playerTime) {
-            withAnimation(.easeInOut) {
+            withAnimation(reduceMotion ? nil : .easeInOut) {
                 if !isEditingCurrentTime {
-                    playerTime <=> model.playerTime
                     currentTime = model.currentTime
                 }
             }
@@ -65,7 +56,7 @@ extension AudioPlayerView {
             .tint(Color.accentColor)
 #endif
             
-            Text(name)
+            Text(currentName)
                 .font(.title2)
                 .lineLimit(1)
             
@@ -101,12 +92,20 @@ extension AudioPlayerView {
     var playSkipControlView: some View {
         HStack(spacing: 32) {
             Button {
-                withAnimation(.easeInOut) { root.audioController.skipToCurrentItem(offsetBy: -1) }
+                withAnimation(reduceMotion ? nil : .easeInOut) {
+                    root.audioController.skipToCurrentItem(offsetBy: -1)
+                }
             } label: {
-                Image(systemName: "backward.fill")
-                    .font(.headline)
-                    .foregroundStyle((root.audioController.model.currentIndex ?? 0) > 0 ? Color.teal : Color.secondary)
+                Label {
+                    Text("Previous Track", bundle: .module)
+                } icon: {
+                    Image(systemName: "backward.fill")
+                }
+                .labelStyle(.iconOnly)
+                .font(.headline)
+                .foregroundStyle((root.audioController.model.currentIndex ?? 0) > 0 ? Color.teal : Color.secondary)
             }
+            .frame(minWidth: 44, minHeight: 44)
             
             Button {
                 if let currentId = root.audioController.model.currentId, appGameStateModel.isGameRunning {
@@ -115,27 +114,56 @@ extension AudioPlayerView {
                     root.audioController.toggle()
                 }
             } label: {
-                Image(systemName: playPauseIcon)
-                    .contentTransition(.symbolEffect(.replace.offUp))
-                    .font(.largeTitle)
-                    .foregroundStyle(root.audioController.model.playList.isEmpty ? Color.secondary : Color.teal)
+                Label {
+                    if root.audioController.model.isPlaying {
+                        Text("Pause", bundle: .module)
+                    } else {
+                        Text("Play", bundle: .module)
+                    }
+                } icon: {
+                    Image(systemName: playPauseIcon)
+                        .contentTransition(.symbolEffect(.replace.offUp))
+                }
+                .labelStyle(.iconOnly)
+                .font(.largeTitle)
+                .foregroundStyle(root.audioController.model.playList.isEmpty ? Color.secondary : Color.teal)
             }
             .disabled(root.audioController.model.currentId == nil)
+            .frame(minWidth: 44, minHeight: 44)
             
             Button {
-                withAnimation(.easeInOut) { root.audioController.skipToCurrentItem(offsetBy: 1) }
+                withAnimation(reduceMotion ? nil : .easeInOut) {
+                    root.audioController.skipToCurrentItem(offsetBy: 1)
+                }
             } label: {
-                Image(systemName: "forward.fill")
-                    .font(.headline)
-                    .foregroundStyle((root.audioController.model.currentIndex ?? 0 < root.audioController.model.playList.count - 1) ? Color.teal : Color.secondary)
+                Label {
+                    Text("Next Track", bundle: .module)
+                } icon: {
+                    Image(systemName: "forward.fill")
+                }
+                .labelStyle(.iconOnly)
+                .font(.headline)
+                .foregroundStyle((root.audioController.model.currentIndex ?? 0 < root.audioController.model.playList.count - 1) ? Color.teal : Color.secondary)
             }
+            .frame(minWidth: 44, minHeight: 44)
             
             Button {
                 root.audioController.model.repeatPlayList.toggle()
             } label: {
-                Image(systemName: "repeat.circle\(root.audioController.model.repeatPlayList ? ".fill" : "")")
-                    .font(.title)
+                Label {
+                    Text("Repeat Playlist", bundle: .module)
+                } icon: {
+                    Image(systemName: "repeat.circle\(root.audioController.model.repeatPlayList ? ".fill" : "")")
+                }
+                .labelStyle(.iconOnly)
+                .font(.title)
             }
+            .frame(minWidth: 44, minHeight: 44)
+            .accessibilityValue(
+                root.audioController.model.repeatPlayList
+                    ? Text("Enabled", bundle: .module)
+                    : Text("Disabled", bundle: .module)
+            )
         }
         .disabled(root.audioController.model.playList.isEmpty)
         .borderLessTVBottonStyle()
@@ -145,15 +173,18 @@ extension AudioPlayerView {
     var playTimeControlView: some View {
         VStack {
             HStack {
-                Text(root.audioController.model.playerTime.elapsedText)
-                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                Text(verbatim: root.audioController.model.playerTime.elapsedText)
+                    .font(.caption)
+                    .bold()
+                    .monospaced()
                 
                 Spacer()
                 
-                Text(root.audioController.model.playerTime.remainingText)
-                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                Text(verbatim: root.audioController.model.playerTime.remainingText)
+                    .font(.caption)
+                    .bold()
+                    .monospaced()
             }
-            .font(.system(size: 14, weight: .semibold))
             
 #if os(tvOS)
             ProgressView(value: currentTime, total: totalTime)
@@ -168,11 +199,24 @@ extension AudioPlayerView {
             }
             .labelsHidden()
             .tint(Color.accentColor)
+            .accessibilityValue(
+                Text(
+                    "\(Int(currentTime.rounded())) seconds of \(Int(totalTime.rounded())) seconds",
+                    bundle: .module
+                )
+            )
 #endif
         }
     }
     
     var totalTime: Double {
         root.audioController.model.currentItem?.duration.seconds ?? 0
+    }
+
+    var currentName: String {
+        guard let id = root.audioController.model.currentId else {
+            return String(localized: "No song currently loaded", bundle: .module)
+        }
+        return root.gameController.gameItem(for: id).name
     }
 }

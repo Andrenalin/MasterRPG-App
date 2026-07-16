@@ -24,6 +24,7 @@ public struct SheetAIAssistantOverlayView: View {
     @State private var availability = SheetAIGenerationController().availability
     @FocusState private var isTextFieldFocused: Bool
     @Namespace private var glassNamespace
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let generationController = SheetAIGenerationController()
 
@@ -77,7 +78,7 @@ public struct SheetAIAssistantOverlayView: View {
             }
             #endif
         }
-        .animation(.smooth, value: rootModel.isAIModeActive)
+        .animation(reduceMotion ? nil : .smooth, value: rootModel.isAIModeActive)
         .alert(
             Text("AI Generation Failed", bundle: .module),
             isPresented: isErrorPresented,
@@ -89,7 +90,7 @@ public struct SheetAIAssistantOverlayView: View {
                 }
             },
             message: {
-                Text(errorMessage ?? "")
+                Text(verbatim: errorMessage ?? "")
             }
         )
         .task(id: rootModel.isAIModeActive) {
@@ -129,14 +130,14 @@ public struct SheetAIAssistantOverlayView: View {
     }
 
     private func activateAIMode() {
-        withAnimation(.smooth) {
+        withAnimation(reduceMotion ? nil : .smooth) {
             availability = generationController.availability
             rootModel.setAIModeActive(true)
         }
     }
 
     private func closeAIMode() {
-        withAnimation(.smooth) {
+        withAnimation(reduceMotion ? nil : .smooth) {
             isTextFieldFocused = false
             rootModel.setAIModeActive(false)
         }
@@ -156,7 +157,7 @@ public struct SheetAIAssistantOverlayView: View {
 
         availability = generationController.availability
         guard availability.isAvailable else { return }
-        let didQueue = withAnimation(.smooth) {
+        let didQueue = withAnimation(reduceMotion ? nil : .smooth) {
             guard rootModel.queueGeneration(prompt: prompt, module: module) != nil else {
                 return false
             }
@@ -176,7 +177,7 @@ public struct SheetAIAssistantOverlayView: View {
         }
 
         availability = generationController.availability
-        withAnimation(.smooth) {
+        withAnimation(reduceMotion ? nil : .smooth) {
             errorMessage = nil
         }
 
@@ -185,23 +186,23 @@ public struct SheetAIAssistantOverlayView: View {
             try Task.checkCancellation()
             guard rootModel.pendingGenerationRequest?.id == request.id else { return }
 
-            let installed = withAnimation(.smooth) {
+            let installed = withAnimation(reduceMotion ? nil : .smooth) {
                 rootModel.installGeneratedDrafts(drafts, for: request.id)
             }
             if !installed {
-                withAnimation(.smooth) {
+                withAnimation(reduceMotion ? nil : .smooth) {
                     errorMessage = SheetAIGenerationError.emptyResponse.localizedDescription
                     rootModel.finishGenerationRequest(request.id)
                 }
             }
         } catch is CancellationError {
             guard rootModel.pendingGenerationRequest?.id == request.id else { return }
-            withAnimation(.smooth) {
+            withAnimation(reduceMotion ? nil : .smooth) {
                 rootModel.finishGenerationRequest(request.id)
             }
         } catch {
             guard rootModel.pendingGenerationRequest?.id == request.id else { return }
-            withAnimation(.smooth) {
+            withAnimation(reduceMotion ? nil : .smooth) {
                 errorMessage = error.localizedDescription
                 rootModel.finishGenerationRequest(request.id)
             }
@@ -209,157 +210,7 @@ public struct SheetAIAssistantOverlayView: View {
     }
 }
 
-private struct SheetAIAssistantOpenButton: View {
-    let module: NetworkModules
-    let glassNamespace: Namespace.ID
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Label {
-                Text("Ask AI", bundle: .module)
-            } icon: {
-                Image(systemName: NetworkModules.generator.icon)
-            }
-            .padding()
-        }
-        #if os(visionOS)
-        .buttonStyle(.borderedProminent)
-        .tint(module.tint)
-        #else
-        .buttonStyle(.plain)
-        .glassEffectAll(.regular.tint(module.tint).interactive(), in: .capsule)
-        .glassEffectID("aiOverlay", in: glassNamespace)
-        #endif
-        .padding()
-    }
-}
-
-private struct SheetAIAssistantComposer: View {
-    let module: NetworkModules
-    @Binding var messageText: String
-    let availability: SheetAIGenerationAvailability
-    let isGenerating: Bool
-    let canSubmit: Bool
-    @FocusState.Binding var isTextFieldFocused: Bool
-    let glassNamespace: Namespace.ID
-    let submitAction: () -> Void
-    let closeAction: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            if let availabilityMessage = availability.message {
-                Label(availabilityMessage, systemImage: "apple.intelligence")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            HStack(alignment: .bottom) {
-                TextField(
-                    String(localized: "Type your request...", bundle: .module),
-                    text: $messageText,
-                    axis: .vertical
-                )
-                .textFieldStyle(.plain)
-                .focused($isTextFieldFocused)
-                .onSubmit(submitAction)
-                #if os(iOS)
-                .submitLabel(.send)
-                #endif
-                .disabled(!availability.isAvailable)
-
-                if isGenerating {
-                    ProgressView()
-                        .controlSize(.small)
-                        .accessibilityLabel(Text("Generating sheet content", bundle: .module))
-                        .transition(.scale(scale: 0.8).combined(with: .opacity))
-                }
-
-                Button(action: submitAction) {
-                    Label {
-                        Text("Generate", bundle: .module)
-                    } icon: {
-                        Image(systemName: "arrow.up")
-                    }
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.plain)
-                .disabled(!canSubmit)
-
-                Button(action: closeAction) {
-                    Label {
-                        Text("Close", bundle: .module)
-                    } icon: {
-                        Image(systemName: "xmark.circle.fill")
-                    }
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-            }
-        }
-        .animation(.smooth, value: isGenerating)
-        .padding()
-        #if os(visionOS)
-        .background(.regularMaterial, in: .capsule)
-        #else
-        .glassEffectAll(.regular.tint(module.tint), in: .capsule)
-        .glassEffectID("aiOverlay", in: glassNamespace)
-        #endif
-        .padding(.horizontal)
-    }
-}
-
-private struct SheetAIAssistantComponentPreview: View {
-    @Namespace private var namespace
-    @State private var message = "Create a dramatic encounter"
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        VStack {
-            SheetAIAssistantOpenButton(module: .adventure, glassNamespace: namespace, action: {})
-            SheetAIAssistantComposer(
-                module: .adventure,
-                messageText: $message,
-                availability: SheetAIGenerationController().availability,
-                isGenerating: false,
-                canSubmit: true,
-                isTextFieldFocused: $isFocused,
-                glassNamespace: namespace,
-                submitAction: {},
-                closeAction: {}
-            )
-        }
-    }
-}
-
-#Preview("Sheet AI Components") {
-    SheetAIAssistantComponentPreview()
-}
-
 #Preview("Sheet AI Assistant") {
     SheetAIAssistantOverlayView(module: .adventure, itemId: UUID(), rootModel: .fake)
-}
-
-#Preview("Sheet AI Open Button") {
-    @Previewable @Namespace var namespace
-    SheetAIAssistantOpenButton(module: .adventure, glassNamespace: namespace, action: {})
-}
-
-#Preview("Sheet AI Composer") {
-    @Previewable @Namespace var namespace
-    @Previewable @State var message = "Create a dramatic encounter"
-    @Previewable @FocusState var isFocused: Bool
-    SheetAIAssistantComposer(
-        module: .adventure,
-        messageText: $message,
-        availability: SheetAIGenerationController().availability,
-        isGenerating: false,
-        canSubmit: true,
-        isTextFieldFocused: $isFocused,
-        glassNamespace: namespace,
-        submitAction: {},
-        closeAction: {}
-    )
 }
 #endif

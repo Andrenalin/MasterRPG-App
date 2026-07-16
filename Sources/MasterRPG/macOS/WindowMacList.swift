@@ -16,7 +16,11 @@ struct WindowMacList: Scene {
             MenuBarView(appModel: appModel)
                 .environmentSetUp(appModel)
         } label: {
-            Label("MasterRPG", systemImage: "music.note.list")
+            Label {
+                Text(verbatim: "MasterRPG")
+            } icon: {
+                Image(systemName: "music.note.list")
+            }
         }
         .menuBarExtraStyle(.menu)
 

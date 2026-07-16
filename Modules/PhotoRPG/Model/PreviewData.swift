@@ -2,43 +2,44 @@
 
 import CoreRPG
 import Foundation
-import RPGResources
+import SwiftUI
 
 public extension PhotoRootModel {
     static let previewPhotoId = PhotoModel.previewId
 
     @MainActor
-    static let preview: PhotoRootModel = {
+    static var preview: PhotoRootModel {
+        previewFixture()
+    }
+
+    @MainActor
+    internal static func previewFixture(
+        models: [PhotoModel] = PhotoModel.previewFixtures
+    ) -> PhotoRootModel {
         let root = PhotoRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let realRootManager = RootManager.preview(fake: root.rootController)
         root.setUp(context: nil, batchContext: nil, rootManager: realRootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: realRootManager))
+
+        for model in models {
+            root.itemController.replace(model: model, isInsert: true)
+        }
+
+        if let cacheController = root.itemController.cacheController {
+            let image = previewFixtureImage()
+            cacheController.setCachedImage(image, for: PhotoModel.previewId)
+            cacheController.setCachedThumbnail(image, for: PhotoModel.previewId)
+        }
+
         root.editController.setCurrentItem(to: .preview)
         return root
-    }()
+    }
     
     @MainActor
-    static let previewWithData: PhotoRootModel = {
-        let root = PhotoRootModel.preview
-        let importController = root.importController
-        let editController = root.editController
-#if DEBUG
-        Task(priority: .userInitiated) {
-            let bundle = RPGResources.Resources.bundle
-            guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-                print("url nil ")
-                return
-            }
-            let task = importController.importUrl(from: url)
-            let _ = try? await task.value
-            Task { @MainActor in
-                editController.setCurrentItem(to: .previewWithData)
-            }
-        }
-#endif
-        return root
-    }()
+    static var previewWithData: PhotoRootModel {
+        previewFixture()
+    }
     
 #if DEBUG
     @MainActor
@@ -62,55 +63,128 @@ extension PhotoRootModel: RootExportControllable {
 
 // MARK: Preview - Test
 extension PhotoModel {
-    nonisolated static let previewId = UUID(uuidString: "12975503-CC29-4837-8018-EFF774E97595")!
-    static let preview = PhotoModel(id: previewId, name: "ExodusAtlantisMap", description: "Imaginary map of Atlantis for Amber DRPG \"Exodus\", a tabletop roleplaying game. Author: Theresa Thomas. From Wikimedia: [Wikipedia](https://commons.wikimedia.org/wiki/File:ExodusAtlantisMap.jpg)", tags: ["Map", "Fanatasy"], degrees: 0, entries: [])
+    nonisolated static let previewId = UUID.fixture("12975503-CC29-4837-8018-EFF774E97595")
+    nonisolated static let previewEmptyId = UUID(uuid: (0xB3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
+    nonisolated static let previewRotatedId = UUID(uuid: (0xB3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
+
+    @MainActor
+    static var preview: PhotoModel {
+        PhotoModel(
+            id: previewId,
+            name: "ExodusAtlantisMap",
+            description: "Imaginary map of Atlantis for Amber DRPG \"Exodus\", a tabletop roleplaying game. Author: Theresa Thomas. From Wikimedia: [Wikipedia](https://commons.wikimedia.org/wiki/File:ExodusAtlantisMap.jpg)",
+            tags: ["Map", "Fanatasy"],
+            degrees: 0,
+            entries: []
+        )
+    }
+
+    @MainActor
+    static var previewEmpty: PhotoModel {
+        PhotoModel(
+            id: previewEmptyId,
+            name: "Empty Photo",
+            description: "A photo fixture without an imported image.",
+            tags: ["Preview"]
+        )
+    }
+
+    @MainActor
+    static var previewRotated: PhotoModel {
+        PhotoModel(
+            id: previewRotatedId,
+            name: "Rotated Photo",
+            description: "A portrait-orientation preview fixture.",
+            tags: ["Preview", "Rotated"],
+            degrees: 90
+        )
+    }
+
+    @MainActor
+    static var previewFixtures: [PhotoModel] {
+        [preview, previewEmpty, previewRotated]
+    }
 }
 
 extension ItemRowTreeModel {
     static let preview = ItemRowTreeModel(itemId: PhotoModel.previewId, typeId: .photo)
     @MainActor
-    static var previewWithData: ItemRowTreeModel = {
+    static var previewWithData: ItemRowTreeModel {
         let root = PhotoRootModel.previewWithData
-        return ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], entryId: nil, typeId: .photo)
-    }()
+        return ItemRowTreeModel(
+            itemId: root.itemController.itemDataModel.items.first ?? PhotoModel.previewId,
+            entryId: nil,
+            typeId: .photo
+        )
+    }
 
 }
 
 extension ItemController {
     @MainActor
-    static let preview = PhotoRootModel.preview.itemController
+    static var preview: ItemController {
+        PhotoRootModel.previewFixture().itemController
+    }
 }
 
 extension EditController {
     @MainActor
-    static var preview: EditController = {
-        let controller = PhotoRootModel.preview.editController
+    static var preview: EditController {
+        let controller = PhotoRootModel.previewFixture().editController
         controller.setCurrentItem(to: .preview)
         return controller
-    }()
+    }
 }
 
 extension GameController {
     @MainActor
-    static var preview = PhotoRootModel.preview.gameController
+    static var preview: GameController {
+        PhotoRootModel.previewFixture().gameController
+    }
 }
 
 extension ImportController {
     @MainActor
-    static var preview = PhotoRootModel.preview.importController
+    static var preview: ImportController {
+        PhotoRootModel.previewFixture().importController
+    }
 }
 
 extension ExportController {
     @MainActor
-    static var preview = PhotoRootModel.preview.exportController
+    static var preview: ExportController {
+        PhotoRootModel.previewFixture().exportController
+    }
 }
 
 extension ViewController {
     @MainActor
-    static var preview = PhotoRootModel.preview.viewController
+    static var preview: ViewController {
+        PhotoRootModel.previewFixture().viewController
+    }
 }
 
 extension LinkController {
     @MainActor
-    static var preview = PhotoRootModel.preview.linkController
+    static var preview: LinkController {
+        PhotoRootModel.previewFixture().linkController
+    }
+}
+
+@MainActor
+private func previewFixtureImage() -> AKImage {
+#if os(macOS)
+    AKImage(systemSymbolName: "photo", accessibilityDescription: "Preview photo") ?? AKImage()
+#else
+    AKImage(systemName: "photo") ?? AKImage()
+#endif
+}
+
+private extension UUID {
+    nonisolated static func fixture(_ value: String) -> UUID {
+        guard let id = UUID(uuidString: value) else {
+            preconditionFailure("Invalid deterministic preview UUID: \(value)")
+        }
+        return id
+    }
 }

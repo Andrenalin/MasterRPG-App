@@ -25,4 +25,5 @@ struct AppInspectorView: View {
 
 #Preview {
     AppInspectorView(isExtendedRoutes: false)
+        .environment(AppModel.preview)
 }

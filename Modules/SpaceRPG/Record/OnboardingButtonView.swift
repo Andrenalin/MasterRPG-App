@@ -24,7 +24,7 @@ struct OnboardingButtonView: View {
     var body: some View {
         VStack {
             HStack {
-                CancelButton(buttonLabel: LocalizedString.cancel)
+                OnboardingCancelButton(buttonLabel: LocalizedString.cancel)
                 Spacer()
             }
 
@@ -33,14 +33,14 @@ struct OnboardingButtonView: View {
             VStack(spacing: 0) {
                 let currentStateInputs = onboardingStateMachine.currentStateInputs()
                 if currentStateInputs.contains(where: { $0 == .continue(isFlippable: false) || $0 == .continue(isFlippable: true) }) {
-                    CreateButton(buttonLabel: LocalizedString.continue,
+                    OnboardingCreateButton(buttonLabel: LocalizedString.continue,
                                  buttonLabelColor: .white,
                                  shouldApplyBackground: true,
                                  action: { transition(with: .continue(isFlippable: appModel.isObjectFlippable)) }
                     )
                 }
                 if currentStateInputs.contains(where: { $0 == .flipObjectAnyway }) {
-                    CreateButton(buttonLabel: LocalizedString.flipAnyway,
+                    OnboardingCreateButton(buttonLabel: LocalizedString.flipAnyway,
                                  buttonLabelColor: .blue,
                                  action: {
                         userHasIndicatedFlipObjectAnyway = true
@@ -48,21 +48,21 @@ struct OnboardingButtonView: View {
                     })
                 }
                 if currentStateInputs.contains(where: { $0 == .skip(isFlippable: false) || $0 == .skip(isFlippable: true) }) {
-                    CreateButton(buttonLabel: LocalizedString.skip,
+                    OnboardingCreateButton(buttonLabel: LocalizedString.skip,
                                  buttonLabelColor: .blue,
                                  action: {
                         transition(with: .skip(isFlippable: appModel.isObjectFlippable))
                     })
                 }
                 if currentStateInputs.contains(where: { $0 == .finish }) {
-                    CreateButton(buttonLabel: LocalizedString.finish,
+                    OnboardingCreateButton(buttonLabel: LocalizedString.finish,
                                  buttonLabelColor: onboardingStateMachine.currentState == .thirdSegmentComplete ? .white : .blue,
                                  shouldApplyBackground: onboardingStateMachine.currentState == .thirdSegmentComplete,
                                  showBusyIndicator: session.state == .finishing,
                                  action: { [weak session] in session?.finish() })
                 }
                 if currentStateInputs.contains(where: { $0 == .objectCannotBeFlipped }) {
-                    CreateButton(buttonLabel: LocalizedString.cannotFlipYourObject,
+                    OnboardingCreateButton(buttonLabel: LocalizedString.cannotFlipYourObject,
                                  buttonLabelColor: .blue,
                                  action: {
                         userHasIndicatedObjectCannotBeFlipped = true
@@ -72,7 +72,7 @@ struct OnboardingButtonView: View {
                 if onboardingStateMachine.currentState == OnboardingState.tooFewImages ||
                     onboardingStateMachine.currentState == .secondSegmentComplete  ||
                     onboardingStateMachine.currentState == .thirdSegmentComplete {
-                    CreateButton(buttonLabel: "", action: {})
+                    OnboardingCreateButton(buttonLabel: "", action: {})
                 }
             }
             .padding(.bottom)
@@ -119,51 +119,6 @@ struct OnboardingButtonView: View {
     }
 }
 
-private struct CreateButton: View {
-    @Environment(AppDataModel.self) private var appModel
-    let buttonLabel: String
-    var buttonLabelColor: Color = Color.white
-    var buttonBackgroundColor: Color = Color.blue
-    var shouldApplyBackground = false
-    var showBusyIndicator = false
-    let action: () -> Void
-
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        Button(
-            action: {
-                Logger.scanner3D.log("\(buttonLabel) clicked!")
-                action()
-            },
-            label: {
-                ZStack {
-                    if showBusyIndicator {
-                        HStack {
-                            Text(buttonLabel).hidden()
-                            Spacer().frame(maxWidth: 48)
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(
-                                    tint: shouldApplyBackground ? .white : (colorScheme == .light ? .black : .white)))
-                        }
-                    }
-                    Text(buttonLabel)
-                        .font(.headline)
-                        .bold()
-                        .foregroundStyle(buttonLabelColor)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                }
-            })
-        .if(shouldApplyBackground) { view in
-            view.background(RoundedRectangle(cornerRadius: 16.0).fill(buttonBackgroundColor))
-        }
-        .padding(.leading)
-        .padding(.trailing)
-        .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 380 : .infinity)
-    }
-}
-
 extension View {
     @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
         if condition {
@@ -172,34 +127,6 @@ extension View {
             self
         }
     }
-}
-
-private struct CancelButton: View {
-    @Environment(AppDataModel.self) private var appModel
-    let buttonLabel: String
-
-    var body: some View {
-        Button(
-            action: {
-                Logger.scanner3D.log("Cancel button clicked!")
-                appModel.setPreviewModelState(shown: false)
-            },
-            label: {
-                Text(buttonLabel)
-                    .font(.headline)
-                    .bold()
-                    .padding(30)
-                    .foregroundStyle(.blue)
-            })
-    }
-}
-
-#Preview {
-    CreateButton(buttonLabel: "Continue", shouldApplyBackground: true, action: {})
-}
-
-#Preview {
-    CancelButton(buttonLabel: "Cancel")
 }
 
 #Preview("Onboarding Buttons") {

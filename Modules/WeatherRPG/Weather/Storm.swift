@@ -5,6 +5,7 @@
 //  Created by Paul Hudson on 03/02/2022.
 //
 
+import Foundation
 import SwiftUI
 
 public class Storm {
@@ -15,14 +16,14 @@ public class Storm {
             rawValue
         }
         
-        var localizedTitle: LocalizedStringKey {
+        var localizedTitle: LocalizedStringResource {
             switch self {
             case .none:
-                return "None"
+                return LocalizedStringResource("None", bundle: .module)
             case .rain:
-                return "Rain"
+                return LocalizedStringResource("Rain", bundle: .module)
             case .snow:
-                return "Snow"
+                return LocalizedStringResource("Snow", bundle: .module)
             }
         }
     }

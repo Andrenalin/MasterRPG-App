@@ -9,6 +9,7 @@ struct EntryListDiceRow: View {
     let entryId: UUID
 
     @Environment(CharacterRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var updateOtherValue: Bool = false
     @State private var isFavorited: Bool = false
 
@@ -24,6 +25,12 @@ struct EntryListDiceRow: View {
                 } label: {
                     Image(systemName: isFavorited ? "star.fill" : "star")
                 }
+                .accessibilityLabel(
+                    isFavorited
+                    ? Text("Remove from favorites", bundle: .module)
+                    : Text("Add to favorites", bundle: .module)
+                )
+                .frame(minWidth: 44, minHeight: 44)
                 .contentShape(.rect)
                 
                 root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, childId: entryId, module: root.itemController.config.module), player: true)
@@ -50,7 +57,9 @@ struct EntryListDiceRow: View {
 
     private func updateDiceValue(id: UUID) {
         let diceValue = diceValue(itemId: itemId, entryId: entryId)
-        withAnimation { root.diceRoot.diceGameControllable.validateForValue(diceId: id, compareValue: diceValue) }
+        withAnimation(reduceMotion ? nil : .default) {
+            root.diceRoot.diceGameControllable.validateForValue(diceId: id, compareValue: diceValue)
+        }
     }
 
     private func diceValue(itemId: UUID, entryId: UUID) -> Int? {

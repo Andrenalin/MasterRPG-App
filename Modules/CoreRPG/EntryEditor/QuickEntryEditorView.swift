@@ -24,6 +24,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     private enum Field: Hashable {
         case editor
@@ -57,7 +58,9 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                     .padding(.horizontal)
                     .offset(x: 0, y: -8)
                     .opacity(showHelp ? 1 : 0)
-                    .animation(.default, value: showHelp)
+                    .allowsHitTesting(showHelp)
+                    .accessibilityHidden(!showHelp)
+                    .animation(accessibilityReduceMotion ? nil : .default, value: showHelp)
                 }
                 .sizedSheet(isPresented: $showEffectedLinksAlert, idealSize: CGSize(width: 400, height: 600)) {
                     EffectedLinkActionPanelView(root: root, overwrite: true) { rowModels in
@@ -100,8 +103,9 @@ private extension QuickEntryEditorView {
 
                 editorView
             }
-            .animation(.bouncy, value: showResult)
+            .animation(accessibilityReduceMotion ? nil : .bouncy, value: showResult)
             
+            #if !os(iOS) && !os(macOS)
             if showInspector {
                 inspector
                     .frame(width: 300)
@@ -111,8 +115,15 @@ private extension QuickEntryEditorView {
 #endif
 
             }
+            #endif
         }
-        .animation(.bouncy, value: showInspector)
+        .animation(accessibilityReduceMotion ? nil : .bouncy, value: showInspector)
+#if os(iOS) || os(macOS)
+        .inspector(isPresented: $showInspector) {
+            inspector
+                .inspectorColumnWidth(min: 260, ideal: 300, max: 420)
+        }
+#endif
         .onAppear {
             referenceText.input = initialText
             focusedField = .editor
@@ -162,15 +173,18 @@ private extension QuickEntryEditorView {
 }
 
 #Preview {
+    let fixture = FakeItemRootControllerFixture()
     QuickEntryEditorView(
-        root: ItemRootController.fake,
-        editController: FakeEditController.fake,
+        root: fixture.root,
+        editController: fixture.editController,
         model: FakeItemModel.empty,
         referenceText: DebouncerModel(initialValue: ""),
         pdfEditorRoute: InternalRoute.removeAlert,
         inspector: { EmptyView() },
         pdfOverlay: { EmptyView() }
     )
+    .environment(AppWindowSizeModel())
+    .environment(ScenesManager())
 }
 
 private extension QuickEntryEditorView {
@@ -200,6 +214,7 @@ private extension QuickEntryEditorView {
             } label: {
                 Image(systemName: "xmark.circle")
             }
+            .accessibilityLabel(Text("Cancel", bundle: .module))
         }
 
 #if os(macOS)
@@ -238,6 +253,7 @@ private extension QuickEntryEditorView {
                 } label: {
                     Image(systemName: "square.and.arrow.down")
                 }
+                .accessibilityLabel(Text("Apply", bundle: .module))
             }
         }
     }

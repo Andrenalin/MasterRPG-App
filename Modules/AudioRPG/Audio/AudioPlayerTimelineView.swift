@@ -21,6 +21,8 @@ struct AudioPlayerTimelineView: View {
     let audioPlayerModel: AudioPlayerModel
     @Bindable var viewModel: AudioPlayerBarViewModel
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private enum Constants {
         static let contentHeight: CGFloat = 44
         static let horizontalSpacing: CGFloat = 4
@@ -44,14 +46,14 @@ struct AudioPlayerTimelineView: View {
 
     @ViewBuilder
     private var iPadTimelineView: some View {
-        contentLayer
-            .contentShape(Rectangle())
-            .onTapGesture {
-                // Tap artwork/title to reveal scrubber
-                withAnimation(Constants.hoverSpring) {
-                    viewModel.isScubberVisible = true
-                }
-            }
+        Button {
+            showScrubber()
+        } label: {
+            contentLayer
+                .contentShape(.rect)
+        }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Show Playback Controls", bundle: .module))
             .overlay(alignment: .bottom) {
                 progressOverlay
             }
@@ -78,7 +80,7 @@ struct AudioPlayerTimelineView: View {
             .contentShape(Rectangle())
         #if !os(tvOS)
             .onHover { hovering in
-                withAnimation(Constants.hoverSpring) {
+                withAnimation(reduceMotion ? nil : Constants.hoverSpring) {
                     viewModel.isScubberVisible = hovering
                 }
             }
@@ -142,21 +144,34 @@ struct AudioPlayerTimelineView: View {
                 scrubberBackground
             }
             .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            .accessibilityAction(named: Text("Hide Playback Controls", bundle: .module)) {
+                hideScrubber()
+            }
         }
     }
 
     private var scrubberBackground: some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(.ultraThinMaterial.opacity(0.95))
-            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
+        Button(action: hideScrubber) {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.ultraThinMaterial.opacity(0.95))
+                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHidden(true)
 #if os(iOS)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                // Tap outside (on background) to dismiss
-                withAnimation(Constants.hoverSpring) {
-                    viewModel.isScubberVisible = false
-                }
-            }
+        .contentShape(.rect)
 #endif
+    }
+
+    private func showScrubber() {
+        withAnimation(reduceMotion ? nil : Constants.hoverSpring) {
+            viewModel.isScubberVisible = true
+        }
+    }
+
+    private func hideScrubber() {
+        withAnimation(reduceMotion ? nil : Constants.hoverSpring) {
+            viewModel.isScubberVisible = false
+        }
     }
 }

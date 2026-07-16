@@ -34,6 +34,7 @@ struct ImageViewer: View {
     let toolBarModel: GameToolBarModel?
 
     @State private var viewerState = ImageViewerState()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var currentDegrees: Double {
         toolBarModel?.degrees(for: id, fallback: photoDegrees)
@@ -61,7 +62,10 @@ struct ImageViewer: View {
                     geometry: geometry
                 )
                 .allowsHitTesting(false)
-                .accessibilityHidden(true)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: accessibilityLabel))
+                .accessibilityHint(Text(verbatim: accessibilityHint ?? ""))
+                .accessibilityAddTraits(.isImage)
             } else {
                 InteractiveImageCanvas(
                     image: image,
@@ -79,10 +83,26 @@ struct ImageViewer: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(verbatim: accessibilityLabel))
                 .accessibilityHint(Text(verbatim: accessibilityHint ?? ""))
+                .accessibilityValue(
+                    Text(
+                        "Zoom \(viewerState.viewport.scale / geometry.fitViewport.scale, format: .percent)",
+                        bundle: .module
+                    )
+                )
                 .accessibilityAddTraits(.isImage)
                 .accessibilityAction(named: Text("Zoom in", bundle: .module), zoomIn)
                 .accessibilityAction(named: Text("Zoom out", bundle: .module), zoomOut)
                 .accessibilityAction(named: Text("Reset zoom", bundle: .module), resetZoom)
+                .accessibilityAdjustableAction { direction in
+                    switch direction {
+                    case .increment:
+                        zoomIn()
+                    case .decrement:
+                        zoomOut()
+                    @unknown default:
+                        break
+                    }
+                }
             }
         }
         .frame(
@@ -117,7 +137,7 @@ private extension ImageViewer {
         )
         newState.dragStartOffset = newState.viewport.offset
 
-        if shouldAnimate {
+        if shouldAnimate && !reduceMotion {
             withAnimation(.snappy) {
                 viewerState = newState
             }
@@ -131,7 +151,7 @@ private extension ImageViewer {
             return
         }
 
-        if animated {
+        if animated && !reduceMotion {
             withAnimation(.snappy) {
                 viewerState.viewport = viewport
             }
@@ -221,69 +241,15 @@ private struct ImageViewerState: Equatable {
     var magnificationStartViewport: ImageViewport?
 }
 
-private struct InteractiveImageCanvas: View {
-    let image: AKImage
-    let geometry: ImageViewportGeometry
-    let viewport: ImageViewport
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            Color.clear
-
-            RotatedImage(
-                image: image,
-                originalSize: geometry.originalImageSize,
-                rotatedSize: geometry.rotatedImageSize,
-                degrees: geometry.normalizedDegrees
-            )
-            .scaleEffect(viewport.scale, anchor: .topLeading)
-            .offset(x: viewport.offset.x, y: viewport.offset.y)
-        }
-        .frame(
-            width: geometry.containerSize.width,
-            height: geometry.containerSize.height,
-            alignment: .topLeading
-        )
-        .contentShape(.rect)
-        .clipped()
-    }
-}
-
-private struct FilledImageCanvas: View {
-    let image: AKImage
-    let geometry: ImageViewportGeometry
-
-    var body: some View {
-        ZStack {
-            Image(akImage: image)
-                .resizable()
-                .frame(
-                    width: geometry.originalImageSize.width * geometry.fillScale,
-                    height: geometry.originalImageSize.height * geometry.fillScale
-                )
-                .rotationEffect(.degrees(geometry.normalizedDegrees))
-        }
-        .frame(
-            width: geometry.containerSize.width,
-            height: geometry.containerSize.height
-        )
-        .clipped()
-    }
-}
-
-private struct RotatedImage: View {
-    let image: AKImage
-    let originalSize: CGSize
-    let rotatedSize: CGSize
-    let degrees: Double
-
-    var body: some View {
-        ZStack {
-            Image(akImage: image)
-                .resizable()
-                .frame(width: originalSize.width, height: originalSize.height)
-                .rotationEffect(.degrees(degrees))
-        }
-        .frame(width: rotatedSize.width, height: rotatedSize.height)
-    }
+#Preview {
+    ImageViewer(
+        id: PhotoModel.previewId,
+        image: AKImage(systemName: "photo")!,
+        photoDegrees: 0,
+        containerSize: CGSize(width: 600, height: 400),
+        contentMode: .fit,
+        accessibilityLabel: "Preview photo",
+        accessibilityHint: nil,
+        toolBarModel: nil
+    )
 }

@@ -68,7 +68,10 @@ extension EditController {
     @MainActor func addBookmark(itemId: UUID, entry: PdfEntryModel) {
         guard let item = editModel(for: itemId) else { return }
         item.entries.append(entry)
-        save(updated: item, message: "Added Bookmark".localizedString)
+        save(
+            updated: item,
+            message: String(localized: "Added Bookmark", bundle: .module).localizedString
+        )
     }
     
     func createBookmark(itemId: UUID, content: String, page: String, bounds: CGRect) -> PdfEntryModel {
@@ -127,7 +130,10 @@ extension EditController {
 
         item.entries.append(contentsOf: newEntries)
         
-        save(updated: item, message: "Applied PDF sections as bookmarks".localizedString)
+        save(
+            updated: item,
+            message: String(localized: "Applied PDF sections as bookmarks", bundle: .module).localizedString
+        )
     }
 }
 #endif

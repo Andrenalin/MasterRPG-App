@@ -13,7 +13,7 @@ struct TableEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Table"),
-            numericFormat: "\(placeholder: .int) Table"
+            numericFormat: "\(placeholder: .int) tables"
         )
     }
 
@@ -80,11 +80,12 @@ extension TableEntity: Transferable {
             return .init(url)
         }
 
-        DataRepresentation(exportedContentType: .plainText) {
-            """
-            Name: \($0.name)
-            Description: \($0.description)
-            """.data(using: .utf8)!
+        DataRepresentation(exportedContentType: .plainText) { item in
+            String(
+                localized: "Name: \(item.name)\nDescription: \(item.description)",
+                bundle: .module
+            )
+            .data(using: .utf8) ?? Data()
         }
     }
 }

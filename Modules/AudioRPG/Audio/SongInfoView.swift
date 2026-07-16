@@ -13,12 +13,13 @@ struct SongInfoView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
+            Text(verbatim: title)
+                .font(.caption)
+                .bold()
                 .lineLimit(1)
 
-            Text(artist)
-                .font(.system(size: 11))
+            Text(verbatim: artist)
+                .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }

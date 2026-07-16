@@ -8,7 +8,7 @@ public enum SpaceFactory {
         SpaceRootModel(tagController: tagController)
     }
     
-    public static func rootView() -> some View {
+    @MainActor public static func rootView() -> some View {
         SpaceRootView()
     }
     

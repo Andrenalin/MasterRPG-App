@@ -1,16 +1,15 @@
 // @copyright André Trettin
 
 import CoreRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import RPGResources
 import SwiftUI
 import SwiftData
 
 struct MockData: PreviewModifier {
-    nonisolated static let previewId = UUID()
-    nonisolated static let previewId2 = UUID()
-    nonisolated static let previewId3 = UUID()
-    
-    static var previewRoot: TableRootModel?
+    nonisolated static let previewId = UUID(uuid: (0xA5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
     func body(content: Content, context: ModelContainer) -> some View {
         content
@@ -18,7 +17,7 @@ struct MockData: PreviewModifier {
             .modelContainer(context)
     }
     static func makeSharedContext() async throws -> ModelContainer {
-        let container = try! ModelContainer(
+        let container = try ModelContainer(
             for: LinkDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
@@ -31,7 +30,7 @@ struct MockData: PreviewModifier {
 
         let root = TableRootModel.preview
         let task = root.importController.importUrl(from: url)
-        let _ = try await task.value
+        _ = try await task.value
 
         return container
     }
@@ -39,19 +38,36 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
+        let appGameStateModel = AppGameStateModel()
         self._root = State(wrappedValue: TableRootModel.preview)
+#if !os(tvOS)
+        self._generatorRoot = State(wrappedValue: GeneratorRootModel.previewFixture())
+#endif
+        self._appGameStateModel = State(wrappedValue: appGameStateModel)
+        self._appNavigationModel = State(
+            wrappedValue: AppNavigationModel(appGameStateModel: appGameStateModel)
+        )
     }
 
     @State private var root: TableRootModel
+#if !os(tvOS)
+    @State private var generatorRoot: GeneratorRootModel
+#endif
+    @State private var appGameStateModel: AppGameStateModel
+    @State private var appNavigationModel: AppNavigationModel
 
     func body(content: Content) -> some View {
         content
             .environment(root)
-            .environment(AppGameStateModel())
+            .environment(appGameStateModel)
+            .environment(appNavigationModel)
             .environment(AppWindowSizeModel())
             .environment(CacheItemListModel())
             .environment(ScenesManager())
             .environment(root.diceRoot)
+#if !os(tvOS)
+            .environment(generatorRoot)
+#endif
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

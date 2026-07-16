@@ -3,6 +3,7 @@
 import CoreRPG
 import CoreData
 import CloudKit
+import Foundation
 
 import AdventureRPG
 import AudioRPG
@@ -66,7 +67,7 @@ public final class DataBaseModel {
     private var cloudPersistence: CloudKitCoreDataPersistenceController?
     
     public private(set) var hasError: Bool = false
-    public private(set) var errorMessage: LocalizedStringResource = ""
+    public private(set) var errorMessage: String?
     public private(set) var canRecover: Bool = false
     public private(set) var accountAvailable: Bool = false
     
@@ -136,14 +137,26 @@ public final class DataBaseModel {
             hasContextSet = true
             return
         case .loadModel:
-            errorMessage = "The database models can not be loaded. That means the app bundle is defect. Therefore delete the app and reinstall it. Sorry no recovery possible."
+            errorMessage = String(
+                localized: "The database models could not be loaded. The app installation may be damaged. Delete and reinstall the app. Recovery is not possible.",
+                bundle: .module
+            )
         case .removeFile(let message):
-            errorMessage = "The database cannot be removed from the device. The app cannot recover by itself. The underlaying error: \(message)"
+            errorMessage = String(
+                localized: "The database could not be removed from this device. The app cannot recover automatically. Underlying error: \(message)",
+                bundle: .module
+            )
         case .migration(let message):
-            errorMessage = "The database cannot be loaded. The underlaying error: \(message). But we can recover the app by removing the database file. All data will be lost if you click remove database."
+            errorMessage = String(
+                localized: "The database could not be loaded. Underlying error: \(message). The app can recover by removing the database file, but all data will be lost.",
+                bundle: .module
+            )
             canRecover = true
         case .creation(let message):
-            errorMessage = "The database cannot be recreated on the device. This should never happen. Hardware defect? The underlaying error: \(message)"
+            errorMessage = String(
+                localized: "The database could not be recreated on this device. Underlying error: \(message)",
+                bundle: .module
+            )
         @unknown default:
             fatalError()
         }

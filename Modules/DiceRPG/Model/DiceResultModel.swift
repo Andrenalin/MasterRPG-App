@@ -23,10 +23,10 @@ public struct DiceResultModel: Equatable, Hashable, Codable, Sendable, Identifia
         
         public var localizedTitle: LocalizedStringResource {
             switch self {
-            case .coup: "Coup"
-            case .fumble: "Fumble"
-            case .rolled: "Rolled"
-            case .notRolled: "Not rolled"
+            case .coup: LocalizedStringResource("Coup", bundle: .module)
+            case .fumble: LocalizedStringResource("Fumble", bundle: .module)
+            case .rolled: LocalizedStringResource("Rolled", bundle: .module)
+            case .notRolled: LocalizedStringResource("Not rolled", bundle: .module)
             }
         }
     }

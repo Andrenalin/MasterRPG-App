@@ -128,7 +128,10 @@ struct DeleteDiceIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: DiceEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) dice set](inflect: true).")
+        let message = AttributedString(
+            localized: "Deleted ^[\(count) dice set](inflect: true).",
+            bundle: .module
+        )
         return .result(dialog: "\(message)")
     }
 }

@@ -116,7 +116,7 @@ struct RollResultSnippetView: View {
             }
             
             // Dice name
-            Text(result.diceModel.name)
+            Text(verbatim: result.diceModel.name)
                 .font(.title2)
                 .bold()
             
@@ -124,14 +124,17 @@ struct RollResultSnippetView: View {
             HStack(spacing: 4) {
                 Image(systemName: "dice.fill")
                     .foregroundStyle(.secondary)
-                Text("\(result.sum)")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .accessibilityHidden(true)
+                Text(result.sum, format: .number)
+                    .font(.largeTitle)
+                    .bold()
+                    .monospacedDigit()
                     .contentTransition(.numericText())
             }
             
             // Values breakdown
             if !result.values.isEmpty {
-                Text(result.values)
+                Text(verbatim: result.values)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -146,15 +149,19 @@ struct RollResultSnippetView: View {
         case .coup:
             Image(systemName: "star.fill")
                 .foregroundStyle(.yellow)
+                .accessibilityHidden(true)
         case .fumble:
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
+                .accessibilityHidden(true)
         case .rolled:
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
+                .accessibilityHidden(true)
         case .notRolled:
             Image(systemName: "circle")
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
         }
     }
 }

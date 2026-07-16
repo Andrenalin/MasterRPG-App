@@ -131,8 +131,7 @@ struct DeleteTableIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: TableEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) table](inflect: true).")
-        return .result(dialog: "\(message)")
+        return .result(dialog: "Deleted ^[\(count) table](inflect: true).")
     }
 }
 

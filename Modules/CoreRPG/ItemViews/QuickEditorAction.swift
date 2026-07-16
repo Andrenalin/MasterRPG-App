@@ -110,6 +110,7 @@ public struct QuickEditorAction<EntryViewModel, SelectionView: View>: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(isEntryLink && linkScanId[selectedLinkModule] == nil)
+                .accessibilityLabel(Text("Scan", bundle: .module))
 #if os(macOS)
                 .padding(.trailing)
 #endif
@@ -126,7 +127,7 @@ public struct QuickEditorAction<EntryViewModel, SelectionView: View>: View {
         afterEntries: $entries,
         scanner: { _, _, _, _ in ["Scanned entry"] }
     ) { _, _, _ in
-        Text("Link selection")
+        Text(verbatim: "Link selection")
     }
     .padding()
 }

@@ -3,6 +3,8 @@
 import SwiftUI
 
 public struct LinkHighlightTextView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     public init(model: LinkHighlightTextModel) {
         self.model = model
     }
@@ -25,9 +27,9 @@ public struct LinkHighlightTextView: View {
     
     var plainText: Text {
         let _ = model.updated        
-        return model.displayText.reduce(Text("")) {
+        return model.displayText.reduce(Text(verbatim: "")) {
             partialResult, component in
-            return Text("\(partialResult)\(component.text)")
+            return Text("\(partialResult)\(component.text)", bundle: .module)
         }
     }
 
@@ -47,7 +49,7 @@ public struct LinkHighlightTextView: View {
     func overlayView(linkLocation: LinkHighLightLocation, foreground: Bool) -> some View {
         if foreground {
             Button {
-                withAnimation(.easeInOut(duration: 1)) {
+                withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 1)) {
                     model.handle(link: linkLocation.link)
                 }
             } label: {
@@ -55,6 +57,8 @@ public struct LinkHighlightTextView: View {
             }
             .buttonStyle(.plain)
             .contentShape(.rect)
+            .accessibilityLabel(Text(verbatim: linkLocation.link.name))
+            .accessibilityHint(Text("Open link", bundle: .module))
 #if os(visionOS)
             .buttonStyle(LinkButtonStyle())
             .buttonBorderShape(.roundedRectangle(radius: 4))
@@ -82,7 +86,7 @@ public struct LinkHighlightTextView: View {
                 }
             }
         } label: {
-            Text("Change width")
+            Text(verbatim: "Change width")
         }
         
         LinkHighlightTextView(model: model)

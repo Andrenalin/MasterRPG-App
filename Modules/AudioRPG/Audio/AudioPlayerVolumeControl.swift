@@ -15,6 +15,8 @@ struct AudioPlayerVolumeControl: View {
     @Binding var isSliderVisible: Bool
     let onToggleMute: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private enum Constants {
         static let buttonSize: CGFloat = 32
         static let sliderWidth: CGFloat = 100
@@ -27,7 +29,9 @@ struct AudioPlayerVolumeControl: View {
 #if !os(tvOS)
             // Volume slider (visible when expanded)
             if isSliderVisible {
-                Slider(value: $audioPlayerModel.volume, in: 0...1)
+                Slider(value: $audioPlayerModel.volume, in: 0...1) {
+                    Text("Volume", bundle: .module)
+                }
                     .frame(width: Constants.sliderWidth)
                     .tint(.primary)
                     .padding(.leading, 12)
@@ -40,17 +44,20 @@ struct AudioPlayerVolumeControl: View {
             Button {
                 handleVolumeButtonTap()
             } label: {
-                Label(
-                    audioPlayerModel.isMuted ? "Unmute" : "Mute",
-                    systemImage: volumeIcon
-                )
+                Label {
+                    Text(audioPlayerModel.isMuted ? "Unmute" : "Mute", bundle: .module)
+                } icon: {
+                    Image(systemName: volumeIcon)
+                }
                 .labelStyle(.iconOnly)
                 .font(.body)
                 .frame(width: Constants.buttonSize, height: Constants.buttonSize)
                 .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
-            .accessibilityValue(volumeAccessibilityValue)
+            .accessibilityValue(
+                Text("\(Int(audioPlayerModel.volume * 100)) percent", bundle: .module)
+            )
             .padding(.horizontal, 8)
         }
         .padding(.vertical, 6)
@@ -61,8 +68,14 @@ struct AudioPlayerVolumeControl: View {
         .contentShape(Rectangle())
         .volumeControlInteraction(
             isSliderVisible: $isSliderVisible,
-            animation: Constants.volumeSpring
+            animation: reduceMotion ? nil : Constants.volumeSpring
         )
+        .accessibilityAction(named: Text("Hide Volume Control", bundle: .module)) {
+            guard isSliderVisible else { return }
+            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
+                isSliderVisible = false
+            }
+        }
     }
 
     private var volumeControlBackground: some View {
@@ -103,31 +116,26 @@ struct AudioPlayerVolumeControl: View {
         }
     }
 
-    private var volumeAccessibilityValue: String {
-        let percentage = Int(audioPlayerModel.volume * 100)
-        return "\(percentage) percent"
-    }
-
     private func handleVolumeButtonTap() {
 #if os(macOS)
         // macOS: toggle mute if already showing slider, otherwise show slider
         if isSliderVisible {
-            withAnimation(Constants.volumeSpring) {
+            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
                 onToggleMute()
             }
         } else {
-            withAnimation(Constants.volumeSpring) {
+            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
                 isSliderVisible = true
             }
         }
 #else
         // iOS/visionOS: first tap shows slider, second tap mutes
         if isSliderVisible {
-            withAnimation(Constants.volumeSpring) {
+            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
                 onToggleMute()
             }
         } else {
-            withAnimation(Constants.volumeSpring) {
+            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
                 isSliderVisible = true
             }
         }
@@ -139,7 +147,7 @@ struct AudioPlayerVolumeControl: View {
 
 private struct VolumeControlInteractionModifier: ViewModifier {
     @Binding var isSliderVisible: Bool
-    let animation: Animation
+    let animation: Animation?
 
     func body(content: Content) -> some View {
 #if os(macOS)
@@ -153,20 +161,26 @@ private struct VolumeControlInteractionModifier: ViewModifier {
             }
 #else
         content
-            .onTapGesture {
-                // Tapping the background (outside button/slider) dismisses
-                if isSliderVisible {
-                    withAnimation(animation) {
-                        isSliderVisible = false
+            .background {
+                Button {
+                    if isSliderVisible {
+                        withAnimation(animation) {
+                            isSliderVisible = false
+                        }
                     }
+                } label: {
+                    Color.clear
+                        .contentShape(.rect)
                 }
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)
             }
 #endif
     }
 }
 
 private extension View {
-    func volumeControlInteraction(isSliderVisible: Binding<Bool>, animation: Animation) -> some View {
+    func volumeControlInteraction(isSliderVisible: Binding<Bool>, animation: Animation?) -> some View {
         modifier(VolumeControlInteractionModifier(isSliderVisible: isSliderVisible, animation: animation))
     }
 }

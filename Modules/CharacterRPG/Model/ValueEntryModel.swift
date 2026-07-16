@@ -38,15 +38,15 @@ public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
 
         public var localizedTitle: LocalizedStringResource {
             switch self {
-            case .text: "Text"
-            case .number: "Number"
-            case .decimal: "Decimal"
-            case .selection: "Selection"
+            case .text: LocalizedStringResource("Text", bundle: .module)
+            case .number: LocalizedStringResource("Number", bundle: .module)
+            case .decimal: LocalizedStringResource("Decimal", bundle: .module)
+            case .selection: LocalizedStringResource("Selection", bundle: .module)
             }
         }
 
         public var title: String {
-            String(localized: localizedTitle).localizedString
+            String(localized: localizedTitle)
         }
 
         public var icon: String {

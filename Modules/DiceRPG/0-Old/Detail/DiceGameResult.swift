@@ -13,6 +13,7 @@ struct DiceGameResult: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(DiceDisplayModel.self) var diceDisplayModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: isTrailing ? .trailing : .leading) {
@@ -25,10 +26,12 @@ struct DiceGameResult: View {
                 }
             }
         }
-        .animation(.spring(), value: diceDisplayModel.showDiceValueEditor)
+        .animation(reduceMotion ? nil : .spring(), value: diceDisplayModel.showDiceValueEditor)
         .onChange(of: diceDisplayModel.isEditing) {
             guard diceDisplayModel.isEditing else { return }
-            withAnimation { diceDisplayModel.showDiceValueEditor <=> false }
+            withAnimation(reduceMotion ? nil : .default) {
+                diceDisplayModel.showDiceValueEditor <=> false
+            }
         }
     }
 
@@ -36,18 +39,28 @@ struct DiceGameResult: View {
     private var resultView: some View {
         if root.gameController.gameItem(for: itemId).sumUp || root.gameController.gameItem(for: itemId).compareOption != .off {
             Button {
-                if appGameStateModel.isGameRunning && root.gameController.canEditDice(itemId: itemId, isGameMode: true) {
+                if canEditResult {
                     diceDisplayModel.showDiceValueEditor.toggle()
                     diceDisplayModel.showPlayerDice = !diceDisplayModel.showDiceValueEditor
                     diceDisplayModel.isEditing <=> false
                 }
             } label: {
-                Label("\(root.gameController.resultText(itemId: itemId).markDown())", systemImage: root.gameController.result(itemId: itemId).checked ? "checkmark" : "xmark")
+                Label {
+                    Text(root.gameController.resultText(itemId: itemId).markDown())
+                } icon: {
+                    Image(systemName: root.gameController.result(itemId: itemId).checked ? "checkmark" : "xmark")
+                }
             }
+            .disabled(!canEditResult)
 #if !os(tvOS)
             .buttonStyle(.borderedProminent)
 #endif
         }
+    }
+
+    private var canEditResult: Bool {
+        appGameStateModel.isGameRunning
+        && root.gameController.canEditDice(itemId: itemId, isGameMode: true)
     }
 }
 

@@ -1,0 +1,2046 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        }
+      }
+    },
+    "%@ Analysis" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@-Analyse"
+          }
+        }
+      }
+    },
+    "%@ How can I help you?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Wie kann ich helfen?"
+          }
+        }
+      }
+    },
+    "%lld / %lld tokens" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / %lld Token"
+          }
+        }
+      }
+    },
+    "%lld Instructions" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Anweisungen"
+          }
+        }
+      }
+    },
+    "%lld tokens" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Token"
+          }
+        }
+      }
+    },
+    "... and %lld more" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "… und %lld weitere"
+          }
+        }
+      }
+    },
+    "AI Generation Failed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KI-Generierung fehlgeschlagen"
+          }
+        }
+      }
+    },
+    "AI did not generate usable sheet content." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die KI hat keinen verwendbaren Datenblattinhalt generiert."
+          }
+        }
+      }
+    },
+    "Add Generator Note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generatornotiz hinzufügen"
+          }
+        }
+      }
+    },
+    "Add a reference character" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Referenzcharakter hinzufügen"
+          }
+        }
+      }
+    },
+    "Add note to ${target}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notiz zu ${target} hinzufügen"
+          }
+        }
+      }
+    },
+    "Added note to \"%@\"." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notiz zu „%@“ hinzugefügt."
+          }
+        }
+      }
+    },
+    "Adventure" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer"
+          }
+        }
+      }
+    },
+    "Adventure Block %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuerblock %lld"
+          }
+        }
+      }
+    },
+    "Adventure: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer: %@"
+          }
+        }
+      }
+    },
+    "An unexpected generation error occurred: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein unerwarteter Generierungsfehler ist aufgetreten: %@"
+          }
+        }
+      }
+    },
+    "Analysis refused: %@ (category: %@)." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse abgelehnt: %@ (Kategorie: %@)."
+          }
+        }
+      }
+    },
+    "Analysis refused: %@ (category: %@). The PDF content may violate content policies." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse abgelehnt: %@ (Kategorie: %@). Der PDF-Inhalt verstößt möglicherweise gegen Inhaltsrichtlinien."
+          }
+        }
+      }
+    },
+    "Analyze PDF Summary" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF-Zusammenfassung analysieren"
+          }
+        }
+      }
+    },
+    "Analyze Text Entries" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Texteinträge analysieren"
+          }
+        }
+      }
+    },
+    "Analyzing PDF with Apple Intelligence..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF wird mit Apple Intelligence analysiert …"
+          }
+        }
+      }
+    },
+    "Analyzing with Apple Intelligence..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse mit Apple Intelligence läuft …"
+          }
+        }
+      }
+    },
+    "Analyzing..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse läuft …"
+          }
+        }
+      }
+    },
+    "Answers / Ideas" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antworten / Ideen"
+          }
+        }
+      }
+    },
+    "Apple Intelligence Not available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence nicht verfügbar"
+          }
+        }
+      }
+    },
+    "Apple Intelligence is not available. PDF summary analysis requires it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ist nicht verfügbar. Für die Analyse der PDF-Zusammenfassung wird es benötigt."
+          }
+        }
+      }
+    },
+    "Apple Intelligence is not enabled. Please enable it in Settings." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ist nicht aktiviert. Bitte aktiviere es in den Einstellungen."
+          }
+        }
+      }
+    },
+    "Apple Intelligence is still preparing its language model. Try again later." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence bereitet das Sprachmodell noch vor. Versuche es später erneut."
+          }
+        }
+      }
+    },
+    "Apple Intelligence is unavailable." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ist nicht verfügbar."
+          }
+        }
+      }
+    },
+    "Apple Intelligence is unavailable: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ist nicht verfügbar: %@"
+          }
+        }
+      }
+    },
+    "Apply" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anwenden"
+          }
+        }
+      }
+    },
+    "Apply selected properties" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählte Eigenschaften anwenden"
+          }
+        }
+      }
+    },
+    "Ask AI" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KI fragen"
+          }
+        }
+      }
+    },
+    "Assistant is currently typing a response" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Assistent gibt gerade eine Antwort ein"
+          }
+        }
+      }
+    },
+    "Assistant is typing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Assistent schreibt"
+          }
+        }
+      }
+    },
+    "Assistant replied, %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antwort des Assistenten, %@"
+          }
+        }
+      }
+    },
+    "Assistant replied, context summary: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antwort des Assistenten, Kontextzusammenfassung: %@"
+          }
+        }
+      }
+    },
+    "Assistant replied, typing indicator, %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antwort des Assistenten, Eingabeanzeige, %@"
+          }
+        }
+      }
+    },
+    "Attached image" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angehängtes Bild"
+          }
+        }
+      }
+    },
+    "Blocks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blöcke"
+          }
+        }
+      }
+    },
+    "Campaign: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kampagne: %@"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        }
+      }
+    },
+    "Cancel extraction" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extraktion abbrechen"
+          }
+        }
+      }
+    },
+    "Character" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter"
+          }
+        }
+      }
+    },
+    "Checking model availability..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modellverfügbarkeit wird geprüft …"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        }
+      }
+    },
+    "Content policy prevented analysis." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Inhaltsrichtlinie hat die Analyse verhindert."
+          }
+        }
+      }
+    },
+    "Content policy prevented analysis. The PDF may contain inappropriate content." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Inhaltsrichtlinie hat die Analyse verhindert. Das PDF enthält möglicherweise unangemessene Inhalte."
+          }
+        }
+      }
+    },
+    "Content policy prevented extraction. The PDF may contain inappropriate content." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Inhaltsrichtlinie hat die Extraktion verhindert. Das PDF enthält möglicherweise unangemessene Inhalte."
+          }
+        }
+      }
+    },
+    "Content policy violation: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verstoß gegen die Inhaltsrichtlinie: %@"
+          }
+        }
+      }
+    },
+    "Context" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontext"
+          }
+        }
+      }
+    },
+    "Context summarized" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontext zusammengefasst"
+          }
+        }
+      }
+    },
+    "Context summary indicator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontextzusammenfassungsanzeige"
+          }
+        }
+      }
+    },
+    "Context window exceeded: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontextfenster überschritten: %@"
+          }
+        }
+      }
+    },
+    "Copy message" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nachricht kopieren"
+          }
+        }
+      }
+    },
+    "Create Generator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generator erstellen"
+          }
+        }
+      }
+    },
+    "Create a new campaign for DungeonSlayer under the mountain in an old deserted dwarven empire." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstelle eine neue DungeonSlayer-Kampagne unter dem Berg in einem alten, verlassenen Zwergenreich."
+          }
+        }
+      }
+    },
+    "Create generator named ${name}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generator mit dem Namen ${name} erstellen"
+          }
+        }
+      }
+    },
+    "Created \"%@\"." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ erstellt."
+          }
+        }
+      }
+    },
+    "Decoding Failure: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dekodierungsfehler: %@"
+          }
+        }
+      }
+    },
+    "Delete Answers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antworten löschen"
+          }
+        }
+      }
+    },
+    "Delete Generator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generator löschen"
+          }
+        }
+      }
+    },
+    "Delete answers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antworten löschen"
+          }
+        }
+      }
+    },
+    "Deleted ^[%lld generator](inflect: true)." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld Generator](inflect: true) gelöscht."
+          }
+        }
+      }
+    },
+    "Description" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beschreibung"
+          }
+        }
+      }
+    },
+    "Description extracted" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beschreibung extrahiert"
+          }
+        }
+      }
+    },
+    "Description pending" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beschreibung ausstehend"
+          }
+        }
+      }
+    },
+    "Dismiss" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fertig"
+          }
+        }
+      }
+    },
+    "Double-tap to access message options like copy and share" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doppeltippen, um Nachrichtenoptionen wie Kopieren und Teilen aufzurufen"
+          }
+        }
+      }
+    },
+    "Enable Apple Intelligence in System Settings to generate sheet content." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktiviere Apple Intelligence in den Systemeinstellungen, um Datenblattinhalte zu generieren."
+          }
+        }
+      }
+    },
+    "Enable Apple Intelligence in System Settings." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktiviere Apple Intelligence in den Systemeinstellungen."
+          }
+        }
+      }
+    },
+    "Error" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fehler"
+          }
+        }
+      }
+    },
+    "Extract" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extrahieren"
+          }
+        }
+      }
+    },
+    "Extract Information" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informationen extrahieren"
+          }
+        }
+      }
+    },
+    "Extract PDF Text" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF-Text extrahieren"
+          }
+        }
+      }
+    },
+    "Extract adventure blocks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuerblöcke extrahieren"
+          }
+        }
+      }
+    },
+    "Extracted %lld blocks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Blöcke extrahiert"
+          }
+        }
+      }
+    },
+    "Extracting PDF content with Apple Intelligence..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF-Inhalt wird mit Apple Intelligence extrahiert …"
+          }
+        }
+      }
+    },
+    "Extraction refused: %@ (category: %@). The PDF content may violate content policies." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extraktion abgelehnt: %@ (Kategorie: %@). Der PDF-Inhalt verstößt möglicherweise gegen Inhaltsrichtlinien."
+          }
+        }
+      }
+    },
+    "Extractor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extraktor"
+          }
+        }
+      }
+    },
+    "Failed to create language model session" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sprachmodellsitzung konnte nicht erstellt werden"
+          }
+        }
+      }
+    },
+    "Failed to decode PDF content: %@. The document may have unusual formatting." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der PDF-Inhalt konnte nicht dekodiert werden: %@. Das Dokument hat möglicherweise eine ungewöhnliche Formatierung."
+          }
+        }
+      }
+    },
+    "Failed to decode PDF summary: %@. The document may have unusual formatting." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die PDF-Zusammenfassung konnte nicht dekodiert werden: %@. Das Dokument hat möglicherweise eine ungewöhnliche Formatierung."
+          }
+        }
+      }
+    },
+    "Failed to decode response: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Antwort konnte nicht dekodiert werden: %@"
+          }
+        }
+      }
+    },
+    "Failed to decode result: %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Ergebnis konnte nicht dekodiert werden: %@."
+          }
+        }
+      }
+    },
+    "Failed to extract text from the PDF document." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text konnte nicht aus dem PDF-Dokument extrahiert werden."
+          }
+        }
+      }
+    },
+    "Failed to generate summary analysis: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Zusammenfassungsanalyse konnte nicht generiert werden: %@"
+          }
+        }
+      }
+    },
+    "Found %lld tags" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Tags gefunden"
+          }
+        }
+      }
+    },
+    "Generate" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generieren"
+          }
+        }
+      }
+    },
+    "Generate adventure" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer generieren"
+          }
+        }
+      }
+    },
+    "Generated Adventure" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generiertes Abenteuer"
+          }
+        }
+      }
+    },
+    "Generating block" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block wird generiert"
+          }
+        }
+      }
+    },
+    "Generating sheet content" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datenblattinhalt wird generiert"
+          }
+        }
+      }
+    },
+    "Generation Error: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generierungsfehler: %@"
+          }
+        }
+      }
+    },
+    "Generation Type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generierungstyp"
+          }
+        }
+      }
+    },
+    "Generator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generator"
+          }
+        }
+      }
+    },
+    "Generators" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generatoren"
+          }
+        }
+      }
+    },
+    "Guardrail Violation: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardrail-Verstoß: %@"
+          }
+        }
+      }
+    },
+    "Identified %lld sections" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Abschnitte erkannt"
+          }
+        }
+      }
+    },
+    "Instructions" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anweisungen"
+          }
+        }
+      }
+    },
+    "Invalid request: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungültige Anfrage: %@"
+          }
+        }
+      }
+    },
+    "Memory exceeded: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speicher überschritten: %@"
+          }
+        }
+      }
+    },
+    "Message copied to clipboard" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nachricht in die Zwischenablage kopiert"
+          }
+        }
+      }
+    },
+    "Missing prompt" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eingabe fehlt"
+          }
+        }
+      }
+    },
+    "Model assets are unavailable: %@. Please ensure Apple Intelligence is fully downloaded." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modellressourcen sind nicht verfügbar: %@. Stelle sicher, dass Apple Intelligence vollständig geladen wurde."
+          }
+        }
+      }
+    },
+    "Model assets unavailable: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modellressourcen nicht verfügbar: %@"
+          }
+        }
+      }
+    },
+    "Model assets unavailable: %@. Ensure Apple Intelligence is downloaded." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modellressourcen nicht verfügbar: %@. Stelle sicher, dass Apple Intelligence geladen wurde."
+          }
+        }
+      }
+    },
+    "Model not ready. Downloading or temporarily unavailable. Please wait, ensure sufficient battery and Wi-Fi." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell ist nicht bereit. Es wird geladen oder ist vorübergehend nicht verfügbar. Bitte warte und stelle eine ausreichende Batterieladung sowie eine WLAN-Verbindung sicher."
+          }
+        }
+      }
+    },
+    "Model refused to respond: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell hat die Antwort verweigert: %@"
+          }
+        }
+      }
+    },
+    "Model unavailable: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modell nicht verfügbar: %@"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "No Blocks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Blöcke"
+          }
+        }
+      }
+    },
+    "No note added." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Notiz hinzugefügt."
+          }
+        }
+      }
+    },
+    "Not Supported" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht unterstützt"
+          }
+        }
+      }
+    },
+    "Not selected" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht ausgewählt"
+          }
+        }
+      }
+    },
+    "Note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notiz"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "Open Generator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generator öffnen"
+          }
+        }
+      }
+    },
+    "Open When Created" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach dem Erstellen öffnen"
+          }
+        }
+      }
+    },
+    "Other error: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonstiger Fehler: %@"
+          }
+        }
+      }
+    },
+    "Output Language" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgabesprache"
+          }
+        }
+      }
+    },
+    "PDF content is too large for processing. Try a smaller document or fewer pages." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der PDF-Inhalt ist zu groß für die Verarbeitung. Versuche es mit einem kleineren Dokument oder weniger Seiten."
+          }
+        }
+      }
+    },
+    "PDF extraction schema contains unsupported constraint: %@. This is a developer error." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das PDF-Extraktionsschema enthält eine nicht unterstützte Einschränkung: %@. Dies ist ein Entwicklungsfehler."
+          }
+        }
+      }
+    },
+    "PDF summary schema contains unsupported constraint: %@. This is a developer error." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das PDF-Zusammenfassungsschema enthält eine nicht unterstützte Einschränkung: %@. Dies ist ein Entwicklungsfehler."
+          }
+        }
+      }
+    },
+    "Page %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seite %lld"
+          }
+        }
+      }
+    },
+    "Please wait for the assistant to finish typing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitte warte, bis der Assistent die Eingabe beendet hat"
+          }
+        }
+      }
+    },
+    "Provider failure: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbieterfehler: %@"
+          }
+        }
+      }
+    },
+    "Rate Limit exceeded: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ratenlimit überschritten: %@"
+          }
+        }
+      }
+    },
+    "Rate limit exceeded. Please try again in %@ seconds." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ratenlimit überschritten. Versuche es in %@ Sekunden erneut."
+          }
+        }
+      }
+    },
+    "Rate limit exceeded. Try again in %@ seconds." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ratenlimit überschritten. Versuche es in %@ Sekunden erneut."
+          }
+        }
+      }
+    },
+    "Rate limited: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ratenbegrenzung: %@"
+          }
+        }
+      }
+    },
+    "Reasoning: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überlegung: %@"
+          }
+        }
+      }
+    },
+    "Reference added" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Referenz hinzugefügt"
+          }
+        }
+      }
+    },
+    "Response generation failed: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Antwortgenerierung ist fehlgeschlagen: %@"
+          }
+        }
+      }
+    },
+    "Restore" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederherstellen"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speichern"
+          }
+        }
+      }
+    },
+    "Scenario: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Szenario: %@"
+          }
+        }
+      }
+    },
+    "Schema contains unsupported constraint: %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Schema enthält eine nicht unterstützte Einschränkung: %@."
+          }
+        }
+      }
+    },
+    "Search Generators" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generatoren durchsuchen"
+          }
+        }
+      }
+    },
+    "Select which extracted values to apply on the %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle aus, welche extrahierten Werte auf %@ angewendet werden sollen."
+          }
+        }
+      }
+    },
+    "Selected" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählt"
+          }
+        }
+      }
+    },
+    "Send message" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nachricht senden"
+          }
+        }
+      }
+    },
+    "Send prompt" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anfrage senden"
+          }
+        }
+      }
+    },
+    "Share message" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nachricht teilen"
+          }
+        }
+      }
+    },
+    "Share sheet opened" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilen-Dialog geöffnet"
+          }
+        }
+      }
+    },
+    "Sheet Blocks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datenblattblöcke"
+          }
+        }
+      }
+    },
+    "Sheet blocks and generated blocks will appear here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datenblattblöcke und generierte Blöcke werden hier angezeigt."
+          }
+        }
+      }
+    },
+    "Start" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start"
+          }
+        }
+      }
+    },
+    "Streaming completed but no complete content was received." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Streaming wurde abgeschlossen, aber es wurde kein vollständiger Inhalt empfangen."
+          }
+        }
+      }
+    },
+    "Streaming completed but no content was received." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Streaming wurde abgeschlossen, aber es wurde kein Inhalt empfangen."
+          }
+        }
+      }
+    },
+    "Streaming failed: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming fehlgeschlagen: %@"
+          }
+        }
+      }
+    },
+    "Summary extracted" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zusammenfassung extrahiert"
+          }
+        }
+      }
+    },
+    "Summary pending" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zusammenfassung ausstehend"
+          }
+        }
+      }
+    },
+    "Supported" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unterstützt"
+          }
+        }
+      }
+    },
+    "Table content is too large. Try a table with fewer entries." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Tabelleninhalt ist zu groß. Versuche es mit einer Tabelle mit weniger Einträgen."
+          }
+        }
+      }
+    },
+    "Tags" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tags"
+          }
+        }
+      }
+    },
+    "Take" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übernehmen"
+          }
+        }
+      }
+    },
+    "The PDF content is too large. Processing only the first portion." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der PDF-Inhalt ist zu groß. Nur der erste Teil wird verarbeitet."
+          }
+        }
+      }
+    },
+    "The PDF document is empty or contains no readable text." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das PDF-Dokument ist leer oder enthält keinen lesbaren Text."
+          }
+        }
+      }
+    },
+    "The PDF language is not supported by Apple Intelligence." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sprache des PDFs wird von Apple Intelligence nicht unterstützt."
+          }
+        }
+      }
+    },
+    "The language model is not ready yet. Please try again later." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Sprachmodell ist noch nicht bereit. Versuche es später erneut."
+          }
+        }
+      }
+    },
+    "The language model is unavailable for an unknown reason." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Sprachmodell ist aus einem unbekannten Grund nicht verfügbar."
+          }
+        }
+      }
+    },
+    "The table language is not supported by Apple Intelligence." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sprache der Tabelle wird von Apple Intelligence nicht unterstützt."
+          }
+        }
+      }
+    },
+    "This device does not support Apple Intelligence." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Gerät unterstützt Apple Intelligence nicht."
+          }
+        }
+      }
+    },
+    "This device is not eligible for Apple Intelligence. Please use a compatible device." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Gerät ist nicht für Apple Intelligence geeignet. Verwende bitte ein kompatibles Gerät."
+          }
+        }
+      }
+    },
+    "This is a summary of previous conversation context. Double-tap to interact with message options." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dies ist eine Zusammenfassung des vorherigen Gesprächskontexts. Doppeltippen, um die Nachrichtenoptionen aufzurufen."
+          }
+        }
+      }
+    },
+    "This message contains a summary of previous conversation context" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Nachricht enthält eine Zusammenfassung des vorherigen Gesprächskontexts"
+          }
+        }
+      }
+    },
+    "Title" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel"
+          }
+        }
+      }
+    },
+    "Title pending" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel ausstehend"
+          }
+        }
+      }
+    },
+    "Title unavailable" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel nicht verfügbar"
+          }
+        }
+      }
+    },
+    "Title: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel: %@"
+          }
+        }
+      }
+    },
+    "Too many concurrent analysis requests. Maximum allowed: %@. Please wait for current analyses to complete." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu viele gleichzeitige Analyseanfragen. Maximal zulässig: %@. Warte, bis die aktuellen Analysen abgeschlossen sind."
+          }
+        }
+      }
+    },
+    "Too many concurrent extraction requests. Maximum allowed: %@. Please wait for current extractions to complete." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu viele gleichzeitige Extraktionsanfragen. Maximal zulässig: %@. Warte, bis die aktuellen Extraktionen abgeschlossen sind."
+          }
+        }
+      }
+    },
+    "Too many concurrent requests (max %@). Please wait." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu viele gleichzeitige Anfragen (maximal %@). Bitte warte."
+          }
+        }
+      }
+    },
+    "Too many concurrent requests: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu viele gleichzeitige Anfragen: %@"
+          }
+        }
+      }
+    },
+    "Tool '%@' failed: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tool „%@“ fehlgeschlagen: %@"
+          }
+        }
+      }
+    },
+    "Tool Call Error: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tool-Aufruffehler: %@"
+          }
+        }
+      }
+    },
+    "Tool call failed: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tool-Aufruf fehlgeschlagen: %@"
+          }
+        }
+      }
+    },
+    "Total: %lld pages" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gesamt: %lld Seiten"
+          }
+        }
+      }
+    },
+    "Try again" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut versuchen"
+          }
+        }
+      }
+    },
+    "Type your message..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nachricht eingeben …"
+          }
+        }
+      }
+    },
+    "Type your request..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anfrage eingeben …"
+          }
+        }
+      }
+    },
+    "Unavailable capability: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht verfügbare Funktion: %@"
+          }
+        }
+      }
+    },
+    "Unexpected error: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unerwarteter Fehler: %@"
+          }
+        }
+      }
+    },
+    "Unknown generation error" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbekannter Generierungsfehler"
+          }
+        }
+      }
+    },
+    "Unsupported environment: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht unterstützte Umgebung: %@"
+          }
+        }
+      }
+    },
+    "Unsupported generation guide: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht unterstützte Generierungsanleitung: %@"
+          }
+        }
+      }
+    },
+    "Unsupported language/locale: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht unterstützte Sprache oder Region: %@"
+          }
+        }
+      }
+    },
+    "Untitled" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ohne Titel"
+          }
+        }
+      }
+    },
+    "Upgrade to use Apple Intelligence" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade durchführen, um Apple Intelligence zu verwenden"
+          }
+        }
+      }
+    },
+    "Welcome to the AI Assistant." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Willkommen beim KI-Assistenten."
+          }
+        }
+      }
+    },
+    "What note should be added?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welche Notiz soll hinzugefügt werden?"
+          }
+        }
+      }
+    },
+    "What should the generator be called?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie soll der Generator heißen?"
+          }
+        }
+      }
+    },
+    "Which generator instructions?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welche Generatoranweisungen?"
+          }
+        }
+      }
+    },
+    "Which generator?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcher Generator?"
+          }
+        }
+      }
+    },
+    "You said, %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihre Nachricht, %@"
+          }
+        }
+      }
+    },
+    "You said, context summary: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihre Nachricht, Kontextzusammenfassung: %@"
+          }
+        }
+      }
+    },
+    "You said, typing indicator, %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihre Nachricht, Eingabeanzeige, %@"
+          }
+        }
+      }
+    },
+    "Your current language %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuelle Sprache: %@"
+          }
+        }
+      }
+    },
+    "^[%lld Item](inflect: true)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld Element](inflect: true)"
+          }
+        }
+      }
+    },
+    "🔧 Calling tool: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔧 Tool wird aufgerufen: %@"
+          }
+        }
+      }
+    },
+    "🔧 Tool result: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔧 Tool-Ergebnis: %@"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}

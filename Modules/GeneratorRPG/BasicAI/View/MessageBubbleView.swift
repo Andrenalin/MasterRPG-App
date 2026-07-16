@@ -5,8 +5,14 @@ import FoundationModels
 
 struct MessageBubbleView: View {
     let message: ChatMessage
-    @State private var animateTyping = false
+    private let animatesTyping: Bool
+
     @AccessibilityFocusState private var isMessageFocused: Bool
+
+    init(message: ChatMessage, animatesTyping: Bool = true) {
+      self.message = message
+      self.animatesTyping = animatesTyping
+    }
 
   var body: some View {
     HStack {
@@ -72,20 +78,11 @@ struct MessageBubbleView: View {
         Circle()
           .fill(.secondary)
           .frame(width: 6, height: 6)
-          .scaleEffect(animateTyping ? 1.2 : 0.8)
-          .animation(
-            .easeInOut(duration: 0.6)
-              .repeatForever()
-              .delay(Double(index) * 0.2),
-            value: animateTyping
-          )
+          .scaleEffect(animatesTyping && index == 1 ? 1.2 : 0.8)
       }
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 8)
-    .onAppear {
-      animateTyping = true
-    }
     .accessibilityLabel(Text("Assistant is typing", bundle: .module))
     .accessibilityAddTraits(.updatesFrequently)
     #if os(iOS) || os(macOS)
@@ -132,35 +129,55 @@ struct MessageBubbleView: View {
   // MARK: - Accessibility Computed Properties
 
   private var accessibilityMessageLabel: String {
-    let sender = message.isFromUser ? "You said" : "Assistant replied"
     let timestamp = formatTimestampForAccessibility(message.timestamp)
 
     if message.content.characters.isEmpty {
-      return "\(sender), typing indicator, \(timestamp)"
+      if message.isFromUser {
+        return String(localized: "You said, typing indicator, \(timestamp)", bundle: .module)
+      }
+      return String(localized: "Assistant replied, typing indicator, \(timestamp)", bundle: .module)
     }
 
-    let contextPrefix = message.isContextSummary ? "Context summary: " : ""
-    return "\(sender), \(contextPrefix)\(timestamp)"
+    if message.isContextSummary {
+      if message.isFromUser {
+        return String(localized: "You said, context summary: \(timestamp)", bundle: .module)
+      }
+      return String(localized: "Assistant replied, context summary: \(timestamp)", bundle: .module)
+    }
+
+    if message.isFromUser {
+      return String(localized: "You said, \(timestamp)", bundle: .module)
+    }
+    return String(localized: "Assistant replied, \(timestamp)", bundle: .module)
   }
 
   private var accessibilityMessageValue: String {
     if message.content.characters.isEmpty {
-      return "Assistant is currently typing a response"
+      return String(localized: "Assistant is currently typing a response", bundle: .module)
     }
     return String(message.content.characters)
   }
 
   private var accessibilityMessageHint: String {
     if message.content.characters.isEmpty {
-      return "Please wait for the assistant to finish typing"
+      return String(
+        localized: "Please wait for the assistant to finish typing",
+        bundle: .module
+      )
     }
 
     if message.isContextSummary {
       return
-        "This is a summary of previous conversation context. Double-tap to interact with message options."
+        String(
+          localized: "This is a summary of previous conversation context. Double-tap to interact with message options.",
+          bundle: .module
+        )
     }
 
-    return "Double-tap to access message options like copy and share"
+    return String(
+      localized: "Double-tap to access message options like copy and share",
+      bundle: .module
+    )
   }
 
   private var accessibilityTraits: AccessibilityTraits {
@@ -193,7 +210,10 @@ struct MessageBubbleView: View {
       impactFeedback.impactOccurred()
 
       // Announce to VoiceOver
-      UIAccessibility.post(notification: .announcement, argument: "Message copied to clipboard")
+      UIAccessibility.post(
+        notification: .announcement,
+        argument: String(localized: "Message copied to clipboard", bundle: .module)
+      )
     #elseif os(macOS)
       NSPasteboard.general.setString(String(message.content.characters), forType: .string)
     #endif
@@ -221,7 +241,10 @@ struct MessageBubbleView: View {
         rootVC.present(activityVC, animated: true)
 
         // Announce to VoiceOver
-        UIAccessibility.post(notification: .announcement, argument: "Share sheet opened")
+        UIAccessibility.post(
+          notification: .announcement,
+          argument: String(localized: "Share sheet opened", bundle: .module)
+        )
       }
     #endif
   }
@@ -232,7 +255,7 @@ struct MessageBubbleView: View {
 #Preview("Message Bubbles") {
   ScrollView {
     VStack(spacing: 16) {
-      Text("Chat Message Examples")
+      Text(verbatim: "Chat Message Examples")
         .font(.headline)
         .padding()
 
@@ -253,10 +276,13 @@ struct MessageBubbleView: View {
         isFromUser: false
       ))
 
-      MessageBubbleView(message: ChatMessage(
-        content: "",
-        isFromUser: false
-      ))
+      MessageBubbleView(
+        message: ChatMessage(
+          content: "",
+          isFromUser: false
+        ),
+        animatesTyping: false
+      )
     }
     .padding()
   }
@@ -293,7 +319,10 @@ struct MessageBubbleView: View {
           isFromUser: false
         ))
 
-      MessageBubbleView(message: ChatMessage(content: "", isFromUser: false))
+      MessageBubbleView(
+        message: ChatMessage(content: "", isFromUser: false),
+        animatesTyping: false
+      )
     }
     .padding()
   }

@@ -3,22 +3,31 @@
 import SwiftUI
 
 public struct HarmonicButton: View {
-    public init() {}
+    public init(animates: Bool = true) {
+      self.animates = animates
+    }
+
+  private let animates: Bool
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
   public var body: some View {
     Button(
       action: {},
       label: {}
     )
     .frame(width: 240.0, height: 70.0)
-    .buttonStyle(HarmonicStyle())
+    .buttonStyle(HarmonicStyle(animates: animates && !reduceMotion))
+    .accessibilityHidden(true)
   }
 }
 
 #Preview {
-    HarmonicButton()
+    HarmonicButton(animates: false)
 }
 
 struct HarmonicStyle: ButtonStyle {
+  let animates: Bool
+
   @State private var scale: CGFloat = 1.0
 
   @State private var speedMultiplier: Double = 1.0
@@ -28,7 +37,7 @@ struct HarmonicStyle: ButtonStyle {
   private let updateInterval: Double = 0.016
   
   func makeBody(configuration: Configuration) -> some View {
-    TimelineView(.periodic(from: .now, by: updateInterval / speedMultiplier)) { context in
+    TimelineView(.animation(minimumInterval: updateInterval / speedMultiplier, paused: !animates)) { context in
       configuration.label
         .spatialWrap(Capsule(), lineWidth: 1.0)
         .background {
@@ -44,11 +53,12 @@ struct HarmonicStyle: ButtonStyle {
         .clipShape(Capsule())
         .scaleEffect(scale)
         .onChange(of: context.date) { _, _ in
+          guard animates else { return }
           elapsedTime += updateInterval * speedMultiplier
         }
     }
     .onChange(of: configuration.isPressed) { _, newValue in
-      withAnimation(.spring(duration: 0.3)) {
+      withAnimation(animates ? .spring(duration: 0.3) : nil) {
         amplitude = newValue ? 2.0 : 0.5
         speedMultiplier = newValue ? 2.0 : 1.0
         scale = newValue ? 0.95 : 1.0

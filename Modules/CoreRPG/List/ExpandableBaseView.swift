@@ -86,7 +86,7 @@ fileprivate extension View {
         ExpandableBaseView(
             animatableData: isExpanded ? 1 : 0,
             header: {
-                Text("Tap to expand/collapse")
+                Text(verbatim: "Tap to expand/collapse")
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
@@ -98,7 +98,7 @@ fileprivate extension View {
                     }
             },
             content: {
-                Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.")
+                Text(verbatim: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.")
                     .font(.body)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding()
@@ -110,7 +110,7 @@ fileprivate extension View {
         ExpandableBaseView(
             animatableData: isExpanded ? 1 : 0,
             header: {
-                Text("2. Tap to expand/collapse")
+                Text(verbatim: "2. Tap to expand/collapse")
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
@@ -122,7 +122,7 @@ fileprivate extension View {
                     }
             },
             content: {
-                Text("********* Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ****")
+                Text(verbatim: "********* Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ****")
                     .font(.headline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

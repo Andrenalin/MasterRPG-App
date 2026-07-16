@@ -20,6 +20,7 @@ struct ViewerRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.navigator) private var navigator
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var searchModel = PdfSearchModel()
 
@@ -81,7 +82,7 @@ struct ViewerRootView: View {
         .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
         .applyIf(configuration.aiExtractor == false) {
-            $0.navigationTitle(Text(model.name))
+            $0.navigationTitle(Text(verbatim: model.name))
                 .navigationBarTitleDisplayModeAll(.inline)
         }
         .onChange(of: model, initial: true) {
@@ -97,7 +98,7 @@ struct ViewerRootView: View {
                 }
                 let doc = await pdfTask.value
                 searchModel.pdfDoc = doc
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     searchModel.pdfId = id
                 }
             }
@@ -124,7 +125,12 @@ private extension ViewerRootView {
                 dismiss()
             }
         } label: {
-            Image(systemName: "xmark.circle")
+            Label {
+                Text("Close PDF", bundle: .module)
+            } icon: {
+                Image(systemName: "xmark.circle")
+            }
+            .labelStyle(.iconOnly)
         }
 #if os(macOS)
                 .foregroundStyle(root.config.module.tint)
@@ -163,4 +169,3 @@ private extension ViewerRootView {
     .frame(width: 800, height: 600)
 #endif
 }
-

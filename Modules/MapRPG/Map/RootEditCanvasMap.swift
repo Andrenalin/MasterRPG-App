@@ -5,20 +5,30 @@ import PhotoRPG
 import SwiftUI
 
 struct RootEditCanvasMap: View {
-    init(itemId: UUID, isTileEditor: Bool = false) {
+    init(
+        itemId: UUID,
+        isTileEditor: Bool = false,
+        initialImage: AKImage? = nil,
+        initialModel: MapModel? = nil,
+        loadsImage: Bool = true
+    ) {
         self.itemId = itemId
         self.isTileEditor = isTileEditor
+        self.loadsImage = loadsImage
+        self._image = State(wrappedValue: initialImage)
+        self._model = State(wrappedValue: initialModel ?? .empty(itemId))
     }
     
     let itemId: UUID
     let isTileEditor: Bool
+    private let loadsImage: Bool
 
     @Environment(MapRootModel.self) private var root
 
     @State private var image: AKImage?
     @State private var degrees: Double = 0
     @State private var dropPinModel = DropPinModel()
-    @State private var model: MapModel = .empty
+    @State private var model: MapModel
 
     var body: some View {
         GeometryReader { geo in
@@ -46,6 +56,7 @@ struct RootEditCanvasMap: View {
             updateModel()
         }
         .onChange(of: model.photoId, initial: true) {
+            guard loadsImage else { return }
             Task {
                 await reloadImage()
             }
@@ -81,4 +92,10 @@ struct RootEditCanvasMap: View {
     }
 }
 
-#Preview(traits: .mockData) { RootEditCanvasMap(itemId: MapModel.previewId) }
+#Preview(traits: .mockData) {
+    RootEditCanvasMap(
+        itemId: MapModel.previewId,
+        initialModel: .preview,
+        loadsImage: false
+    )
+}

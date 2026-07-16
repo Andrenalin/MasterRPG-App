@@ -12,6 +12,7 @@ struct NeedleMapPin: View {
 
     @Namespace var glassNamespace
     @GestureState private var isDragging = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var isSelected: Bool {
         entries.isSelected(index: index)
@@ -52,7 +53,11 @@ struct NeedleMapPin: View {
                 addPin()
             }
         } label: {
-            Label(type.label, systemImage: type.systemImage)
+            Label {
+                Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module)
+            } icon: {
+                Image(systemName: type.systemImage)
+            }
                 .labelStyle(.iconOnly)
                 .frame(width: 50, height: 50)
         }
@@ -67,6 +72,8 @@ struct NeedleMapPin: View {
         .offset(type.offset(expanded: isSelected, layoutDown: true))
         .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: isSelected)
         .opacity(isSelected ? 1 : 0)
+        .allowsHitTesting(isSelected)
+        .accessibilityHidden(!isSelected)
     }
 
     var needleView: some View {
@@ -133,6 +140,29 @@ struct NeedleMapPin: View {
             .frame(width: 44, height: 44)
             .zIndex(2)
             .gesture(combinedGesture)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(
+                Text("Map Area Point \(index + 1)", bundle: .module)
+            )
+            .accessibilityValue(coordinateAccessibilityValue)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction {
+                toggleSelection()
+            }
+#if !os(tvOS)
+            .accessibilityAction(named: Text("Move Left", bundle: .module)) {
+                movePointBy(x: -10, y: 0)
+            }
+            .accessibilityAction(named: Text("Move Right", bundle: .module)) {
+                movePointBy(x: 10, y: 0)
+            }
+            .accessibilityAction(named: Text("Move Up", bundle: .module)) {
+                movePointBy(x: 0, y: -10)
+            }
+            .accessibilityAction(named: Text("Move Down", bundle: .module)) {
+                movePointBy(x: 0, y: 10)
+            }
+#endif
             .onChange(of: isDragging) {
                 guard !isDragging else { return }
                 entries.selectedNeedleCoordinate = nil
@@ -146,9 +176,7 @@ struct NeedleMapPin: View {
 
     var combinedGesture: some Gesture {
         let tapGesture = TapGesture().onEnded {
-            withAnimation(.bouncy) {
-                entries.selectedNeedleIndex = isSelected ? nil : index
-            }
+            toggleSelection()
         }
 #if os(tvOS)
         return tapGesture
@@ -171,7 +199,29 @@ struct NeedleMapPin: View {
                 entries.selectedNeedleCoordinate = position
             }
     }
+
+    private func movePointBy(x: CGFloat, y: CGFloat) {
+        entries.update(
+            coordinate: CGPoint(x: coordinate.x + x, y: coordinate.y + y),
+            for: entryId,
+            at: index
+        )
+        updateCoordinate()
+    }
 #endif
+
+    private var coordinateAccessibilityValue: Text {
+        Text(
+            "X \(coordinate.x, format: .number.precision(.fractionLength(0))), Y \(coordinate.y, format: .number.precision(.fractionLength(0)))",
+            bundle: .module
+        )
+    }
+
+    private func toggleSelection() {
+        withAnimation(reduceMotion ? nil : .bouncy) {
+            entries.selectedNeedleIndex = isSelected ? nil : index
+        }
+    }
 
     private static let needlePath: Path = {
         var p = Path()

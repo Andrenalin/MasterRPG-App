@@ -10,9 +10,10 @@ struct DiceBag: View {
     let diceBagG: [DieModel] = [.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
 
     @Environment(DiceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        ScrollView(.horizontal) {
             VStack {
                 HStack(spacing: 8) {
                     diceBagView(for: diceBagA)
@@ -22,16 +23,21 @@ struct DiceBag: View {
                 }
             }
         }
+        .scrollIndicators(.hidden)
     }
 
     func diceBagView(for diceBag: [DieModel]) -> some View {
         ForEach(diceBag) { die in
             Button {
-                withAnimation { root.editController.add(die: die, itemId: model.id) }
+                withAnimation(reduceMotion ? nil : .default) {
+                    root.editController.add(die: die, itemId: model.id)
+                }
             } label: {
                 ThumbnailDice(die: die)
                     .padding(4)
             }
+            .accessibilityLabel(Text("Add \(die.die.text) die", bundle: .module))
+            .frame(minWidth: 44, minHeight: 44)
             .borderLessTVBottonStyle()
         }
     }

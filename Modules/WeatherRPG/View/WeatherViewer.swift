@@ -11,6 +11,10 @@ struct WeatherViewer: View {
     @Binding var isAnimating: Bool
 
     @Environment(WeatherRootModel.self) private var root
+    @Environment(\.accessibilityDimFlashingLights) private var accessibilityDimFlashingLights
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    @State private var lightningTrigger = 0
 
     let backgroundTopStops: [Gradient.Stop] = [
         .init(color: .midnightStart, location: 0),
@@ -90,7 +94,12 @@ struct WeatherViewer: View {
                     bottomTint: cloudBottomStops.interpolated(amount: model.time)
                 )
                 
-                LightningView(frequency: model.lightningFrequency, maximumBolts: Int(model.lightningMaxBolts), forkProbability: Int(model.lightningForkProbability))
+                LightningView(
+                    frequency: model.lightningFrequency,
+                    maximumBolts: Int(model.lightningMaxBolts),
+                    forkProbability: Int(model.lightningForkProbability),
+                    trigger: lightningTrigger
+                )
                 
                 if model.stormType != .none {
                     StormView(type: model.stormType, direction: .degrees(model.rainAngle), strength: Int(model.rainIntensity))
@@ -108,6 +117,19 @@ struct WeatherViewer: View {
         #endif
         }
         .frame(width: containerSize.width, height: containerSize.height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Weather preview for \(model.name)", bundle: .module))
+        .accessibilityValue(Text(verbatim: accessibilitySummary))
+        .accessibilityAddTraits(.isImage)
+        .accessibilityActions {
+            if canTriggerLightning {
+                Button {
+                    lightningTrigger &+= 1
+                } label: {
+                    Text("Trigger Lightning", bundle: .module)
+                }
+            }
+        }
         .onDisappear {
             isAnimating = false
         }
@@ -115,6 +137,32 @@ struct WeatherViewer: View {
 
     var containerSize: CGSize {
         CGSize(width: size.width > 0 ? size.width : 320, height: size.height > 0 ? size.height : 64)
+    }
+
+    private var accessibilitySummary: String {
+        let start = Calendar.current.startOfDay(for: .now)
+        let time = start
+            .addingTimeInterval(model.time * 24 * 60 * 60)
+            .formatted(date: .omitted, time: .shortened)
+        let clouds = String(localized: model.cloudThickness.localizedTitle)
+        let precipitation = String(localized: model.stormType.localizedTitle)
+        let intensity = model.rainIntensity.formatted(
+            .number.precision(.fractionLength(0))
+        )
+        let lightning = model.lightningFrequency.formatted(
+            .number.precision(.fractionLength(0))
+        )
+
+        return String(
+            localized: "Time: \(time); Clouds: \(clouds); Precipitation: \(precipitation); Intensity: \(intensity); Lightning: \(lightning) per minute",
+            bundle: .module
+        )
+    }
+
+    private var canTriggerLightning: Bool {
+        (isAnimating || useGame)
+        && !accessibilityReduceMotion
+        && !accessibilityDimFlashingLights
     }
 }
 

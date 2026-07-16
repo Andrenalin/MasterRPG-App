@@ -91,7 +91,7 @@ public struct PdfContentExtractionView: View {
                             Image(systemName: "doc.text.fill")
                                 .foregroundStyle(.blue)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(block.title)
+                                Text(verbatim: block.title)
                                     .font(.caption)
                                     .lineLimit(1)
                             }
@@ -117,7 +117,7 @@ public struct PdfContentExtractionView: View {
             Image(systemName: "exclamationmark.circle.fill")
                 .foregroundStyle(.red)
 
-            Text(error)
+            Text(verbatim: error)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 

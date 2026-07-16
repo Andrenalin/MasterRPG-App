@@ -28,7 +28,6 @@ struct AlbumArtworkView: View {
         .frame(width: size, height: size)
         .clipShape(.rect(cornerRadius: cornerRadius, style: .continuous))
         .shadow(radius: 2, y: 1)
-        .accessibilityLabel("Album Artwork")
         .accessibilityHidden(true) // Decorative image
     }
 }

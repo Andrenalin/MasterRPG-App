@@ -28,7 +28,9 @@ struct SearchListView: View {
         
         Group {
             if model.isSearching {
-                ProgressView("Searching...")
+                ProgressView {
+                    Text("Searching...", bundle: .module)
+                }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if model.searchText.isEmpty {
                 unavailableSearch
@@ -104,8 +106,8 @@ private extension SearchListView {
     
     func sectionHeader(module: NetworkModules, results: [SearchResult]) -> some View {
         HStack {
-            Text("\(Image(systemName: module.icon)) \(module.title)")
-            Text("(\(results.count))")
+            Text("\(Image(systemName: module.icon)) \(module.title)", bundle: .module)
+            Text("(\(results.count))", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

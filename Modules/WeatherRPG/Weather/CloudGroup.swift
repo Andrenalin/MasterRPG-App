@@ -11,10 +11,12 @@ import Foundation
 class CloudGroup {
     var clouds = [Cloud]()
     let opacity: Double
+    let deterministic: Bool
     var lastUpdate = Date.now
     var lastSize = CGSize.zero
 
-    init(thickness: Cloud.Thickness) {
+    init(thickness: Cloud.Thickness, deterministic: Bool = false) {
+        self.deterministic = deterministic
         let cloudsToCreate: Int
         let cloudScale: ClosedRange<Double>
 
@@ -51,7 +53,13 @@ class CloudGroup {
         }
 
         for i in 0 ..< cloudsToCreate {
-            let scale = Double.random(in: cloudScale)
+            let scale: Double
+            if deterministic {
+                let fraction = cloudsToCreate > 1 ? Double(i) / Double(cloudsToCreate - 1) : 0
+                scale = cloudScale.lowerBound + (cloudScale.upperBound - cloudScale.lowerBound) * fraction
+            } else {
+                scale = Double.random(in: cloudScale)
+            }
             let imageNumber = i % 8
 
             let cloud = Cloud(imageNumber: imageNumber, scale: scale)
@@ -60,6 +68,20 @@ class CloudGroup {
     }
 
     func update(date: Date, size: CGSize) {
+        if deterministic {
+            guard lastSize != size else { return }
+            let horizontalSpan = max(size.width + 200, 1)
+            let verticalSpan = max(size.height / 5 + 50, 1)
+            for (index, cloud) in clouds.enumerated() {
+                let x = Double(index * 73).truncatingRemainder(dividingBy: horizontalSpan) - 100
+                let y = Double(index * 37).truncatingRemainder(dividingBy: verticalSpan) - 50
+                cloud.position = CGPoint(x: x, y: y)
+            }
+            lastSize = size
+            lastUpdate = date
+            return
+        }
+
         if lastSize != size {
             clouds.forEach { $0.change(size: size) }
             lastSize = size

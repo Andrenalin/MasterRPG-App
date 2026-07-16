@@ -93,12 +93,19 @@ public final class AppModel: Sendable {
 
     let root: RootManager
     
-    @MainActor public init() {
+    @MainActor public convenience init() {
+        self.init(databaseModelOverride: nil, settingsModelOverride: nil)
+    }
+
+    @MainActor private init(
+        databaseModelOverride: DataBaseModel?,
+        settingsModelOverride: AppSettingsModel?
+    ) {
         let gameStateModel = AppGameStateModel()
         self.appGameStateModel = gameStateModel
         self.scenesManager = ScenesManager()
         self.optionKeyDownModel = OptionKeyDownModel()
-        self.settingsModel = AppSettingsModel()
+        self.settingsModel = settingsModelOverride ?? AppSettingsModel()
         
         self.inAppController = InAppController(model: inAppModel)
         
@@ -182,7 +189,7 @@ public final class AppModel: Sendable {
         self.weatherRoot = weatherRoot
         
 #if os(tvOS)
-        self.databaseModel = DataBaseModel(useCloudKit: false, currentActor: .mainApp)
+        self.databaseModel = databaseModelOverride ?? DataBaseModel(useCloudKit: false, currentActor: .mainApp)
         root = RootManager(
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,
@@ -198,7 +205,7 @@ public final class AppModel: Sendable {
         )
         
 #else
-        self.databaseModel = DataBaseModel(useCloudKit: settingsModel.useCloudKit, currentActor: .mainApp)
+        self.databaseModel = databaseModelOverride ?? DataBaseModel(useCloudKit: settingsModel.useCloudKit, currentActor: .mainApp)
         root = RootManager(
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,
@@ -433,9 +440,19 @@ extension AppModel {
 extension AppModel {
     @MainActor public static var preview: AppModel {
         let dbModel = DataBaseModel.preview
-        let model = AppModel()
+        let model = AppModel(
+            databaseModelOverride: dbModel,
+            settingsModelOverride: .previewFixture()
+        )
         model.setupRootModels(context: dbModel.context.unsafelyUnwrapped, batchContext: dbModel.batchContext, spotlightIndexer: nil, coreDataInitModel: nil)
         return model
     }
-    @MainActor public static let previewWithoutDatabase: AppModel = AppModel()
+    @MainActor public static var previewWithoutDatabase: AppModel {
+        let model = AppModel(
+            databaseModelOverride: DataBaseModel.previewWithOutSetup(),
+            settingsModelOverride: .previewFixture()
+        )
+        model.selectedExtendedModule = .maps
+        return model
+    }
 }

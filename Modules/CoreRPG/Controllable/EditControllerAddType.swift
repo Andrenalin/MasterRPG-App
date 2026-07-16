@@ -9,17 +9,17 @@ public enum EditControllerAddType: Equatable, Hashable, Sendable {
     case collection
     
     var title: String {
-        String(localized: localizedTitle).localizedString
+        String(localized: localizedTitle)
     }
     
     private var localizedTitle: LocalizedStringResource {
         switch self {
         case .item:
-            return "Add Item"
+            return LocalizedStringResource("Add Item", bundle: .module)
         case .folder:
-            return "Add Folder"
+            return LocalizedStringResource("Add Folder", bundle: .module)
         case .collection:
-            return "Add Collection"
+            return LocalizedStringResource("Add Collection", bundle: .module)
         }
     }
     

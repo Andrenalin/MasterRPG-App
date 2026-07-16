@@ -31,7 +31,10 @@ struct DetailFolderListView: View {
             DetailEditorView(model: model)
         }
         .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-            DiceOverlayView(model: model).opacity(0)
+            DiceOverlayView(model: model)
+                .opacity(0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
         .overlay(alignment: .bottom) {
             DiceOverlayView(model: model)

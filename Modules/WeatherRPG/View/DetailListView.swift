@@ -18,6 +18,7 @@ struct DetailListView: View {
     let folderListController: any FolderListControllable
 
     @State private var animate: Bool = false
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -52,7 +53,9 @@ struct DetailListView: View {
     var animateButton: some View {
         ControlGroup {
             Button {
-                withAnimation { animate.toggle() }
+                withAnimation(accessibilityReduceMotion ? nil : .default) {
+                    animate.toggle()
+                }
             } label: {
                 Label {
                     Text("Animate", bundle: .module)
@@ -60,6 +63,9 @@ struct DetailListView: View {
                     Image(systemName: "film\(animate ? ".fill" : "")")
                 }
             }
+            .accessibilityValue(
+                animate ? Text("On", bundle: .module) : Text("Off", bundle: .module)
+            )
             .contentTransition(.symbolEffect(.replace.wholeSymbol))
         }
     }

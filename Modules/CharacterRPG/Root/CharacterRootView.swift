@@ -6,13 +6,20 @@ import SwiftUI
 struct CharacterRootView: View {
     @Environment(CharacterRootModel.self) private var root
     @Environment(\.navigator) private var navigator
+    private let restoresState: Bool
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         
         ItemRootView(root: root.rootController)
             .overlay {
-                ItemStateRestorationView<CharacterRoute, CharacterRootModel>(root: root, keyPrefix: "Character")
+                if restoresState {
+                    ItemStateRestorationView<CharacterRoute, CharacterRootModel>(root: root, keyPrefix: "Character")
+                }
             }
             .onNavigationReceive { (route: CharacterRoute, navigator) in
                 guard let itemId = route.detail() else { return .cancel }
@@ -24,6 +31,6 @@ struct CharacterRootView: View {
 
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
-        CharacterRootView()
+        CharacterRootView(restoresState: false)
     }
 }

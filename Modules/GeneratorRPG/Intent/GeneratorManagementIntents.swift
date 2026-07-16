@@ -133,8 +133,7 @@ struct DeleteGeneratorIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: GeneratorEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) generator](inflect: true).")
-        return .result(dialog: "\(message)")
+        return .result(dialog: "Deleted ^[\(count) generator](inflect: true).")
     }
 }
 

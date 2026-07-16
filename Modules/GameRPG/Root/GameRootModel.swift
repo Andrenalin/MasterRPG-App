@@ -265,7 +265,7 @@ public final class GameRoot {
         if let selectedCharacter = gameModel.selectedCharacter {
             return characterRoot.linkControllable.name(for: selectedCharacter)
         } else {
-            return "Unknown"
+            return String(localized: "Unknown", bundle: .module)
         }
     }
 
@@ -373,9 +373,9 @@ extension GameRoot {
     private func name(for type: GameType) -> String {
         switch type {
         case .observer:
-            return "Observer"
+            return String(localized: "Observer", bundle: .module)
         case .proxy:
-            return "Proxy"
+            return String(localized: "Proxy", bundle: .module)
         default:
             return characterName
         }

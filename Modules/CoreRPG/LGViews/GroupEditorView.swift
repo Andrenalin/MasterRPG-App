@@ -91,6 +91,7 @@ struct GroupEditorView: View {
     let groupEditorController: GroupEditorController
     
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     enum FocusField {
         case name
@@ -114,7 +115,7 @@ struct GroupEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
-                        withAnimation { dismiss() }
+                        withAnimation(accessibilityReduceMotion ? nil : .default) { dismiss() }
                     } label: {
                         Image(systemName: "xmark")
                     }
@@ -160,12 +161,16 @@ private extension GroupEditorView {
             .focused($currentFocus, equals: .name)
 
             Button {
-                withAnimation { model.name = "" }
+                withAnimation(accessibilityReduceMotion ? nil : .default) { model.name = "" }
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.secondary)
             }
+            .frame(minWidth: 44, minHeight: 44)
+            .disabled(model.name.isEmpty)
             .opacity(model.name.isEmpty ? 0: 1)
+            .accessibilityHidden(model.name.isEmpty)
+            .accessibilityLabel(Text("Clear name", bundle: .module))
             .contentTransition(.symbolEffect(.automatic))
         }
         .padding(.bottom, 6)

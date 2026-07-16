@@ -13,6 +13,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     @State private var isDropTargeted: Bool = false
     @State private var isSaving: Bool = false
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     var body: some View {
         HStack(spacing: 12) {
@@ -30,7 +31,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
 
     private var dismissButton: some View {
         Button {
-            withAnimation { editorModel.entryId = nil }
+            withAnimation(accessibilityReduceMotion ? nil : .default) { editorModel.entryId = nil }
         } label: {
             Image(systemName: "xmark")
         }
@@ -73,7 +74,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
             content: editModel.text
         )
         
-        withAnimation { editorModel.entryId = nil }
+        withAnimation(accessibilityReduceMotion ? nil : .default) { editorModel.entryId = nil }
     }
     
     // MARK: - Drop Link Button
@@ -103,7 +104,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
             handleDrop(items: items)
             return true
         } isTargeted: { isTargeted in
-            withAnimation(.snappy(duration: 0.2)) {
+            withAnimation(accessibilityReduceMotion ? nil : .snappy(duration: 0.2)) {
                 isDropTargeted = isTargeted
             }
         }

@@ -70,9 +70,17 @@ struct WindowUtilityList: Scene {
 #if os(macOS) || os(visionOS)
             BaseWindow("Game Statistics", id: SceneId.gameStatistics.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    ManagedNavigationStack(name: "Game Statistics") {
+                    ManagedNavigationStack(name: String(localized: "Game Statistics", bundle: .main)) {
                         GameFactory.statisticsView(root: appModel.gameRoot)
                     }
+#if os(macOS)
+                    .frame(
+                        minWidth: 900,
+                        idealWidth: 1_000,
+                        minHeight: 600,
+                        idealHeight: 720
+                    )
+#endif
                     .sceneTracker(for: SceneId.gameStatistics)
                     .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .game))
                 }
@@ -114,28 +122,6 @@ struct WindowUtilityList: Scene {
 #endif
         }
         .defaultSize(CGSize(width: 600, height: 800))
-    }
-}
-
-private struct GeneratorAdventureWindowContent: View {
-    let appModel: AppModel
-    let selection: WindowItemSelection?
-
-    private var windowSelection: WindowItemSelection? {
-        selection ?? appModel.adventureRoot.currentSelectedItemId.map { WindowItemSelection(itemId: $0) }
-    }
-
-    var body: some View {
-        switch windowSelection {
-        case .some(let windowSelection):
-            appModel.adventureRoot.viewController.generatorView(root: appModel.adventureRoot, selection: windowSelection)
-        case .none:
-            ContentUnavailableView {
-                Label("No Adventure Selected", systemImage: NetworkModules.adventure.icon)
-            } description: {
-                Text("Select an adventure before opening the AI Assistant.")
-            }
-        }
     }
 }
 

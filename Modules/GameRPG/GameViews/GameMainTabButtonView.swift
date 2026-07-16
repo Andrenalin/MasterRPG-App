@@ -21,10 +21,11 @@ struct GameMainTabButtonView: View {
     @Binding var displayMode: GameMainTabDisplayMode
     
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     var body: some View {
         Button {
-            withAnimation {
+            withAnimation(accessibilityReduceMotion ? nil : .default) {
                 cycleDisplayMode()
             }
         } label: {
@@ -32,6 +33,7 @@ struct GameMainTabButtonView: View {
         }
         .selectedBorderedStype(isSelected: displayMode != .hidden)
         .help(helpText)
+        .accessibilityLabel(helpText)
     }
     
     private var iconName: String {
@@ -45,14 +47,14 @@ struct GameMainTabButtonView: View {
         }
     }
     
-    private var helpText: String {
+    private var helpText: Text {
         switch displayMode {
         case .hidden:
-            return "Show game view inline"
+            return Text("Show game view inline", bundle: .module)
         case .inline:
-            return "Open game view in window"
+            return Text("Open game view in window", bundle: .module)
         case .window:
-            return "Hide game view"
+            return Text("Hide game view", bundle: .module)
         }
     }
     
@@ -68,30 +70,6 @@ struct GameMainTabButtonView: View {
     }
 }
 
-// MARK: - iOS/iPadOS/tvOS Simple Toggle Button
-
-/// Simple toggle button for iOS, iPadOS, and tvOS (show/hide only)
-struct GameMainTabToggleButtonView: View {
-    let isMaster: Bool
-    @Binding var isShown: Bool
-    
-    var body: some View {
-        Button {
-            withAnimation {
-                isShown.toggle()
-            }
-        } label: {
-            Image(systemName: NetworkModules.game.icon)
-#if os(iOS)
-                .frame(height: 24)
-#endif
-        }
-        .selectedBorderedStype(isSelected: isShown)
-    }
-}
-
-// MARK: - Previews
-
 #Preview("Three-State (macOS/visionOS)") {
     HStack {
         GameMainTabButtonView(isMaster: true, displayMode: .constant(.hidden))
@@ -101,13 +79,3 @@ struct GameMainTabToggleButtonView: View {
     .padding()
     .background(.ultraThinMaterial)
 }
-
-#Preview("Toggle (iOS/tvOS)") {
-    HStack {
-        GameMainTabToggleButtonView(isMaster: true, isShown: .constant(false))
-        GameMainTabToggleButtonView(isMaster: true, isShown: .constant(true))
-    }
-    .padding()
-    .background(.ultraThinMaterial)
-}
-

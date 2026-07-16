@@ -11,7 +11,7 @@ import SwiftUI
 struct OpenTableIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open Table"
 
-    @Parameter(title: "Table", requestValueDialog: "Which Table?")
+    @Parameter(title: "Table", requestValueDialog: "Which table?")
     var target: TableEntity
 
     @Dependency var navigator: Navigator

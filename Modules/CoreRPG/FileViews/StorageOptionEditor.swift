@@ -4,6 +4,7 @@ import SwiftUI
 
 struct StorageOptionEditor: View {
     @Environment(AppSettingsModel.self) private var appSettings
+    @Environment(\.cloudKitAccountChecksEnabled) private var cloudKitAccountChecksEnabled
     
     @State private var showExitAlert = false
     @State private var useCloudKit = false
@@ -50,6 +51,7 @@ struct StorageOptionEditor: View {
             Text("Settings about the Database storage. You can switch back and furth, the database will not be removed. If you like you can export the current database and import it the other one. Use iCloud if you want automatical sync between the devices.", bundle: .module)
         }
         .task {
+            guard cloudKitAccountChecksEnabled else { return }
             iCloudAvailable = await CloudKitAccountController.checkAccountStatus()
         }
     }
@@ -62,4 +64,23 @@ struct StorageOptionEditor: View {
 
 #Preview {
     StorageOptionEditor()
+        .environment(AppSettingsModel.previewFixture())
+        .cloudKitAccountChecksEnabled(false)
+}
+
+private struct CloudKitAccountChecksEnabledKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+private extension EnvironmentValues {
+    var cloudKitAccountChecksEnabled: Bool {
+        get { self[CloudKitAccountChecksEnabledKey.self] }
+        set { self[CloudKitAccountChecksEnabledKey.self] = newValue }
+    }
+}
+
+public extension View {
+    func cloudKitAccountChecksEnabled(_ enabled: Bool) -> some View {
+        environment(\.cloudKitAccountChecksEnabled, enabled)
+    }
 }

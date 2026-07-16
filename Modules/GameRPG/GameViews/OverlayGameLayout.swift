@@ -12,6 +12,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {
     let toolBarOverlay: () -> ToolBar
     
     @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -41,58 +42,11 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {
         .padding(.horizontal, 4)
         .padding(.trailing, valueFor(iOS: 0, macOS: 0, tvOS: 0, visionOS: 20))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .animation(.bouncy, value: gameScreenModel.showDice)
+        .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showDice)
         .onAppear {
             guard hideDice == false && !gameScreenModel.showDice else { return }
             gameScreenModel.showDice.toggle()
         }
-    }
-}
-
-private struct OverlayGameSideContent<Side: View, ToolBar: View, Dice: View>: View {
-    let side: Side
-    let toolbar: ToolBar
-    let dice: Dice
-    let showsDice: Bool
-
-    var body: some View {
-        HStack {
-            side
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-        .overlay(alignment: .topLeading) {
-#if !os(visionOS)
-            if showsDice {
-                dice
-                    .transition(.move(edge: .leading))
-            }
-#endif
-        }
-        .overlay(alignment: .bottomLeading) {
-            toolbar
-                .padding(.bottom, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
-        }
-    }
-}
-
-struct GameDiceToggleButton: View {
-    @Environment(GameScreenModel.self) private var gameScreenModel
-
-    var body: some View {
-        Button {
-            withAnimation {
-                gameScreenModel.showDice.toggle()
-            }
-        } label: {
-            Label {
-                Text(gameScreenModel.showDice ? "Hide Dice" : "Show Dice", bundle: .module)
-            } icon: {
-                Image(systemName: "bag\(gameScreenModel.showDice ? ".fill" : "")")
-                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
-            }
-            .labelStyle(.iconOnly)
-        }
-        .help(Text(gameScreenModel.showDice ? "Hide Dice" : "Show Dice", bundle: .module))
     }
 }
 

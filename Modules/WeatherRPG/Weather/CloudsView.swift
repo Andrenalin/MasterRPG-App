@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct CloudsView: View {
-    init(thickness: Cloud.Thickness, topTint: Color, bottomTint: Color) {
-        cloudGroup = CloudGroup(thickness: thickness)
+    init(thickness: Cloud.Thickness, topTint: Color, bottomTint: Color, deterministic: Bool = false) {
+        cloudGroup = CloudGroup(thickness: thickness, deterministic: deterministic)
         self.topTint = topTint
         self.bottomTint = bottomTint
     }
@@ -18,8 +18,10 @@ struct CloudsView: View {
     let topTint: Color
     let bottomTint: Color
 
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     var body: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(paused: accessibilityReduceMotion)) { timeline in
             Canvas { context, size in
                 cloudGroup.update(date: timeline.date, size: size)
                 context.opacity = cloudGroup.opacity
@@ -49,7 +51,7 @@ struct CloudsView: View {
 }
 
 #Preview {
-    CloudsView(thickness: .regular, topTint: .sunriseCloudStart, bottomTint: .sunriseCloudEnd)
+    CloudsView(thickness: .regular, topTint: .sunriseCloudStart, bottomTint: .sunriseCloudEnd, deterministic: true)
         .frame(width: 400, height: 200)
         .background(.blue)
 }

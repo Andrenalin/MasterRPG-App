@@ -175,7 +175,7 @@ extension SpaceModel: nonisolated ItemDiffComparable {
 extension SpaceModel {
     @MainActor public var reviewProperties: [ReviewCustomProperty] {
         [
-            ReviewCustomProperty(displayName: "Rotation") {
+            ReviewCustomProperty(displayName: String(localized: "Rotation", bundle: .module)) {
                 ReviewPropertyValue(($0 as? SpaceModel)?.degrees ?? 0)
             }
         ]

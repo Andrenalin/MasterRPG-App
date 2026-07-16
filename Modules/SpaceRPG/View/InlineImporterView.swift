@@ -16,8 +16,13 @@ enum ImporterButtonType: String {
         }
     }
     
-    var label: String {
-        self.rawValue.capitalized
+    var localizedLabel: LocalizedStringResource {
+        switch self {
+        case .file:
+            LocalizedStringResource("File", bundle: .module)
+        case .scanner:
+            LocalizedStringResource("3D Scanner", bundle: .module)
+        }
     }
     
     var duration: CGFloat {
@@ -70,6 +75,7 @@ struct InlineImporterView: View, Equatable {
     let layoutDown: Bool
     
     @Environment(SpaceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var canScan: Bool = false
     
     @Namespace var glassNamespace
@@ -95,7 +101,7 @@ struct InlineImporterView: View, Equatable {
             button(type: .scanner)
             
             Button {
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     isExpanded.toggle()
                 }
             } label: {
@@ -140,18 +146,27 @@ struct InlineImporterView: View, Equatable {
                 showScanner.toggle()
             }
         } label: {
-            Label(type.label, systemImage: type.systemImage)
+            Label {
+                Text(type.localizedLabel)
+            } icon: {
+                Image(systemName: type.systemImage)
+            }
                 .labelStyle(.iconOnly)
                 .frame(width: 50, height: 50)
                 .opacity(isExpanded ? 1 : 0)
         }
+        .allowsHitTesting(isExpanded)
+        .accessibilityHidden(!isExpanded)
         .borderLessTVBottonStyle()
 #if !os(visionOS)
         .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
-        .glassEffectID(type.label, in: glassNamespace)
+        .glassEffectID(type.rawValue, in: glassNamespace)
 #endif
         .offset(type.offset(expanded: isExpanded, layoutDown: layoutDown))
-        .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: isExpanded)
+        .animation(
+            reduceMotion ? nil : .spring(duration: type.duration * 3, bounce: 0.2),
+            value: isExpanded
+        )
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

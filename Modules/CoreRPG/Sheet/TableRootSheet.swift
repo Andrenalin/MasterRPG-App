@@ -39,7 +39,7 @@ public struct TableRootSheet: View {
             .toolbar {
                 toolbarContent
             }
-            .navigationTitle(Text(sheetRootModel.sheetModel.name))
+            .navigationTitle(Text(verbatim: sheetRootModel.sheetModel.name))
     }
 }
 
@@ -63,6 +63,7 @@ private extension TableRootSheet {
         } label: {
             Image(systemName: "xmark.circle")
         }
+        .accessibilityLabel(Text("Close", bundle: .module))
     }
 }
 

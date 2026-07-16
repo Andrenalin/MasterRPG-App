@@ -668,7 +668,10 @@ extension EditController {
         if groupItem.groupId == nil {
             groupItem.displayState = 0 // make this visible (or should I remove it?
         }
-        save(updated: groupItem, message: "Reparing group item")
+        save(
+            updated: groupItem,
+            message: String(localized: "Repairing group item", bundle: .module).localizedString
+        )
         guard let owners, owners.count > 1 else { return }
         for ownerId in owners.dropFirst() {
             removeOld(groupItemId: itemId, valueId: ownerId)

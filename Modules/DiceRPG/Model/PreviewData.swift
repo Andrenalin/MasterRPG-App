@@ -8,32 +8,33 @@ public extension DiceRootModel {
     static let previewDiceId = DiceModel.previewId
     
     @MainActor
-    static let preview: DiceRootModel = {
+    static let preview: DiceRootModel = previewFixture()
+
+    @MainActor
+    internal static func previewFixture(
+        models: [DiceModel] = DiceModel.previewFixtures,
+        focusedID: UUID? = DiceModel.previewId
+    ) -> DiceRootModel {
         let root = DiceRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let realRootManager = RootManager.preview(fake: root.rootController)
         root.setUp(context: nil, batchContext: nil, rootManager: realRootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: realRootManager))
-        root.itemController.replace(model: DiceModel.preview, isInsert: true)
+        for model in models {
+            root.itemController.replace(model: model, isInsert: true)
+        }
+        root.itemController.diceBag.dice = DieModel.previewBagDice
         root.editController.setCurrentItem(to: .preview)
-
-        Task {
-            await _ = root.gameController.setCurrent(itemId: DiceModel.previewId)
+        if let focusedID, let focusedModel = models.first(where: { $0.id == focusedID }) {
+            root.gameController.setGame(item: focusedModel.copy(), itemId: focusedID)
+            root.gameController.gameModel.focusItemIds = [focusedID]
         }
         return root
-    }()
+    }
     
     @MainActor
     static func preview(id: UUID) -> DiceRootModel {
-        let root = DiceRootModel(tagController: .preview)
-        let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
-        root.itemController.replace(model: DiceModel.preview, isInsert: true)
-        root.editController.setCurrentItem(to: .preview)
-        Task {
-            _ = await root.gameController.setCurrent(itemId: id)
-        }
-        return root
+        previewFixture(focusedID: id)
     }
     
     @MainActor
@@ -101,9 +102,9 @@ extension ItemController {
     
     @MainActor
     static func setPreviewData(for controller: ItemController) async {
-        controller.replace(model: DiceModel.preview, isInsert: false)
-        controller.replace(model: DiceModel.diceERPS, isInsert: false)
-        controller.replace(model: DiceModel.diceCoC, isInsert: false)
+        for model in DiceModel.previewFixtures {
+            controller.replace(model: model, isInsert: true)
+        }
     }
 }
 
@@ -143,7 +144,7 @@ extension LinkController {
 
 // MARK: Preview - Test
 extension DiceModel {
-    nonisolated static let previewId = UUID(uuidString: "2201FBB7-0403-4A18-A361-CAD5A76A637D")!
+    nonisolated static let previewId = UUID(uuid: (0x22, 0x01, 0xFB, 0xB7, 0x04, 0x03, 0x4A, 0x18, 0xA3, 0x61, 0xCA, 0xD5, 0xA7, 0x6A, 0x63, 0x7D))
     // nonisolated: consumed by the (nonisolated) widget configuration default.
     nonisolated static public let preview = previewSnapshot.makeModel()
     nonisolated static public let previewSnapshot = DiceSnapshot(
@@ -155,8 +156,9 @@ extension DiceModel {
         displayState: 0,
         dice: [
             DieModel(
-                id: UUID(uuidString: "87C7E292-DEFA-456B-B009-341EDE859689")!,
+                id: UUID(uuid: (0x87, 0xC7, 0xE2, 0x92, 0xDE, 0xFA, 0x45, 0x6B, 0xB0, 0x09, 0x34, 0x1E, 0xDE, 0x85, 0x96, 0x89)),
                 die: RawDie.twenty,
+                color: DieModel.ColorCode.G.rawValue,
                 rotation: 0.0,
                 result: [],
                 displayState: 0
@@ -177,7 +179,7 @@ extension DiceModel {
         resultCategory: nil
     )
     
-    static let uuidCoC = UUID(uuidString: "4401FBB7-0403-4A18-A361-CAD5A76A637D")!
+    static let uuidCoC = UUID(uuid: (0x44, 0x01, 0xFB, 0xB7, 0x04, 0x03, 0x4A, 0x18, 0xA3, 0x61, 0xCA, 0xD5, 0xA7, 0x6A, 0x63, 0x7D))
     static let diceCoC: DiceModel = .init(
         id: uuidCoC,
         name: "CoC",
@@ -187,14 +189,14 @@ extension DiceModel {
         displayState: 0,
         dice: [
             DieModel(
-                id: UUID(uuidString: "815BFF42-1DB4-4F6D-9612-AA52A4B3E200")!,
+                id: UUID(uuid: (0x81, 0x5B, 0xFF, 0x42, 0x1D, 0xB4, 0x4F, 0x6D, 0x96, 0x12, 0xAA, 0x52, 0xA4, 0xB3, 0xE2, 0x00)),
                 die: RawDie.ten,
                 rotation: 0.0,
                 result: [],
                 displayState: 0
             ),
             DieModel(
-                id: UUID(uuidString: "4CC89BC8-1290-41AE-9FAE-E98EA5D0F34C")!,
+                id: UUID(uuid: (0x4C, 0xC8, 0x9B, 0xC8, 0x12, 0x90, 0x41, 0xAE, 0x9F, 0xAE, 0xE9, 0x8E, 0xA5, 0xD0, 0xF3, 0x4C)),
                 die: RawDie.ten,
                 rotation: 0.0,
                 result: [],
@@ -216,7 +218,7 @@ extension DiceModel {
         resultCategory: nil
     )
     
-    static let uuidERPS = UUID(uuidString: "9856EA10-FC63-446F-9F90-F4097B8F7A15")!
+    static let uuidERPS = UUID(uuid: (0x98, 0x56, 0xEA, 0x10, 0xFC, 0x63, 0x44, 0x6F, 0x9F, 0x90, 0xF4, 0x09, 0x7B, 0x8F, 0x7A, 0x15))
     static let diceERPS: DiceModel = .init(
         id: uuidERPS,
         name: "ERPS",
@@ -226,14 +228,14 @@ extension DiceModel {
         displayState: 0,
         dice: [
             DieModel(
-                id: UUID(uuidString: "CAE4EFCB-D079-4249-8378-B01E0953686B")!,
+                id: UUID(uuid: (0xCA, 0xE4, 0xEF, 0xCB, 0xD0, 0x79, 0x42, 0x49, 0x83, 0x78, 0xB0, 0x1E, 0x09, 0x53, 0x68, 0x6B)),
                 die: RawDie.ten,
                 rotation: 0.0,
                 result: [],
                 displayState: 0
             ),
             DieModel(
-                id: UUID(uuidString: "1EA396F4-8B11-4B29-9F22-0B3EA29C35AC")!,
+                id: UUID(uuid: (0x1E, 0xA3, 0x96, 0xF4, 0x8B, 0x11, 0x4B, 0x29, 0x9F, 0x22, 0x0B, 0x3E, 0xA2, 0x9C, 0x35, 0xAC)),
                 die: RawDie.ten,
                 rotation: 0.0,
                 result: [],
@@ -255,7 +257,74 @@ extension DiceModel {
         resultCategory: nil
     )
     
-    static var diceList: [DiceModel] {
-        [diceCoC, preview, diceERPS]
+    @MainActor
+    static var previewFixtures: [DiceModel] {
+        [previewSnapshot.makeModel(), diceCoC.copy(), diceERPS.copy()]
     }
+
+    @MainActor
+    static var diceList: [DiceModel] {
+        previewFixtures
+    }
+}
+
+extension DieModel {
+    nonisolated static let previewDisplayTen = DieModel(
+        id: UUID(uuid: (0xD1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)),
+        die: .ten,
+        color: ColorCode.G.rawValue
+    )
+
+    nonisolated static let previewDisplayTwenty = DieModel(
+        id: UUID(uuid: (0xD1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2)),
+        die: .twenty,
+        color: ColorCode.A.rawValue
+    )
+
+    nonisolated static let previewDisplaySuccess = DieModel(
+        id: UUID(uuid: (0xD1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)),
+        die: .twenty,
+        color: ColorCode.G.rawValue,
+        result: [20, 1]
+    )
+
+    nonisolated static let previewDisplayFailure = DieModel(
+        id: UUID(uuid: (0xD1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4)),
+        die: .twenty,
+        color: ColorCode.G.rawValue,
+        result: [7, 20]
+    )
+
+    nonisolated static let previewBagDice: [DieModel] = [
+        DieModel(
+            id: UUID(uuid: (0xD2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)),
+            die: .four,
+            color: ColorCode.G.rawValue
+        ),
+        DieModel(
+            id: UUID(uuid: (0xD2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2)),
+            die: .six,
+            color: ColorCode.G.rawValue
+        ),
+        DieModel(
+            id: UUID(uuid: (0xD2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)),
+            die: .eight,
+            color: ColorCode.G.rawValue
+        ),
+        DieModel(
+            id: UUID(uuid: (0xD2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4)),
+            die: .ten,
+            color: ColorCode.G.rawValue
+        ),
+        DieModel(
+            id: UUID(uuid: (0xD2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5)),
+            die: .twelve,
+            color: ColorCode.G.rawValue
+        ),
+        DieModel(
+            id: UUID(uuid: (0xD2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6)),
+            die: .twenty,
+            color: ColorCode.G.rawValue
+        )
+    ]
 }

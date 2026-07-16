@@ -10,8 +10,10 @@ import SwiftUI
 struct StormView: View {
     let storm: Storm
 
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     var body: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(paused: accessibilityReduceMotion)) { timeline in
             Canvas { context, size in
                 storm.update(date: timeline.date, size: size)
 

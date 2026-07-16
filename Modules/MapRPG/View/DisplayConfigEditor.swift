@@ -11,6 +11,7 @@ struct DisplayConfigEditor: View {
     
     @Environment(\.navigator) private var navigator
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var color = Color.black
     @State private var borderToggleEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
@@ -29,11 +30,13 @@ struct DisplayConfigEditor: View {
             DisplayConfigBorderEditor(model: model)
                 .opacity(model.displayConfig.hasBorder ? 1 : 0)
                 .frame(maxHeight: model.displayConfig.hasBorder ? .infinity : 1)
+                .allowsHitTesting(model.displayConfig.hasBorder)
+                .accessibilityHidden(!model.displayConfig.hasBorder)
 #endif
         } header: {
             Text("Config", bundle: .module)
         }
-        .animation(.default, value: model.displayConfig.hasBorder)
+        .animation(reduceMotion ? nil : .default, value: model.displayConfig.hasBorder)
         .onChange(of: model.id, initial: true) {
 #if !os(tvOS)
             resetColor()
@@ -78,7 +81,7 @@ struct DisplayConfigEditor: View {
     @ViewBuilder private var activateBorderView: some View {
         ToggleEditor(model: borderToggleEditModel, title: "Activate Border", bundle: .module, icon: "rectangle")
             .onChange(of: model.displayConfig.hasBorder) {
-                withAnimation { updateToggleValue() }
+                withAnimation(reduceMotion ? nil : .default) { updateToggleValue() }
             }
     }
     
@@ -104,13 +107,14 @@ struct DisplayConfigEditor: View {
                         .frame(maxWidth: 120, maxHeight: 80)
                         .background(Color.secondary.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .accessibilityLabel(Text("Cover tile", bundle: .module))
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
                         )
                         .overlay(alignment: .topTrailing) {
                             Button(role: .destructive) {
-                                withAnimation {
+                                withAnimation(reduceMotion ? nil : .default) {
                                     clearTileCoordinates()
                                 }
                             } label: {
@@ -119,6 +123,7 @@ struct DisplayConfigEditor: View {
                                     .foregroundStyle(.white, .red, .red)
                             }
                             .accessibilityLabel(Text("Remove Tile", bundle: .module))
+                            .frame(minWidth: 44, minHeight: 44)
                             .borderLessTVBottonStyle()
                             .padding(4)
                             .contentShape(.circle)
@@ -126,6 +131,8 @@ struct DisplayConfigEditor: View {
                             .glassEffect(.regular.interactive())
 #endif
                             .opacity(model.displayConfig.tileCoordinates.isEmpty ? 0.0 : 1.0)
+                            .allowsHitTesting(!model.displayConfig.tileCoordinates.isEmpty)
+                            .accessibilityHidden(model.displayConfig.tileCoordinates.isEmpty)
                         }
                 }
                 Spacer()
@@ -138,7 +145,11 @@ struct DisplayConfigEditor: View {
                     navigator.navigate(to: MapEditorRoute.mapTileEditor(model.id))
 #endif
                 } label: {
-                    Label("Edit cover tile", systemImage: "rectangle.dashed")
+                    Label {
+                        Text("Edit cover tile", bundle: .module)
+                    } icon: {
+                        Image(systemName: "rectangle.dashed")
+                    }
                 }
                 .buttonStyle(.borderless)
                 .tint(root.configurable.module.tint)

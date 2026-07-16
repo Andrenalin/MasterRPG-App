@@ -16,55 +16,23 @@ public final class DiceDisplayModel {
     public var showDiceValueEditor: Bool
 }
 
-#Preview(traits: .mockData) {
-    DiceFocusActionBar()
-}
-
-#Preview(traits: .mockData) {
-    DiceFocusResult()
-}
-
 struct DiceFocusRoll: View {
     @Environment(DiceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var itemId = UUID()
     
     var body: some View {
         DiceOverlay(item: ItemRowTreeModel(itemId: itemId, typeId: root.itemController.config.module), showFocusButton: false, canShowPlayer: false, hideOwnDice: false, alignIsVertical: false)
             .onChange(of: root.gameController.gameModel.focusItemIds, initial: true) {
-                withAnimation { itemId <=> root.gameController.gameModel.focusItemIds.first ?? UUID() }
+                withAnimation(reduceMotion ? nil : .default) {
+                    itemId <=> root.gameController.gameModel.focusItemIds.first ?? UUID()
+                }
             }
     }
 }
 
-struct DiceFocusActionBar: View {
-    @Environment(DiceRootModel.self) private var root
-
-    @State private var itemId = UUID()
-
-    var body: some View {
-        DiceGameActionBar(itemId: itemId, showFocusButton: false, canShowPlayer: false, hideOwnDice:false)
-            .onChange(of: root.gameController.gameModel.focusItemIds, initial: true) {
-                withAnimation { itemId <=> root.gameController.gameModel.focusItemIds.first ?? UUID() }
-            }
-    }
-}
-
-struct DiceFocusResult: View {
-    @Environment(DiceRootModel.self) private var root
-
-    @State private var itemId = UUID()
-
-    var body: some View {
-        DiceGameResult(itemId: itemId, canShowPlayer: false, isTrailing: true)
-            .onChange(of: root.gameController.gameModel.focusItemIds, initial: true) {
-                withAnimation { itemId <=> root.gameController.gameModel.focusItemIds.first ?? UUID() }
-            }
-    }
-}
-
-
-#Preview {
+#Preview(traits: .mockData) {
     DiceFocusRoll()
-        .environment(DiceRootModel.previewWithData)
+        .environment(DiceDisplayModel())
 }

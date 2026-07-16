@@ -58,8 +58,28 @@ extension SpaceRootModel: RootExportControllable {
 
 // MARK: Preview - Test
 extension SpaceModel {
-    nonisolated static let previewId = UUID(uuidString: "F5AC90DF-36F2-4151-B283-F0CF9D0BAC35")!
+    nonisolated static let previewId = UUID.fixture("F5AC90DF-36F2-4151-B283-F0CF9D0BAC35")
+    nonisolated static let previewEmptyId = UUID(uuid: (0xB4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
+    nonisolated static let previewRotatedId = UUID(uuid: (0xB4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
+
     static let preview = SpaceModel(id: previewId, name: "ExodusAtlantisMap", description: "Imaginary map of Atlantis for Amber DRPG \"Exodus\", a tabletop roleplaying game. Author: Theresa Thomas. From Wikimedia: [Wikipedia](https://commons.wikimedia.org/wiki/File:ExodusAtlantisMap.jpg)", tags: ["Map", "Fanatasy"], displayState: 0, degrees: 0, entries: [])
+
+    static let previewEmpty = SpaceModel(
+        id: previewEmptyId,
+        name: "Empty 3D Object",
+        description: "A fixture without an imported model.",
+        tags: ["Preview"],
+        displayState: 0
+    )
+
+    static let previewRotated = SpaceModel(
+        id: previewRotatedId,
+        name: "Rotated 3D Object",
+        description: "A deterministic rotated model fixture.",
+        tags: ["Preview", "Rotated"],
+        displayState: 0,
+        degrees: 90
+    )
 }
 
 extension ItemRowTreeModel {
@@ -104,4 +124,13 @@ extension ViewController {
 extension LinkController {
     @MainActor
     static var preview = SpaceRootModel.preview.linkController
+}
+
+private extension UUID {
+    nonisolated static func fixture(_ value: String) -> UUID {
+        guard let id = UUID(uuidString: value) else {
+            preconditionFailure("Invalid deterministic preview UUID: \(value)")
+        }
+        return id
+    }
 }

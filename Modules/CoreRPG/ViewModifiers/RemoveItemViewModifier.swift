@@ -26,6 +26,7 @@ struct RemoveItemViewModifier: ViewModifier {
                     Image(systemName: "minus.circle.fill")
                         .offset(x: isLeading ? -4 : 4, y: -8)
                         .foregroundStyle(.white, .red)
+                        .accessibilityHidden(true)
                 }
         }
         .buttonStyle(.plain)
@@ -34,12 +35,12 @@ struct RemoveItemViewModifier: ViewModifier {
 
 #Preview {
     VStack {
-        Text("Hello World")
+        Text(verbatim: "Hello World")
             .removeItemImage {
                 print("Removed")
             }
 
-        Text("Hello World")
+        Text(verbatim: "Hello World")
             .removeItemImage(isLeading: true) {
                 print("Removed")
             }

@@ -17,11 +17,18 @@ struct SelectionBar: View {
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         textSelection
-            .opacity((!withoutBookmark && searchModel.selectedEntry != nil) ? 1 : 0)
+            .opacity(showsSelection ? 1 : 0)
+            .allowsHitTesting(showsSelection)
+            .accessibilityHidden(!showsSelection)
             .padding()
+    }
+
+    private var showsSelection: Bool {
+        !withoutBookmark && searchModel.selectedEntry != nil
     }
 }
 
@@ -46,13 +53,13 @@ private extension SelectionBar {
     @ViewBuilder
     var textContent: some View {
         if let currentPage = searchModel.selectedEntry?.pageLabel {
-            Text(currentPage)
+            Text(verbatim: currentPage)
                 .font(.title)
                 .padding(8)
                 .foregroundStyle(Color.accentColor)
         }
         if let currentSelection = searchModel.selectedEntry?.content {
-            Text(currentSelection)
+            Text(verbatim: currentSelection)
                 .lineLimit(/*@START_MENU_TOKEN@*/2/*@END_MENU_TOKEN@*/)
                 .foregroundStyle(Color.accentColor)
         }
@@ -63,11 +70,18 @@ private extension SelectionBar {
             if let selectedEntry = searchModel.selectedEntry {
                 editController.addBookmark(itemId: model.id, entry: selectedEntry)
             }
-            withAnimation { searchModel.selectedEntry = nil }
+            withAnimation(reduceMotion ? nil : .default) {
+                searchModel.selectedEntry = nil
+            }
         } label: {
-            Image(systemName: "bookmark")
-                .padding(12)
-                .clipShape(.circle)
+            Label {
+                Text("Add bookmark", bundle: .module)
+            } icon: {
+                Image(systemName: "bookmark")
+            }
+            .labelStyle(.iconOnly)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(.circle)
         }
 #if !os(visionOS)
         .glassEffect(.regular.interactive())

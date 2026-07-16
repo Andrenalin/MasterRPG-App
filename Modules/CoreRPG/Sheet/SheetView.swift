@@ -3,6 +3,8 @@
 import SwiftUI
 
 struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     init(
         root: ItemRootController,
         rootModel: SheetRootModel,
@@ -69,7 +71,7 @@ private extension SheetView {
     }
 
     func refineSheetWithAI() {
-        _ = withAnimation(.smooth) {
+        _ = withAnimation(accessibilityReduceMotion ? nil : .smooth) {
             rootModel.queueGeneration(
                 from: sheetModel,
                 parent: sheetModel,
@@ -89,11 +91,16 @@ private extension SheetView {
                             ProgressView()
                                 .controlSize(.small)
                         } else {
-                            Label("Refine with AI", systemImage: "sparkles")
+                            Label {
+                                Text("Refine with AI", bundle: .module)
+                            } icon: {
+                                Image(systemName: "sparkles")
+                            }
                                 .labelStyle(.iconOnly)
                         }
                     }
                     .buttonStyle(.borderless)
+                    .frame(minWidth: 44, minHeight: 44)
                     .disabled(rootModel.pendingGenerationRequest != nil)
                     .accessibilityLabel(Text("Refine with AI", bundle: .module))
                     .accessibilityValue(
@@ -101,7 +108,7 @@ private extension SheetView {
                             ? Text("Generating", bundle: .module)
                             : Text("Ready", bundle: .module)
                     )
-                    .help("Refine this sheet with AI")
+                    .help(Text("Refine this sheet with AI", bundle: .module))
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
                 }
 
@@ -114,13 +121,20 @@ private extension SheetView {
                     .font(.title)
 
                 if let detailAction {
-                    Button("Next Question", systemImage: "questionmark.bubble") {
+                    Button {
                         detailAction(sheetModel)
+                    } label: {
+                        Label {
+                            Text("Next Question", bundle: .module)
+                        } icon: {
+                            Image(systemName: "questionmark.bubble")
+                        }
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
+                    .frame(minWidth: 44, minHeight: 44)
                     .disabled(!sheetModel.hasDetailContent)
-                    .help("Next question")
+                    .help(Text("Next question", bundle: .module))
                 }
             }
         }
@@ -129,7 +143,7 @@ private extension SheetView {
                 .allowsHitTesting(false)
         }
         .contentShape(.rect)
-        .animation(.easeInOut(duration: 0.2), value: sheetModel.isSelected)
+        .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2), value: sheetModel.isSelected)
         .applyIf((isEditor && sheetModel.canAdd) || sheetModel.isSelected) {
             $0.contextMenuAll {
                 SheetContextMenuView(rootModel: rootModel, parentModel: sheetModel, entryModel: sheetModel, isEditor: isEditor)
@@ -320,84 +334,6 @@ private extension SheetView {
     }
 }
 
-private struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, DetailContent: View>: View {
-    init(
-        rootModel: SheetRootModel,
-        parentModel: SheetModel,
-        entryModel: SheetModel,
-        isEditor: Bool,
-        linkTypes: LinkType.Type,
-        generatedAcceptanceNamespace: Namespace.ID,
-        detailAction: ((SheetModel) -> Void)?,
-        @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
-    ) {
-        self.rootModel = rootModel
-        self.parentModel = parentModel
-        self.entryModel = entryModel
-        self.isEditor = isEditor
-        self.linkTypes = linkTypes
-        self.generatedAcceptanceNamespace = generatedAcceptanceNamespace
-        self.detailAction = detailAction
-        self.detailContent = detailContent
-    }
-
-    let rootModel: SheetRootModel
-    let parentModel: SheetModel
-    let entryModel: SheetModel
-    let isEditor: Bool
-    let linkTypes: LinkType.Type
-    let generatedAcceptanceNamespace: Namespace.ID
-    let detailAction: ((SheetModel) -> Void)?
-    let detailContent: (SheetModel) -> DetailContent
-
-    var body: some View {
-        SheetEntryView(
-            rootModel: rootModel,
-            parentModel: parentModel,
-            entryModel: entryModel,
-            isEditor: isEditor,
-            linkTypes: linkTypes,
-            generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-            detailAction: detailAction,
-            detailContent: detailContent
-        )
-        .frame(maxWidth: .infinity, alignment: .leading)
-
-        ForEach(visibleChildEntries) { childEntry in
-            if childEntry.isGeneratedAnswer {
-                GeneratedSheetEntryTreeView(
-                    rootModel: rootModel,
-                    parentModel: entryModel,
-                    entryModel: childEntry,
-                    isEditor: isEditor,
-                    linkTypes: linkTypes,
-                    generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-                    detailAction: detailAction,
-                    detailContent: detailContent
-                )
-                .padding(.leading, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            } else if let root = rootModel.rootController(for: childEntry.source.typeId), childEntry.isShown {
-                SheetView(
-                    root: root,
-                    rootModel: rootModel,
-                    sheetModel: childEntry,
-                    isEditor: isEditor,
-                    linkTypes: linkTypes,
-                    generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-                    detailAction: detailAction,
-                    detailContent: detailContent
-                )
-                .padding(.leading, 2)
-            }
-        }
-    }
-
-    private var visibleChildEntries: [SheetModel] {
-        entryModel.entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
-    }
-}
-
 private extension AnyTransition {
     static var persistedSheetEntry: AnyTransition {
         .asymmetric(
@@ -421,61 +357,16 @@ private extension SheetModel {
     }
 }
 
-private struct SheetViewPreview: View {
-    @Namespace private var namespace
-
-    var body: some View {
-        VStack {
-            SheetView(
-                root: ItemRootController.fake,
-                rootModel: .fake,
-                sheetModel: .empty,
-                isEditor: true,
-                linkTypes: EmptyLinkTransferable.self,
-                generatedAcceptanceNamespace: namespace,
-                detailContent: { _ in EmptyView() }
-            )
-            GeneratedSheetEntryTreeView(
-                rootModel: .fake,
-                parentModel: .empty,
-                entryModel: .empty,
-                isEditor: true,
-                linkTypes: EmptyLinkTransferable.self,
-                generatedAcceptanceNamespace: namespace,
-                detailAction: nil,
-                detailContent: { _ in EmptyView() }
-            )
-        }
-    }
-}
-
-#Preview {
-    SheetViewPreview()
-}
-
 #Preview("Sheet View Direct") {
     @Previewable @Namespace var namespace
+    let fixture = FakeItemRootControllerFixture()
     SheetView(
-        root: ItemRootController.fake,
-        rootModel: .fake,
+        root: fixture.root,
+        rootModel: fixture.sheetRootModel,
         sheetModel: .empty,
         isEditor: true,
         linkTypes: EmptyLinkTransferable.self,
         generatedAcceptanceNamespace: namespace,
-        detailContent: { _ in EmptyView() }
-    )
-}
-
-#Preview("Generated Sheet Tree Direct") {
-    @Previewable @Namespace var namespace
-    GeneratedSheetEntryTreeView(
-        rootModel: .fake,
-        parentModel: .empty,
-        entryModel: .empty,
-        isEditor: true,
-        linkTypes: EmptyLinkTransferable.self,
-        generatedAcceptanceNamespace: namespace,
-        detailAction: nil,
         detailContent: { _ in EmptyView() }
     )
 }

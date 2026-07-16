@@ -9,6 +9,7 @@ struct DicePlayer: View {
 
     @Environment(DiceRootModel.self) private var root
     @Environment(DiceDisplayModel.self) var diceDisplayModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public var body: some View {
         VStack(alignment: alignment, spacing: 4) {
@@ -21,7 +22,10 @@ struct DicePlayer: View {
                             playerDice(playerId: player.id)
                         }
                     }
-                    .animation(.bouncy, value: root.gameController.isPlayerHidden(playerId: player.id))
+                    .animation(
+                        reduceMotion ? nil : .bouncy,
+                        value: root.gameController.isPlayerHidden(playerId: player.id)
+                    )
                 }
             }
         }
@@ -35,28 +39,41 @@ struct DicePlayer: View {
 
     @ViewBuilder
     private func playerButton(playerId: UUID) -> some View {
-        Button {
-            guard diceDisplayModel.isEditing else { return }
-            Task {
-                await root.gameController.toggleHidden(playerId: playerId)
+        if diceDisplayModel.isEditing {
+            Button {
+                Task {
+                    await root.gameController.toggleHidden(playerId: playerId)
+                }
+            } label: {
+                playerLabel(playerId: playerId)
             }
-        } label: {
+            .accessibilityLabel(
+                root.gameController.isPlayerHidden(playerId: playerId)
+                ? Text("Show \(playerName(playerId: playerId)) dice", bundle: .module)
+                : Text("Hide \(playerName(playerId: playerId)) dice", bundle: .module)
+            )
+            .frame(minHeight: 44)
+            .buttonStyle(.borderedProminent)
+            .opacity(0.75)
+        } else {
             playerLabel(playerId: playerId)
         }
-        .buttonStyle(.borderedProminent)
-        .opacity(0.75)
     }
 
     @ViewBuilder
     private func playerLabel(playerId: UUID) -> some View {
         HStack(alignment: .top, spacing: 4) {
-            Text(playerName(playerId: playerId))
+            Text(verbatim: playerName(playerId: playerId))
                 .lineLimit(1)
                 .truncationMode(.head)
                 .font(.footnote)
 
             if root.gameController.gameItem(for: playerId).sumUp || root.gameController.gameItem(for: playerId).compareOption != .off {
-                Label("\(root.gameController.resultText(itemId: playerId).markDown())", systemImage: root.gameController.result(itemId: playerId).checked ? "checkmark" : "xmark")
+                Label {
+                    Text(root.gameController.resultText(itemId: playerId).markDown())
+                } icon: {
+                    Image(systemName: root.gameController.result(itemId: playerId).checked ? "checkmark" : "xmark")
+                }
                     .font(.footnote)
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
             }
@@ -64,9 +81,11 @@ struct DicePlayer: View {
             if diceDisplayModel.isEditing {
                 Image(systemName: root.gameController.isPlayerHidden(playerId: playerId) ? "plus.circle" : "x.circle.fill")
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
+                    .accessibilityHidden(true)
             }
         }
         .fixedSize()
+        .accessibilityElement(children: .combine)
     }
 
     private func playerName(playerId: UUID) -> String {

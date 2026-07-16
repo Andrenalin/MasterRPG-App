@@ -44,6 +44,7 @@ struct SearchDetailView: View {
                     } label: {
                         Image(systemName: selection.module.icon)
                     }
+                    .accessibilityLabel(Text(selection.module.localizedTitle))
 #if os(macOS)
                     .foregroundStyle(selection.module.tint)
 #else

@@ -42,7 +42,7 @@ private extension StretchingHeaderView {
                 .frame(height: 200)
             ) {
                 ForEach(0 ..< 20) { i in
-                    Text("Row \(i)")
+                    Text(verbatim: "Row \(i)")
                 }
             }
         }

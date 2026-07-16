@@ -12,6 +12,7 @@ struct ListRootView: View {
     var isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -20,7 +21,7 @@ struct ListRootView: View {
                                 && !listController.searchModel.searchText.starts(with: "@")) {
             
             listView
-                .animation(.smooth, value: listModel.list.count)
+                .animation(accessibilityReduceMotion ? nil : .smooth, value: listModel.list.count)
                 .frame(minWidth: 250, idealWidth: 350)
 #if !os(tvOS)
             // Always-present modifier: empty closure = no menu; avoids applyIf identity break
@@ -45,13 +46,13 @@ struct ListRootView: View {
                     if let sheetRootModel = root.editControllable.editorModel.sheetRootModel, sheetRootModel.selectedEntryId != nil {
                         sheetRootModel.clearSelection()
                     } else {
-                        withAnimation { listController.closeParentFolder() }
+                        withAnimation(accessibilityReduceMotion ? nil : .default) { listController.closeParentFolder() }
                     }
                     return .handled
                 }
                 .onKeyPress(.rightArrow, phases: .down) { _ in
                     if listController.canOpenFolder(itemId: listModel.selected) {
-                        withAnimation { listController.openSelectedFolder() }
+                        withAnimation(accessibilityReduceMotion ? nil : .default) { listController.openSelectedFolder() }
                     } else if let sheetRootModel = root.editControllable.editorModel.sheetRootModel,
                               sheetRootModel.sheetModel.source.itemId == listModel.selected,
                               let firstEntry = sheetRootModel.firstSelectableEntry {
@@ -72,7 +73,9 @@ struct ListRootView: View {
 #endif
         .applyIf(parentModel == nil) {
             $0
-                .navigationTitle("\(root.configurable.module.title) - \(listModel.list.count)")
+                .navigationTitle(
+                    Text("\(root.configurable.module.title) - \(listModel.list.count)", bundle: .module)
+                )
                 .focusedSceneValue(\.listDisplayModel, listController.listDisplayModel)
                 .onChange(of: root.navigationModel.triggerExport) {
                     guard root.navigationModel.triggerExport, let itemId = root.currentSelectedItemId else { return }
@@ -101,7 +104,7 @@ struct ListRootView: View {
                     root.navigationModel.triggerSpaceAction = false
                     guard !root.viewControllable.hasCustomSpaceAction,
                           root.openFileWindowModel.enabled else { return }
-                    withAnimation { root.openFileWindowModel.showItem.toggle() }
+                    withAnimation(accessibilityReduceMotion ? nil : .default) { root.openFileWindowModel.showItem.toggle() }
                 }
         }
     }
@@ -187,242 +190,28 @@ private extension ListRootView {
     }
 }
 
-struct UnavailableGlassOverlay<Content: View>: View {
-    let content: Content
-    let isUnavailable: Bool
-    
-    init(isUnavailable: Bool, @ViewBuilder content: () -> Content) {
-        self.isUnavailable = isUnavailable
-        self.content = content()
-    }
-    
-    var body: some View {
-        content
-            .disabled(isUnavailable)
-            .overlay {
-                Color.primary.opacity(isUnavailable ? 0.2 : 0)
-                
-                ContentUnavailableView.search
-                    .padding()
-#if os(visionOS)
-                    .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
-#else
-                    .glassEffect(.regular.interactive())
-#endif
-                    .padding()
-                    .opacity(isUnavailable ? 1 : 0)
-            }
-    }
-}
-
-#Preview {
-    UnavailableGlassOverlay(isUnavailable: true) {
-        Text("Search results")
-            .padding()
-    }
-}
 
 
 // MARK: - ItemRowsView
 // Extracted from the @ViewBuilder itemRows() function so SwiftUI can skip this struct's
 // body entirely when its inputs (list contents, controller references) have not changed.
 
-private struct ItemRowsView: View {
-    let root: any ItemRootControllable
-    let listController: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
-    let listModel: FolderListModel
-    let menuController: ContextMenuMultiController
-    
-    @Environment(\.navigator) private var navigator
-    
-    var body: some View {
-        if listModel.list.isEmpty && parentModel != nil {
-            dropHereView
-        }
-        
-        ForEach(listModel.list) { item in
-            ListRowItemView(
-                root: root,
-                item: item,
-                listController: listController,
-                parentModel: parentModel,
-                menuController: menuController,
-                leadingPadding: leadingPadding
-            )
-        }
-        .onDelete(perform: deleteItems)
-        .onMove(perform: moveItems)
-        .moveDisabled(parentModel == nil || parentModel?.category == .folder)
-        .deleteDisabled(listController.listDisplayModel.isSelectionMode)
-    }
-    
-    private var dropHereView: some View {
-        VStack(spacing: 0) {
-            Text("Drop here", bundle: .module)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding()
-                .background(root.configurable.module.color.gradient, in: .capsule)
-                .padding()
-                .dropDestination(for: root.configurable.module, isEnabled: true, handler: addLink)
-            
-            Text("Drag items from the list or the inspector on this drop field to add the item to the folder or collection. After the first item is added you can add more items by dropping it on the exisiting items in this detail list.", bundle: .module)
-                .padding()
-                .lineLimit(5)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-    }
-    
-    private func addLink(name: String, itemId: UUID, entryId: UUID?) {
-        guard let parentModel else { return }
-        withAnimation {
-            root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
-            listController.scheduleDetailSearch()
-            root.folderListControllable.resetFilter()
-        }
-    }
-    
-    private func deleteItems(offsets: IndexSet) {
-        if let parentModel {
-            root.editControllable.removeItem(offsets: offsets, itemId: parentModel.id)
-            listModel.deleteItems(offsets: offsets)
-        } else {
-            let removingItems = listController.delete(offsets: offsets)
-            guard !removingItems.isEmpty else { return }
-            root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
-            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
-        }
-    }
-    
-    private func moveItems(source: IndexSet, destination: Int) {
-        guard let parentModel else { return }
-        root.editControllable.moveItems(source: source, destination: destination, itemId: parentModel.id)
-    }
-    
-    private var leadingPadding: CGFloat {
-        let value = listController.listDisplayModel.isSelectionMode ? 12 : 8
-        return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
-    }
-}
 
 #Preview("Item List") {
-    ListRootView(root: ItemRootController.fake, listController: FakeFolderListController.fake, parentModel: nil, isSubFolder: false)
+    let fixture = FakeItemRootControllerFixture()
+    ListRootView(root: fixture.root, listController: fixture.folderListController, parentModel: nil, isSubFolder: false)
 }
 
-#Preview("Item Rows") {
-    ItemRowsView(
-        root: ItemRootController.fake,
-        listController: FakeFolderListController.fake,
-        parentModel: nil,
-        listModel: FakeFolderListController.fake.listModel,
-        menuController: ContextMenuMultiController(
-            editController: FakeEditController.fake,
-            itemController: FakeItemController.fake,
-            listModel: FakeFolderListController.fake.listModel
-        )
-    )
-}
 
 // MARK: - ListRowItemView
 // Each row is its own struct so SwiftUI can skip body evaluation for unchanged rows.
 // No closure parameters — all inputs are value/reference types enabling fast memcmp diffing.
 
-private struct ListRowItemView: View {
-    let root: any ItemRootControllable
-    let item: FolderListItemModel
-    let listController: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
-    let menuController: ContextMenuMultiController
-    let leadingPadding: CGFloat
-    
-    var body: some View {
-        // Use the pre-resolved model from FolderListItemModel (set by mapResult via itemSync).
-        // Falls back to itemOrEmpty only for items not yet through the search pipeline.
-        let model = item.model ?? root.itemControllable.itemOrEmpty(for: item.source.itemId)
-        HStack {
-            ItemRowView(
-                root: root,
-                model: model,
-                cacheItemListModel: listController.cacheListItemModel,
-                listDisplayModel: listController.listDisplayModel,
-                searchModel: listController.searchModel,
-                isSelected: false
-            ) {
-                if root.viewControllable.thumbnailRowViewType == .custom {
-                    root.viewControllable.thumbnailRowView(for: item.source.itemId)
-                } else if root.viewControllable.thumbnailRowViewType == .photo,
-                          let cacheController = root.cacheControllable {
-                    ThumbnailRowPhotoView(
-                        cacheController: cacheController,
-                        model: model,
-                        listDisplayModel: listController.listDisplayModel
-                    )
-                }
-            }
-            .draggable(for: root.configurable.module, itemId: item.source.itemId, entryId: nil, name: model.name)
-            // Always-present contextMenu: empty closure = no menu when in selection mode
-            .contextMenu {
-                if !listController.listDisplayModel.isSelectionMode {
-                    ListRootContextMenu(
-                        root: root,
-                        controller: menuController,
-                        parentItem: parentModel,
-                        currentSelected: item.source.itemId,
-                        listController: listController
-                    )
-                }
-            }
-            
-            SpecialCategoryFolderIndicator(
-                item: item,
-                listController: listController
-            )
-        }
-        .environment(listController.listDisplayModel)
-        .padding(.leading, CGFloat(item.level * 16))
-        .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink)
-        .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
-        .listRowSeparatorAll(item.isOpen ? .visible : .hidden, edges: .bottom)
-    }
-    
-    private func addLink(name: String, itemId: UUID, entryId: UUID?) {
-        guard let parentModel else { return }
-        withAnimation {
-            root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
-            listController.scheduleDetailSearch()
-            root.folderListControllable.resetFilter()
-        }
-    }
-}
 
 // MARK: - SpecialCategoryFolderIndicator
 // Extracted so SwiftUI can skip rendering for rows that are neither open nor expandable.
 // Uses `item.canOpen` (set from `SearchResult.canOpen`) — no itemSync call needed.
 
-private struct SpecialCategoryFolderIndicator: View {
-    let item: FolderListItemModel
-    let listController: any FolderListControllable
-    
-    var body: some View {
-        // Show chevron when: (a) item has unexplored children (canOpen), (b) item is open,
-        // or (c) user explicitly closed it (wasExplicitlyClosed) so they can reopen it.
-        // Without (c), closing a folder during search hid the chevron permanently (canOpen=false
-        // because children were already in result.children, isOpen=false after close).
-        if item.canOpen || item.isOpen || item.wasExplicitlyClosed {
-            Button {
-                listController.toggleFolder(item: item)
-            } label: {
-                Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
-                    .imageScale(.small)
-                    .padding(.trailing)
-                    .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .contentShape(.rect)
-        }
-    }
-}
 
 //#Preview("Split", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root

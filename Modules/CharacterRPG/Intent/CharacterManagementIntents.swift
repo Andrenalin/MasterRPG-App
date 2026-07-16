@@ -130,7 +130,10 @@ struct DeleteCharacterIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: CharacterEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) character](inflect: true).")
+        let message = AttributedString(
+            localized: "Deleted ^[\(count) character](inflect: true).",
+            bundle: .module
+        )
         return .result(dialog: "\(message)")
     }
 }

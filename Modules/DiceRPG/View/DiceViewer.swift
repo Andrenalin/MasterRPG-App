@@ -9,31 +9,39 @@ struct DiceViewer: View {
     let isEditor: Bool
     
     @Environment(DiceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        ScrollView(.horizontal) {
             HStack(spacing: 4) {
                 ForEach(model.dice) { die in
-                    Button {
-                        if isEditor {
-                            withAnimation { root.editController.remove(die: die, itemId: model.id) }
-                        }
-                    } label: {
-                        HStack(alignment: .top, spacing: 8) {
-                            ThumbnailDice(die: die)
-                                .padding(4)
-                            
-                            if isEditor {
+                    if isEditor {
+                        Button {
+                            withAnimation(reduceMotion ? nil : .default) {
+                                root.editController.remove(die: die, itemId: model.id)
+                            }
+                        } label: {
+                            HStack(alignment: .top, spacing: 8) {
+                                ThumbnailDice(die: die)
+                                    .padding(4)
+
                                 Image(systemName: "x.circle.fill")
                                     .tint(.red)
                                     .offset(x: -8, y: 4)
+                                    .accessibilityHidden(true)
                             }
                         }
+                        .accessibilityLabel(Text("Remove \(die.die.text) die", bundle: .module))
+                        .frame(minWidth: 44, minHeight: 44)
+                        .borderLessTVBottonStyle()
+                    } else {
+                        ThumbnailDice(die: die)
+                            .padding(4)
                     }
-                    .borderLessTVBottonStyle()
                 }
             }
         }
+        .scrollIndicators(.hidden)
     }
 }
 

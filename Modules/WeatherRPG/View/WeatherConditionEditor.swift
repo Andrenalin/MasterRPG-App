@@ -54,6 +54,8 @@ private extension WeatherConditionEditor {
 #else
             HStack {
                 Slider(value: $model.time)
+                    .accessibilityLabel(Text("Time", bundle: .module))
+                    .accessibilityValue(Text(verbatim: formattedTime))
                 Text(formattedTime)
             }
 #endif
@@ -64,7 +66,7 @@ private extension WeatherConditionEditor {
 
     @ViewBuilder var cloudsEditorView: some View {
         ValuePickerEditor(model: cloudEditModel, allCategories: Cloud.Thickness.allCases, title: "Clouds", bundle: .module) { thickness in
-            Text(thickness.localizedTitle, bundle: .module)
+            Text(thickness.localizedTitle)
         }
     }
 

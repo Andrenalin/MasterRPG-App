@@ -130,7 +130,10 @@ struct DeletePdfIntent: DeleteIntent {
         try await deleteIntentEntities(ids: ids, ofType: PdfEntity.self)
 
         let count = entities.count
-        let message = AttributedString(localized: "Deleted ^[\(count) PDF](inflect: true).")
+        let message = AttributedString(
+            localized: "Deleted ^[\(count) PDF](inflect: true).",
+            bundle: .module
+        )
         return .result(dialog: "\(message)")
     }
 }

@@ -18,32 +18,13 @@ struct DetailEditorView: View {
             SheetRootEditorView(
                 root: root.rootController,
                 sheetRootModel: sheetRootModel,
-                headerTitle: String(localized: "Entries", bundle: .module).localizedString,
+                headerTitle: String(localized: "Entries", bundle: .module),
                 linkTypes: LinkTableModuleTransferable.self
             )
         }
     }
 }
 
-struct DetailSelectionEditorView: View {
-    let root: TableRootModel
-    let model: TableModel
-
-    var body: some View {
-        root.diceRoot.viewController.dropChooseView(model: root.editController.tableEditModel.selectionDice)
-            .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
-                withAnimation(.easeInOut) { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, itemId: model.id) }
-            }
-            .task(id: model.diceId) {
-                root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil)
-            }
-    }
-}
-
 #Preview(traits: .mockData) {
     DetailEditorView(root: .preview, model: .preview)
-}
-
-#Preview(traits: .mockData) {
-    DetailSelectionEditorView(root: .preview, model: .preview)
 }

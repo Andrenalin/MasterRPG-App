@@ -49,5 +49,6 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
 }
 
 #Preview {
-    SheetRootEditorView(root: ItemRootController.fake, sheetRootModel: .fake, headerTitle: "Entries", linkTypes: EmptyLinkTransferable.self)
+    let fixture = FakeItemRootControllerFixture()
+    SheetRootEditorView(root: fixture.root, sheetRootModel: fixture.sheetRootModel, headerTitle: "Entries", linkTypes: EmptyLinkTransferable.self)
 }

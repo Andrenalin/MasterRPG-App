@@ -6,11 +6,18 @@ import SwiftUI
 struct AudioRootView: View {
     @Environment(AudioRootModel.self) private var root
     @Environment(\.navigator) private var navigator
+    private let restoresState: Bool
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
 
     var body: some View {
         ItemRootView(root: root.rootController)
             .overlay {
-                ItemStateRestorationView<AudioRoute, AudioRootModel>(root: root, keyPrefix: "Audio")
+                if restoresState {
+                    ItemStateRestorationView<AudioRoute, AudioRootModel>(root: root, keyPrefix: "Audio")
+                }
             }
             .onNavigationReceive { (route: AudioRoute, navigator) in
                 guard let itemId = route.detail() else { return .cancel }
@@ -22,6 +29,6 @@ struct AudioRootView: View {
 
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
-        AudioRootView()
+        AudioRootView(restoresState: false)
     }
 }

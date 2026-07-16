@@ -79,7 +79,12 @@ struct PdfSummaryAnalyzer: Sendable {
                   let summary = partial.summary,
                   let tags = partial.tags,
                   let partialSections = partial.sections else {
-                throw PdfSummaryAnalysisError.generationFailed("Streaming completed but no complete content received")
+                throw PdfSummaryAnalysisError.generationFailed(
+                    String(
+                        localized: "Streaming completed but no complete content was received.",
+                        bundle: .module
+                    )
+                )
             }
 
             let sections: [PdfSection] = partialSections.compactMap { partialSection -> PdfSection? in
@@ -148,25 +153,55 @@ struct PdfSummaryAnalyzer: Sendable {
     private func handleGenerationError(_ error: LanguageModelSession.GenerationError) -> String {
         switch error {
         case .exceededContextWindowSize:
-            return "PDF content is too large for processing. Try a smaller document or fewer pages."
+            return String(
+                localized: "PDF content is too large for processing. Try a smaller document or fewer pages.",
+                bundle: .module
+            )
         case .guardrailViolation:
-            return "Content policy prevented analysis. The PDF may contain inappropriate content."
+            return String(
+                localized: "Content policy prevented analysis. The PDF may contain inappropriate content.",
+                bundle: .module
+            )
         case .unsupportedLanguageOrLocale:
-            return "The PDF language is not supported by Apple Intelligence."
+            return String(
+                localized: "The PDF language is not supported by Apple Intelligence.",
+                bundle: .module
+            )
         case .assetsUnavailable(let reason):
-            return "Model assets are unavailable: \(reason). Please ensure Apple Intelligence is fully downloaded."
+            return String(
+                localized: "Model assets are unavailable: \(String(describing: reason)). Please ensure Apple Intelligence is fully downloaded.",
+                bundle: .module
+            )
         case .unsupportedGuide(let guide):
-            return "PDF summary schema contains unsupported constraint: \(guide). This is a developer error."
+            return String(
+                localized: "PDF summary schema contains unsupported constraint: \(String(describing: guide)). This is a developer error.",
+                bundle: .module
+            )
         case .decodingFailure(let reason):
-            return "Failed to decode PDF summary: \(reason). The document may have unusual formatting."
+            return String(
+                localized: "Failed to decode PDF summary: \(String(describing: reason)). The document may have unusual formatting.",
+                bundle: .module
+            )
         case .rateLimited(let retryAfter):
-            return "Rate limit exceeded. Please try again in \(retryAfter) seconds."
+            return String(
+                localized: "Rate limit exceeded. Please try again in \(String(describing: retryAfter)) seconds.",
+                bundle: .module
+            )
         case .concurrentRequests(let maxCount):
-            return "Too many concurrent analysis requests. Maximum allowed: \(maxCount). Please wait for current analyses to complete."
+            return String(
+                localized: "Too many concurrent analysis requests. Maximum allowed: \(String(describing: maxCount)). Please wait for current analyses to complete.",
+                bundle: .module
+            )
         case .refusal(let reason, let category):
-            return "Analysis refused: \(reason) (category: \(category)). The PDF content may violate content policies."
+            return String(
+                localized: "Analysis refused: \(String(describing: reason)) (category: \(String(describing: category))). The PDF content may violate content policies.",
+                bundle: .module
+            )
         @unknown default:
-            return "An unexpected generation error occurred: \(error.localizedDescription)"
+            return String(
+                localized: "An unexpected generation error occurred: \(error.localizedDescription)",
+                bundle: .module
+            )
         }
     }
 

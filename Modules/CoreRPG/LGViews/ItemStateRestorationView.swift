@@ -3,7 +3,32 @@
 import SwiftUI
 
 public struct ItemStateRestorationView<Route: ItemDetailRoute & Equatable, Root: ItemRootControllable>: View {
-    public init(root: Root, keyPrefix: String) {
+    public init(root: Root, keyPrefix: String, restoresState: Bool = true) {
+        self.root = root
+        self.keyPrefix = keyPrefix
+        self.restoresState = restoresState
+    }
+
+    let root: Root
+    private let keyPrefix: String
+    private let restoresState: Bool
+
+    @Environment(\.itemStateRestorationEnabled) private var itemStateRestorationEnabled
+
+    @ViewBuilder public var body: some View {
+        if restoresState && itemStateRestorationEnabled {
+            let _ = Self.printViewChangesOnlyInDebug()
+
+            Color.clear
+                .modifier(ItemStateRestorationModifier<Route, Root>(root: root, keyPrefix: keyPrefix))
+        } else {
+            Color.clear
+        }
+    }
+}
+
+private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, Root: ItemRootControllable>: ViewModifier {
+    init(root: Root, keyPrefix: String) {
         self.root = root
         _selectedItemId = SceneStorage("\(keyPrefix)SelectedItem")
         _displayMode = SceneStorage(wrappedValue: .medium, "\(keyPrefix)DisplayModel")
@@ -20,10 +45,8 @@ public struct ItemStateRestorationView<Route: ItemDetailRoute & Equatable, Root:
 
     @State private var route: Route?
 
-    public var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-
-        Color.clear
+    func body(content: Content) -> some View {
+        content
             .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $route)
                     .onChange(of: route) {
@@ -48,23 +71,27 @@ public struct ItemStateRestorationView<Route: ItemDetailRoute & Equatable, Root:
                     }
                 }
             }
-            .onAppear {
-                Task {
-                    try? await Task.sleep(for: .seconds(2))
-                    if let itemIdString = selectedItemId, let itemId = UUID(uuidString: itemIdString) {
-                        if root.navigationModel.selectedItemId != itemId {
-                            root.navigationModel.selectedItemId = itemId
-                        }
-                    } else {
-                        selectedItemId <=> nil
-                        root.navigationModel.selectedItemId <=> nil
+            .task {
+                do {
+                    try await Task.sleep(for: .seconds(2))
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled else { return }
+
+                if let itemIdString = selectedItemId, let itemId = UUID(uuidString: itemIdString) {
+                    if root.navigationModel.selectedItemId != itemId {
+                        root.navigationModel.selectedItemId = itemId
                     }
+                } else {
+                    selectedItemId <=> nil
+                    root.navigationModel.selectedItemId <=> nil
                 }
             }
     }
 }
 
-private enum ItemStateRestorationPreviewRoute: @MainActor ItemDetailRoute {
+enum ItemStateRestorationPreviewRoute: @MainActor ItemDetailRoute {
     case detail(UUID)
 
     var id: UUID { detail() ?? UUID() }
@@ -80,6 +107,27 @@ private enum ItemStateRestorationPreviewRoute: @MainActor ItemDetailRoute {
 }
 
 #Preview {
-    ItemStateRestorationView<ItemStateRestorationPreviewRoute, ItemRootController>(root: .fake, keyPrefix: "preview")
+    ItemStateRestorationView<ItemStateRestorationPreviewRoute, ItemRootController>(
+        root: .fake,
+        keyPrefix: "preview",
+        restoresState: false
+    )
         .environment(AppWindowSizeModel())
+}
+
+private struct ItemStateRestorationEnabledKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+private extension EnvironmentValues {
+    var itemStateRestorationEnabled: Bool {
+        get { self[ItemStateRestorationEnabledKey.self] }
+        set { self[ItemStateRestorationEnabledKey.self] = newValue }
+    }
+}
+
+public extension View {
+    func itemStateRestorationEnabled(_ enabled: Bool) -> some View {
+        environment(\.itemStateRestorationEnabled, enabled)
+    }
 }

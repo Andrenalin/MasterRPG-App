@@ -20,7 +20,9 @@ struct SharingInput: View {
     
     var body: some View {
         @Bindable var model = model
-        TextField("Name", text: $model.name, axis: .vertical)
+        TextField(text: $model.name, axis: .vertical) {
+            Text("Name", bundle: .main)
+        }
             .textFieldStyle(.roundedBorder)
             .focused($focusedField, equals: .name)
             .onSubmit {
@@ -34,7 +36,9 @@ struct SharingInput: View {
                 }
             }
 
-        TextField("Text", text: $model.text, axis: .vertical)
+        TextField(text: $model.text, axis: .vertical) {
+            Text("Text", bundle: .main)
+        }
             .lineLimit(3...6)
             .textFieldStyle(.roundedBorder)
             .focused($focusedField, equals: .text)
@@ -42,4 +46,16 @@ struct SharingInput: View {
                 focusedField = nil
             }
     }
+}
+
+#Preview("Adventure share input") {
+    let model: InputModel = {
+        let model = InputModel()
+        model.name = "The Verdant Vault"
+        model.text = "A moss-covered stair descends beneath the ruined observatory."
+        return model
+    }()
+
+    SharingInput(model: model)
+        .padding()
 }

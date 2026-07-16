@@ -6,11 +6,18 @@ import SwiftUI
 struct PhotoRootView: View {
     @Environment(PhotoRootModel.self) private var root
     @Environment(\.navigator) private var navigator
+    private let restoresState: Bool
+
+    init(restoresState: Bool = true) {
+        self.restoresState = restoresState
+    }
 
     var body: some View {
         ItemRootView(root: root.rootController)
             .background {
-                ItemStateRestorationView<PhotoRoute, PhotoRootModel>(root: root, keyPrefix: "Photo")
+                if restoresState {
+                    ItemStateRestorationView<PhotoRoute, PhotoRootModel>(root: root, keyPrefix: "Photo")
+                }
             }
             .onNavigationReceive { (route: PhotoRoute, navigator) in
                 guard let itemId = route.detail() else { return .cancel }
@@ -22,6 +29,6 @@ struct PhotoRootView: View {
 
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
-        PhotoRootView()
+        PhotoRootView(restoresState: false)
     }
 }
