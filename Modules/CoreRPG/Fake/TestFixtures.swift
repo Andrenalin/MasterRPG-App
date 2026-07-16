@@ -2,7 +2,7 @@
 
 import Foundation
 
-#if DEBUG
+//#if DEBUG
 /// Deterministic test fixtures for dates and UUIDs.
 ///
 /// These fixtures provide repeatable values for tests, ensuring F.I.R.S.T. principles
@@ -61,4 +61,4 @@ public extension UUID {
     /// Fixed UUID for character entities
     static let fixtureCharacter = UUID(uuidString: "EEEEEEEE-EEEE-EEEE-EEEE-EEEEEEEEEEEE")!
 }
-#endif
+//#endif

@@ -1717,6 +1717,7 @@
       }
     },
     "You need at least %lld images of your object to create a model." : {
+      "comment" : "Feedback for when the user has fewer than the minimum required images.",
       "localizations" : {
         "de" : {
           "stringUnit" : {

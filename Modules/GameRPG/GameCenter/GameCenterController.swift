@@ -122,20 +122,20 @@ struct GameCenterAchievementProgress: Hashable, Sendable {
 
 struct GameCenterAchievementEvaluator: Sendable {
     enum Identifier {
-        static let firstGame = "de.andretrettin.masterrpg.achievement.first-game"
-        static let regularAdventurer = "de.andretrettin.masterrpg.achievement.regular-adventurer"
-        static let veteranAdventurer = "de.andretrettin.masterrpg.achievement.veteran-adventurer"
+        static let firstGame = "de.andretrettin.masterrpg.achievement.first_game"
+        static let regularAdventurer = "de.andretrettin.masterrpg.achievement.regular_adventurer"
+        static let veteranAdventurer = "de.andretrettin.masterrpg.achievement.veteran_adventurer"
         static let storyteller = "de.andretrettin.masterrpg.achievement.storyteller"
-        static let loyalHero = "de.andretrettin.masterrpg.achievement.loyal-hero"
+        static let loyalHero = "de.andretrettin.masterrpg.achievement.loyal_hero"
         static let campaigner = "de.andretrettin.masterrpg.achievement.campaigner"
-        static let wellTravelled = "de.andretrettin.masterrpg.achievement.well-travelled"
-        static let diceInitiate = "de.andretrettin.masterrpg.achievement.dice-initiate"
-        static let diceLegend = "de.andretrettin.masterrpg.achievement.dice-legend"
-        static let criticalMoment = "de.andretrettin.masterrpg.achievement.critical-moment"
-        static let unluckyHero = "de.andretrettin.masterrpg.achievement.unlucky-hero"
-        static let multimediaMaestro = "de.andretrettin.masterrpg.achievement.multimedia-maestro"
-        static let fullParty = "de.andretrettin.masterrpg.achievement.full-party"
-        static let epicSession = "de.andretrettin.masterrpg.achievement.epic-session"
+        static let wellTravelled = "de.andretrettin.masterrpg.achievement.well_travelled"
+        static let diceInitiate = "de.andretrettin.masterrpg.achievement.dice_initiate"
+        static let diceLegend = "de.andretrettin.masterrpg.achievement.dice_legend"
+        static let criticalMoment = "de.andretrettin.masterrpg.achievement.critical_moment"
+        static let unluckyHero = "de.andretrettin.masterrpg.achievement.unlucky_hero"
+        static let multimediaMaestro = "de.andretrettin.masterrpg.achievement.multimedia_maestro"
+        static let fullParty = "de.andretrettin.masterrpg.achievement.full_party"
+        static let epicSession = "de.andretrettin.masterrpg.achievement.epic_session"
     }
 
     private enum DurationGoal {
