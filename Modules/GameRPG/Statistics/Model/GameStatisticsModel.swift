@@ -227,6 +227,27 @@ final class GameStatisticsModel: Sendable {
         configuration.sectionOrder = order
     }
 
+    func moveSections(fromOffsets source: IndexSet, toOffset destination: Int) {
+        let order = configuration.sectionOrder
+        guard !source.isEmpty,
+              source.allSatisfy({ order.indices.contains($0) }),
+              order.indices.contains(destination) || destination == order.endIndex
+        else { return }
+
+        let movedSections = source.map { order[$0] }
+        var reordered = order
+        for index in source.reversed() {
+            reordered.remove(at: index)
+        }
+
+        let removedBeforeDestination = source.lazy.filter { $0 < destination }.count
+        let insertionIndex = destination - removedBeforeDestination
+        reordered.insert(contentsOf: movedSections, at: insertionIndex)
+
+        guard reordered != order else { return }
+        configuration.sectionOrder = reordered
+    }
+
     func deleteAll() async {
         guard let context else { return }
         do {

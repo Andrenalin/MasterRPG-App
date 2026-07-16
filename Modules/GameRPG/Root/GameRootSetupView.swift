@@ -48,6 +48,7 @@ struct GameRootSetupView: View {
                     GameStatisticsEntryLabel(sessionCount: root.statisticsModel.summary.sessionCount)
                 }
                 .buttonStyle(.borderedProminent)
+                .fixedSize()
                 .padding()
             }
         }

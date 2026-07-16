@@ -5,6 +5,8 @@ import DiceRPG
 import Foundation
 
 struct GameStatisticsController: Sendable {
+    static let minimumCountedSessionDuration: TimeInterval = 15 * 60
+
     func eventDraft(
         for model: GameNetworkModel,
         sessionID: UUID,
@@ -86,8 +88,12 @@ struct GameStatisticsController: Sendable {
         configuration: GameStatisticsDashboardConfiguration,
         calendar: Calendar = .autoupdatingCurrent
     ) -> GameStatisticsSummary {
-        let sessions = dataSet.sessions
-        let events = dataSet.events
+        let sessions = dataSet.sessions.filter {
+            $0.duration >= Self.minimumCountedSessionDuration
+        }
+        let countedSessionIDs = Set(sessions.map(\.id))
+        let events = dataSet.events.filter { countedSessionIDs.contains($0.sessionID) }
+        let participants = dataSet.participants.filter { countedSessionIDs.contains($0.sessionID) }
         let totalDuration = sessions.reduce(0) { $0 + $1.duration }
         let diceEvents = events.filter { $0.kind == .diceRolled }
 
@@ -121,7 +127,7 @@ struct GameStatisticsController: Sendable {
             ),
             diceOutcomes: diceOutcomePoints(events: diceEvents),
             modules: modulePoints(events: events),
-            party: participantPoints(participants: dataSet.participants),
+            party: participantPoints(participants: participants),
             network: networkPoints(events: events),
             recentSessions: Array(sessions.sorted { $0.startedAt > $1.startedAt }.prefix(10))
         )

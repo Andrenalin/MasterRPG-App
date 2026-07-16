@@ -110,7 +110,7 @@ struct GameStatisticsControllerTests {
             let session = GameStatisticSessionSnapshot.fixture(
                 id: deterministicUUID(UInt8(index + 1)),
                 startedAt: Date(timeIntervalSince1970: 1_704_067_200 + Double(index * 86_400)),
-                duration: index == 0 ? 18_000 : 3_600,
+                duration: index == 0 ? 8 * 3_600 : 4 * 3_600,
                 role: .gameMaster,
                 characterID: deterministicUUID(30),
                 characterName: "Aria",
@@ -146,9 +146,10 @@ struct GameStatisticsControllerTests {
         // Then
         #expect(progress[GameCenterAchievementEvaluator.Identifier.firstGame] == 100)
         #expect(progress[GameCenterAchievementEvaluator.Identifier.regularAdventurer] == 100)
+        #expect(progress[GameCenterAchievementEvaluator.Identifier.veteranAdventurer] == 20)
         #expect(progress[GameCenterAchievementEvaluator.Identifier.storyteller] == 100)
         let loyalHero = try #require(progress[GameCenterAchievementEvaluator.Identifier.loyalHero])
-        #expect(abs(loyalHero - 56) < 0.000_001)
+        #expect(abs(loyalHero - 44) < 0.000_001)
         #expect(progress[GameCenterAchievementEvaluator.Identifier.campaigner] == 60)
         #expect(progress[GameCenterAchievementEvaluator.Identifier.wellTravelled] == 100)
         #expect(progress[GameCenterAchievementEvaluator.Identifier.diceInitiate] == 100)
@@ -159,6 +160,115 @@ struct GameStatisticsControllerTests {
         #expect(progress[GameCenterAchievementEvaluator.Identifier.multimediaMaestro] == 100)
         #expect(progress[GameCenterAchievementEvaluator.Identifier.fullParty] == 100)
         #expect(progress[GameCenterAchievementEvaluator.Identifier.epicSession] == 100)
+    }
+
+    @Test("games shorter than 15 minutes and their related data are excluded")
+    func excludesShortGames() {
+        // Given
+        let shortGame = GameStatisticSessionSnapshot.fixture(
+            id: deterministicUUID(80),
+            duration: GameStatisticsController.minimumCountedSessionDuration - 1
+        )
+        let boundaryGame = GameStatisticSessionSnapshot.fixture(
+            id: deterministicUUID(81),
+            duration: GameStatisticsController.minimumCountedSessionDuration
+        )
+        let normalGame = GameStatisticSessionSnapshot.fixture(
+            id: deterministicUUID(82),
+            duration: 4 * 3_600,
+            role: .gameMaster
+        )
+        let events: [GameStatisticEventSnapshot] = [
+            .fixture(
+                id: deterministicUUID(83),
+                sessionID: shortGame.id,
+                quantity: 100,
+                payloadByteCount: 1_000
+            ),
+            .fixture(
+                id: deterministicUUID(84),
+                sessionID: boundaryGame.id,
+                quantity: 2,
+                payloadByteCount: 200
+            ),
+            .fixture(
+                id: deterministicUUID(85),
+                sessionID: normalGame.id,
+                kind: .contentShared,
+                module: .photo,
+                outcome: .none,
+                quantity: 3,
+                payloadByteCount: 300
+            )
+        ]
+        let participants: [GameStatisticParticipantSnapshot] = [
+            .fixture(
+                id: deterministicUUID(86),
+                sessionID: shortGame.id,
+                connectedDuration: shortGame.duration
+            ),
+            .fixture(
+                id: deterministicUUID(87),
+                sessionID: boundaryGame.id,
+                connectedDuration: boundaryGame.duration
+            ),
+            .fixture(
+                id: deterministicUUID(88),
+                sessionID: normalGame.id,
+                connectedDuration: normalGame.duration
+            )
+        ]
+
+        // When
+        let summary = GameStatisticsController().summary(
+            from: GameStatisticsDataSet(
+                sessions: [shortGame, boundaryGame, normalGame],
+                participants: participants,
+                events: events
+            ),
+            configuration: .default
+        )
+
+        // Then
+        #expect(summary.sessionCount == 2)
+        #expect(summary.totalDuration == 15_300)
+        #expect(summary.averageDuration == 7_650)
+        #expect(summary.longestDuration == 14_400)
+        #expect(summary.diceRollCount == 2)
+        #expect(summary.payloadByteCount == 500)
+        #expect(summary.modules.map(\.count).reduce(0, +) == 3)
+        #expect(summary.party.first?.value == 15_300)
+        #expect(summary.network.map(\.count).reduce(0, +) == 5)
+        #expect(summary.recentSessions.count == 2)
+        #expect(!summary.recentSessions.contains(shortGame))
+    }
+
+    @Test(
+        "epic-session progress reflects realistic game lengths",
+        arguments: zip(
+            [4.0, 6.0, 8.0, 12.0],
+            [50.0, 75.0, 100.0, 100.0]
+        )
+    )
+    func evaluatesEpicSessionProgress(durationInHours: Double, expectedProgress: Double) throws {
+        // Given
+        let session = GameStatisticSessionSnapshot.fixture(
+            duration: durationInHours * 3_600
+        )
+        let summary = GameStatisticsController().summary(
+            from: GameStatisticsDataSet(sessions: [session], participants: [], events: []),
+            configuration: .default
+        )
+
+        // When
+        let epicSession = try #require(
+            GameCenterAchievementEvaluator()
+                .progress(from: summary)
+                .first { $0.identifier == GameCenterAchievementEvaluator.Identifier.epicSession }
+        )
+
+        // Then
+        #expect(abs(epicSession.percentComplete - expectedProgress) < 0.000_001)
     }
 
     @Test("preview data demonstrates the dashboard without persistence")
@@ -183,6 +293,48 @@ struct GameStatisticsControllerTests {
         #expect(summary.modules.count >= 4)
         #expect(summary.recentSessions.count == 3)
         #expect(summary.activity.map(\.date) == summary.activity.map(\.date).sorted())
+    }
+
+    @Test("native move offsets reorder dashboard sections")
+    @MainActor
+    func reordersDashboardSections() throws {
+        // Given
+        let suiteName = "GameStatisticsControllerTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let model = GameStatisticsModel(defaults: defaults)
+
+        // When
+        model.moveSections(fromOffsets: IndexSet(integer: 0), toOffset: 6)
+
+        // Then
+        #expect(model.configuration.sectionOrder == [
+            .schedule,
+            .roles,
+            .characters,
+            .adventures,
+            .dice,
+            .activity,
+            .sharedContent,
+            .party,
+            .network
+        ])
+
+        // When
+        model.moveSections(fromOffsets: IndexSet(integer: 8), toOffset: 1)
+
+        // Then
+        #expect(model.configuration.sectionOrder == [
+            .schedule,
+            .network,
+            .roles,
+            .characters,
+            .adventures,
+            .dice,
+            .activity,
+            .sharedContent,
+            .party
+        ])
     }
 
     private func deterministicUUID(_ finalByte: UInt8) -> UUID {

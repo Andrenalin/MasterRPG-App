@@ -22,10 +22,8 @@ struct GameStatisticsEntryLabel: View {
                 }
             }
 
-            Spacer()
             Image(systemName: "chevron.forward")
         }
-        .frame(maxWidth: .infinity)
     }
 }
 

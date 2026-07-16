@@ -33,7 +33,7 @@ struct GameStatisticsPreviewHeader: View {
 
             if collectionEnabled {
                 Label {
-                    Text("Finish your first game to replace this preview with your own story.", bundle: .module)
+                    Text("Finish a game lasting at least 15 minutes to replace this preview with your own story.", bundle: .module)
                 } icon: {
                     Image(systemName: "flag.checkered")
                 }
