@@ -61,6 +61,93 @@ extension MultiConnectionAudioTests {
         ]))
     }
 
+    @Test("Master ignores stale and duplicate player audio reports")
+    func masterIgnoresStalePlayerAudioReports() async throws {
+        // Given
+        let env = try await Self.preparedEnvironment()
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+        _ = try await env.master.handleAudio(
+            Self.audioReport(from: env.player1Root, availableIds: [audioId], counter: 2)
+        )
+        env.master.gameModel.audioTransferPlayers[audioId] = [env.player1Config.id]
+        let baseline = env.masterNetworkSpy.sendResponseHistory.count
+
+        // When
+        _ = try await env.master.handleAudio(
+            Self.audioReport(from: env.player1Root, availableIds: [], counter: 1)
+        )
+        _ = try await env.master.handleAudio(
+            Self.audioReport(from: env.player1Root, availableIds: [], counter: 2)
+        )
+
+        // Then
+        #expect(env.masterNetworkSpy.sendResponseHistory.count == baseline)
+        #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(env.master.gameModel.audioTransferPlayers[audioId] == Set([env.player1Config.id]))
+    }
+
+    @Test("Malformed audio report is ignored and does not advance its counter")
+    func malformedAudioReportDoesNotAdvanceCounter() async throws {
+        // Given
+        let env = try await Self.preparedEnvironment()
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+        let malformed = env.player1Root.gameModel.outgoingMessage(
+            counter: 10,
+            type: .update,
+            subType: .audioList,
+            asMaster: false,
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: .audio,
+                version: 0,
+                data: Data([0xFF])
+            )
+        )
+        env.master.gameModel.audioTransferPlayers[audioId] = [env.player1Config.id]
+        let baseline = env.masterNetworkSpy.sendResponseHistory.count
+
+        // When
+        _ = try await env.master.handleAudio(malformed)
+
+        // Then
+        #expect(env.masterNetworkSpy.sendResponseHistory.count == baseline)
+        #expect(!env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(env.master.gameModel.audioTransferPlayers[audioId] == Set([env.player1Config.id]))
+
+        // When - A valid lower counter follows the malformed packet.
+        _ = try await env.master.handleAudio(
+            Self.audioReport(from: env.player1Root, availableIds: [audioId], counter: 2)
+        )
+
+        // Then
+        #expect(env.masterNetworkSpy.sendResponseHistory.count == baseline + 1)
+        #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+    }
+
+    @Test("Player ignores stale and duplicate authoritative audio lists")
+    func playerIgnoresStaleAuthoritativeAudioLists() async throws {
+        // Given
+        let env = try await MultiConnectionTestEnvironment.create()
+        let audioId = UUID()
+        let newer = Self.authoritativeAudioList(
+            from: env.masterRoot,
+            counter: 4,
+            players: [audioId: [env.player1Config.id]]
+        )
+        _ = try await env.player1.handleAudio(newer)
+
+        // When
+        _ = try await env.player1.handleAudio(
+            Self.authoritativeAudioList(from: env.masterRoot, counter: 3, players: [:])
+        )
+        _ = try await env.player1.handleAudio(
+            Self.authoritativeAudioList(from: env.masterRoot, counter: 4, players: [:])
+        )
+
+        // Then
+        #expect(env.player1Root.audioRoot.gameController.gameModel.playerReport(for: audioId) == [env.player1Config.id])
+    }
+
     @Test("Play waits and sends journaled audio only to missing player ids")
     func playWaitsForMissingPlayers() async throws {
         // Given
@@ -92,7 +179,7 @@ extension MultiConnectionAudioTests {
         #expect(env.masterRoot.audioRoot.audioController.model.currentId == nil)
     }
 
-    @Test("Last successful receipt publishes the list before starting pending play")
+    @Test("Last successful receipt starts pending play without publishing another list")
     func receiptCompletesPendingPlay() async throws {
         // Given
         let env = try await Self.preparedEnvironment()
@@ -119,12 +206,18 @@ extension MultiConnectionAudioTests {
         let sent = env.masterNetworkSpy.sendResponseHistory
             .dropFirst(baseline)
             .compactMap { $0 as? GameNetworkModel }
-        #expect(sent.map(\.subType) == [.audioList, .playAudio])
+        #expect(sent.map(\.subType) == [.playAudio])
         #expect(env.masterRoot.audioRoot.audioController.model.currentId == audioId)
 
-        let play = try #require(sent.last)
+        let play = try #require(sent.first)
         _ = try await env.player2.handleAudio(play)
         #expect(env.player2Root.audioRoot.audioController.model.currentId == audioId)
+        #expect(Set(env.player2Root.audioRoot.gameController.gameModel.playerReport(for: audioId)) == Set([
+            env.masterConfig.id,
+            env.player1Config.id,
+            env.player2Config.id,
+            env.player3Config.id
+        ]))
     }
 
     @Test("Reconnect report retries a pending transfer for an unavailable player")
@@ -144,7 +237,9 @@ extension MultiConnectionAudioTests {
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
 
         // When - Player 2 reconnects and its fresh database report still lacks the audio.
-        _ = try await env.master.handleAudio(Self.audioReport(from: env.player2Root, availableIds: []))
+        _ = try await env.master.handleAudio(
+            Self.audioReport(from: env.player2Root, availableIds: [], counter: 2)
+        )
 
         // Then - The list converges first, followed by a new targeted transfer.
         let sent = env.masterNetworkSpy.sendResponseHistory
@@ -179,7 +274,9 @@ extension MultiConnectionAudioTests {
         // When
         await env.master.game(message: pauseData, actionType: .playAudio)
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
-        _ = try await env.master.handleAudio(Self.audioReport(from: env.player2Root, availableIds: [audioId]))
+        _ = try await env.master.handleAudio(
+            Self.audioReport(from: env.player2Root, availableIds: [audioId], counter: 2)
+        )
 
         // Then - Availability still synchronizes, but the cancelled play is not restarted.
         let sent = env.masterNetworkSpy.sendResponseHistory
@@ -247,6 +344,36 @@ extension MultiConnectionAudioTests {
         #expect(env.player1Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.masterConfig.id))
     }
 
+    @Test("Pause command does not mark missing players as having audio")
+    func pauseDoesNotMarkAudioAvailability() async throws {
+        // Given
+        let env = try await MultiConnectionTestEnvironment.create()
+        let audioId = UUID()
+        env.player1Root.audioRoot.gameController.gameModel.setCurrent(players: [
+            env.masterConfig.id,
+            env.player1Config.id,
+            env.player2Config.id
+        ])
+        let pause = env.masterRoot.gameModel.outgoingMessage(
+            counter: 1,
+            type: .update,
+            subType: .playAudio,
+            asMaster: true,
+            data: NetworkCodableDataType(
+                id: audioId,
+                type: .audio,
+                version: 0,
+                data: AudioPlayRequest(id: audioId, shouldPlay: false).encodeData()
+            )
+        )
+
+        // When
+        _ = try await env.player1.handleAudio(pause)
+
+        // Then
+        #expect(env.player1Root.audioRoot.gameController.gameModel.playerReport(for: audioId).isEmpty)
+    }
+
     @Test("SharePlay receivers load while the master device initiates coordinated playback")
     func sharePlayPlaybackPolicy() {
         #expect(PlayerController.shouldStartAudioPlayback(isSharePlayActive: false, asGameMaster: false))
@@ -287,14 +414,34 @@ private extension MultiConnectionAudioTests {
         return env
     }
 
-    static func audioReport(from root: GameRoot, availableIds: [UUID]) -> GameNetworkModel {
+    static func audioReport(from root: GameRoot, availableIds: [UUID], counter: Int = 1) -> GameNetworkModel {
         let request = AudioListRequest(list: availableIds, players: [:])
         return root.gameModel.outgoingMessage(
-            counter: 1,
+            counter: counter,
             type: .update,
             subType: .audioList,
             asMaster: false,
             data: NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: request.encodeData())
+        )
+    }
+
+    static func authoritativeAudioList(
+        from root: GameRoot,
+        counter: Int,
+        players: [UUID: [UUID]]
+    ) -> GameNetworkModel {
+        let request = AudioListRequest(list: [], players: players)
+        return root.gameModel.outgoingMessage(
+            counter: counter,
+            type: .update,
+            subType: .audioList,
+            asMaster: true,
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: .audio,
+                version: 0,
+                data: request.encodeData()
+            )
         )
     }
 

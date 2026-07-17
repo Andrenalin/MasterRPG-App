@@ -6,6 +6,7 @@ import RPGResourcesDebug
 import Testing
 
 @testable import GameRPG
+@testable import AudioRPG
 @testable import CharacterRPG
 @testable import WeatherRPG
 
@@ -154,6 +155,57 @@ struct MasterControllerLostPlayerTests {
         await env.master.lostPlayer(for: connId)
 
         #expect(env.root.gameModel.gameRoster.players.isEmpty)
+    }
+
+    @Test("lostPlayer removes only the departed player from audio availability reports")
+    func lostPlayerPrunesDepartedPlayerFromAudioReports() async throws {
+        // Given
+        let env = try await ConnectionTestEnvironment.make()
+        let departingConnectionId = UUID()
+        let remainingConnectionId = UUID()
+        let departingPlayerId = env.playerMessage.sender.id
+        let remainingPlayerId = UUID()
+        let remainingPlayerConfig = GameConfigModel(
+            id: remainingPlayerId,
+            state: .started,
+            master: .empty
+        )
+        let remainingPlayerMessage = GameNetworkModel(
+            counter: 0,
+            proxyCounter: 0,
+            type: .store,
+            subType: .store,
+            gameConfig: remainingPlayerConfig,
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(id: remainingPlayerId, type: .player, name: "Remaining Player")
+            ]),
+            data: NetworkCodableDataType(id: UUID(), type: .setting, version: 0, data: nil)
+        )
+        await env.master.receivedProcess(env.playerMessage, connectionId: departingConnectionId)
+        await env.master.receivedProcess(remainingPlayerMessage, connectionId: remainingConnectionId)
+
+        let sharedAudioId = UUID()
+        let departingOnlyAudioId = UUID()
+        env.root.audioRoot.audioGameControllable.applyAudio(
+            id: sharedAudioId,
+            for: [departingPlayerId, remainingPlayerId]
+        )
+        env.root.audioRoot.audioGameControllable.applyAudio(
+            id: departingOnlyAudioId,
+            for: [departingPlayerId]
+        )
+        #expect(
+            Set(env.root.audioRoot.gameControllable.gameModel.playerReport(for: sharedAudioId)) ==
+                [departingPlayerId, remainingPlayerId]
+        )
+
+        // When
+        await env.master.lostPlayer(for: departingConnectionId)
+
+        // Then
+        let audioReports = env.root.audioRoot.gameControllable.gameModel.playerReports
+        #expect(audioReports.values.allSatisfy { !$0.contains(departingPlayerId) })
+        #expect(audioReports[sharedAudioId]?.contains(remainingPlayerId) == true)
     }
 
     @Test("lostPlayer for the old connectionId does not remove a player who has already reconnected")

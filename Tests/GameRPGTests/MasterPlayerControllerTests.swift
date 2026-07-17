@@ -175,10 +175,14 @@ final class MasterPlayerControllerTests {
 
         response = try await sut.handle(result!)
         #expect(nil == response)
-        #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: audioId).sorted() == [gameConfigModelPlayer.id, gameConfigModelSut.id].sorted())
-        #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: subAudioId).sorted() == [gameConfigModelPlayer.id, gameConfigModelSut.id].sorted())
+        #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: audioId) == [gameConfigModelPlayer.id])
+        #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: subAudioId) == [gameConfigModelPlayer.id])
 
         let playData = rootSut.audioRoot.gameController.requestPlay(id: audioId)
+        rootPlayer.audioRoot.gameController.gameModel.setCurrent(players: [
+            gameConfigModelPlayer.id,
+            gameConfigModelSut.id
+        ])
         await sut.game(message: playData, actionType: .playAudio)
         let sendedPlayAudioData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
         #expect(nil != sendedPlayAudioData)
@@ -190,6 +194,9 @@ final class MasterPlayerControllerTests {
         let audioFirst = rootSut.audioRoot.itemController.itemDataModel.items[1]
         #expect(rootPlayer.audioRoot.audioController.model.playList[1].id == audioFirst)
         #expect(rootPlayer.audioRoot.audioController.model.currentId == audioId)
+        let expectedPlayers = Set([gameConfigModelPlayer.id, gameConfigModelSut.id])
+        #expect(Set(rootPlayer.audioRoot.gameController.gameModel.playerReport(for: audioId)) == expectedPlayers)
+        #expect(Set(rootPlayer.audioRoot.gameController.gameModel.playerReport(for: subAudioId)) == expectedPlayers)
     }
 
     @Test func handleDice() async throws {

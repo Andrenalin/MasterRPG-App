@@ -10,27 +10,38 @@ struct AsyncThumbnail: View {
 
     @Environment(PhotoRootModel.self) private var root
 
+    @State private var renderedImage: AKImage?
+    @State private var renderedImageKey: AsyncThumbnailLoadKey?
     @State private var lastLoadKey: AsyncThumbnailLoadKey?
     @State private var isLoading: Bool = false
 
     var body: some View {
-        if let itemId {
-            let model = root.gameController.gameItem(for: itemId)
-            let key = loadKey(for: model)
-            Group {
-                if let image = cachedImage(for: model.id) {
-                    Image(akImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } else {
-                    placeholderView
+        Group {
+            if let itemId {
+                let model = root.gameController.gameItem(for: itemId)
+                let key = loadKey(for: model)
+                Group {
+                    if renderedImageKey == key, let renderedImage {
+                        Image(akImage: renderedImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else {
+                        placeholderView
+                    }
                 }
+                .task(id: key) {
+                    await initImage(for: model, key: key)
+                }
+            } else {
+                placeholderView
             }
-            .task(id: key) {
-                await initImage(for: model, key: key)
-            }
-        } else {
-            placeholderView
+        }
+        .onChange(of: itemId) { _, newItemId in
+            guard newItemId == nil else { return }
+            renderedImage = nil
+            renderedImageKey = nil
+            lastLoadKey = nil
+            isLoading = false
         }
     }
 }
@@ -45,12 +56,20 @@ private struct AsyncThumbnailLoadKey: Equatable {
     let version: Int
 }
 
+extension AsyncThumbnail {
+    nonisolated static let fullImageMinimumSide: CGFloat = 160
+
+    nonisolated static func shouldUseFullImage(for size: CGSize) -> Bool {
+        max(size.width, size.height) >= fullImageMinimumSide
+    }
+}
+
 private extension AsyncThumbnail {
     /// Zoomed map pins need more than the shared 64-point list thumbnail.
     /// Reuse the full-photo cache only for those large presentations; ordinary
     /// pins stay on the cheaper thumbnail path.
     var usesFullImage: Bool {
-        max(size.width, size.height) > 64
+        Self.shouldUseFullImage(for: size)
     }
 
     /// Synchronously access the appropriate observable cache.
@@ -83,18 +102,29 @@ private extension AsyncThumbnail {
     
     /// Initialize image loading with deduplication
     func initImage(for model: PhotoModel, key: AsyncThumbnailLoadKey) async {
-        guard model.fileUrl != nil else {
+        if let cachedImage = cachedImage(for: model.id) {
+            guard !Task.isCancelled else { return }
+            renderedImage = cachedImage
+            renderedImageKey = key
             lastLoadKey = key
             isLoading = false
             return
         }
-        // Avoid redundant loads once this exact image/version/quality request
-        // already has an observable cached image.
-        guard lastLoadKey != key || cachedImage(for: model.id) == nil else {
+
+        guard model.fileUrl != nil else {
+            renderedImage = nil
+            renderedImageKey = nil
+            lastLoadKey = key
             isLoading = false
             return
         }
-        
+        guard lastLoadKey != key || renderedImageKey != key else {
+            isLoading = false
+            return
+        }
+
+        renderedImage = nil
+        renderedImageKey = nil
         isLoading = true
         lastLoadKey = key
         await loadImage(for: model, key: key)
@@ -128,6 +158,8 @@ private extension AsyncThumbnail {
         } else {
             cacheController.setCachedThumbnail(newImage, for: id)
         }
+        renderedImage = newImage
+        renderedImageKey = newImage == nil ? nil : key
         isLoading = false
     }
 }

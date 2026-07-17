@@ -42,6 +42,7 @@ final class PlayerControllerModel: Sendable {
     var messageCounter: Int = 0
     private var outgoingMessageCounter: Int = 1
     private var lastMasterStateCounters: [UUID: Int] = [:]
+    private var lastAudioListCounters: [UUID: Int] = [:]
     private var presentationIntents: [UUID: PresentationIntent] = [:]
     var lostMaster: Bool = true
     var hasSendPlayer = false
@@ -91,6 +92,21 @@ final class PlayerControllerModel: Sendable {
 
     func resetMasterStateSequence() {
         lastMasterStateCounters.removeAll()
+    }
+
+    func canApplyAudioList(from masterId: UUID, counter: Int) -> Bool {
+        guard counter >= 0 else { return false }
+        guard counter > 0 else { return true }
+        return counter > (lastAudioListCounters[masterId] ?? 0)
+    }
+
+    func recordAudioList(counter: Int, from masterId: UUID) {
+        guard counter > 0 else { return }
+        lastAudioListCounters[masterId] = counter
+    }
+
+    func resetAudioListSequence() {
+        lastAudioListCounters.removeAll()
     }
 
     /// Accepts presentation content according to the latest master intent, not
@@ -369,6 +385,7 @@ extension PlayerController {
         gameModel.requestedRepairIds = []
         gameModel.requestedFullMapIds = []
         gameModel.resetMasterStateSequence()
+        gameModel.resetAudioListSequence()
         gameModel.resetPresentationSequence()
         gameModel.resetMapContentSequence()
     }
@@ -462,6 +479,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             gameModel.requestedRepairIds = []
             gameModel.requestedFullMapIds = []
             gameModel.resetMasterStateSequence()
+            gameModel.resetAudioListSequence()
             gameModel.resetPresentationSequence()
             gameModel.resetMapContentSequence()
         }
@@ -743,10 +761,12 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .audioList:
-                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.sender.id, authoritative: model.sender.isMaster)
+                _ = await applyAudioList(model)
             case .playAudio:
                 guard model.sender.isMaster else { return nil }
-                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: (model.masterState?.controls.map { $0.id } ?? []) + [model.masterId])
+                if await root.audioRoot.audioGameControllable.shouldPlay(with: model.data) {
+                    await reportAudioAvailableToCurrentPlayers(itemId: model.data.id, model: model)
+                }
                 let asGameMaster = await gameModel.asGameMaster
                 if Self.shouldStartAudioPlayback(
                     isSharePlayActive: usesSharePlayPlaybackCoordination,
@@ -763,6 +783,33 @@ extension PlayerController {
             }
         }
         return nil
+    }
+
+    @MainActor
+    private func applyAudioList(_ model: GameNetworkModel) -> Bool {
+        guard model.sender.isMaster,
+              gameModel.canApplyAudioList(from: model.masterId, counter: model.counter),
+              root.audioRoot.audioGameControllable.applyAudioList(
+                  data: model.data,
+                  for: model.masterId,
+                  authoritative: true
+              )
+        else { return false }
+
+        gameModel.recordAudioList(counter: model.counter, from: model.masterId)
+        return true
+    }
+
+    @MainActor
+    private func reportAudioAvailableToCurrentPlayers(itemId: UUID, model: GameNetworkModel) {
+        var playerIds = Set(root.audioRoot.gameControllable.gameModel.currentPlayers)
+        if playerIds.isEmpty {
+            playerIds.formUnion(model.masterState?.controls.compactMap { $0.show ? $0.id : nil } ?? [])
+        }
+        playerIds.insert(model.masterId)
+        for playerId in playerIds {
+            root.audioRoot.gameControllable.report(itemId: itemId, for: playerId)
+        }
     }
 
     func handleDice(_ model: GameNetworkModel) async throws -> GameNetworkModel? {

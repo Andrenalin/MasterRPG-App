@@ -15,7 +15,8 @@ public protocol AudioGameStoreable {
 
     @MainActor func audioList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType
     @MainActor func applyAudio(id: UUID, for players: [UUID])
-    @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool)
+    @discardableResult
+    @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool) -> Bool
     @MainActor func missingPlayers(for itemId: UUID) -> [UUID]
     func hasLocalAudioData(for itemId: UUID) async -> Bool
     func play(with data: NetworkCodableDataType) -> Task<Void, Error>
@@ -92,13 +93,19 @@ extension GameController: GameControllable {
     }
 
     @MainActor func report(itemId: UUID, for player: UUID) {
+        report(itemId: itemId, for: player, visited: [])
+    }
+
+    @MainActor private func report(itemId: UUID, for player: UUID, visited: Set<UUID>) {
+        guard !visited.contains(itemId) else { return }
+        let visited = visited.union([itemId])
         let item = gameItem(for: itemId)
         let players = gameModel.playerReport(for: itemId)
         if !players.contains(player) {
             gameModel.setPlayerReport(playerId: player, for: itemId)
-            for entry in item.entries {
-                report(itemId: entry.audioId, for: player)
-            }
+        }
+        for entry in item.entries {
+            report(itemId: entry.audioId, for: player, visited: visited)
         }
     }
 }
@@ -268,8 +275,9 @@ extension GameController: AudioGameStoreable {
     }
 
     @MainActor
-    func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool) {
-        guard let list = AudioListRequest.decodeData(of: data.data) else { return }
+    @discardableResult
+    func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool) -> Bool {
+        guard let list = AudioListRequest.decodeData(of: data.data) else { return false }
         if authoritative {
             let itemIds = Set(itemController.itemDataModel.items)
                 .union(gameModel.playerReports.keys)
@@ -290,6 +298,7 @@ extension GameController: AudioGameStoreable {
                 gameModel.playerReports[itemId] = players
             }
         }
+        return true
     }
     
     func play(with data: NetworkCodableDataType) -> Task<Void, Error> {

@@ -53,6 +53,12 @@ public final class ItemGameModel {
             playerReports[itemId]!.append(playerId)
         }
     }
+
+    public func removePlayerReport(for playerId: UUID) {
+        playerReports = playerReports.mapValues { players in
+            players.filter { $0 != playerId }
+        }
+    }
     
     func append(itemId: UUID, item: ModelType, onlyItem: Bool = false) {
         if !onlyItem {

@@ -21,6 +21,7 @@ final class MapEditorModel {
     var editEntries: MapEntryViewerModel
     var focusId: MapEntryModel.ID?
     var appeared = false
+    private(set) var mapId: UUID
 
     // Working copy of MapModel — owned here, mutated by MapEditController
     var workingCopy: MapModel?
@@ -92,6 +93,8 @@ final class MapEditorModel {
     private var photoDegrees: Double
     private var canvasSize: CGSize
     private var containerSize: CGSize
+    @ObservationIgnored private var legacyMagnificationBaseline: MapViewportTransform?
+    @ObservationIgnored private var appearanceTask: Task<Void, Never>?
 
     // MARK: - Initialization
 
@@ -112,6 +115,7 @@ final class MapEditorModel {
         self.displayMode = displayMode
         self.mapMode = mapMode
         self.playerPinId = playerPinId
+        self.mapId = map.id
 
         self.imageModel = ImageViewerModel(offset: .zero, scale: 1)
         self.pins = MapPinViewModel(mapPins: map.mapPins, pointer: map.pointer)
@@ -167,8 +171,12 @@ final class MapEditorModel {
         }
 
         guard pins.mapPins != modified else { return }
-        withAnimation(.bouncy) {
+        if mapMode == .edit {
             pins.mapPins = modified
+        } else {
+            withAnimation(.bouncy) {
+                pins.mapPins = modified
+            }
         }
     }
 
@@ -225,14 +233,29 @@ final class MapEditorModel {
     // MARK: - Change Management (view state only — no save)
 
     func changeImage(map: MapModel) {
+        appearanceTask?.cancel()
+        appearanceTask = nil
+        let changedMap = mapId != map.id
+        mapId = map.id
         hexScale = map.hexMapScale
         pinScale = map.pinScale
         resetReshare()
 
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(150))
-            self.changeMap(map: map)
+        if changedMap {
+            appeared = false
+            focusId = nil
+            workingCopy = nil
+            pins.isExpandedId = nil
+            editEntries.needleInteraction.dragCoordinate = nil
+            pins.mapPins = map.mapPins
+            pins.pointer = map.pointer
+            entries.resetEntries(
+                mapId: map.id,
+                entries: mapMode == .edit ? [] : map.entries
+            )
+            editEntries.resetEntries(mapId: map.id, entries: [])
         }
+        changeMap(map: map)
     }
 
     func changeMap(map: MapModel) {
@@ -249,17 +272,35 @@ final class MapEditorModel {
     // MARK: - First Appear
 
     func firstAppear(map: MapModel) {
-        Task {
+        appearanceTask?.cancel()
+        let expectedMapId = map.id
+        appearanceTask = Task { [weak self] in
+            guard let self else { return }
             let delay: Duration = mapMode == .edit ? .milliseconds(50) : .milliseconds(150)
-            try? await Task.sleep(for: delay)
-            await MainActor.run {
-                appeared = true
-                resetEntries(newEntries: map.entries, map: map)
-                withAnimation {
-                    if focusId == nil { resetZoom() } else { focusedMap() }
-                }
+            do {
+                try await Task.sleep(for: delay)
+            } catch {
+                return
             }
+            guard !Task.isCancelled, self.mapId == expectedMapId else { return }
+            appeared = true
+            resetEntries(newEntries: map.entries, map: map)
+            withAnimation {
+                if focusId == nil { resetZoom() } else { focusedMap() }
+            }
+            appearanceTask = nil
         }
+    }
+
+    func disappear() {
+        appearanceTask?.cancel()
+        appearanceTask = nil
+        appeared = false
+        isDragging = .nothing
+        isTapping = .nothing
+        editEntries.eaten = false
+        editEntries.addedNewNeedlePoint = nil
+        editEntries.needleInteraction.dragCoordinate = nil
     }
 
     // MARK: - Zooming
@@ -271,6 +312,51 @@ final class MapEditorModel {
         )
         imageModel.normScale = newScale
         zoom(scale: newScale, at: newOffset)
+    }
+
+    /// The absolute transform to capture when a pan or magnification begins.
+    var viewportTransform: MapViewportTransform {
+        imageModel.viewportTransform
+    }
+
+    /// Derives a transient transform from one immutable gesture baseline.
+    /// `startAnchor` maps directly to `MagnifyGesture.Value.startAnchor`.
+    func magnifiedViewportTransform(
+        from baseline: MapViewportTransform,
+        magnification: CGFloat,
+        startAnchor: UnitPoint
+    ) -> MapViewportTransform {
+        magnifiedViewportTransform(
+            from: baseline,
+            magnification: magnification,
+            anchor: viewportPoint(for: startAnchor)
+        )
+    }
+
+    /// Point-based overload for tests and non-SwiftUI input sources.
+    func magnifiedViewportTransform(
+        from baseline: MapViewportTransform,
+        magnification: CGFloat,
+        anchor: CGPoint
+    ) -> MapViewportTransform {
+        let proposed = baseline.magnified(by: magnification, around: anchor)
+        return constrainedViewportTransform(proposed)
+    }
+
+    /// Derives a transient pan without mutating the observable model.
+    func pannedViewportTransform(
+        from baseline: MapViewportTransform,
+        translation: CGSize
+    ) -> MapViewportTransform {
+        constrainedViewportTransform(baseline.translated(by: translation))
+    }
+
+    /// Commits the final transient transform once a gesture succeeds.
+    func commitViewportTransform(_ transform: MapViewportTransform) {
+        applyViewportTransform(transform)
+        imageModel.lastScale = transform.scale
+        imageModel.lastOffset = transform.offset
+        legacyMagnificationBaseline = nil
     }
 
     func zooming(on location: CGPoint) {
@@ -288,26 +374,29 @@ final class MapEditorModel {
 
     func zoom(scale: CGFloat, at offset: CGPoint) {
         withAnimation {
-            imageModel.scale = scale
-            imageModel.lastScale = imageModel.scale
-            imageModel.offset = offset
-            imageModel.lastOffset = imageModel.offset
+            commitViewportTransform(MapViewportTransform(scale: scale, offset: offset))
         }
     }
 
     func zoomIn(at point: CGPoint) -> (CGFloat, CGPoint) {
-        let newScale = max(0.1, imageModel.scale * 4)
-        let offPoint = (point - imageModel.offset) / imageModel.scale
+        let baseline = viewportTransform
+        guard baseline.scale.isFinite, baseline.scale > 0 else {
+            return (MapViewportTransform.minimumScale, baseline.offset)
+        }
 
-        updateScale(newScale, updateLast: false)
-
-        let pswidth = (containerSize.width / newScale) / 2
-        let psHeight = (containerSize.height / newScale) / 2
-        let offset = CGPoint(
-            x: -1 * (offPoint.x - pswidth) * imageModel.scale,
-            y: -1 * (offPoint.y - psHeight) * imageModel.scale
+        let newScale = max(MapViewportTransform.minimumScale, baseline.scale * 4)
+        let centeredPoint = CGPoint(
+            x: containerSize.width / 2,
+            y: containerSize.height / 2
         )
-        return (newScale, offset)
+        let centered = baseline
+            .magnified(by: newScale / baseline.scale, around: point)
+            .translated(by: CGSize(
+                width: centeredPoint.x - point.x,
+                height: centeredPoint.y - point.y
+            ))
+        let constrained = constrainedViewportTransform(centered)
+        return (constrained.scale, constrained.offset)
     }
 
     func focusedMap() {
@@ -327,36 +416,31 @@ final class MapEditorModel {
         let newScale = min(sw, sh)
 
         withAnimation {
-            imageModel.scale = max(0.1, newScale)
-            imageModel.lastScale = imageModel.scale
-            imageModel.offset = CGPoint(
-                x: -1 * (focusMap.xOffset - 25) * imageModel.scale,
-                y: -1 * (focusMap.yOffset - 25) * imageModel.scale
-            )
-            imageModel.lastOffset = imageModel.offset
+            let scale = max(MapViewportTransform.minimumScale, newScale)
+            commitViewportTransform(MapViewportTransform(
+                scale: scale,
+                offset: CGPoint(
+                    x: -1 * (focusMap.xOffset - 25) * scale,
+                    y: -1 * (focusMap.yOffset - 25) * scale
+                )
+            ))
         }
     }
 
     // MARK: - Gesture: Scale
 
     func updateScale(_ value: CGFloat, updateLast: Bool) {
-        if updateLast {
-            imageModel.lastScale = value
+        if updateLast || legacyMagnificationBaseline == nil {
+            legacyMagnificationBaseline = viewportTransform
         }
-
-        let delta = value / imageModel.lastScale
-        let newScale = imageModel.scale * delta
-
-        guard newScale >= 0.1 else { return }
-
-        let imgSize = canvasSize
-        let scaleDiff = (newScale - imageModel.scale) / 2
-        let imgOff = imgSize * scaleDiff
-        let newOffsetNew = CGPoint(x: -imgOff.width, y: -imgOff.height)
-
-        imageModel.lastScale = value
-        imageModel.scale = newScale
-        updateOffset(with: newOffsetNew, firstOffset: imageModel.offset)
+        guard let baseline = legacyMagnificationBaseline else { return }
+        let transform = magnifiedViewportTransform(
+            from: baseline,
+            magnification: value,
+            startAnchor: .center
+        )
+        applyViewportTransform(transform)
+        imageModel.lastScale = transform.scale
     }
 
     // MARK: - Gesture: Drag
@@ -366,29 +450,19 @@ final class MapEditorModel {
     }
 
     func updateOffset(with newLocation: CGPoint, firstOffset: CGPoint) {
-        let imgSize = canvasSize
-        let offX = max(300, (containerSize.width - imgSize.width * imageModel.scale) / 2)
-        let offY = max(300, (containerSize.height - imgSize.height * imageModel.scale) / 2)
-        let minX = containerSize.width - (imgSize.width * imageModel.scale) - offX
-        let minY = containerSize.height - (imgSize.height * imageModel.scale) - offY
-
-        var newOffset = firstOffset + newLocation
-        newOffset.x = min(max(newOffset.x, minX), offX)
-        newOffset.y = min(max(newOffset.y, minY), offY)
-
+        let baseline = MapViewportTransform(scale: imageModel.scale, offset: firstOffset)
+        let transform = pannedViewportTransform(
+            from: baseline,
+            translation: CGSize(width: newLocation.x, height: newLocation.y)
+        )
+        applyViewportTransform(transform)
         imageModel.lastOffset = firstOffset
-        imageModel.offset = newOffset
     }
 
     // MARK: - Gesture: Double Tap
 
     func onDoubleTapped(with location: CGPoint) {
-        if editEntries.eaten {
-            editEntries.eaten = false
-            isTapping = .nothing
-        } else {
-            zooming(on: location)
-        }
+        zooming(on: location)
     }
 
     // MARK: - Gesture Handlers
@@ -421,6 +495,31 @@ final class MapEditorModel {
     func endAction() {
         isDragging = .nothing
         isTapping = .nothing
+        imageModel.lastScale = imageModel.scale
+        imageModel.lastOffset = imageModel.offset
+        legacyMagnificationBaseline = nil
+    }
+
+    private func viewportPoint(for unitPoint: UnitPoint) -> CGPoint {
+        CGPoint(
+            x: containerSize.width * unitPoint.x,
+            y: containerSize.height * unitPoint.y
+        )
+    }
+
+    private func constrainedViewportTransform(
+        _ transform: MapViewportTransform
+    ) -> MapViewportTransform {
+        MapEditorGeometry.constrainedViewportTransform(
+            transform,
+            containerSize: containerSize,
+            contentSize: canvasSize
+        )
+    }
+
+    private func applyViewportTransform(_ transform: MapViewportTransform) {
+        imageModel.scale = transform.scale
+        imageModel.offset = transform.offset
     }
 
     // MARK: - Helper Methods
@@ -536,6 +635,53 @@ struct MapEditorGeometry {
         let y = (containerSize.height - contentSize.height * scale) / 2.0
         let offset = CGPoint(x: x, y: y)
         return (scale, offset)
+    }
+
+    static func constrainedViewportTransform(
+        _ transform: MapViewportTransform,
+        containerSize: CGSize,
+        contentSize: CGSize,
+        overscroll: CGFloat = 300
+    ) -> MapViewportTransform {
+        let minimumScale = MapViewportTransform.minimumScale
+        let scale = transform.scale.isFinite
+            ? max(minimumScale, transform.scale)
+            : minimumScale
+        let offset = CGPoint(
+            x: transform.offset.x.isFinite ? transform.offset.x : 0,
+            y: transform.offset.y.isFinite ? transform.offset.y : 0
+        )
+
+        guard containerSize.width.isFinite,
+              containerSize.height.isFinite,
+              containerSize.width > 0,
+              containerSize.height > 0,
+              contentSize.width.isFinite,
+              contentSize.height.isFinite,
+              contentSize.width > 0,
+              contentSize.height > 0 else {
+            return MapViewportTransform(scale: scale, offset: offset)
+        }
+
+        let boundedOverscroll = overscroll.isFinite ? max(0, overscroll) : 0
+        let maxX = max(
+            boundedOverscroll,
+            (containerSize.width - contentSize.width * scale) / 2
+        )
+        let maxY = max(
+            boundedOverscroll,
+            (containerSize.height - contentSize.height * scale) / 2
+        )
+        let minX = containerSize.width - contentSize.width * scale - maxX
+        let minY = containerSize.height - contentSize.height * scale - maxY
+
+        return MapViewportTransform(
+            scale: scale,
+            offset: CGPoint(
+                x: min(max(offset.x, minX), maxX),
+                y: min(max(offset.y, minY), maxY)
+            )
+        )
     }
 
     static func normScale(screenSize: CGSize, contentSize: CGSize) -> CGFloat {

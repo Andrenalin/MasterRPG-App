@@ -1053,8 +1053,8 @@ Main payload types:
 
 Master handling:
 
-- `.ok`: record the player's audio availability, broadcast the converged
-  `.update/.audioList`, then continue any pending play
+- `.ok`: record the player's audio availability and continue any pending play;
+  the eventual `.update/.playAudio` makes a second full-list broadcast unnecessary
 - `.failed`: release that player's in-flight transfer so a later report/reconnect
   can retry it
 - `.reveal` / `.store`: return full audio payload
@@ -1062,15 +1062,19 @@ Master handling:
 - `.update/.playAudio`: cancel immediately for pause; for play, wait until every
   controlled player has the audio, target `.store/.show` payloads at missing
   player IDs, then broadcast the play command
-- `.update/.audioList`: apply player's list, then broadcast all-player audio list
+- `.update/.audioList`: accept a successfully decoded report only when its
+  per-player message counter is newer, apply it, then broadcast the authoritative
+  all-player audio list. Counter zero remains an unsequenced legacy format.
 
 Player handling:
 
 - `.reveal`: import/show if available, otherwise request payload
 - `.store`: import hidden/background audio data, ACK
-- `.update/.audioList`: update audio reports for the sending player
-- `.update/.playAudio`: mark the audio as available for all controlled players
-  and the master, then play/load it
+- `.update/.audioList`: accept only a successfully decoded, newer authoritative
+  list from the master
+- `.update/.playAudio`: for a play command, recursively mark the audio and its
+  playlist entries as available for all current visible players and the master,
+  then play/load it. Pause does not change availability.
 
 SharePlay audio special case:
 
@@ -1088,6 +1092,9 @@ Player join sync:
 
 Audio reports are recursive for playlist entries. `allPlayersReported(for:)`
 checks the root audio item and nested entries.
+
+When a player disconnects, the master removes that player from every audio
+availability report and clears the player's last accepted audio-list counter.
 
 ### Photo
 
@@ -1531,13 +1538,13 @@ Master:
   checks authoritative audio availability
   if players are missing bytes:
     sends targeted .store/.show audio payloads
-    waits for successful receipts/audio-list convergence
+    waits for successful receipts
 
 Master -> all:
   .update/.playAudio
 
 Players:
-  mark audio as available for controlled players/master
+  mark audio as available for current visible players/master
   play normally, or load for SharePlay-coordinated playback
 ```
 

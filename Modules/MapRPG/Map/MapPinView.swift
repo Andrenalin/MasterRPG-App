@@ -4,76 +4,328 @@ import CoreRPG
 import PhotoRPG
 import SwiftUI
 
+/// A single event channel keeps controller/network side effects out of every pin
+/// view. The store is configured once by the owning map surface.
+enum MapPinInteractionEvent: Equatable {
+    case tap(pin: MapPinModel, isPointer: Bool)
+    case doubleTap(pin: MapPinModel, isPointer: Bool)
+    case move(pin: MapPinModel, isPointer: Bool)
+    case action(
+        MapPinButtonType,
+        pin: MapPinModel,
+        isPointer: Bool,
+        context: MapPinActionContext
+    )
+}
+
 @MainActor @Observable
-final class MapPinViewModel {
-    init(mapPins: [MapPinModel], pointer: MapPinModel) {
-        self.mapPins = mapPins
-        self.pointer = pointer
+final class MapPinNode: Identifiable {
+    init(pin: MapPinModel, isPointer: Bool = false) {
+        self.id = pin.id
+        self.pin = pin
+        self.isPointer = isPointer
     }
 
-    var mapPins: [MapPinModel]
-    var pointer: MapPinModel
-    var isExpandedId: UUID?
+    let id: UUID
+    private(set) var pin: MapPinModel
+    private(set) var isExpanded = false
+    var isPhotoSelectionPresented = false
+    let isPointer: Bool
+
+    @ObservationIgnored private weak var store: MapPinViewModel?
+
+    var presentedPin: MapPinModel {
+        guard isPointer else { return pin }
+        var presented = pin
+        presented.isDead = false
+        presented.isHighlighted = false
+        return presented
+    }
+
+    func handleTap(context: MapPinActionContext) {
+        store?.handleTap(on: self, context: context)
+    }
+
+    func openActions(context: MapPinActionContext) {
+        store?.openActions(on: self, context: context)
+    }
+
+    func handleDoubleTap() {
+        store?.handleDoubleTap(on: self)
+    }
+
+    func move(by translation: CGSize) {
+        store?.move(self, by: translation)
+    }
+
+    func beginMove() {
+        guard isExpanded else { return }
+        store?.collapseActions(for: self)
+    }
+
+    func perform(_ action: MapPinButtonType, context: MapPinActionContext) {
+        store?.perform(action, on: self, context: context)
+    }
+
+    func replacePhoto(with itemId: UUID?) {
+        store?.replacePhoto(pinId: id, itemId: itemId)
+    }
+
+    fileprivate func attach(to store: MapPinViewModel) {
+        self.store = store
+    }
+
+    fileprivate func update(pin: MapPinModel) {
+        guard self.pin != pin else { return }
+        self.pin = pin
+    }
+
+    fileprivate func setExpanded(_ isExpanded: Bool) {
+        guard self.isExpanded != isExpanded else { return }
+        self.isExpanded = isExpanded
+        if !isExpanded {
+            isPhotoSelectionPresented = false
+        }
+    }
+}
+
+@MainActor @Observable
+final class MapPinViewModel {
+    typealias InteractionHandler = @MainActor (MapPinInteractionEvent) -> Void
+
+    init(mapPins: [MapPinModel], pointer: MapPinModel) {
+        mapPinNodes = mapPins.map { MapPinNode(pin: $0) }
+        pointerNode = MapPinNode(pin: pointer, isPointer: true)
+        attachNodes()
+    }
+
+    /// Structural changes invalidate the layer. Mutating one node does not
+    /// replace this array, so sibling pins retain identity and stay untouched.
+    private(set) var mapPinNodes: [MapPinNode]
+    private(set) var pointerNode: MapPinNode
+    private var expandedId: UUID?
+
+    @ObservationIgnored private var interactionHandler: InteractionHandler?
+
+    /// Compatibility DTO surface for controllers and persistence. Rendering
+    /// should iterate `mapPinNodes` and pass each node directly to the leaf.
+    var mapPins: [MapPinModel] {
+        get { mapPinNodes.map(\.pin) }
+        set { reconcileMapPins(with: newValue) }
+    }
+
+    var pointer: MapPinModel {
+        get { pointerNode.pin }
+        set { reconcilePointer(with: newValue) }
+    }
+
+    var isExpandedId: UUID? {
+        get { expandedId }
+        set { setExpanded(id: newValue) }
+    }
+
+    func configureInteractionHandler(_ handler: InteractionHandler?) {
+        interactionHandler = handler
+    }
+
+    func pinNode(for id: UUID) -> MapPinNode? {
+        if pointerNode.id == id { return pointerNode }
+        return mapPinNodes.first { $0.id == id }
+    }
 
     func pinPointer(for id: UUID) -> MapPinModel? {
-        if pointer.id == id { return pointer }
-        return mapPins.first { $0.id == id }
+        pinNode(for: id)?.pin
     }
 
     func setPinPointer(updatedPin: MapPinModel) {
-        if pointer.id == updatedPin.id {
-            pointer = updatedPin
-        } else if let index = mapPins.firstIndex(where: { $0.id == updatedPin.id }) {
-            mapPins[index] = updatedPin
+        if pointerNode.id == updatedPin.id {
+            pointerNode.update(pin: updatedPin)
+        } else {
+            pinNode(for: updatedPin.id)?.update(pin: updatedPin)
         }
     }
 
     func removePin(id: UUID) {
-        mapPins.removeAll { $0.id == id }
-        if isExpandedId == id { isExpandedId = nil }
+        guard let index = mapPinNodes.firstIndex(where: { $0.id == id }) else { return }
+        mapPinNodes.remove(at: index)
+        if expandedId == id { setExpanded(id: nil) }
     }
 
     func replacePhoto(pinId: UUID, itemId: UUID?) {
-        guard var updatedPin = pinPointer(for: pinId) else { return }
+        guard let node = pinNode(for: pinId) else { return }
+        var updatedPin = node.pin
         updatedPin.photoId = itemId
-        setPinPointer(updatedPin: updatedPin)
+        node.update(pin: updatedPin)
+        interactionHandler?(.action(
+            .photo,
+            pin: updatedPin,
+            isPointer: node.isPointer,
+            context: .editor
+        ))
     }
 
     func copyPin(id: UUID) {
-        guard var pin = pinPointer(for: id) else { return }
+        guard let sourceIndex = mapPinNodes.firstIndex(where: { $0.id == id }) else { return }
+        var pin = mapPinNodes[sourceIndex].pin
         pin.id = UUID()
         pin.location = pin.location + (pin.size.size.width + 25)
-        if let index = mapPins.firstIndex(where: { $0.id == id }), index != mapPins.endIndex {
-            mapPins.insert(pin, at: index)
-        } else {
-            mapPins.append(pin)
-        }
+        let node = MapPinNode(pin: pin)
+        node.attach(to: self)
+        mapPinNodes.insert(node, at: sourceIndex)
     }
 
     func resizePin(id: UUID) {
-        guard var updatedPin = pinPointer(for: id) else { return }
+        guard let node = pinNode(for: id) else { return }
+        var updatedPin = node.pin
         updatedPin.size = updatedPin.size.nextSize()
-        setPinPointer(updatedPin: updatedPin)
+        node.update(pin: updatedPin)
     }
 
     func toggleDeadPin(id: UUID) {
-        guard var updatedPin = pinPointer(for: id) else { return }
+        guard let node = pinNode(for: id) else { return }
+        var updatedPin = node.pin
         updatedPin.isDead.toggle()
-        setPinPointer(updatedPin: updatedPin)
+        node.update(pin: updatedPin)
+    }
+
+    fileprivate func handleTap(on node: MapPinNode, context: MapPinActionContext) {
+        if context != .none {
+            setExpanded(id: node.isExpanded ? nil : node.id)
+        }
+        interactionHandler?(.tap(pin: node.pin, isPointer: node.isPointer))
+    }
+
+    fileprivate func openActions(on node: MapPinNode, context: MapPinActionContext) {
+        guard context != .none else {
+            handleTap(on: node, context: context)
+            return
+        }
+        // Opening is deliberately idempotent: both recognizers may observe a
+        // double tap, but it must not toggle or perform a second model action.
+        setExpanded(id: node.id)
+        interactionHandler?(.tap(pin: node.pin, isPointer: node.isPointer))
+    }
+
+    fileprivate func handleDoubleTap(on node: MapPinNode) {
+        setExpanded(id: nil)
+        interactionHandler?(.doubleTap(pin: node.pin, isPointer: node.isPointer))
+    }
+
+    fileprivate func move(_ node: MapPinNode, by translation: CGSize) {
+        guard translation != .zero else { return }
+        var updatedPin = node.pin
+        updatedPin.location = CGPoint(
+            x: updatedPin.location.x + translation.width,
+            y: updatedPin.location.y + translation.height
+        )
+        updatedPin.timeInterval = max(
+            Date.now.timeIntervalSince1970,
+            updatedPin.timeInterval.nextUp
+        )
+        node.update(pin: updatedPin)
+        interactionHandler?(.move(pin: updatedPin, isPointer: node.isPointer))
+    }
+
+    fileprivate func collapseActions(for node: MapPinNode) {
+        guard expandedId == node.id else { return }
+        setExpanded(id: nil)
+    }
+
+    fileprivate func perform(
+        _ action: MapPinButtonType,
+        on node: MapPinNode,
+        context: MapPinActionContext
+    ) {
+        let originalPin = node.pin
+        switch (context, action) {
+        case (.editor, .remove):
+            removePin(id: node.id)
+        case (.editor, .copy):
+            copyPin(id: node.id)
+        case (.editor, .photo):
+            node.isPhotoSelectionPresented = true
+            return
+        case (.editor, .resize):
+            resizePin(id: node.id)
+        case (.editor, .dead):
+            toggleDeadPin(id: node.id)
+        case (.editor, .visibility), (.editor, .zoom),
+             (.gameMaster, _), (.none, _):
+            break
+        }
+
+        let eventPin = pinNode(for: node.id)?.pin ?? originalPin
+        interactionHandler?(.action(
+            action,
+            pin: eventPin,
+            isPointer: node.isPointer,
+            context: context
+        ))
+    }
+
+    private func setExpanded(id: UUID?) {
+        guard expandedId != id else { return }
+        if let expandedId {
+            pinNode(for: expandedId)?.setExpanded(false)
+        }
+        expandedId = id
+        if let id {
+            pinNode(for: id)?.setExpanded(true)
+        }
+    }
+
+    private func reconcileMapPins(with pins: [MapPinModel]) {
+        var existingNodes: [UUID: MapPinNode] = [:]
+        for node in mapPinNodes where existingNodes[node.id] == nil {
+            existingNodes[node.id] = node
+        }
+
+        let reconciled = pins.map { pin in
+            if let node = existingNodes.removeValue(forKey: pin.id) {
+                node.update(pin: pin)
+                return node
+            }
+            let node = MapPinNode(pin: pin)
+            node.attach(to: self)
+            return node
+        }
+
+        let hasStructuralChange = reconciled.count != mapPinNodes.count
+            || zip(reconciled, mapPinNodes).contains { $0.id != $1.id }
+        if hasStructuralChange {
+            mapPinNodes = reconciled
+        }
+        if let expandedId, !pins.contains(where: { $0.id == expandedId }) {
+            setExpanded(id: nil)
+        }
+    }
+
+    private func reconcilePointer(with pin: MapPinModel) {
+        if pointerNode.id == pin.id {
+            pointerNode.update(pin: pin)
+        } else {
+            pointerNode = MapPinNode(pin: pin, isPointer: true)
+            pointerNode.attach(to: self)
+        }
+    }
+
+    private func attachNodes() {
+        mapPinNodes.forEach { $0.attach(to: self) }
+        pointerNode.attach(to: self)
     }
 }
 
 struct MapPinView: View {
-    let pin: MapPinModel
+    let model: MapPinNode
     let pinSize: CGSize
     let canMove: Bool
+    let actionContext: MapPinActionContext
     let doubleTapAccessibilityLabel: LocalizedStringResource
-    let doubleTapAction: (() -> Void)?
-    let moveAction: ((CGSize) -> Void)?
-    var tapAction: (() -> Void)? = nil
 
     @Environment(MapRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var pin: MapPinModel { model.presentedPin }
 
     var body: some View {
         pinView
@@ -126,7 +378,11 @@ struct MapPinView: View {
             effect.scaleEffect(isActive ? 1.2 : 1)
         }
 #endif
-        .gesture(combinedGesture)
+        .modifier(MapPinTapGestureModifier(
+            model: model,
+            actionContext: actionContext,
+            reduceMotion: reduceMotion
+        ))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(pinAccessibilityLabel)
         .accessibilityValue(pinAccessibilityValue)
@@ -135,9 +391,8 @@ struct MapPinView: View {
             handleTap()
         }
         .accessibilityAction(named: Text(doubleTapAccessibilityLabel)) {
-            guard let doubleTapAction else { return }
             withAnimation(reduceMotion ? nil : .default) {
-                doubleTapAction()
+                model.handleDoubleTap()
             }
         }
 #if !os(tvOS)
@@ -156,20 +411,10 @@ struct MapPinView: View {
 #endif
     }
 
-    private var combinedGesture: some Gesture {
-        let tapGesture = TapGesture().onEnded {
-            handleTap()
-        }
-        let doubleTap = TapGesture(count: 2).onEnded {
-            withAnimation(reduceMotion ? nil : .default) { doubleTapAction?() }
-        }
-        return doubleTap.exclusively(before: tapGesture)
-    }
-
 #if !os(tvOS)
     private func movePinBy(x: CGFloat, y: CGFloat) {
         guard canMove else { return }
-        moveAction?(CGSize(width: x, height: y))
+        model.move(by: CGSize(width: x, height: y))
     }
 #endif
 
@@ -199,7 +444,54 @@ struct MapPinView: View {
 
     private func handleTap() {
         withAnimation(reduceMotion ? nil : .default) {
-            tapAction?()
+            model.handleTap(context: actionContext)
+        }
+    }
+}
+
+private struct MapPinTapGestureModifier: ViewModifier {
+    let model: MapPinNode
+    let actionContext: MapPinActionContext
+    let reduceMotion: Bool
+
+    func body(content: Content) -> some View {
+        if actionContext == .none {
+            // Player/viewer taps have separate model actions, so preserve exact
+            // single-versus-double semantics even though single tap waits.
+            content.highPriorityGesture(
+                doubleTapGesture.exclusively(before: singleTapGesture)
+            )
+        } else {
+            // Editor/game-master action menus open on the first tap. Opening is
+            // idempotent, and the double-tap handler closes the menu before its
+            // visibility/zoom action is emitted.
+            content
+                .highPriorityGesture(immediateMenuTapGesture)
+                .simultaneousGesture(doubleTapGesture)
+        }
+    }
+
+    private var singleTapGesture: some Gesture {
+        TapGesture().onEnded {
+            withAnimation(reduceMotion ? nil : .default) {
+                model.handleTap(context: actionContext)
+            }
+        }
+    }
+
+    private var immediateMenuTapGesture: some Gesture {
+        TapGesture().onEnded {
+            withAnimation(reduceMotion ? nil : .default) {
+                model.openActions(context: actionContext)
+            }
+        }
+    }
+
+    private var doubleTapGesture: some Gesture {
+        TapGesture(count: 2).onEnded {
+            withAnimation(reduceMotion ? nil : .default) {
+                model.handleDoubleTap()
+            }
         }
     }
 }
@@ -208,25 +500,11 @@ struct MapPinView: View {
     @Previewable var model: MapPinViewModel = MapPinViewModel(mapPins: [MapPinModel.empty(MapModel.previewId), MapPinModel.empty(UUID())], pointer: .empty(UUID()))
 
     MapPinView(
-        pin: model.mapPins[0],
+        model: model.mapPinNodes[0],
         pinSize: model.mapPins[0].size == .normal ? CGSize(width: 64, height: 64) : CGSize(width: 128, height: 128),
         canMove: true,
-        doubleTapAccessibilityLabel: LocalizedStringResource("Toggle Player Visibility", bundle: .module),
-        doubleTapAction: {
-            var pin = model.mapPins[0]
-            pin.isShown.toggle()
-            model.setPinPointer(updatedPin: pin)
-        },
-        moveAction: { translation in
-            var pin = model.mapPins[0]
-            pin.location = pin.location + translation
-            model.setPinPointer(updatedPin: pin)
-        },
-        tapAction: {
-            model.isExpandedId = model.isExpandedId == model.mapPins[0].id
-                ? nil
-                : model.mapPins[0].id
-        }
+        actionContext: .editor,
+        doubleTapAccessibilityLabel: LocalizedStringResource("Toggle Player Visibility", bundle: .module)
     )
     .onChange(of: model.isExpandedId) {
         withAnimation {
