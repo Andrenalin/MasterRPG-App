@@ -54,25 +54,44 @@ struct MapEditor: View {
     let mapEditController: MapEditController
 
     @State private var viewModel: MapEditorModel
+    @State private var coverMapImage: AKImage?
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(MapRootModel.self) private var root
     @Environment(DropPinModel.self) private var dropPinModel
+
+    private var canvasConfiguration: MapCanvasConfiguration {
+        MapCanvasConfiguration(
+            imageIdentifier: ObjectIdentifier(image),
+            imageSize: image.fixedSize,
+            degrees: photoDegrees,
+            mapSize: CGSize(width: map.width, height: map.height),
+            usesCoverTile: map.displayConfig.tileCoordinates.count == 4
+        )
+    }
 
     var body: some View {
         ManagedNavigationStack(name: "MapEditor") { navigator in
             ZStack(alignment: .topLeading) {
                 Color.clear
 
-                Image(akImage: image)
-                    .overlay(alignment: .topLeading) {
-                        overlayMap
-                    }
-                    .scaleEffect(viewModel.imageModel.scale)
-                    .rotationEffect(Angle(degrees: photoDegrees))
+                ZStack(alignment: .topLeading) {
+                    MapOrientedImage(
+                        image: image,
+                        degrees: photoDegrees,
+                        canvasSize: viewModel.mapCanvasSize
+                    )
+                    .allowsHitTesting(false)
+
+                    overlayMap
+                }
+                    .frame(
+                        width: viewModel.mapCanvasSize.width,
+                        height: viewModel.mapCanvasSize.height,
+                        alignment: .topLeading
+                    )
+                    .scaleEffect(viewModel.imageModel.scale, anchor: .topLeading)
                     .offset(x: viewModel.imageModel.offset.x, y: viewModel.imageModel.offset.y)
-                    .contentMargins(.all, 50)
-                    .frame(width: viewModel.currentSize.width, height: viewModel.currentSize.height)
             }
             .frame(width: containerSize.width, height: containerSize.height, alignment: .topLeading)
             .background {
@@ -83,7 +102,7 @@ struct MapEditor: View {
                 backColor.opacity(viewModel.appeared ? 0 : 1)
             }
 #if !os(tvOS)
-            .dragTapGesture(isActive: viewModel.mapMode != .viewer, pressAction: pressAction(_:), releaseAction: releaseAction(_:), longPressAction: longPressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
+            .dragTapGesture(isActive: viewModel.mapMode != .viewer, pressAction: pressAction(_:), releaseAction: releaseAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
             .onChange(of: editController.editorModel.sheetEditorModel.itemId) {
                 viewModel.changeImage(map: map)
@@ -109,6 +128,16 @@ struct MapEditor: View {
             }
             .onChange(of: containerSize) {
                 viewModel.updateContainerSize(containerSize)
+            }
+            .onChange(of: canvasConfiguration, initial: true) {
+                viewModel.updateCanvas(
+                    image: image,
+                    photoDegrees: photoDegrees,
+                    mapSize: CGSize(width: map.width, height: map.height)
+                )
+            }
+            .task(id: canvasConfiguration) {
+                renderCoverMapImage()
             }
             .onChange(of: dropPinModel.items) {
                 dropPin()
@@ -178,53 +207,36 @@ private extension MapEditor {
                 
                 if let magnifyPoint = viewModel.editEntries.selectedNeedleCoordinate {
                     drawCrosshair(location: magnifyPoint)
-                        .zIndex(500)
+                        .zIndex(MapLayer.crosshair)
                 }
             } else {
-                // Normal Editor Mode
-                // Player mode: shown entries → pins → hidden entries (pins appear between layers)
-                if viewModel.displayMode == .player {
-                    drawEntryViews(isShowing: true)
-                    drawPins
-                    drawEntryViews(isShowing: false)
-                } else {
-                    drawEntryViews(isShowing: true)
-                    drawEntryViews(isShowing: false)
-                    drawPins
-                }
+                // A single stable sibling tree uses zIndex for player fog, zoomed pins,
+                // and the active menu. Pins never move between separate ForEach branches.
+                drawEntryViews(isShowing: true)
+                drawEntryViews(isShowing: false)
+                drawPins
 
                 // Pointer pin (game mode)
-                if map.pointer.isShown {
-                    drawPin(id: viewModel.pins.pointer.id)
-                }
-
-                // Zoomed pins always on top (visible to all via mapState)
-                ForEach(viewModel.pins.mapPins.filter {
-                    $0.isZoom
-                        && (viewModel.displayMode != .player || $0.isShown)
-                        && (!showsPinActionMenus || $0.id != viewModel.pins.isExpandedId)
-                }, id: \.id) { pin in
-                    drawPin(id: pin.id)
-                }
-
-                // Keep the active editor/game-master menu above every map layer.
-                if showsPinActionMenus, let scalePinId = viewModel.pins.isExpandedId {
-                    drawPin(id: scalePinId)
+                if viewModel.pins.pointer.isShown {
+                    drawPin(pin: viewModel.pins.pointer, isPointer: true)
+                        .zIndex(MapLayer.pointer)
                 }
 
                 // Edit-mode only overlays
                 if viewModel.mapMode == .edit {
                     if let editEntry = viewModel.editEntries.entries.first {
                         drawEntryView(entries: viewModel.editEntries, entry: editEntry)
+                            .zIndex(MapLayer.activeEntry)
                     }
 
                     if viewModel.displayMode == .master || viewModel.displayMode == .reader {
                         drawEntryPins()
+                            .zIndex(MapLayer.entryPins)
                     }
 
                     if let magnifyPoint = viewModel.editEntries.selectedNeedleCoordinate {
                         drawCrosshair(location: magnifyPoint)
-                            .zIndex(500)
+                            .zIndex(MapLayer.crosshair)
                     }
                 }
             }
@@ -262,6 +274,47 @@ private extension MapEditor {
     func setupTileEditor() {
         mapEditController.prepareTileWorkingCopy(from: map, editorModel: viewModel)
     }
+
+    /// `ImagePaint` cannot rotate its source image. Keep one bounded, oriented
+    /// raster for textured fog covers so a selected cover tile still matches
+    /// the map at 90/180/270 degrees. The main map continues to render directly
+    /// from the original image and does not pay this extra rasterization cost.
+    func renderCoverMapImage() {
+        guard map.displayConfig.tileCoordinates.count == 4 else {
+            coverMapImage = nil
+            return
+        }
+        let normalizedDegrees = MapEditorGeometry.normalizedDegrees(photoDegrees)
+        guard normalizedDegrees != 0 else {
+            coverMapImage = image
+            return
+        }
+
+        let canvasSize = viewModel.mapCanvasSize
+        let longestEdge = max(canvasSize.width, canvasSize.height)
+        guard longestEdge.isFinite, longestEdge > 0 else {
+            coverMapImage = image
+            return
+        }
+        let rasterScale = min(1, 2_048 / longestEdge)
+        let rasterSize = CGSize(
+            width: max(1, floor(canvasSize.width * rasterScale)),
+            height: max(1, floor(canvasSize.height * rasterScale))
+        )
+        let renderer = ImageRenderer(
+            content: MapOrientedImage(
+                image: image,
+                degrees: normalizedDegrees,
+                canvasSize: rasterSize
+            )
+        )
+        renderer.scale = 1
+#if os(macOS)
+        coverMapImage = renderer.nsImage ?? image
+#else
+        coverMapImage = renderer.uiImage ?? image
+#endif
+    }
 }
 
 // MARK: - Drawing MapEntry
@@ -271,13 +324,28 @@ extension MapEditor {
     func drawEntryViews(isShowing: Bool) -> some View {
         ForEach(viewModel.entries.entries.filter { $0.isShown == isShowing && $0.id != viewModel.editEntries.entries.first?.id }) { entry in
             drawEntryView(entries: viewModel.entries, entry: entry)
+                .zIndex(entryLayer(isShowing: isShowing))
         }
     }
 
     func drawEntryView(entries: MapEntryViewerModel, entry: MapEntryModel) -> some View {
-        let canActivate = viewModel.displayMode == .master
-            && (viewModel.mapMode != .edit || viewModel.editEntries.entries.isEmpty)
-        return MapEntryViewer(entry: entry, displayMode: viewModel.displayMode, displayConfig: map.displayConfig, activateGestures: canActivate, mapImage: image) {
+        let modeAllowsActivation = switch viewModel.mapMode {
+        case .edit:
+            viewModel.editEntries.entries.isEmpty
+        case .gameMaster:
+            true
+        case .player, .viewer:
+            false
+        }
+        let canActivate = viewModel.displayMode == .master && modeAllowsActivation
+        return MapEntryViewer(
+            entry: entry,
+            displayMode: viewModel.displayMode,
+            displayConfig: map.displayConfig,
+            activateGestures: canActivate,
+            mapImage: coverMapImage,
+            mapImageSize: viewModel.mapCanvasSize
+        ) {
             viewModel.editEntries.addedNewNeedlePoint = nil
             viewModel.editEntries.eaten = true
 
@@ -306,8 +374,15 @@ extension MapEditor {
                 viewModel.focusedCallback?()
             }
         }
-        .frame(width: entry.width, height: entry.height)
+        .frame(width: entry.size.width, height: entry.size.height)
         .offset(x: entry.xOffset, y: entry.yOffset)
+    }
+
+    func entryLayer(isShowing: Bool) -> Double {
+        if viewModel.displayMode == .player, !isShowing {
+            return MapLayer.playerFog
+        }
+        return MapLayer.entries
     }
 }
 
@@ -315,72 +390,77 @@ extension MapEditor {
 
 extension MapEditor {
     var drawPins: some View {
-        ForEach(viewModel.pins.mapPins.filter({
-            !$0.isZoom
-            && (viewModel.displayMode != .player || $0.isShown)
-            && (!showsPinActionMenus || $0.id != viewModel.pins.isExpandedId)
-        })) { pin in
-            drawPin(id: pin.id)
+        ForEach(viewModel.pins.mapPins) { pin in
+            if viewModel.displayMode != .player || pin.isShown {
+                drawPin(pin: pin)
+                    .zIndex(pinLayer(pin))
+            }
         }
     }
 
-    @ViewBuilder
-    func drawPin(id: UUID) -> some View {
-        if let pin = viewModel.pins.pinPointer(for: id) {
-            let isPointer = id == viewModel.pins.pointer.id
-            let presentedPin = pinForPresentation(pin, isPointer: isPointer)
-            let scaleFact: CGFloat = pin.isZoom ? 4.0 : 1.0
-            let pinSize = pin.size.size * viewModel.pinScale * scaleFact
-            let location: CGPoint = pin.location - (pinSize / CGFloat(2.0))
-            let canDrag = viewModel.mapMode == .edit
-                || viewModel.mapMode == .gameMaster
-                || id == viewModel.playerPinId
-                || id == map.pointer.id
+    func drawPin(pin: MapPinModel, isPointer: Bool = false) -> some View {
+        let presentedPin = pinForPresentation(pin, isPointer: isPointer)
+        let scaleFactor: CGFloat = pin.isZoom ? 4.0 : 1.0
+        let pinSize = pin.size.size * viewModel.pinScale * scaleFactor
+        let location: CGPoint = pin.location - (pinSize / CGFloat(2.0))
+        let canDrag = viewModel.mapMode == .edit
+            || viewModel.mapMode == .gameMaster
+            || (viewModel.mapMode == .player
+                && (pin.id == viewModel.playerPinId || isPointer))
+        let isExpanded = showsPinActionMenus && viewModel.pins.isExpandedId == pin.id
 
-            MapPinActionView(
-                model: viewModel.pins,
-                pin: presentedPin,
-                layoutDown: true,
-                pinSize: pinSize,
-                canDrag: canDrag,
-                actionContext: pinActionContext(isPointer: isPointer),
-                doubleTapAccessibilityLabel: doubleTapAccessibilityLabel(isPointer: isPointer),
-                doubleTapAction: {
-                    handlePinDoubleTap(pinId: pin.id, isPointer: isPointer)
-                },
-                dragEndAction: {
-                    handlePinDragEnd(pinId: pin.id, isPointer: isPointer)
-                },
-                tapAction: {
-                    handlePinSingleTap(pinId: pin.id, isPointer: isPointer)
-                },
-                onToggleDead: {
-                    performGameMasterMutation(pinId: pin.id) {
-                        root.gameController.toggleDeadPin(itemId: map.id, pinId: pin.id)
-                    }
-                },
-                onToggleVisibility: {
-                    performGameMasterMutation(pinId: pin.id) {
-                        root.gameController.togglePin(itemId: map.id, pinId: pin.id)
-                    }
-                },
-                onResize: {
-                    performGameMasterMutation(pinId: pin.id) {
-                        root.gameController.resizePin(itemId: map.id, pinId: pin.id)
-                    }
-                },
-                onToggleZoom: {
-                    performGameMasterMutation(pinId: pin.id) {
-                        root.gameController.zoomPin(itemId: map.id, pinId: pin.id)
-                    }
+        return MapPinActionView(
+            model: viewModel.pins,
+            pin: presentedPin,
+            isExpanded: isExpanded,
+            layoutDown: true,
+            pinSize: pinSize,
+            canDrag: canDrag,
+            actionContext: pinActionContext(isPointer: isPointer),
+            doubleTapAccessibilityLabel: doubleTapAccessibilityLabel(isPointer: isPointer),
+            doubleTapAction: {
+                handlePinDoubleTap(pinId: pin.id, isPointer: isPointer)
+            },
+            dragEndAction: { updatedPin in
+                handlePinDragEnd(pin: updatedPin, isPointer: isPointer)
+            },
+            tapAction: {
+                handlePinSingleTap(pinId: pin.id, isPointer: isPointer)
+            },
+            onToggleDead: {
+                performGameMasterMutation(pinId: pin.id) {
+                    root.gameController.toggleDeadPin(itemId: map.id, pinId: pin.id)
                 }
-            )
-            .equatable()
-            .opacity(viewModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
-            .allowsHitTesting(viewModel.displayMode != .player || pin.isShown)
-            .accessibilityHidden(viewModel.displayMode == .player && !pin.isShown)
-            .offset(x: location.x, y: location.y)
+            },
+            onToggleVisibility: {
+                performGameMasterMutation(pinId: pin.id) {
+                    root.gameController.togglePin(itemId: map.id, pinId: pin.id)
+                }
+            },
+            onResize: {
+                performGameMasterMutation(pinId: pin.id) {
+                    root.gameController.resizePin(itemId: map.id, pinId: pin.id)
+                }
+            },
+            onToggleZoom: {
+                performGameMasterMutation(pinId: pin.id) {
+                    root.gameController.zoomPin(itemId: map.id, pinId: pin.id)
+                }
+            }
+        )
+        .allowsHitTesting(viewModel.displayMode != .player || pin.isShown)
+        .accessibilityHidden(viewModel.displayMode == .player && !pin.isShown)
+        .offset(x: location.x, y: location.y)
+    }
+
+    func pinLayer(_ pin: MapPinModel) -> Double {
+        if showsPinActionMenus, viewModel.pins.isExpandedId == pin.id {
+            return MapLayer.expandedPin
         }
+        if pin.isZoom {
+            return MapLayer.zoomedPin
+        }
+        return MapLayer.pin
     }
 
     func pinActionContext(isPointer: Bool) -> MapPinActionContext {
@@ -440,8 +520,8 @@ extension MapEditor {
         }
     }
 
-    func handlePinDragEnd(pinId: UUID, isPointer: Bool) {
-        guard let updatedPin = viewModel.pins.pinPointer(for: pinId) else { return }
+    func handlePinDragEnd(pin updatedPin: MapPinModel, isPointer: Bool) {
+        let pinId = updatedPin.id
         if isPointer {
             viewModel.updatePointer(location: updatedPin.location, map: map, withOutRelocation: true)
         } else if viewModel.mapMode == .edit {
@@ -571,8 +651,11 @@ private extension MapEditor {
     }
 
     var magnifyContent: some View {
-        Image(akImage: image)
-            .rotationEffect(Angle(degrees: photoDegrees))
+        MapOrientedImage(
+            image: image,
+            degrees: photoDegrees,
+            canvasSize: viewModel.mapCanvasSize
+        )
             .offset(viewModel.imageOffset())
             .scaleEffect(viewModel.imageModel.scale * 3)
             .frame(width: crosshairSize.width, height: crosshairSize.height)
@@ -602,11 +685,13 @@ private extension MapEditor {
             let hasEditableEntry = !viewModel.editEntries.entries.isEmpty
             mapEditController.releaseAction(value, map: map, editorModel: viewModel, hasEditableEntry: hasEditableEntry)
         } else {
+            defer { viewModel.editEntries.eaten = false }
+            // A room long press focuses that room. Its simultaneous canvas
+            // recognizer must not also relocate the shared pointer on release.
+            guard !viewModel.editEntries.eaten else { return }
             viewModel.updatePointer(location: value.location, map: map)
         }
     }
-
-    func longPressAction(_ value: DragGesture.Value) {}
 
     func doubleTapAction(_ value: DragGesture.Value) {
         viewModel.onDoubleTapped(with: value.location)
@@ -639,6 +724,57 @@ private extension MapEditor {
         mapEditController.addTileCoordinateFromCanvas(location, editorModel: viewModel)
     }
     #endif
+}
+
+private enum MapLayer {
+    static let entries = 0.0
+    static let pin = 100.0
+    static let activeEntry = 150.0
+    static let playerFog = 200.0
+    static let pointer = 250.0
+    static let zoomedPin = 300.0
+    static let expandedPin = 400.0
+    static let entryPins = 500.0
+    static let crosshair = 600.0
+}
+
+private struct MapCanvasConfiguration: Equatable {
+    let imageIdentifier: ObjectIdentifier
+    let imageSize: CGSize
+    let degrees: Double
+    let mapSize: CGSize
+    let usesCoverTile: Bool
+}
+
+private struct MapOrientedImage: View {
+    let image: AKImage
+    let degrees: Double
+    let canvasSize: CGSize
+
+    private var originalSize: CGSize { image.fixedSize }
+    private var rotatedSize: CGSize { MapEditorGeometry.imageSize(image, degrees: degrees) }
+
+    private var horizontalScale: CGFloat {
+        guard rotatedSize.width > 0 else { return 1 }
+        return canvasSize.width / rotatedSize.width
+    }
+
+    private var verticalScale: CGFloat {
+        guard rotatedSize.height > 0 else { return 1 }
+        return canvasSize.height / rotatedSize.height
+    }
+
+    var body: some View {
+        ZStack {
+            Image(akImage: image)
+                .resizable()
+                .frame(width: originalSize.width, height: originalSize.height)
+                .rotationEffect(.degrees(MapEditorGeometry.normalizedDegrees(degrees)))
+        }
+        .frame(width: rotatedSize.width, height: rotatedSize.height)
+        .scaleEffect(x: horizontalScale, y: verticalScale)
+        .frame(width: canvasSize.width, height: canvasSize.height)
+    }
 }
 
 #Preview(traits: .mockData) {

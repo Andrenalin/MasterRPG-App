@@ -71,9 +71,10 @@ enum MapPinButtonType: String, Hashable {
     }
 }
 
-struct MapPinActionView: View, Equatable {
+struct MapPinActionView: View {
     let model: MapPinViewModel
     let pin: MapPinModel
+    let isExpanded: Bool
     let layoutDown: Bool
     let pinSize: CGSize
     let canDrag: Bool
@@ -81,12 +82,102 @@ struct MapPinActionView: View, Equatable {
     let doubleTapAccessibilityLabel: LocalizedStringResource
     var usesGlassEffects: Bool = true
     let doubleTapAction: (() -> Void)?
-    let dragEndAction: (() -> Void)?
+    let dragEndAction: ((MapPinModel) -> Void)?
     var tapAction: (() -> Void)? = nil
     var onToggleDead: (() -> Void)? = nil
     var onToggleVisibility: (() -> Void)? = nil
     var onResize: (() -> Void)? = nil
     var onToggleZoom: (() -> Void)? = nil
+
+    @GestureState private var dragTranslation: CGSize = .zero
+
+    var body: some View {
+        MapPinView(
+            pin: pin,
+            pinSize: pinSize,
+            canMove: canDrag,
+            doubleTapAccessibilityLabel: doubleTapAccessibilityLabel,
+            doubleTapAction: doubleTapAction,
+            moveAction: moveAccessibility,
+            tapAction: handleTap
+        )
+#if !os(tvOS)
+            // Keep the drag recognizer on the pin itself. Attaching it after
+            // the overlay made slight movement on an expanded action button
+            // drag the token as well.
+            .highPriorityGesture(
+                dragGesture,
+                including: canDrag ? .all : .none
+            )
+#endif
+            .overlay {
+                if isExpanded, actionContext != .none {
+                    MapPinExpandedMenu(
+                        model: model,
+                        pin: pin,
+                        layoutDown: layoutDown,
+                        context: actionContext,
+                        usesGlassEffects: usesGlassEffects,
+                        onToggleDead: onToggleDead,
+                        onToggleVisibility: onToggleVisibility,
+                        onResize: onResize,
+                        onToggleZoom: onToggleZoom
+                    )
+                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+                }
+            }
+            .offset(dragTranslation)
+    }
+
+    private func handleTap() {
+        if actionContext != .none {
+            model.isExpandedId = isExpanded ? nil : pin.id
+        }
+        tapAction?()
+    }
+
+    private func moveAccessibility(_ translation: CGSize) {
+        commitMove(translation: translation)
+    }
+
+    private func commitMove(translation: CGSize) {
+        guard canDrag, translation != .zero else { return }
+        var updatedPin = pin
+        updatedPin.location = CGPoint(
+            x: pin.location.x + translation.width,
+            y: pin.location.y + translation.height
+        )
+        updatedPin.timeInterval = max(
+            Date.now.timeIntervalSince1970,
+            pin.timeInterval.nextUp
+        )
+        dragEndAction?(updatedPin)
+    }
+
+#if !os(tvOS)
+    private var dragGesture: some Gesture {
+        DragGesture(minimumDistance: 3)
+            .updating($dragTranslation) { value, state, _ in
+                guard canDrag else { return }
+                state = value.translation
+            }
+            .onEnded { value in
+                commitMove(translation: value.translation)
+            }
+    }
+#endif
+}
+
+private struct MapPinExpandedMenu: View {
+    let model: MapPinViewModel
+    let pin: MapPinModel
+    let layoutDown: Bool
+    let context: MapPinActionContext
+    let usesGlassEffects: Bool
+    let onToggleDead: (() -> Void)?
+    let onToggleVisibility: (() -> Void)?
+    let onResize: (() -> Void)?
+    let onToggleZoom: (() -> Void)?
 
     @Environment(MapRootModel.self) private var root
     @Environment(ScenesManager.self) private var scenesManager
@@ -94,72 +185,46 @@ struct MapPinActionView: View, Equatable {
     @Namespace private var glassNamespace
     @Namespace private var photoSpace
 
-    @State private var showPhotoSelection: Bool = false
-    @State private var selectedPhoto: ItemSelectionModel = ItemSelectionModel(isSingleSelection: true, allowCollections: false)
-
-    // Resolve pointer once — avoids 6 linear scans in ==
-    static func == (lhs: MapPinActionView, rhs: MapPinActionView) -> Bool {
-        lhs.pin == rhs.pin
-            && lhs.layoutDown == rhs.layoutDown
-            && lhs.model.isExpandedId == rhs.model.isExpandedId
-            && lhs.pinSize == rhs.pinSize
-            && lhs.canDrag == rhs.canDrag
-            && lhs.actionContext == rhs.actionContext
-            && lhs.usesGlassEffects == rhs.usesGlassEffects
-            && lhs.doubleTapAccessibilityLabel == rhs.doubleTapAccessibilityLabel
-    }
+    @State private var showPhotoSelection = false
+    @State private var selectedPhoto = ItemSelectionModel(isSingleSelection: true, allowCollections: false)
 
     var body: some View {
-        MapPinView(
-            model: model,
-            pin: pin,
-            pinSize: pinSize,
-            canDrag: canDrag,
-            opensActionMenu: actionContext != .none,
-            doubleTapAccessibilityLabel: doubleTapAccessibilityLabel,
-            doubleTapAction: doubleTapAction,
-            dragEndAction: dragEndAction,
-            tapAction: tapAction
-        )
-            .overlay {
-                if actionContext != .none {
+        Group {
 #if os(visionOS)
-                    actionButtons
+            actionButtons
 #else
-                    if usesGlassEffects {
-                        GlassEffectContainer {
-                            actionButtons
-                        }
-                    } else {
-                        actionButtons
-                    }
-#endif
+            if usesGlassEffects {
+                GlassEffectContainer {
+                    actionButtons
                 }
+            } else {
+                actionButtons
             }
-            .sheet(isPresented: actionContext == .editor ? $showPhotoSelection : .constant(false)) {
-                ManagedPresentationView {
-                    root.viewController.photoSelection(root: root, selectionModel: selectedPhoto)
+#endif
+        }
+        .sheet(isPresented: context == .editor ? $showPhotoSelection : .constant(false)) {
+            ManagedPresentationView {
+                root.viewController.photoSelection(root: root, selectionModel: selectedPhoto)
 #if !os(macOS)
-                        .navigationTransition(.zoom(sourceID: MapPinButtonType.photo.label, in: photoSpace))
+                    .navigationTransition(.zoom(sourceID: MapPinButtonType.photo.label, in: photoSpace))
 #endif
-                }
             }
-            .onChange(of: showPhotoSelection) {
-                guard actionContext == .editor,
-                      !showPhotoSelection,
-                      !selectedPhoto.selection.isEmpty else { return }
-                withAnimation { model.replacePhoto(pinId: pin.id, itemId: selectedPhoto.itemId) }
-                selectedPhoto.resetSelection(itemId: nil, entryId: nil)
-            }
+        }
+        .onChange(of: showPhotoSelection) {
+            guard context == .editor,
+                  !showPhotoSelection,
+                  !selectedPhoto.selection.isEmpty else { return }
+            withAnimation { model.replacePhoto(pinId: pin.id, itemId: selectedPhoto.itemId) }
+            selectedPhoto.resetSelection(itemId: nil, entryId: nil)
+        }
     }
 
-    // Extracted subview — SwiftUI can skip re-evaluation when inputs are unchanged
     private var actionButtons: some View {
         MapPinActionButtons(
-            model: model,
             pin: pin,
+            isExpanded: true,
             layoutDown: layoutDown,
-            context: actionContext,
+            context: context,
             glassNamespace: glassNamespace,
             photoSpace: photoSpace,
             usesGlassEffects: usesGlassEffects,
@@ -180,13 +245,13 @@ struct MapPinActionView: View, Equatable {
             showPhotoSelection.toggle()
 #endif
         case .resize:
-            if actionContext == .editor {
+            if context == .editor {
                 model.resizePin(id: pin.id)
             } else {
                 onResize?()
             }
         case .dead:
-            if actionContext == .editor {
+            if context == .editor {
                 model.toggleDeadPin(id: pin.id)
             } else {
                 onToggleDead?()
@@ -207,6 +272,7 @@ struct MapPinActionView: View, Equatable {
         MapPinActionView(
             model: model,
             pin: .empty(id),
+            isExpanded: true,
             layoutDown: true,
             pinSize: CGSize(width: 80, height: 80),
             canDrag: true,
@@ -214,7 +280,7 @@ struct MapPinActionView: View, Equatable {
             doubleTapAccessibilityLabel: LocalizedStringResource("Toggle Player Visibility", bundle: .module)
         ) {
             print("double tap")
-        } dragEndAction: {
+        } dragEndAction: { _ in
             print("end move")
         }
     }

@@ -105,5 +105,48 @@ struct MapModelTests {
         #expect(sut.isSame(a) == false)
         #expect(m1.isSame(m2) == false)
     }
+
+    @Test func resetImageKeepsEveryOverlayInTheUpdatedCanvas() throws {
+        let roomId = UUID()
+        let pinId = UUID()
+        let map = MapModel(
+            id: UUID(),
+            name: "Rotated map",
+            entries: [
+                MapEntryModel(
+                    id: roomId,
+                    name: "Room",
+                    content: "",
+                    coordinates: [CGPoint(x: 10, y: 20)]
+                )
+            ],
+            displayConfig: DisplayConfigModel(
+                tileCoordinates: [CGPoint(x: 5, y: 10)],
+                border: DisplayBorderViewModel(id: UUID())
+            ),
+            width: 100,
+            height: 50,
+            mapPins: [MapPinModel(id: pinId, name: "Pin", location: CGPoint(x: 20, y: 10))],
+            degrees: 0
+        )
+        map.pointer.location = CGPoint(x: 25, y: 5)
+
+        map.resetImage(
+            with: UUID(),
+            size: CGSize(width: 200, height: 100),
+            degrees: 90
+        )
+
+        let room = try #require(map.entries.first)
+        let pin = try #require(map.mapPins.first)
+
+        #expect(map.width == 100)
+        #expect(map.height == 200)
+        #expect(map.degrees == 90)
+        #expect(room.coordinates == [CGPoint(x: 10, y: 80)])
+        #expect(pin.location == CGPoint(x: 20, y: 40))
+        #expect(map.pointer.location == CGPoint(x: 25, y: 20))
+        #expect(map.displayConfig.tileCoordinates == [CGPoint(x: 5, y: 40)])
+    }
 }
 #endif

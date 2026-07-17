@@ -885,7 +885,7 @@ extension PlayerController {
                 // introduced a pin whose photo model is not owned locally.
                 // `requestedRepairIds` keeps this to one request per connection.
                 await requestMissingMapImages(itemId: model.data.id)
-                #if os(visionOS)
+                #if !os(tvOS)
                 // A re-reveal of the current map changes rooms/pins without a
                 // map change — bring the 3D table up to date as well.
                 let isGameMaster = await root.gameModel.gameConfig.isMaster
@@ -922,7 +922,7 @@ extension PlayerController {
                     gameModel.gameUpdateType = .map
                 }
                 await requestMissingMapImages(itemId: model.data.id)
-                #if os(visionOS)
+                #if !os(tvOS)
                 let isGameMaster = await root.gameModel.gameConfig.isMaster
                 await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
                 await MainActor.run {
@@ -944,7 +944,7 @@ extension PlayerController {
                     await requestMissingMapImages(itemId: model.data.id)
 
                     // Update fog of war on 3D board
-                    #if os(visionOS)
+                    #if !os(tvOS)
                     let isGameMaster = await root.gameModel.gameConfig.isMaster
                     await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
                     await MainActor.run {
@@ -1034,7 +1034,7 @@ extension PlayerController {
         )
         await requestMissingMapImages(itemId: model.data.id)
 
-        #if os(visionOS)
+        #if !os(tvOS)
         let isGameMaster = await root.gameModel.gameConfig.isMaster
         await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
         await MainActor.run {

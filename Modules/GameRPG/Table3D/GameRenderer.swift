@@ -5,6 +5,7 @@ import TabletopKit
 import RealityKit
 import SwiftUI
 import RPGTabletopGameContent
+import os.log
 
 @MainActor
 class GameRenderer: TabletopGame.RenderDelegate {
@@ -18,6 +19,7 @@ class GameRenderer: TabletopGame.RenderDelegate {
     weak var game: GameTableModel?
     let portalWorld: Entity
     let portal: Entity
+    private var didLoadAssets = false
     
     @MainActor
     init() {
@@ -32,33 +34,22 @@ class GameRenderer: TabletopGame.RenderDelegate {
         portalWorld = Entity()
         portal = Entity()
         
-        // Assets will be loaded explicitly by GameTableModel
+        // Assets are loaded when GameTableView appears. Keeping this
+        // initializer resource-free also supports lightweight control tests.
     }
     
     @MainActor
     func loadAssets() async {
-        #if DEBUG
-        print("🎮 Loading TabletopGame assets...")
-        #endif
-        
+        guard !didLoadAssets else { return }
+        didLoadAssets = true
+
         do {
             let staticSceneEntity = try await Entity(named: "static_scene", in: tabletopGameContentBunlde)
             staticSceneEntity.setParent(root)
-            
-            #if DEBUG
-            print("✅ TabletopGame assets loaded successfully")
-            print("   Root children: \(root.children.count)")
-            print("   Static scene name: \(staticSceneEntity.name)")
-            print("   Static scene children: \(staticSceneEntity.children.count)")
-            
-            // List all children for debugging
-            for (index, child) in staticSceneEntity.children.enumerated() {
-                print("     Child \(index): \(child.name) (type: \(type(of: child)))")
-            }
-            #endif
         } catch {
-            print("❌ Failed to load static_scene: \(error)")
-            print("   Continuing without static scene assets")
+            Logger.gameTable.error(
+                "Failed to load the visionOS table scene: \(error.localizedDescription, privacy: .public)"
+            )
         }
 
         portalWorld.components.set(WorldComponent())

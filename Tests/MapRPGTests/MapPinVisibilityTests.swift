@@ -209,5 +209,88 @@ struct MapPinVisibilityTests {
 
         #expect(!sut.movePin(itemId: mapId, pinId: UUID(), location: .zero))
     }
+
+    @Test func roomCommandsUseMapToggleRulesAndReportActualChanges() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let roomId = UUID()
+        let hexId = UUID()
+        let room = MapEntryModel(
+            id: roomId,
+            name: "Great Hall",
+            content: "",
+            coordinates: square,
+            isShown: false
+        )
+        let hex = MapEntryModel(
+            id: hexId,
+            name: "Hex",
+            content: "",
+            coordinates: square,
+            isHexGrid: true,
+            isShown: false
+        )
+        let map = MapModel(id: mapId, name: "Dungeon", entries: [hex, room])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+
+        #expect(sut.toggleRoom(itemId: mapId, roomId: hexId))
+        #expect(sut.gameItem(for: mapId).entries.allSatisfy { $0.isShown })
+        #expect(!sut.toggleRoom(itemId: mapId, roomId: UUID()))
+
+        #expect(sut.setRoomsShown(
+            itemId: mapId,
+            roomIds: [hexId, roomId],
+            isShown: false
+        ))
+        #expect(sut.gameItem(for: mapId).entries.allSatisfy { !$0.isShown })
+        #expect(!sut.setRoomsShown(
+            itemId: mapId,
+            roomIds: [hexId, roomId],
+            isShown: false
+        ))
+    }
+
+    @Test func pointerCommandsMoveToggleAndEncodeTheSharedPointer() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let map = MapModel(id: mapId, name: "Dungeon")
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        let liveMap = sut.gameItem(for: mapId)
+        liveMap.pointer.timeInterval = 1
+
+        #expect(sut.movePointer(
+            itemId: mapId,
+            location: CGPoint(x: 42, y: 24)
+        ))
+        #expect(!sut.movePointer(
+            itemId: mapId,
+            location: CGPoint(x: 42, y: 24)
+        ))
+        #expect(sut.togglePointer(itemId: mapId))
+
+        let pointer = liveMap.pointer
+        #expect(pointer.location == CGPoint(x: 42, y: 24))
+        #expect(pointer.isShown)
+        #expect(pointer.timeInterval > 1)
+
+        let data = try #require(sut.networkPointer(itemId: mapId))
+        let decoded = try #require(MapPinModel.decodeData(of: data.data))
+        #expect(data.id == mapId)
+        // SwiftUI may decode a named color (for example `.red`) into an
+        // equivalent RGBA-backed Color that is not identity-equal. Verify the
+        // fields authorized by the pointer network route explicitly.
+        #expect(decoded.id == pointer.id)
+        #expect(decoded.name == pointer.name)
+        #expect(decoded.location == pointer.location)
+        #expect(decoded.size == pointer.size)
+        #expect(decoded.isShown == pointer.isShown)
+        #expect(decoded.timeInterval == pointer.timeInterval)
+    }
 }
 #endif

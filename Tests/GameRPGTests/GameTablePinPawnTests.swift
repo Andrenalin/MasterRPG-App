@@ -210,7 +210,7 @@ struct GameTablePinPawnTests {
         )
         liveMap.mapPins = [pin]
 
-        let game = await GameTableModel(mapRoot: mapRoot, photoRoot: mapRoot.photoRoot)
+        let game = GameTableModel(mapRoot: mapRoot, photoRoot: mapRoot.photoRoot)
         let networkSpy = NetworkActionSpy()
         game.currentMapId = persistentMap.id
         game.isGameMaster = isGameMaster

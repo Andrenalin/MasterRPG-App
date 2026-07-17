@@ -51,8 +51,29 @@ struct MapEntryViewer: View {
     let displayConfig: DisplayConfigModel
     let activateGestures: Bool
     let mapImage: AKImage?
+    let mapImageSize: CGSize?
     let doubleTapAction: () -> Void
     let longPressAction: () -> Void
+
+    init(
+        entry: MapEntryModel,
+        displayMode: MapDisplayMode,
+        displayConfig: DisplayConfigModel,
+        activateGestures: Bool,
+        mapImage: AKImage?,
+        mapImageSize: CGSize? = nil,
+        doubleTapAction: @escaping () -> Void,
+        longPressAction: @escaping () -> Void
+    ) {
+        self.entry = entry
+        self.displayMode = displayMode
+        self.displayConfig = displayConfig
+        self.activateGestures = activateGestures
+        self.mapImage = mapImage
+        self.mapImageSize = mapImageSize
+        self.doubleTapAction = doubleTapAction
+        self.longPressAction = longPressAction
+    }
 
     var body: some View {
         let path = entryPath
@@ -155,15 +176,11 @@ struct MapEntryViewer: View {
         let minY = coords.map { $0.y }.min() ?? 0
         let maxY = coords.map { $0.y }.max() ?? 0
         
-        #if os(macOS)
-        guard let imageSize = mapImage?.size else {
+        guard let imageSize = mapImageSize ?? mapImage?.fixedSize,
+              imageSize.width > 0,
+              imageSize.height > 0 else {
             return CGRect(x: 0, y: 0, width: 1, height: 1)
         }
-        #else
-        guard let imageSize = mapImage?.size else {
-            return CGRect(x: 0, y: 0, width: 1, height: 1)
-        }
-        #endif
         
         // Normalize to 0-1 range for ImagePaint
         return CGRect(

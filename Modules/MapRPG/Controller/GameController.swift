@@ -33,6 +33,12 @@ public protocol MapGameStorable {
     func hasBackgroundImage(itemId: UUID) async -> Bool
     func missingMapImages(itemId: UUID) async -> [NetworkCodableDataType]
     @MainActor func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool
+    @MainActor func toggleRoom(itemId: UUID, roomId: UUID) -> Bool
+    @MainActor func setRoomsShown(itemId: UUID, roomIds: [UUID], isShown: Bool) -> Bool
+    @MainActor func movePointer(itemId: UUID, location: CGPoint) -> Bool
+    @MainActor func togglePointer(itemId: UUID) -> Bool
+    @MainActor func networkPointer(itemId: UUID) -> NetworkCodableDataType?
+    @MainActor func addMonstersAtMapCenter(itemId: UUID, monsters: [ItemRowModel]) -> Bool
     @MainActor func togglePin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func zoomPin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func toggleDeadPin(itemId: UUID, pinId: UUID) -> Bool
@@ -337,6 +343,79 @@ extension GameController: MapGameStorable {
         updatePinState(itemId: itemId, pinId: pinId) { pin in
             pin.location = location
         }
+    }
+
+    /// Toggles a room using `MapModel`'s domain behavior. In particular, this
+    /// preserves the hex-grid rule that revealing a hex also reveals rooms it
+    /// intersects instead of duplicating that rule in a tabletop view.
+    @MainActor
+    func toggleRoom(itemId: UUID, roomId: UUID) -> Bool {
+        let item = gameItem(for: itemId)
+        guard item.entries.contains(where: { $0.id == roomId }) else { return false }
+        item.toggle(roomId)
+        return true
+    }
+
+    /// Applies one room-visibility command to a collection of entries. Each
+    /// changed room still travels through `MapModel.toggle(_:)`, and callers
+    /// can therefore send one authoritative map-state update for the batch.
+    @MainActor
+    func setRoomsShown(itemId: UUID, roomIds: [UUID], isShown: Bool) -> Bool {
+        let item = gameItem(for: itemId)
+        var didChange = false
+        for roomId in roomIds {
+            guard let room = item.entries.first(where: { $0.id == roomId }),
+                  room.isShown != isShown else { continue }
+            item.toggle(roomId)
+            didChange = true
+        }
+        return didChange
+    }
+
+    /// Moves the shared pointer while keeping its timestamp monotonic for the
+    /// same player-to-master conflict resolution used by regular map pins.
+    @MainActor
+    func movePointer(itemId: UUID, location: CGPoint) -> Bool {
+        let item = gameItem(for: itemId)
+        guard item.pointer.location != location else { return false }
+        item.pointer.location = location
+        item.pointer.timeInterval = max(Date.now.timeIntervalSince1970, item.pointer.timeInterval.nextUp)
+        return true
+    }
+
+    /// Shows or hides the shared pointer as an authoritative game-master action.
+    @MainActor
+    func togglePointer(itemId: UUID) -> Bool {
+        let item = gameItem(for: itemId)
+        item.pointer.isShown.toggle()
+        item.pointer.timeInterval = max(Date.now.timeIntervalSince1970, item.pointer.timeInterval.nextUp)
+        return true
+    }
+
+    /// Encodes the current pointer for the player-origin `.mapPin` route.
+    @MainActor
+    func networkPointer(itemId: UUID) -> NetworkCodableDataType? {
+        let item = gameItem(for: itemId)
+        return networkPin(itemId: itemId, position: item.pointer)
+    }
+
+    /// Adds the selected characters to the center of the live game map. This
+    /// lets a standalone tabletop add pawns without depending on MapEditor UI.
+    @MainActor
+    func addMonstersAtMapCenter(itemId: UUID, monsters: [ItemRowModel]) -> Bool {
+        guard !monsters.isEmpty,
+              gameModel.itemData[itemId] is MapModel else { return false }
+        let item = gameItem(for: itemId)
+        let initialCount = item.mapPins.count
+        let center = CGPoint(x: item.width / 2, y: item.height / 2)
+        root.editController.addMonsters(
+            map: item,
+            entryId: nil,
+            location: center,
+            monsters: monsters,
+            number: 1
+        )
+        return item.mapPins.count > initialCount
     }
 
     /// Toggles a pin's visibility as the game master — the 3D-table

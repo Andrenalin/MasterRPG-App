@@ -100,15 +100,19 @@ struct Board: EntityEquipment {
         
     // Method to update map from PhotoModel data with aspect ratio and border color
     @MainActor mutating func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool) {
-        guard let cgImage = image.cgImage else {
-            print("Failed to create image from photo data")
+        guard image.cgImage != nil else {
+            Logger.gameTable.error("Failed to create a board image from the current photo")
             return
         }
-        
-        // Get image dimensions from CGImage
-        let imageWidth = CGFloat(cgImage.width)
-        let imageHeight = CGFloat(cgImage.height)
-        let aspectRatio = imageWidth / imageHeight
+
+        // Map rooms and pins are stored in the photo's oriented coordinate space.
+        // Size the board from that same space so the texture and tokens agree at
+        // 90/270-degree rotations.
+        let displaySize = mapModel.map {
+            CGSize(width: $0.width, height: $0.height)
+        } ?? Self.orientedSize(for: image.fixedSize, degrees: degrees)
+        guard displaySize.width > 0, displaySize.height > 0 else { return }
+        let aspectRatio = displaySize.width / displaySize.height
         
         var planeWidth: Float
         var planeDepth: Float
@@ -125,19 +129,18 @@ struct Board: EntityEquipment {
         
         // Update image plane mesh with correct aspect ratio
         imagePlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
+        borderPlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
         
-        // Generate composite texture with fog of war overlays
-        let compositeImage: CGImage
-        if let mapModel = mapModel, let displayConfig = displayConfig {
-            compositeImage = generateCompositeTexture(
-                baseImage: cgImage,
-                mapModel: mapModel,
-                displayConfig: displayConfig,
-                isGameMaster: isGameMaster
-            )
-        } else {
-            compositeImage = cgImage
-        }
+        // Always orient the photo before applying fog. Map entry coordinates are
+        // already expressed in this oriented canvas.
+        guard let compositeImage = generateCompositeTexture(
+            baseImage: image,
+            degrees: degrees,
+            canvasSize: displaySize,
+            mapModel: mapModel,
+            displayConfig: displayConfig,
+            isGameMaster: isGameMaster
+        ) else { return }
         
         // Update the texture using new visionOS 2.0+ API
         do {
@@ -146,7 +149,9 @@ struct Board: EntityEquipment {
             mapMaterial.color = .init(texture: .init(texture))
             imagePlane.model?.materials = [mapMaterial]
         } catch {
-            print("Failed to create texture from image: \(error)")
+            Logger.gameTable.error(
+                "Failed to create the visionOS board texture: \(error.localizedDescription, privacy: .public)"
+            )
             var mapMaterial = UnlitMaterial()
             mapMaterial.color = .init(tint: .gray)
             imagePlane.model?.materials = [mapMaterial]
@@ -158,42 +163,45 @@ struct Board: EntityEquipment {
             borderPlane.model?.materials = [SimpleMaterial(color: uiColor, isMetallic: false)]
         }
     }
+
+    /// Removes a previously rendered map when game selection or photo loading
+    /// no longer supplies a board image.
+    @MainActor mutating func clearMap() {
+        imagePlane.model?.mesh = .generatePlane(width: mapSize, depth: mapSize)
+        var material = UnlitMaterial()
+        material.color = .init(tint: .gray)
+        imagePlane.model?.materials = [material]
+    }
     
     // Generate a composite texture with fog of war overlays drawn on top of the base image
     @MainActor private func generateCompositeTexture(
-        baseImage: CGImage,
-        mapModel: MapModel,
-        displayConfig: DisplayConfigModel,
+        baseImage: AKImage,
+        degrees: Double,
+        canvasSize: CGSize,
+        mapModel: MapModel?,
+        displayConfig: DisplayConfigModel?,
         isGameMaster: Bool
-    ) -> CGImage {
-        print("🖼️ Generating composite texture with fog of war (Game Master: \(isGameMaster))")
-        
-        let imageWidth = CGFloat(baseImage.width)
-        let imageHeight = CGFloat(baseImage.height)
-        
-        // Filter entries based on mode
-        let entriesToRender: [MapEntryModel]
-        if isGameMaster {
-            // Game Master sees ALL entries (both hidden and shown)
-            entriesToRender = mapModel.entries
+    ) -> CGImage? {
+        guard let fallbackImage = baseImage.cgImage else { return nil }
+        let normalizedDegrees = degrees.truncatingRemainder(dividingBy: 360)
+        let sourceSize = baseImage.fixedSize
+        let orientedSize = Self.orientedSize(for: sourceSize, degrees: normalizedDegrees)
+        let entriesToRender = if isGameMaster {
+            mapModel?.entries ?? []
         } else {
-            // Players only see hidden entries as solid fog
-            entriesToRender = mapModel.entries.filter { !$0.isShown }
-        }
-        
-        print("🖼️ Found \(entriesToRender.count) entries to render")
-        
-        // If no entries, return the original image
-        guard !entriesToRender.isEmpty else {
-            print("🖼️ No fog of war needed - returning original image")
-            return baseImage
+            mapModel?.entries.filter { !$0.isShown } ?? []
         }
         
         // Create a SwiftUI view that layers the image with fog of war overlays
         let compositeView = ZStack {
-            Image(akImage: AKImage(cgImage: baseImage))
-                .resizable()
-                .aspectRatio(contentMode: .fit)
+            ZStack {
+                Image(akImage: baseImage)
+                    .resizable()
+                    .frame(width: sourceSize.width, height: sourceSize.height)
+                    .rotationEffect(.degrees(normalizedDegrees))
+            }
+            .frame(width: orientedSize.width, height: orientedSize.height)
+            .frame(width: canvasSize.width, height: canvasSize.height)
             
             Canvas { context, size in
                 // Draw each entry as a polygon
@@ -235,10 +243,10 @@ struct Board: EntityEquipment {
                         // Player: Only show solid fog for hidden areas (matching MapViewer .player mode)
                         if !entry.isShown {
                             // Fill with the configured fog color
-                            context.fill(path, with: .color(displayConfig.color))
+                            context.fill(path, with: .color(displayConfig?.color ?? .black))
                             
                             // Draw border if configured
-                            if displayConfig.hasBorder {
+                            if displayConfig?.hasBorder == true, let displayConfig {
                                 context.stroke(
                                     path,
                                     with: .color(displayConfig.borderColor),
@@ -250,30 +258,38 @@ struct Board: EntityEquipment {
                 }
             }
         }
-        .frame(width: imageWidth, height: imageHeight)
+        .frame(width: canvasSize.width, height: canvasSize.height)
         
-        // Use ImageRenderer to convert the SwiftUI view to a UIImage/NSImage
+        // The frame is already expressed in image-space pixels/points. Rendering
+        // it at 3x attempted textures up to nine times larger than necessary and
+        // stalled room toggles on the main actor. Keep the longest edge within a
+        // conservative GPU texture budget.
         let renderer = ImageRenderer(content: compositeView)
-        renderer.scale = 3.0  // Use 3x scale for high quality
+        let longestEdge = max(canvasSize.width, canvasSize.height)
+        renderer.scale = longestEdge > 0 ? min(1, 2_048 / longestEdge) : 1
         
         #if os(macOS)
         if let nsImage = renderer.nsImage,
            let tiffData = nsImage.tiffRepresentation,
            let bitmap = NSBitmapImageRep(data: tiffData),
            let cgImage = bitmap.cgImage {
-            print("🖼️ ✅ Composite texture generated successfully (macOS)")
             return cgImage
         }
         #else
         if let uiImage = renderer.uiImage,
            let cgImage = uiImage.cgImage {
-            print("🖼️ ✅ Composite texture generated successfully (iOS/visionOS)")
             return cgImage
         }
         #endif
         
-        print("🖼️ ⚠️ Failed to generate composite texture - returning original image")
-        return baseImage
+        Logger.gameTable.warning("Failed to composite the board texture; using the original image")
+        return fallbackImage
+    }
+
+    private static func orientedSize(for size: CGSize, degrees: Double) -> CGSize {
+        let normalized = abs(degrees.truncatingRemainder(dividingBy: 180))
+        guard abs(normalized - 90) < 0.001 else { return size }
+        return CGSize(width: size.height, height: size.width)
     }
 }
 

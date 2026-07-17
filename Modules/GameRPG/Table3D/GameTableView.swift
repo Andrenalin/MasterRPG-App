@@ -2,8 +2,10 @@
 
 #if os(visionOS)
 import Combine
+import CoreRPG
 import Foundation
 import GroupActivities
+import MapRPG
 import RealityKit
 import SwiftUI
 import TabletopKit
@@ -12,7 +14,6 @@ import TabletopKit
 public struct GameTableView: View {
     let root: GameRoot
     
-    @Environment(\.realityKitScene) private var scene
     @State private var game: GameTableModel?
     @State private var activityManager: GroupActivityManager?
     @State private var scaleController = TableScaleGestureController()
@@ -24,9 +25,8 @@ public struct GameTableView: View {
 
     public var body: some View {
         GeometryReader3D { proxy in
-            if let loadedGame = game {  // ✅ Removed activityManager check - it was blocking render!
+            if let loadedGame = game {
                 RealityView { content, attachments in
-                    // ✅ Use .add() consistently
                     content.add(loadedGame.renderer.root)
                     content.add(loadedGame.renderer.portalWorld)
                     content.add(loadedGame.renderer.portal)
@@ -60,13 +60,6 @@ public struct GameTableView: View {
                         loadedGame.registerPinMenuAttachment(pinMenu)
                     }
 
-                    // ✅ Debug logging
-                    #if DEBUG
-                    print("✅ Root added with \(loadedGame.renderer.root.children.count) children")
-                    print("   Position: \(loadedGame.renderer.root.position)")
-                    print("   Scale: \(loadedGame.renderer.root.scale)")
-                    print("   Volume bounds: \(volumeBounds)")
-                    #endif
                 } update: { content, _ in
                     // Re-anchor to the volume floor when the user resizes the volume.
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
@@ -125,62 +118,76 @@ public struct GameTableView: View {
             }
         }
         .task {
-            #if DEBUG
-            print("🚀 GameTableView.task: Starting initialization...")
-            #endif
-            
-            let initGame = await GameTableModel(mapRoot: root.mapRoot, photoRoot: root.photoRoot)
-            self.root.gameModel.gameTableModel = initGame
-            
-            #if DEBUG
-            print("✅ GameTableModel created, setting game state...")
-            #endif
-            
-            self.game = initGame  // This will trigger RealityView to render
-            scaleController.renderer = initGame.renderer
-            root.gameModel.shareState.mode = .tabletop
-            
-            #if DEBUG
-            print("📡 Applying SharePlay state...")
-            #endif
-            
-            root.networkStore.sharePlayStore.applyShareState()
-            
-            #if DEBUG
-            print("🎮 Creating GroupActivityManager...")
-            #endif
-            
-            self.activityManager = .init(tabletopGame: initGame.tabletopGame, sharePlayController: root.networkStore.sharePlayStore)
-            initGame.setupSeating(sharePlayController: root.networkStore.sharePlayStore)
-
-            // The volume can open after a map is already revealed — bring the
-            // table up to date immediately instead of waiting for the next
-            // mapState round-trip.
-            initGame.networkActions = root.networkActions
-            initGame.isGameMaster = root.gameModel.gameConfig.isMaster
-            initGame.playerPinId = initGame.isGameMaster ? nil : root.gameModel.gameConfig.id
-            await initGame.handleMapChange(isGameMaster: initGame.isGameMaster)
-            initGame.syncPawnsWithMapPins()
-            
-            // ✅ Verify initialization
-            #if DEBUG
-            print("✅ GameTableModel initialized")
-            print("   TabletopGame: \(initGame.tabletopGame)")
-            print("   ActivityManager: \(String(describing: activityManager))")
-            print("   SharePlay active: \(root.networkStore.sharePlayStore.isActive)")
-            #endif
+            await initializeGameIfNeeded()
         }
-        .onDisappear {
-            accessibilitySubscriptions.removeAll()
+        .task(id: root.mapRoot.gameControllable.gameModel.currentItemId) {
+            guard let game else { return }
+            await game.handleMapChange(
+                isGameMaster: root.gameModel.gameConfig.isMaster
+            )
         }
         .task {
             await scaleController.start()
         }
         .onDisappear {
+            accessibilitySubscriptions.removeAll()
             root.gameModel.shareState.mode = .window
             root.networkStore.sharePlayStore.applyShareState()
-            root.gameModel.gameTableModel = nil
+            if root.gameModel.gameTableModel === game {
+                root.gameModel.gameTableModel = nil
+            }
         }
+    }
+
+    private func initializeGameIfNeeded() async {
+        if let game {
+            // A volumetric window can disappear without discarding its @State.
+            // Re-register the retained model instead of rebuilding the complete
+            // TabletopKit graph and loading its package assets again.
+            root.gameModel.gameTableModel = game
+            scaleController.renderer = game.renderer
+            root.gameModel.shareState.mode = .tabletop
+            root.networkStore.sharePlayStore.applyShareState()
+            configureSessionState(for: game)
+            await game.handleMapChange(isGameMaster: game.isGameMaster)
+            return
+        }
+
+        let initializedGame = GameTableModel(
+            mapRoot: root.mapRoot,
+            photoRoot: root.photoRoot
+        )
+        await initializedGame.renderer.loadAssets()
+        guard !Task.isCancelled else { return }
+
+        root.gameModel.gameTableModel = initializedGame
+        game = initializedGame
+        scaleController.renderer = initializedGame.renderer
+        root.gameModel.shareState.mode = .tabletop
+        root.networkStore.sharePlayStore.applyShareState()
+
+        activityManager = .init(
+            tabletopGame: initializedGame.tabletopGame,
+            sharePlayController: root.networkStore.sharePlayStore
+        )
+        initializedGame.setupSeating(
+            sharePlayController: root.networkStore.sharePlayStore
+        )
+        configureSessionState(for: initializedGame)
+
+        // The volume can open after a map is already revealed — bring the
+        // table up to date immediately instead of waiting for a mapState trip.
+        await initializedGame.handleMapChange(
+            isGameMaster: initializedGame.isGameMaster
+        )
+        guard !Task.isCancelled else { return }
+        initializedGame.syncPawnsWithMapPins()
+    }
+
+    private func configureSessionState(for game: GameTableModel) {
+        game.networkActions = root.networkActions
+        game.isGameMaster = root.gameModel.gameConfig.isMaster
+        game.playerPinId = game.isGameMaster ? nil : root.gameModel.gameConfig.id
     }
 }
 
@@ -188,4 +195,197 @@ public struct GameTableView: View {
     GameTableView(root: .preview)
 }
 
+#endif
+
+#if os(iOS) || os(macOS)
+import Combine
+import CoreRPG
+import MapRPG
+import RealityKit
+import SwiftUI
+
+/// Camera-based 3D table for iOS and macOS. It intentionally shares the game
+/// model and map/pin synchronization with the visionOS table while leaving all
+/// TabletopKit session behavior in the visionOS implementation above.
+@MainActor
+public struct GameTableView: View {
+    let root: GameRoot
+
+    @State private var game: GameTableModel?
+    @State private var accessibilitySubscriptions: [any Cancellable] = []
+
+    public init(root: GameRoot) {
+        self.root = root
+    }
+
+    public var body: some View {
+        Group {
+            if let game {
+                GameTableRealityContent(
+                    game: game,
+                    accessibilitySubscriptions: $accessibilitySubscriptions
+                )
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .background(.black.gradient)
+        .task {
+            await initializeGameIfNeeded()
+        }
+        .task(id: root.mapRoot.gameControllable.gameModel.currentItemId) {
+            guard let game else { return }
+            await game.handleMapChange(
+                isGameMaster: root.gameModel.gameConfig.isMaster
+            )
+        }
+        .onDisappear {
+            accessibilitySubscriptions.removeAll()
+            if root.gameModel.gameTableModel === game {
+                root.gameModel.gameTableModel = nil
+            }
+        }
+    }
+
+    private func initializeGameIfNeeded() async {
+        if let game {
+            // SwiftUI may temporarily disappear without destroying @State.
+            // Restore the root registration so network controllers continue
+            // driving the still-live table after it appears again.
+            root.gameModel.gameTableModel = game
+            await game.handleMapChange(
+                isGameMaster: root.gameModel.gameConfig.isMaster
+            )
+            return
+        }
+        let initializedGame = GameTableModel(
+            mapRoot: root.mapRoot,
+            photoRoot: root.photoRoot
+        )
+        await initializedGame.renderer.loadAssets()
+        guard !Task.isCancelled else { return }
+
+        initializedGame.networkActions = root.networkActions
+        initializedGame.isGameMaster = root.gameModel.gameConfig.isMaster
+        initializedGame.playerPinId = initializedGame.isGameMaster
+            ? nil
+            : root.gameModel.gameConfig.id
+        root.gameModel.gameTableModel = initializedGame
+        game = initializedGame
+
+        await initializedGame.handleMapChange(
+            isGameMaster: initializedGame.isGameMaster
+        )
+        guard !Task.isCancelled else { return }
+        initializedGame.syncPawnsWithMapPins()
+    }
+}
+
+/// Explicit name for callers that want to distinguish the camera-based table
+/// from the volumetric visionOS TabletopKit view.
+public typealias GameTableRealityView = GameTableView
+
+@MainActor
+private struct GameTableRealityContent: View {
+    let game: GameTableModel
+    @Binding var accessibilitySubscriptions: [any Cancellable]
+
+    var body: some View {
+        RealityView { content in
+            content.camera = .virtual
+            content.add(game.renderer.root)
+            content.cameraTarget = game.setup.board.entity
+            installAccessibilitySubscriptionsIfNeeded()
+        } update: { content in
+            content.camera = .virtual
+            content.cameraTarget = game.setup.board.entity
+        }
+        .realityViewCameraControls(.orbit)
+        .simultaneousGesture(pinDragGesture)
+        .simultaneousGesture(pinTapGesture)
+        .overlay(alignment: .topTrailing) {
+            GameTableToolbar(game: game)
+                .padding()
+        }
+        .overlay(alignment: .bottom) {
+            GamePinActionMenu(game: game)
+                .padding()
+        }
+    }
+
+    private var pinDragGesture: some Gesture {
+        DragGesture(minimumDistance: 5)
+            .targetedToEntity(where: .has(PinComponent.self))
+            .onChanged { value in
+                guard let pinId = value.entity.components[PinComponent.self]?.pinId,
+                      let parent = value.entity.parent,
+                      let position = value.tablePosition(relativeTo: parent) else { return }
+                game.pinDragChanged(pinId: pinId, position: position)
+            }
+            .onEnded { value in
+                guard let pinId = value.entity.components[PinComponent.self]?.pinId,
+                      let parent = value.entity.parent,
+                      let position = value.tablePosition(relativeTo: parent) else { return }
+                game.pinDragEnded(pinId: pinId, position: position)
+            }
+    }
+
+    private var pinTapGesture: some Gesture {
+        TapGesture(count: 2)
+            .targetedToEntity(where: .has(PinComponent.self))
+            .exclusively(
+                before: TapGesture()
+                    .targetedToEntity(where: .has(PinComponent.self))
+            )
+            .onEnded { value in
+                switch value {
+                case .first(let doubleTap):
+                    guard let pinId = doubleTap.entity.components[PinComponent.self]?.pinId else { return }
+                    game.pinDoubleTapped(pinId: pinId)
+                case .second(let tap):
+                    guard let pinId = tap.entity.components[PinComponent.self]?.pinId else { return }
+                    game.pinTapped(pinId: pinId)
+                }
+            }
+    }
+
+    private func installAccessibilitySubscriptionsIfNeeded() {
+        guard accessibilitySubscriptions.isEmpty,
+              let scene = game.renderer.root.scene else { return }
+
+        let activate = scene.subscribe(to: AccessibilityEvents.Activate.self) { event in
+            guard let pinId = event.entity.components[PinComponent.self]?.pinId else { return }
+            Task { @MainActor in
+                game.pinTapped(pinId: pinId)
+            }
+        }
+        let zoom = scene.subscribe(to: AccessibilityEvents.CustomAction.self) { event in
+            guard let pinId = event.entity.components[PinComponent.self]?.pinId else { return }
+            Task { @MainActor in
+                game.pinDoubleTapped(pinId: pinId)
+            }
+        }
+        accessibilitySubscriptions = [activate, zoom]
+    }
+}
+
+private extension EntityTargetValue where Value == DragGesture.Value {
+    @MainActor
+    func tablePosition(relativeTo parent: Entity) -> SIMD3<Float>? {
+        guard let ray = ray(
+            through: self.location,
+            in: .local,
+            to: parent
+        ), abs(ray.direction.y) > 0.000_001 else { return nil }
+
+        let distance = (MapTableProjection.pinHeight - ray.origin.y) / ray.direction.y
+        guard distance.isFinite, distance >= 0 else { return nil }
+        return ray.origin + ray.direction * distance
+    }
+}
+
+#Preview("3D Table") {
+    GameTableView(root: .preview)
+}
 #endif

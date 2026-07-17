@@ -4,8 +4,8 @@ import CoreRPG
 import SwiftUI
 
 struct MapPinActionButtons: View {
-    let model: MapPinViewModel
     let pin: MapPinModel
+    let isExpanded: Bool
     let layoutDown: Bool
     let context: MapPinActionContext
     let glassNamespace: Namespace.ID
@@ -14,8 +14,6 @@ struct MapPinActionButtons: View {
     let action: (MapPinButtonType) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private var isExpanded: Bool { model.isExpandedId == pin.id }
 
     var body: some View {
         ZStack {
@@ -58,7 +56,7 @@ struct MapPinActionButtons: View {
         .offset(type.offset(at: index, count: count, expanded: isExpanded, layoutDown: layoutDown))
         .animation(
             reduceMotion ? nil : .spring(duration: (0.3 + CGFloat(index) * 0.1) * 3, bounce: 0.2),
-            value: model.isExpandedId
+            value: isExpanded
         )
         .opacity(isExpanded ? 1 : 0)
         .allowsHitTesting(isExpanded)
@@ -68,12 +66,11 @@ struct MapPinActionButtons: View {
 }
 
 #Preview {
-    @Previewable @State var model = MapPinViewModel(mapPins: [], pointer: .empty)
     @Previewable @Namespace var glassNamespace
     @Previewable @Namespace var photoSpace
     MapPinActionButtons(
-        model: model,
         pin: .empty(MapModel.previewId),
+        isExpanded: true,
         layoutDown: true,
         context: .editor,
         glassNamespace: glassNamespace,

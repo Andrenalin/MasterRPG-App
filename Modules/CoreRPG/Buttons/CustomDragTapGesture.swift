@@ -154,6 +154,8 @@ struct DragTapClassifier {
         @State private var isPressed = false
         @State private var lastDragValue: DragGesture.Value?
         @State private var longPressTask: Task<Void, Never>?
+        @State private var pendingReleaseTasks: [UUID: Task<Void, Never>] = [:]
+        @State private var pendingTapTaskId: UUID?
         @State private var tapClassifier = DragTapClassifier()
 
         public func body(content: Content) -> some View {
@@ -187,6 +189,7 @@ struct DragTapClassifier {
                     isMagnifying = true
                     didMagnify = true
                     tapClassifier.cancelPendingTap()
+                    cancelPendingTapRelease()
                     cancelLongPress()
                 }
                 magnifierAction?(magnifyValue, isFirstValue)
@@ -236,6 +239,7 @@ struct DragTapClassifier {
 
             didDrag = true
             tapClassifier.cancelPendingTap()
+            cancelPendingTapRelease()
             cancelLongPress()
             dragStartAction?(value)
         }
@@ -246,8 +250,10 @@ struct DragTapClassifier {
                 return
             }
 
-            let draggedBeforeRelease = didDrag || didLongPress
+            let didDragBeforeRelease = didDrag
+            let draggedBeforeRelease = didDragBeforeRelease || didLongPress
             let magnifiedBeforeRelease = didMagnify
+            let isTapRelease = !didDrag && !didLongPress && !didMagnify
             let isDoubleTap = tapClassifier.registerRelease(
                 at: value.location,
                 timestamp: value.time.timeIntervalSinceReferenceDate,
@@ -263,10 +269,17 @@ struct DragTapClassifier {
             didLongPress = false
 
             if isDoubleTap {
+                cancelPendingTapRelease()
                 doubleTapAction?(value)
             }
-            dragEndAction?(value)
-            releaseAction?(value)
+            if didDragBeforeRelease {
+                dragEndAction?(value)
+            }
+            if isTapRelease {
+                if !isDoubleTap {
+                    scheduleRelease(value)
+                }
+            }
             endAction?(value)
         }
 
@@ -285,8 +298,35 @@ struct DragTapClassifier {
                 guard !Task.isCancelled, isPressed, !didDrag, !didMagnify else { return }
                 didLongPress = true
                 tapClassifier.cancelPendingTap()
+                cancelPendingTapRelease()
                 longPressAction(value)
             }
+        }
+
+        func scheduleRelease(_ value: DragGesture.Value) {
+            let taskId = UUID()
+            pendingTapTaskId = taskId
+            pendingReleaseTasks[taskId] = Task { @MainActor in
+                do {
+                    try await Task.sleep(for: .seconds(max(0, doubleTapTimeout)))
+                } catch {
+                    return
+                }
+
+                guard !Task.isCancelled else { return }
+                pendingReleaseTasks[taskId] = nil
+                if pendingTapTaskId == taskId {
+                    pendingTapTaskId = nil
+                    tapClassifier.cancelPendingTap()
+                }
+                releaseAction?(value)
+            }
+        }
+
+        func cancelPendingTapRelease() {
+            guard let taskId = pendingTapTaskId else { return }
+            pendingReleaseTasks.removeValue(forKey: taskId)?.cancel()
+            pendingTapTaskId = nil
         }
 
         func cancelLongPress() {
@@ -296,6 +336,9 @@ struct DragTapClassifier {
 
         func cancelGesture() {
             cancelLongPress()
+            pendingReleaseTasks.values.forEach { $0.cancel() }
+            pendingReleaseTasks.removeAll()
+            pendingTapTaskId = nil
             tapClassifier.cancelPendingTap()
             isPressed = false
             isPressedBinding.wrappedValue = false
