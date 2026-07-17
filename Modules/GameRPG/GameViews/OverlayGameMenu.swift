@@ -49,8 +49,10 @@ private extension OverlayGameMenu {
                 toolIconView
                 enlargerView
                 
+#if !os(tvOS)
                 GameTableWindowButton()
-
+#endif
+                
                 wifiView
             }
 
@@ -69,8 +71,10 @@ private extension OverlayGameMenu {
                 
                 toolIconView
                 enlargerView
+#if !os(tvOS)
                 GameTableWindowButton()
-                
+#endif
+
                 wifiView
             }
             .foregroundStyle(.secondary)
