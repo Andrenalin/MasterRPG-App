@@ -66,11 +66,6 @@ struct GameRootViewer: View {
             root.photoRoot.imagePresentationModel.selectedItemId = photoId
             scenesManager.openWindow(SceneId.imageSpaceViewer)
         }
-        .task(id: root.mapRoot.gameControllable.gameModel.currentItemId) {
-            let isGameMaster = root.gameModel.gameConfig.isMaster
-            await root.gameModel.gameTableModel?.handleMapChange(isGameMaster: isGameMaster)
-        }
-
 #endif
     }
     

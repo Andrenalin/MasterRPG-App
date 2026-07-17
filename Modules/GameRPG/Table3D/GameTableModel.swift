@@ -1,26 +1,32 @@
 // @copyright André Trettin
 
-#if os(visionOS)
-import TabletopKit
-import RealityKit
-import SwiftUI
+#if os(iOS) || os(macOS) || os(visionOS)
 import CoreRPG
+import Foundation
 import MapRPG
 import PhotoRPG
-import UIKit
+import RealityKit
+import SwiftUI
 import os.log
+
+#if os(visionOS)
+import TabletopKit
+#endif
 
 @Observable @MainActor
 final class GameTableModel: Sendable {
-    let tabletopGame: TabletopGame
     let renderer: GameRenderer
-    let observer: GameObserver
     let setup: GameSetup
-    
-    // References to root models for accessing game controllers
+
+#if os(visionOS)
+    let tabletopGame: TabletopGame
+    let observer: GameObserver
+#endif
+
+    // References to root models for accessing game controllers.
     let mapRoot: MapRootModel
     let photoRoot: PhotoRootModel
-    
+
     var currentMapId: UUID?
     var currentMapImage: AKImage?
     var currentMapDegrees: Double = 0
@@ -33,42 +39,34 @@ final class GameTableModel: Sendable {
     private(set) var selectedPinId: UUID?
     private(set) var selectedPin: MapPinModel?
     private var pinMenuAttachment: Entity?
-    /// Room-visibility signature of the last rendered fog texture — pin moves
-    /// broadcast mapState constantly; skip the expensive composite when the
-    /// room state did not change.
+    private var currentPhotoId: UUID?
+    private var currentPhotoVersion: Int?
+    private var pendingPinPhotoIds: [UUID: UUID] = [:]
+    /// Signature of every value that affects the rendered board texture.
+    /// Pin-only mapState messages can then skip a full fog recomposite.
     private var fogSignature: Int?
 
     @MainActor
-    init(mapRoot: MapRootModel, photoRoot: PhotoRootModel) async {
+    init(mapRoot: MapRootModel, photoRoot: PhotoRootModel) {
         self.mapRoot = mapRoot
         self.photoRoot = photoRoot
 
         renderer = GameRenderer()
-        
-        // ✅ IMPORTANT: Wait for assets to load before continuing
-        await renderer.loadAssets()
-        
         setup = GameSetup(root: renderer.root)
-        
+
+#if os(visionOS)
         tabletopGame = TabletopGame(tableSetup: setup.setup)
-        
         observer = GameObserver(tabletop: tabletopGame, renderer: renderer)
         tabletopGame.addObserver(observer)
-        
         tabletopGame.addRenderDelegate(renderer)
+#endif
+
         renderer.game = self
-
-        // Note: Initial seat claiming is handled by SharePlay coordinator
-        // If SharePlay is active, seats will be assigned through setupSeatAssignment
-        // If not active, claim any seat for single-player mode
-        // This will be called from the view when the immersive space is opened
-
-        // Shuffles the card deck.
-        self.resetGame()
+        resetGame()
     }
-    
-    /// Called when the 3D table view appears to set up seating
-    @MainActor
+
+#if os(visionOS)
+    /// Called when the 3D table view appears to set up seating.
     func setupSeating(sharePlayController: RPGSharePlayController) {
         let isMaster = sharePlayController.gameModel?.gameConfig.isMaster ?? false
         observer.isMaster = isMaster
@@ -81,53 +79,89 @@ final class GameTableModel: Sendable {
             tabletopGame.claimAnySeat()
         }
     }
-        
-    @MainActor func handleMapChange(isGameMaster: Bool) async {
+#endif
+
+    /// Refreshes the standalone tabletop from the current game selection. The
+    /// method deliberately rechecks the same map id because mapState updates can
+    /// alter its photo, rooms, pins, or role without changing navigation.
+    func refreshCurrentMap(isGameMaster: Bool) async {
+        await handleMapChange(isGameMaster: isGameMaster)
+    }
+
+    func handleMapChange(isGameMaster: Bool) async {
+        let roleChanged = self.isGameMaster != isGameMaster
         self.isGameMaster = isGameMaster
-        guard let currentItemId = mapRoot.gameControllable.gameModel.currentItemId else {
+
+        guard let currentItemId = mapRoot.mapGameControllable.gameModel.currentItemId else {
+            clearPinSelection()
+            currentMapId = nil
+            clearBoardImage()
+            syncPawnsWithMapPins()
             Logger.gameTable.debug("No current map selected in game")
             return
         }
 
-        // Only update if the map actually changed
-        guard currentItemId != currentMapId else { return }
-        clearPinSelection()
-        currentMapId = currentItemId
-        fogSignature = nil
-
-        // Get the current map model from game controller
         guard let mapModel = await mapModel(for: currentItemId) else {
+            clearPinSelection()
+            currentMapId = nil
+            clearBoardImage()
+            syncPawnsWithMapPins()
             Logger.gameTable.error("Current item is not a MapModel")
             return
         }
 
-        await loadMapPhoto(mapModel: mapModel, isGameMaster: isGameMaster)
+        let mapChanged = currentItemId != currentMapId
+        let photoMetadata = mapModel.photoId.flatMap(photoMetadata(for:))
+        let photoChanged = mapModel.photoId != currentPhotoId
+            || photoMetadata?.version != currentPhotoVersion
+            || photoMetadata?.degrees != currentMapDegrees
+        if mapChanged {
+            clearPinSelection()
+            fogSignature = nil
+        }
+        if roleChanged {
+            fogSignature = nil
+        }
+        currentMapId = currentItemId
+
+        if mapChanged || photoChanged || currentMapImage == nil {
+            await loadMapPhoto(mapModel: mapModel, isGameMaster: isGameMaster)
+        } else {
+            await updateFogOfWar(isGameMaster: isGameMaster)
+        }
         syncPawnsWithMapPins()
     }
-    
-    @MainActor
+
     private func loadMapPhoto(mapModel: MapModel, isGameMaster: Bool) async {
+        currentPhotoId = mapModel.photoId
         guard let photoId = mapModel.photoId else {
+            currentMapImage = nil
+            currentMapDegrees = 0
+            currentPhotoVersion = nil
+            fogSignature = Self.renderSignature(of: mapModel, degrees: 0, isGameMaster: isGameMaster)
+            setup.board.clearMap()
             Logger.gameTable.debug("Map has no photo")
             return
         }
-        
-        // Fetch the photo image similar to RootCanvasMap.reloadImage()
+
+        let metadata = photoMetadata(for: photoId)
         let (image, degrees) = await photoRoot.fetchPhotoImage(for: photoId, useGame: true) ?? (nil, 0)
-        
-        guard let akImage = image else {
+        guard let image else {
+            currentMapImage = nil
+            currentMapDegrees = 0
+            currentPhotoVersion = metadata?.version
+            fogSignature = nil
+            setup.board.clearMap()
             Logger.gameTable.error("Failed to load photo for the current map")
             return
         }
-        
-        // Cache the current map image and rotation for future updates
-        currentMapImage = akImage
+
+        currentMapImage = image
         currentMapDegrees = degrees
-        fogSignature = Self.roomSignature(of: mapModel)
-        
-        // Update the board with the new photo, display config, and map model (for fog of war)
+        currentPhotoVersion = metadata?.version
+        fogSignature = Self.renderSignature(of: mapModel, degrees: degrees, isGameMaster: isGameMaster)
         setup.board.updateMap(
-            image: akImage,
+            image: image,
             degrees: degrees,
             displayConfig: mapModel.displayConfig,
             mapModel: mapModel,
@@ -135,29 +169,36 @@ final class GameTableModel: Sendable {
         )
         Logger.gameTable.debug("Map updated (rotation: \(degrees, privacy: .public)°, GM: \(isGameMaster, privacy: .public))")
     }
-    
-    /// Updates the fog of war when map entries change (rooms shown/hidden)
-    @MainActor
+
+    /// Rebuilds fog only when a value that affects the rendered board changed.
     func updateFogOfWar(isGameMaster: Bool) async {
         self.isGameMaster = isGameMaster
         guard let currentItemId = currentMapId else {
             Logger.gameTable.debug("No current map to update fog of war")
             return
         }
-
         guard let mapModel = await mapModel(for: currentItemId) else {
+            clearBoardImage()
             Logger.gameTable.error("Current item is not a MapModel")
             return
         }
-
-        guard let mapImage = currentMapImage else {
+        let metadata = mapModel.photoId.flatMap(photoMetadata(for:))
+        if metadata?.version != currentPhotoVersion
+            || metadata?.degrees != currentMapDegrees {
+            await loadMapPhoto(mapModel: mapModel, isGameMaster: isGameMaster)
+            return
+        }
+        guard let mapImage = currentMapImage,
+              currentPhotoId == mapModel.photoId else {
             await loadMapPhoto(mapModel: mapModel, isGameMaster: isGameMaster)
             return
         }
 
-        // Pin moves arrive as mapState too — only re-composite the texture
-        // when the room visibility actually changed.
-        let signature = Self.roomSignature(of: mapModel)
+        let signature = Self.renderSignature(
+            of: mapModel,
+            degrees: currentMapDegrees,
+            isGameMaster: isGameMaster
+        )
         guard signature != fogSignature else { return }
         fogSignature = signature
 
@@ -171,19 +212,101 @@ final class GameTableModel: Sendable {
         Logger.gameTable.debug("Fog of war updated - \(mapModel.entries.filter { !$0.isShown }.count, privacy: .public) hidden areas (GM: \(isGameMaster, privacy: .public))")
     }
 
-    private static func roomSignature(of mapModel: MapModel) -> Int {
+    /// Includes all board inputs, not merely room visibility, so edits to room
+    /// geometry, map dimensions, display configuration, photo, and role render.
+    private static func renderSignature(
+        of mapModel: MapModel,
+        degrees: Double,
+        isGameMaster: Bool
+    ) -> Int {
         var hasher = Hasher()
         hasher.combine(mapModel.id)
+        hasher.combine(mapModel.photoId)
+        hasher.combine(mapModel.width)
+        hasher.combine(mapModel.height)
+        hasher.combine(degrees)
+        hasher.combine(isGameMaster)
+        hasher.combine(mapModel.displayConfig)
         for entry in mapModel.entries {
             hasher.combine(entry.id)
+            hasher.combine(entry.coordinates)
+            hasher.combine(entry.isHexGrid)
             hasher.combine(entry.isShown)
         }
         return hasher.finalize()
     }
 
+    var rooms: [MapEntryModel] {
+        currentMapModel()?.entries ?? []
+    }
+
+    var pointer: MapPinModel? {
+        currentMapModel()?.pointer
+    }
+
+    /// Game-master room action used by every tabletop platform.
+    func toggleRoomVisibility(_ roomId: UUID) async {
+        guard isGameMaster, let mapId = currentMapId,
+              mapRoot.mapGameControllable.toggleRoom(itemId: mapId, roomId: roomId) else { return }
+        await updateFogOfWar(isGameMaster: true)
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
+    /// Shows or hides the full map with one render/sync/network transaction.
+    func setAllRoomsShown(_ isShown: Bool) async {
+        guard isGameMaster, let mapId = currentMapId else { return }
+        let roomIds = rooms.map(\.id)
+        guard mapRoot.mapGameControllable.setRoomsShown(
+            itemId: mapId,
+            roomIds: roomIds,
+            isShown: isShown
+        ) else { return }
+        await updateFogOfWar(isGameMaster: true)
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
+    func togglePointerVisibility() {
+        guard isGameMaster, let mapId = currentMapId,
+              mapRoot.mapGameControllable.togglePointer(itemId: mapId) else { return }
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
+    /// Places and reveals the pointer at the map center without requiring the
+    /// 2D map window. Both mutations are delivered in one mapState message.
+    func movePointerToMapCenter() {
+        guard isGameMaster, let mapId = currentMapId, let mapModel = currentMapModel() else { return }
+        let center = CGPoint(x: mapModel.width / 2, y: mapModel.height / 2)
+        let moved = mapRoot.mapGameControllable.movePointer(itemId: mapId, location: center)
+        let revealed = mapModel.pointer.isShown
+            ? false
+            : mapRoot.mapGameControllable.togglePointer(itemId: mapId)
+        guard moved || revealed else { return }
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
+    /// Adds a set selected by a future platform-specific character picker.
+    /// Keeping the mutation here avoids coupling the tabletop to MapEditor.
+    func addMonstersAtMapCenter(_ monsters: [ItemRowModel]) {
+        guard isGameMaster, let mapId = currentMapId,
+              mapRoot.mapGameControllable.addMonstersAtMapCenter(
+                itemId: mapId,
+                monsters: monsters
+              ) else { return }
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
     /// Loads the pin's photo thumbnail (2D pin pipeline) onto the 3D token.
-    @MainActor
     func loadPinThumbnail(pinId: UUID, photoId: UUID) async {
+        defer {
+            if pendingPinPhotoIds[pinId] == photoId {
+                pendingPinPhotoIds[pinId] = nil
+            }
+        }
         guard let cache = photoRoot.cacheControllable else { return }
         var image = await cache.thumbnail(for: photoId)
         if image == nil {
@@ -191,14 +314,33 @@ final class GameTableModel: Sendable {
             await cache.thumbnailId(for: photoId, item: item)
             image = await cache.thumbnail(for: photoId)
         }
-        guard let image, let pawn = setup.pinPawns.first(where: { $0.pinId == pinId }) else { return }
+        let currentPin = currentMapModel().flatMap { mapModel in
+            pinId == mapModel.pointer.id
+                ? mapModel.pointer
+                : mapModel.mapPins.first(where: { $0.id == pinId })
+        }
+        guard currentPin?.photoId == photoId,
+              let image,
+              let pawn = setup.pinPawns.first(where: { $0.pinId == pinId }) else { return }
         pawn.setPhotoTexture(image)
         pawn.loadedPhotoId = photoId
     }
 
-    /// The master moves every pin; a player only its own (2D `canDrag` parity).
+    func beginPinPhotoLoad(pinId: UUID, photoId: UUID) -> Bool {
+        guard pendingPinPhotoIds[pinId] != photoId else { return false }
+        pendingPinPhotoIds[pinId] = photoId
+        return true
+    }
+
+    /// The master moves every pin. A player moves its own pin and may move the
+    /// shared pointer while the game master has made that pointer visible,
+    /// matching the existing 2D game-map contract.
     func canMovePin(_ pinId: UUID) -> Bool {
-        isGameMaster || pinId == playerPinId
+        guard let mapModel = currentMapModel() else { return false }
+        if pinId == mapModel.pointer.id {
+            return isGameMaster || mapModel.pointer.isShown
+        }
+        return isGameMaster || pinId == playerPinId
     }
 
     /// Registers the SwiftUI attachment used for the game-master pin menu.
@@ -246,7 +388,6 @@ final class GameTableModel: Sendable {
     }
 
     /// Pin drag: follow the finger on the board plane.
-    @MainActor
     func pinDragChanged(pinId: UUID, position: SIMD3<Float>) {
         guard canMovePin(pinId), let pawn = setup.pinPawns.first(where: { $0.pinId == pinId }) else { return }
         pawn.entity.position = SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)
@@ -256,17 +397,37 @@ final class GameTableModel: Sendable {
     }
 
     /// Pin drop: write the move back into the map model, then network it.
-    /// The master broadcasts the authoritative map state directly; a player
-    /// sends its own pin as `.mapPin` to the master, which rebroadcasts the
-    /// map state to everyone — either way the round-trip snaps every device
-    /// (including this one) to the authoritative position.
-    @MainActor
     func pinDragEnded(pinId: UUID, position: SIMD3<Float>) {
         guard canMovePin(pinId), let mapId = currentMapId,
-              let mapImage = currentMapImage else { return }
-        let projection = MapTableProjection(imageSize: mapImage.fixedSize, degrees: currentMapDegrees)
-        let location = projection.mapLocation(for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z))
-        guard mapRoot.mapGameControllable.movePin(itemId: mapId, pinId: pinId, location: location) else { return }
+              let mapImage = currentMapImage,
+              let mapModel = currentMapModel() else { return }
+        let coordinateSize = mapModel.width > 0 && mapModel.height > 0
+            ? CGSize(width: mapModel.width, height: mapModel.height)
+            : MapTableProjection.orientedImageSize(
+                mapImage.fixedSize,
+                degrees: currentMapDegrees
+            )
+        let projection = MapTableProjection(imageSize: coordinateSize, degrees: 0)
+        let location = projection.mapLocation(
+            for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)
+        )
+
+        if pinId == mapModel.pointer.id {
+            guard mapRoot.mapGameControllable.movePointer(itemId: mapId, location: location) else { return }
+            syncPawnsWithMapPins()
+            if isGameMaster {
+                broadcastMapState(for: mapId)
+            } else {
+                sendPlayerPointerUpdate(mapId: mapId)
+            }
+            return
+        }
+
+        guard mapRoot.mapGameControllable.movePin(
+            itemId: mapId,
+            pinId: pinId,
+            location: location
+        ) else { return }
         syncPawnsWithMapPins()
         if isGameMaster {
             broadcastMapState(for: mapId)
@@ -277,16 +438,17 @@ final class GameTableModel: Sendable {
 
     /// A game-master tap opens the local action menu. A player tap toggles the
     /// pin's shared highlight state and asks the master to authorize it.
-    @MainActor
     func pinTapped(pinId: UUID) {
         guard let mapId = currentMapId,
+              let mapModel = currentMapModel(),
+              pinId != mapModel.pointer.id,
               setup.pinPawns.contains(where: { $0.pinId == pinId }) else { return }
         if isGameMaster {
             if selectedPinId == pinId {
                 clearPinSelection()
             } else {
                 selectedPinId = pinId
-                updateSelectedPinState(mapModel: currentMapModel())
+                updateSelectedPinState(mapModel: mapModel)
             }
             return
         }
@@ -296,11 +458,10 @@ final class GameTableModel: Sendable {
         sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
     }
 
-    /// Double tap toggles shared zoom for both roles. Player changes travel as
-    /// `.mapPin`; the master rebroadcasts the accepted authoritative mapState.
-    @MainActor
+    /// Double tap toggles shared zoom for both roles.
     func pinDoubleTapped(pinId: UUID) {
         guard let mapId = currentMapId,
+              pinId != currentMapModel()?.pointer.id,
               setup.pinPawns.contains(where: { $0.pinId == pinId }),
               mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: pinId) else { return }
         syncPawnsWithMapPins()
@@ -352,18 +513,48 @@ final class GameTableModel: Sendable {
             ?? (mapRoot.itemControllable.itemSync(for: currentMapId) as? MapModel)
     }
 
+    private func photoMetadata(for photoId: UUID) -> (version: Int, degrees: Double)? {
+        let photo = (photoRoot.gameControllable.gameModel.itemData[photoId] as? PhotoModel)
+            ?? (photoRoot.itemControllable.itemSync(for: photoId) as? PhotoModel)
+        guard let photo else { return nil }
+        return (photo.version, photo.degrees)
+    }
+
+    private func clearBoardImage() {
+        currentPhotoId = nil
+        currentPhotoVersion = nil
+        currentMapImage = nil
+        currentMapDegrees = 0
+        fogSignature = nil
+        setup.board.clearMap()
+    }
+
     private func broadcastMapState(for mapId: UUID) {
-        networkActions?.game(mapRoot.mapGameControllable.networkMapUpdate(for: mapId), .mapState, nil)
+        networkActions?.game(
+            mapRoot.mapGameControllable.networkMapUpdate(for: mapId),
+            .mapState,
+            nil
+        )
     }
 
     private func sendPlayerPinUpdate(mapId: UUID, pinId: UUID) {
-        guard let pinData = mapRoot.mapGameControllable.networkPin(itemId: mapId, pinId: pinId) else { return }
+        guard let pinData = mapRoot.mapGameControllable.networkPin(
+            itemId: mapId,
+            pinId: pinId
+        ) else { return }
         networkActions?.game(pinData, .mapPin, nil)
     }
-    
+
+    private func sendPlayerPointerUpdate(mapId: UUID) {
+        guard let pointerData = mapRoot.mapGameControllable.networkPointer(itemId: mapId) else { return }
+        networkActions?.game(pointerData, .mapPin, nil)
+    }
+
     isolated deinit {
+#if os(visionOS)
         tabletopGame.removeObserver(observer)
         tabletopGame.removeRenderDelegate(renderer)
+#endif
     }
 }
 

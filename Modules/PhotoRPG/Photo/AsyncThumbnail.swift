@@ -10,12 +10,13 @@ struct AsyncThumbnail: View {
 
     @Environment(PhotoRootModel.self) private var root
 
-    @State private var lastFileUrl: FileUrl?
+    @State private var lastLoadKey: AsyncThumbnailLoadKey?
     @State private var isLoading: Bool = false
 
     var body: some View {
         if let itemId {
             let model = root.gameController.gameItem(for: itemId)
+            let key = loadKey(for: model)
             Group {
                 if let image = cachedImage(for: model.id) {
                     Image(akImage: image)
@@ -25,8 +26,8 @@ struct AsyncThumbnail: View {
                     placeholderView
                 }
             }
-            .task(id: loadKey(for: model)) {
-                await initImage(for: model)
+            .task(id: key) {
+                await initImage(for: model, key: key)
             }
         } else {
             placeholderView
@@ -40,19 +41,33 @@ private struct AsyncThumbnailLoadKey: Equatable {
     let itemId: UUID
     let fileUrl: FileUrl?
     let hasInlineData: Bool
+    let usesFullImage: Bool
+    let version: Int
 }
 
 private extension AsyncThumbnail {
-    /// Synchronously access the cached thumbnail from the observable cache
+    /// Zoomed map pins need more than the shared 64-point list thumbnail.
+    /// Reuse the full-photo cache only for those large presentations; ordinary
+    /// pins stay on the cheaper thumbnail path.
+    var usesFullImage: Bool {
+        max(size.width, size.height) > 64
+    }
+
+    /// Synchronously access the appropriate observable cache.
     func cachedImage(for itemId: UUID) -> AKImage? {
-        root.itemController.cacheController?.cachedThumbnail(for: itemId)
+        guard let cacheController = root.itemController.cacheController else { return nil }
+        return usesFullImage
+            ? cacheController.cachedImage(for: itemId)
+            : cacheController.cachedThumbnail(for: itemId)
     }
 
     func loadKey(for model: PhotoModel) -> AsyncThumbnailLoadKey {
         AsyncThumbnailLoadKey(
             itemId: model.id,
             fileUrl: model.fileUrl,
-            hasInlineData: model.fileUrl?.data != nil
+            hasInlineData: model.fileUrl?.data != nil,
+            usesFullImage: usesFullImage,
+            version: model.version
         )
     }
     
@@ -67,36 +82,53 @@ private extension AsyncThumbnail {
     }
     
     /// Initialize image loading with deduplication
-    func initImage(for model: PhotoModel) async {
-        guard model.fileUrl != nil else { return }
-        // Avoid redundant loads once this URL already has an observable cached image.
-        guard lastFileUrl != model.fileUrl || cachedImage(for: model.id) == nil else { return }
+    func initImage(for model: PhotoModel, key: AsyncThumbnailLoadKey) async {
+        guard model.fileUrl != nil else {
+            lastLoadKey = key
+            isLoading = false
+            return
+        }
+        // Avoid redundant loads once this exact image/version/quality request
+        // already has an observable cached image.
+        guard lastLoadKey != key || cachedImage(for: model.id) == nil else {
+            isLoading = false
+            return
+        }
         
         isLoading = true
-        lastFileUrl = model.fileUrl
-        await loadImage(for: model)
+        lastLoadKey = key
+        await loadImage(for: model, key: key)
     }
     
     /// Load the thumbnail asynchronously and update the observable cache
-    func loadImage(for model: PhotoModel) async {
+    func loadImage(for model: PhotoModel, key: AsyncThumbnailLoadKey) async {
         guard let cacheController = root.itemController.cacheController else {
-            isLoading = false
+            if lastLoadKey == key { isLoading = false }
             return
         }
         
         let id = model.id
         
-        // Trigger thumbnail creation if needed
-        await cacheController.thumbnailId(for: id, item: model)
-        
-        // Retrieve the thumbnail
-        let newImage = await cacheController.thumbnail(for: id)
-        
-        // Update the observable cache so all views can access it
-        await MainActor.run {
-            cacheController.setCachedThumbnail(newImage, for: id)
-            isLoading = false
+        let newImage: AKImage?
+        if key.usesFullImage {
+            await cacheController.photoId(for: id, item: model)
+            newImage = await cacheController.photo(for: id)
+        } else {
+            await cacheController.thumbnailId(for: id, item: model)
+            newImage = await cacheController.thumbnail(for: id)
         }
+        
+        guard !Task.isCancelled, lastLoadKey == key else { return }
+
+        // Update the observable cache so all views can access it. Checking the
+        // task generation above prevents an older item/size request from
+        // clearing the current request's loading state.
+        if key.usesFullImage {
+            cacheController.setCachedImage(newImage, for: id)
+        } else {
+            cacheController.setCachedThumbnail(newImage, for: id)
+        }
+        isLoading = false
     }
 }
 

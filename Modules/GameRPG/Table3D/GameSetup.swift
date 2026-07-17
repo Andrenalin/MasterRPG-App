@@ -100,26 +100,46 @@ class GameSetup {
     /// id-matched: updates existing, creates missing, removes stale tokens.
     /// Returns pinId → photoId for tokens that still need their photo texture.
     func syncPins(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, isGameMaster: Bool) -> [UUID: UUID] {
-        let allPins = mapModel?.mapPins ?? []
+        let allPins: [MapPinModel]
+        if let mapModel {
+            let pointerPins = mapModel.pointer.isShown ? [mapModel.pointer] : []
+            allPins = mapModel.mapPins + pointerPins
+        } else {
+            allPins = []
+        }
         // Visibility: the master sees every pin (hidden ones dimmed); players
         // see a pin when it is shown and — for monsters — not covered by fog.
-        let targetPins = allPins.filter { pin in
+        var seenPinIds: Set<UUID> = []
+        let targetPins = allPins.filter { seenPinIds.insert($0.id).inserted }.filter { pin in
             if isGameMaster { return true }
             guard pin.isShown else { return false }
+            if pin.id == mapModel?.pointer.id { return true }
             if pin.isPlayer { return true }
             return mapModel.map { !$0.isLocationHiddenForPlayers(pin.location) } ?? true
         }
 
-        var projection: MapTableProjection?
-        if let mapImage {
-            // Use fixedSize (UIImage.size in points) so the coordinate space matches
-            // the 2D MapEditor overlay, where pin locations are stored in point space.
-            projection = MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
+        let projection: MapTableProjection? = if let mapModel,
+                                                  mapModel.width > 0,
+                                                  mapModel.height > 0 {
+            // MapModel is authoritative: room/pin coordinates were already
+            // normalized into this oriented canvas by the 2D editor.
+            MapTableProjection(
+                imageSize: CGSize(width: mapModel.width, height: mapModel.height),
+                degrees: 0
+            )
+        } else if let mapImage {
+            MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
+        } else {
+            nil
         }
 
         var photoLoads: [UUID: UUID] = [:]
         var lineupIndex = 0
         var keptIds: Set<UUID> = []
+        let existingPawns = Dictionary(
+            pinPawns.map { ($0.pinId, $0) },
+            uniquingKeysWith: { current, _ in current }
+        )
 
         for pin in targetPins {
             keptIds.insert(pin.id)
@@ -133,7 +153,7 @@ class GameSetup {
                 lineupIndex += 1
             }
             let hiddenForMaster = isGameMaster && !pin.isShown
-            if let pawn = pinPawns.first(where: { $0.pinId == pin.id }) {
+            if let pawn = existingPawns[pin.id] {
                 pawn.update(pin: pin, position: position, hiddenForMaster: hiddenForMaster)
                 if pawn.loadedPhotoId != pin.photoId, let photoId = pin.photoId {
                     photoLoads[pin.id] = photoId
@@ -173,6 +193,7 @@ extension GameTableModel {
         let photoLoads = setup.syncPins(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees, isGameMaster: isGameMaster)
         updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {
+            guard beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }
             Task { [weak self] in
                 await self?.loadPinThumbnail(pinId: pinId, photoId: photoId)
             }
@@ -193,9 +214,15 @@ struct MapTableProjection {
     let planeDepth: Float
 
     init(imageSize: CGSize, degrees: Double) {
-        self.imageSize = imageSize
-        self.degrees = degrees
-        let aspectRatio = imageSize.width / imageSize.height
+        let normalizedDegrees = Self.normalizedDegrees(degrees)
+        let orientedSize = Self.orientedImageSize(imageSize, degrees: normalizedDegrees)
+        let safeSize = CGSize(
+            width: max(1, orientedSize.width),
+            height: max(1, orientedSize.height)
+        )
+        self.imageSize = safeSize
+        self.degrees = normalizedDegrees
+        let aspectRatio = safeSize.width / safeSize.height
         if aspectRatio > 1.0 {
             planeWidth = Self.mapSize
             planeDepth = Self.mapSize / Float(aspectRatio)
@@ -210,20 +237,30 @@ struct MapTableProjection {
         let normalizedY = location.y / imageSize.height
         let tableX = Float(normalizedX - 0.5) * planeWidth
         let tableZ = Float(normalizedY - 0.5) * planeDepth
-        let radians = Float(degrees * .pi / 180.0)
-        let rotatedX = tableX * cos(radians) - tableZ * sin(radians)
-        let rotatedZ = tableX * sin(radians) + tableZ * cos(radians)
-        return SIMD3<Float>(rotatedX, Self.pinHeight, rotatedZ)
+        return SIMD3<Float>(tableX, Self.pinHeight, tableZ)
     }
 
     /// Exact inverse of `tablePosition(for:)`, clamped to the image bounds.
     func mapLocation(for position: SIMD3<Float>) -> CGPoint {
-        let radians = Float(-degrees * .pi / 180.0)
-        let tableX = position.x * cos(radians) - position.z * sin(radians)
-        let tableZ = position.x * sin(radians) + position.z * cos(radians)
-        let x = (CGFloat(tableX / planeWidth) + 0.5) * imageSize.width
-        let y = (CGFloat(tableZ / planeDepth) + 0.5) * imageSize.height
+        let x = (CGFloat(position.x / planeWidth) + 0.5) * imageSize.width
+        let y = (CGFloat(position.z / planeDepth) + 0.5) * imageSize.height
         return CGPoint(x: min(max(x, 0), imageSize.width), y: min(max(y, 0), imageSize.height))
+    }
+
+    static func orientedImageSize(_ size: CGSize, degrees: Double) -> CGSize {
+        swapsAxes(for: normalizedDegrees(degrees))
+            ? CGSize(width: size.height, height: size.width)
+            : size
+    }
+
+    static func swapsAxes(for degrees: Double) -> Bool {
+        abs(degrees - 90) < 0.001 || abs(degrees - 270) < 0.001
+    }
+
+    static func normalizedDegrees(_ degrees: Double) -> Double {
+        guard degrees.isFinite else { return 0 }
+        let remainder = degrees.truncatingRemainder(dividingBy: 360)
+        return remainder >= 0 ? remainder : remainder + 360
     }
 }
 

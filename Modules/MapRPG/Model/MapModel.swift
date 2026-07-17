@@ -190,6 +190,7 @@ extension MapModel {
             width = size.height
             height = size.width
         }
+        self.degrees = degrees
         resetEntrySize(oldWidth: oldWidth, oldHeight: oldHeight)
     }
 
@@ -218,6 +219,15 @@ extension MapModel {
             updatedPin.location = CGPoint(x: updatedPin.location.x * wf, y: updatedPin.location.y * hf)
             return updatedPin
         }
+        pointer.location = CGPoint(
+            x: pointer.location.x * wf,
+            y: pointer.location.y * hf
+        )
+        var updatedDisplayConfig = displayConfig
+        updatedDisplayConfig.tileCoordinates = updatedDisplayConfig.tileCoordinates.map {
+            CGPoint(x: $0.x * wf, y: $0.y * hf)
+        }
+        displayConfig = updatedDisplayConfig
     }
 
     func toggle(_ entryId: UUID) {

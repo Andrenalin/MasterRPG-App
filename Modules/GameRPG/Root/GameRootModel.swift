@@ -40,8 +40,11 @@ final class GameRootModel: Sendable {
     var masterController: MasterController?
     var playerController: PlayerController?
 
-    #if os(visionOS)
+    #if !os(tvOS)
     var gameTableModel: GameTableModel?
+    #endif
+
+    #if os(visionOS)
     var shareState = GameShareStateModel()
     #endif
 

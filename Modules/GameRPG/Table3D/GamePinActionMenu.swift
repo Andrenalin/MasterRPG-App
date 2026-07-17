@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-#if os(visionOS)
+#if os(iOS) || os(macOS) || os(visionOS)
 import MapRPG
 import SwiftUI
 
@@ -50,7 +50,7 @@ private struct GamePinActionMenuContent: View {
             )
         }
         .padding(12)
-        .glassBackgroundEffect(in: .capsule)
+        .modifier(GamePinMenuBackground())
     }
 }
 
@@ -70,6 +70,17 @@ private struct GamePinMenuButton: View {
         .labelStyle(.iconOnly)
         .controlSize(.small)
         .help(Text(title))
+    }
+}
+
+private struct GamePinMenuBackground: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+#if os(visionOS)
+        content.glassBackgroundEffect(in: .capsule)
+#else
+        content.background(.regularMaterial, in: .capsule)
+#endif
     }
 }
 

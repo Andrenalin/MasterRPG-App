@@ -48,8 +48,7 @@ private extension OverlayGameMenu {
                 toolIconView
                 enlargerView
                 
-                // TableTop Kit Table Volume Button
-                gameTableButton
+                GameTableWindowButton()
 
                 wifiView
             }
@@ -67,6 +66,7 @@ private extension OverlayGameMenu {
                 
                 toolIconView
                 enlargerView
+                GameTableWindowButton()
                 
                 wifiView
             }
@@ -378,54 +378,6 @@ private extension OverlayGameMenu {
         }
     }
     
-    // MARK: - TableTop Kit Table Volume Button (visionOS only)
-    
-    @ViewBuilder
-    var gameTableButton: some View {
-#if os(visionOS)
-        @Bindable var gameScreenModel = gameScreenModel
-        Button {
-            withAnimation(accessibilityReduceMotion ? nil : .default) {
-                appSettingsModel.showGameTableVolume.toggle()
-                handleGameTableToggle()
-            }
-        } label: {
-            Image(systemName: "cube.transparent")
-                .imageScale(.medium)
-        }
-        .selectedBorderedStype(isSelected: appSettingsModel.showGameTableVolume)
-        .help(
-            Text(
-                appSettingsModel.showGameTableVolume ? "Hide table volume" : "Show table volume",
-                bundle: .module
-            )
-        )
-        .accessibilityLabel(
-            appSettingsModel.showGameTableVolume
-                ? Text("Hide table volume", bundle: .module)
-                : Text("Show table volume", bundle: .module)
-        )
-#else
-        EmptyView()
-#endif
-    }
-    
-    /// Handles the show/hide of the TableTop Kit table volume (visionOS only)
-    func handleGameTableToggle() {
-#if os(visionOS)
-        if appSettingsModel.showGameTableVolume {
-            // Open the table volume
-            if scenesManager.getSceneState(for: SceneId.gameTable) != .opened {
-                scenesManager.openWindow(SceneId.gameTable)
-            }
-        } else {
-            // Close the table volume
-            if scenesManager.getSceneState(for: SceneId.gameTable) != .closed {
-                scenesManager.dismissWindow(SceneId.gameTable)
-            }
-        }
-#endif
-    }
 }
 
 #Preview("wide") {

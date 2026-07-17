@@ -88,8 +88,9 @@ final class MapEditorModel {
 
     // MARK: - Dependencies
 
-    private let image: AKImage
-    private let photoDegrees: Double
+    private var image: AKImage
+    private var photoDegrees: Double
+    private var canvasSize: CGSize
     private var containerSize: CGSize
 
     // MARK: - Initialization
@@ -97,6 +98,11 @@ final class MapEditorModel {
     init(map: MapModel, image: AKImage, photoDegrees: Double, containerSize: CGSize, displayMode: MapDisplayMode = .master, mapMode: MapMode = .edit, playerPinId: UUID? = nil) {
         self.image = image
         self.photoDegrees = photoDegrees
+        self.canvasSize = MapEditorGeometry.canvasSize(
+            mapSize: CGSize(width: map.width, height: map.height),
+            image: image,
+            degrees: photoDegrees
+        )
         self.containerSize = containerSize
         self.pinScale = map.pinScale
         self.hexScale = map.hexMapScale
@@ -118,7 +124,26 @@ final class MapEditorModel {
     // MARK: - Container Size Updates
 
     func updateContainerSize(_ newSize: CGSize) {
+        guard containerSize != newSize else { return }
         containerSize = newSize
+        resetZoom()
+    }
+
+    func updateCanvas(image: AKImage, photoDegrees: Double, mapSize: CGSize) {
+        let newCanvasSize = MapEditorGeometry.canvasSize(
+            mapSize: mapSize,
+            image: image,
+            degrees: photoDegrees
+        )
+        let geometryChanged = self.photoDegrees != photoDegrees
+            || canvasSize != newCanvasSize
+            || ObjectIdentifier(self.image) != ObjectIdentifier(image)
+
+        self.image = image
+        self.photoDegrees = photoDegrees
+        canvasSize = newCanvasSize
+
+        guard geometryChanged, appeared else { return }
         resetZoom()
     }
 
@@ -242,8 +267,7 @@ final class MapEditorModel {
     func resetZoom() {
         let (newScale, newOffset) = MapEditorGeometry.zoomToFit(
             containerSize: containerSize,
-            image: image,
-            degrees: photoDegrees
+            contentSize: canvasSize
         )
         imageModel.normScale = newScale
         zoom(scale: newScale, at: newOffset)
@@ -254,8 +278,7 @@ final class MapEditorModel {
         if imageModel.scale != imageModel.normScale {
             (newScale, newOffset) = MapEditorGeometry.zoomToFit(
                 containerSize: containerSize,
-                image: image,
-                degrees: photoDegrees
+                contentSize: canvasSize
             )
         } else {
             (newScale, newOffset) = zoomIn(at: location)
@@ -326,7 +349,7 @@ final class MapEditorModel {
 
         guard newScale >= 0.1 else { return }
 
-        let imgSize = MapEditorGeometry.imageSize(image, degrees: photoDegrees)
+        let imgSize = canvasSize
         let scaleDiff = (newScale - imageModel.scale) / 2
         let imgOff = imgSize * scaleDiff
         let newOffsetNew = CGPoint(x: -imgOff.width, y: -imgOff.height)
@@ -343,11 +366,11 @@ final class MapEditorModel {
     }
 
     func updateOffset(with newLocation: CGPoint, firstOffset: CGPoint) {
-        let imgSize = MapEditorGeometry.imageSize(image, degrees: photoDegrees)
+        let imgSize = canvasSize
         let offX = max(300, (containerSize.width - imgSize.width * imageModel.scale) / 2)
         let offY = max(300, (containerSize.height - imgSize.height * imageModel.scale) / 2)
         let minX = containerSize.width - (imgSize.width * imageModel.scale) - offX
-        let minY = containerSize.height - (imgSize.height * imageModel.scale) - offX
+        let minY = containerSize.height - (imgSize.height * imageModel.scale) - offY
 
         var newOffset = firstOffset + newLocation
         newOffset.x = min(max(newOffset.x, minX), offX)
@@ -457,13 +480,15 @@ final class MapEditorModel {
     // MARK: - Computed Properties
 
     var currentSize: CGSize {
-        MapEditorGeometry.imageSize(image, degrees: photoDegrees) * imageModel.scale
+        canvasSize * imageModel.scale
     }
+
+    var mapCanvasSize: CGSize { canvasSize }
 
     func imageOffset() -> CGSize {
         guard let location = editEntries.selectedNeedleCoordinate else { return .zero }
 
-        let size = MapEditorGeometry.imageSize(image, degrees: photoDegrees)
+        let size = canvasSize
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         return CGSize(
             width: -1 * (location.x - center.x),
@@ -475,29 +500,61 @@ final class MapEditorModel {
 // MARK: - Geometry Utilities
 
 struct MapEditorGeometry {
+    static func canvasSize(mapSize: CGSize, image: AKImage, degrees: Double) -> CGSize {
+        guard mapSize.width.isFinite,
+              mapSize.height.isFinite,
+              mapSize.width > 0,
+              mapSize.height > 0 else {
+            return imageSize(image, degrees: degrees)
+        }
+        return mapSize
+    }
+
     static func imageSize(_ image: AKImage, degrees: Double) -> CGSize {
-        (degrees == 0 || degrees == 180)
-            ? image.fixedSize
-            : CGSize(width: image.size.height, height: image.size.width)
+        let originalSize = image.fixedSize
+        guard originalSize.width.isFinite,
+              originalSize.height.isFinite,
+              originalSize.width > 0,
+              originalSize.height > 0 else { return .zero }
+
+        let normalizedDegrees = normalizedDegrees(degrees)
+        let radians = normalizedDegrees * .pi / 180
+        let cosine = CGFloat(abs(cos(radians)))
+        let sine = CGFloat(abs(sin(radians)))
+        return CGSize(
+            width: originalSize.width * cosine + originalSize.height * sine,
+            height: originalSize.width * sine + originalSize.height * cosine
+        )
     }
 
     static func zoomToFit(
         containerSize: CGSize,
-        image: AKImage,
-        degrees: Double
+        contentSize: CGSize
     ) -> (scale: CGFloat, offset: CGPoint) {
-        let scale = normScale(screenSize: containerSize, image: image, degrees: degrees)
-        let imgSize = imageSize(image, degrees: degrees)
-        let x = (containerSize.width - imgSize.width * scale) / 2.0
-        let y = (containerSize.height - imgSize.height * scale) / 2.0
+        let scale = normScale(screenSize: containerSize, contentSize: contentSize)
+        let x = (containerSize.width - contentSize.width * scale) / 2.0
+        let y = (containerSize.height - contentSize.height * scale) / 2.0
         let offset = CGPoint(x: x, y: y)
         return (scale, offset)
     }
 
-    static func normScale(screenSize: CGSize, image: AKImage, degrees: Double) -> CGFloat {
-        let size = imageSize(image, degrees: degrees)
-        let wScale = screenSize.width / size.width
-        let hScale = screenSize.height / size.height
+    static func normScale(screenSize: CGSize, contentSize: CGSize) -> CGFloat {
+        guard screenSize.width.isFinite,
+              screenSize.height.isFinite,
+              screenSize.width > 0,
+              screenSize.height > 0,
+              contentSize.width.isFinite,
+              contentSize.height.isFinite,
+              contentSize.width > 0,
+              contentSize.height > 0 else { return 1 }
+        let wScale = screenSize.width / contentSize.width
+        let hScale = screenSize.height / contentSize.height
         return min(wScale, hScale)
+    }
+
+    static func normalizedDegrees(_ degrees: Double) -> Double {
+        guard degrees.isFinite else { return 0 }
+        let remainder = degrees.truncatingRemainder(dividingBy: 360)
+        return remainder < 0 ? remainder + 360 : remainder
     }
 }

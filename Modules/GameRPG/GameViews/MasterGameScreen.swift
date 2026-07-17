@@ -153,7 +153,7 @@ private extension MasterGameScreen {
         }
 #endif
 
-#if os(visionOS)
+#if !os(tvOS)
         if appSettingsModel.showGameTableVolume {
             scenesManager.openWindow(SceneId.gameTable)
         }

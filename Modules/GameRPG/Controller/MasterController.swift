@@ -127,7 +127,7 @@ extension MasterController {
         await root.diceRoot.diceGameControllable.resetPlayerDice(to: playerNames)
         if !asProxy {
             await root.mapRoot.mapGameControllable.resetPlayerPins(for: gameRoster.players.filter { $0.type != .observer })
-            #if os(visionOS)
+            #if !os(tvOS)
             await MainActor.run {
                 root.gameModel.gameTableModel?.syncPawnsWithMapPins()
             }
@@ -582,7 +582,7 @@ extension MasterController {
                     data: model.data.data,
                     playerId: model.sender.id
                 ) {
-                    #if os(visionOS)
+                    #if !os(tvOS)
                     await MainActor.run {
                         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
                     }

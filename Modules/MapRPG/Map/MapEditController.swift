@@ -77,8 +77,7 @@ extension MapEditController {
     @MainActor
     func addTileCoordinateFromCanvas(_ coordinate: CGPoint, editorModel: MapEditorModel) {
         defer { editorModel.editEntries.eaten = false }
-        guard editorModel.isTapping != .nothing,
-              !editorModel.editEntries.eaten else { return }
+        guard !editorModel.editEntries.eaten else { return }
 
         addTileCoordinate(coordinate, editorModel: editorModel)
     }
@@ -186,20 +185,13 @@ extension MapEditController {
         hasEditableEntry: Bool
     ) {
         defer { editorModel.editEntries.eaten = false }
-        guard editorModel.isTapping != .nothing else { return }
         guard hasEditableEntry else { return }
         let roomPin = (value.location - editorModel.imageModel.offset) / editorModel.imageModel.scale
         guard editorModel.editEntries.eaten == false,
               editorModel.editEntries.addedNewNeedlePoint == nil else { return }
 
         editorModel.editEntries.addedNewNeedlePoint = roomPin
-
-        Task {
-            try? await Task.sleep(for: .milliseconds(250))
-            await MainActor.run {
-                addCoordinateToWorkingCopy(map: map, editorModel: editorModel)
-            }
-        }
+        addCoordinateToWorkingCopy(map: map, editorModel: editorModel)
     }
 
     @MainActor
