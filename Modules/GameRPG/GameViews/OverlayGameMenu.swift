@@ -35,6 +35,7 @@ struct OverlayGameMenu: View {
 }
 
 private extension OverlayGameMenu {
+#if os(visionOS)
     var visionProMenu: some View {
         HStack(alignment: .bottom, spacing: marginWidth) {
             titleView
@@ -56,7 +57,9 @@ private extension OverlayGameMenu {
             closeFieldView
         }
     }
-    
+#endif
+
+#if os(macOS)
     var macMenu: some View {
         HStack {
             titleView
@@ -76,7 +79,8 @@ private extension OverlayGameMenu {
             closeFieldView
         }
     }
-    
+#endif
+
     var tvMenu: some View {
         HStack {
             if isMaster || root.gameModel.gameType != .observer {

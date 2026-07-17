@@ -70,13 +70,21 @@ struct GameControllerTests {
         #expect(listRequest.players.isEmpty)
 
         let incomingList = AudioListRequest(list: [playlistId], players: [trackBId: [otherPlayerId]])
-        sut.applyAudioList(
+        #expect(sut.applyAudioList(
             data: NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: incomingList.encodeData()),
             for: playerId,
             authoritative: false
-        )
+        ))
         #expect(sut.gameModel.playerReport(for: playlistId).contains(playerId))
         #expect(sut.gameModel.playerReport(for: trackBId).contains(otherPlayerId))
+
+        let reportsBeforeMalformedList = sut.gameModel.playerReports
+        #expect(!sut.applyAudioList(
+            data: NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: Data([0xFF])),
+            for: playerId,
+            authoritative: false
+        ))
+        #expect(sut.gameModel.playerReports == reportsBeforeMalformedList)
 
         let playRequest = try #require(AudioPlayRequest.decodeData(of: sut.requestPlay(id: playlistId).data))
         #expect(playRequest.id == playlistId)

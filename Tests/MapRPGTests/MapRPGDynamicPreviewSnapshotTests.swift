@@ -85,20 +85,20 @@ struct MapRPGDynamicPreviewSnapshotTests {
     @Test("MapPinView")
     func mapPinView() async throws {
         let pins = MapRPGDynamicPreviewFixtures.presentationPins
+        let model = MapPinViewModel(mapPins: pins, pointer: .empty)
 
         try await assertDynamicSnapshot("MapPinView") {
             VStack(spacing: 24) {
-                ForEach(pins) { pin in
+                ForEach(model.mapPinNodes) { node in
                     HStack {
-                        Text(verbatim: pin.name)
+                        Text(verbatim: node.pin.name)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         MapPinView(
-                            pin: pin,
+                            model: node,
                             pinSize: CGSize(width: 64, height: 64),
                             canMove: true,
-                            doubleTapAccessibilityLabel: "Toggle Pin Zoom",
-                            doubleTapAction: {},
-                            moveAction: { _ in }
+                            actionContext: .editor,
+                            doubleTapAccessibilityLabel: "Toggle Pin Zoom"
                         )
                     }
                 }
@@ -237,18 +237,17 @@ struct MapRPGDynamicPreviewSnapshotTests {
     @Test("MapPinActionButtons")
     func mapPinActionButtons() async throws {
         let pinID = MapRPGDynamicPreviewFixtures.pinID
+        let model = MapPinViewModel(mapPins: [.empty(pinID)], pointer: .empty)
 
         try await assertDynamicSnapshot("MapPinActionButtons") {
             MapRPGDoubleNamespaceSnapshotHarness { glassNamespace, photoSpace in
                 MapPinActionButtons(
-                    pin: .empty(pinID),
-                    isExpanded: true,
+                    model: model.mapPinNodes[0],
                     layoutDown: true,
                     context: .editor,
                     glassNamespace: glassNamespace,
                     photoSpace: photoSpace,
-                    usesGlassEffects: false,
-                    action: { _ in }
+                    usesGlassEffects: false
                 )
                 .frame(width: 300, height: 300)
                 .background(.blue)
@@ -270,17 +269,13 @@ struct MapRPGDynamicPreviewSnapshotTests {
             ZStack {
                 Color.blue
                 MapPinActionView(
-                    model: model,
-                    pin: .empty(pinID),
-                    isExpanded: true,
+                    model: model.mapPinNodes[0],
                     layoutDown: true,
-                    pinSize: CGSize(width: 80, height: 80),
+                    pinScale: 80 / 44,
                     canDrag: true,
                     actionContext: .editor,
                     doubleTapAccessibilityLabel: "Toggle Player Visibility",
-                    usesGlassEffects: false,
-                    doubleTapAction: {},
-                    dragEndAction: { _ in }
+                    usesGlassEffects: false
                 )
             }
         }
@@ -302,17 +297,13 @@ struct MapRPGDynamicPreviewSnapshotTests {
             ZStack {
                 Color.blue
                 MapPinActionView(
-                    model: model,
-                    pin: pin,
-                    isExpanded: true,
+                    model: model.mapPinNodes[0],
                     layoutDown: true,
-                    pinSize: CGSize(width: 80, height: 80),
+                    pinScale: 80 / 44,
                     canDrag: true,
                     actionContext: .gameMaster,
                     doubleTapAccessibilityLabel: "Toggle Pin Zoom",
-                    usesGlassEffects: false,
-                    doubleTapAction: {},
-                    dragEndAction: { _ in }
+                    usesGlassEffects: false
                 )
             }
         }

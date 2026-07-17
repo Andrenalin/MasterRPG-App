@@ -175,37 +175,22 @@ extension MapEditController {
 }
 
 // MARK: - Coordinate / Tap Handling
-#if !os(tvOS)
 extension MapEditController {
     @MainActor
     func releaseAction(
-        _ value: DragGesture.Value,
+        at location: CGPoint,
         map: MapModel,
         editorModel: MapEditorModel,
         hasEditableEntry: Bool
     ) {
-        defer { editorModel.editEntries.eaten = false }
         guard hasEditableEntry else { return }
-        let roomPin = (value.location - editorModel.imageModel.offset) / editorModel.imageModel.scale
-        guard editorModel.editEntries.eaten == false,
-              editorModel.editEntries.addedNewNeedlePoint == nil else { return }
-
-        editorModel.editEntries.addedNewNeedlePoint = roomPin
-        addCoordinateToWorkingCopy(map: map, editorModel: editorModel)
-    }
-
-    @MainActor
-    func addCoordinateToWorkingCopy(map: MapModel, editorModel: MapEditorModel) {
-        guard let point = editorModel.editEntries.addedNewNeedlePoint,
-              var updatedEntry = editorModel.editEntries.entries.first else { return }
-
-        editorModel.editEntries.addedNewNeedlePoint = nil
+        let point = (location - editorModel.imageModel.offset) / editorModel.imageModel.scale
+        guard var updatedEntry = editorModel.editEntries.entries.first else { return }
         updatedEntry.coordinates.append(point)
         editorModel.editEntries.setEntry(entry: updatedEntry)
         editorModel.workingCopy?[updatedEntry.id] = updatedEntry
     }
 }
-#endif
 
 // MARK: - Drop Pin
 

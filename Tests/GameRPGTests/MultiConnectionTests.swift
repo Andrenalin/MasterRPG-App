@@ -480,8 +480,8 @@ struct MultiConnectionAudioTests {
         #expect(env.masterNetworkSpy.calledSendResponseAll == 3)
     }
 
-    @Test("Audio receipt waits for local bytes and propagates after storage")
-    func audioReceiptWaitsForLocalBytesAndPropagates() async throws {
+    @Test("Audio receipt waits for local bytes and updates the master without rebroadcasting")
+    func audioReceiptWaitsForLocalBytesAndUpdatesMasterWithoutRebroadcasting() async throws {
         // Arrange
         let env = try await MultiConnectionTestEnvironment.create()
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
@@ -549,15 +549,16 @@ struct MultiConnectionAudioTests {
         #expect(acknowledgment.subType == .ok)
         #expect(await env.player1Root.audioRoot.gameController.hasLocalAudioData(for: audioId))
 
-        // Act - The master publishes the authoritative report to another local player.
-        _ = try await env.master.handle(acknowledgment)
-        let reportUpdate = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
-        #expect(reportUpdate.subType == .audioList)
-        _ = try await env.player2.handle(reportUpdate)
+        let sendCountBeforeReceipt = env.masterNetworkSpy.sendResponseHistory.count
 
-        // Assert
+        // Act - The receipt updates only the master's availability state.
+        _ = try await env.master.handle(acknowledgment)
+
+        // Assert - No full audio-list update is needed; a later play command tells
+        // receivers that every controlled player has the audio.
+        #expect(env.masterNetworkSpy.sendResponseHistory.count == sendCountBeforeReceipt)
         #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
-        #expect(env.player2Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
+        #expect(!env.player2Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
     }
 
     @Test("Master does not report a failed audio receipt")
@@ -818,8 +819,7 @@ struct MultiConnectionAudioTests {
         #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).sorted() == [
             env.player1Config.id,
             env.player2Config.id,
-            env.player3Config.id,
-            env.masterConfig.id
+            env.player3Config.id
         ].sorted())
     }
 

@@ -4,36 +4,27 @@ import CoreRPG
 import SwiftUI
 
 struct MapPinActionButtons: View {
-    let pin: MapPinModel
-    let isExpanded: Bool
+    let model: MapPinNode
     let layoutDown: Bool
     let context: MapPinActionContext
     let glassNamespace: Namespace.ID
     let photoSpace: Namespace.ID
     var usesGlassEffects: Bool = true
-    let action: (MapPinButtonType) -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private var pin: MapPinModel { model.pin }
 
     var body: some View {
         ZStack {
             ForEach(context.actions.enumerated(), id: \.element) { index, type in
                 pinButton(type: type, index: index, count: context.actions.count)
-                    .zIndex(10)
+                    .zIndex(Double(index + 1))
             }
-
-            Color.clear
-#if !os(visionOS)
-                .applyIf(usesGlassEffects) {
-                    $0.glassEffectID("menu", in: glassNamespace)
-                }
-#endif
         }
     }
 
     private func pinButton(type: MapPinButtonType, index: Int, count: Int) -> some View {
         Button {
-            action(type)
+            model.perform(type, context: context)
         } label: {
             Label {
                 Text(type.localizedLabel(for: pin))
@@ -46,35 +37,32 @@ struct MapPinActionButtons: View {
         .borderLessTVBottonStyle()
         .foregroundStyle(.white)
 #if !os(visionOS)
-        .applyIf(usesGlassEffects && isExpanded) {
+        .applyIf(usesGlassEffects) {
             $0.glassEffect(.regular.tint(NetworkModules.map.tint.opacity(0.75)).interactive())
         }
         .applyIf(usesGlassEffects) {
             $0.glassEffectID(type.label, in: glassNamespace)
         }
 #endif
-        .offset(type.offset(at: index, count: count, expanded: isExpanded, layoutDown: layoutDown))
-        .animation(
-            reduceMotion ? nil : .spring(duration: (0.3 + CGFloat(index) * 0.1) * 3, bounce: 0.2),
-            value: isExpanded
-        )
-        .opacity(isExpanded ? 1 : 0)
-        .allowsHitTesting(isExpanded)
-        .accessibilityHidden(!isExpanded)
-        .matchedTransitionSource(id: type.label, in: photoSpace)
+        .offset(type.offset(at: index, count: count, expanded: true, layoutDown: layoutDown))
+        .applyIf(type == .photo) {
+            $0.matchedTransitionSource(id: type.label, in: photoSpace)
+        }
     }
 }
 
 #Preview {
     @Previewable @Namespace var glassNamespace
     @Previewable @Namespace var photoSpace
+    @Previewable var model = MapPinViewModel(
+        mapPins: [.empty(MapModel.previewId)],
+        pointer: .empty
+    )
     MapPinActionButtons(
-        pin: .empty(MapModel.previewId),
-        isExpanded: true,
+        model: model.mapPinNodes[0],
         layoutDown: true,
         context: .editor,
         glassNamespace: glassNamespace,
-        photoSpace: photoSpace,
-        action: { _ in }
+        photoSpace: photoSpace
     )
 }

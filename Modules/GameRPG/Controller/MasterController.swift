@@ -21,6 +21,7 @@ final class MasterControllerModel: Sendable {
     var asProxy = false
     var pendingAudioPlays: [UUID: NetworkCodableDataType] = [:]
     var audioTransferPlayers: [UUID: Set<UUID>] = [:]
+    private var lastAudioListCounters: [UUID: Int] = [:]
     /// Latest file-backed item versions whose full package already went out in
     /// the current game. A changed version must be broadcast in full again;
     /// otherwise a new map is reduced to a reference and unnecessarily falls
@@ -48,6 +49,27 @@ final class MasterControllerModel: Sendable {
         // so lostPlayer(oldConnectionId) doesn't remove a player who has already reconnected.
         connectIDPlayers = connectIDPlayers.filter { $0.value != playerId }
         connectIDPlayers[connectionId] = playerId
+    }
+
+    func remove(connectionId: ConnectionController.ID) -> UUID? {
+        guard let playerId = connectIDPlayers.removeValue(forKey: connectionId) else { return nil }
+        lastAudioListCounters[playerId] = nil
+        return playerId
+    }
+
+    func canApplyAudioList(from playerId: UUID, counter: Int) -> Bool {
+        guard counter >= 0 else { return false }
+        guard counter > 0 else { return true }
+        return counter > (lastAudioListCounters[playerId] ?? 0)
+    }
+
+    func recordAudioList(counter: Int, from playerId: UUID) {
+        guard counter > 0 else { return }
+        lastAudioListCounters[playerId] = counter
+    }
+
+    func resetAudioListSequence() {
+        lastAudioListCounters.removeAll()
     }
 }
 
@@ -99,6 +121,7 @@ extension MasterController {
         gameModel.pendingAudioPlays.removeAll()
         gameModel.audioTransferPlayers.removeAll()
         gameModel.sentGameItems.removeAll()
+        gameModel.resetAudioListSequence()
         await root.networkStore.stopGame()
         await root.networkProxyStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
@@ -276,7 +299,8 @@ extension MasterController: MasterNetworkStoreDelegate {
     
     func lostPlayer(for connectionId: ConnectionController.ID) async {
         Logger.networking.debug("MasterController: Lost Player for \(connectionId, privacy: .public)")
-        guard let playerId = await gameModel.connectIDPlayers[connectionId] else { return }
+        guard let playerId = await gameModel.remove(connectionId: connectionId) else { return }
+        await root.audioRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
         if await root.gameModel.remove(playerId: playerId) {
             await root.statisticsModel.participantLeft(id: playerId)
             await resetPlayers()
@@ -403,8 +427,6 @@ extension MasterController {
     func handleAudio(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         if model.subType == .ok {
             await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
-            let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id)
-            await send(type: .update, subtype: .audioList, updated: audioList)
             await continuePendingAudioPlays()
             return nil
         }
@@ -423,8 +445,8 @@ extension MasterController {
             case .playAudio:
                 await requestAudioPlay(model.data)
             case .audioList:
+                guard await applyAudioList(model) else { return nil }
                 await resetAudioTransfers(for: model.sender.id)
-                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.sender.id, authoritative: false)
                 let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id)
                 await send(type: .update, subtype: .audioList, updated: audioList)
                 await continuePendingAudioPlays()
@@ -433,6 +455,21 @@ extension MasterController {
             }
             return nil
         }
+    }
+
+    @MainActor
+    private func applyAudioList(_ model: GameNetworkModel) -> Bool {
+        guard !model.sender.isMaster,
+              gameModel.canApplyAudioList(from: model.sender.id, counter: model.counter),
+              root.audioRoot.audioGameControllable.applyAudioList(
+                  data: model.data,
+                  for: model.sender.id,
+                  authoritative: false
+              )
+        else { return false }
+
+        gameModel.recordAudioList(counter: model.counter, from: model.sender.id)
+        return true
     }
 
     @MainActor
