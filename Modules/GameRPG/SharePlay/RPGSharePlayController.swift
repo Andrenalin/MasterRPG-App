@@ -750,7 +750,7 @@ extension RPGSharePlayController {
         playBack?.coordinateWithSession(groupSession)
         #if os(visionOS)
         Task {
-            await tabletopGame?.coordinateWithSession(groupSession)
+            tabletopGame?.coordinateWithSession(groupSession)
         }
         
         if tabletopGame != nil {
