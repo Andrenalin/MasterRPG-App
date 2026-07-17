@@ -86,5 +86,26 @@ struct AdventureEntryModelTests {
         #expect(decoded.displayState == original.displayState)
         #expect(decoded == decodedAgain)
     }
+
+    @Test func linkedAdventureDifferenceIsDetected() {
+        // Given
+        let existing = AdventureEntryModel.fixture(
+            id: .fixture1,
+            name: "Shared name",
+            content: "Shared content",
+            adventureId: .fixture2
+        )
+        let imported = AdventureEntryModel.fixture(
+            id: .fixture1,
+            name: "Shared name",
+            content: "Shared content",
+            adventureId: .fixture3
+        )
+
+        // When / Then
+        #expect(existing.name == imported.name)
+        #expect(existing.content == imported.content)
+        #expect(!existing.isSame(imported))
+    }
 }
 #endif

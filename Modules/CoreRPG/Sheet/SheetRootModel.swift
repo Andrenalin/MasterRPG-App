@@ -49,6 +49,63 @@ public final class SheetRootModel: Sendable {
         initializeLastIsShownState(sheetModel: sheetModel)
     }
 
+    /// Builds a materialized import sheet and decorates its direct entries with
+    /// non-mutating Existing/Merge/New snapshots. Public construction stays unchanged.
+    init(
+        rootManager: RootManager,
+        linkControllable: any LinkControllable,
+        sheetControllable: SheetControllable,
+        itemId: UUID,
+        module: NetworkModules,
+        isEditor: Bool,
+        reviewModel: ImportReviewModel,
+        reviewItem: ImportReviewItemModel
+    ) {
+        let reviewRootManager = rootManager.with(reviewSheetMemory: reviewModel.sheetMemory())
+        let sheetModel = sheetControllable.sheet(
+            root: reviewRootManager,
+            itemId: itemId,
+            destination: nil,
+            level: 0,
+            isShown: true,
+            moduleDepth: 0,
+            isEditor: isEditor
+        )
+
+        var versionSheets: [SingleReviewDecision: SheetModel] = [:]
+        for decision in SingleReviewDecision.allCases {
+            let versionMemory = reviewModel.sheetMemory(
+                overriding: itemId,
+                module: module,
+                decision: decision
+            )
+            let versionRootManager = rootManager.with(reviewSheetMemory: versionMemory)
+            versionSheets[decision] = sheetControllable.sheet(
+                root: versionRootManager,
+                itemId: itemId,
+                destination: nil,
+                level: 0,
+                isShown: true,
+                moduleDepth: 0,
+                isEditor: false
+            )
+        }
+
+        self.rootManager = reviewRootManager
+        self.linkControllable = linkControllable
+        self.sheetControllable = sheetControllable
+        self.isEditor = isEditor
+        self.sheetModel = sheetModel
+        self.editorModel = SheetEditorModel(itemId: itemId, module: sheetModel.source.typeId)
+
+        SheetReviewTreeBuilder.decorate(
+            sheetModel: sheetModel,
+            reviewItem: reviewItem,
+            versionSheets: versionSheets
+        )
+        initializeLastIsShownState(sheetModel: sheetModel)
+    }
+
     // Use this init in fake/testing contexts where a real SheetModel tree is already built.
     // FakeSheetController.sheet ignores the root parameter anyway, so passing
     // the SheetModel directly avoids needing a real cross-module sheet() call.

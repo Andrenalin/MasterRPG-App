@@ -73,5 +73,30 @@ struct MapEntryModelTests {
         #expect(sut.isSame(a) == false)
         #expect(m1.isSame(m2) == true)
     }
+
+    @Test func mapSpecificDifferencesAreDetected() {
+        // Given
+        let existing = MapEntryModel.fixture(
+            id: .fixture1,
+            name: "Shared name",
+            content: "Shared content",
+            coordinates: [CGPoint(x: 0, y: 0)],
+            isHexGrid: false,
+            isShown: false
+        )
+        var coordinatesChanged = existing
+        coordinatesChanged.coordinates = [CGPoint(x: 1, y: 0)]
+        var hexGridChanged = existing
+        hexGridChanged.isHexGrid = true
+        var visibilityChanged = existing
+        visibilityChanged.isShown = true
+
+        // When / Then
+        for changed in [coordinatesChanged, hexGridChanged, visibilityChanged] {
+            #expect(existing.name == changed.name)
+            #expect(existing.content == changed.content)
+            #expect(!existing.isSame(changed))
+        }
+    }
 }
 #endif

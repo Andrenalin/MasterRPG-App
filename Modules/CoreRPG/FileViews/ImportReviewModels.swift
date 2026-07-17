@@ -140,17 +140,44 @@ import SwiftUI
     }
 
     func sheetMemory() -> ReviewSheetMemory {
+        sheetMemory(overriding: nil)
+    }
+
+    func sheetMemory(
+        overriding itemID: UUID,
+        module: NetworkModules,
+        decision: SingleReviewDecision
+    ) -> ReviewSheetMemory {
+        sheetMemory(overriding: (itemID, module, decision))
+    }
+
+    private func sheetMemory(
+        overriding override: (itemID: UUID, module: NetworkModules, decision: SingleReviewDecision)?
+    ) -> ReviewSheetMemory {
         var items: [NetworkModules: [UUID: any ItemDataAccessable]] = [:]
         var hiddenItemIds: [NetworkModules: Set<UUID>] = [:]
 
         for module in modules {
             for item in module.reviewItems {
-                if item.isDeletion && item.itemModel.decision == .imported {
+                let overriddenDecision: SingleReviewDecision?
+                if let override, override.itemID == item.id, override.module == module.id {
+                    overriddenDecision = override.decision
+                } else {
+                    overriddenDecision = nil
+                }
+                let decision = overriddenDecision ?? item.itemModel.decision
+
+                if (item.isDeletion && decision == .imported) ||
+                    (item.kind == .added && decision == .existing) {
                     hiddenItemIds[module.id, default: []].insert(item.id)
                     continue
                 }
 
-                items[module.id, default: [:]][item.id] = item.itemModel.materializedItem()
+                if let overriddenDecision {
+                    items[module.id, default: [:]][item.id] = item.itemModel.materializedItem(for: overriddenDecision)
+                } else {
+                    items[module.id, default: [:]][item.id] = item.itemModel.materializedItem()
+                }
             }
         }
 

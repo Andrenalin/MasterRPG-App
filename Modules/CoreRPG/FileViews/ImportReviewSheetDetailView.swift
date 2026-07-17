@@ -25,25 +25,34 @@ struct ImportReviewSheetDetailView: View {
                     LazyVStack(alignment: .leading, spacing: 16) {
                         sheetPreview(rootController: rootController)
 
-                        DisclosureGroupTV(isExpanded: $showsChoices) {
-                            SingleItemReviewChoicesView(
-                                model: item.itemModel,
-                                root: root,
-                                rootManager: rootManager,
-                                reviewModel: reviewModel
-                            )
-                            .padding(.top, 8)
-                        } label: {
-                            Label {
-                                Text("Choices", bundle: .module)
-                            } icon: {
-                                Image(systemName: "slider.horizontal.3")
+                        if rootController.configurable.module.supportsStructuredImportReview {
+                            if !item.itemModel.references.isEmpty {
+                                SingleItemReviewReferencesSection(model: item.itemModel)
+                                    .padding()
+                                    .background(Color.secondary.opacity(0.05))
+                                    .clipShape(.rect(cornerRadius: 12))
                             }
-                            .font(.headline)
+                        } else {
+                            DisclosureGroupTV(isExpanded: $showsChoices) {
+                                SingleItemReviewChoicesView(
+                                    model: item.itemModel,
+                                    root: root,
+                                    rootManager: rootManager,
+                                    reviewModel: reviewModel
+                                )
+                                .padding(.top, 8)
+                            } label: {
+                                Label {
+                                    Text("Choices", bundle: .module)
+                                } icon: {
+                                    Image(systemName: "slider.horizontal.3")
+                                }
+                                .font(.headline)
+                            }
+                            .padding()
+                            .background(Color.secondary.opacity(0.05))
+                            .clipShape(.rect(cornerRadius: 12))
                         }
-                        .padding()
-                        .background(Color.secondary.opacity(0.05))
-                        .clipShape(.rect(cornerRadius: 12))
                     }
                     .padding()
                 }
@@ -70,6 +79,13 @@ struct ImportReviewSheetDetailView: View {
             )
             .frame(maxWidth: .infinity)
             .padding()
+        } else if item.kind == .added && item.itemModel.decision == .existing {
+            ContentUnavailableView(
+                String(localized: "Will Not Be Added", bundle: .module),
+                systemImage: "nosign"
+            )
+            .frame(maxWidth: .infinity)
+            .padding()
         } else if let sheetRootModel {
             LazyVStack(alignment: .leading, spacing: 4) {
                 SheetRootView(root: rootController, rootModel: sheetRootModel)
@@ -83,6 +99,27 @@ struct ImportReviewSheetDetailView: View {
     }
 
     private func rebuildSheetRootModel(rootController: ItemRootController, rootManager: RootManager) {
+        if (item.isDeletion && item.itemModel.decision == .imported) ||
+            (item.kind == .added && item.itemModel.decision == .existing) {
+            sheetRootModel = nil
+            return
+        }
+
+        let module = rootController.configurable.module
+        if module.supportsStructuredImportReview {
+            sheetRootModel = SheetRootModel(
+                rootManager: rootManager,
+                linkControllable: rootController.linkControllable,
+                sheetControllable: rootController.sheetControllable,
+                itemId: item.id,
+                module: module,
+                isEditor: false,
+                reviewModel: reviewModel,
+                reviewItem: item
+            )
+            return
+        }
+
         let reviewRootManager = rootManager.with(reviewSheetMemory: reviewModel.sheetMemory())
         sheetRootModel = SheetRootModel(
             rootManager: reviewRootManager,

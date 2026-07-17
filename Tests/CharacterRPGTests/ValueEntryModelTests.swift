@@ -103,6 +103,31 @@ struct ValueEntryModelTests {
         #expect(expResult == result)
     }
 
+    @Test func valueSpecificDifferencesAreDetected() {
+        // Given
+        let existing = ValueEntryModel.fixture(
+            id: .fixture1,
+            name: "Shared name",
+            type: .number,
+            value: "42",
+            diceId: .fixture2,
+            valueId: .fixture4
+        )
+        var typeChanged = existing
+        typeChanged.type = .decimal
+        var diceChanged = existing
+        diceChanged.diceId = .fixture3
+        var valueLinkChanged = existing
+        valueLinkChanged.valueId = .fixture5
+
+        // When / Then
+        for changed in [typeChanged, diceChanged, valueLinkChanged] {
+            #expect(existing.name == changed.name)
+            #expect(existing.content == changed.content)
+            #expect(!existing.isSame(changed))
+        }
+    }
+
     @Test func calculate() async throws {
         var sut = setUp()
         sut.reset(valueType: .number)

@@ -45,23 +45,34 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
         )
 
         ZStack(alignment: .topLeading) {
-            if !usesGeneratedContextMenu {
+            if !usesGeneratedContextMenu && !entryModel.isReviewPlaceholder {
                 selectionBackgroundButton
             }
 
             VStack(alignment: .leading) {
-                beforeInline
+                if entryModel.isReviewPlaceholder, let reviewModel = entryModel.entryReviewModel {
+                    SheetEntryReviewPlaceholderView(
+                        entryModel: entryModel,
+                        reviewModel: reviewModel
+                    )
+                } else {
+                    beforeInline
 
-                mainRow
+                    mainRow
 
-                contentRow
-                    .allowsHitTesting(!entryModel.isGeneratedAnswer)
+                    contentRow
+                        .allowsHitTesting(!entryModel.isGeneratedAnswer)
 
-                detailContent(entryModel)
+                    detailContent(entryModel)
 
-                inlineEditorRow
+                    inlineEditorRow
 
-                afterInline
+                    afterInline
+                }
+
+                if let reviewModel = entryModel.entryReviewModel, reviewModel.hasDifferences {
+                    SheetEntryReviewAlternativesView(reviewModel: reviewModel)
+                }
             }
         }
         .id(entryModel.source.entryId ?? entryModel.source.itemId)
@@ -91,7 +102,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
         .onChange(of: entryModel.description) {
             rootModel.updateParent(parentModel)
         }
-        .applyIf(!entryModel.isGeneratedAnswer && (isEditor || entryModel.isSelected)) {
+        .applyIf(!entryModel.isReviewPlaceholder && !entryModel.isGeneratedAnswer && (isEditor || entryModel.isSelected)) {
             $0.contextMenuAll {
                 SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: false)
                 SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor)
@@ -130,16 +141,22 @@ private extension SheetEntryView {
         rootModel.rootManager.rootModel(for: source.typeId)?.viewControllable
     }
     
-    var beforeInline: some View {
-        ForEach(entryModel.inlineEntries) { inlineSheet in
-            switch inlineSheet.sheetType {
-            case .photo:
-                // Use inlineSheet.source (the photo item) not entryModel.source (the parent entry)
-                viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
-                    .frame(height: 96)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            default:
-                EmptyView()
+    @ViewBuilder var beforeInline: some View {
+        if entryModel.entryReviewModel != nil {
+            ForEach(entryModel.inlineEntries) { inlineSheet in
+                SheetEntryReviewInlineSnapshotView(sheetModel: inlineSheet)
+            }
+        } else {
+            ForEach(entryModel.inlineEntries) { inlineSheet in
+                switch inlineSheet.sheetType {
+                case .photo:
+                    // Use inlineSheet.source (the photo item) not entryModel.source (the parent entry)
+                    viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
+                        .frame(height: 96)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                default:
+                    EmptyView()
+                }
             }
         }
     }
@@ -191,6 +208,12 @@ private extension SheetEntryView {
                 generatedDeleteButton
             }
 
+            if !entryModel.isGeneratedAnswer,
+               let reviewModel = entryModel.entryReviewModel,
+               reviewModel.hasDifferences {
+                SheetEntryReviewButton(model: reviewModel)
+            }
+
             if !entryModel.isGeneratedAnswer, let detailAction, canGoDeeper {
                 Button {
                     detailAction(entryModel)
@@ -234,17 +257,19 @@ private extension SheetEntryView {
         }
     }
     
-    var afterInline: some View {
-        ForEach(entryModel.inlineEntries) { inlineSheet in
-            switch inlineSheet.sheetType {
-            case .dice:
-                // Use inlineSheet.source for both viewController lookup and rowViewer
-                viewController(for: inlineSheet.destination.typeId == .value ? inlineSheet.destination : inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
-            case .pdf:
-                // Use inlineSheet.source for both viewController lookup and rowViewer
-                viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
-            default:
-                EmptyView()
+    @ViewBuilder var afterInline: some View {
+        if entryModel.entryReviewModel == nil {
+            ForEach(entryModel.inlineEntries) { inlineSheet in
+                switch inlineSheet.sheetType {
+                case .dice:
+                    // Use inlineSheet.source for both viewController lookup and rowViewer
+                    viewController(for: inlineSheet.destination.typeId == .value ? inlineSheet.destination : inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
+                case .pdf:
+                    // Use inlineSheet.source for both viewController lookup and rowViewer
+                    viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
+                default:
+                    EmptyView()
+                }
             }
         }
     }

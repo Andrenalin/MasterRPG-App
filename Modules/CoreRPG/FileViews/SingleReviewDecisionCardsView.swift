@@ -42,9 +42,9 @@ struct SingleReviewDecisionCardsView: View {
                 }
             }
 
-            if model.hasPropertyOverrides {
+            if model.hasOverrides {
                 Label {
-                    Text("Some properties have custom overrides", bundle: .module)
+                    Text("Some properties or entries have custom overrides", bundle: .module)
                 } icon: {
                     Image(systemName: "slider.horizontal.3")
                 }

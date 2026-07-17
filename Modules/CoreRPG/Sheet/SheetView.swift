@@ -242,13 +242,13 @@ private extension SheetView {
                 // silently stop reaching it. simultaneousGesture is guaranteed to coexist
                 // with .draggable's gesture rather than compete with it. Generated editor
                 // rows deliberately omit tap handling and expose their actions by context menu.
-                .applyIf(!entry.isGeneratedAnswer) {
+                .applyIf(!entry.isGeneratedAnswer && !entry.isReviewPlaceholder && entry.entryReviewModel == nil) {
                     $0.simultaneousGesture(TapGesture().onEnded {
                         rootModel.setSelected(entry, parent: sheetModel)
                     })
                 }
 #if !os(tvOS)
-                .applyIf(isEditor && !entry.isGeneratedAnswer) {
+                .applyIf(isEditor && !entry.isGeneratedAnswer && !entry.isReviewPlaceholder) {
                     $0
                         .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
                         .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)
