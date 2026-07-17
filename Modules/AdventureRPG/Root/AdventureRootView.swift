@@ -37,4 +37,5 @@ struct AdventureRootView: View {
     ManagedNavigationStack {
         AdventureRootView(restoresState: false)
     }
+    .environment(\.locale, .init(identifier: "de"))
 }

@@ -100,4 +100,6 @@ struct ListRowItemView: View {
         ),
         leadingPadding: 8
     )
+    .environment(AppGameStateModel())
+    .environment(\.locale, .init(identifier: "de"))
 }

@@ -51,4 +51,6 @@ struct NameItemNewRow: View {
 
         NameItemNewRow(itemId: itemId, name: "**Super cool Name** cool and more **cool**", cacheItemListModel: cache, listDisplayModel: ListDisplayModel(), searchModel: SearchModel.preview())
     }
+    .environment(AppGameStateModel())
+    .environment(\.locale, .init(identifier: "de"))
 }

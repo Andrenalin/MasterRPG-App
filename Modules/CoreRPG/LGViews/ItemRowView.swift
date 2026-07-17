@@ -24,6 +24,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     let isSelected: Bool
     let thumbnail: Thumbnail
     let actionBar: ActionBar
+    
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -117,4 +118,6 @@ private extension ItemRowView {
         searchModel: .preview()
     )
     .padding()
+    .environment(AppGameStateModel())
+    .environment(\.locale, .init(identifier: "de"))
 }

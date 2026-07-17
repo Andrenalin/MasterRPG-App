@@ -190,31 +190,9 @@ private extension ListRootView {
     }
 }
 
-
-
-// MARK: - ItemRowsView
-// Extracted from the @ViewBuilder itemRows() function so SwiftUI can skip this struct's
-// body entirely when its inputs (list contents, controller references) have not changed.
-
-
 #Preview("Item List") {
     let fixture = FakeItemRootControllerFixture()
     ListRootView(root: fixture.root, listController: fixture.folderListController, parentModel: nil, isSubFolder: false)
 }
 
 
-// MARK: - ListRowItemView
-// Each row is its own struct so SwiftUI can skip body evaluation for unchanged rows.
-// No closure parameters — all inputs are value/reference types enabling fast memcmp diffing.
-
-
-// MARK: - SpecialCategoryFolderIndicator
-// Extracted so SwiftUI can skip rendering for rows that are neither open nor expandable.
-// Uses `item.canOpen` (set from `SearchResult.canOpen`) — no itemSync call needed.
-
-
-//#Preview("Split", traits: .mockData) {
-//    @Previewable @Environment(FakeItemRootController.self) var root
-//
-//    ListRootView(root: root, parentModel: nil)
-//}
