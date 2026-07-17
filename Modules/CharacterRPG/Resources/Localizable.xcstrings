@@ -8,15 +8,81 @@
             "state" : "translated",
             "value" : "%@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@"
+          }
         }
       }
     },
     "%lld Character" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Charakter"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld Charakter"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld Charakter"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld Charakter"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Character"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Characters"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Characters"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ตัวละคร"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ตัวละคร"
+                }
+              }
+            }
           }
         }
       }
@@ -29,6 +95,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charaktereintrag hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มรายการตัวละคร"
           }
         }
       }
@@ -55,6 +127,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eintrag ${entryName} zu ${target} hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มรายการ ${entryName} ไปยัง ${target}"
           }
         }
       }
@@ -86,6 +164,12 @@
             "state" : "translated",
             "value" : "Neuen Eintrag hinzufügen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มรายการใหม่"
+          }
         }
       }
     },
@@ -96,6 +180,12 @@
             "state" : "translated",
             "value" : "Neue Gruppe hinzufügen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มกลุ่มใหม่"
+          }
         }
       }
     },
@@ -105,6 +195,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zu Favoriten hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มในรายการโปรด"
           }
         }
       }
@@ -124,6 +220,12 @@
             "state" : "new",
             "value" : "Added \"%1$@\" to \"%2$@\"."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่ม \"%1$@\" ไปยัง \"%2$@\" แล้ว"
+          }
         }
       }
     },
@@ -134,6 +236,12 @@
             "state" : "translated",
             "value" : "Abenteuer"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การผจญภัย"
+          }
         }
       }
     },
@@ -143,6 +251,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Würfel ändern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนลูกเต๋าแล้ว"
           }
         }
       }
@@ -224,6 +338,12 @@
             "state" : "translated",
             "value" : "%@ auswählen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือก %@"
+          }
         }
       }
     },
@@ -236,6 +356,12 @@
             "state" : "translated",
             "value" : "Inhalt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เนื้อหา"
+          }
         }
       }
     },
@@ -247,6 +373,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charakter erstellen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละคร"
           }
         }
       }
@@ -292,6 +424,12 @@
             "state" : "translated",
             "value" : "Dezimal"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทศนิยม"
+          }
         }
       }
     },
@@ -318,9 +456,69 @@
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld Charakter](inflect: true) gelöscht."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "^[%lld Charakter](inflect: true) gelöscht."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "^[%lld Charakter](inflect: true) gelöscht."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "^[%lld Charakter](inflect: true) gelöscht."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Deleted %lld character."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Deleted %lld characters."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Deleted %lld characters."
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ลบตัวละคร %lld รายการแล้ว"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ลบตัวละคร %lld รายการแล้ว"
+                }
+              }
+            }
           }
         }
       }
@@ -352,6 +550,12 @@
             "state" : "translated",
             "value" : "%@ ablegen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วาง %@"
+          }
         }
       }
     },
@@ -361,6 +565,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kind duplizieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทำซ้ำรายการย่อย"
           }
         }
       }
@@ -387,6 +597,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Einträge ersetzt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แทนที่รายการแล้ว"
           }
         }
       }
@@ -416,6 +632,12 @@
             "state" : "translated",
             "value" : "Sammlungseinträge reparieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แก้ไขรายการคอลเลกชัน"
+          }
         }
       }
     },
@@ -430,7 +652,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "รายการที่ส่งจากเกมมาสเตอร์"
+            "value" : "รายการที่ส่งมาจากเกมมาสเตอร์"
           }
         }
       }
@@ -476,11 +698,24 @@
             "state" : "translated",
             "value" : "Nummer"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวเลข"
+          }
         }
       }
     },
     "Open %@" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิด %@"
+          }
+        }
+      }
     },
     "Open Character" : {
       "localizations" : {
@@ -506,6 +741,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nach dem Erstellen öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดเมื่อสร้าง"
           }
         }
       }
@@ -581,6 +822,12 @@
             "state" : "translated",
             "value" : "Fotos entfernen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำรูปภาพออก"
+          }
         }
       }
     },
@@ -607,6 +854,12 @@
             "state" : "translated",
             "value" : "Sammlung reparieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อมแซมคอลเลกชัน"
+          }
         }
       }
     },
@@ -617,6 +870,12 @@
             "state" : "translated",
             "value" : "Ordner reparieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อมแซมโฟลเดอร์"
+          }
         }
       }
     },
@@ -626,6 +885,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gruppeneinträge reparieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อมแซมรายการกลุ่ม"
           }
         }
       }
@@ -638,6 +903,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verwaisten Eintrag reparieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อมแซมรายการกำพร้า"
           }
         }
       }
@@ -669,7 +940,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "กำลังซ่อมแซมรายการกลุ่ม"
+            "value" : "ซ่อมแซมรายการกลุ่ม"
           }
         }
       }
@@ -714,6 +985,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Text"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อความ"
           }
         }
       }
@@ -813,6 +1090,12 @@
             "state" : "translated",
             "value" : "Werttyp aktualisieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดตประเภทค่า"
+          }
         }
       }
     },
@@ -824,6 +1107,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Werte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค่า"
           }
         }
       }
@@ -837,6 +1126,12 @@
             "state" : "translated",
             "value" : "Wie soll der Charakter heißen?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ควรตั้งชื่อตัวละครว่าอะไร?"
+          }
         }
       }
     },
@@ -848,6 +1143,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wie soll der Eintrag heißen?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ควรตั้งชื่อรายการว่าอะไร?"
           }
         }
       }
@@ -861,6 +1162,12 @@
             "state" : "translated",
             "value" : "Welcher Charakter?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละครใด?"
+          }
         }
       }
     },
@@ -870,6 +1177,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Welcher Charakter?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละครใด?"
           }
         }
       }
