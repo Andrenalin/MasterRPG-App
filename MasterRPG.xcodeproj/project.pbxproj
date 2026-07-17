@@ -291,7 +291,7 @@
 		D03C74C5CE214B1B9D40BC81 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 141331AAA97C4452AC874037 /* SnapshotTesting */; };
 		D9F43BA450BF4F86B318E76F /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = D3AE3A79319345E1BD13D59F /* SnapshotTesting */; };
 		EE67B1131C0D4298AD1F0FE2 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = C137FFD8DBDD4ED6AB2A058D /* SnapshotTesting */; };
-		F0AB5F73144B4871BE8D9938 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = E0242688F1574D01826E57E0 /* SnapshotTesting */; };
+		F0AB5F73144B4871BE8D9938 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; platformFilters = (ios, macos, ); productRef = E0242688F1574D01826E57E0 /* SnapshotTesting */; };
 		F31F0B0C131C4415B4FEA68F /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = BDB8B906601B47D6A54C2F16 /* SnapshotTesting */; };
 		F4534A4085AB43F396C48A70 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 621F2DF7BA554C1482D37EA6 /* SnapshotTesting */; };
 /* End PBXBuildFile section */
@@ -3198,7 +3198,6 @@
 			);
 			name = GameRPGTests;
 			packageProductDependencies = (
-				E0242688F1574D01826E57E0 /* SnapshotTesting */,
 			);
 			productName = RPGGamesTests;
 			productReference = 8EBED0B62CD8EF94004E7103 /* GameRPGTests.xctest */;
@@ -6966,6 +6965,8 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				"BUNDLE_LOADER[sdk=xros*]" = "$(TEST_HOST)";
+				"BUNDLE_LOADER[sdk=xrsimulator*]" = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -6982,6 +6983,8 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
+				"TEST_HOST[sdk=xros*]" = "$(BUILT_PRODUCTS_DIR)/MasterRPG.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MasterRPG";
+				"TEST_HOST[sdk=xrsimulator*]" = "$(BUILT_PRODUCTS_DIR)/MasterRPG.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MasterRPG";
 			};
 			name = Debug;
 		};
@@ -6990,6 +6993,8 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				"BUNDLE_LOADER[sdk=xros*]" = "$(TEST_HOST)";
+				"BUNDLE_LOADER[sdk=xrsimulator*]" = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -7006,6 +7011,8 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
+				"TEST_HOST[sdk=xros*]" = "$(BUILT_PRODUCTS_DIR)/MasterRPG.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MasterRPG";
+				"TEST_HOST[sdk=xrsimulator*]" = "$(BUILT_PRODUCTS_DIR)/MasterRPG.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MasterRPG";
 			};
 			name = Release;
 		};

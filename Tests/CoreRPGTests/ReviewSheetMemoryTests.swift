@@ -1,111 +1,580 @@
-//// @copyright André Trettin
-//
-//import Foundation
-//import Testing
-//
-//@testable import CoreRPG
-//
-//@MainActor
-//struct ReviewSheetMemoryTests {
-//    @Test func reviewAwareLookupPrefersReviewMemory() throws {
-//        let itemId = UUID()
-//        let liveItem = FakeItemModel(id: itemId, name: "Live Item")
-//        let reviewItem = FakeItemModel(id: itemId, name: "Review Item")
-//        let controller = fakeController(with: liveItem)
-//        let rootManager = RootManager(
-//            anyRoot: ItemRootController.fake,
-//            reviewSheetMemory: ReviewSheetMemory(items: [.adventure: [itemId: reviewItem]])
-//        )
-//
-//        let result = controller.reviewAwareItemOrEmpty(root: rootManager, for: itemId)
-//
-//        #expect(result.name == "Review Item")
-//    }
-//
-//    @Test func reviewAwareLookupCanHideLiveItem() throws {
-//        let itemId = UUID()
-//        let liveItem = FakeItemModel(id: itemId, name: "Live Item")
-//        let controller = fakeController(with: liveItem)
-//        let rootManager = RootManager(
-//            anyRoot: ItemRootController.fake,
-//            reviewSheetMemory: ReviewSheetMemory(items: [:], hiddenItemIds: [.adventure: [itemId]])
-//        )
-//
-//        let hidden = controller.reviewAwareItemSync(root: rootManager, for: itemId)
-//        let empty = controller.reviewAwareItemOrEmpty(root: rootManager, for: itemId)
-//
-//        #expect(hidden == nil)
-//        #expect(empty.id == itemId)
-//        #expect(empty.name.isEmpty)
-//    }
-//
-//    @Test func importReviewMemoryUsesCurrentDecision() throws {
-//        let itemId = UUID()
-//        let existing = FakeItemModel(id: itemId, name: "Existing Item", description: "Existing Description")
-//        let imported = FakeItemModel(id: itemId, name: "Imported Item", description: "Imported Description")
-//        let merged = FakeItemModel(id: itemId, name: "Merged Item", description: "Merged Description")
-//        let itemModel = SingleItemImportModel.from(item: SingleReviewItem(existing: existing, imported: imported, merged: merged))
-//        let reviewModel = ImportReviewModel(modules: [
-//            ImportReviewModule(id: .adventure, reviewItems: [
-//                ImportReviewItemModel(
-//                    id: itemId,
-//                    kind: .different,
-//                    existingStatus: existing.name,
-//                    importedStatus: imported.name,
-//                    mergedStatus: merged.name,
-//                    itemModel: itemModel
-//                )
-//            ])
-//        ])
-//
-//        itemModel.applyItemDecision(.imported)
-//        let importedMemory = reviewModel.sheetMemory()
-//        let importedResult = try #require(importedMemory.item(for: itemId, module: .adventure) as? FakeItemModel)
-//
-//        itemModel.applyItemDecision(.existing)
-//        let existingMemory = reviewModel.sheetMemory()
-//        let existingResult = try #require(existingMemory.item(for: itemId, module: .adventure) as? FakeItemModel)
-//
-//        #expect(importedResult.name == "Imported Item")
-//        #expect(importedResult.description == "Imported Description")
-//        #expect(existingResult.name == "Existing Item")
-//        #expect(existingResult.description == "Existing Description")
-//    }
-//
-//    @Test func importReviewMemoryHidesDeletionWhenImportDecisionIsSelected() throws {
-//        let itemId = UUID()
-//        let deleted = FakeItemModel(id: itemId, name: "Deleted Item")
-//        let itemModel = SingleItemImportModel.from(item: SingleReviewItem(existing: deleted, imported: deleted, merged: deleted))
-//        let reviewModel = ImportReviewModel(modules: [
-//            ImportReviewModule(id: .adventure, reviewItems: [
-//                ImportReviewItemModel(
-//                    id: itemId,
-//                    kind: .different,
-//                    existingStatus: deleted.name,
-//                    importedStatus: "Not in import",
-//                    mergedStatus: deleted.name,
-//                    itemModel: itemModel,
-//                    isDeletion: true
-//                )
-//            ])
-//        ])
-//
-//        itemModel.applyItemDecision(.imported)
-//        let memory = reviewModel.sheetMemory()
-//
-//        #expect(memory.hides(itemId: itemId, module: .adventure))
-//        #expect(memory.item(for: itemId, module: .adventure) == nil)
-//    }
-//
-//    private func fakeController(with item: FakeItemModel) -> FakeItemController {
-//        let itemDataModel = ItemDataModel(categoryTags: [.all])
-//        itemDataModel.items = [item.id]
-//        itemDataModel.itemData[item.id] = item
-//
-//        return FakeItemController(
-//            config: FakeModuleConfiguration(),
-//            linkRegisterController: LinkRegisterController.fake,
-//            itemDataModel: itemDataModel
-//        )
-//    }
-//}
+// @copyright André Trettin
+
+import Foundation
+import Testing
+
+@testable import CoreRPG
+
+@MainActor
+@Suite("Import Review Sheet Models")
+struct ReviewSheetMemoryTests {
+    @Test(
+        "Structured review is enabled only for sheet-first modules",
+        arguments: [NetworkModules.adventure, .map, .value, .table]
+    )
+    func structuredModulesUseInlineReview(_ module: NetworkModules) {
+        // Given / When / Then
+        #expect(module.supportsStructuredImportReview)
+    }
+
+    @Test(
+        "Other modules keep the legacy Choices presentation",
+        arguments: [
+            NetworkModules.audio,
+            .dice,
+            .generator,
+            .pdf,
+            .photo,
+            .space,
+            .weather
+        ]
+    )
+    func nonStructuredModulesKeepLegacyReview(_ module: NetworkModules) {
+        // Given / When / Then
+        #expect(!module.supportsStructuredImportReview)
+    }
+
+    @Test func reviewAwareLookupPrefersReviewMemory() {
+        // Given
+        let itemID = UUID.fixture1
+        let liveItem = FakeItemModel(id: itemID, name: "Live Item")
+        let reviewItem = FakeItemModel(id: itemID, name: "Review Item")
+        let controller = fakeController(with: liveItem)
+        let rootManager = RootManager(
+            anyRoot: ItemRootController.fake,
+            reviewSheetMemory: ReviewSheetMemory(items: [.adventure: [itemID: reviewItem]])
+        )
+
+        // When
+        let result = controller.reviewAwareItemOrEmpty(root: rootManager, for: itemID)
+
+        // Then
+        #expect(result.name == "Review Item")
+    }
+
+    @Test func reviewAwareLookupCanHideLiveItem() {
+        // Given
+        let itemID = UUID.fixture1
+        let liveItem = FakeItemModel(id: itemID, name: "Live Item")
+        let controller = fakeController(with: liveItem)
+        let rootManager = RootManager(
+            anyRoot: ItemRootController.fake,
+            reviewSheetMemory: ReviewSheetMemory(
+                items: [:],
+                hiddenItemIds: [.adventure: [itemID]]
+            )
+        )
+
+        // When
+        let hidden = controller.reviewAwareItemSync(root: rootManager, for: itemID)
+        let empty = controller.reviewAwareItemOrEmpty(root: rootManager, for: itemID)
+
+        // Then
+        #expect(hidden == nil)
+        #expect(empty.id == itemID)
+        #expect(empty.name.isEmpty)
+    }
+
+    @Test func itemDecisionCascadesAndChangesSignature() throws {
+        // Given
+        let sut = makeReviewItem().itemModel
+        let originalSignature = sut.decisionSignature
+
+        // When
+        sut.applyItemDecision(.existing)
+
+        // Then
+        #expect(sut.decision == .existing)
+        #expect(sut.properties.allSatisfy { $0.decision == .existing })
+        #expect(sut.entries.allSatisfy { $0.decision == .existing })
+        #expect(sut.entries.flatMap(\.properties).allSatisfy { $0.decision == .existing })
+        #expect(sut.decisionSignature != originalSignature)
+
+        let changedSignature = sut.decisionSignature
+        sut.entries[0].applyItemDecision(.imported)
+        #expect(sut.decisionSignature != changedSignature)
+        #expect(sut.hasOverrides)
+    }
+
+    @Test func wholeVersionMaterializationDoesNotMutateCurrentChoices() throws {
+        // Given
+        let sut = makeReviewItem().itemModel
+        sut.applyItemDecision(.existing)
+        let entry = try #require(sut.entries.first)
+        entry.applyItemDecision(.merge)
+        let signature = sut.decisionSignature
+
+        // When
+        let imported = try #require(sut.materializedItem(for: .imported) as? FakeItemModel)
+        let importedEntry = try #require(imported.entries.first)
+        let mergedEntry = try #require(entry.materializedEntry(for: .merge) as? FakeEntryModel)
+
+        // Then
+        #expect(imported.name == "Imported Item")
+        #expect(imported.description == "Imported Description")
+        #expect(importedEntry.name == "Imported Entry")
+        #expect(importedEntry.content == "Imported Content")
+        #expect(mergedEntry.name == "Merged Entry")
+        #expect(mergedEntry.content == "Merged Content")
+        #expect(sut.decision == .existing)
+        #expect(entry.decision == .merge)
+        #expect(sut.decisionSignature == signature)
+    }
+
+    @Test func currentMaterializationKeepsEntryOverride() throws {
+        // Given
+        let sut = makeReviewItem().itemModel
+        sut.applyItemDecision(.existing)
+        let entry = try #require(sut.entries.first)
+        entry.applyItemDecision(.imported)
+
+        // When
+        let materialized = try #require(sut.materializedItem() as? FakeItemModel)
+        let materializedEntry = try #require(materialized.entries.first)
+
+        // Then
+        #expect(materialized.name == "Existing Item")
+        #expect(materializedEntry.name == "Imported Entry")
+        #expect(materializedEntry.content == "Imported Content")
+    }
+
+    @Test func semanticDifferenceUsesConcreteEntryComparison() {
+        // Given
+        let existing = SemanticReviewEntry(
+            id: .fixture2,
+            name: "Same Name",
+            content: "Same Content",
+            semanticValue: 1
+        )
+        let imported = SemanticReviewEntry(
+            id: .fixture2,
+            name: "Same Name",
+            content: "Same Content",
+            semanticValue: 2
+        )
+        let unchanged = SemanticReviewEntry(
+            id: .fixture2,
+            name: "Same Name",
+            content: "Same Content",
+            semanticValue: 1
+        )
+
+        // When
+        let changedModel = SingleReviewEntry(existing: existing, imported: imported, merged: imported)
+        let unchangedModel = SingleReviewEntry(existing: existing, imported: unchanged, merged: unchanged)
+        let removedModel = SingleReviewEntry(existing: existing, imported: nil, merged: nil)
+
+        // Then
+        #expect(changedModel.hasDifferences)
+        #expect(!unchangedModel.hasDifferences)
+        #expect(removedModel.hasDifferences)
+    }
+
+    @Test func versionIdentitiesAreUniqueAndStable() throws {
+        // Given
+        let itemID = UUID.fixture1
+        let entryID = UUID.fixture2
+
+        // When
+        let identities = SingleReviewDecision.allCases.map {
+            SheetReviewVersionID(itemID: itemID, entryID: entryID, decision: $0)
+        }
+        let repeated = SheetReviewVersionID(itemID: itemID, entryID: entryID, decision: .merge)
+
+        // Then
+        #expect(Set(identities).count == SingleReviewDecision.allCases.count)
+        #expect(identities[0] == repeated)
+    }
+
+    @Test func decorationBuildsUnionAndPlaceholdersForMissingVersions() throws {
+        // Given
+        let itemID = UUID.fixture1
+        let existingOnly = FakeEntryModel(id: .fixture2, name: "Existing only", content: "Old")
+        let sharedExisting = FakeEntryModel(id: .fixture3, name: "Shared", content: "Old")
+        let sharedImported = FakeEntryModel(id: .fixture3, name: "Shared", content: "New")
+        let importedOnly = FakeEntryModel(id: .fixture4, name: "Imported only", content: "New")
+        let existing = FakeItemModel(
+            id: itemID,
+            name: "Existing",
+            entries: [existingOnly, sharedExisting]
+        )
+        let imported = FakeItemModel(
+            id: itemID,
+            name: "Imported",
+            entries: [sharedImported, importedOnly]
+        )
+        let merged = FakeItemModel(
+            id: itemID,
+            name: "Merged",
+            entries: [sharedImported, importedOnly]
+        )
+        let itemModel = SingleItemImportModel.from(
+            item: SingleReviewItem(existing: existing, imported: imported, merged: merged)
+        )
+        itemModel.applyItemDecision(.imported)
+        let reviewItem = ImportReviewItemModel(
+            id: itemID,
+            kind: .different,
+            existingStatus: "Existing",
+            importedStatus: "Imported",
+            mergedStatus: "Merged",
+            itemModel: itemModel
+        )
+        let currentSheet = sheet(itemID: itemID, entryIDs: [.fixture3, .fixture4])
+        let versionSheets: [SingleReviewDecision: SheetModel] = [
+            .existing: sheet(itemID: itemID, entryIDs: [.fixture2, .fixture3]),
+            .imported: sheet(itemID: itemID, entryIDs: [.fixture3, .fixture4]),
+            .merge: sheet(itemID: itemID, entryIDs: [.fixture3, .fixture4])
+        ]
+
+        // When
+        SheetReviewTreeBuilder.decorate(
+            sheetModel: currentSheet,
+            reviewItem: reviewItem,
+            versionSheets: versionSheets
+        )
+
+        // Then
+        #expect(currentSheet.entries.compactMap(\.source.entryId) == [.fixture2, .fixture3, .fixture4])
+        let existingPlaceholder = try #require(currentSheet.entries.first)
+        #expect(existingPlaceholder.isReviewPlaceholder)
+        #expect(existingPlaceholder.entryReviewModel?.versions.count == 3)
+        #expect(existingPlaceholder.entryReviewModel?.versions.first { $0.decision == .imported }?.isAvailable == false)
+
+        let importedRow = try #require(currentSheet.entries.first { $0.source.entryId == .fixture4 })
+        #expect(!importedRow.isReviewPlaceholder)
+        #expect(importedRow.entryReviewModel?.versions.first { $0.decision == .existing }?.isAvailable == false)
+    }
+
+    @Test func decorationPreservesCurrentAndForeignRowOrder() throws {
+        // Given
+        let itemID = UUID.fixture1
+        let foreignItemID = UUID.fixture5
+        let entryA = UUID.fixture2
+        let entryB = UUID.fixture3
+        let existingOnly = UUID.fixture4
+        let existing = FakeItemModel(
+            id: itemID,
+            name: "Existing",
+            entries: [
+                FakeEntryModel(id: entryB, name: "B", content: "Existing B"),
+                FakeEntryModel(id: existingOnly, name: "Removed", content: "Existing only"),
+                FakeEntryModel(id: entryA, name: "A", content: "Existing A")
+            ]
+        )
+        let imported = FakeItemModel(
+            id: itemID,
+            name: "Imported",
+            entries: [
+                FakeEntryModel(id: entryA, name: "A", content: "Imported A"),
+                FakeEntryModel(id: entryB, name: "B", content: "Imported B")
+            ]
+        )
+        let merged = FakeItemModel(
+            id: itemID,
+            name: "Merged",
+            entries: [
+                FakeEntryModel(id: entryA, name: "A", content: "Merged A"),
+                FakeEntryModel(id: entryB, name: "B", content: "Merged B")
+            ]
+        )
+        let itemModel = SingleItemImportModel.from(
+            item: SingleReviewItem(existing: existing, imported: imported, merged: merged)
+        )
+        itemModel.applyItemDecision(.imported)
+        let reviewItem = ImportReviewItemModel(
+            id: itemID,
+            kind: .different,
+            existingStatus: "Existing",
+            importedStatus: "Imported",
+            mergedStatus: "Merged",
+            itemModel: itemModel
+        )
+        let foreignA = sheetRow(itemID: foreignItemID, entryID: entryA, name: "Foreign A")
+        let currentA = sheetRow(itemID: itemID, entryID: entryA, name: "Current A")
+        let foreignRemoved = sheetRow(itemID: foreignItemID, entryID: existingOnly, name: "Foreign Removed")
+        let currentB = sheetRow(itemID: itemID, entryID: entryB, name: "Current B")
+        let currentSheet = SheetModel(
+            source: ItemRowModel(itemId: itemID, typeId: .adventure),
+            name: "Review Sheet",
+            description: "",
+            entries: [foreignA, currentA, foreignRemoved, currentB]
+        )
+        let versionSheets: [SingleReviewDecision: SheetModel] = [
+            .existing: sheet(itemID: itemID, entryIDs: [entryB, existingOnly, entryA]),
+            .imported: sheet(itemID: itemID, entryIDs: [entryA, entryB]),
+            .merge: sheet(itemID: itemID, entryIDs: [entryA, entryB])
+        ]
+
+        // When
+        SheetReviewTreeBuilder.decorate(
+            sheetModel: currentSheet,
+            reviewItem: reviewItem,
+            versionSheets: versionSheets
+        )
+
+        // Then
+        let rowsWithoutPlaceholder = currentSheet.entries.filter { !$0.isReviewPlaceholder }
+        #expect(rowsWithoutPlaceholder.count == 4)
+        #expect(rowsWithoutPlaceholder[0] === foreignA)
+        #expect(rowsWithoutPlaceholder[1] === currentA)
+        #expect(rowsWithoutPlaceholder[2] === foreignRemoved)
+        #expect(rowsWithoutPlaceholder[3] === currentB)
+        #expect(foreignA.entryReviewModel == nil)
+        #expect(foreignRemoved.entryReviewModel == nil)
+
+        let placeholder = try #require(
+            currentSheet.entries.first { $0.isReviewPlaceholder }
+        )
+        #expect(placeholder.source.itemId == itemID)
+        #expect(placeholder.source.entryId == existingOnly)
+        #expect(placeholder.entryReviewModel != nil)
+    }
+
+    @Test func selectingAnotherVersionRestoresAnOmittedRowOnRebuild() throws {
+        // Given
+        let reviewItem = makeExistingOnlyReviewItem()
+        reviewItem.itemModel.applyItemDecision(.imported)
+        let importedSheet = sheet(itemID: reviewItem.id, entryIDs: [])
+        let versions: [SingleReviewDecision: SheetModel] = [
+            .existing: sheet(itemID: reviewItem.id, entryIDs: [.fixture2]),
+            .imported: sheet(itemID: reviewItem.id, entryIDs: []),
+            .merge: sheet(itemID: reviewItem.id, entryIDs: [])
+        ]
+        SheetReviewTreeBuilder.decorate(
+            sheetModel: importedSheet,
+            reviewItem: reviewItem,
+            versionSheets: versions
+        )
+        let placeholder = try #require(importedSheet.entries.first)
+        let review = try #require(placeholder.entryReviewModel)
+
+        // When
+        review.select(.existing)
+        let existingSheet = sheet(itemID: reviewItem.id, entryIDs: [.fixture2])
+        SheetReviewTreeBuilder.decorate(
+            sheetModel: existingSheet,
+            reviewItem: reviewItem,
+            versionSheets: versions
+        )
+
+        // Then
+        #expect(reviewItem.itemModel.entries[0].decision == .existing)
+        #expect(!review.isExpanded)
+        #expect(existingSheet.entries.first?.source.entryId == .fixture2)
+        #expect(existingSheet.entries.first?.isReviewPlaceholder == false)
+    }
+
+    @Test func unchangedEntriesHaveNoInlineReviewControl() throws {
+        // Given
+        let entry = FakeEntryModel(id: .fixture2, name: "Same", content: "Same")
+        let item = FakeItemModel(id: .fixture1, name: "Item", entries: [entry])
+        let itemModel = SingleItemImportModel.from(
+            item: SingleReviewItem(existing: item, imported: item, merged: item)
+        )
+        let reviewItem = ImportReviewItemModel(
+            id: item.id,
+            kind: .different,
+            existingStatus: "Existing",
+            importedStatus: "Imported",
+            mergedStatus: "Merged",
+            itemModel: itemModel
+        )
+        let currentSheet = sheet(itemID: item.id, entryIDs: [entry.id])
+        let versions = Dictionary(
+            uniqueKeysWithValues: SingleReviewDecision.allCases.map {
+                ($0, sheet(itemID: item.id, entryIDs: [entry.id]))
+            }
+        )
+
+        // When
+        SheetReviewTreeBuilder.decorate(
+            sheetModel: currentSheet,
+            reviewItem: reviewItem,
+            versionSheets: versions
+        )
+
+        // Then
+        let row = try #require(currentSheet.entries.first)
+        #expect(row.entryReviewModel == nil)
+        #expect(!row.isReviewPlaceholder)
+    }
+
+    @Test func reviewMemoryUsesCurrentDecisionAndCanOverrideWithoutMutation() throws {
+        // Given
+        let reviewItem = makeReviewItem()
+        let reviewModel = ImportReviewModel(modules: [
+            ImportReviewModule(id: .adventure, reviewItems: [reviewItem])
+        ])
+        reviewItem.itemModel.applyItemDecision(.existing)
+        let signature = reviewItem.itemModel.decisionSignature
+
+        // When
+        let current = try #require(
+            reviewModel.sheetMemory().item(for: reviewItem.id, module: .adventure) as? FakeItemModel
+        )
+        let imported = try #require(
+            reviewModel.sheetMemory(
+                overriding: reviewItem.id,
+                module: .adventure,
+                decision: .imported
+            ).item(for: reviewItem.id, module: .adventure) as? FakeItemModel
+        )
+
+        // Then
+        #expect(current.name == "Existing Item")
+        #expect(imported.name == "Imported Item")
+        #expect(reviewItem.itemModel.decision == .existing)
+        #expect(reviewItem.itemModel.decisionSignature == signature)
+    }
+
+    @Test func reviewMemoryHidesDeletionAndRejectedAddition() {
+        // Given
+        let deletion = makeReviewItem(isDeletion: true)
+        deletion.itemModel.applyItemDecision(.imported)
+        let addition = makeReviewItem(kind: .added)
+        addition.itemModel.applyItemDecision(.existing)
+        let reviewModel = ImportReviewModel(modules: [
+            ImportReviewModule(id: .adventure, reviewItems: [deletion, addition])
+        ])
+
+        // When
+        let memory = reviewModel.sheetMemory()
+
+        // Then
+        #expect(memory.hides(itemId: deletion.id, module: .adventure))
+        #expect(memory.hides(itemId: addition.id, module: .adventure))
+        #expect(memory.item(for: deletion.id, module: .adventure) == nil)
+        #expect(memory.item(for: addition.id, module: .adventure) == nil)
+    }
+
+    private func makeReviewItem(
+        kind: ImportReviewItemModel.ChangeKind = .different,
+        isDeletion: Bool = false
+    ) -> ImportReviewItemModel {
+        let itemID = kind == .added ? UUID.fixture5 : UUID.fixture1
+        let entryID = UUID.fixture2
+        let existing = FakeItemModel(
+            id: itemID,
+            name: "Existing Item",
+            description: "Existing Description",
+            entries: [FakeEntryModel(id: entryID, name: "Existing Entry", content: "Existing Content")]
+        )
+        let imported = FakeItemModel(
+            id: itemID,
+            name: "Imported Item",
+            description: "Imported Description",
+            entries: [FakeEntryModel(id: entryID, name: "Imported Entry", content: "Imported Content")]
+        )
+        let merged = FakeItemModel(
+            id: itemID,
+            name: "Merged Item",
+            description: "Merged Description",
+            entries: [FakeEntryModel(id: entryID, name: "Merged Entry", content: "Merged Content")]
+        )
+        let itemModel = SingleItemImportModel.from(
+            item: SingleReviewItem(
+                existing: kind == .added ? nil : existing,
+                imported: imported,
+                merged: merged
+            )
+        )
+        return ImportReviewItemModel(
+            id: itemID,
+            kind: kind,
+            existingStatus: existing.name,
+            importedStatus: imported.name,
+            mergedStatus: merged.name,
+            itemModel: itemModel,
+            isDeletion: isDeletion
+        )
+    }
+
+    private func makeExistingOnlyReviewItem() -> ImportReviewItemModel {
+        let existingEntry = FakeEntryModel(id: .fixture2, name: "Removed", content: "Old")
+        let existing = FakeItemModel(id: .fixture1, name: "Existing", entries: [existingEntry])
+        let imported = FakeItemModel(id: .fixture1, name: "Imported", entries: [])
+        let merged = FakeItemModel(id: .fixture1, name: "Merged", entries: [])
+        let itemModel = SingleItemImportModel.from(
+            item: SingleReviewItem(existing: existing, imported: imported, merged: merged)
+        )
+        return ImportReviewItemModel(
+            id: .fixture1,
+            kind: .different,
+            existingStatus: "Existing",
+            importedStatus: "Imported",
+            mergedStatus: "Merged",
+            itemModel: itemModel
+        )
+    }
+
+    private func sheet(itemID: UUID, entryIDs: [UUID]) -> SheetModel {
+        SheetModel(
+            source: ItemRowModel(itemId: itemID, typeId: .adventure),
+            name: "Review Sheet",
+            description: "",
+            entries: entryIDs.map { entryID in
+                SheetModel(
+                    source: ItemRowModel(itemId: itemID, entryId: entryID, typeId: .adventure),
+                    name: "Entry \(entryID.uuidString)",
+                    description: "Content \(entryID.uuidString)",
+                    entries: []
+                )
+            }
+        )
+    }
+
+    private func sheetRow(itemID: UUID, entryID: UUID, name: String) -> SheetModel {
+        SheetModel(
+            source: ItemRowModel(itemId: itemID, entryId: entryID, typeId: .adventure),
+            name: name,
+            description: "Content",
+            entries: []
+        )
+    }
+
+    private func fakeController(with item: FakeItemModel) -> FakeItemController {
+        let itemDataModel = ItemDataModel(categoryTags: [.all])
+        itemDataModel.items = [item.id]
+        itemDataModel.itemData[item.id] = item
+
+        return FakeItemController(
+            config: FakeModuleConfiguration(),
+            linkRegisterController: LinkRegisterController.fake,
+            itemDataModel: itemDataModel
+        )
+    }
+}
+
+private struct SemanticReviewEntry: EntryDataAccessable {
+    static var empty: SemanticReviewEntry {
+        SemanticReviewEntry(id: .fixture1, name: "", content: "", semanticValue: 0)
+    }
+
+    static func newChild(id: UUID) -> SemanticReviewEntry {
+        SemanticReviewEntry(id: id, name: "", content: "", semanticValue: 0)
+    }
+
+    let id: UUID
+    var childId: UUID { id }
+    var name: String
+    var content: String
+    let semanticValue: Int
+    var displayState: Int = 0
+
+    func duplicate() -> SemanticReviewEntry {
+        self
+    }
+}
+
+extension SemanticReviewEntry: ItemDiffComparable {
+    @MainActor
+    func isSame(_ other: SemanticReviewEntry) -> Bool {
+        name == other.name && content == other.content && semanticValue == other.semanticValue
+    }
+
+    @MainActor
+    func merge(_ other: SemanticReviewEntry) -> SemanticReviewEntry {
+        other
+    }
+}

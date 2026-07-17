@@ -101,6 +101,47 @@ final class SingleReviewEntry {
         case .merge: merged
         }
     }
+
+    var hasDifferences: Bool {
+        switch (existing, imported) {
+        case (nil, nil):
+            false
+        case (.some, nil), (nil, .some):
+            true
+        case let (.some(existing), .some(imported)):
+            !entriesAreSemanticallySame(existing, imported)
+        }
+    }
+}
+
+@MainActor
+private func entriesAreSemanticallySame(
+    _ existing: any EntryDataAccessable,
+    _ imported: any EntryDataAccessable
+) -> Bool {
+    if let comparable = existing as? any ItemDiffComparable,
+       let isSame = compareEntry(comparable, with: imported) {
+        return isSame
+    }
+
+    return compareBasicEntry(existing, with: imported) ?? false
+}
+
+@MainActor
+private func compareEntry<Entry: ItemDiffComparable>(
+    _ existing: Entry,
+    with imported: any EntryDataAccessable
+) -> Bool? {
+    guard let imported = imported as? Entry else { return nil }
+    return existing.isSame(imported)
+}
+
+private func compareBasicEntry<Entry: EntryDataAccessable>(
+    _ existing: Entry,
+    with imported: any EntryDataAccessable
+) -> Bool? {
+    guard let imported = imported as? Entry else { return nil }
+    return existing.name == imported.name && existing.content == imported.content
 }
 
 @Observable @MainActor
@@ -354,6 +395,10 @@ final class SingleEntryImportModel: Identifiable {
         properties.contains { defaultDecision(for: $0) != $0.decision }
     }
 
+    var hasDifferences: Bool {
+        entry.hasDifferences
+    }
+
     var isRemovalSummary: Bool {
         guard let firstProperty = properties.first else { return false }
         return entry.item(for: firstProperty.decision) == nil
@@ -509,6 +554,17 @@ extension SingleItemImportModel {
         result.replaceEntries(with: entries.compactMap { $0.materializedEntry() })
         return result
     }
+
+    /// Creates a whole-item snapshot for review without changing any live decisions.
+    func materializedItem(for decision: SingleReviewDecision) -> any ItemDataAccessable {
+        var result = item.item(for: decision).copy()
+        for property in properties {
+            let propertyDecision = defaultDecision(for: property, given: decision)
+            property.apply(&result, item.item(for: propertyDecision))
+        }
+        result.replaceEntries(with: entries.compactMap { $0.materializedEntry(for: decision) })
+        return result
+    }
 }
 
 extension SingleEntryImportModel {
@@ -521,6 +577,17 @@ extension SingleEntryImportModel {
         guard var result = entry.item(for: decision) else { return nil }
         for property in properties {
             guard let source = entry.item(for: property.decision) else { continue }
+            property.apply(&result, source)
+        }
+        return result
+    }
+
+    /// Creates a whole-entry snapshot for review without changing any live decisions.
+    func materializedEntry(for decision: SingleReviewDecision) -> (any EntryDataAccessable)? {
+        guard var result = entry.item(for: decision) else { return nil }
+        for property in properties {
+            let propertyDecision = defaultDecision(for: property, given: decision)
+            guard let source = entry.item(for: propertyDecision) else { continue }
             property.apply(&result, source)
         }
         return result

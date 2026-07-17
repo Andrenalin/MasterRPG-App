@@ -72,5 +72,23 @@ struct TableEntryModelTests {
         let result2 = "**Hello name**: Hello Content More"
         #expect(sut.entryLinkText(otherValue: "More") == result2)
     }
+
+    @Test func contentDifferenceIsDetected() {
+        // Given
+        let existing = TableEntryModel.fixture(
+            id: .fixture1,
+            name: "Shared name",
+            content: "Existing content"
+        )
+        let imported = TableEntryModel.fixture(
+            id: .fixture1,
+            name: "Shared name",
+            content: "Imported content"
+        )
+
+        // When / Then
+        #expect(existing.name == imported.name)
+        #expect(!existing.isSame(imported))
+    }
 }
 #endif

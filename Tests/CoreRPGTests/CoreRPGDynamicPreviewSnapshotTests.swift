@@ -488,6 +488,124 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 
+    // snapshot-root: CoreRPG::SheetRootView
+    @Test("Structured sheet review collapsed")
+    func structuredSheetReviewCollapsed() {
+        let fixture = structuredSheetReviewFixture(
+            existingEntries: [
+                FakeEntryModel(id: .fixture2, name: "Ancient Door", content: "Sealed by old runes")
+            ],
+            importedEntries: [
+                FakeEntryModel(id: .fixture2, name: "Ancient Door", content: "The runes have faded")
+            ],
+            mergedEntries: [
+                FakeEntryModel(id: .fixture2, name: "Ancient Door", content: "Sealed, but the runes are fading")
+            ],
+            decision: .merge
+        )
+
+        assertCoreSnapshot("StructuredSheetReviewCollapsed") {
+            structuredSheetRootView(fixture)
+        }
+    }
+
+    // Expanded structured sheet-review state.
+    @Test("Structured sheet review expanded with New selected")
+    func structuredSheetReviewExpandedSelectedNew() {
+        let fixture = structuredSheetReviewFixture(
+            existingEntries: [
+                FakeEntryModel(id: .fixture2, name: "Ancient Door", content: "Sealed by old runes")
+            ],
+            importedEntries: [
+                FakeEntryModel(id: .fixture2, name: "Open Archway", content: "The runes have vanished")
+            ],
+            mergedEntries: [
+                FakeEntryModel(id: .fixture2, name: "Ancient Door", content: "Sealed, but the runes are fading")
+            ],
+            decision: .imported,
+            isExpanded: true
+        )
+
+        assertCoreSnapshot("StructuredSheetReviewExpandedSelectedNew") {
+            structuredSheetRootView(fixture)
+        }
+    }
+
+    // Structured sheet-review placeholder state.
+    @Test("Structured sheet review absent version")
+    func structuredSheetReviewAbsentVersion() {
+        let fixture = structuredSheetReviewFixture(
+            existingEntries: [
+                FakeEntryModel(id: .fixture2, name: "Removed Passage", content: "Only in the existing adventure")
+            ],
+            importedEntries: [],
+            mergedEntries: [],
+            decision: .imported,
+            isExpanded: true
+        )
+
+        assertCoreSnapshot("StructuredSheetReviewAbsentVersion") {
+            structuredSheetRootView(fixture)
+        }
+    }
+
+    // Unchanged structured sheet entry.
+    @Test("Structured sheet review unchanged entry")
+    func structuredSheetReviewUnchangedEntry() {
+        let unchanged = FakeEntryModel(
+            id: .fixture2,
+            name: "Unchanged Hall",
+            content: "No version control is needed for this row"
+        )
+        let fixture = structuredSheetReviewFixture(
+            existingEntries: [unchanged],
+            importedEntries: [unchanged],
+            mergedEntries: [unchanged],
+            decision: .merge
+        )
+
+        assertCoreSnapshot("StructuredSheetReviewUnchangedEntry") {
+            structuredSheetRootView(fixture)
+        }
+    }
+
+    // snapshot-root: CoreRPG::ImportReviewSheetDetailView
+    @Test("Structured import detail keeps reference diagnostics")
+    func structuredImportReviewDetail() {
+        let fixture = FakeItemRootControllerFixture()
+        let reviewItem = makeStructuredReviewItem(
+            existingEntries: [
+                FakeEntryModel(id: .fixture2, name: "Old Gate", content: "Closed")
+            ],
+            importedEntries: [
+                FakeEntryModel(id: .fixture2, name: "New Gate", content: "Open")
+            ],
+            mergedEntries: [
+                FakeEntryModel(id: .fixture2, name: "Gate", content: "Partly open")
+            ],
+            decision: .merge
+        )
+        reviewItem.itemModel.references = [
+            SingleReviewReference(
+                itemName: "Missing Chronicle",
+                destination: ItemRowModel(itemId: .fixture5, typeId: .adventure),
+                status: .missing
+            )
+        ]
+        let reviewModel = ImportReviewModel(modules: [
+            ImportReviewModule(id: .adventure, reviewItems: [reviewItem])
+        ])
+
+        assertCoreSnapshot("StructuredImportReviewDetail") {
+            ImportReviewSheetDetailView(
+                item: reviewItem,
+                root: fixture.root,
+                rootManager: RootManager.preview(fake: fixture.root),
+                reviewModel: reviewModel
+            )
+        }
+    }
+
     // snapshot-root: CoreRPG::DisclosureGroupTV
     @Test("DisclosureGroupTV")
     func disclosureGroupTV() {
@@ -513,6 +631,114 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 #endif
+
+    private func structuredSheetReviewFixture(
+        existingEntries: [FakeEntryModel],
+        importedEntries: [FakeEntryModel],
+        mergedEntries: [FakeEntryModel],
+        decision: SingleReviewDecision,
+        isExpanded: Bool = false
+    ) -> StructuredSheetReviewFixture {
+        let reviewItem = makeStructuredReviewItem(
+            existingEntries: existingEntries,
+            importedEntries: importedEntries,
+            mergedEntries: mergedEntries,
+            decision: decision
+        )
+        let currentSheet = structuredSheet(for: reviewItem.itemModel.materializedItem())
+        let versionSheets = Dictionary(
+            uniqueKeysWithValues: SingleReviewDecision.allCases.map { versionDecision in
+                (
+                    versionDecision,
+                    structuredSheet(for: reviewItem.itemModel.materializedItem(for: versionDecision))
+                )
+            }
+        )
+        SheetReviewTreeBuilder.decorate(
+            sheetModel: currentSheet,
+            reviewItem: reviewItem,
+            versionSheets: versionSheets
+        )
+        currentSheet.entries.compactMap(\.entryReviewModel).first?.isExpanded = isExpanded
+
+        let controllerFixture = FakeItemRootControllerFixture()
+        let rootManager = RootManager.preview(fake: controllerFixture.root)
+        let rootModel = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: controllerFixture.linkController,
+            sheetControllable: controllerFixture.sheetController,
+            sheetModel: currentSheet,
+            isEditor: false
+        )
+        return StructuredSheetReviewFixture(root: controllerFixture.root, rootModel: rootModel)
+    }
+
+    private func makeStructuredReviewItem(
+        existingEntries: [FakeEntryModel],
+        importedEntries: [FakeEntryModel],
+        mergedEntries: [FakeEntryModel],
+        decision: SingleReviewDecision
+    ) -> ImportReviewItemModel {
+        let existing = FakeItemModel(
+            id: .fixture1,
+            name: "Existing Adventure",
+            description: "Current library version",
+            entries: existingEntries
+        )
+        let imported = FakeItemModel(
+            id: .fixture1,
+            name: "Imported Adventure",
+            description: "Incoming file version",
+            entries: importedEntries
+        )
+        let merged = FakeItemModel(
+            id: .fixture1,
+            name: "Merged Adventure",
+            description: "Combined review version",
+            entries: mergedEntries
+        )
+        let itemModel = SingleItemImportModel.from(
+            item: SingleReviewItem(existing: existing, imported: imported, merged: merged)
+        )
+        itemModel.applyItemDecision(decision)
+        return ImportReviewItemModel(
+            id: .fixture1,
+            kind: .different,
+            existingStatus: existing.name,
+            importedStatus: imported.name,
+            mergedStatus: merged.name,
+            itemModel: itemModel
+        )
+    }
+
+    private func structuredSheet(for item: any ItemDataAccessable) -> SheetModel {
+        SheetModel(
+            source: ItemRowModel(itemId: item.id, typeId: .adventure),
+            name: item.name,
+            description: item.description,
+            entries: item.entries.map { entry in
+                SheetModel(
+                    source: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: .adventure),
+                    name: entry.name,
+                    description: entry.content,
+                    entries: []
+                )
+            }
+        )
+    }
+
+    private func structuredSheetRootView(_ fixture: StructuredSheetReviewFixture) -> some View {
+        ScrollView {
+            LazyVStack(alignment: .leading) {
+                SheetRootView(
+                    root: fixture.root,
+                    rootModel: fixture.rootModel,
+                    linkTypes: EmptyLinkTransferable.self
+                )
+            }
+            .padding()
+        }
+    }
 
     private func assertCoreSnapshot<Content: View>(
         _ name: String,
@@ -548,4 +774,10 @@ struct CoreRPGDynamicPreviewSnapshotTests {
             named: name
         )
     }
+}
+
+@MainActor
+private struct StructuredSheetReviewFixture {
+    let root: ItemRootController
+    let rootModel: SheetRootModel
 }

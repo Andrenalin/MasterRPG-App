@@ -92,6 +92,12 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     /// Distinct from `isGeneratedAnswer`/`isGeneratedSelected` — do not conflate.
     public var isSelected: Bool = false
 
+    // MARK: Import review
+    /// Entry-version review is intentionally independent from normal row selection and
+    /// generated-answer selection. It is populated only for structured import sheets.
+    var entryReviewModel: SheetEntryReviewModel?
+    var isReviewPlaceholder: Bool = false
+
     public var canAdd: Bool
     public var showHeader: Bool
 
@@ -149,6 +155,8 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         isGeneratedHidden <=> otherSheetModel.isGeneratedHidden
         generatedBatchID <=> otherSheetModel.generatedBatchID
         isSelected <=> otherSheetModel.isSelected
+        entryReviewModel = otherSheetModel.entryReviewModel
+        isReviewPlaceholder <=> otherSheetModel.isReviewPlaceholder
 
         canAdd <=> otherSheetModel.canAdd
         showHeader <=> otherSheetModel.showHeader
@@ -180,6 +188,8 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         lhs._isGeneratedHidden == rhs._isGeneratedHidden &&
         lhs._generatedBatchID == rhs._generatedBatchID &&
         lhs._isSelected == rhs._isSelected &&
+        lhs.entryReviewModel?.id == rhs.entryReviewModel?.id &&
+        lhs._isReviewPlaceholder == rhs._isReviewPlaceholder &&
         lhs._canAdd == rhs._canAdd &&
         lhs._showHeader == rhs._showHeader
     }
