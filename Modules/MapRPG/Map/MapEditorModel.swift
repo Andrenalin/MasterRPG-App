@@ -1,24 +1,20 @@
 // @copyright André Trettin
 
 import CoreRPG
-import PhotoRPG
 import SwiftUI
 
-enum MapMode {
-    case edit
-    case gameMaster
-    case player
-    case viewer
-}
-
 @MainActor @Observable
-final class MapEditorModel {
+final class MapEditorSession {
     // MARK: - View State
 
-    var imageModel: ImageViewerModel
+    let configuration: MapEditorConfiguration
+    let actions: MapEditorActions
+    let viewport: ViewportModel
     var pins: MapPinViewModel
-    var entries: MapEntryViewerModel
-    var editEntries: MapEntryViewerModel
+    let rooms: MapRoomStore
+    let selection = MapEditorSelectionStore()
+    var entries: MapEntryViewerModel { rooms.passive }
+    var editEntries: MapEntryViewerModel { rooms.active }
     var focusId: MapEntryModel.ID?
     var appeared = false
     private(set) var mapId: UUID
@@ -55,13 +51,10 @@ final class MapEditorModel {
 
     // MARK: - Game Mode State
 
-    var mapMode: MapMode = .edit
-    var playerPinId: UUID? = nil
+    var mapMode: MapMode { configuration.mode }
+    var playerPinId: UUID? { configuration.playerPinId }
     var isStreaming: Bool = false
     var isPointing: Bool = false
-    var sendMapUpdates: (() -> Void)? = nil
-    var sendPinUpdate: ((UUID) -> Void)? = nil
-    var focusedCallback: (() -> Void)? = nil
 
     var iconDisplayMode: String {
         switch displayMode {
@@ -79,50 +72,133 @@ final class MapEditorModel {
         }
     }
 
-    enum DraggingType: Hashable {
-        case nothing
-        case image
-    }
-
-    var isDragging: DraggingType = .nothing
-    var isTapping: DraggingType = .nothing
-
     // MARK: - Dependencies
 
     private var image: AKImage
     private var photoDegrees: Double
     private var canvasSize: CGSize
     private var containerSize: CGSize
-    @ObservationIgnored private var legacyMagnificationBaseline: MapViewportTransform?
     @ObservationIgnored private var appearanceTask: Task<Void, Never>?
+    @ObservationIgnored private var actionRouter: MapEditorActionRouter?
 
     // MARK: - Initialization
 
-    init(map: MapModel, image: AKImage, photoDegrees: Double, containerSize: CGSize, displayMode: MapDisplayMode = .master, mapMode: MapMode = .edit, playerPinId: UUID? = nil) {
+    init(
+        map: MapModel,
+        image: AKImage,
+        photoDegrees: Double,
+        containerSize: CGSize = .zero,
+        configuration: MapEditorConfiguration,
+        actions: MapEditorActions = MapEditorActions()
+    ) {
+        self.configuration = configuration
+        self.actions = actions
         self.image = image
         self.photoDegrees = photoDegrees
-        self.canvasSize = MapEditorGeometry.canvasSize(
+        let resolvedCanvasSize = Self.resolvedCanvasSize(
             mapSize: CGSize(width: map.width, height: map.height),
             image: image,
             degrees: photoDegrees
         )
+        self.canvasSize = resolvedCanvasSize
         self.containerSize = containerSize
         self.pinScale = map.pinScale
         self.hexScale = map.hexMapScale
         self.lastPinScale = map.pinScale
         self.lastHexScale = map.hexMapScale
         self.isHexMap = map.entries.contains(where: { $0.isHexGrid })
-        self.displayMode = displayMode
-        self.mapMode = mapMode
-        self.playerPinId = playerPinId
+        self.displayMode = configuration.displayMode
         self.mapId = map.id
 
-        self.imageModel = ImageViewerModel(offset: .zero, scale: 1)
+        let viewportConfiguration = ViewportConfiguration(
+            id: map.id,
+            contentSize: resolvedCanvasSize,
+            containerSize: containerSize,
+            maximumScaleMultiplier: 8,
+            panPolicy: .minimumVisible(44)
+        )
+        let viewportModel = ViewportModel(configuration: viewportConfiguration)
+        self.viewport = viewportModel
         self.pins = MapPinViewModel(mapPins: map.mapPins, pointer: map.pointer)
         // Game mode seeds entries immediately (no working-copy merge needed); edit mode
         // starts empty and lets firstAppear/resetEntries do the merge against the working copy.
-        self.entries = MapEntryViewerModel(mapId: map.id, entries: mapMode == .edit ? [] : map.entries)
-        self.editEntries = MapEntryViewerModel(mapId: map.id, entries: [])
+        self.rooms = MapRoomStore(
+            mapId: map.id,
+            passiveEntries: configuration.mode == .edit ? [] : map.entries
+        )
+
+        pins.configureInteractionHandler { [weak self] event in
+            self?.handlePinSelection(event)
+        }
+        rooms.active.configureNeedleSelectionHandler { [weak self] point in
+            self?.handleNeedleSelection(point)
+        }
+    }
+
+    convenience init(
+        map: MapModel,
+        image: AKImage,
+        photoDegrees: Double,
+        containerSize: CGSize,
+        displayMode: MapDisplayMode = .master,
+        mapMode: MapMode = .edit,
+        playerPinId: UUID? = nil
+    ) {
+        self.init(
+            map: map,
+            image: image,
+            photoDegrees: photoDegrees,
+            containerSize: containerSize,
+            configuration: MapEditorConfiguration(
+                mode: mapMode,
+                displayMode: displayMode,
+                playerPinId: playerPinId
+            )
+        )
+    }
+
+    private func handlePinSelection(_ event: MapPinInteractionEvent) {
+        switch event {
+        case let .tap(pin, _):
+            rooms.active.selectNeedle(nil)
+            selection.selectPin(pins.isExpandedId == pin.id ? pin.id : nil)
+        case .doubleTap:
+            rooms.active.selectNeedle(nil)
+            selection.selectPin(nil)
+        case .beginMove:
+            rooms.active.selectNeedle(nil)
+            selection.selectPin(nil)
+        case .move, .action:
+            break
+        }
+        actionRouter?.handle(.pin(event))
+    }
+
+    private func handleNeedleSelection(_ point: MapNeedlePointModel?) {
+        selection.selectNeedle(point?.id)
+        if point != nil {
+            pins.isExpandedId = nil
+        }
+    }
+
+    func beginNeedleDrag(_ point: MapNeedlePointModel) {
+        pins.isExpandedId = nil
+        editEntries.selectNeedle(point)
+        selection.selectNeedle(point.id)
+    }
+
+    func installActionRouter(_ router: MapEditorActionRouter?) {
+        actionRouter = router
+    }
+
+    func route(_ event: MapEditorEvent) {
+        actionRouter?.handle(event)
+    }
+
+    func clearSelections() {
+        selection.clear()
+        pins.isExpandedId = nil
+        editEntries.selectNeedle(nil)
     }
 
     // MARK: - Container Size Updates
@@ -130,11 +206,11 @@ final class MapEditorModel {
     func updateContainerSize(_ newSize: CGSize) {
         guard containerSize != newSize else { return }
         containerSize = newSize
-        resetZoom()
+        viewport.resize(to: makeViewportConfiguration())
     }
 
     func updateCanvas(image: AKImage, photoDegrees: Double, mapSize: CGSize) {
-        let newCanvasSize = MapEditorGeometry.canvasSize(
+        let newCanvasSize = Self.resolvedCanvasSize(
             mapSize: mapSize,
             image: image,
             degrees: photoDegrees
@@ -147,8 +223,8 @@ final class MapEditorModel {
         self.photoDegrees = photoDegrees
         canvasSize = newCanvasSize
 
-        guard geometryChanged, appeared else { return }
-        resetZoom()
+        guard geometryChanged else { return }
+        viewport.configure(makeViewportConfiguration())
     }
 
     // MARK: - Pins Management
@@ -245,24 +321,23 @@ final class MapEditorModel {
             appeared = false
             focusId = nil
             workingCopy = nil
-            pins.isExpandedId = nil
-            editEntries.needleInteraction.dragCoordinate = nil
+            clearSelections()
             pins.mapPins = map.mapPins
             pins.pointer = map.pointer
-            entries.resetEntries(
+            rooms.reset(
                 mapId: map.id,
-                entries: mapMode == .edit ? [] : map.entries
+                passiveEntries: mapMode == .edit ? [] : map.entries
             )
-            editEntries.resetEntries(mapId: map.id, entries: [])
+            // Content identity is part of viewport state. Reset even when the
+            // replacement map happens to have the same image dimensions.
+            viewport.configure(makeViewportConfiguration())
         }
         changeMap(map: map)
     }
 
     func changeMap(map: MapModel) {
-        isDragging = .nothing
-        isTapping = .nothing
-        editEntries.eaten = false
-        editEntries.addedNewNeedlePoint = nil
+        editEntries.needleInteraction.dragCoordinate = nil
+        clearSelections()
 
         if appeared {
             resetZoom()
@@ -296,254 +371,82 @@ final class MapEditorModel {
         appearanceTask?.cancel()
         appearanceTask = nil
         appeared = false
-        isDragging = .nothing
-        isTapping = .nothing
-        editEntries.eaten = false
-        editEntries.addedNewNeedlePoint = nil
         editEntries.needleInteraction.dragCoordinate = nil
     }
 
     // MARK: - Zooming
 
     func resetZoom() {
-        let (newScale, newOffset) = MapEditorGeometry.zoomToFit(
-            containerSize: containerSize,
-            contentSize: canvasSize
-        )
-        imageModel.normScale = newScale
-        zoom(scale: newScale, at: newOffset)
-    }
-
-    /// The absolute transform to capture when a pan or magnification begins.
-    var viewportTransform: MapViewportTransform {
-        imageModel.viewportTransform
-    }
-
-    /// Derives a transient transform from one immutable gesture baseline.
-    /// `startAnchor` maps directly to `MagnifyGesture.Value.startAnchor`.
-    func magnifiedViewportTransform(
-        from baseline: MapViewportTransform,
-        magnification: CGFloat,
-        startAnchor: UnitPoint
-    ) -> MapViewportTransform {
-        magnifiedViewportTransform(
-            from: baseline,
-            magnification: magnification,
-            anchor: viewportPoint(for: startAnchor)
-        )
-    }
-
-    /// Point-based overload for tests and non-SwiftUI input sources.
-    func magnifiedViewportTransform(
-        from baseline: MapViewportTransform,
-        magnification: CGFloat,
-        anchor: CGPoint
-    ) -> MapViewportTransform {
-        let proposed = baseline.magnified(by: magnification, around: anchor)
-        return constrainedViewportTransform(proposed)
-    }
-
-    /// Derives a transient pan without mutating the observable model.
-    func pannedViewportTransform(
-        from baseline: MapViewportTransform,
-        translation: CGSize
-    ) -> MapViewportTransform {
-        constrainedViewportTransform(baseline.translated(by: translation))
-    }
-
-    /// Commits the final transient transform once a gesture succeeds.
-    func commitViewportTransform(_ transform: MapViewportTransform) {
-        applyViewportTransform(transform)
-        imageModel.lastScale = transform.scale
-        imageModel.lastOffset = transform.offset
-        legacyMagnificationBaseline = nil
-    }
-
-    func zooming(on location: CGPoint) {
-        let (newScale, newOffset): (CGFloat, CGPoint)
-        if imageModel.scale != imageModel.normScale {
-            (newScale, newOffset) = MapEditorGeometry.zoomToFit(
-                containerSize: containerSize,
-                contentSize: canvasSize
-            )
-        } else {
-            (newScale, newOffset) = zoomIn(at: location)
-        }
-        zoom(scale: newScale, at: newOffset)
-    }
-
-    func zoom(scale: CGFloat, at offset: CGPoint) {
-        withAnimation {
-            commitViewportTransform(MapViewportTransform(scale: scale, offset: offset))
-        }
-    }
-
-    func zoomIn(at point: CGPoint) -> (CGFloat, CGPoint) {
-        let baseline = viewportTransform
-        guard baseline.scale.isFinite, baseline.scale > 0 else {
-            return (MapViewportTransform.minimumScale, baseline.offset)
-        }
-
-        let newScale = max(MapViewportTransform.minimumScale, baseline.scale * 4)
-        let centeredPoint = CGPoint(
-            x: containerSize.width / 2,
-            y: containerSize.height / 2
-        )
-        let centered = baseline
-            .magnified(by: newScale / baseline.scale, around: point)
-            .translated(by: CGSize(
-                width: centeredPoint.x - point.x,
-                height: centeredPoint.y - point.y
-            ))
-        let constrained = constrainedViewportTransform(centered)
-        return (constrained.scale, constrained.offset)
+        viewport.reset()
     }
 
     func focusedMap() {
         guard let focusId else {
-            zooming(on: .zero)
+            resetZoom()
             return
         }
 
-        guard let focusMap = entries.entries.first(where: { $0.id == focusId }) else {
-            zooming(on: .zero)
+        guard let focusRoom = entries.roomNode(for: focusId) else {
+            resetZoom()
             return
         }
 
-        let ss = focusMap.size
-        let sw = containerSize.width / (ss.width + 50)
-        let sh = containerSize.height / (ss.height + 50)
+        let bounds = focusRoom.bounds
+        let sw = containerSize.width / (bounds.width + 50)
+        let sh = containerSize.height / (bounds.height + 50)
         let newScale = min(sw, sh)
 
         withAnimation {
-            let scale = max(MapViewportTransform.minimumScale, newScale)
-            commitViewportTransform(MapViewportTransform(
+            let scale = viewport.geometry.clampedScale(newScale)
+            viewport.commit(ViewportTransform(
                 scale: scale,
                 offset: CGPoint(
-                    x: -1 * (focusMap.xOffset - 25) * scale,
-                    y: -1 * (focusMap.yOffset - 25) * scale
+                    x: viewport.geometry.containerCenter.x - bounds.midX * scale,
+                    y: viewport.geometry.containerCenter.y - bounds.midY * scale
                 )
             ))
         }
     }
 
-    // MARK: - Gesture: Scale
-
-    func updateScale(_ value: CGFloat, updateLast: Bool) {
-        if updateLast || legacyMagnificationBaseline == nil {
-            legacyMagnificationBaseline = viewportTransform
-        }
-        guard let baseline = legacyMagnificationBaseline else { return }
-        let transform = magnifiedViewportTransform(
-            from: baseline,
-            magnification: value,
-            startAnchor: .center
-        )
-        applyViewportTransform(transform)
-        imageModel.lastScale = transform.scale
+    func contentPoint(fromViewport point: CGPoint) -> CGPoint {
+        viewport.geometry.contentPoint(fromViewport: point, transform: viewport.transform)
     }
 
-    // MARK: - Gesture: Drag
-
-    func dragPoint(location: CGPoint) -> DraggingType {
-        .image
+    func viewportPoint(fromContent point: CGPoint) -> CGPoint {
+        viewport.geometry.viewportPoint(fromContent: point, transform: viewport.transform)
     }
 
-    func updateOffset(with newLocation: CGPoint, firstOffset: CGPoint) {
-        let baseline = MapViewportTransform(scale: imageModel.scale, offset: firstOffset)
-        let transform = pannedViewportTransform(
-            from: baseline,
-            translation: CGSize(width: newLocation.x, height: newLocation.y)
-        )
-        applyViewportTransform(transform)
-        imageModel.lastOffset = firstOffset
-    }
-
-    // MARK: - Gesture: Double Tap
-
-    func onDoubleTapped(with location: CGPoint) {
-        zooming(on: location)
-    }
-
-    // MARK: - Gesture Handlers
-    #if !os(tvOS)
-    func pressAction(_ value: DragGesture.Value) {
-        isTapping = dragPoint(location: value.location)
-    }
-
-    func dragStartAction(_ value: DragGesture.Value) {
-        isDragging = dragPoint(location: value.startLocation)
-        isTapping = .nothing
-        imageModel.lastOffset = imageModel.offset
-    }
-
-    func dragAction(_ value: DragGesture.Value) {
-        switch isDragging {
-        case .image:
-            updateOffset(
-                with: value.location - value.startLocation,
-                firstOffset: imageModel.lastOffset
-            )
-        case .nothing:
-            break
-        }
-    }
-    #endif
-    
-    func dragEndAction() {}
-
-    func endAction() {
-        isDragging = .nothing
-        isTapping = .nothing
-        imageModel.lastScale = imageModel.scale
-        imageModel.lastOffset = imageModel.offset
-        legacyMagnificationBaseline = nil
-    }
-
-    private func viewportPoint(for unitPoint: UnitPoint) -> CGPoint {
-        CGPoint(
-            x: containerSize.width * unitPoint.x,
-            y: containerSize.height * unitPoint.y
-        )
-    }
-
-    private func constrainedViewportTransform(
-        _ transform: MapViewportTransform
-    ) -> MapViewportTransform {
-        MapEditorGeometry.constrainedViewportTransform(
-            transform,
+    private func makeViewportConfiguration() -> ViewportConfiguration {
+        ViewportConfiguration(
+            id: mapId,
+            contentSize: canvasSize,
             containerSize: containerSize,
-            contentSize: canvasSize
+            maximumScaleMultiplier: 8,
+            panPolicy: .minimumVisible(44)
         )
     }
 
-    private func applyViewportTransform(_ transform: MapViewportTransform) {
-        imageModel.scale = transform.scale
-        imageModel.offset = transform.offset
+    private static func resolvedCanvasSize(
+        mapSize: CGSize,
+        image: AKImage,
+        degrees: Double
+    ) -> CGSize {
+        guard mapSize.width.isFinite,
+              mapSize.height.isFinite,
+              mapSize.width > 0,
+              mapSize.height > 0 else {
+            return ViewportGeometry.rotatedContentSize(
+                image.fixedSize,
+                rotationDegrees: degrees
+            )
+        }
+        return mapSize
     }
 
     // MARK: - Helper Methods
 
-    func entry(for location: CGPoint, in map: MapModel) -> MapEntryModel? {
-        entries.entries.last { entry in
-            let path = subPath(for: entry)
-            return path.contains(location)
-        }
-    }
-
-    func subPath(for entry: MapEntryModel) -> Path {
-        Path { path in
-            guard let firstPoint = entry.coordinates.first else { return }
-            path.move(to: firstPoint)
-            for point in entry.coordinates[1...] {
-                path.addLine(to: point)
-            }
-            path.addLine(to: firstPoint)
-            if entry.coordinates.count >= 2 {
-                let secondPoint = entry.coordinates[1]
-                path.addLine(to: secondPoint)
-            }
-        }
+    func entry(for location: CGPoint, in _: MapModel) -> MapEntryModel? {
+        entries.roomNodes.last { $0.path.contains(location) }?.entry
     }
 
     // MARK: - Pointer (game mode)
@@ -562,7 +465,7 @@ final class MapEditorModel {
         if withOutRelocation {
             map.pointer.location = location
         } else {
-            map.pointer.location = (location - imageModel.offset) / imageModel.scale
+            map.pointer.location = contentPoint(fromViewport: location)
         }
         map.pointer.timeInterval = max(
             Date.now.timeIntervalSince1970,
@@ -573,134 +476,8 @@ final class MapEditorModel {
             map.pointer.isShown = isPointing
             pins.setPinPointer(updatedPin: map.pointer)
         }
-        sendMapUpdates?()
-    }
-
-    // MARK: - Computed Properties
-
-    var currentSize: CGSize {
-        canvasSize * imageModel.scale
+        actions.sendMapUpdates?()
     }
 
     var mapCanvasSize: CGSize { canvasSize }
-
-    func imageOffset() -> CGSize {
-        guard let location = editEntries.selectedNeedleCoordinate else { return .zero }
-
-        let size = canvasSize
-        let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        return CGSize(
-            width: -1 * (location.x - center.x),
-            height: -1 * (location.y - center.y)
-        )
-    }
-}
-
-// MARK: - Geometry Utilities
-
-struct MapEditorGeometry {
-    static func canvasSize(mapSize: CGSize, image: AKImage, degrees: Double) -> CGSize {
-        guard mapSize.width.isFinite,
-              mapSize.height.isFinite,
-              mapSize.width > 0,
-              mapSize.height > 0 else {
-            return imageSize(image, degrees: degrees)
-        }
-        return mapSize
-    }
-
-    static func imageSize(_ image: AKImage, degrees: Double) -> CGSize {
-        let originalSize = image.fixedSize
-        guard originalSize.width.isFinite,
-              originalSize.height.isFinite,
-              originalSize.width > 0,
-              originalSize.height > 0 else { return .zero }
-
-        let normalizedDegrees = normalizedDegrees(degrees)
-        let radians = normalizedDegrees * .pi / 180
-        let cosine = CGFloat(abs(cos(radians)))
-        let sine = CGFloat(abs(sin(radians)))
-        return CGSize(
-            width: originalSize.width * cosine + originalSize.height * sine,
-            height: originalSize.width * sine + originalSize.height * cosine
-        )
-    }
-
-    static func zoomToFit(
-        containerSize: CGSize,
-        contentSize: CGSize
-    ) -> (scale: CGFloat, offset: CGPoint) {
-        let scale = normScale(screenSize: containerSize, contentSize: contentSize)
-        let x = (containerSize.width - contentSize.width * scale) / 2.0
-        let y = (containerSize.height - contentSize.height * scale) / 2.0
-        let offset = CGPoint(x: x, y: y)
-        return (scale, offset)
-    }
-
-    static func constrainedViewportTransform(
-        _ transform: MapViewportTransform,
-        containerSize: CGSize,
-        contentSize: CGSize,
-        overscroll: CGFloat = 300
-    ) -> MapViewportTransform {
-        let minimumScale = MapViewportTransform.minimumScale
-        let scale = transform.scale.isFinite
-            ? max(minimumScale, transform.scale)
-            : minimumScale
-        let offset = CGPoint(
-            x: transform.offset.x.isFinite ? transform.offset.x : 0,
-            y: transform.offset.y.isFinite ? transform.offset.y : 0
-        )
-
-        guard containerSize.width.isFinite,
-              containerSize.height.isFinite,
-              containerSize.width > 0,
-              containerSize.height > 0,
-              contentSize.width.isFinite,
-              contentSize.height.isFinite,
-              contentSize.width > 0,
-              contentSize.height > 0 else {
-            return MapViewportTransform(scale: scale, offset: offset)
-        }
-
-        let boundedOverscroll = overscroll.isFinite ? max(0, overscroll) : 0
-        let maxX = max(
-            boundedOverscroll,
-            (containerSize.width - contentSize.width * scale) / 2
-        )
-        let maxY = max(
-            boundedOverscroll,
-            (containerSize.height - contentSize.height * scale) / 2
-        )
-        let minX = containerSize.width - contentSize.width * scale - maxX
-        let minY = containerSize.height - contentSize.height * scale - maxY
-
-        return MapViewportTransform(
-            scale: scale,
-            offset: CGPoint(
-                x: min(max(offset.x, minX), maxX),
-                y: min(max(offset.y, minY), maxY)
-            )
-        )
-    }
-
-    static func normScale(screenSize: CGSize, contentSize: CGSize) -> CGFloat {
-        guard screenSize.width.isFinite,
-              screenSize.height.isFinite,
-              screenSize.width > 0,
-              screenSize.height > 0,
-              contentSize.width.isFinite,
-              contentSize.height.isFinite,
-              contentSize.width > 0,
-              contentSize.height > 0 else { return 1 }
-        let wScale = screenSize.width / contentSize.width
-        let hScale = screenSize.height / contentSize.height
-        return min(wScale, hScale)
-    }
-
-    static func normalizedDegrees(_ degrees: Double) -> Double {
-        guard degrees.isFinite else { return 0 }
-        let remainder = degrees.truncatingRemainder(dividingBy: 360)
-        return remainder < 0 ? remainder + 360 : remainder
-    }
 }

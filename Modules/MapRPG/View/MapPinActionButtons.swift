@@ -5,8 +5,8 @@ import SwiftUI
 
 struct MapPinActionButtons: View {
     let model: MapPinNode
-    let layoutDown: Bool
     let context: MapPinActionContext
+    let placement: MapAdaptiveFanPlacement
     let glassNamespace: Namespace.ID
     let photoSpace: Namespace.ID
     var usesGlassEffects: Bool = true
@@ -32,19 +32,24 @@ struct MapPinActionButtons: View {
                 Image(systemName: type.systemImage(for: pin))
             }
                 .labelStyle(.iconOnly)
-                .frame(width: 50, height: 50)
+                .frame(
+                    width: MapAdaptiveFanGeometry.buttonSize.width,
+                    height: MapAdaptiveFanGeometry.buttonSize.height
+                )
         }
         .borderLessTVBottonStyle()
         .foregroundStyle(.white)
+        .background(type.tint(for: pin).opacity(0.78), in: .circle)
+        .help(Text(type.localizedLabel(for: pin)))
 #if !os(visionOS)
         .applyIf(usesGlassEffects) {
-            $0.glassEffect(.regular.tint(NetworkModules.map.tint.opacity(0.75)).interactive())
+            $0.glassEffect(.regular.tint(type.tint(for: pin).opacity(0.8)).interactive())
         }
         .applyIf(usesGlassEffects) {
             $0.glassEffectID(type.label, in: glassNamespace)
         }
 #endif
-        .offset(type.offset(at: index, count: count, expanded: true, layoutDown: layoutDown))
+        .position(placement.center(at: index) ?? placement.sourceAnchor)
         .applyIf(type == .photo) {
             $0.matchedTransitionSource(id: type.label, in: photoSpace)
         }
@@ -60,8 +65,12 @@ struct MapPinActionButtons: View {
     )
     MapPinActionButtons(
         model: model.mapPinNodes[0],
-        layoutDown: true,
         context: .editor,
+        placement: MapAdaptiveFanGeometry.placement(
+            anchor: CGPoint(x: 200, y: 200),
+            itemCount: MapPinActionContext.editor.actions.count,
+            viewport: CGRect(x: 0, y: 0, width: 400, height: 400)
+        ),
         glassNamespace: glassNamespace,
         photoSpace: photoSpace
     )

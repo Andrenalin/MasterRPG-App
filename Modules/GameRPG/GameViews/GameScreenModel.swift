@@ -4,6 +4,8 @@ import SwiftUI
 
 @MainActor @Observable
 final class GameScreenModel {
+
+    static let mapSidebarSpacing: CGFloat = 12
     
     private enum WidthValues {
 #if os(macOS)
@@ -64,4 +66,13 @@ final class GameScreenModel {
 
     // Retains the selected iOS sidebar content while the sidebar is hidden.
     var iOSSidebarShowsPrimaryView: Bool = true
+
+    var isInlineSidebarVisible: Bool {
+        showMainTab != .none || showSettingTab != .none
+    }
+
+    func mapTrailingReservation(usesInlineSidebarLayout: Bool) -> CGFloat {
+        guard usesInlineSidebarLayout, isInlineSidebarVisible else { return 0 }
+        return sideBarWidth + Self.mapSidebarSpacing
+    }
 }

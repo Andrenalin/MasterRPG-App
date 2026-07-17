@@ -8,179 +8,148 @@ import Testing
 
 @testable import MapRPG
 
-@Suite("Map editor viewport transforms")
+@Suite("Map editor viewport session")
 @MainActor
 struct MapEditorViewportTransformTests {
-    @Test("Magnification preserves the canvas point below its anchor")
-    func magnificationPreservesAnchor() {
+    @Test("Measuring the viewport fits the logical map and enables coordinate round trips")
+    func measuredViewportFitsLogicalMap() {
         // Given
-        let baseline = MapViewportTransform(
-            scale: 2,
-            offset: CGPoint(x: -100, y: -50)
-        )
-        let anchor = CGPoint(x: 200, y: 150)
-        let canvasPointBefore = canvasPoint(at: anchor, transform: baseline)
+        let mapSize = CGSize(width: 1_200, height: 800)
+        let map = makeMap(name: "Measured map", size: mapSize)
+        let sut = makeSession(map: map, containerSize: .zero)
 
         // When
-        let result = baseline.magnified(by: 1.5, around: anchor)
+        sut.updateContainerSize(CGSize(width: 400, height: 300))
+        let logicalPoint = CGPoint(x: 735, y: 246)
+        let viewportPoint = sut.viewportPoint(fromContent: logicalPoint)
 
         // Then
-        expect(result.scale, equals: 3)
-        expect(result.offset, equals: CGPoint(x: -250, y: -150))
-        expect(canvasPoint(at: anchor, transform: result), equals: canvasPointBefore)
+        #expect(sut.mapCanvasSize == mapSize)
+        #expect(sut.viewport.configuration.id == map.id)
+        #expect(sut.viewport.configuration.contentSize == mapSize)
+        #expect(sut.viewport.configuration.containerSize == CGSize(width: 400, height: 300))
+        #expect(sut.viewport.isAtFit)
+        expectApproximately(sut.contentPoint(fromViewport: viewportPoint), logicalPoint)
     }
 
-    @Test("Native magnification anchor is converted from viewport unit coordinates")
-    func nativeMagnificationAnchor() {
+    @Test("Resizing a zoomed editor preserves the map point under the available center")
+    func resizePreservesMapPointAtCenter() {
         // Given
-        let sut = makeModel(containerSize: CGSize(width: 400, height: 300))
-        let baseline = MapViewportTransform(
-            scale: 0.5,
-            offset: CGPoint(x: -20, y: 30)
+        let map = makeMap(name: "Resizable map", size: CGSize(width: 1_200, height: 800))
+        let oldContainerSize = CGSize(width: 400, height: 300)
+        let newContainerSize = CGSize(width: 640, height: 300)
+        let sut = makeSession(map: map, containerSize: oldContainerSize)
+        let oldCenter = CGPoint(x: oldContainerSize.width / 2, y: oldContainerSize.height / 2)
+        let zoomed = sut.viewport.geometry.zoomed(
+            from: sut.viewport.transform,
+            toScale: 0.75,
+            anchor: oldCenter
         )
+        sut.viewport.commit(zoomed)
+        let logicalPoint = sut.contentPoint(fromViewport: oldCenter)
 
         // When
-        let result = sut.magnifiedViewportTransform(
-            from: baseline,
-            magnification: 2,
-            startAnchor: UnitPoint(x: 0.25, y: 0.75)
-        )
+        sut.updateContainerSize(newContainerSize)
+        let newCenter = CGPoint(x: newContainerSize.width / 2, y: newContainerSize.height / 2)
 
         // Then
-        expect(result.scale, equals: 1)
-        expect(result.offset, equals: CGPoint(x: -140, y: -165))
+        expectApproximately(sut.viewport.transform.scale, zoomed.scale)
+        expectApproximately(sut.contentPoint(fromViewport: newCenter), logicalPoint)
     }
 
-    @Test("Consecutive gestures each use a committed absolute baseline")
-    func consecutiveMagnificationsUseCommittedBaseline() {
+    @Test("Switching maps with equal dimensions resets viewport identity and transform")
+    func mapSwitchResetsViewportIdentity() {
         // Given
-        let sut = makeModel()
-        sut.commitViewportTransform(MapViewportTransform(
-            scale: 0.5,
-            offset: CGPoint(x: 10, y: 20)
-        ))
+        let size = CGSize(width: 1_200, height: 800)
+        let firstMap = makeMap(name: "First map", size: size)
+        let secondMap = makeMap(name: "Second map", size: size)
+        let sut = makeSession(
+            map: firstMap,
+            containerSize: CGSize(width: 400, height: 300)
+        )
+        sut.viewport.commit(
+            sut.viewport.geometry.zoomed(
+                from: sut.viewport.transform,
+                toScale: 1,
+                anchor: sut.viewport.geometry.containerCenter
+            )
+        )
+        #expect(!sut.viewport.isAtFit)
 
         // When
-        let firstBaseline = sut.viewportTransform
-        let firstPreview = sut.magnifiedViewportTransform(
-            from: firstBaseline,
-            magnification: 1.5,
-            startAnchor: .center
-        )
-
-        // Then: deriving a preview does not mutate committed model state.
-        expect(sut.viewportTransform.scale, equals: 0.5)
-        expect(sut.viewportTransform.offset, equals: CGPoint(x: 10, y: 20))
-
-        // When
-        sut.commitViewportTransform(firstPreview)
-        let secondBaseline = sut.viewportTransform
-        let secondPreview = sut.magnifiedViewportTransform(
-            from: secondBaseline,
-            magnification: 2,
-            startAnchor: .center
-        )
+        sut.changeImage(map: secondMap)
 
         // Then
-        expect(firstPreview.scale, equals: 0.75)
-        expect(secondPreview.scale, equals: 1.5)
+        #expect(sut.mapId == secondMap.id)
+        #expect(sut.viewport.configuration.id == secondMap.id)
+        #expect(sut.viewport.isAtFit)
     }
 
-    @Test("Double-tap zoom calculation is side-effect free")
-    func zoomInDoesNotMutateModel() {
+    @Test("Changing logical map bounds atomically refits the viewport")
+    func canvasGeometryChangeRefitsViewport() {
         // Given
-        let sut = makeModel(containerSize: CGSize(width: 400, height: 300))
-        let baseline = MapViewportTransform(
-            scale: 0.5,
-            offset: CGPoint(x: 20, y: 30)
+        let map = makeMap(name: "Bounds map", size: CGSize(width: 1_200, height: 800))
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 400, height: 300)
         )
-        sut.commitViewportTransform(baseline)
-
-        // When
-        let result = sut.zoomIn(at: CGPoint(x: 100, y: 150))
-
-        // Then
-        expect(sut.viewportTransform.scale, equals: baseline.scale)
-        expect(sut.viewportTransform.offset, equals: baseline.offset)
-        expect(result.0, equals: 2)
-        expect(result.1, equals: CGPoint(x: -120, y: -330))
-    }
-
-    @Test("Pan preview retains the existing overscroll bounds")
-    func panPreviewIsConstrained() {
-        // Given
-        let sut = makeModel(containerSize: CGSize(width: 400, height: 300))
-        let baseline = MapViewportTransform(scale: 1, offset: .zero)
-
-        // When
-        let result = sut.pannedViewportTransform(
-            from: baseline,
-            translation: CGSize(width: 1_000, height: -2_000)
+        sut.viewport.commit(
+            sut.viewport.geometry.zoomed(
+                from: sut.viewport.transform,
+                toScale: 1,
+                anchor: sut.viewport.geometry.containerCenter
+            )
         )
-
-        // Then
-        expect(result.scale, equals: 1)
-        expect(result.offset, equals: CGPoint(x: 300, y: -800))
-    }
-
-    @Test("Legacy magnification API also uses one stable baseline")
-    func legacyMagnificationUsesStableBaseline() {
-        // Given
-        let sut = makeModel(containerSize: CGSize(width: 400, height: 300))
-        sut.commitViewportTransform(MapViewportTransform(
-            scale: 0.5,
-            offset: CGPoint(x: 20, y: 30)
-        ))
+        let newMapSize = CGSize(width: 800, height: 1_600)
 
         // When
-        sut.updateScale(1.1, updateLast: true)
-        sut.updateScale(1.5, updateLast: false)
+        sut.updateCanvas(image: AKImage(), photoDegrees: 0, mapSize: newMapSize)
 
         // Then
-        expect(sut.viewportTransform.scale, equals: 0.75)
-        expect(sut.viewportTransform.offset, equals: CGPoint(x: -70, y: -30))
+        #expect(sut.mapCanvasSize == newMapSize)
+        #expect(sut.viewport.configuration.contentSize == newMapSize)
+        #expect(sut.viewport.isAtFit)
     }
 }
 
 private extension MapEditorViewportTransformTests {
-    func makeModel(
-        containerSize: CGSize = CGSize(width: 400, height: 300)
-    ) -> MapEditorModel {
-        MapEditorModel(
-            map: MapModel(
-                id: UUID(),
-                name: "Viewport Test Map",
-                width: 1_200,
-                height: 800
-            ),
+    func makeMap(name: String, size: CGSize) -> MapModel {
+        MapModel(
+            id: UUID(),
+            name: name,
+            width: size.width,
+            height: size.height
+        )
+    }
+
+    func makeSession(
+        map: MapModel,
+        containerSize: CGSize
+    ) -> MapEditorSession {
+        MapEditorSession(
+            map: map,
             image: AKImage(),
             photoDegrees: 0,
-            containerSize: containerSize
+            containerSize: containerSize,
+            configuration: MapEditorConfiguration(
+                mode: .edit,
+                displayMode: .master
+            )
         )
     }
 
-    func canvasPoint(
-        at viewportPoint: CGPoint,
-        transform: MapViewportTransform
-    ) -> CGPoint {
-        CGPoint(
-            x: (viewportPoint.x - transform.offset.x) / transform.scale,
-            y: (viewportPoint.y - transform.offset.y) / transform.scale
-        )
-    }
-
-    func expect(
+    func expectApproximately(
         _ actual: CGPoint,
-        equals expected: CGPoint,
+        _ expected: CGPoint,
         tolerance: CGFloat = 0.000_1
     ) {
-        expect(actual.x, equals: expected.x, tolerance: tolerance)
-        expect(actual.y, equals: expected.y, tolerance: tolerance)
+        expectApproximately(actual.x, expected.x, tolerance: tolerance)
+        expectApproximately(actual.y, expected.y, tolerance: tolerance)
     }
 
-    func expect(
+    func expectApproximately(
         _ actual: CGFloat,
-        equals expected: CGFloat,
+        _ expected: CGFloat,
         tolerance: CGFloat = 0.000_1
     ) {
         #expect(abs(actual - expected) <= tolerance)

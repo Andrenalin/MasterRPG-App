@@ -10,7 +10,6 @@ struct RootGameMapViewer: View {
     let playerPinId: UUID?
     let image: AKImage
     let degrees: Double
-    let containerSize: CGSize
 
     @Environment(\.networkActions) private var networkActions
 
@@ -20,13 +19,16 @@ struct RootGameMapViewer: View {
             image: image,
             photoDegrees: degrees,
             map: mapModel,
-            viewMode: mode == .player ? .player : .master,
-            containerSize: containerSize,
-            mapMode: mode == .player ? .player : .gameMaster,
-            playerPinId: playerPinId,
-            sendMapUpdates: sendMapUpdates,
-            sendPinUpdate: sendPinUpdate,
-            focused: focused
+            configuration: MapEditorConfiguration(
+                mode: mode == .player ? .player : .gameMaster,
+                displayMode: mode == .player ? .player : .master,
+                playerPinId: playerPinId
+            ),
+            actions: MapEditorActions(
+                sendMapUpdates: sendMapUpdates,
+                sendPinUpdate: sendPinUpdate,
+                focused: focused
+            )
         )
         .id(itemId)
     }
@@ -64,8 +66,7 @@ struct RootGameMapViewer: View {
         mode: .master,
         playerPinId: nil,
         image: AKImage(systemName: "photo") ?? AKImage(),
-        degrees: 0,
-        containerSize: CGSize(width: 600, height: 400)
+        degrees: 0
     )
     .environment(DropPinModel())
 }

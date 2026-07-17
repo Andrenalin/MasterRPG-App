@@ -72,6 +72,39 @@ struct MapEditorInteractionModelTests {
         #expect(firstNode.pin.location == CGPoint(x: 70, y: 80))
     }
 
+    @Test("Dragging one pin in a 200-pin map commits once and leaves sibling nodes untouched")
+    func heavyPinDragIsIsolated() throws {
+        let pins = (0..<200).map { index in
+            MapPinModel(
+                id: UUID(),
+                name: "Pin \(index)",
+                location: CGPoint(x: CGFloat(index), y: CGFloat(index * 2))
+            )
+        }
+        let model = MapPinViewModel(mapPins: pins, pointer: .empty)
+        let target = try #require(model.pinNode(for: pins[0].id))
+        let siblingNodes = model.mapPinNodes.dropFirst().map { $0 }
+        let siblingPins = siblingNodes.map(\.pin)
+        let originalLayerNodeIds = model.ordinaryPinNodes.map(\.id)
+        var committedMoves = 0
+        model.configureInteractionHandler { event in
+            if case .move = event {
+                committedMoves += 1
+            }
+        }
+
+        target.beginMove()
+        target.move(by: CGSize(width: 20, height: 30))
+
+        #expect(committedMoves == 1)
+        #expect(target.pin.location == CGPoint(x: 20, y: 30))
+        #expect(model.ordinaryPinNodes.map(\.id) == originalLayerNodeIds)
+        for (index, sibling) in siblingNodes.enumerated() {
+            #expect(model.mapPinNodes[index + 1] === sibling)
+            #expect(sibling.pin == siblingPins[index])
+        }
+    }
+
     @Test("Editor pin actions mutate the store before emitting one event")
     func editorPinActionIsModelDriven() throws {
         let pin = MapPinModel(id: UUID(), name: "Token")
@@ -128,11 +161,15 @@ struct MapEditorInteractionModelTests {
         )
         firstMap.pointer = MapPinModel(id: UUID(), name: "First pointer", isShown: true)
 
-        let model = MapEditorModel(
+        let model = MapEditorSession(
             map: firstMap,
             image: AKImage(),
             photoDegrees: 0,
-            containerSize: CGSize(width: 800, height: 600)
+            containerSize: CGSize(width: 800, height: 600),
+            configuration: MapEditorConfiguration(
+                mode: .edit,
+                displayMode: .master
+            )
         )
         model.workingCopy = firstMap
         model.entries.resetEntries(mapId: firstMap.id, entries: firstMap.entries)

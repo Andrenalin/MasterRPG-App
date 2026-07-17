@@ -22,7 +22,13 @@ struct PlayerGameScreen: View {
         let _ = Self.printViewChangesOnlyInDebug()
 
         ManagedNavigationStack {
-            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running", contentType: .player)
+            GameRootViewer(
+                root: root,
+                playerController: playerController,
+                emptyTitle: "Game is running",
+                contentType: .player,
+                gameScreenModel: gameScreenModel
+            )
         }
         .overlay(alignment: .topLeading) {
             PlayerOverlayMenu(root: root, playerController: playerController)

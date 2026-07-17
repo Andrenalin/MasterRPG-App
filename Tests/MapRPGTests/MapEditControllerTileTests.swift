@@ -41,7 +41,6 @@ struct MapEditControllerTileTests {
         let editorModel = makeEditorModel(map: map)
         let sut = MapEditController(editController: .preview)
         sut.prepareTileWorkingCopy(from: map, editorModel: editorModel)
-        editorModel.isTapping = .image
 
         // When
         sut.addTileCoordinateFromCanvas(existingCoordinate, editorModel: editorModel)
@@ -53,8 +52,8 @@ struct MapEditControllerTileTests {
         #expect(map.displayConfig.tileCoordinates == [existingCoordinate])
     }
 
-    @Test("Needle interaction consumes its canvas tap without consuming the next tap")
-    func needleTapIsConsumed() throws {
+    @Test("Consecutive canvas taps append coordinates without stale interaction state")
+    func consecutiveCanvasTapsAppendCoordinates() throws {
         // Given
         let existingCoordinate = CGPoint(x: 10, y: 20)
         let newCoordinate = CGPoint(x: 30, y: 40)
@@ -62,22 +61,12 @@ struct MapEditControllerTileTests {
         let editorModel = makeEditorModel(map: map)
         let sut = MapEditController(editController: .preview)
         sut.prepareTileWorkingCopy(from: map, editorModel: editorModel)
-        editorModel.isTapping = .image
-        editorModel.editEntries.eaten = true
-
-        // When
         sut.addTileCoordinateFromCanvas(newCoordinate, editorModel: editorModel)
-
-        // Then
-        #expect(editorModel.editEntries.entries.first?.coordinates == [existingCoordinate])
-        #expect(!editorModel.editEntries.eaten)
-
-        // When
         sut.addTileCoordinateFromCanvas(newCoordinate, editorModel: editorModel)
 
         // Then
         let tileEntry = try #require(editorModel.editEntries.entries.first)
-        #expect(tileEntry.coordinates == [existingCoordinate, newCoordinate])
+        #expect(tileEntry.coordinates == [existingCoordinate, newCoordinate, newCoordinate])
         #expect(editorModel.workingCopy?.displayConfig.tileCoordinates == tileEntry.coordinates)
     }
 
@@ -93,14 +82,13 @@ struct MapEditControllerTileTests {
         let sut = MapEditController(editController: .preview)
         sut.prepareTileWorkingCopy(from: map, editorModel: editorModel)
         let entryId = try #require(editorModel.editEntries.entries.first?.id)
+        let firstPoint = try #require(
+            editorModel.editEntries.renderedNeedlePoints(for: entryId)
+                .first(where: { $0.coordinateIndex == 0 })
+        )
 
         // When
-        sut.addNeedlePoint(
-            at: 0,
-            entryId: entryId,
-            entries: editorModel.editEntries,
-            map: map
-        )
+        editorModel.editEntries.insertNeedle(after: firstPoint, entryId: entryId)
         let addedCoordinates = editorModel.editEntries.entry(entryId).coordinates
         sut.syncTileCoordinates(addedCoordinates, editorModel: editorModel)
 
@@ -109,12 +97,11 @@ struct MapEditControllerTileTests {
         #expect(editorModel.workingCopy?.displayConfig.tileCoordinates == addedCoordinates)
 
         // When
-        sut.removeNeedlePoint(
-            at: 1,
-            entryId: entryId,
-            entries: editorModel.editEntries,
-            map: map
+        let insertedPoint = try #require(
+            editorModel.editEntries.renderedNeedlePoints(for: entryId)
+                .first(where: { $0.coordinateIndex == 1 })
         )
+        editorModel.editEntries.removeNeedle(insertedPoint, entryId: entryId)
         let removedCoordinates = editorModel.editEntries.entry(entryId).coordinates
         sut.syncTileCoordinates(removedCoordinates, editorModel: editorModel)
 
@@ -133,15 +120,22 @@ struct MapEditControllerTileTests {
         let sut = MapEditController(editController: .preview)
         sut.prepareTileWorkingCopy(from: map, editorModel: editorModel)
         let entryId = try #require(editorModel.editEntries.entries.first?.id)
+        let point = try #require(
+            editorModel.editEntries.renderedNeedlePoints(for: entryId).first
+        )
+        let root = MapRootModel.preview
+        editorModel.installActionRouter(MapEditorActionRouter(
+            session: editorModel,
+            editController: root.editController,
+            mapEditController: sut,
+            map: map,
+            root: root
+        ))
         let needle = NeedleMapPin(
             entries: editorModel.editEntries,
             entryId: entryId,
-            index: 0,
-            map: map,
-            mapEditController: sut,
-            coordinatesChanged: { coordinates in
-                sut.syncTileCoordinates(coordinates, editorModel: editorModel)
-            }
+            point: point,
+            session: editorModel
         )
 
         // When: the drag gesture has updated the shared edit entry and ends.
@@ -174,12 +168,17 @@ private extension MapEditControllerTileTests {
         )
     }
 
-    func makeEditorModel(map: MapModel) -> MapEditorModel {
-        MapEditorModel(
+    func makeEditorModel(map: MapModel) -> MapEditorSession {
+        MapEditorSession(
             map: map,
             image: AKImage(),
             photoDegrees: 0,
-            containerSize: CGSize(width: 400, height: 600)
+            containerSize: CGSize(width: 400, height: 600),
+            configuration: MapEditorConfiguration(
+                mode: .edit,
+                displayMode: .master,
+                isTileEditor: true
+            )
         )
     }
 }

@@ -33,12 +33,15 @@ struct MapRPGDynamicPreviewSnapshotTests {
     // snapshot-root: MapRPG::GameToolBar
     @Test("GameToolBar")
     func gameToolBar() async throws {
-        let editorModel = MapEditorModel(
+        let editorModel = MapEditorSession(
             map: .empty,
             image: AKImage(),
             photoDegrees: 0,
             containerSize: CGSize(width: 400, height: 600),
-            mapMode: .gameMaster
+            configuration: MapEditorConfiguration(
+                mode: .gameMaster,
+                displayMode: .master
+            )
         )
 
         try await assertDynamicSnapshot("GameToolBar") {
@@ -73,9 +76,10 @@ struct MapRPGDynamicPreviewSnapshotTests {
                 image: AKImage(),
                 photoDegrees: 0,
                 map: .preview,
-                viewMode: .master,
-                containerSize: CGSize(width: 390, height: 720),
-                mapMode: .viewer
+                configuration: MapEditorConfiguration(
+                    mode: .viewer,
+                    displayMode: .master
+                )
             )
             .environment(DropPinModel())
         }
@@ -126,12 +130,14 @@ struct MapRPGDynamicPreviewSnapshotTests {
     // snapshot-root: MapRPG::NeedleMapPin
     @Test("NeedleMapPin")
     func needleMapPin() async throws {
-        let root = MapRootModel.preview
         let entries = MapEntryViewerModel(
             mapId: MapModel.previewId,
             entries: [.previewGreatHall]
         )
-        entries.selectedNeedleIndex = 0
+        let point = try #require(entries.renderedNeedlePoints(
+            for: MapEntryModel.previewGreatHall.id
+        ).first)
+        entries.selectNeedle(point)
 
         try await assertDynamicSnapshot("NeedleMapPin") {
             ZStack(alignment: .topLeading) {
@@ -139,10 +145,8 @@ struct MapRPGDynamicPreviewSnapshotTests {
                 NeedleMapPin(
                     entries: entries,
                     entryId: MapEntryModel.previewGreatHall.id,
-                    index: 0,
-                    map: .preview,
-                    mapEditController: MapEditController(editController: root.editController),
-                    usesGlassEffects: false
+                    point: point,
+                    session: nil
                 )
                 .padding(80)
             }
@@ -243,8 +247,12 @@ struct MapRPGDynamicPreviewSnapshotTests {
             MapRPGDoubleNamespaceSnapshotHarness { glassNamespace, photoSpace in
                 MapPinActionButtons(
                     model: model.mapPinNodes[0],
-                    layoutDown: true,
                     context: .editor,
+                    placement: MapAdaptiveFanGeometry.placement(
+                        anchor: CGPoint(x: 150, y: 150),
+                        itemCount: MapPinActionContext.editor.actions.count,
+                        viewport: CGRect(x: 0, y: 0, width: 300, height: 300)
+                    ),
                     glassNamespace: glassNamespace,
                     photoSpace: photoSpace,
                     usesGlassEffects: false
@@ -270,7 +278,6 @@ struct MapRPGDynamicPreviewSnapshotTests {
                 Color.blue
                 MapPinActionView(
                     model: model.mapPinNodes[0],
-                    layoutDown: true,
                     pinScale: 80 / 44,
                     canDrag: true,
                     actionContext: .editor,
@@ -298,7 +305,6 @@ struct MapRPGDynamicPreviewSnapshotTests {
                 Color.blue
                 MapPinActionView(
                     model: model.mapPinNodes[0],
-                    layoutDown: true,
                     pinScale: 80 / 44,
                     canDrag: true,
                     actionContext: .gameMaster,
@@ -309,12 +315,16 @@ struct MapRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    private func makeEditorModel() -> MapEditorModel {
-        MapEditorModel(
+    private func makeEditorModel() -> MapEditorSession {
+        MapEditorSession(
             map: .previewEmpty,
             image: AKImage(),
             photoDegrees: 0,
-            containerSize: CGSize(width: 320, height: 240)
+            containerSize: CGSize(width: 320, height: 240),
+            configuration: MapEditorConfiguration(
+                mode: .edit,
+                displayMode: .master
+            )
         )
     }
 

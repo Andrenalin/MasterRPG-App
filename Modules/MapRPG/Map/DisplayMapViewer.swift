@@ -15,13 +15,20 @@ struct DisplayMapViewer: View {
 
     var body: some View {
         VStack {
-            MapEditor(editController: root.editController, image: image, photoDegrees: 0, map: mapUpdated, viewMode: .master, containerSize: size, mapMode: .viewer, sendMapUpdates: sendMapUpdates, focused: focused)
+            MapEditor(
+                editController: root.editController,
+                image: image,
+                photoDegrees: 0,
+                map: mapUpdated,
+                configuration: MapEditorConfiguration(
+                    mode: .viewer,
+                    displayMode: .master
+                )
+            )
         }
         .frame(width: size.width, height: size.height)
         .onChange(of: root.itemController.itemOrEmpty(for: itemId).entries, initial: false) {
-            Task {
-                withAnimation { mapUpdated = map }
-            }
+            withAnimation { mapUpdated = map }
         }
         .onChange(of: entryId, initial: true) {
             withAnimation { mapUpdated = map }
@@ -33,9 +40,6 @@ struct DisplayMapViewer: View {
         map.entries = map.entries.filter { $0.id == entryId }
         return map
     }
-
-    private func focused() {}
-    private func sendMapUpdates() {}
 }
 
 #Preview(traits: .mockData) {

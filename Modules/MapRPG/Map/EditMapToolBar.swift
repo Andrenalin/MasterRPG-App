@@ -7,7 +7,7 @@ import CharacterRPG
 
 struct EditToolBarViewModifier: ViewModifier {
     let mapEditController: MapEditController
-    let editorModel: MapEditorModel
+    let editorModel: MapEditorSession
     let isTileEditor: Bool
 
     @Environment(\.dismiss) private var dismiss
@@ -458,7 +458,7 @@ private extension EditToolBarViewModifier {
 
 #Preview("New Modifier") {
     @Previewable var editController: EditController = .preview
-    @Previewable var editorModel = MapEditorModel(
+    @Previewable var editorModel = MapEditorSession(
         map: .empty,
         image: AKImage(),
         photoDegrees: 0,

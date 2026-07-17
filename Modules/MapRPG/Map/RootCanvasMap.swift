@@ -36,34 +36,28 @@ struct RootCanvasMap: View {
     let playerPinId: UUID?
     private let loadsImage: Bool
 
-    @Environment(\.networkActions) private var networkActions
-
     @State private var dropPinModel = DropPinModel()
     @State private var image: AKImage?
     @State private var degrees: Double = 0
 
     var body: some View {
-        GeometryReader { geo in
+        ZStack {
             if let image {
-                RootGameMapViewer(root: root, itemId: itemId, mode: mode, playerPinId: playerPinId, image: image, degrees: degrees, containerSize: geo.size)
-                    .environment(dropPinModel)
-            } else {
-                Color.clear
+                RootGameMapViewer(
+                    root: root,
+                    itemId: itemId,
+                    mode: mode,
+                    playerPinId: playerPinId,
+                    image: image,
+                    degrees: degrees
+                )
+                .environment(dropPinModel)
             }
         }
-        .onChange(of: mapModel.id, initial: true) {
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task(id: imageLoadIdentity) {
             guard loadsImage else { return }
-            Task { await reloadImage() }
-        }
-        .onChange(of: mapModel.entries, initial: false) {
-            guard loadsImage, image == nil else { return }
-            Task { await reloadImage() }
-        }
-        .onChange(of: photoFileUrl, initial: false) {
-            guard loadsImage else { return }
-            // The background photo can arrive after the map (game re-request) —
-            // reload when its file lands or changes, or the map stays black.
-            Task { await reloadImage() }
+            await reloadImage(for: imageLoadIdentity)
         }
 #if !os(tvOS)
         .dropDestination(for: LinkData.self) { items, point in
@@ -89,13 +83,29 @@ private extension RootCanvasMap {
         return root.photoRoot.itemControllable.itemSync(for: photoId)?.fileUrl
     }
 
-    func reloadImage() async {
-        let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(for: mapModel.photoId, useGame: true) ?? (nil, 0)
-        Task {
-            self.image = updateImage
-            self.degrees <=> updateDegrees
-        }
+    var imageLoadIdentity: GameMapImageLoadIdentity {
+        GameMapImageLoadIdentity(
+            mapId: mapModel.id,
+            photoId: mapModel.photoId,
+            photoFileUrl: photoFileUrl
+        )
     }
+
+    func reloadImage(for identity: GameMapImageLoadIdentity) async {
+        let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(
+            for: identity.photoId,
+            useGame: true
+        ) ?? (nil, 0)
+        guard !Task.isCancelled, imageLoadIdentity == identity else { return }
+        image = updateImage
+        degrees <=> updateDegrees
+    }
+}
+
+private struct GameMapImageLoadIdentity: Hashable {
+    let mapId: UUID
+    let photoId: UUID?
+    let photoFileUrl: FileUrl?
 }
 
 #Preview(traits: .mockData) {

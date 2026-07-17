@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 struct HexMapScaleView: View {
-    @Bindable var model: MapEditorModel
+    @Bindable var model: MapEditorSession
     let onScaleChanged: (Double) -> Void
 
     var body: some View {
@@ -29,7 +29,7 @@ struct HexMapScaleView: View {
 }
 
 #Preview {
-    @Previewable var model = MapEditorModel(
+    @Previewable var model = MapEditorSession(
         map: .previewEmpty,
         image: AKImage(),
         photoDegrees: 0,

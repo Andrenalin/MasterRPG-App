@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreGraphics
+import CoreRPG
 import Foundation
 import Testing
 

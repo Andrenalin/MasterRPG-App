@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 struct PinScaleView: View {
-    @Bindable var model: MapEditorModel
+    @Bindable var model: MapEditorSession
 
     var body: some View {
         HStack {
@@ -29,7 +29,7 @@ struct PinScaleView: View {
 }
 
 #Preview {
-    @Previewable var model = MapEditorModel(
+    @Previewable var model = MapEditorSession(
         map: .previewEmpty,
         image: AKImage(),
         photoDegrees: 0,
