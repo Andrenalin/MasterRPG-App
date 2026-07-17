@@ -6,7 +6,7 @@ import CharacterRPG
 
 struct GameToolBar: View {
     let editController: EditController
-    let model: MapEditorModel
+    let model: MapEditorSession
     let isMaster: Bool
 
     @Environment(MapRootModel.self) private var root
@@ -125,7 +125,7 @@ struct GameToolBar: View {
             withAnimation(reduceMotion ? nil : .bouncy) {
                 root.editController.addMonsters(map: map, entryId: nil, location: nil, monsters: monsters, number: 1)
             }
-            if model.isStreaming { model.sendMapUpdates?() }
+            if model.isStreaming { model.actions.sendMapUpdates?() }
             selectedPin.resetSelection(itemId: nil, entryId: nil)
         }
     }
@@ -137,7 +137,7 @@ struct GameToolBar: View {
                 model.isStreaming.toggle()
             }
             if model.isStreaming {
-                model.sendMapUpdates?()
+                model.actions.sendMapUpdates?()
             }
         } label: {
             let symbolName = "person.2\(model.isStreaming ? ".fill" : ".slash")"
@@ -299,7 +299,7 @@ struct GameToolBar: View {
 
 #Preview {
     @Previewable var editController: EditController = .preview
-    @Previewable var editorModel = MapEditorModel(
+    @Previewable var editorModel = MapEditorSession(
         map: .empty,
         image: AKImage(),
         photoDegrees: 0,

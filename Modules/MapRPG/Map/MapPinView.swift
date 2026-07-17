@@ -9,6 +9,7 @@ import SwiftUI
 enum MapPinInteractionEvent: Equatable {
     case tap(pin: MapPinModel, isPointer: Bool)
     case doubleTap(pin: MapPinModel, isPointer: Bool)
+    case beginMove(pin: MapPinModel, isPointer: Bool)
     case move(pin: MapPinModel, isPointer: Bool)
     case action(
         MapPinButtonType,
@@ -59,8 +60,7 @@ final class MapPinNode: Identifiable {
     }
 
     func beginMove() {
-        guard isExpanded else { return }
-        store?.collapseActions(for: self)
+        store?.beginMove(self)
     }
 
     func perform(_ action: MapPinButtonType, context: MapPinActionContext) {
@@ -94,7 +94,10 @@ final class MapPinViewModel {
     typealias InteractionHandler = @MainActor (MapPinInteractionEvent) -> Void
 
     init(mapPins: [MapPinModel], pointer: MapPinModel) {
-        mapPinNodes = mapPins.map { MapPinNode(pin: $0) }
+        let nodes = mapPins.map { MapPinNode(pin: $0) }
+        mapPinNodes = nodes
+        ordinaryPinNodes = nodes.filter { !$0.pin.isZoom }
+        zoomedPinNodes = nodes.filter { $0.pin.isZoom }
         pointerNode = MapPinNode(pin: pointer, isPointer: true)
         attachNodes()
     }
@@ -102,6 +105,11 @@ final class MapPinViewModel {
     /// Structural changes invalidate the layer. Mutating one node does not
     /// replace this array, so sibling pins retain identity and stay untouched.
     private(set) var mapPinNodes: [MapPinNode]
+    /// Layer membership is rebuilt only for structural or zoom-state changes.
+    /// A drag can therefore update one node without making the parent layer
+    /// observe and filter every sibling pin.
+    private(set) var ordinaryPinNodes: [MapPinNode]
+    private(set) var zoomedPinNodes: [MapPinNode]
     private(set) var pointerNode: MapPinNode
     private var expandedId: UUID?
 
@@ -140,14 +148,19 @@ final class MapPinViewModel {
     func setPinPointer(updatedPin: MapPinModel) {
         if pointerNode.id == updatedPin.id {
             pointerNode.update(pin: updatedPin)
-        } else {
-            pinNode(for: updatedPin.id)?.update(pin: updatedPin)
+        } else if let node = pinNode(for: updatedPin.id) {
+            let layerChanged = node.pin.isZoom != updatedPin.isZoom
+            node.update(pin: updatedPin)
+            if layerChanged {
+                rebuildLayerNodes()
+            }
         }
     }
 
     func removePin(id: UUID) {
         guard let index = mapPinNodes.firstIndex(where: { $0.id == id }) else { return }
         mapPinNodes.remove(at: index)
+        rebuildLayerNodes()
         if expandedId == id { setExpanded(id: nil) }
     }
 
@@ -172,6 +185,7 @@ final class MapPinViewModel {
         let node = MapPinNode(pin: pin)
         node.attach(to: self)
         mapPinNodes.insert(node, at: sourceIndex)
+        rebuildLayerNodes()
     }
 
     func resizePin(id: UUID) {
@@ -224,6 +238,11 @@ final class MapPinViewModel {
         )
         node.update(pin: updatedPin)
         interactionHandler?(.move(pin: updatedPin, isPointer: node.isPointer))
+    }
+
+    fileprivate func beginMove(_ node: MapPinNode) {
+        collapseActions(for: node)
+        interactionHandler?(.beginMove(pin: node.pin, isPointer: node.isPointer))
     }
 
     fileprivate func collapseActions(for node: MapPinNode) {
@@ -280,8 +299,10 @@ final class MapPinViewModel {
             existingNodes[node.id] = node
         }
 
+        var layerMembershipChanged = false
         let reconciled = pins.map { pin in
             if let node = existingNodes.removeValue(forKey: pin.id) {
+                layerMembershipChanged = layerMembershipChanged || node.pin.isZoom != pin.isZoom
                 node.update(pin: pin)
                 return node
             }
@@ -294,6 +315,9 @@ final class MapPinViewModel {
             || zip(reconciled, mapPinNodes).contains { $0.id != $1.id }
         if hasStructuralChange {
             mapPinNodes = reconciled
+        }
+        if hasStructuralChange || layerMembershipChanged {
+            rebuildLayerNodes()
         }
         if let expandedId, !pins.contains(where: { $0.id == expandedId }) {
             setExpanded(id: nil)
@@ -312,6 +336,17 @@ final class MapPinViewModel {
     private func attachNodes() {
         mapPinNodes.forEach { $0.attach(to: self) }
         pointerNode.attach(to: self)
+    }
+
+    private func rebuildLayerNodes() {
+        let ordinary = mapPinNodes.filter { !$0.pin.isZoom }
+        let zoomed = mapPinNodes.filter { $0.pin.isZoom }
+        if ordinary.map(\.id) != ordinaryPinNodes.map(\.id) {
+            ordinaryPinNodes = ordinary
+        }
+        if zoomed.map(\.id) != zoomedPinNodes.map(\.id) {
+            zoomedPinNodes = zoomed
+        }
     }
 }
 

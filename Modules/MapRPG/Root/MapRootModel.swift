@@ -14,7 +14,7 @@ import SwiftUI
 @MainActor @Observable
 public final class RootModel: Sendable {
     @MainActor
-    var gameEditorModel: MapEditorModel? = nil
+    var gameEditorModel: MapEditorSession? = nil
 }
 
 @MainActor @Observable

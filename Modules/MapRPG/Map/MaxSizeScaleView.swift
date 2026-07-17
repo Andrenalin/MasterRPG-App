@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 struct MaxSizeScaleView: View {
-    @Bindable var model: MapEditorModel
+    @Bindable var model: MapEditorSession
     let onMaxWidthChanged: (Double) -> Void
     let onMaxHeightChanged: (Double) -> Void
 
@@ -45,7 +45,7 @@ struct MaxSizeScaleView: View {
 }
 
 #Preview {
-    @Previewable var model = MapEditorModel(
+    @Previewable var model = MapEditorSession(
         map: .previewEmpty,
         image: AKImage(),
         photoDegrees: 0,

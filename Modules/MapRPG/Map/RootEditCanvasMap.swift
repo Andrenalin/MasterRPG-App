@@ -31,14 +31,23 @@ struct RootEditCanvasMap: View {
     @State private var model: MapModel
 
     var body: some View {
-        GeometryReader { geo in
+        ZStack {
             if let image {
-                MapEditor(editController: root.editController, image: image, photoDegrees: degrees, map: model, viewMode: .master, isTileEditor: isTileEditor, containerSize: geo.size)
-                        .environment(dropPinModel)
-            } else {
-                Color.clear
+                MapEditor(
+                    editController: root.editController,
+                    image: image,
+                    photoDegrees: degrees,
+                    map: model,
+                    configuration: MapEditorConfiguration(
+                        mode: .edit,
+                        displayMode: .master,
+                        isTileEditor: isTileEditor
+                    )
+                )
+                .environment(dropPinModel)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
 #if os(iOS)
             root.editController.editorModel.deactivateEntryEditor = true
@@ -55,11 +64,9 @@ struct RootEditCanvasMap: View {
         .onChange(of: root.itemController.itemOrEmpty(for: itemId).entries) {
             updateModel()
         }
-        .onChange(of: model.photoId, initial: true) {
+        .task(id: imageLoadIdentity) {
             guard loadsImage else { return }
-            Task {
-                await reloadImage()
-            }
+            await reloadImage(for: imageLoadIdentity)
         }
 #if !os(tvOS)
         .dropDestination(for: LinkCharacterData.self) { items, point in
@@ -83,13 +90,24 @@ struct RootEditCanvasMap: View {
         }
     }
 
-    func reloadImage() async {
-        let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(for: model.photoId, useGame: false) ?? (nil, 0)
-        Task {
-            self.image = updateImage
-            self.degrees <=> updateDegrees
-        }
+    private var imageLoadIdentity: EditMapImageLoadIdentity {
+        EditMapImageLoadIdentity(mapId: model.id, photoId: model.photoId)
     }
+
+    fileprivate func reloadImage(for identity: EditMapImageLoadIdentity) async {
+        let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(
+            for: identity.photoId,
+            useGame: false
+        ) ?? (nil, 0)
+        guard !Task.isCancelled, imageLoadIdentity == identity else { return }
+        image = updateImage
+        degrees <=> updateDegrees
+    }
+}
+
+fileprivate struct EditMapImageLoadIdentity: Hashable {
+    let mapId: UUID
+    let photoId: UUID?
 }
 
 #Preview(traits: .mockData) {

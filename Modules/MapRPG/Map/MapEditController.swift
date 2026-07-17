@@ -13,7 +13,7 @@ struct MapEditController {
 
 extension MapEditController {
     @MainActor
-    func prepareWorkingCopy(from map: MapModel, editorModel: MapEditorModel) {
+    func prepareWorkingCopy(from map: MapModel, editorModel: MapEditorSession) {
         editorModel.workingCopy = map.copy()
         editorModel.undoDepthAtOpen = editController.editorModel.undoManaged.undoDepth
         editorModel.isHexMap = editorModel.workingCopy?.entries.contains(where: { $0.isHexGrid }) ?? false
@@ -24,7 +24,7 @@ extension MapEditController {
     }
 
     @MainActor
-    func commitChanges(editorModel: MapEditorModel) {
+    func commitChanges(editorModel: MapEditorSession) {
         guard let copy = editorModel.workingCopy else { return }
         // Flush any in-progress entry edit into the working copy before saving
         for entry in editorModel.editEntries.entries {
@@ -39,8 +39,8 @@ extension MapEditController {
     }
 
     @MainActor
-    func discardChanges(editorModel: MapEditorModel) {
-        // Unwind any direct saves (MapEntryViewer gestures) that bypassed working copy
+    func discardChanges(editorModel: MapEditorSession) {
+        // Unwind any controller-side saves that occurred while this editor was open.
         let currentDepth = editController.editorModel.undoManaged.undoDepth
         let stepsToUndo = currentDepth - editorModel.undoDepthAtOpen
         for _ in 0..<max(0, stepsToUndo) {
@@ -53,7 +53,7 @@ extension MapEditController {
 
 extension MapEditController {
     @MainActor
-    func prepareTileWorkingCopy(from map: MapModel, editorModel: MapEditorModel) {
+    func prepareTileWorkingCopy(from map: MapModel, editorModel: MapEditorSession) {
         prepareWorkingCopy(from: map, editorModel: editorModel)
 
         let tileEntry = MapEntryModel(
@@ -67,7 +67,7 @@ extension MapEditController {
     }
 
     @MainActor
-    func addTileCoordinate(_ coordinate: CGPoint, editorModel: MapEditorModel) {
+    func addTileCoordinate(_ coordinate: CGPoint, editorModel: MapEditorSession) {
         guard var tileEntry = editorModel.editEntries.entries.first else { return }
         tileEntry.coordinates.append(coordinate)
         editorModel.editEntries.setEntry(entry: tileEntry)
@@ -75,15 +75,12 @@ extension MapEditController {
     }
 
     @MainActor
-    func addTileCoordinateFromCanvas(_ coordinate: CGPoint, editorModel: MapEditorModel) {
-        defer { editorModel.editEntries.eaten = false }
-        guard !editorModel.editEntries.eaten else { return }
-
+    func addTileCoordinateFromCanvas(_ coordinate: CGPoint, editorModel: MapEditorSession) {
         addTileCoordinate(coordinate, editorModel: editorModel)
     }
 
     @MainActor
-    func syncTileCoordinates(_ coordinates: [CGPoint], editorModel: MapEditorModel) {
+    func syncTileCoordinates(_ coordinates: [CGPoint], editorModel: MapEditorSession) {
         editorModel.workingCopy?.displayConfig.tileCoordinates = coordinates
     }
 }
@@ -92,7 +89,7 @@ extension MapEditController {
 
 extension MapEditController {
     @MainActor
-    func mergeExternalPins(newMap: MapModel, editorModel: MapEditorModel) {
+    func mergeExternalPins(newMap: MapModel, editorModel: MapEditorSession) {
         guard let copy = editorModel.workingCopy else { return }
         // Merge external pin changes via CRDT; local drag state (in pins UI model) wins for
         // pins currently being positioned, since workingCopy will be saved on checkmark.
@@ -101,7 +98,7 @@ extension MapEditController {
     }
 
     @MainActor
-    func mergeExternalEntries(newMap: MapModel, editorModel: MapEditorModel) {
+    func mergeExternalEntries(newMap: MapModel, editorModel: MapEditorSession) {
         guard let copy = editorModel.workingCopy else { return }
         let activeEntryId = editorModel.editEntries.entries.first?.id
         // Merge each entry from the external map into the working copy,
@@ -125,13 +122,13 @@ extension MapEditController {
 
 extension MapEditController {
     @MainActor
-    func updatePinMove(pin: MapPinModel, editorModel: MapEditorModel) {
+    func updatePinMove(pin: MapPinModel, editorModel: MapEditorSession) {
         editorModel.workingCopy?.setPinPointer(updatedPin: pin)
         editorModel.pins.setPinPointer(updatedPin: pin)
     }
 
     @MainActor
-    func togglePinVisibility(pinId: UUID, editorModel: MapEditorModel) {
+    func togglePinVisibility(pinId: UUID, editorModel: MapEditorSession) {
         guard var pin = editorModel.pins.pinPointer(for: pinId) else { return }
         pin.isShown.toggle()
         editorModel.workingCopy?.setPinPointer(updatedPin: pin)
@@ -143,7 +140,7 @@ extension MapEditController {
 
 extension MapEditController {
     @MainActor
-    func changeMap(map: MapModel, currentEntryId: UUID?, editorModel: MapEditorModel) {
+    func changeMap(map: MapModel, currentEntryId: UUID?, editorModel: MapEditorSession) {
         if currentEntryId != editorModel.editEntries.entries.first?.id {
             // Flush current edit entry into working copy and display entries
             for entry in editorModel.editEntries.entries {
@@ -163,11 +160,6 @@ extension MapEditController {
             }
         }
 
-        editorModel.isDragging = .nothing
-        editorModel.isTapping = .nothing
-        editorModel.editEntries.eaten = false
-        editorModel.editEntries.addedNewNeedlePoint = nil
-
         if editorModel.appeared {
             editorModel.resetZoom()
         }
@@ -180,11 +172,11 @@ extension MapEditController {
     func releaseAction(
         at location: CGPoint,
         map: MapModel,
-        editorModel: MapEditorModel,
+        editorModel: MapEditorSession,
         hasEditableEntry: Bool
     ) {
         guard hasEditableEntry else { return }
-        let point = (location - editorModel.imageModel.offset) / editorModel.imageModel.scale
+        let point = editorModel.contentPoint(fromViewport: location)
         guard var updatedEntry = editorModel.editEntries.entries.first else { return }
         updatedEntry.coordinates.append(point)
         editorModel.editEntries.setEntry(entry: updatedEntry)
@@ -200,10 +192,10 @@ extension MapEditController {
         at point: CGPoint,
         map: MapModel,
         monsters: [ItemRowModel],
-        editorModel: MapEditorModel
+        editorModel: MapEditorSession
     ) {
         guard editorModel.workingCopy != nil else { return }
-        let location = (point - editorModel.imageModel.offset) / editorModel.imageModel.scale
+        let location = editorModel.contentPoint(fromViewport: point)
         let entry = editorModel.entry(for: location, in: map)
 
         withAnimation(.bouncy) {
@@ -216,7 +208,7 @@ extension MapEditController {
 
 extension MapEditController {
     @MainActor
-    func addMonsters(entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int, editorModel: MapEditorModel) {
+    func addMonsters(entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int, editorModel: MapEditorSession) {
         guard let copy = editorModel.workingCopy else { return }
 
         let pinCount = min(max(1, number), 25)
@@ -265,12 +257,12 @@ extension MapEditController {
 
 extension MapEditController {
     @MainActor
-    func isHexMap(editorModel: MapEditorModel) -> Bool {
+    func isHexMap(editorModel: MapEditorSession) -> Bool {
         editorModel.workingCopy?.entries.contains(where: { $0.isHexGrid }) ?? false
     }
 
     @MainActor
-    func toggleHexMap(editorModel: MapEditorModel) {
+    func toggleHexMap(editorModel: MapEditorSession) {
         guard let copy = editorModel.workingCopy else { return }
         if isHexMap(editorModel: editorModel) {
             copy.entries.removeAll { $0.isHexGrid }
@@ -286,7 +278,7 @@ extension MapEditController {
     }
 
     @MainActor
-    func updateHexScale(_ scale: Double, editorModel: MapEditorModel) {
+    func updateHexScale(_ scale: Double, editorModel: MapEditorSession) {
         guard let copy = editorModel.workingCopy, scale > 0, scale != copy.hexMapScale else { return }
         copy.hexMapScale = scale
         replaceHexGrid(entries: calculateGrid(for: scale, in: CGRect(origin: .zero, size: CGSize(width: copy.width, height: copy.height))), in: copy)
@@ -295,7 +287,7 @@ extension MapEditController {
     }
 
     @MainActor
-    private func syncDisplayEntries(from copy: MapModel, editorModel: MapEditorModel) {
+    private func syncDisplayEntries(from copy: MapModel, editorModel: MapEditorSession) {
         let activeEntryId = editorModel.editEntries.entries.first?.id
         let displayEntries = copy.entries.filter { $0.id != activeEntryId }
         editorModel.entries.resetEntries(mapId: copy.id, entries: displayEntries)
@@ -353,21 +345,21 @@ extension MapEditController {
 
 extension MapEditController {
     @MainActor
-    func updateMaxWidth(_ ratio: Double, editorModel: MapEditorModel) {
+    func updateMaxWidth(_ ratio: Double, editorModel: MapEditorSession) {
         rescaleEntries(editorModel: editorModel) { copy in
             editController.rescale(maxWidthRatio: ratio, in: copy)
         }
     }
 
     @MainActor
-    func updateMaxHeight(_ ratio: Double, editorModel: MapEditorModel) {
+    func updateMaxHeight(_ ratio: Double, editorModel: MapEditorSession) {
         rescaleEntries(editorModel: editorModel) { copy in
             editController.rescale(maxHeightRatio: ratio, in: copy)
         }
     }
 
     @MainActor
-    private func rescaleEntries(editorModel: MapEditorModel, using rescale: (MapModel) -> Void) {
+    private func rescaleEntries(editorModel: MapEditorSession, using rescale: (MapModel) -> Void) {
         guard let copy = editorModel.workingCopy else { return }
         // Flush the in-progress entry edit so it is rescaled together with the others
         for entry in editorModel.editEntries.entries {
@@ -381,43 +373,5 @@ extension MapEditController {
         editorModel.editEntries.resetEntries(mapId: copy.id, entries: rescaledActive)
         editorModel.pins.mapPins = copy.mapPins
         syncDisplayEntries(from: copy, editorModel: editorModel)
-    }
-}
-
-// MARK: - NeedleMapPin Operations (working copy only)
-
-extension MapEditController {
-    @MainActor
-    func addNeedlePoint(at index: Int, entryId: UUID, entries: MapEntryViewerModel, map: MapModel) {
-        var updatedEntry = entries.entry(entryId)
-        let next = index + 1 < updatedEntry.coordinates.count ? index + 1 : 0
-        var nextPoint = updatedEntry.coordinates[next]
-        if next == 0 {
-            nextPoint = nextPoint + CGPoint(x: 50, y: 50)
-        } else {
-            nextPoint = nextPoint - (nextPoint - updatedEntry.coordinates[index]) / 2
-        }
-        updatedEntry.coordinates.insert(nextPoint, at: next)
-        entries.setEntry(entry: updatedEntry)
-
-        // Find the MapEditorModel that owns this entries model to update workingCopy.
-        // Since NeedleMapPin passes editEntries directly, we update via the entries model;
-        // the caller (MapEditor) is responsible for passing the correct entries reference
-        // that is backed by workingCopy (editEntries is already synced to workingCopy on commit).
-    }
-
-    @MainActor
-    func removeNeedlePoint(at index: Int, entryId: UUID, entries: MapEntryViewerModel, map: MapModel) {
-        entries.selectedNeedleIndex = nil
-        var updatedEntry = entries.entry(entryId)
-        guard index >= 0 && index < updatedEntry.coordinates.count else { return }
-        updatedEntry.coordinates.remove(at: index)
-        entries.setEntry(entry: updatedEntry)
-    }
-
-    @MainActor
-    func updateNeedleCoordinate(entryId: UUID, entries: MapEntryViewerModel, map: MapModel) {
-        // Coordinate already updated in entries via drag gesture — nothing more to do here.
-        // The updated entry will be flushed into workingCopy on changeMap or commitChanges.
     }
 }

@@ -6,7 +6,8 @@ import SwiftUI
 struct MapNeedleLayer: View {
     let entries: MapEntryViewerModel
     let entryId: UUID
-    var coordinatesChanged: ([CGPoint]) -> Void = { _ in }
+    let session: MapEditorSession?
+    var viewportScale: CGFloat = 1
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -15,31 +16,11 @@ struct MapNeedleLayer: View {
                     entries: entries,
                     entryId: entryId,
                     point: point,
-                    coordinatesChanged: coordinatesChanged
+                    session: session,
+                    viewportScale: viewportScale
                 )
                 .offset(x: point.coordinate.x - 22, y: point.coordinate.y - 110)
             }
-        }
-    }
-}
-
-struct MapNeedleMenuLayer: View {
-    let entries: MapEntryViewerModel
-    let entryId: UUID
-    var coordinatesChanged: ([CGPoint]) -> Void = { _ in }
-    var usesGlassEffects = true
-
-    var body: some View {
-        if let point = entries.selectedNeedlePoint(for: entryId) {
-            NeedleMapPinMenu(
-                entries: entries,
-                entryId: entryId,
-                point: point,
-                coordinatesChanged: coordinatesChanged,
-                usesGlassEffects: usesGlassEffects
-            )
-            .offset(x: point.coordinate.x - 22, y: point.coordinate.y - 110)
-            .transition(.scale(scale: 0.8).combined(with: .opacity))
         }
     }
 }
@@ -48,7 +29,8 @@ struct NeedleMapPin: View {
     let entries: MapEntryViewerModel
     let entryId: UUID
     let point: MapNeedlePointModel
-    let coordinatesChanged: ([CGPoint]) -> Void
+    let session: MapEditorSession?
+    let viewportScale: CGFloat
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @GestureState private var dragTranslation: CGSize = .zero
@@ -57,34 +39,14 @@ struct NeedleMapPin: View {
         entries: MapEntryViewerModel,
         entryId: UUID,
         point: MapNeedlePointModel,
-        coordinatesChanged: @escaping ([CGPoint]) -> Void = { _ in }
+        session: MapEditorSession? = nil,
+        viewportScale: CGFloat = 1
     ) {
         self.entries = entries
         self.entryId = entryId
         self.point = point
-        self.coordinatesChanged = coordinatesChanged
-    }
-
-    // Compatibility for previews/tests that still address the persisted array
-    // index. Production rendering passes the stable point model directly.
-    init(
-        entries: MapEntryViewerModel,
-        entryId: UUID,
-        index: Int,
-        map _: MapModel,
-        mapEditController _: MapEditController,
-        coordinatesChanged: @escaping ([CGPoint]) -> Void = { _ in },
-        usesGlassEffects _: Bool = true
-    ) {
-        let point = entries.renderedNeedlePoints(for: entryId)
-            .first(where: { $0.coordinateIndex == index })
-            ?? MapNeedlePointModel(coordinate: .zero, coordinateIndex: index)
-        self.init(
-            entries: entries,
-            entryId: entryId,
-            point: point,
-            coordinatesChanged: coordinatesChanged
-        )
+        self.session = session
+        self.viewportScale = viewportScale
     }
 
     var body: some View {
@@ -105,7 +67,7 @@ struct NeedleMapPin: View {
                 .allowsHitTesting(false)
         }
         .shadow(radius: 4)
-        .offset(dragTranslation)
+        .offset(logicalTranslation(dragTranslation))
     }
 
     private var needleHeader: some View {
@@ -165,23 +127,33 @@ struct NeedleMapPin: View {
 
 #if !os(tvOS)
     private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 3)
+        DragGesture(
+            minimumDistance: 3,
+            coordinateSpace: .named(MapViewportCoordinateSpace.name)
+        )
             .updating($dragTranslation) { value, state, _ in
                 state = value.translation
             }
             .onChanged { value in
+                if entries.needleInteraction.dragPointId != point.id {
+                    session?.beginNeedleDrag(point)
+                }
+                let translation = logicalTranslation(value.translation)
+                entries.needleInteraction.dragPointId = point.id
                 entries.needleInteraction.dragCoordinate = CGPoint(
-                    x: point.coordinate.x + value.translation.width,
-                    y: point.coordinate.y + value.translation.height
+                    x: point.coordinate.x + translation.width,
+                    y: point.coordinate.y + translation.height
                 )
             }
             .onEnded { value in
+                let translation = logicalTranslation(value.translation)
                 let coordinate = CGPoint(
-                    x: point.coordinate.x + value.translation.width,
-                    y: point.coordinate.y + value.translation.height
+                    x: point.coordinate.x + translation.width,
+                    y: point.coordinate.y + translation.height
                 )
                 entries.moveNeedle(point, to: coordinate, entryId: entryId)
                 entries.needleInteraction.dragCoordinate = nil
+                entries.needleInteraction.dragPointId = nil
                 notifyCoordinatesChanged()
             }
     }
@@ -200,6 +172,11 @@ struct NeedleMapPin: View {
         notifyCoordinatesChanged()
     }
 
+    private func logicalTranslation(_ translation: CGSize) -> CGSize {
+        let scale = viewportScale.isFinite && viewportScale > 0 ? viewportScale : 1
+        return CGSize(width: translation.width / scale, height: translation.height / scale)
+    }
+
     private var coordinateAccessibilityValue: Text {
         Text(
             "X \(point.coordinate.x, format: .number.precision(.fractionLength(0))), Y \(point.coordinate.y, format: .number.precision(.fractionLength(0)))",
@@ -214,7 +191,7 @@ struct NeedleMapPin: View {
     }
 
     private func notifyCoordinatesChanged() {
-        coordinatesChanged(entries.entry(entryId).coordinates)
+        session?.route(.needleCoordinatesChanged(entryId))
     }
 
     private static let needlePath: Path = {
@@ -237,74 +214,7 @@ struct NeedleMapPin: View {
     }()
 }
 
-private struct NeedleMapPinMenu: View {
-    let entries: MapEntryViewerModel
-    let entryId: UUID
-    let point: MapNeedlePointModel
-    let coordinatesChanged: ([CGPoint]) -> Void
-    let usesGlassEffects: Bool
-
-    @Namespace private var glassNamespace
-
-    var body: some View {
-        Group {
-#if os(visionOS)
-            actionButtons
-#else
-            if usesGlassEffects {
-                GlassEffectContainer {
-                    actionButtons
-                }
-            } else {
-                actionButtons
-            }
-#endif
-        }
-        .frame(width: 44, height: 44)
-    }
-
-    private var actionButtons: some View {
-        ZStack {
-            menuButton(type: .remove)
-            menuButton(type: .add)
-        }
-    }
-
-    private func menuButton(type: NeedleMapPinButtonType) -> some View {
-        Button {
-            perform(type)
-        } label: {
-            Label {
-                Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module)
-            } icon: {
-                Image(systemName: type.systemImage)
-            }
-            .labelStyle(.iconOnly)
-            .frame(width: 50, height: 50)
-        }
-        .borderLessTVBottonStyle()
-        .foregroundStyle(.white)
-#if !os(visionOS)
-        .applyIf(usesGlassEffects) {
-            $0.glassEffect(.regular.tint(NetworkModules.map.tint.opacity(0.75)).interactive())
-                .glassEffectID(type.label, in: glassNamespace)
-        }
-#endif
-        .offset(type.offset(expanded: true, layoutDown: true))
-    }
-
-    private func perform(_ type: NeedleMapPinButtonType) {
-        switch type {
-        case .remove:
-            entries.removeNeedle(point, entryId: entryId)
-        case .add:
-            entries.insertNeedle(after: point, entryId: entryId)
-        }
-        coordinatesChanged(entries.entry(entryId).coordinates)
-    }
-}
-
-enum NeedleMapPinButtonType: String {
+enum NeedleMapPinButtonType: String, CaseIterable, Hashable {
     case remove, add
 
     var systemImage: String {
@@ -315,26 +225,6 @@ enum NeedleMapPinButtonType: String {
     }
 
     var label: String { rawValue.capitalized }
-
-    func offset(expanded: Bool, layoutDown: Bool) -> CGSize {
-        guard expanded else { return .zero }
-        return switch self {
-        case .remove: offset(atIndex: 0, layoutDown: layoutDown)
-        case .add: offset(atIndex: 3, layoutDown: layoutDown)
-        }
-    }
-
-    private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
-        let radius: CGFloat = 80
-        let startAngleDeg = 45.0
-        let step = 90.0 / Double(4 - 1)
-        let angleDeg = startAngleDeg + Double(index) * step
-        let angleRad = angleDeg * .pi / 180
-        return CGSize(
-            width: cos(angleRad) * radius,
-            height: sin(angleRad) * radius * (layoutDown ? -1 : 1)
-        )
-    }
 }
 
 #Preview(traits: .mockData) {
@@ -347,7 +237,6 @@ enum NeedleMapPinButtonType: String {
         Rectangle().fill(Color.yellow.gradient)
             .ignoresSafeArea()
 
-        MapNeedleLayer(entries: entries, entryId: entries.entries[0].id)
-        MapNeedleMenuLayer(entries: entries, entryId: entries.entries[0].id)
+        MapNeedleLayer(entries: entries, entryId: entries.entries[0].id, session: nil)
     }
 }

@@ -18,9 +18,27 @@ struct GameRootViewer: View {
     let playerController: PlayerController
     let emptyTitle: LocalizedStringKey
     let contentType: GameMapContentType
+    let gameScreenModel: GameScreenModel?
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(ScenesManager.self) private var scenesManager
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
+
+    init(
+        root: GameRoot,
+        playerController: PlayerController,
+        emptyTitle: LocalizedStringKey,
+        contentType: GameMapContentType,
+        gameScreenModel: GameScreenModel? = nil
+    ) {
+        self.root = root
+        self.playerController = playerController
+        self.emptyTitle = emptyTitle
+        self.contentType = contentType
+        self.gameScreenModel = gameScreenModel
+    }
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -29,6 +47,7 @@ struct GameRootViewer: View {
             if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
                 mapView(for: mapId)
                     .id(mapId)
+                    .padding(.trailing, mapTrailingReservation)
                     .overlay {
                         if playerController.gameModel.gameUpdateType != .map {
                             ZStack {
@@ -66,6 +85,22 @@ struct GameRootViewer: View {
             root.photoRoot.imagePresentationModel.selectedItemId = photoId
             scenesManager.openWindow(SceneId.imageSpaceViewer)
         }
+#endif
+    }
+
+    private var mapTrailingReservation: CGFloat {
+        gameScreenModel?.mapTrailingReservation(
+            usesInlineSidebarLayout: usesInlineSidebarLayout
+        ) ?? 0
+    }
+
+    private var usesInlineSidebarLayout: Bool {
+#if os(macOS)
+        true
+#elseif os(iOS)
+        horizontalSizeClass == .regular
+#else
+        false
 #endif
     }
     
@@ -123,5 +158,10 @@ struct GameRootViewer: View {
 }
 
 #Preview {
-    GameRootViewer(root: .preview, playerController: .preview, emptyTitle: "Game is running", contentType: .master)
+    GameRootViewer(
+        root: .preview,
+        playerController: .preview,
+        emptyTitle: "Game is running",
+        contentType: .master
+    )
 }

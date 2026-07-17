@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import PhotoRPG
 import SwiftUI
 
 enum MapPinActionContext: Equatable {
@@ -37,6 +38,18 @@ enum MapPinButtonType: String, Hashable {
 
     var label: String { rawValue.capitalized }
 
+    func tint(for pin: MapPinModel) -> Color {
+        switch self {
+        case .remove: .red
+        case .copy: .gray
+        case .photo: .purple
+        case .resize: .teal
+        case .visibility: .blue
+        case .zoom: .indigo
+        case .dead: pin.isDead ? .green : .red
+        }
+    }
+
     func localizedLabel(for pin: MapPinModel) -> LocalizedStringResource {
         switch self {
         case .remove: LocalizedStringResource("Remove Pin", bundle: .module)
@@ -58,29 +71,19 @@ enum MapPinButtonType: String, Hashable {
         }
     }
 
-    func offset(at index: Int, count: Int, expanded: Bool, layoutDown: Bool) -> CGSize {
-        guard expanded else { return .zero }
-        let radius: CGFloat = 120
-        let divisor = max(1, count - 1)
-        let angleDeg = -180.0 + Double(index) * (90.0 / Double(divisor))
-        let angleRad = angleDeg * .pi / 180
-        return CGSize(
-            width: cos(angleRad) * radius,
-            height: sin(angleRad) * radius * (layoutDown ? -1 : 1)
-        )
-    }
 }
 
 struct MapPinActionView: View {
     let model: MapPinNode
-    let layoutDown: Bool
     let pinScale: CGFloat
     let canDrag: Bool
     let actionContext: MapPinActionContext
     let doubleTapAccessibilityLabel: LocalizedStringResource
     var usesGlassEffects: Bool = true
+    var viewportScale: CGFloat = 1
 
     @GestureState private var dragTranslation: CGSize = .zero
+    @State private var isMoving = false
 
     private var pin: MapPinModel { model.pin }
 
@@ -110,44 +113,44 @@ struct MapPinActionView: View {
                 including: canDrag ? .all : .none
             )
 #endif
-            .overlay {
-                if model.isExpanded, actionContext != .none {
-                    MapPinExpandedMenu(
-                        model: model,
-                        layoutDown: layoutDown,
-                        context: actionContext,
-                        usesGlassEffects: usesGlassEffects
-                    )
-                    .transition(.scale(scale: 0.7).combined(with: .opacity))
-                }
-            }
-            .offset(dragTranslation)
+            .offset(logicalTranslation(dragTranslation))
             .offset(x: location.x, y: location.y)
     }
 
 #if !os(tvOS)
     private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 3)
+        DragGesture(
+            minimumDistance: 3,
+            coordinateSpace: .named(MapViewportCoordinateSpace.name)
+        )
             .updating($dragTranslation) { value, state, _ in
                 guard canDrag else { return }
                 state = value.translation
             }
             .onChanged { _ in
-                guard canDrag else { return }
+                guard canDrag, !isMoving else { return }
+                isMoving = true
                 model.beginMove()
             }
             .onEnded { value in
                 guard canDrag else { return }
-                model.move(by: value.translation)
+                isMoving = false
+                model.move(by: logicalTranslation(value.translation))
             }
     }
+
 #endif
+
+    private func logicalTranslation(_ translation: CGSize) -> CGSize {
+        let scale = viewportScale.isFinite && viewportScale > 0 ? viewportScale : 1
+        return CGSize(width: translation.width / scale, height: translation.height / scale)
+    }
 }
 
-private struct MapPinExpandedMenu: View {
+struct MapPinExpandedMenu: View {
     let model: MapPinNode
-    let layoutDown: Bool
     let context: MapPinActionContext
+    let placement: MapAdaptiveFanPlacement
     let usesGlassEffects: Bool
 
     @Environment(MapRootModel.self) private var root
@@ -179,8 +182,14 @@ private struct MapPinExpandedMenu: View {
 #if os(macOS)
         .onChange(of: model.isPhotoSelectionPresented) { _, isPresented in
             guard context == .editor, isPresented else { return }
+            root.photoRoot.itemSelectionModel = selectedPhoto
             scenesManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
             model.isPhotoSelectionPresented = false
+        }
+        .onChange(of: selectedPhoto.selection) {
+            guard context == .editor, let itemId = selectedPhoto.itemId else { return }
+            withAnimation { model.replacePhoto(with: itemId) }
+            selectedPhoto.resetSelection(itemId: nil, entryId: nil)
         }
 #else
         .sheet(isPresented: context == .editor ? $model.isPhotoSelectionPresented : .constant(false)) {
@@ -197,17 +206,19 @@ private struct MapPinExpandedMenu: View {
             selectedPhoto.resetSelection(itemId: nil, entryId: nil)
         }
 #endif
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var actionButtons: some View {
         MapPinActionButtons(
             model: model,
-            layoutDown: layoutDown,
             context: context,
+            placement: placement,
             glassNamespace: glassNamespace,
             photoSpace: photoSpace,
             usesGlassEffects: usesGlassEffects
         )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
@@ -220,7 +231,6 @@ private struct MapPinExpandedMenu: View {
         Color.blue
         MapPinActionView(
             model: model.mapPinNodes[0],
-            layoutDown: true,
             pinScale: 1,
             canDrag: true,
             actionContext: .editor,

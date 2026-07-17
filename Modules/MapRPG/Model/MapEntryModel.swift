@@ -4,7 +4,7 @@ import CoreRPG
 import CoreGraphics
 import Foundation
 
-enum MapDisplayMode: Int, Identifiable, Equatable, Hashable, CaseIterable {
+enum MapDisplayMode: Int, Identifiable, Equatable, Hashable, CaseIterable, Sendable {
     case master = 0
     case player = 1
     case reader = 2

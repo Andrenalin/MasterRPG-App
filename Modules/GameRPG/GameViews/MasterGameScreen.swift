@@ -24,7 +24,13 @@ struct MasterGameScreen: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         ManagedNavigationStack {
-            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object", contentType: .master)
+            GameRootViewer(
+                root: root,
+                playerController: playerController,
+                emptyTitle: "Select Map, Photo, Table, Weather or 3D Object",
+                contentType: .master,
+                gameScreenModel: gameScreenModel
+            )
         }
         .overlay(alignment: .topLeading) {
             MasterOverlayMenu(root: root, adventureId: adventureId, playerController: playerController)
@@ -213,5 +219,4 @@ struct GameWindowButtonAppearance: ViewModifier {
         playerController: PlayerController(root: root, asGameMaster: true),
         adventureId: GamePreviewData.adventureID
     )
-    .preferredColorScheme(.dark)
 }
