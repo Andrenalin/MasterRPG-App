@@ -305,6 +305,155 @@ struct MapMasterMessageFlowTests {
         #expect(broadcastPin.players == incomingPin.players)
     }
 
+    @Test("A player reuses the accepted Map generation for pin updates")
+    func playerPinUsesAuthoritativeImportedGeneration() async throws {
+        // Given: the master exports one complete generation containing the
+        // player's authoritative session pin.
+        let fixture = try await MapMasterRoutingFixture.makeMaster()
+        let mapId = fixture.currentMapId
+        let masterMap = fixture.root.mapRoot.gameController.gameItem(for: mapId)
+        let initialPin = MapPinModel(
+            id: fixture.playerId,
+            name: fixture.playerName,
+            location: CGPoint(x: 4, y: 6),
+            isShown: true,
+            isPlayer: true,
+            players: [fixture.playerId],
+            timeInterval: 1
+        )
+        masterMap.mapPins.removeAll { $0.id == fixture.playerId }
+        masterMap.mapPins.append(initialPin)
+        let fullMap = try await fixture.root.mapRoot.mapGameControllable.createMapGameData(
+            for: mapId
+        )
+
+        // And: a separate player root imports that package through the real
+        // PlayerController path, which records the sender-computed generation.
+        let playerRoot = try await MockRoot.createGameRoot()
+        try await MockRoot.resetTestData(for: playerRoot.adventureRoot)
+        try await MockRoot.resetGameController(for: playerRoot)
+        playerRoot.gameModel.reset(
+            gameConfig: GameConfigModel(
+                id: fixture.playerId,
+                state: .started,
+                master: MasterGameModel(
+                    id: fixture.masterId,
+                    type: .master,
+                    name: "Map master"
+                )
+            ),
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(
+                    id: fixture.playerId,
+                    type: .player,
+                    name: fixture.playerName
+                ),
+            ])
+        )
+        let player = PlayerController(root: playerRoot, asGameMaster: false)
+        let show = GameNetworkModel(
+            counter: 80,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: fixture.masterId,
+            sender: GameSenderModel(
+                id: fixture.masterId,
+                role: .master,
+                name: "Map master",
+                characterId: nil
+            ),
+            data: fullMap
+        )
+        _ = try await player.handleMap(show)
+
+        let playerMap = playerRoot.mapRoot.gameController.gameItem(for: mapId)
+        // Simulate a cross-platform Codable normalization difference. The
+        // locally recomputed content digest is deliberately not authoritative.
+        playerMap.pinScale += 0.125
+        #expect(
+            playerRoot.mapRoot.gameController.mapContentVersion(for: mapId)
+                != fullMap.contentVersion
+        )
+
+        // When: the player moves its pin and builds the ordinary UI payload.
+        let movedLocation = CGPoint(x: 31, y: 47)
+        #expect(playerRoot.mapRoot.gameController.movePin(
+            itemId: mapId,
+            pinId: fixture.playerId,
+            location: movedLocation
+        ))
+        let playerUpdate = try #require(
+            playerRoot.mapRoot.gameController.networkPin(
+                itemId: mapId,
+                pinId: fixture.playerId
+            )
+        )
+
+        // Then: the payload retains the accepted master's generation instead
+        // of the player's divergent local digest, so the master authorizes it.
+        #expect(playerUpdate.version == fullMap.version)
+        #expect(playerUpdate.assetVersion == fullMap.assetVersion)
+        #expect(playerUpdate.contentVersion == fullMap.contentVersion)
+        let proxyReplay = playerRoot.mapRoot.gameController.networkMapUpdate(for: mapId)
+        #expect(proxyReplay.version == fullMap.version)
+        #expect(proxyReplay.assetVersion == fullMap.assetVersion)
+        #expect(proxyReplay.contentVersion == fullMap.contentVersion)
+
+        // A proxy host validates its private client against that same cached
+        // master token, rather than its divergent local Map representation.
+        var proxyPin = try #require(MapPinModel.decodeData(of: playerUpdate.data))
+        proxyPin.isHighlighted.toggle()
+        proxyPin.timeInterval = proxyPin.timeInterval.nextUp
+        let proxyUpdate = NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: fullMap.version,
+            data: proxyPin.encodeData(),
+            assetVersion: fullMap.assetVersion,
+            contentVersion: fullMap.contentVersion
+        )
+        #expect(playerRoot.mapRoot.gameController.updatePinIfCurrentGeneration(
+            itemId: mapId,
+            data: proxyUpdate,
+            playerId: fixture.playerId
+        ))
+
+        let command = fixture.playerMessage(
+            counter: 81,
+            type: .update,
+            subType: .mapPin,
+            data: playerUpdate
+        )
+        _ = try await fixture.master.handleMap(command)
+        #expect(
+            masterMap.mapPins.first { $0.id == fixture.playerId }?.location
+                == movedLocation
+        )
+
+        let highlightedUpdate = try #require(
+            playerRoot.mapRoot.gameController.networkPin(
+                itemId: mapId,
+                pinId: fixture.playerId
+            )
+        )
+        _ = try await fixture.master.handleMap(fixture.playerMessage(
+            counter: 82,
+            type: .update,
+            subType: .mapPin,
+            data: highlightedUpdate
+        ))
+        #expect(
+            masterMap.mapPins.first { $0.id == fixture.playerId }?.isHighlighted
+                == true
+        )
+        #expect(
+            fixture.directMasterSpy.sendResponseHistory
+                .compactMap { $0 as? GameNetworkModel }
+                .contains { $0.type == .update && $0.subType == .mapState }
+        )
+    }
+
     @Test("Proxy serves only a complete Map matching the requested asset and content generations")
     func proxyMapRepairChecksVersions() async throws {
         // Given

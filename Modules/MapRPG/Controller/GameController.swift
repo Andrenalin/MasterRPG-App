@@ -10,18 +10,45 @@ import PhotoRPG
 
 @MainActor @Observable
 final class MapGameModel: Sendable {
+    struct AuthoritativeGeneration: Equatable, Sendable {
+        let version: Int
+        let assetVersion: Int
+        let contentVersion: Int
+    }
+
     init() {}
 
     var playerPins: [MapPinModel] = []
+    private var authoritativeGenerations: [UUID: AuthoritativeGeneration] = [:]
+
+    func recordAuthoritativeGeneration(_ data: NetworkCodableDataType) {
+        guard data.type == .map else { return }
+        guard let assetVersion = data.assetVersion,
+              let contentVersion = data.contentVersion else {
+            authoritativeGenerations[data.id] = nil
+            return
+        }
+        authoritativeGenerations[data.id] = AuthoritativeGeneration(
+            version: data.version,
+            assetVersion: assetVersion,
+            contentVersion: contentVersion
+        )
+    }
+
+    func authoritativeGeneration(for itemId: UUID) -> AuthoritativeGeneration? {
+        authoritativeGenerations[itemId]
+    }
     
     func reset() {
         playerPins = []
+        authoritativeGenerations = [:]
     }
 }
 
 public protocol MapGameStorable {
     func mapAssetVersion(for itemId: UUID) async -> Int
     @MainActor func mapContentVersion(for itemId: UUID) -> Int
+    @MainActor func recordAuthoritativeMapGeneration(_ data: NetworkCodableDataType)
     func shareMap(id: UUID) async -> NetworkCodableDataType
     func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType
     func networkMapContentUpdate(for itemId: UUID) async -> NetworkCodableDataType
@@ -118,6 +145,11 @@ extension GameController: MapGameStorable {
         MapUpdatePayload(model: gameItem(for: itemId)).contentVersion
     }
 
+    @MainActor
+    func recordAuthoritativeMapGeneration(_ data: NetworkCodableDataType) {
+        mapGameModel.recordAuthoritativeGeneration(data)
+    }
+
     func shareMap(id: UUID) async -> NetworkCodableDataType {
         guard let metadata = await stablePackageMetadata(for: id) else {
             // A continuously edited map may not become stable within the
@@ -192,6 +224,7 @@ extension GameController: MapGameStorable {
             return false
         }
         payload.snapshot.apply(to: model)
+        mapGameModel.recordAuthoritativeGeneration(data)
         return true
     }
 
@@ -330,13 +363,13 @@ extension GameController: MapGameStorable {
         data: NetworkCodableDataType,
         playerId: UUID
     ) -> Bool {
+        let generation = networkGeneration(for: itemId)
         guard data.id == itemId,
               data.type == .map,
               gameModel.currentItemId == itemId,
-              let assetVersion = data.assetVersion,
-              let contentVersion = data.contentVersion,
-              currentMapAssetVersion(for: itemId) == assetVersion,
-              mapContentVersion(for: itemId) == contentVersion
+              data.version == generation.version,
+              data.assetVersion == generation.assetVersion,
+              data.contentVersion == generation.contentVersion
         else { return false }
 
         return updatePin(itemId: itemId, data: data.data, playerId: playerId)
@@ -529,7 +562,9 @@ extension GameController: MapGameStorable {
     @discardableResult
     func updateMap(for itemId: UUID, with data: NetworkCodableDataType) -> Bool {
         guard let mapData = data.data, let text = String(data: mapData, encoding: .utf8) else { return false }
-        return updateMap(for: itemId, with: text)
+        guard updateMap(for: itemId, with: text) else { return false }
+        mapGameModel.recordAuthoritativeGeneration(data)
+        return true
     }
 
     @MainActor
@@ -541,27 +576,27 @@ extension GameController: MapGameStorable {
 
     @MainActor
     func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType {
-        let item = gameItem(for: itemId)
+        let generation = networkGeneration(for: itemId)
         return NetworkCodableDataType(
             id: itemId,
             type: .map,
-            version: item.version,
+            version: generation.version,
             data: mapUpdateResult(for: itemId).data(using: .utf8),
-            assetVersion: currentMapAssetVersion(for: itemId),
-            contentVersion: mapContentVersion(for: itemId)
+            assetVersion: generation.assetVersion,
+            contentVersion: generation.contentVersion
         )
     }
 
     @MainActor
     func networkPin(itemId: UUID, position: MapPinModel) -> NetworkCodableDataType {
-        let item = gameItem(for: itemId)
+        let generation = networkGeneration(for: itemId)
         return NetworkCodableDataType(
             id: itemId,
             type: .map,
-            version: item.version,
+            version: generation.version,
             data: position.encodeData(),
-            assetVersion: currentMapAssetVersion(for: itemId),
-            contentVersion: mapContentVersion(for: itemId)
+            assetVersion: generation.assetVersion,
+            contentVersion: generation.contentVersion
         )
     }
     
@@ -607,6 +642,19 @@ private extension GameController {
     struct MapContentCapture: Sendable {
         let core: PackageCoreMetadata
         let data: Data?
+    }
+
+    @MainActor
+    func networkGeneration(for itemId: UUID) -> MapGameModel.AuthoritativeGeneration {
+        if let authoritative = mapGameModel.authoritativeGeneration(for: itemId) {
+            return authoritative
+        }
+        let item = gameItem(for: itemId)
+        return MapGameModel.AuthoritativeGeneration(
+            version: item.version,
+            assetVersion: currentMapAssetVersion(for: itemId),
+            contentVersion: mapContentVersion(for: itemId)
+        )
     }
 
     func stablePackageMetadata(for itemId: UUID) async -> PackageMetadata? {

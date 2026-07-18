@@ -207,6 +207,53 @@ struct MapPinVisibilityTests {
         #expect(sut.networkPin(itemId: mapId, pinId: UUID()) == nil)
     }
 
+    @Test func authoritativeMapGenerationIsUsedAndResetWithGameState() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let pinId = UUID()
+        let map = MapModel(
+            id: mapId,
+            name: "Imported player map",
+            mapPins: [MapPinModel(id: pinId, name: "Hero")]
+        )
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        let authoritative = NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: 71,
+            assetVersion: 72,
+            contentVersion: 73
+        )
+
+        sut.recordAuthoritativeMapGeneration(authoritative)
+
+        let cached = try #require(sut.networkPin(itemId: mapId, pinId: pinId))
+        #expect(cached.version == 71)
+        #expect(cached.assetVersion == 72)
+        #expect(cached.contentVersion == 73)
+
+        sut.resetGameState()
+
+        let reset = try #require(sut.networkPin(itemId: mapId, pinId: pinId))
+        #expect(reset.version == map.version)
+        #expect(reset.assetVersion != 72)
+        #expect(reset.contentVersion != 73)
+
+        sut.recordAuthoritativeMapGeneration(authoritative)
+        sut.recordAuthoritativeMapGeneration(NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: 1
+        ))
+        let legacy = try #require(sut.networkPin(itemId: mapId, pinId: pinId))
+        #expect(legacy.version == map.version)
+        #expect(legacy.assetVersion != 72)
+        #expect(legacy.contentVersion != 73)
+    }
+
     @Test func movePinUnknownPinReturnsFalse() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)

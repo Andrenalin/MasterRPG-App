@@ -1776,6 +1776,9 @@ extension PlayerController {
             }
 
             if importedFullPayload {
+                await root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
+                    model.data
+                )
                 await gameModel.recordFullMapContentVersion(
                     itemId: model.data.id,
                     contentVersion: model.data.contentVersion,
@@ -1841,6 +1844,9 @@ extension PlayerController {
                     return nil
                 }
                 importedFullPayload = true
+                await root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
+                    model.data
+                )
                 await gameModel.recordFullMapContentVersion(
                     itemId: model.data.id,
                     contentVersion: model.data.contentVersion,
