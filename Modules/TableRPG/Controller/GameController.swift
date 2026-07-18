@@ -7,6 +7,27 @@ import Foundation
 public protocol TableGameStorable {
     @MainActor func addResult(_ result: ResultCategory, value: String)
     func requestTableResult(for itemId: UUID, diceId: UUID, diceResult: String, networkActions: NetworkActions?, valueActions: ValueActions) async
+    @MainActor func isTableAvailable(itemId: UUID, version: Int) -> Bool
+    func receiveTable(itemId: UUID, data: NetworkCodableDataType, makeCurrent: Bool) async throws -> Bool
+}
+
+@MainActor
+private final class TableGameAvailabilityModel: Sendable {
+    private var availableVersions: [UUID: Int] = [:]
+
+    func contains(itemId: UUID, version: Int) -> Bool {
+        guard version != 0 else { return false }
+        return availableVersions[itemId] == version
+    }
+
+    func markAvailable(itemId: UUID, version: Int) {
+        guard version != 0 else { return }
+        availableVersions[itemId] = version
+    }
+
+    func reset() {
+        availableVersions.removeAll()
+    }
 }
 
 struct GameController: Sendable {
@@ -16,6 +37,7 @@ struct GameController: Sendable {
         self.exportController = exportController
 
         self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
+        self.tableGameAvailabilityModel = TableGameAvailabilityModel()
     }
 
     let diceRoot: DiceRootModel
@@ -23,6 +45,7 @@ struct GameController: Sendable {
     let exportController: ExportController
 
     let gameModel: ItemGameModel
+    private let tableGameAvailabilityModel: TableGameAvailabilityModel
 
     @MainActor func gameItem(for itemId: UUID) -> TableModel {
         (gameModel.itemData[itemId] as? TableModel) ?? itemController.itemOrEmpty(for: itemId)
@@ -45,6 +68,11 @@ struct GameController: Sendable {
 extension GameController: GameControllable {
     var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
     var exportControllable: any ExportControllable { exportController as ExportControllable }
+
+    @MainActor
+    func resetGameState() {
+        tableGameAvailabilityModel.reset()
+    }
 }
 
 extension GameController: TableGameStorable {
@@ -97,6 +125,106 @@ extension GameController: TableGameStorable {
                 return item.entries[index].id
             }
             return nil
+        }
+    }
+
+    @MainActor
+    public func isTableAvailable(itemId: UUID, version: Int) -> Bool {
+        tableGameAvailabilityModel.contains(itemId: itemId, version: version) &&
+            gameModel.itemData[itemId] is TableModel
+    }
+
+    public func receiveTable(itemId: UUID, data: NetworkCodableDataType, makeCurrent: Bool) async throws -> Bool {
+        guard data.type == .table, data.id == itemId else {
+            throw ItemGameStorableError.wrongData
+        }
+
+        guard data.version != 0 else { return false }
+
+        guard let encodedData = data.data else {
+            guard await isTableAvailable(itemId: itemId, version: data.version) else { return false }
+            guard makeCurrent else { return true }
+            guard await setCurrent(itemId: itemId) else { return false }
+            await MainActor.run {
+                guard let table = gameModel.itemData[itemId] as? TableModel else { return }
+                itemController.replaceForGame(model: table, isInsert: true, policy: .persist)
+            }
+            return true
+        }
+
+        let persistentTables = await persistentTableCopies()
+        let previousIdentities = await tableObjectIdentities()
+
+        // Import into game memory first. Do not call generic updateGame here:
+        // even its hidden/store path appends the root to gameModel.items and can
+        // accidentally turn a cache-only package into the current presentation.
+        // Persisting before the CRDT merge would also overwrite a player's
+        // same-ID Table with the master's raw snapshot.
+        do {
+            try await importNetwork(from: encodedData)
+        } catch {
+            throw ItemGameStorableError.networkDecoding
+        }
+
+        let importedTables = await newlyImportedTables(comparedWith: previousIdentities)
+        var importedVersions = await MainActor.run {
+            importedTables.mapValues(\.version)
+        }
+        guard importedTables[itemId] != nil else { return false }
+
+        // The envelope is the game master's authoritative package version.
+        // Import repair may normalize legacy categories/tags, so recomputing
+        // the root version after import is not guaranteed to reproduce the
+        // pre-export value even though these are the canonical bytes. Keep the
+        // transmitted baseline for the requested root; nested Tables can use
+        // their imported, pre-player-merge versions.
+        importedVersions[itemId] = data.version
+
+        await MainActor.run {
+            for (id, imported) in importedTables {
+                let merged = persistentTables[id].map { imported.merge($0) } ?? imported
+                gameModel.itemData[id] = merged
+                if makeCurrent {
+                    itemController.replaceForGame(model: merged, isInsert: true, policy: .persist)
+                }
+            }
+        }
+
+        if makeCurrent, await !setCurrent(itemId: itemId) {
+            return false
+        }
+
+        await MainActor.run {
+            for (id, version) in importedVersions {
+                tableGameAvailabilityModel.markAvailable(itemId: id, version: version)
+            }
+        }
+        return true
+    }
+
+    @MainActor
+    private func persistentTableCopies() -> [UUID: TableModel] {
+        itemController.itemDataModel.items.reduce(into: [:]) { result, id in
+            guard let item = itemController.itemSync(for: id, noGame: true) else { return }
+            result[id] = item.copy()
+        }
+    }
+
+    @MainActor
+    private func tableObjectIdentities() -> [UUID: ObjectIdentifier] {
+        gameModel.itemData.reduce(into: [:]) { result, entry in
+            guard let table = entry.value as? TableModel else { return }
+            result[entry.key] = ObjectIdentifier(table)
+        }
+    }
+
+    @MainActor
+    private func newlyImportedTables(comparedWith previous: [UUID: ObjectIdentifier]) -> [UUID: TableModel] {
+        gameModel.itemData.reduce(into: [:]) { result, entry in
+            guard let table = entry.value as? TableModel,
+                  previous[entry.key] != ObjectIdentifier(table)
+            else { return }
+            result[entry.key] = table
         }
     }
 }

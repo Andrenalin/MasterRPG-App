@@ -630,6 +630,7 @@ extension PlayerController {
         root.photoRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
         root.pdfRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
         root.spaceRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
+        root.tableRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
         root.weatherRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
         let playerNames = root.gameModel.gameControl.controls.map { $0.name }.sorted()
         root.diceRoot.diceGameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
@@ -645,7 +646,7 @@ extension PlayerController {
     
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType) async {
         // Players cannot publish Weather and Weather has no live updates yet.
-        guard message.type != .weather else { return }
+        guard message.type != .table, message.type != .weather else { return }
         if message.type == .photo, actionType == .generic {
             await sharePhoto(message)
             return
@@ -821,7 +822,18 @@ extension PlayerController {
         await send(counter: responseCounter, type: .store, subType: .screen, updated: data)
     }
     
-    func send(counter: Int? = nil, type: RPGMessageType, subType: RPGMessageActionType = .show, updated: NetworkCodableDataType, useJournal: Bool = false) async {
+    func send(
+        counter: Int? = nil,
+        type: RPGMessageType,
+        subType: RPGMessageActionType = .show,
+        updated: NetworkCodableDataType,
+        useJournal: Bool = false,
+        relayToProxyClients: Bool = true
+    ) async {
+        // Tables have no live-update protocol. Only reveal/store messages may
+        // carry their versioned canonical package.
+        guard type != .update || updated.type != .table else { return }
+
         let outgoingCounter = await MainActor.run {
             counter ?? gameModel.nextOutgoingMessageCounter()
         }
@@ -834,7 +846,11 @@ extension PlayerController {
         await root.statisticsModel.record(networtData, direction: .outgoing, origin: origin)
 
         let useOnTypeJournal = useJournal || Self.usesFileJournal(for: networtData)
-        await sendOriginating(model: networtData, useJournal: useOnTypeJournal)
+        await sendOriginating(
+            model: networtData,
+            useJournal: useOnTypeJournal,
+            relayToProxyClients: relayToProxyClients
+        )
     }
 
     static func usesFileJournal(for model: GameNetworkModel) -> Bool {
@@ -853,12 +869,18 @@ extension PlayerController {
         !isSharePlayActive || asGameMaster
     }
     
-    private func sendOriginating(model: GameNetworkModel, useJournal: Bool = false) async {
+    private func sendOriginating(
+        model: GameNetworkModel,
+        useJournal: Bool = false,
+        relayToProxyClients: Bool = true
+    ) async {
         if await root.gameModel.gameType == .proxy {
             await root.networkProxyStore.sendMaster(data: model)
         } else {
             await root.networkStore.sendMaster(data: model, fileJournal: useJournal)
-            await root.networkProxyStore.sendPlayer(data: model)
+            if relayToProxyClients {
+                await root.networkProxyStore.sendPlayer(data: model)
+            }
         }
     }
 
@@ -2022,9 +2044,15 @@ extension PlayerController {
     }
     
     func handleTable(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+        guard model.subType != .ok, model.subType != .failed else { return nil }
+
         switch model.type {
         case .reveal:
-            if try await root.tableRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
+            if try await root.tableRoot.tableGameControllable.receiveTable(
+                itemId: model.data.id,
+                data: model.data,
+                makeCurrent: true
+            ) {
                 await MainActor.run {
                     gameModel.gameUpdateType = .table
                 }
@@ -2033,10 +2061,16 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
-            try await root.tableRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
-            return await response(for: model, isSuccess: true, requestData: false)
+            if try await root.tableRoot.tableGameControllable.receiveTable(
+                itemId: model.data.id,
+                data: model.data,
+                makeCurrent: false
+            ) {
+                return await response(for: model, isSuccess: true, requestData: false)
+            }
+            return await response(for: model, isSuccess: true, requestData: true)
         case .update:
-            break
+            return nil
         }
         return nil
     }
@@ -2278,6 +2312,7 @@ extension PlayerController {
         let preservesAssetVersion = model.data.type == .photo ||
             model.data.type == .pdf ||
             model.data.type == .space ||
+            model.data.type == .table ||
             model.data.type == .weather
         let version = if requestData {
             requestedVersion ?? model.data.version

@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import CryptoKit
 import Foundation
 import Observation
 
@@ -225,6 +226,68 @@ extension TableModel: nonisolated ItemDiffComparable {
             }
     
         }
+    }
+
+    /// Deterministic identity of the Table content sent by the game master.
+    /// Dice results are presentation-only game state and must not force a new
+    /// package version when somebody rolls the same Table.
+    public var version: Int {
+        StableTableVersion.digest(CanonicalTableContent(self))
+    }
+}
+
+private struct CanonicalTableContent: Codable, Sendable {
+    let id: UUID
+    let name: String
+    let description: String
+    let tags: [String]
+    let category: ItemListCategory
+    let displayState: Int
+    let tableType: TableModel.TableType
+    let diceId: UUID?
+    let entries: [CanonicalTableEntry]
+    let parentId: UUID?
+
+    @MainActor
+    init(_ model: TableModel) {
+        id = model.id
+        name = model.name
+        description = model.description
+        tags = model.tags
+        category = model.category
+        displayState = model.displayState
+        tableType = model.tableType
+        diceId = model.diceId
+        entries = model.entries.map(CanonicalTableEntry.init)
+        parentId = model.parentId
+    }
+}
+
+private struct CanonicalTableEntry: Codable, Sendable {
+    let id: UUID
+    let name: String
+    let content: String
+    let displayState: Int
+
+    init(_ entry: TableEntryModel) {
+        id = entry.id
+        name = entry.name
+        content = entry.content
+        displayState = entry.displayState
+    }
+}
+
+private enum StableTableVersion {
+    static func digest<Value: Encodable>(_ value: Value) -> Int {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(value) else { return 1 }
+        let digest = SHA256.hash(data: data)
+        let rawValue = digest.prefix(8).reduce(UInt64(0)) { partialResult, byte in
+            partialResult << 8 | UInt64(byte)
+        }
+        let version = Int(bitPattern: UInt(truncatingIfNeeded: rawValue))
+        return version == 0 ? 1 : version
     }
 }
 

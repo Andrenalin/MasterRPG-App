@@ -110,6 +110,55 @@ struct MapEditorViewportTransformTests {
         #expect(sut.viewport.configuration.contentSize == newMapSize)
         #expect(sut.viewport.isAtFit)
     }
+
+    @Test("Editor first appearance refits while retaining a persisted room focus")
+    func editorFirstAppearanceRefitsWhileRetainingFocus() async throws {
+        // Given
+        let focusedRoom = MapEntryModel(
+            id: UUID(),
+            name: "Persisted focus",
+            content: "",
+            coordinates: [
+                CGPoint(x: 300, y: 200),
+                CGPoint(x: 500, y: 200),
+                CGPoint(x: 500, y: 400),
+                CGPoint(x: 300, y: 400)
+            ],
+            focused: true
+        )
+        let map = MapModel(
+            id: UUID(),
+            name: "Focused editor map",
+            entries: [focusedRoom],
+            width: 1_200,
+            height: 800
+        )
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 600, height: 400)
+        )
+        let zoomed = sut.viewport.geometry.zoomed(
+            from: sut.viewport.transform,
+            toScale: 1,
+            anchor: sut.viewport.geometry.containerCenter
+        )
+        sut.viewport.commit(zoomed)
+        #expect(!sut.viewport.isAtFit)
+
+        // When
+        sut.firstAppear(map: map)
+        try await Task.sleep(for: .milliseconds(100))
+        // macOS can perform a final content-size pass after installing the
+        // window toolbar. A fitted editor must remain fitted through it.
+        let finalWindowSize = CGSize(width: 620, height: 380)
+        sut.updateContainerSize(finalWindowSize)
+
+        // Then
+        #expect(sut.viewport.configuration.containerSize == finalWindowSize)
+        #expect(sut.viewport.isAtFit)
+        expectApproximately(sut.viewport.transform.scale, sut.viewport.geometry.fitScale)
+        #expect(sut.focusId == focusedRoom.id)
+    }
 }
 
 private extension MapEditorViewportTransformTests {

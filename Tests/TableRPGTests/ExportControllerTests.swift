@@ -4,6 +4,7 @@
 import CoreRPG
 import Foundation
 import DiceRPG
+import PdfRPG
 import Testing
 
 @testable import TableRPG
@@ -179,6 +180,85 @@ struct ExportControllerTests {
         try #require(tableIds != nil)
         #expect(tableIds!.contains(itemId))
         #expect(ids.ids[.dice]?.contains(diceId) == true)
+    }
+
+    @Test("Exporting all Tables includes PDF dependencies")
+    func exportingAllIncludesPdfs() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let pdfId = await root.pdfRoot.itemControllable.addNew(type: .item)
+
+        // When
+        let ids = root.exportController.exportingAll()
+
+        // Then
+        let pdfIds = try #require(ids.ids[.pdf])
+        #expect(pdfIds == [pdfId])
+    }
+
+    @Test("Exporting a Table includes its linked PDF only")
+    func exportingTableWithPdfLinkExportsPdf() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let linkedPdfId = await root.pdfRoot.itemControllable.addNew(type: .item)
+        let unrelatedPdfId = await root.pdfRoot.itemControllable.addNew(type: .item)
+        let tableId = await root.itemController.addNew(type: .item)
+        let pdfLink = root.pdfRoot.linkControllable.generateLink(
+            linkNumber: 0,
+            itemId: linkedPdfId,
+            entryId: nil
+        )
+        root.itemController.itemOrEmpty(for: tableId).entries.append(
+            TableEntryModel(id: UUID(), name: "PDF", content: pdfLink)
+        )
+
+        // When
+        let ids = root.exportController.exporting(
+            itemIds: ItemModuleIds(ids: Set([tableId]), module: .table)
+        )
+
+        // Then
+        let tableIds = try #require(ids.ids[.table])
+        let pdfIds = try #require(ids.ids[.pdf])
+        #expect(tableIds == [tableId])
+        #expect(pdfIds.contains(linkedPdfId))
+        #expect(!pdfIds.contains(unrelatedPdfId))
+    }
+
+    @Test("PDF links in recursively linked Tables are exported")
+    func exportingLinkedTableIncludesItsPdf() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let pdfId = await root.pdfRoot.itemControllable.addNew(type: .item)
+        let rootTableId = await root.itemController.addNew(type: .item)
+        let linkedTableId = await root.itemController.addNew(type: .item)
+        let tableLink = root.linkController.generateLink(itemId: linkedTableId)
+        let pdfLink = root.pdfRoot.linkControllable.generateLink(
+            linkNumber: 0,
+            itemId: pdfId,
+            entryId: nil
+        )
+        root.itemController.itemOrEmpty(for: rootTableId).entries.append(
+            TableEntryModel(id: UUID(), name: "Linked Table", content: tableLink)
+        )
+        root.itemController.itemOrEmpty(for: linkedTableId).entries.append(
+            TableEntryModel(id: UUID(), name: "Linked PDF", content: pdfLink)
+        )
+
+        // When
+        let ids = root.exportController.exporting(
+            itemIds: ItemModuleIds(ids: Set([rootTableId]), module: .table)
+        )
+
+        // Then
+        let tableIds = try #require(ids.ids[.table])
+        let pdfIds = try #require(ids.ids[.pdf])
+        #expect(tableIds.contains(rootTableId))
+        #expect(tableIds.contains(linkedTableId))
+        #expect(pdfIds.contains(pdfId))
     }
 
 }

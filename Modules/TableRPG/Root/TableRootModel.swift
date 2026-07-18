@@ -32,7 +32,7 @@ public final class TableRootModel {
         self.itemController = itemController
         let sheetController = SheetController(itemController: itemController)
         self.sheetController = sheetController
-        let exportController = ExportController(diceRoot: diceRoot, itemController: itemController)
+        let exportController = ExportController(diceRoot: diceRoot, pdfRoot: pdfRoot, itemController: itemController)
         self.exportController = exportController
         let gameController = GameController(diceRoot: diceRoot, itemController: itemController, exportController: exportController)
         self.gameController = gameController

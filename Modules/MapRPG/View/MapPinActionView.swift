@@ -171,7 +171,7 @@ struct MapPinExpandedMenu: View {
             actionButtons
 #else
             if usesGlassEffects {
-                GlassEffectContainer {
+                GlassEffectContainer(spacing: 12) {
                     actionButtons
                 }
             } else {

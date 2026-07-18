@@ -361,7 +361,14 @@ final class MapEditorSession {
             appeared = true
             resetEntries(newEntries: map.entries, map: map)
             withAnimation {
-                if focusId == nil { resetZoom() } else { focusedMap() }
+                // A persisted room focus is runtime/game state. The editor must
+                // always open with the complete map visible; later explicit
+                // focus actions can still zoom to an individual room.
+                if mapMode == .edit || focusId == nil {
+                    resetZoom()
+                } else {
+                    focusedMap()
+                }
             }
             appearanceTask = nil
         }

@@ -48,6 +48,11 @@ struct RootEditCanvasMap: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+#if os(iOS)
+        // This root is used only by the normal and tile map editors. Keeping
+        // the policy here avoids overriding game-mode status-bar ownership.
+        .statusBarHidden(true)
+#endif
         .onAppear {
 #if os(iOS)
             root.editController.editorModel.deactivateEntryEditor = true

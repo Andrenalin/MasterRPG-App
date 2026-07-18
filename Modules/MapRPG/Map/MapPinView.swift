@@ -47,10 +47,6 @@ final class MapPinNode: Identifiable {
         store?.handleTap(on: self, context: context)
     }
 
-    func openActions(context: MapPinActionContext) {
-        store?.openActions(on: self, context: context)
-    }
-
     func handleDoubleTap() {
         store?.handleDoubleTap(on: self)
     }
@@ -206,17 +202,6 @@ final class MapPinViewModel {
         if context != .none {
             setExpanded(id: node.isExpanded ? nil : node.id)
         }
-        interactionHandler?(.tap(pin: node.pin, isPointer: node.isPointer))
-    }
-
-    fileprivate func openActions(on node: MapPinNode, context: MapPinActionContext) {
-        guard context != .none else {
-            handleTap(on: node, context: context)
-            return
-        }
-        // Opening is deliberately idempotent: both recognizers may observe a
-        // double tap, but it must not toggle or perform a second model action.
-        setExpanded(id: node.id)
         interactionHandler?(.tap(pin: node.pin, isPointer: node.isPointer))
     }
 
@@ -382,6 +367,14 @@ struct MapPinView: View {
             }
         }
         .clipShape(.circle)
+        .background {
+            // Apply after clipping so the selection halo can extend beyond
+            // the pin while the image itself remains circular.
+            MapSelectionHalo(
+                contentDiameter: max(pinSize.width, pinSize.height),
+                isVisible: model.isExpanded
+            )
+        }
         .overlay {
             Circle()
                 .strokeBorder(pin.isDead ? .black : .gray, lineWidth: pin.isDead ? 5 : 2)
@@ -497,11 +490,11 @@ private struct MapPinTapGestureModifier: ViewModifier {
                 doubleTapGesture.exclusively(before: singleTapGesture)
             )
         } else {
-            // Editor/game-master action menus open on the first tap. Opening is
-            // idempotent, and the double-tap handler closes the menu before its
-            // visibility/zoom action is emitted.
+            // Editor/game-master action menus toggle immediately. The
+            // simultaneous double-tap action still closes any open menu before
+            // emitting its domain action.
             content
-                .highPriorityGesture(immediateMenuTapGesture)
+                .highPriorityGesture(singleTapGesture)
                 .simultaneousGesture(doubleTapGesture)
         }
     }
@@ -510,14 +503,6 @@ private struct MapPinTapGestureModifier: ViewModifier {
         TapGesture().onEnded {
             withAnimation(reduceMotion ? nil : .default) {
                 model.handleTap(context: actionContext)
-            }
-        }
-    }
-
-    private var immediateMenuTapGesture: some Gesture {
-        TapGesture().onEnded {
-            withAnimation(reduceMotion ? nil : .default) {
-                model.openActions(context: actionContext)
             }
         }
     }

@@ -4,10 +4,12 @@ import CoreRPG
 import Foundation
 import os.log
 import DiceRPG
+import PdfRPG
 
 struct ExportController: Sendable {
-    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController) {
+    @MainActor init(diceRoot: DiceRootModel, pdfRoot: PdfRootModel, itemController: ItemController) {
         self.diceRoot = diceRoot
+        self.pdfRoot = pdfRoot
         self.itemController = itemController
         self.exportModel = ExportModel()
     }
@@ -18,6 +20,7 @@ struct ExportController: Sendable {
         set { exportModel.hubControllable = newValue }
     }
     let diceRoot: DiceRootModel
+    let pdfRoot: PdfRootModel
     let itemController: ItemController
 }
 
@@ -26,6 +29,7 @@ extension ExportController: ExportControllable {
 
     public func exportingAll() -> ItemModuleIds {
         var allIds = diceRoot.exportControllable.exportingAll()
+        allIds.merge(other: pdfRoot.exportControllable.exportingAll())
         allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }]))
 
         return allIds
@@ -35,6 +39,7 @@ extension ExportController: ExportControllable {
         var checkIds = itemIds.ids[itemController.config.module, default: []]
         var results: Set<UUID> = []
         var diceIds: Set<UUID> = []
+        var pdfIds: Set<UUID> = []
     
         while !checkIds.isEmpty {
             let id = checkIds.removeLast()
@@ -70,6 +75,10 @@ extension ExportController: ExportControllable {
                         if diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             diceIds.insert($0.itemId)
                         }
+                    case .pdf:
+                        if pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            pdfIds.insert($0.itemId)
+                        }
                     case .table:
                         if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && itemController.itemSync(for: $0.itemId) != nil {
                             checkIds.append($0.itemId)
@@ -87,6 +96,8 @@ extension ExportController: ExportControllable {
 
         let newDiceIds = diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
+        let newPdfIds = pdfRoot.exportControllable.exporting(ids: pdfIds)
+        allIds.merge(other: newPdfIds)
         return allIds
     }
 }

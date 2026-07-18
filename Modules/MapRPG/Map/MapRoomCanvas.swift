@@ -82,52 +82,90 @@ struct MapPassiveRoomCanvas: View {
     private func drawFog(for snapshots: [MapRoomSnapshot], in context: inout GraphicsContext) {
         guard !snapshots.isEmpty else { return }
 
-        var combinedPath = Path()
-        var combinedBounds = CGRect.null
-        for snapshot in snapshots {
-            combinedPath.addPath(snapshot.path)
-            combinedBounds = combinedBounds.union(snapshot.bounds)
-        }
+        let coveragePlan = MapFogCoveragePlan(snapshots: snapshots)
 
         guard let tile = tileRectangle,
               let symbol = context.resolveSymbol(id: MapRoomCanvasSymbol.fogTile) else {
-            context.fill(combinedPath, with: .color(displayConfig.color))
+            drawSolidFog(coveragePlan, in: &context)
             return
         }
 
-        let columns = tileOrigins(
-            minimum: combinedBounds.minX,
-            maximum: combinedBounds.maxX,
-            sourceMinimum: tile.minX,
-            length: tile.width
-        )
-        let rows = tileOrigins(
-            minimum: combinedBounds.minY,
-            maximum: combinedBounds.maxY,
-            sourceMinimum: tile.minY,
-            length: tile.height
-        )
-        guard !columns.isEmpty, !rows.isEmpty, columns.count * rows.count <= 4_096 else {
-            context.fill(combinedPath, with: .color(displayConfig.color))
+        guard let tileDrawPlans = tileDrawPlans(for: coveragePlan, tile: tile) else {
+            drawSolidFog(coveragePlan, in: &context)
             return
         }
 
-        context.drawLayer { layer in
-            layer.clip(to: combinedPath)
-            for x in columns {
-                for y in rows {
-                    layer.draw(
-                        symbol,
-                        in: CGRect(
-                            x: x,
-                            y: y,
-                            width: tile.width,
-                            height: tile.height
+        // Keep every room in its own source-over layer. A compound path can
+        // cancel where polygons use opposite winding, exposing the base map,
+        // and it also flattens the intended coverage in overlapping rooms.
+        for drawPlan in tileDrawPlans {
+            context.drawLayer { layer in
+                layer.clip(to: drawPlan.snapshot.path)
+                for x in drawPlan.columns {
+                    for y in drawPlan.rows {
+                        layer.draw(
+                            symbol,
+                            in: CGRect(
+                                x: x,
+                                y: y,
+                                width: tile.width,
+                                height: tile.height
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
+    }
+
+    private func drawSolidFog(
+        _ coveragePlan: MapFogCoveragePlan,
+        in context: inout GraphicsContext
+    ) {
+        for snapshot in coveragePlan.snapshots {
+            context.fill(snapshot.path, with: .color(displayConfig.color))
+        }
+    }
+
+    private func tileDrawPlans(
+        for coveragePlan: MapFogCoveragePlan,
+        tile: CGRect
+    ) -> [MapFogTileDrawPlan]? {
+        var totalTileCount = 0
+        var drawPlans: [MapFogTileDrawPlan] = []
+        drawPlans.reserveCapacity(coveragePlan.snapshots.count)
+
+        for snapshot in coveragePlan.snapshots {
+            let columns = tileOrigins(
+                minimum: snapshot.bounds.minX,
+                maximum: snapshot.bounds.maxX,
+                sourceMinimum: tile.minX,
+                length: tile.width
+            )
+            let rows = tileOrigins(
+                minimum: snapshot.bounds.minY,
+                maximum: snapshot.bounds.maxY,
+                sourceMinimum: tile.minY,
+                length: tile.height
+            )
+            guard !columns.isEmpty, !rows.isEmpty else { return nil }
+
+            let (tileCount, didOverflow) = columns.count.multipliedReportingOverflow(
+                by: rows.count
+            )
+            guard !didOverflow else { return nil }
+            let (updatedTotal, totalDidOverflow) = totalTileCount.addingReportingOverflow(
+                tileCount
+            )
+            guard !totalDidOverflow, updatedTotal <= 4_096 else { return nil }
+            totalTileCount = updatedTotal
+
+            drawPlans.append(
+                MapFogTileDrawPlan(snapshot: snapshot, columns: columns, rows: rows)
+            )
+        }
+
+        return drawPlans
     }
 
     private var tileRectangle: CGRect? {
@@ -292,10 +330,26 @@ struct MapOrientedImage: View {
     }
 }
 
-private struct MapRoomSnapshot {
+struct MapRoomSnapshot {
     let path: Path
     let bounds: CGRect
     let isShown: Bool
+}
+
+/// A fog coverage plan deliberately preserves one path per hidden room.
+/// Combining these paths changes overlap semantics when polygon winding differs.
+struct MapFogCoveragePlan {
+    let snapshots: [MapRoomSnapshot]
+
+    func coverageDepth(at point: CGPoint) -> Int {
+        snapshots.count { $0.path.contains(point) }
+    }
+}
+
+private struct MapFogTileDrawPlan {
+    let snapshot: MapRoomSnapshot
+    let columns: [CGFloat]
+    let rows: [CGFloat]
 }
 
 private enum MapRoomCanvasSymbol: Hashable {

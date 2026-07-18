@@ -14,6 +14,7 @@ struct MapEditorCanvas: View {
     let map: MapModel
 
     @GestureState private var interactionTransform: ViewportTransform?
+    @State private var safeAreaInsets = EdgeInsets()
 
     private var displayedTransform: ViewportTransform {
         interactionTransform ?? session.viewport.transform
@@ -44,7 +45,8 @@ struct MapEditorCanvas: View {
                 session: session,
                 image: image,
                 degrees: degrees,
-                transform: displayedTransform
+                transform: displayedTransform,
+                safeAreaInsets: safeAreaInsets
             )
             // Menus and the loupe live in viewport space and must remain above
             // every transformed map hit target, including selected needles.
@@ -53,12 +55,21 @@ struct MapEditorCanvas: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .coordinateSpace(name: MapViewportCoordinateSpace.name)
         .clipped()
-        .onGeometryChange(for: CGSize.self) { proxy in
-            proxy.size
-        } action: { size in
-            session.updateContainerSize(size)
+        .onGeometryChange(for: MapViewportMetrics.self) { proxy in
+            MapViewportMetrics(
+                size: proxy.size,
+                safeAreaInsets: proxy.safeAreaInsets
+            )
+        } action: { metrics in
+            safeAreaInsets = metrics.safeAreaInsets
+            session.updateContainerSize(metrics.size)
         }
     }
+}
+
+private struct MapViewportMetrics: Equatable {
+    let size: CGSize
+    let safeAreaInsets: EdgeInsets
 }
 
 private struct MapViewportInteractionPlane: View {

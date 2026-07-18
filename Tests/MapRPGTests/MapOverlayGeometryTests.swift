@@ -80,6 +80,69 @@ struct MapOverlayGeometryTests {
         #expect(placement.isFullyVisible)
     }
 
+    @Test("Two needle actions form one compact row above the needle")
+    func compactNeedleFan() throws {
+        let anchor = CGPoint(x: 500, y: 400)
+        let placement = MapAdaptiveFanGeometry.verticalPlacement(
+            anchor: anchor,
+            itemCount: 2,
+            viewport: CGRect(x: 0, y: 0, width: 1_000, height: 800),
+            preferredDirection: .top,
+            centerSpacing: MapAdaptiveFanGeometry.buttonSize.width * 2
+        )
+        let first = try #require(placement.center(at: 0))
+        let second = try #require(placement.center(at: 1))
+
+        #expect(placement.isFullyVisible)
+        #expect(first.y < anchor.y && second.y < anchor.y)
+        #expect(abs(first.y - second.y) < 0.001)
+        #expect(abs(first.distance(to: second) - 96) < 0.001)
+        #expect(abs(placement.buttonFrames[1].minX - placement.buttonFrames[0].maxX - 48) < 0.001)
+    }
+
+    @Test("Needle actions flip below and stay inside a nonzero safe viewport")
+    func needleFanRespectsSafeViewport() {
+        let viewport = CGRect(x: 72, y: 54, width: 760, height: 560)
+        let anchor = CGPoint(x: 90, y: 70)
+        let placement = MapAdaptiveFanGeometry.verticalPlacement(
+            anchor: anchor,
+            itemCount: 2,
+            viewport: viewport,
+            preferredDirection: .top,
+            centerSpacing: MapAdaptiveFanGeometry.buttonSize.width * 2
+        )
+        let safeFrame = viewport.insetBy(
+            dx: MapAdaptiveFanGeometry.edgeInset,
+            dy: MapAdaptiveFanGeometry.edgeInset
+        )
+
+        #expect(placement.centers.allSatisfy { $0.y > anchor.y })
+        #expect(placement.buttonFrames.allSatisfy { safeFrame.contains($0) })
+        #expect(placement.isFullyVisible)
+    }
+
+    @Test("Pin actions center below the pin and retain top-bottom edge flipping")
+    func pinFanCentersBelowAndFlips() {
+        let viewport = CGRect(x: 0, y: 0, width: 1_000, height: 800)
+        let centerPlacement = MapAdaptiveFanGeometry.verticalPlacement(
+            anchor: CGPoint(x: 500, y: 400),
+            itemCount: 5,
+            viewport: viewport,
+            preferredDirection: .bottom
+        )
+        let bottomEdgePlacement = MapAdaptiveFanGeometry.verticalPlacement(
+            anchor: CGPoint(x: 500, y: 770),
+            itemCount: 5,
+            viewport: viewport,
+            preferredDirection: .bottom
+        )
+
+        #expect(centerPlacement.centers.allSatisfy { $0.y > 400 })
+        #expect(bottomEdgePlacement.centers.allSatisfy { $0.y < 770 })
+        #expect(centerPlacement.isFullyVisible)
+        #expect(bottomEdgePlacement.isFullyVisible)
+    }
+
     @Test("Fan applies one group translation so clamping never changes spacing")
     func fanClampingPreservesSpacing() {
         // Given

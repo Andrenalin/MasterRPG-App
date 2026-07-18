@@ -139,19 +139,18 @@ struct MapEditorInteractionModelTests {
         #expect(emittedPin.size == .large)
     }
 
-    @Test("Immediate pin menu opening is idempotent and double tap closes it")
-    func immediatePinMenuOpeningIsIdempotent() throws {
+    @Test("Successive pin taps open and close the action menu")
+    func pinTapTogglesActionMenu() throws {
         let pin = MapPinModel(id: UUID(), name: "Token")
         let model = MapPinViewModel(mapPins: [pin], pointer: .empty)
         let node = try #require(model.pinNode(for: pin.id))
 
-        node.openActions(context: .editor)
-        node.openActions(context: .editor)
+        node.handleTap(context: .editor)
 
         #expect(node.isExpanded)
         #expect(model.isExpandedId == pin.id)
 
-        node.handleDoubleTap()
+        node.handleTap(context: .editor)
 
         #expect(!node.isExpanded)
         #expect(model.isExpandedId == nil)

@@ -78,6 +78,35 @@ enum MapOverlayQuadrant: CaseIterable, Equatable, Sendable {
     }
 }
 
+/// The preferred vertical side for a fan centered on the source anchor.
+/// Vertical fans keep every action above or below its map item and flip to the
+/// opposite side when the preferred side would intersect viewport chrome.
+enum MapOverlayVerticalDirection: Equatable, Sendable {
+    case top
+    case bottom
+
+    fileprivate var centerAngle: CGFloat {
+        switch self {
+        case .top: -.pi / 2
+        case .bottom: .pi / 2
+        }
+    }
+
+    fileprivate var opposite: Self {
+        switch self {
+        case .top: .bottom
+        case .bottom: .top
+        }
+    }
+
+    fileprivate var representativeQuadrant: MapOverlayQuadrant {
+        switch self {
+        case .top: .topTrailing
+        case .bottom: .bottomTrailing
+        }
+    }
+}
+
 /// A resolved fan layout. Centers are in viewport coordinates, so the menu can
 /// stay outside the transformed map and retain a constant physical size.
 struct MapAdaptiveFanPlacement: Sendable {
@@ -221,6 +250,103 @@ enum MapAdaptiveFanGeometry {
         )
     }
 
+    /// Places a compact fan centered vertically above or below its anchor.
+    /// When a small item count does not need the full 90-degree arc, the arc
+    /// narrows to the requested center spacing instead of spreading across the
+    /// minimum radius.
+    static func verticalPlacement(
+        anchor: CGPoint,
+        itemCount: Int,
+        viewport: CGRect,
+        preferredDirection: MapOverlayVerticalDirection,
+        centerSpacing: CGFloat = minimumCenterSpacing
+    ) -> MapAdaptiveFanPlacement {
+        let resolvedCenterSpacing = max(
+            minimumCenterSpacing,
+            centerSpacing.isFinite ? centerSpacing : minimumCenterSpacing
+        )
+        guard itemCount > 0,
+              viewport.isFiniteAndPositive,
+              viewport.width >= buttonSize.width + edgeInset * 2,
+              viewport.height >= buttonSize.height + edgeInset * 2,
+              anchor.isFinite else {
+            return invalidPlacement(
+                anchor: anchor.isFinite ? anchor : .zero,
+                preferredQuadrant: preferredDirection.representativeQuadrant
+            )
+        }
+
+        let safeButtonCenterRect = viewport.insetBy(
+            dx: buttonSize.width / 2 + edgeInset,
+            dy: buttonSize.height / 2 + edgeInset
+        )
+        guard !safeButtonCenterRect.isNull,
+              safeButtonCenterRect.origin.x.isFinite,
+              safeButtonCenterRect.origin.y.isFinite,
+              safeButtonCenterRect.width >= 0,
+              safeButtonCenterRect.height >= 0 else {
+            return invalidPlacement(
+                anchor: anchor,
+                preferredQuadrant: preferredDirection.representativeQuadrant
+            )
+        }
+
+        let layoutAnchor = anchor.clamped(to: safeButtonCenterRect)
+        let radius = fanRadius(itemCount: itemCount)
+        let safeFrame = viewport.insetBy(dx: edgeInset, dy: edgeInset)
+        let directions = [preferredDirection, preferredDirection.opposite]
+        let candidates = directions.enumerated().map { rank, direction in
+            let centers = verticallyCenteredCenters(
+                anchor: layoutAnchor,
+                itemCount: itemCount,
+                radius: radius,
+                direction: direction,
+                centerSpacing: resolvedCenterSpacing
+            )
+            return FanCandidate(
+                quadrant: direction.representativeQuadrant,
+                centers: centers,
+                overflow: framesBounds(for: centers).overflowDistance(from: safeFrame),
+                capacity: verticalCapacity(
+                    from: layoutAnchor,
+                    in: safeButtonCenterRect,
+                    direction: direction,
+                    radius: radius
+                ),
+                preferenceRank: rank
+            )
+        }
+
+        guard let candidate = candidates.min(by: candidatePrecedes) else {
+            return invalidPlacement(
+                anchor: anchor,
+                preferredQuadrant: preferredDirection.representativeQuadrant
+            )
+        }
+
+        let translation = groupTranslation(
+            centers: candidate.centers,
+            into: safeButtonCenterRect
+        )
+        let centers = candidate.centers.map { center in
+            CGPoint(
+                x: center.x + translation.width,
+                y: center.y + translation.height
+            )
+        }
+
+        return MapAdaptiveFanPlacement(
+            sourceAnchor: anchor,
+            layoutAnchor: layoutAnchor,
+            quadrant: candidate.quadrant,
+            buttonSize: buttonSize,
+            minimumCenterSpacing: resolvedCenterSpacing,
+            centers: centers,
+            isValid: true,
+            isFullyVisible: centers.allSatisfy(safeButtonCenterRect.contains)
+        )
+    }
+
     private static func invalidPlacement(
         anchor: CGPoint,
         preferredQuadrant: MapOverlayQuadrant
@@ -263,6 +389,32 @@ enum MapAdaptiveFanGeometry {
 
         return angles.map { angle in
             CGPoint(
+                x: anchor.x + cos(angle) * radius,
+                y: anchor.y + sin(angle) * radius
+            )
+        }
+    }
+
+    private static func verticallyCenteredCenters(
+        anchor: CGPoint,
+        itemCount: Int,
+        radius: CGFloat,
+        direction: MapOverlayVerticalDirection,
+        centerSpacing: CGFloat
+    ) -> [CGPoint] {
+        let angularStep: CGFloat
+        if itemCount > 1 {
+            let ratio = min(1, centerSpacing / (2 * radius))
+            angularStep = 2 * asin(ratio)
+        } else {
+            angularStep = 0
+        }
+        let totalSpan = angularStep * CGFloat(max(0, itemCount - 1))
+        let startAngle = direction.centerAngle - totalSpan / 2
+
+        return (0..<itemCount).map { index in
+            let angle = startAngle + CGFloat(index) * angularStep
+            return CGPoint(
                 x: anchor.x + cos(angle) * radius,
                 y: anchor.y + sin(angle) * radius
             )
@@ -323,6 +475,18 @@ enum MapAdaptiveFanGeometry {
             ? anchor.y - rect.minY
             : rect.maxY - anchor.y
         return min(max(0, horizontal), radius) + min(max(0, vertical), radius)
+    }
+
+    private static func verticalCapacity(
+        from anchor: CGPoint,
+        in rect: CGRect,
+        direction: MapOverlayVerticalDirection,
+        radius: CGFloat
+    ) -> CGFloat {
+        let available = direction == .top
+            ? anchor.y - rect.minY
+            : rect.maxY - anchor.y
+        return min(max(0, available), radius)
     }
 
     private static func quadrantPreferenceOrder(

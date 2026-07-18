@@ -71,15 +71,11 @@ struct NeedleMapPin: View {
     }
 
     private var needleHeader: some View {
-        Circle()
-            .fill(.black.opacity(0.4))
-            .frame(width: 44, height: 44)
-            .scaleEffect(point.isSelected ? 84.0 / 44.0 : 1.0)
-            .animation(reduceMotion ? nil : .snappy, value: point.isSelected)
-            .opacity(point.isSelected ? 1 : 0)
-            .overlay {
-                needleHead
-            }
+        ZStack {
+            MapSelectionHalo(contentDiameter: 44, isVisible: point.isSelected)
+            needleHead
+        }
+        .frame(width: 44, height: 44)
     }
 
     private var needleHead: some View {
@@ -235,6 +231,35 @@ struct NeedleMapPin: View {
         path.closeSubpath()
         return path
     }()
+}
+
+/// Shared selection halo for needles and map pins. It draws outside the
+/// interactive content without enlarging or intercepting its hit region.
+struct MapSelectionHalo: View {
+    let contentDiameter: CGFloat
+    let isVisible: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var diameter: CGFloat {
+        max(0, contentDiameter) + 40
+    }
+
+    private var collapsedScale: CGFloat {
+        guard diameter > 0 else { return 1 }
+        return max(0, contentDiameter) / diameter
+    }
+
+    var body: some View {
+        Circle()
+            .fill(.black.opacity(0.4))
+            .frame(width: diameter, height: diameter)
+            .scaleEffect(isVisible ? 1 : collapsedScale)
+            .opacity(isVisible ? 1 : 0)
+            .animation(reduceMotion ? nil : .snappy, value: isVisible)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
 }
 
 enum NeedleMapPinButtonType: String, CaseIterable, Hashable {

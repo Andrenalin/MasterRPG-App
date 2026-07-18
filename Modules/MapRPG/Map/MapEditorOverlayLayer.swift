@@ -8,9 +8,30 @@ struct MapViewportOverlayLayer: View {
     let image: AKImage
     let degrees: Double
     let transform: ViewportTransform
+    let safeAreaInsets: EdgeInsets
 
     private var viewportRectangle: CGRect {
         CGRect(origin: .zero, size: session.viewport.configuration.containerSize)
+    }
+
+    /// System bars and visionOS ornaments can visually cover the map without
+    /// belonging to its hit-test tree. Keep the map full-screen, but place
+    /// viewport controls only in the unobscured rectangle.
+    private var actionViewportRectangle: CGRect {
+        let top = safeInset(safeAreaInsets.top)
+        let leading = safeInset(safeAreaInsets.leading)
+        let bottom = safeInset(safeAreaInsets.bottom)
+        let trailing = safeInset(safeAreaInsets.trailing)
+        let rectangle = CGRect(
+            x: viewportRectangle.minX + leading,
+            y: viewportRectangle.minY + top,
+            width: viewportRectangle.width - leading - trailing,
+            height: viewportRectangle.height - top - bottom
+        )
+        guard rectangle.width > 0, rectangle.height > 0 else {
+            return viewportRectangle
+        }
+        return rectangle
     }
 
     var body: some View {
@@ -20,13 +41,15 @@ struct MapViewportOverlayLayer: View {
                 mode: session.mapMode,
                 transform: transform,
                 geometry: session.viewport.geometry,
-                viewportRectangle: viewportRectangle
+                viewportRectangle: actionViewportRectangle,
+                containerSize: viewportRectangle.size
             )
 
             MapNeedleViewportMenuLayer(
                 session: session,
                 transform: transform,
-                viewportRectangle: viewportRectangle
+                viewportRectangle: actionViewportRectangle,
+                containerSize: viewportRectangle.size
             )
 
             MapNeedleLoupeLayer(
@@ -36,7 +59,7 @@ struct MapViewportOverlayLayer: View {
                 canvasSize: session.mapCanvasSize,
                 transform: transform,
                 geometry: session.viewport.geometry,
-                viewportRectangle: viewportRectangle
+                viewportRectangle: actionViewportRectangle
             )
         }
         .frame(
@@ -44,6 +67,10 @@ struct MapViewportOverlayLayer: View {
             height: viewportRectangle.height,
             alignment: .topLeading
         )
+    }
+
+    private func safeInset(_ value: CGFloat) -> CGFloat {
+        value.isFinite ? max(0, value) : 0
     }
 }
 
@@ -53,15 +80,16 @@ private struct MapPinViewportMenuLayer: View {
     let transform: ViewportTransform
     let geometry: ViewportGeometry
     let viewportRectangle: CGRect
+    let containerSize: CGSize
 
     var body: some View {
         if let node = expandedNode, context != .none {
             let anchor = geometry.viewportPoint(fromContent: node.pin.location, transform: transform)
-            let placement = MapAdaptiveFanGeometry.placement(
+            let placement = MapAdaptiveFanGeometry.verticalPlacement(
                 anchor: anchor,
                 itemCount: context.actions.count,
                 viewport: viewportRectangle,
-                preferredQuadrant: .topTrailing
+                preferredDirection: .bottom
             )
             if placement.isValid {
                 MapPinExpandedMenu(
@@ -71,14 +99,14 @@ private struct MapPinViewportMenuLayer: View {
                     usesGlassEffects: true
                 )
                 .frame(
-                    width: viewportRectangle.width,
-                    height: viewportRectangle.height,
+                    width: containerSize.width,
+                    height: containerSize.height,
                     alignment: .topLeading
                 )
-                .transition(.scale(scale: 0.7, anchor: UnitPoint(
-                    x: anchor.x / max(1, viewportRectangle.width),
-                    y: anchor.y / max(1, viewportRectangle.height)
-                )).combined(with: .opacity))
+                // Scale transitions can temporarily separate Liquid Glass
+                // rendering from Button hit regions on touch/spatial input.
+                .transition(.opacity)
+                .zIndex(10)
             }
         }
     }
@@ -100,6 +128,7 @@ private struct MapNeedleViewportMenuLayer: View {
     let session: MapEditorSession
     let transform: ViewportTransform
     let viewportRectangle: CGRect
+    let containerSize: CGSize
 
     var body: some View {
         if shouldShow,
@@ -110,11 +139,14 @@ private struct MapNeedleViewportMenuLayer: View {
                 fromContent: head,
                 transform: transform
             )
-            let placement = MapAdaptiveFanGeometry.placement(
+            let placement = MapAdaptiveFanGeometry.verticalPlacement(
                 anchor: anchor,
                 itemCount: NeedleMapPinButtonType.allCases.count,
                 viewport: viewportRectangle,
-                preferredQuadrant: .topTrailing
+                preferredDirection: .top,
+                // Leave exactly one 48-point button width between the two
+                // needle actions while keeping both controls above the head.
+                centerSpacing: MapAdaptiveFanGeometry.buttonSize.width * 2
             )
             if placement.isValid {
                 MapNeedleViewportMenu(
@@ -124,8 +156,8 @@ private struct MapNeedleViewportMenuLayer: View {
                     placement: placement
                 )
                 .frame(
-                    width: viewportRectangle.width,
-                    height: viewportRectangle.height,
+                    width: containerSize.width,
+                    height: containerSize.height,
                     alignment: .topLeading
                 )
                 // Keep the visual and hit-test frames colocated from the first
@@ -158,7 +190,7 @@ private struct MapNeedleViewportMenu: View {
 #if os(visionOS)
             buttons
 #else
-            GlassEffectContainer {
+            GlassEffectContainer(spacing: 12) {
                 buttons
             }
 #endif
@@ -190,6 +222,7 @@ private struct MapNeedleViewportMenu: View {
                 .help(
                     Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module)
                 )
+                .position(placement.center(at: index) ?? placement.sourceAnchor)
 #if !os(visionOS)
                 .glassEffect(
                     .regular.tint(
@@ -198,7 +231,7 @@ private struct MapNeedleViewportMenu: View {
                 )
                 .glassEffectID(type.label, in: glassNamespace)
 #endif
-                .position(placement.center(at: index) ?? placement.sourceAnchor)
+                .contentShape(.circle)
                 .zIndex(Double(index + 1))
             }
         }

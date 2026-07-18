@@ -224,6 +224,7 @@ extension MasterController {
         await root.photoRoot.gameControllable.gameModel.setCurrent(players: players)
         await root.pdfRoot.gameControllable.gameModel.setCurrent(players: players)
         await root.spaceRoot.gameControllable.gameModel.setCurrent(players: players)
+        await root.tableRoot.gameControllable.gameModel.setCurrent(players: players)
         await root.weatherRoot.gameControllable.gameModel.setCurrent(players: players)
 
         var playerNames = gameRoster.players.filter { $0.type != .observer }.map { $0.name }.sorted()
@@ -340,7 +341,7 @@ extension MasterController {
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType, playerId: UUID? = nil) async {
         // Weather is immutable during a game. It is presented and repaired via
         // reveal messages only; live update messages are not supported yet.
-        guard message.type != .weather else { return }
+        guard message.type != .table, message.type != .weather else { return }
         if message.type == .audio, actionType == .playAudio {
             await requestAudioPlay(message)
             return
@@ -367,6 +368,11 @@ extension MasterController {
     }
     
     func send(type: RPGMessageType, subtype: RPGMessageActionType, updated: NetworkCodableDataType, connectionId: ConnectionController.ID? = nil, playerId: UUID? = nil, authoritativeMaster: Bool? = nil) async {
+        // Tables are immutable during a game. Their complete state is exchanged
+        // only through reveal/store requests; accepting an update would bypass
+        // the versioned canonical-package handshake.
+        guard type != .update || updated.type != .table else { return }
+
         let counter = await gameModel.nextMessageCounter()
         Logger.networking.debug("MasterController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subtype.debugDescription, privacy: .public) for \(updated.type.token, privacy: .public) -> \(updated.id, privacy: .public)")
 
@@ -430,6 +436,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         await root.photoRoot.photoGameControllable.removePhotoReports(for: playerId)
         await root.pdfRoot.pdfGameControllable.removePdfReports(for: playerId)
         await root.spaceRoot.spaceGameControllable.removeSpaceReports(for: playerId)
+        await root.tableRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
         await root.weatherRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
         if await root.gameModel.remove(playerId: playerId) {
             await root.statisticsModel.participantLeft(id: playerId)
@@ -978,7 +985,11 @@ extension MasterController {
     }
     
     func handleTable(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
+        guard model.type != .update else { return nil }
+
         if model.subType == .ok {
+            let currentVersion = await root.tableRoot.gameControllable.networkVersion(for: model.data.id)
+            guard model.data.version != 0, model.data.version == currentVersion else { return nil }
             await root.tableRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
@@ -988,7 +999,7 @@ extension MasterController {
         case .reveal, .store:
             return try await root.tableRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
-            break
+            return nil
         }
         return nil
     }
@@ -1292,7 +1303,15 @@ private extension MasterController {
             Logger.networking.error("MasterController: No player controller to remap proxy message \(model.debugDescription, privacy: .public)")
             return
         }
-        await playerController.send(type: model.type, subType: model.subType, updated: model.data)
+        // This message came from a proxy client. Sending it upstream must not
+        // broadcast the request back to that same proxy (or its siblings),
+        // otherwise every mirror can request the same missing payload again.
+        await playerController.send(
+            type: model.type,
+            subType: model.subType,
+            updated: model.data,
+            relayToProxyClients: false
+        )
     }
 
     /// Whether the host holds everything needed to answer a proxy data request
@@ -1315,6 +1334,11 @@ private extension MasterController {
                 itemId: data.id,
                 version: data.version
             )
+        case .table:
+            // A player's current-session Table is a CRDT merge with its local
+            // copy and may no longer equal the game master's canonical package.
+            // Always forward proxy repairs to the real master.
+            return false
         default:
             return true
         }
@@ -1346,11 +1370,12 @@ private extension MasterController {
                 nil
             }
         case .table:
-            reference = if let id = await root.tableRoot.gameControllable.gameModel.currentItemId {
-                await root.tableRoot.gameControllable.share(id: id)
-            } else {
-                nil
-            }
+            // Tables are rare and noncritical, so a reconnect can wait for the
+            // game master to show the Table again. More importantly, a proxy
+            // host keeps the player's CRDT-merged copy here; deriving a replay
+            // version from that copy would advertise a baseline the real game
+            // master never sent.
+            reference = nil
         case .value:
             reference = if let id = await root.characterRoot.gameControllable.gameModel.currentItemId {
                 await root.characterRoot.gameControllable.share(id: id)

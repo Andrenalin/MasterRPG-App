@@ -48,6 +48,10 @@ struct EditToolBarViewModifier: ViewModifier {
                         confirmTileButtonView
                     }
                 }
+#if os(macOS)
+                .toolbarBackground(.windowBackground, for: .windowToolbar)
+                .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
+#endif
         } else {
             // Normal Edit Mode
             content
@@ -162,6 +166,10 @@ struct EditToolBarViewModifier: ViewModifier {
                     }
                 }
             }
+#if os(macOS)
+            .toolbarBackground(.windowBackground, for: .windowToolbar)
+            .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
+#endif
         } // end else (edit mode)
     }
 }
