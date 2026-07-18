@@ -21,50 +21,58 @@ struct MapEditorCanvas: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            MapViewportInteractionPlane(
-                session: session,
-                interactionTransform: $interactionTransform,
-                surface: .viewport
-            )
-
-            MapLogicalCanvas(
-                session: session,
-                image: image,
-                degrees: degrees,
-                map: map,
-                viewportScale: displayedTransform.scale,
-                interactionTransform: $interactionTransform
-            )
-            .scaleEffect(displayedTransform.scale, anchor: .topLeading)
-            .offset(
-                x: displayedTransform.offset.x,
-                y: displayedTransform.offset.y
-            )
-
-            MapViewportOverlayLayer(
-                session: session,
-                image: image,
-                degrees: degrees,
-                transform: displayedTransform,
-                safeAreaInsets: safeAreaInsets
-            )
-            // Menus and the loupe live in viewport space and must remain above
-            // every transformed map hit target, including selected needles.
-            .zIndex(100)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .coordinateSpace(name: MapViewportCoordinateSpace.name)
-        .clipped()
-        .onGeometryChange(for: MapViewportMetrics.self) { proxy in
-            MapViewportMetrics(
-                size: proxy.size,
-                safeAreaInsets: proxy.safeAreaInsets
-            )
-        } action: { metrics in
-            safeAreaInsets = metrics.safeAreaInsets
-            session.updateContainerSize(metrics.size)
-        }
+        // Only this transparent window plane participates in layout. The
+        // logical map has a fixed (often very large) size and must not be
+        // allowed to become the canvas's ideal size: doing so makes the map
+        // measure itself as the viewport, produces a false fit scale of 1,
+        // and prevents the user from pinching back out to the real window fit.
+        Color.clear
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(alignment: .topLeading) {
+                MapViewportInteractionPlane(
+                    session: session,
+                    interactionTransform: $interactionTransform,
+                    surface: .viewport
+                )
+            }
+            .overlay(alignment: .topLeading) {
+                MapLogicalCanvas(
+                    session: session,
+                    image: image,
+                    degrees: degrees,
+                    map: map,
+                    viewportScale: displayedTransform.scale,
+                    interactionTransform: $interactionTransform
+                )
+                .scaleEffect(displayedTransform.scale, anchor: .topLeading)
+                .offset(
+                    x: displayedTransform.offset.x,
+                    y: displayedTransform.offset.y
+                )
+            }
+            .overlay(alignment: .topLeading) {
+                MapViewportOverlayLayer(
+                    session: session,
+                    image: image,
+                    degrees: degrees,
+                    transform: displayedTransform,
+                    safeAreaInsets: safeAreaInsets
+                )
+                // Menus and the loupe live in viewport space and must remain above
+                // every transformed map hit target, including selected needles.
+                .zIndex(100)
+            }
+            .coordinateSpace(name: MapViewportCoordinateSpace.name)
+            .clipped()
+            .onGeometryChange(for: MapViewportMetrics.self) { proxy in
+                MapViewportMetrics(
+                    size: proxy.size,
+                    safeAreaInsets: proxy.safeAreaInsets
+                )
+            } action: { metrics in
+                safeAreaInsets = metrics.safeAreaInsets
+                session.updateContainerSize(metrics.size)
+            }
     }
 }
 
@@ -164,27 +172,29 @@ struct MapViewportGestureModifier: ViewModifier {
 
 #if !os(tvOS)
     private var viewportGesture: some Gesture {
-        DragGesture(
-            minimumDistance: 5,
-            coordinateSpace: .named(MapViewportCoordinateSpace.name)
-        )
-        .simultaneously(with: MagnifyGesture())
-        .updating(interactionTransform) { value, state, _ in
-            state = transientTransform(for: value)
-        }
-        .onEnded { value in
-            session.viewport.commit(transientTransform(for: value))
-        }
+        MagnifyGesture(minimumScaleDelta: 0)
+            .simultaneously(
+                with: DragGesture(
+                    minimumDistance: 3,
+                    coordinateSpace: .named(MapViewportCoordinateSpace.name)
+                )
+            )
+            .updating(interactionTransform) { value, state, _ in
+                state = transientTransform(for: value)
+            }
+            .onEnded { value in
+                session.viewport.commit(transientTransform(for: value))
+            }
     }
 
     private func transientTransform(
-        for value: SimultaneousGesture<DragGesture, MagnifyGesture>.Value
+        for value: SimultaneousGesture<MagnifyGesture, DragGesture>.Value
     ) -> ViewportTransform {
-        let translation = value.first?.translation ?? .zero
-        let magnification = value.second?.magnification ?? 1
-        let anchor = value.second.map {
+        let translation = value.second?.translation ?? .zero
+        let magnification = value.first?.magnification ?? 1
+        let anchor = value.first.map {
             surface.viewportAnchor(
-                for: $0.startAnchor,
+                forStartLocation: $0.startLocation,
                 session: session
             )
         } ?? session.viewport.geometry.containerCenter
@@ -204,23 +214,15 @@ enum MapViewportGestureSurface {
 
     @MainActor
     func viewportAnchor(
-        for unitPoint: UnitPoint,
+        forStartLocation startLocation: CGPoint,
         session: MapEditorSession
     ) -> CGPoint {
         switch self {
         case .viewport:
-            let size = session.viewport.configuration.containerSize
-            return CGPoint(
-                x: size.width * unitPoint.x,
-                y: size.height * unitPoint.y
-            )
-        case .content(let size):
-            let contentPoint = CGPoint(
-                x: size.width * unitPoint.x,
-                y: size.height * unitPoint.y
-            )
+            return startLocation
+        case .content:
             return session.viewport.geometry.viewportPoint(
-                fromContent: contentPoint,
+                fromContent: startLocation,
                 transform: session.viewport.transform
             )
         }

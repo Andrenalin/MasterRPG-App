@@ -79,7 +79,7 @@ final class MapEditorSession {
     private var canvasSize: CGSize
     private var containerSize: CGSize
     private var pendingInitialFitMapId: UUID?
-    private var pendingEntryFocusId: UUID?
+    private var awaitingInitialRoomHydration = false
     private var presentationIsActive = false
     @ObservationIgnored private var actionRouter: MapEditorActionRouter?
 
@@ -311,10 +311,20 @@ final class MapEditorSession {
             hexToAppend = []
         }
         let final = merged + hexToAppend
+        let previousEntryIds = Set(entries.entries.map(\.id))
+        let finalEntryIds = Set(final.map(\.id))
+        let isInitialRoomHydration = awaitingInitialRoomHydration
+            && previousEntryIds != finalEntryIds
+        if isInitialRoomHydration {
+            awaitingInitialRoomHydration = false
+        }
 
         // Seed persisted focus regardless of whether game-mode entries were
         // already installed at session creation. Initial synchronization keeps
-        // the focus value but deliberately does not zoom to it.
+        // the focus value but deliberately does not zoom to it. The same rule
+        // applies when room records arrive after the initially empty map has
+        // already fitted. Once that structural hydration completes, focus-only
+        // updates for the same room identities resume normal game semantics.
         let focus = final.first(where: { $0.focused })?.id
         let focusChanged = focus != focusId
         if focusChanged {
@@ -328,7 +338,7 @@ final class MapEditorSession {
             isHexMap = final.contains(where: { $0.isHexGrid })
         }
 
-        if focusChanged, appliesFocus, appeared {
+        if focusChanged, appliesFocus, appeared, !isInitialRoomHydration {
             focusedMap()
         }
     }
@@ -345,7 +355,7 @@ final class MapEditorSession {
         if changedMap {
             appeared = false
             pendingInitialFitMapId = map.id
-            pendingEntryFocusId = nil
+            awaitingInitialRoomHydration = false
             focusId = nil
             workingCopy = nil
             clearSelections()
@@ -382,15 +392,14 @@ final class MapEditorSession {
         presentationIsActive = true
         appeared = false
         pendingInitialFitMapId = map.id
-        pendingEntryFocusId = nil
         resetEntries(newEntries: map.entries, map: map, appliesFocus: false)
+        awaitingInitialRoomHydration = entries.entries.isEmpty
         _ = completePendingInitialFitIfPossible()
     }
 
     func disappear() {
         presentationIsActive = false
         appeared = false
-        pendingEntryFocusId = nil
         editEntries.needleInteraction.dragCoordinate = nil
     }
 
@@ -412,32 +421,6 @@ final class MapEditorSession {
         }
 
         focus(on: focusRoom.bounds)
-    }
-
-    /// Explicit editor room navigation focuses the active working-copy room.
-    /// Persisted game focus is still retained without overriding initial fit.
-    func focusActiveEntry() {
-        guard let activeEntryId = editEntries.entries.first?.id,
-              let activeRoom = editEntries.roomNode(for: activeEntryId) else {
-            resetZoom()
-            return
-        }
-        focus(on: activeRoom.bounds)
-    }
-
-    /// Applies explicit room navigation after the initial full-map fit. If a
-    /// selection arrives during the first window measurement, retain it until
-    /// the viewport has valid geometry instead of silently dropping it.
-    func focusActiveEntryWhenReady() {
-        guard presentationIsActive,
-              let activeEntryId = editEntries.entries.first?.id else { return }
-        guard pendingInitialFitMapId == nil,
-              Self.isValidSize(containerSize) else {
-            pendingEntryFocusId = activeEntryId
-            return
-        }
-        pendingEntryFocusId = nil
-        focusActiveEntry()
     }
 
     private func focus(on bounds: CGRect) {
@@ -503,10 +486,6 @@ final class MapEditorSession {
         guard applyPendingInitialFitIfPossible() else { return false }
         if presentationIsActive {
             appeared = true
-            if pendingEntryFocusId == editEntries.entries.first?.id {
-                pendingEntryFocusId = nil
-                focusActiveEntry()
-            }
         }
         return true
     }

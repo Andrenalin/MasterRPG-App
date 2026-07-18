@@ -187,8 +187,6 @@ extension MapEditController {
                 }
             }
         }
-
-        editorModel.focusActiveEntryWhenReady()
     }
 }
 

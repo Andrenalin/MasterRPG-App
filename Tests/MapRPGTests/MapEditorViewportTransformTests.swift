@@ -230,6 +230,112 @@ struct MapEditorViewportTransformTests {
         #expect(sut.viewport.isAtFit)
     }
 
+    @Test("Late initial room hydration seeds persisted focus without changing fit")
+    func lateInitialRoomHydrationPreservesFit() {
+        let map = makeMap(
+            name: "Late room hydration",
+            size: CGSize(width: 1_200, height: 800)
+        )
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 600, height: 400),
+            mode: .gameMaster
+        )
+        sut.firstAppear(map: map)
+        let fittedTransform = sut.viewport.transform
+        let focusedRoom = MapEntryModel(
+            id: UUID(),
+            name: "Persisted room",
+            content: "",
+            coordinates: [
+                CGPoint(x: 700, y: 400),
+                CGPoint(x: 850, y: 400),
+                CGPoint(x: 850, y: 550),
+                CGPoint(x: 700, y: 550)
+            ],
+            focused: true
+        )
+        let hydratedMap = MapModel(
+            id: map.id,
+            name: map.name,
+            entries: [focusedRoom],
+            width: map.width,
+            height: map.height
+        )
+
+        sut.resetEntries(newEntries: hydratedMap.entries, map: hydratedMap)
+
+        #expect(sut.focusId == focusedRoom.id)
+        #expect(sut.viewport.isAtFit)
+        #expect(sut.viewport.transform == fittedTransform)
+    }
+
+    @Test("Focus-only changes after late hydration retain game room focusing")
+    func focusOnlyChangeAfterLateHydrationFocusesRoom() throws {
+        let map = makeMap(
+            name: "Late focus update",
+            size: CGSize(width: 1_200, height: 800)
+        )
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 600, height: 400),
+            mode: .gameMaster
+        )
+        sut.firstAppear(map: map)
+        var firstRoom = MapEntryModel(
+            id: UUID(),
+            name: "First room",
+            content: "",
+            coordinates: [
+                CGPoint(x: 100, y: 100),
+                CGPoint(x: 250, y: 100),
+                CGPoint(x: 250, y: 250),
+                CGPoint(x: 100, y: 250)
+            ],
+            focused: true
+        )
+        var secondRoom = MapEntryModel(
+            id: UUID(),
+            name: "Second room",
+            content: "",
+            coordinates: [
+                CGPoint(x: 750, y: 450),
+                CGPoint(x: 900, y: 450),
+                CGPoint(x: 900, y: 600),
+                CGPoint(x: 750, y: 600)
+            ]
+        )
+        let hydratedMap = MapModel(
+            id: map.id,
+            name: map.name,
+            entries: [firstRoom, secondRoom],
+            width: map.width,
+            height: map.height
+        )
+        sut.resetEntries(newEntries: hydratedMap.entries, map: hydratedMap)
+        #expect(sut.viewport.isAtFit)
+
+        firstRoom.focused = false
+        secondRoom.focused = true
+        let focusUpdate = MapModel(
+            id: map.id,
+            name: map.name,
+            entries: [firstRoom, secondRoom],
+            width: map.width,
+            height: map.height
+        )
+
+        sut.resetEntries(newEntries: focusUpdate.entries, map: focusUpdate)
+
+        let focusedNode = try #require(sut.entries.roomNode(for: secondRoom.id))
+        #expect(sut.focusId == secondRoom.id)
+        #expect(!sut.viewport.isAtFit)
+        expectApproximately(
+            sut.contentPoint(fromViewport: sut.viewport.geometry.containerCenter),
+            CGPoint(x: focusedNode.bounds.midX, y: focusedNode.bounds.midY)
+        )
+    }
+
     @Test("First appearance remains hidden until a valid window measurement completes the fit")
     func firstAppearanceWaitsForValidWindowMeasurement() {
         // Given
@@ -254,8 +360,8 @@ struct MapEditorViewportTransformTests {
         expectApproximately(sut.viewport.transform.scale, 0.5)
     }
 
-    @Test("Initial room selection preserves fit and selecting the next room focuses it")
-    func laterRoomSelectionFocusesActiveRoom() throws {
+    @Test("Changing the active editor room preserves the viewport")
+    func changingActiveRoomPreservesViewport() throws {
         // Given
         let initialRoom = MapEntryModel(
             id: UUID(),
@@ -306,27 +412,34 @@ struct MapEditorViewportTransformTests {
         #expect(editorModel.viewport.isAtFit)
         #expect(editorModel.editEntries.entries.first?.id == initialRoom.id)
 
-        // When: the user explicitly moves to the next room after presentation.
+        // Given: the user has established a manual viewport before moving to
+        // the next room in the editor.
+        let manualViewport = editorModel.viewport.geometry.interacting(
+            from: editorModel.viewport.transform,
+            translation: CGSize(width: -75, height: 40),
+            magnification: 1.6,
+            anchor: editorModel.viewport.geometry.containerCenter
+        )
+        editorModel.viewport.commit(manualViewport)
+        let viewportBeforeSelection = editorModel.viewport.transform
+
+        // When: the user moves to the next room after presentation.
         sut.changeMap(
             map: map,
             currentEntryId: nextRoom.id,
             editorModel: editorModel
         )
 
-        // Then: the newly active room is centered and zoomed in.
-        let activeRoom = try #require(editorModel.editEntries.roomNode(for: nextRoom.id))
-        let viewportCenter = editorModel.viewport.geometry.containerCenter
+        // Then: only the active room/needles change. Room navigation must not
+        // pan, zoom, or otherwise rewrite the user's viewport.
+        let activeRoom = try #require(editorModel.editEntries.entries.first)
         #expect(editorModel.editEntries.entries.first?.id == nextRoom.id)
-        #expect(!editorModel.viewport.isAtFit)
-        #expect(editorModel.viewport.transform.scale > editorModel.viewport.geometry.fitScale)
-        expectApproximately(
-            editorModel.contentPoint(fromViewport: viewportCenter),
-            CGPoint(x: activeRoom.bounds.midX, y: activeRoom.bounds.midY)
-        )
+        #expect(activeRoom.coordinates == nextRoom.coordinates)
+        #expect(editorModel.viewport.transform == viewportBeforeSelection)
     }
 
-    @Test("A room selection made while window geometry is pending focuses after measurement")
-    func deferredRoomSelectionIsNotDropped() throws {
+    @Test("A room selection made while window geometry is pending still finishes at full-map fit")
+    func deferredRoomSelectionPreservesInitialFit() throws {
         let initialRoom = MapEntryModel(
             id: UUID(),
             name: "Initial room",
@@ -373,14 +486,12 @@ struct MapEditorViewportTransformTests {
         )
         editorModel.updateContainerSize(CGSize(width: 600, height: 400))
 
-        let activeRoom = try #require(editorModel.editEntries.roomNode(for: selectedRoom.id))
         #expect(editorModel.appeared)
-        #expect(editorModel.viewport.transform.scale > editorModel.viewport.geometry.fitScale)
+        #expect(editorModel.editEntries.entries.first?.id == selectedRoom.id)
+        #expect(editorModel.viewport.isAtFit)
         expectApproximately(
-            editorModel.contentPoint(
-                fromViewport: editorModel.viewport.geometry.containerCenter
-            ),
-            CGPoint(x: activeRoom.bounds.midX, y: activeRoom.bounds.midY)
+            editorModel.viewport.transform.scale,
+            editorModel.viewport.geometry.fitScale
         )
     }
 
@@ -394,7 +505,7 @@ struct MapEditorViewportTransformTests {
         )
 
         let anchor = MapViewportGestureSurface.content(mapSize).viewportAnchor(
-            for: UnitPoint(x: 0.75, y: 0.25),
+            forStartLocation: CGPoint(x: 900, y: 200),
             session: sut
         )
 
