@@ -88,6 +88,17 @@ struct WindowViewerList: Scene {
 struct WindowViewerSetUpViewModifier: ViewModifier {
     let model: AppModel
     let module: NetworkModules
+    let showsWindowToolbarBackground: Bool
+
+    init(
+        model: AppModel,
+        module: NetworkModules,
+        showsWindowToolbarBackground: Bool = false
+    ) {
+        self.model = model
+        self.module = module
+        self.showsWindowToolbarBackground = showsWindowToolbarBackground
+    }
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -100,7 +111,10 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
             .environmentSetUp(model)
             .environmentActionSetUp(model)
 #if os(macOS)
-            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+            .toolbarBackgroundVisibility(
+                showsWindowToolbarBackground ? .visible : .hidden,
+                for: .windowToolbar
+            )
 #endif
     }
 }

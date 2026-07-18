@@ -31,7 +31,7 @@ struct WindowVisionList: Scene {
             return WindowPlacement(.utilityPanel)
         }
         .restorationBehavior(.disabled)
-        
+
         WindowGroup(id: SceneId.imageSpaceViewer.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.photoRoot.viewController.imageSpaceView()
@@ -44,10 +44,14 @@ struct WindowVisionList: Scene {
         .windowResizability(.contentSize)
         .windowStyle(.plain)
         .restorationBehavior(.disabled)
-
+        
         ImmersiveSpace(id: SceneId.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
+                appModel.spaceRoot.viewController.spaceImmersionWindow(
+                    root: appModel.spaceRoot,
+                    id: appModel.spaceRoot.gameControllable.gameModel.currentItemId ?? selection?.itemId ?? UUID(),
+                    defaultSize: defaultSize
+                )
                     .sceneTracker(for: SceneId.spaceViewer)
                     .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .space))
             }

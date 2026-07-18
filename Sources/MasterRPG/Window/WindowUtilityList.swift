@@ -31,7 +31,17 @@ struct WindowUtilityList: Scene {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.mapRoot.viewController.mapEditWindow(root: appModel.mapRoot)
                         .sceneTracker(for: SceneId.mapEditor)
-                        .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .map))
+                        .modifier(
+                            WindowViewerSetUpViewModifier(
+                                model: appModel,
+                                module: .map,
+                                showsWindowToolbarBackground: true
+                            )
+                        )
+#if os(macOS)
+                        .toolbarBackground(.windowBackground, for: .windowToolbar)
+                        .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
+#endif
                 }
                 .environment(appModel.scenesManager)
                 .environment(appModel)
@@ -44,7 +54,17 @@ struct WindowUtilityList: Scene {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.mapRoot.viewController.mapEditWindow(root: appModel.mapRoot, isTileEditor: true)
                         .sceneTracker(for: SceneId.mapTileEditor)
-                        .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .map))
+                        .modifier(
+                            WindowViewerSetUpViewModifier(
+                                model: appModel,
+                                module: .map,
+                                showsWindowToolbarBackground: true
+                            )
+                        )
+#if os(macOS)
+                        .toolbarBackground(.windowBackground, for: .windowToolbar)
+                        .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
+#endif
                 }
                 .environment(appModel.scenesManager)
                 .environment(appModel)
@@ -66,6 +86,30 @@ struct WindowUtilityList: Scene {
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.above(SceneId.game.rawValue))
             .restorationBehaviorAll(.disabled)
+
+            BaseWindow("Battle Round", id: SceneId.battleRound.rawValue) {
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    GameFactory.battleRoundView(root: appModel.gameRoot)
+#if os(macOS)
+                        .frame(
+                            minWidth: 620,
+                            idealWidth: 760,
+                            minHeight: 520,
+                            idealHeight: 760
+                        )
+#endif
+                        .sceneTracker(for: SceneId.battleRound)
+                        .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .map))
+                }
+                .environment(appModel.scenesManager)
+                .environment(appModel)
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))
+            .restorationBehaviorAll(.disabled)
+#if os(macOS) || os(visionOS)
+            .defaultLaunchBehavior(.suppressed)
+#endif
 
 #if os(macOS) || os(visionOS)
             BaseWindow("Game Statistics", id: SceneId.gameStatistics.rawValue) {
