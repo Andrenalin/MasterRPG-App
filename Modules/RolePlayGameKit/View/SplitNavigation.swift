@@ -140,9 +140,6 @@ private extension SplitNavigation {
             
         }
         .tabViewStyle(.sidebarAdaptable)
-#if os(iOS)
-        .navigationSplitViewColumnWidth(min: 150, ideal: 150, max: 180)
-#endif
     }
     
     func pageTab(for tab: RootRoute) -> some TabContent<RootRoute?> {

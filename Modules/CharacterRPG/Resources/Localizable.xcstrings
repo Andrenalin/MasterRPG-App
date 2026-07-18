@@ -230,6 +230,7 @@
       }
     },
     "Adventure" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -642,6 +643,7 @@
       }
     },
     "Items sent from the gamemaster" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
