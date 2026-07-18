@@ -45,7 +45,7 @@ public protocol MapGameStorable {
     @MainActor func resizePin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func toggleHighlightPin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func networkPin(itemId: UUID, pinId: UUID) -> NetworkCodableDataType?
-    @MainActor func updateMap(for itemId: UUID, with data: NetworkCodableDataType)
+    @MainActor @discardableResult func updateMap(for itemId: UUID, with data: NetworkCodableDataType) -> Bool
     @MainActor func mapUpdateResult(for itemId: UUID) -> String
     @MainActor func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType
     @MainActor func saveAll() -> ItemModuleIds
@@ -101,20 +101,10 @@ extension GameController: GameControllable {
 
 extension GameController: MapGameStorable {
     func mapAssetVersion(for itemId: UUID) async -> Int {
-        let backgroundPhotoId = await MainActor.run {
-            gameItem(for: itemId).photoId
+        if let metadata = await stablePackageMetadata(for: itemId) {
+            return metadata.assetVersion
         }
-        let backgroundPhotoVersion: Int?
-        if let backgroundPhotoId {
-            backgroundPhotoVersion = await root.photoRoot.gameControllable.networkVersion(for: backgroundPhotoId)
-        } else {
-            backgroundPhotoVersion = nil
-        }
-        return MapAssetFingerprint(
-            mapId: itemId,
-            backgroundPhotoId: backgroundPhotoId,
-            backgroundPhotoVersion: backgroundPhotoVersion
-        ).version
+        return await currentMapAssetVersion(for: itemId)
     }
 
     @MainActor
@@ -123,16 +113,18 @@ extension GameController: MapGameStorable {
     }
 
     func shareMap(id: UUID) async -> NetworkCodableDataType {
-        let metadata = await MainActor.run {
-            let item = gameItem(for: id)
-            return (version: item.version, contentVersion: MapUpdatePayload(model: item).contentVersion)
+        guard let metadata = await stablePackageMetadata(for: id) else {
+            // A continuously edited map may not become stable within the
+            // bounded retry window. This actor-isolated fallback is still one
+            // internally consistent generation; a later asset change simply
+            // makes receivers request the full package.
+            return await currentMapReference(for: id)
         }
-        let assetVersion = await mapAssetVersion(for: id)
         return NetworkCodableDataType(
             id: id,
             type: .map,
             version: metadata.version,
-            assetVersion: assetVersion,
+            assetVersion: metadata.assetVersion,
             contentVersion: metadata.contentVersion
         )
     }
@@ -162,24 +154,24 @@ extension GameController: MapGameStorable {
     }
 
     func networkMapContentUpdate(for itemId: UUID) async -> NetworkCodableDataType {
-        let metadata = await MainActor.run {
-            let item = gameItem(for: itemId)
-            let payload = MapUpdatePayload(model: item)
-            return (
-                version: item.version,
-                contentVersion: payload.contentVersion,
-                data: payload.encodedData()
+        for _ in 0..<Self.maximumPackageExportAttempts {
+            let capture = await mapContentCapture(for: itemId)
+            guard let metadata = await stablePackageMetadata(for: itemId),
+                  capture.core.version == metadata.version,
+                  capture.core.contentVersion == metadata.contentVersion,
+                  await packageCoreMetadata(for: itemId) == capture.core else {
+                continue
+            }
+            return NetworkCodableDataType(
+                id: itemId,
+                type: .map,
+                version: metadata.version,
+                data: capture.data,
+                assetVersion: metadata.assetVersion,
+                contentVersion: metadata.contentVersion
             )
         }
-        let assetVersion = await mapAssetVersion(for: itemId)
-        return NetworkCodableDataType(
-            id: itemId,
-            type: .map,
-            version: metadata.version,
-            data: metadata.data,
-            assetVersion: assetVersion,
-            contentVersion: metadata.contentVersion
-        )
+        return await currentMapContentUpdate(for: itemId)
     }
 
     @MainActor
@@ -340,10 +332,16 @@ extension GameController: MapGameStorable {
         var result: [NetworkCodableDataType] = []
         var uniquePhotoIds: Set<UUID> = []
         for photoId in photoIds where uniquePhotoIds.insert(photoId).inserted {
-            // SharePlay repairs model ownership, not the independent iCloud
-            // download state. `hasItem` checks the photo game controller first,
-            // then the persistent item controller.
-            guard await !root.photoRoot.gameControllable.hasItem(id: photoId, version: 0) else { continue }
+            let hasItem = await root.photoRoot.gameControllable.hasItem(id: photoId, version: 0)
+            let hasFile: Bool
+            if hasItem {
+                hasFile = await root.photoRoot.gameControllable.hasLocalFileData(for: photoId)
+            } else {
+                hasFile = false
+            }
+            // A metadata-only Photo cannot render a pin. Route both missing
+            // ownership and missing local bytes through the same Photo repair.
+            guard !hasItem || !hasFile else { continue }
             await result.append(root.photoRoot.gameControllable.share(id: photoId))
         }
         return result
@@ -490,9 +488,10 @@ extension GameController: MapGameStorable {
     }
 
     @MainActor
-    func updateMap(for itemId: UUID, with data: NetworkCodableDataType) {
-        guard let mapData = data.data, let text = String(data: mapData, encoding: .utf8) else { return }
-        updateMap(for: itemId, with: text)
+    @discardableResult
+    func updateMap(for itemId: UUID, with data: NetworkCodableDataType) -> Bool {
+        guard let mapData = data.data, let text = String(data: mapData, encoding: .utf8) else { return false }
+        return updateMap(for: itemId, with: text)
     }
 
     @MainActor
@@ -523,6 +522,7 @@ extension GameController: MapGameStorable {
             type: .map,
             version: item.version,
             data: position.encodeData(),
+            assetVersion: currentMapAssetVersion(for: itemId),
             contentVersion: mapContentVersion(for: itemId)
         )
     }
@@ -566,6 +566,11 @@ private extension GameController {
         let backgroundPhotoId: UUID?
     }
 
+    struct MapContentCapture: Sendable {
+        let core: PackageCoreMetadata
+        let data: Data?
+    }
+
     func stablePackageMetadata(for itemId: UUID) async -> PackageMetadata? {
         for _ in 0..<Self.maximumPackageExportAttempts {
             let before = await packageCoreMetadata(for: itemId)
@@ -576,7 +581,13 @@ private extension GameController {
                 backgroundPhotoVersion = nil
             }
             let after = await packageCoreMetadata(for: itemId)
-            guard before == after else { continue }
+            let currentBackgroundPhotoVersion = await currentBackgroundPhotoVersion(
+                for: after.backgroundPhotoId
+            )
+            guard before == after,
+                  backgroundPhotoVersion == currentBackgroundPhotoVersion else {
+                continue
+            }
             return PackageMetadata(
                 version: after.version,
                 assetVersion: MapAssetFingerprint(
@@ -601,13 +612,56 @@ private extension GameController {
     }
 
     @MainActor
+    func mapContentCapture(for itemId: UUID) -> MapContentCapture {
+        let item = gameItem(for: itemId)
+        let payload = MapUpdatePayload(model: item)
+        return MapContentCapture(
+            core: PackageCoreMetadata(
+                version: item.version,
+                contentVersion: payload.contentVersion,
+                backgroundPhotoId: item.photoId
+            ),
+            data: payload.encodedData()
+        )
+    }
+
+    @MainActor
+    func currentMapReference(for itemId: UUID) -> NetworkCodableDataType {
+        let item = gameItem(for: itemId)
+        return NetworkCodableDataType(
+            id: itemId,
+            type: .map,
+            version: item.version,
+            assetVersion: currentMapAssetVersion(for: itemId),
+            contentVersion: MapUpdatePayload(model: item).contentVersion
+        )
+    }
+
+    @MainActor
+    func currentMapContentUpdate(for itemId: UUID) -> NetworkCodableDataType {
+        let capture = mapContentCapture(for: itemId)
+        return NetworkCodableDataType(
+            id: itemId,
+            type: .map,
+            version: capture.core.version,
+            data: capture.data,
+            assetVersion: currentMapAssetVersion(for: itemId),
+            contentVersion: capture.core.contentVersion
+        )
+    }
+
+    @MainActor
+    func currentBackgroundPhotoVersion(for photoId: UUID?) -> Int? {
+        guard let photoId else { return nil }
+        let gamePhoto = root.photoRoot.gameControllable.gameModel.itemData[photoId] as? PhotoModel
+        let persistentPhoto = root.photoRoot.itemControllable.itemSync(for: photoId) as? PhotoModel
+        return (gamePhoto ?? persistentPhoto)?.version ?? -1
+    }
+
+    @MainActor
     func currentMapAssetVersion(for itemId: UUID) -> Int {
         let backgroundPhotoId = gameItem(for: itemId).photoId
-        let backgroundPhotoVersion = backgroundPhotoId.flatMap { photoId in
-            let gamePhoto = root.photoRoot.gameControllable.gameModel.itemData[photoId] as? PhotoModel
-            let persistentPhoto = root.photoRoot.itemControllable.itemSync(for: photoId) as? PhotoModel
-            return (gamePhoto ?? persistentPhoto)?.version
-        }
+        let backgroundPhotoVersion = currentBackgroundPhotoVersion(for: backgroundPhotoId)
         return MapAssetFingerprint(
             mapId: itemId,
             backgroundPhotoId: backgroundPhotoId,
@@ -625,51 +679,63 @@ private extension GameController {
     }
 
     @MainActor
-    private func updateMap(for itemId: UUID, with result: String) {
+    @discardableResult
+    private func updateMap(for itemId: UUID, with result: String) -> Bool {
         let model = gameItem(for: itemId)
-
         var entries = model.entries
-
-        let subData = result.split(separator: "|")
-        if let positionText = subData.last {
-            if let mapPins: [MapPinModel] = JSONString.decode(text: positionText) {
-                if let pointer = mapPins.first {
-                    model.pointer = pointer
-                }
-                let incoming = Array(mapPins.dropFirst())
-                // Preserve only fields a player may optimistically change while
-                // awaiting the authoritative round trip. Visibility, size, death,
-                // and metadata always come from the game-master mapState.
-                model.mapPins = incoming.map { incomingPin in
-                    guard let local = model.mapPins.first(where: { $0.id == incomingPin.id }),
-                          local.timeInterval > incomingPin.timeInterval else {
-                        return incomingPin
-                    }
-                    var mergedPin = incomingPin
-                    if incomingPin.isPlayer {
-                        mergedPin.location = local.location
-                    }
-                    mergedPin.isZoom = local.isZoom
-                    mergedPin.isHighlighted = local.isHighlighted
-                    mergedPin.timeInterval = local.timeInterval
-                    return mergedPin
-                }
-            }
+        guard let pinArrayStart = result.firstIndex(of: "[") else { return false }
+        let entrySection = result[..<pinArrayStart]
+        guard entrySection.isEmpty || entrySection.last == "|" else { return false }
+        let pinText = String(result[pinArrayStart...])
+        guard let mapPins: [MapPinModel] = JSONString.decode(text: pinText),
+              let pointer = mapPins.first else {
+            return false
         }
 
-        subData.dropLast().forEach {
-            let entryState = $0.split(separator: ":", omittingEmptySubsequences: false)
+        for entryToken in entrySection.split(separator: "|") {
+            let entryState = entryToken.split(separator: ":", omittingEmptySubsequences: false)
             guard entryState.count == 3,
                   let entryId = UUID(uuidString: String(entryState[0])),
-                  let shown = Bool(String(entryState[1])),
-                  let focused = Bool(String(entryState[2])),
+                  let shown = Self.mapStateBool(entryState[1]),
+                  let focused = Self.mapStateBool(entryState[2]),
                   let entryIndex = entries.firstIndex(where: { $0.id == entryId }) else {
-                return
+                return false
             }
             entries[entryIndex].isShown = shown
             entries[entryIndex].focused = focused
         }
+
+        let incoming = Array(mapPins.dropFirst())
+        // Preserve only fields a player may optimistically change while
+        // awaiting the authoritative round trip. Visibility, size, death,
+        // and metadata always come from the game-master mapState.
+        let mergedPins = incoming.map { incomingPin in
+            guard let local = model.mapPins.first(where: { $0.id == incomingPin.id }),
+                  local.timeInterval > incomingPin.timeInterval else {
+                return incomingPin
+            }
+            var mergedPin = incomingPin
+            if incomingPin.isPlayer {
+                mergedPin.location = local.location
+            }
+            mergedPin.isZoom = local.isZoom
+            mergedPin.isHighlighted = local.isHighlighted
+            mergedPin.timeInterval = local.timeInterval
+            return mergedPin
+        }
+
+        model.pointer = pointer
+        model.mapPins = mergedPins
         model.entries = entries
+        return true
+    }
+
+    static func mapStateBool(_ value: Substring) -> Bool? {
+        switch value {
+        case "true": true
+        case "false": false
+        default: nil
+        }
     }
 
     /// Applies a local pin mutation and gives it a monotonic timestamp. This is

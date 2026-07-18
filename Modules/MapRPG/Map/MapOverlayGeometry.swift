@@ -673,12 +673,12 @@ enum MapLoupeGeometry {
         let corners = preferredCorners(for: interaction)
         let candidates = corners.enumerated().map { rank, corner in
             let center = candidateCenter(needleHead: needleHead, corner: corner)
-            let frame = frame(centeredAt: center)
+            let candidateFrame = loupeFrame(centeredAt: center)
             return LoupeCandidate(
                 center: center,
-                frame: frame,
+                frame: candidateFrame,
                 corner: corner,
-                overflow: frame.overflowDistance(from: safeFrame),
+                overflow: candidateFrame.overflowDistance(from: safeFrame),
                 preferenceRank: rank
             )
         }
@@ -695,7 +695,7 @@ enum MapLoupeGeometry {
         guard let candidate else {
             return MapLoupePlacement(
                 center: viewport.center,
-                frame: frame(centeredAt: viewport.center),
+                frame: loupeFrame(centeredAt: viewport.center),
                 corner: nil,
                 isValid: false,
                 isFullyVisible: false,
@@ -704,13 +704,13 @@ enum MapLoupeGeometry {
         }
 
         let center = clampedCenter(candidate.center, inside: safeFrame)
-        let frame = frame(centeredAt: center)
+        let resolvedFrame = loupeFrame(centeredAt: center)
         return MapLoupePlacement(
             center: center,
-            frame: frame,
+            frame: resolvedFrame,
             corner: candidate.corner,
             isValid: true,
-            isFullyVisible: safeFrame.contains(frame),
+            isFullyVisible: safeFrame.contains(resolvedFrame),
             wasClamped: center != candidate.center
         )
     }
@@ -738,7 +738,7 @@ enum MapLoupeGeometry {
         )
     }
 
-    private static func frame(centeredAt center: CGPoint) -> CGRect {
+    private static func loupeFrame(centeredAt center: CGPoint) -> CGRect {
         CGRect(
             x: center.x - size.width / 2,
             y: center.y - size.height / 2,

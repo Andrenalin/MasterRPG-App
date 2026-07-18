@@ -804,14 +804,24 @@ extension MasterController {
     /// Generation-less commands are rejected: they cannot distinguish a stale
     /// command for an earlier incarnation of the same Map id.
     private func isCurrentMapCommand(_ data: NetworkCodableDataType) async -> Bool {
-        guard await root.mapRoot.mapGameControllable.gameModel.currentItemId == data.id else {
-            return false
-        }
         guard let requestedContentVersion = data.contentVersion,
-              await root.mapRoot.mapGameControllable.mapContentVersion(for: data.id) == requestedContentVersion
+              let requestedAssetVersion = data.assetVersion,
+              await root.mapRoot.mapGameControllable.gameModel.currentItemId == data.id
         else { return false }
-        guard let requestedAssetVersion = data.assetVersion else { return true }
-        return await root.mapRoot.mapGameControllable.mapAssetVersion(for: data.id) == requestedAssetVersion
+
+        // Capture both fingerprints in one canonical snapshot. In particular,
+        // do not read the structural generation, suspend for the photo-backed
+        // asset generation, and then compare values that may describe two
+        // different incarnations of the Map.
+        let currentReference = await root.mapRoot.mapGameControllable.shareMap(id: data.id)
+        guard currentReference.contentVersion == requestedContentVersion,
+              currentReference.assetVersion == requestedAssetVersion
+        else { return false }
+
+        // The current presentation can change while shareMap builds its async
+        // photo-backed reference. Never apply the command to a Map that ceased
+        // to be current during that suspension.
+        return await root.mapRoot.mapGameControllable.gameModel.currentItemId == data.id
     }
 
     func handlePdf(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
@@ -1045,7 +1055,6 @@ extension MasterController {
         case .update:
             return nil
         }
-        return nil
     }
 
     func handleValue(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {

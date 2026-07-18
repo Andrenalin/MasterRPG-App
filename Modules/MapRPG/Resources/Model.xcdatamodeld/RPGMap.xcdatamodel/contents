@@ -44,6 +44,7 @@
         <relationship name="map" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGMap" inverseName="entries" inverseEntity="RPGMap"/>
     </entity>
     <entity name="RPGMapPin" representedClassName="RPGMapPin" syncable="YES" codeGenerationType="class">
+        <attribute name="characterId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="color" attributeType="String" defaultValueString=""/>
         <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="isDead" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>

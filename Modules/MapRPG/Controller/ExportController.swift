@@ -59,9 +59,11 @@ extension ExportController: ExportControllable {
         var results: Set<UUID> = []
         var audioIds: Set<UUID> = []
         var diceIds: Set<UUID> = []
+        var pdfIds: Set<UUID> = []
         var photoIds: Set<UUID> = []
         var tableIds: Set<UUID> = []
         var valueIds: Set<UUID> = []
+        let isGameMode = itemControllable.itemDataModel.isGameMode
 
         while !checkIds.isEmpty {
             let id = checkIds.removeLast()
@@ -74,7 +76,9 @@ extension ExportController: ExportControllable {
             results.insert(id)
 
             photoIds.formUnion(item.mapPins.compactMap { $0.photoId }.compactMap { photoRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
-            valueIds.formUnion(item.mapPins.compactMap { $0.characterId }.compactMap { characterRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
+            if !isGameMode {
+                valueIds.formUnion(item.mapPins.compactMap { $0.characterId }.compactMap { characterRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
+            }
             if let photoId = item.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
             }
@@ -109,6 +113,10 @@ extension ExportController: ExportControllable {
                         if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && root.linkControllable.validateLink(itemId: $0.itemId) {
                             checkIds.append($0.itemId)
                         }
+                    case .pdf:
+                        if pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            pdfIds.insert($0.itemId)
+                        }
                     case .photo:
                         if photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             photoIds.insert($0.itemId)
@@ -118,7 +126,7 @@ extension ExportController: ExportControllable {
                             tableIds.insert($0.itemId)
                         }
                     case .value:
-                        if characterRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        if !isGameMode, characterRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             valueIds.insert($0.itemId)
                         }
                     default:
@@ -136,10 +144,6 @@ extension ExportController: ExportControllable {
                 guard let photoId = pin.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) else { return nil }
                 return photoId
             })
-            valueIds.formUnion(root.gameController.mapGameModel.playerPins.compactMap { pin in
-                guard let characterId = pin.characterId, characterRoot.linkControllable.validateLink(itemId: characterId) else { return nil }
-                return characterId
-            })
         }
 
         let partialFolderIds: Set<UUID> = exportingFolder(results: &results)
@@ -150,6 +154,8 @@ extension ExportController: ExportControllable {
         allIds.merge(other: newAudioIds)
         let newDiceIds = diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
+        let newPdfIds = pdfRoot.exportControllable.exporting(ids: pdfIds)
+        allIds.merge(other: newPdfIds)
         let newPhotoIds = photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
         let newTableIds = tableRoot.exportControllable.exporting(ids: tableIds)

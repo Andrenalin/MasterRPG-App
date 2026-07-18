@@ -90,7 +90,7 @@ extension MapSnapshot {
             updatedEntries[index].focused = runtimeState.focused
         }
 
-        var updatedPins = mapPins.wrappedValue.map { incomingPin in
+        let updatedPins = mapPins.wrappedValue.map { incomingPin in
             guard let localPin = localPins[incomingPin.id],
                   localPin.timeInterval > incomingPin.timeInterval else {
                 return incomingPin
@@ -108,13 +108,6 @@ extension MapSnapshot {
             updatedPin.timeInterval = localPin.timeInterval
             return updatedPin
         }
-        let incomingPinIds = Set(updatedPins.map(\.id))
-        // Player pins are game-session state and may have been created after the
-        // sender captured its structural snapshot.
-        updatedPins.append(contentsOf: localPins.values.filter {
-            $0.isPlayer && !incomingPinIds.contains($0.id)
-        })
-
         model.name_ = name
         model.description_ = description
         model.tags_ = tags
