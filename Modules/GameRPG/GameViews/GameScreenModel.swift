@@ -4,6 +4,8 @@ import SwiftUI
 
 @MainActor @Observable
 final class GameScreenModel {
+
+    static let mapOverlaySpacing: CGFloat = 8
     
     private enum WidthValues {
 #if os(macOS)
@@ -28,6 +30,7 @@ final class GameScreenModel {
     var showDice: Bool = false
     var showExport: Bool = false
     var showQuitGameAlert: Bool = false
+    var showsBattleRoundAnnouncement: Bool = false
 
 #if os(iOS) || os(macOS)
     /// Keeps the expensive RealityKit scene reusable while the 2D map is
@@ -74,6 +77,29 @@ final class GameScreenModel {
 
     var isInlineSidebarVisible: Bool {
         showMainTab != .none || showSettingTab != .none
+    }
+
+    /// The actual rendered width of the inline adventure/character overlay.
+    /// This is deliberately presentation metadata: it must never become a
+    /// frame constraint on the full-window game surface or its chrome.
+    private(set) var inlineMainOverlayWidth: CGFloat = 0
+    private(set) var topGameMenuHeight: CGFloat = 0
+
+    var mapTrailingViewportReservation: CGFloat {
+        guard showMainTab != .none, inlineMainOverlayWidth > 0 else { return 0 }
+        return inlineMainOverlayWidth + Self.mapOverlaySpacing
+    }
+
+    func updateInlineMainOverlayWidth(_ width: CGFloat) {
+        let width = width.isFinite ? max(0, width) : 0
+        guard inlineMainOverlayWidth != width else { return }
+        inlineMainOverlayWidth = width
+    }
+
+    func updateTopGameMenuHeight(_ height: CGFloat) {
+        let height = height.isFinite ? max(0, height) : 0
+        guard topGameMenuHeight != height else { return }
+        topGameMenuHeight = height
     }
 
 }

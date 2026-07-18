@@ -36,6 +36,10 @@ struct MasterGameScreen: View {
                 .environment(diceShowOptionModel)
                 .environment(gameScreenModel)
         }
+        .overlay {
+            BattleRoundGameChrome(root: root)
+                .environment(gameScreenModel)
+        }
         .focusSectionAll()
         .sheet(isPresented: $gameScreenModel.showExport) {
             if gameScreenModel.showExport {

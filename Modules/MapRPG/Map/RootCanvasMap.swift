@@ -18,6 +18,7 @@ struct RootCanvasMap: View {
         mode: MapDisplayMode,
         playerPinId: UUID? = nil,
         registersGameToolbarSession: Bool = true,
+        trailingViewportReservation: CGFloat = 0,
         initialImage: AKImage? = nil,
         initialDegrees: Double = 0,
         loadsImage: Bool = true
@@ -27,6 +28,7 @@ struct RootCanvasMap: View {
         self.mode = mode
         self.playerPinId = playerPinId
         self.registersGameToolbarSession = registersGameToolbarSession
+        self.trailingViewportReservation = trailingViewportReservation
         self.loadsImage = loadsImage
         // Install the map/session immediately so game chrome never disappears
         // while the backing photo is loading or unavailable.
@@ -39,6 +41,7 @@ struct RootCanvasMap: View {
     let mode: MapDisplayMode
     let playerPinId: UUID?
     let registersGameToolbarSession: Bool
+    let trailingViewportReservation: CGFloat
     private let loadsImage: Bool
 
     @State private var dropPinModel = DropPinModel()
@@ -52,6 +55,7 @@ struct RootCanvasMap: View {
             mode: mode,
             playerPinId: playerPinId,
             registersGameToolbarSession: registersGameToolbarSession,
+            trailingViewportReservation: trailingViewportReservation,
             image: image,
             degrees: degrees
         )

@@ -94,19 +94,29 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func gameMapView(root: MapRootModel, playerId: UUID, external: Bool = false) -> some View {
+    func gameMapView(
+        root: MapRootModel,
+        playerId: UUID,
+        external: Bool = false,
+        trailingViewportReservation: CGFloat = 0
+    ) -> some View {
         RootCanvasMap(
             root: root,
             itemId: root.gameController.gameModel.currentItemId ?? UUID(),
             mode: .player,
             playerPinId: playerId,
-            registersGameToolbarSession: !external
+            registersGameToolbarSession: !external,
+            trailingViewportReservation: trailingViewportReservation
         )
             .environment(root)
     }
 
     @MainActor
-    func gameMasterMapView(root: MapRootModel, id: UUID?) -> some View {
+    func gameMasterMapView(
+        root: MapRootModel,
+        id: UUID?,
+        trailingViewportReservation: CGFloat = 0
+    ) -> some View {
         let itemId = id ?? UUID()
         let gameController = root.gameController
         gameController.mapGameModel.playerPins.forEach { pin in
@@ -121,7 +131,13 @@ public extension ViewController {
                 gameController.gameItem(for: itemId).mapPins.append(resetPin)
             }
         }
-        return RootCanvasMap(root: root, itemId: itemId, mode: .master, playerPinId: nil)
+        return RootCanvasMap(
+            root: root,
+            itemId: itemId,
+            mode: .master,
+            playerPinId: nil,
+            trailingViewportReservation: trailingViewportReservation
+        )
             .environment(root)
     }
     

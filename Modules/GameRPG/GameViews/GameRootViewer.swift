@@ -103,12 +103,25 @@ struct GameRootViewer: View {
     private func twoDimensionalMapView(for mapId: UUID) -> some View {
         switch contentType {
         case .master:
-            root.mapRoot.viewController.gameMasterMapView(root: root.mapRoot, id: mapId)
+            root.mapRoot.viewController.gameMasterMapView(
+                root: root.mapRoot,
+                id: mapId,
+                trailingViewportReservation: mapTrailingViewportReservation
+            )
         case .player:
-            root.mapRoot.viewController.gameMapView(root: root.mapRoot, playerId: root.gameModel.gameConfig.id)
+            root.mapRoot.viewController.gameMapView(
+                root: root.mapRoot,
+                playerId: root.gameModel.gameConfig.id,
+                trailingViewportReservation: mapTrailingViewportReservation
+            )
         case .externalPlayer:
             root.mapRoot.viewController.gameMapView(root: root.mapRoot, playerId: root.gameModel.gameConfig.id, external: true)
         }
+    }
+
+    private var mapTrailingViewportReservation: CGFloat {
+        guard contentType != .externalPlayer else { return 0 }
+        return gameScreenModel?.mapTrailingViewportReservation ?? 0
     }
 
     @MainActor @ViewBuilder

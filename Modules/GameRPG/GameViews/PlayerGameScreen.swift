@@ -34,6 +34,10 @@ struct PlayerGameScreen: View {
                 .environment(diceShowOptionModel)
                 .environment(gameScreenModel)
         }
+        .overlay {
+            BattleRoundGameChrome(root: root)
+                .environment(gameScreenModel)
+        }
         .focusSectionAll()
         .alert(Text("Quit Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
             Button {

@@ -52,9 +52,9 @@ struct DiceGameResult: View {
                 }
             }
             .disabled(!canEditResult)
-#if !os(tvOS)
-            .buttonStyle(.borderedProminent)
-#endif
+            .gameOverlayCapsuleControlStyle(
+                isSelected: root.gameController.result(itemId: itemId).checked
+            )
         }
     }
 

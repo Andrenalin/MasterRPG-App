@@ -44,6 +44,11 @@ struct TabPlayerGameView: View {
             .accessibilityHidden(gameScreenModel.showMainTab == .none)
             .shadow(radius: 8)
             .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showMainTab)
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.width
+            } action: { width in
+                gameScreenModel.updateInlineMainOverlayWidth(width)
+            }
         }
     }
 }

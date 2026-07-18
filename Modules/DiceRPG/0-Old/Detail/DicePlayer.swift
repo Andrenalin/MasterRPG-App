@@ -53,7 +53,9 @@ struct DicePlayer: View {
                 : Text("Hide \(playerName(playerId: playerId)) dice", bundle: .module)
             )
             .frame(minHeight: 44)
-            .buttonStyle(.borderedProminent)
+            .gameOverlayCapsuleControlStyle(
+                isSelected: !root.gameController.isPlayerHidden(playerId: playerId)
+            )
             .opacity(0.75)
         } else {
             playerLabel(playerId: playerId)

@@ -2,6 +2,7 @@
 
 #if os(iOS)
 import CoreRPG
+import MapRPG
 import SwiftUI
 
 struct IOSGameOverlayMenu: View {
@@ -30,7 +31,7 @@ struct IOSGameOverlayMenu: View {
                         IOSGameOverlayCloseButton()
                     }
 
-                    IOSGameOverlayControlField(
+                    IOSGameOverlayCenterField(
                         root: root,
                         playerController: playerController,
                         isMaster: isMaster,
@@ -62,6 +63,40 @@ struct IOSGameOverlayMenu: View {
 
     private var itemSpacing: CGFloat {
         appWindowSizeModel.mode == .compact ? 4 : 8
+    }
+}
+
+private struct IOSGameOverlayCenterField: View {
+    let root: GameRoot
+    let playerController: PlayerController?
+    let isMaster: Bool
+    let spacing: CGFloat
+
+    @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(ScenesManager.self) private var scenesManager
+
+    var body: some View {
+        let battleModel = root.mapRoot.mapGameControllable.battleRoundModel
+
+        HStack(spacing: spacing) {
+            if battleModel.isRunning && !gameScreenModel.showsBattleRoundAnnouncement {
+                if isMaster {
+                    BattleRoundStatusButton(model: battleModel) {
+                        scenesManager.openWindow(.battleRound)
+                    }
+                } else {
+                    BattleRoundCounterView(model: battleModel, style: .compact)
+                        .allowsHitTesting(false)
+                }
+            }
+
+            IOSGameOverlayControlField(
+                root: root,
+                playerController: playerController,
+                isMaster: isMaster,
+                spacing: spacing
+            )
+        }
     }
 }
 

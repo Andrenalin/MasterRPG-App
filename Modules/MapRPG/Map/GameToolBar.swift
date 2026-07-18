@@ -26,7 +26,8 @@ struct GameToolBar: View {
     @Namespace private var pinSpace
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        GlassEffectContainerAll {
+            VStack(alignment: .leading, spacing: 8) {
             if appWindowSizeModel.mode == .compact {
                 VStack(spacing: 8) {
                     pinScaleView
@@ -63,6 +64,7 @@ struct GameToolBar: View {
                         )
                 }
                 .frame(minWidth: 44, minHeight: 44)
+                .gameOverlayControlStyle(isSelected: showToolBar)
             }
             HStack {
                 if showToolBar {
@@ -78,6 +80,7 @@ struct GameToolBar: View {
                                     .accessibilityValue(displayModeAccessibilityValue)
                             }
                             .frame(minWidth: 44, minHeight: 44)
+                            .gameOverlayControlStyle(isSelected: model.displayMode != .master)
 
                             barButtonViews
 
@@ -109,7 +112,7 @@ struct GameToolBar: View {
             reduceMotion ? nil : .bouncy.delay(hideScales ? 0 : 0.25),
             value: showToolBar
         )
-        .buttonStyle(.borderedProminent)
+        }
         .sheet(isPresented: $showPinSelection) {
             ManagedPresentationView {
                 root.viewController.characterSelection(root: root, selectionModel: selectedPin)
@@ -163,6 +166,7 @@ struct GameToolBar: View {
                 )
         }
         .frame(minWidth: 44, minHeight: 44)
+        .gameOverlayControlStyle(isSelected: model.isStreaming)
 
         Button {
 #if os(macOS)
@@ -178,6 +182,7 @@ struct GameToolBar: View {
                 .accessibilityLabel(Text("Choose Map Pins", bundle: .module))
         }
         .frame(minWidth: 44, minHeight: 44)
+        .gameOverlayControlStyle()
         .matchedTransitionSource(id: "gamePin", in: pinSpace)
 
         Button {
@@ -195,6 +200,7 @@ struct GameToolBar: View {
                 )
         }
         .frame(minWidth: 44, minHeight: 44)
+        .gameOverlayControlStyle(isSelected: model.isPointing)
     }
 
     @ViewBuilder
@@ -245,6 +251,7 @@ struct GameToolBar: View {
                     )
             }
             .frame(minWidth: 44, minHeight: 44)
+            .gameOverlayControlStyle(isSelected: model.isHexMap)
             Text("Hex Map Scale", bundle: .module)
 
             Slider(value: $model.hexScale, in: 20 ... 200) {
@@ -270,6 +277,7 @@ struct GameToolBar: View {
                 .accessibilityLabel(Text("Toggle Scale Controls", bundle: .module))
         }
         .frame(minWidth: 44, minHeight: 44)
+        .gameOverlayControlStyle(isSelected: !hideScales)
     }
 
     @ViewBuilder
@@ -294,6 +302,7 @@ struct GameToolBar: View {
         .allowsHitTesting(!hideScales)
         .accessibilityHidden(hideScales)
         .frame(minWidth: 44, minHeight: 44)
+        .gameOverlayControlStyle()
     }
 
     private var displayModeAccessibilityValue: Text {

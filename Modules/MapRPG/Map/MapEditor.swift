@@ -10,6 +10,7 @@ struct MapEditor: View {
         image: AKImage,
         photoDegrees: Double,
         map: MapModel,
+        trailingViewportReservation: CGFloat = 0,
         configuration: MapEditorConfiguration,
         actions: MapEditorActions = MapEditorActions()
     ) {
@@ -17,6 +18,7 @@ struct MapEditor: View {
         self.image = image
         self.photoDegrees = photoDegrees
         self.map = map
+        self.trailingViewportReservation = trailingViewportReservation
         self.configuration = configuration
         mapEditController = MapEditController(editController: editController)
         _session = State(
@@ -25,7 +27,8 @@ struct MapEditor: View {
                 image: image,
                 photoDegrees: photoDegrees,
                 configuration: configuration,
-                actions: actions
+                actions: actions,
+                trailingViewportReservation: trailingViewportReservation
             )
         )
     }
@@ -38,6 +41,7 @@ struct MapEditor: View {
     private let image: AKImage
     private let photoDegrees: Double
     private let map: MapModel
+    private let trailingViewportReservation: CGFloat
     private let configuration: MapEditorConfiguration
     private let mapEditController: MapEditController
 
@@ -120,6 +124,9 @@ struct MapEditor: View {
                   session.mapMode != .edit,
                   map.pinScale != session.pinScale else { return }
             session.pinScale = map.pinScale
+        }
+        .onChange(of: trailingViewportReservation, initial: true) { _, reservation in
+            session.updateTrailingViewportReservation(reservation)
         }
         .onChange(of: session.pinScale) {
             guard session.mapMode != .edit else { return }

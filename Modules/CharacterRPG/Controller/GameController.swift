@@ -23,6 +23,14 @@ public protocol ValueGameStorable {
     @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func imageIds(for id: UUID) -> [UUID]
     @MainActor func playerPinPhoto(for characterId: UUID) -> UUID?
+    /// Creates an independent, memory-only Character instance for one battle
+    /// combatant. Reusing a monster template therefore never aliases the values
+    /// of another monster placed from the same template.
+    @MainActor func createBattleCharacterCopy(for characterId: UUID) -> UUID?
+    @MainActor func battleCharacterCopy(for gameCharacterId: UUID) -> ValueModel?
+    /// Removes battle-only runtime Characters after their non-player
+    /// combatants leave the encounter. Persistent templates are never touched.
+    @MainActor func removeBattleCharacterCopies(_ gameCharacterIds: Set<UUID>)
     @MainActor func startGame(for id: UUID?) async
     func updatePlayer(data: NetworkCodableDataType) async throws
 }
@@ -53,7 +61,7 @@ struct GameController: Sendable {
     let gameDiceModel: ValueGameModel
     
     @MainActor func gameItem(for itemId: UUID) -> ValueModel {
-        itemController.itemOrEmpty(for: itemId)
+        (gameModel.itemData[itemId] as? ValueModel) ?? itemController.itemOrEmpty(for: itemId)
     }
     
     @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
@@ -75,7 +83,7 @@ struct GameController: Sendable {
 extension GameController {
     @MainActor
     func gameDiceId(itemId: UUID, entryId: UUID) -> UUID? {
-        let entry = itemController.itemOrEmpty(for: itemId)[entryId]
+        let entry = gameItem(for: itemId)[entryId]
         guard let diceId = entry.diceId else { return nil }
         guard entry.type == .number else { return diceId }
         let gameEntryDiceId = gameDiceModel.gameEntryDiceId[entryId]
@@ -129,10 +137,10 @@ extension GameController: GameControllable {
 extension GameController: ValueGameStorable {
     @MainActor
     public func focusDice(for itemId: UUID) -> UUID? {
-        if let diceId = itemController.itemOrEmpty(for: itemId).diceId {
+        if let diceId = gameItem(for: itemId).diceId {
             return gameDiceId(itemId: itemId, diceId: diceId)
         }        
-        guard let entry = itemController.itemOrEmpty(for: itemId).entries.first(where: { $0.diceId != nil }) else { return nil }
+        guard let entry = gameItem(for: itemId).entries.first(where: { $0.diceId != nil }) else { return nil }
         return gameDiceId(itemId: itemId, entryId: entry.id)
     }
 
@@ -145,6 +153,41 @@ extension GameController: ValueGameStorable {
     public func playerPinPhoto(for characterId: UUID) -> UUID? {
         guard let itemId = root.linkController.validate(id: characterId, isCharacter: true) else { return nil }
         return itemController.itemOrEmpty(for: itemId).photoId
+    }
+
+    @MainActor
+    public func createBattleCharacterCopy(for characterId: UUID) -> UUID? {
+        guard let source = itemController.itemSync(for: characterId) else { return nil }
+        let copy = source.duplicateWithoutCopy()
+        // Battle clones are lookup-only runtime data. Do not add them to the
+        // presented game item order: that would make the latest monster the
+        // current Character whenever an encounter starts.
+        gameModel.itemData[copy.id] = copy
+        return copy.id
+    }
+
+    @MainActor
+    public func battleCharacterCopy(for gameCharacterId: UUID) -> ValueModel? {
+        gameModel.itemData[gameCharacterId] as? ValueModel
+    }
+
+    @MainActor
+    public func removeBattleCharacterCopies(_ gameCharacterIds: Set<UUID>) {
+        guard !gameCharacterIds.isEmpty else { return }
+        let entryIds = gameCharacterIds.reduce(into: Set<UUID>()) { result, characterId in
+            guard let character = gameModel.itemData[characterId] as? ValueModel else { return }
+            result.formUnion(character.entries.map(\.id))
+        }
+        gameModel.items.removeAll { gameCharacterIds.contains($0) }
+        for characterId in gameCharacterIds {
+            gameModel.itemData[characterId] = nil
+            gameDiceModel.gameEntryDiceId[characterId] = nil
+            gameDiceModel.gameDiceId[characterId] = nil
+        }
+        for entryId in entryIds {
+            gameDiceModel.gameEntryDiceId[entryId] = nil
+            gameDiceModel.gameDiceId[entryId] = nil
+        }
     }
 
     @MainActor

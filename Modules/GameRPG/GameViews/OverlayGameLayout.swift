@@ -30,9 +30,6 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
     
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-#if os(iOS)
-    @State private var topMenuHeight: CGFloat = 0
-#endif
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -43,20 +40,25 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
 #if os(iOS)
                 // Keep sidebar content below the game menu while leaving the
                 // independent map surface visible beneath both layers.
-                .padding(.top, topMenuHeight)
+                .padding(.top, topContentInset)
 #endif
                 .zIndex(10)
 
             moduleMenuOverlay()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
 #if os(iOS)
-                .padding(.top, topMenuHeight)
+                .padding(.top, topContentInset)
 #endif
                 .zIndex(20)
 
 #if !os(visionOS)
             if gameScreenModel.showDice {
                 root.diceRoot.viewController.overlayGameView(root: root.diceRoot, hideDice: hideDice)
+#if os(iOS)
+                    // Dice and character/adventure content begin on the same
+                    // row, one standard spacing step below the menu field.
+                    .padding(.top, topContentInset)
+#endif
                     .transition(.move(edge: .leading))
                     .zIndex(30)
             }
@@ -72,7 +74,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 .onGeometryChange(for: CGFloat.self) { proxy in
                     proxy.size.height
                 } action: { newHeight in
-                    topMenuHeight = newHeight
+                    gameScreenModel.updateTopGameMenuHeight(newHeight)
                 }
 #endif
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -87,6 +89,12 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
             gameScreenModel.showDice.toggle()
         }
     }
+
+#if os(iOS)
+    private var topContentInset: CGFloat {
+        gameScreenModel.topGameMenuHeight + GameScreenModel.mapOverlaySpacing
+    }
+#endif
 }
 
 #Preview(traits: .defaultLayout) {
