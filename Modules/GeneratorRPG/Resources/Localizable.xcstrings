@@ -4,9 +4,69 @@
     "... and %lld more" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "… und %lld weitere"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "… und %lld weitere"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "… und %lld weitere"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "… und %lld weitere"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "... and %lld more"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "... and %lld more"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "... and %lld more"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "... และอีก %lld รายการ"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "... และอีก %lld รายการ"
+                }
+              }
+            }
           }
         }
       }
@@ -74,9 +134,69 @@
     "^[%lld Item](inflect: true)" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld Element](inflect: true)"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "^[%lld Element](inflect: true)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "^[%lld Element](inflect: true)"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "^[%lld Element](inflect: true)"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Items"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Items"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld รายการ"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld รายการ"
+                }
+              }
+            }
           }
         }
       }
@@ -97,6 +217,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "🔧 Tool-Ergebnis: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "🔧 ผลลัพธ์เครื่องมือ: %@"
           }
         }
       }
@@ -148,6 +274,12 @@
             "state" : "translated",
             "value" : "Abenteuer"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การผจญภัย"
+          }
         }
       }
     },
@@ -198,6 +330,12 @@
             "state" : "translated",
             "value" : "Ein unerwarteter Generierungsfehler ist aufgetreten: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกิดข้อผิดพลาดในการสร้างโดยไม่คาดคิด: %@"
+          }
         }
       }
     },
@@ -217,6 +355,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Analyse abgelehnt: %@ (Kategorie: %@). Der PDF-Inhalt verstößt möglicherweise gegen Inhaltsrichtlinien."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปฏิเสธการวิเคราะห์: %@ (หมวดหมู่: %@). เนื้อหา PDF อาจละเมิดนโยบายเนื้อหา"
           }
         }
       }
@@ -408,6 +552,12 @@
             "state" : "translated",
             "value" : "Antwort des Assistenten, Kontextzusammenfassung: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้ช่วยตอบกลับ, สรุปบริบท: %@"
+          }
         }
       }
     },
@@ -418,6 +568,12 @@
             "state" : "translated",
             "value" : "Antwort des Assistenten, Eingabeanzeige, %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้ช่วยตอบกลับ, ตัวบ่งชี้การพิมพ์, %@"
+          }
         }
       }
     },
@@ -427,6 +583,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Angehängtes Bild"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รูปภาพที่แนบมา"
           }
         }
       }
@@ -468,6 +630,12 @@
             "state" : "translated",
             "value" : "Extraktion abbrechen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิกการดึงข้อมูล"
+          }
         }
       }
     },
@@ -477,6 +645,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charakter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละคร"
           }
         }
       }
@@ -497,6 +671,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด"
           }
         }
       }
@@ -598,6 +778,12 @@
             "state" : "translated",
             "value" : "Erstelle eine neue DungeonSlayer-Kampagne unter dem Berg in einem alten, verlassenen Zwergenreich."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างแคมเปญใหม่สำหรับ DungeonSlayer ใต้ภูเขาในจักรวรรดิดวาร์ฟร้างเก่าแก่"
+          }
         }
       }
     },
@@ -687,6 +873,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Beschreibung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำอธิบาย"
           }
         }
       }
@@ -797,6 +989,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Informationen extrahieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดึงข้อมูล"
           }
         }
       }
@@ -1178,6 +1376,12 @@
             "state" : "translated",
             "value" : "Keine Notiz hinzugefügt."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่ได้เพิ่มโน้ต"
+          }
         }
       }
     },
@@ -1187,6 +1391,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht ausgewählt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยังไม่ได้เลือก"
           }
         }
       }
@@ -1237,6 +1447,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nach dem Erstellen öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดเมื่อสร้าง"
           }
         }
       }
@@ -1318,6 +1534,12 @@
             "state" : "translated",
             "value" : "Anbieterfehler: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้ให้บริการล้มเหลว: %@"
+          }
         }
       }
     },
@@ -1398,6 +1620,12 @@
             "state" : "translated",
             "value" : "Wiederherstellen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กู้คืน"
+          }
         }
       }
     },
@@ -1417,6 +1645,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Szenario: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สถานการณ์: %@"
           }
         }
       }
@@ -1457,6 +1691,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ausgewählt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกแล้ว"
           }
         }
       }
@@ -1598,6 +1838,12 @@
             "state" : "translated",
             "value" : "Der Tabelleninhalt ist zu groß. Versuche es mit einer Tabelle mit weniger Einträgen."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เนื้อหาในตารางมีขนาดใหญ่เกินไป ลองใช้ตารางที่มีรายการน้อยกว่านี้"
+          }
         }
       }
     },
@@ -1637,6 +1883,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Sprachmodell ist aus einem unbekannten Grund nicht verfügbar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โมเดลภาษาไม่พร้อมใช้งานด้วยเหตุผลที่ไม่ทราบ"
           }
         }
       }
@@ -1797,6 +2049,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zu viele gleichzeitige Anfragen: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำขอพร้อมกันมากเกินไป: %@"
           }
         }
       }
@@ -1968,6 +2226,12 @@
             "state" : "translated",
             "value" : "Welche Notiz soll hinzugefügt werden?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ควรเพิ่มโน้ตอะไร?"
+          }
         }
       }
     },
@@ -1977,6 +2241,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wie soll der Generator heißen?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ควรตั้งชื่อตัวสร้างว่าอะไร?"
           }
         }
       }
@@ -2028,6 +2298,12 @@
             "state" : "translated",
             "value" : "Ihre Nachricht, Eingabeanzeige, %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คุณพูดว่า, ตัวบ่งชี้การพิมพ์, %@"
+          }
         }
       }
     },
@@ -2042,5 +2318,5 @@
       }
     }
   },
-  "version" : "1.1"
+  "version" : "1.3"
 }
