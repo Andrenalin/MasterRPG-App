@@ -355,6 +355,12 @@
             "state" : "translated",
             "value" : "1 Eintrag"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1 รายการ"
+          }
         }
       }
     },
@@ -490,6 +496,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Element hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มรายการ"
           }
         }
       }
@@ -689,6 +701,12 @@
             "state" : "translated",
             "value" : "Anwenden"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำไปใช้"
+          }
         }
       }
     },
@@ -715,6 +733,12 @@
             "state" : "translated",
             "value" : "Sei vorsichtig! Das wird alle Daten löschen und die Datenbank zurücksetzen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ระวัง! การดำเนินการนี้จะลบข้อมูลทั้งหมดและรีเซ็ตฐานข้อมูล"
+          }
         }
       }
     },
@@ -724,6 +748,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sei vorsichtig! Dies löscht alle Daten aus der Datenbank, alle Dateien im Lokalen und AppCloud Ordner. Dateien in iCloud und Anderen Ordnern werden nicht gelöscht.."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ระวัง! การดำเนินการนี้จะลบข้อมูลทั้งหมดในฐานข้อมูล รวมถึงไฟล์ทั้งหมดในพื้นที่จัดเก็บ Local และ appCloud ที่เกี่ยวข้องกับฐานข้อมูล ไฟล์ใน iCloud หรือที่อื่น ๆ จะไม่ถูกลบ"
           }
         }
       }
@@ -783,6 +813,12 @@
             "state" : "translated",
             "value" : "Beide:"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทั้งคู่:"
+          }
         }
       }
     },
@@ -839,7 +875,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ไม่แยกตัวพิมพ์เล็ก-ใหญ่"
+            "value" : "ไม่คำนึงถึงตัวพิมพ์"
           }
         }
       }
@@ -925,6 +961,12 @@
             "state" : "translated",
             "value" : "Ändere zu %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนเป็น %@"
+          }
         }
       }
     },
@@ -973,6 +1015,12 @@
             "state" : "translated",
             "value" : "Tags geändert"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนแปลงแท็กแล้ว"
+          }
         }
       }
     },
@@ -982,6 +1030,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charakter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละคร"
           }
         }
       }
@@ -1010,6 +1064,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wähle einen Eintrag aus, um mehr zu erfahren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกรายการเพื่อดูรายละเอียดเพิ่มเติม"
           }
         }
       }
@@ -1121,6 +1181,12 @@
             "state" : "translated",
             "value" : "Übergeordneten Ordner schließen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิดโฟลเดอร์หลัก"
+          }
         }
       }
     },
@@ -1142,6 +1208,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Auswahlmöglichkeiten einklappen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยุบตัวเลือก"
           }
         }
       }
@@ -1191,6 +1263,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sammlung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คอลเลกชัน"
           }
         }
       }
@@ -1317,6 +1395,12 @@
             "state" : "translated",
             "value" : "Datenbank Einstellungen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การตั้งค่าฐานข้อมูล"
+          }
         }
       }
     },
@@ -1421,6 +1505,12 @@
             "state" : "translated",
             "value" : "Beschreibung"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำอธิบาย"
+          }
         }
       }
     },
@@ -1456,6 +1546,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Würfelbeutel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ถุงลูกเต๋า"
           }
         }
       }
@@ -1547,9 +1643,45 @@
           }
         },
         "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แตะสองครั้งเพื่อเปิดรายละเอียด"
+          "variations" : {
+            "device" : {
+              "appletv" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "กดสองครั้งเพื่อเปิดรายละเอียด"
+                }
+              },
+              "applevision" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "แตะสองครั้งเพื่อเปิดรายละเอียด"
+                }
+              },
+              "ipad" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "แตะสองครั้งเพื่อเปิดรายละเอียด"
+                }
+              },
+              "iphone" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "แตะสองครั้งเพื่อเปิดรายละเอียด"
+                }
+              },
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ดับเบิลคลิกเพื่อเปิดรายละเอียด"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "แตะสองครั้งเพื่อเปิดรายละเอียด"
+                }
+              }
+            }
           }
         }
       }
@@ -1589,6 +1721,12 @@
             "state" : "translated",
             "value" : "Ziehe Einträge aus der List oder dem Inspektor auf diese Ablagefeld um den Eintrag in den Order oder in die Sammlung aufzunehmen. Sobald ein Eintrag hinzugefügt wurde können weitere Eintrage auf den schon hingefügten Einträge abgelegt werden."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลากรายการจากรายการหรือตัวตรวจสอบมาที่ช่องวางนี้เพื่อเพิ่มรายการลงในโฟลเดอร์หรือคอลเลกชัน หลังจากเพิ่มรายการแรกแล้ว คุณสามารถเพิ่มรายการอื่นได้โดยการวางลงบนรายการที่มีอยู่แล้วในรายการรายละเอียดนี้"
+          }
         }
       }
     },
@@ -1598,6 +1736,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ablegen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วาง"
           }
         }
       }
@@ -1663,6 +1807,12 @@
             "state" : "translated",
             "value" : "%@ duplizieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทำซ้ำ %@"
+          }
         }
       }
     },
@@ -1705,6 +1855,12 @@
             "state" : "translated",
             "value" : "%@ bearbeiten"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แก้ไข %@"
+          }
         }
       }
     },
@@ -1732,6 +1888,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eintrag bearbeiten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แก้ไขรายการ"
           }
         }
       }
@@ -1791,6 +1953,12 @@
             "state" : "translated",
             "value" : "Aktiviert"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดใช้งาน"
+          }
         }
       }
     },
@@ -1835,6 +2003,12 @@
             "state" : "translated",
             "value" : "Einträge"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการ"
+          }
         }
       }
     },
@@ -1878,6 +2052,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "FEHLER"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อผิดพลาด"
           }
         }
       }
@@ -1936,6 +2116,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eigenschaftsauswahl ausklappen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ขยายตัวเลือกคุณสมบัติ"
           }
         }
       }
@@ -2008,6 +2194,12 @@
             "state" : "translated",
             "value" : "Nur Daten exportieren, nicht die Dateien"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่งออกเฉพาะข้อมูล ไม่รวมไฟล์"
+          }
         }
       }
     },
@@ -2034,6 +2226,12 @@
             "state" : "translated",
             "value" : "Exportieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังส่งออก"
+          }
         }
       }
     },
@@ -2049,6 +2247,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Exporting %1$lld of %2$lld"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังส่งออก %1$lld จาก %2$lld"
           }
         }
       }
@@ -2140,6 +2344,12 @@
             "state" : "translated",
             "value" : "Finden in"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค้นหาใน"
+          }
         }
       }
     },
@@ -2193,6 +2403,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wird generiert"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังสร้าง"
           }
         }
       }
@@ -2420,15 +2636,69 @@
     "Import is finished, %lld are successfully imported." : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import abgeschlossen, %lld erfolgreich importiert."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Import abgeschlossen, %lld erfolgreich importiert."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Import abgeschlossen, %lld erfolgreich importiert."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Import abgeschlossen, %lld erfolgreich importiert."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Import is finished, %lld is successfully imported."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Import is finished, %lld are successfully imported."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Import is finished, %lld are successfully imported."
+                }
+              }
+            }
           }
         },
         "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "นำเข้าเสร็จสมบูรณ์ นำเข้าสำเร็จ %lld รายการ"
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "การนำเข้าเสร็จสมบูรณ์ นำเข้าสำเร็จ %lld รายการ"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "การนำเข้าเสร็จสมบูรณ์ นำเข้าสำเร็จ %lld รายการ"
+                }
+              }
+            }
           }
         }
       }
@@ -2532,6 +2802,12 @@
             "state" : "translated",
             "value" : "Inspektor"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวตรวจสอบ"
+          }
         }
       }
     },
@@ -2541,6 +2817,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gegenstand"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการ"
           }
         }
       }
@@ -2618,6 +2900,12 @@
             "state" : "translated",
             "value" : "Beute"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลูท"
+          }
         }
       }
     },
@@ -2627,6 +2915,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Handbuch"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ด้วยตนเอง"
           }
         }
       }
@@ -2682,6 +2976,24 @@
               }
             }
           }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ทำเครื่องหมายเพื่อลบ %lld รายการ"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ทำเครื่องหมายเพื่อลบ %lld รายการ"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2715,6 +3027,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fehlt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบ"
           }
         }
       }
@@ -2754,7 +3072,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "โมดูล %1$@, %2$lld รายการ, เพิ่ม %3$lld, เปลี่ยนแปลง %4$lld, การอ้างอิงที่ถูกบล็อก %5$lld"
+            "value" : "โมดูล %1$@, %2$lld รายการ, เพิ่มแล้ว %3$lld, เปลี่ยนแปลงแล้ว %4$lld, การอ้างอิงที่ถูกบล็อก %5$lld"
           }
         }
       }
@@ -2784,6 +3102,12 @@
             "state" : "translated",
             "value" : "Module"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โมดูล"
+          }
         }
       }
     },
@@ -2811,6 +3135,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ verschieben nach"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ย้าย %@ ไปที่"
           }
         }
       }
@@ -2876,6 +3206,12 @@
             "state" : "translated",
             "value" : "Verschiebe Eintrag"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ย้ายรายการ"
+          }
         }
       }
     },
@@ -2914,6 +3250,12 @@
             "state" : "translated",
             "value" : "Musik"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพลง"
+          }
         }
       }
     },
@@ -2923,6 +3265,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Name"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชื่อ"
           }
         }
       }
@@ -2956,7 +3304,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ใหม่"
+            "value" : "%@ ใหม่"
           }
         }
       }
@@ -2987,6 +3335,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Neue Gruppe in %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กลุ่มใหม่ใน %@"
           }
         }
       }
@@ -3027,6 +3381,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nächste Frage"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำถามถัดไป"
           }
         }
       }
@@ -3108,6 +3468,12 @@
             "state" : "translated",
             "value" : "Keine Beschreibung"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีคำอธิบาย"
+          }
         }
       }
     },
@@ -3119,6 +3485,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keine Beschreibung gefunden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบคำอธิบาย"
           }
         }
       }
@@ -3141,6 +3513,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keine Datei festgelegt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยังไม่ได้ตั้งค่าไฟล์"
           }
         }
       }
@@ -3191,7 +3569,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ไม่ได้เลือก"
+            "value" : "ยังไม่ได้เลือก"
           }
         }
       }
@@ -3270,6 +3648,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ein"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิด"
           }
         }
       }
@@ -3415,6 +3799,12 @@
             "state" : "translated",
             "value" : "Pfad: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เส้นทาง: %@"
+          }
         }
       }
     },
@@ -3494,6 +3884,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ spielen/würfeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เล่น/ทอย %@"
           }
         }
       }
@@ -3602,6 +3998,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Referenzen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การอ้างอิง"
           }
         }
       }
@@ -3713,6 +4115,12 @@
             "state" : "translated",
             "value" : "Eintrag entfernen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำรายการออก"
+          }
         }
       }
     },
@@ -3765,7 +4173,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "นำรายการโฟลเดอร์ที่ไม่ใช้งานออกแล้ว"
+            "value" : "นำรายการโฟลเดอร์ที่ไม่ถูกต้องออกแล้ว"
           }
         }
       }
@@ -3825,6 +4233,12 @@
             "state" : "translated",
             "value" : "Order Einträge"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เรียงลำดับรายการใหม่"
+          }
         }
       }
     },
@@ -3869,6 +4283,12 @@
             "state" : "translated",
             "value" : "Zurücksetzen der Daten"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รีเซ็ตข้อมูล"
+          }
         }
       }
     },
@@ -3905,6 +4325,12 @@
             "state" : "translated",
             "value" : "Übergeordnetes Element wiederherstellen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คืนค่ารายการแม่แล้ว"
+          }
         }
       }
     },
@@ -3916,6 +4342,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Daten werden wiederhergestellt..."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังกู้คืนข้อมูลของคุณ..."
           }
         }
       }
@@ -4175,6 +4607,12 @@
             "state" : "translated",
             "value" : "Ausgewählt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกแล้ว"
+          }
         }
       }
     },
@@ -4221,7 +4659,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "การตั้งค่าเกี่ยวกับพื้นที่เก็บฐานข้อมูล คุณสามารถสลับไปมาได้ ฐานข้อมูลจะไม่ถูกลบ หากต้องการ คุณสามารถส่งออกฐานข้อมูลปัจจุบันและนำเข้าในอีกฐานข้อมูลหนึ่งได้ ใช้ iCloud หากต้องการซิงค์อัตโนมัติระหว่างอุปกรณ์"
+            "value" : "การตั้งค่าเกี่ยวกับการเก็บข้อมูลในฐานข้อมูล คุณสามารถสลับไปมาระหว่างตัวเลือกได้ ฐานข้อมูลจะไม่ถูกลบออก หากต้องการ คุณสามารถส่งออกฐานข้อมูลปัจจุบันและนำเข้าไปยังอีกตัวเลือกหนึ่งได้ ใช้ iCloud หากต้องการซิงค์โดยอัตโนมัติระหว่างอุปกรณ์"
           }
         }
       }
@@ -4268,6 +4706,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Freigabe deaktiviert"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิดใช้งานการแชร์"
           }
         }
       }
@@ -4326,6 +4770,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Auswahlmöglichkeiten anzeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงตัวเลือก"
           }
         }
       }
@@ -4458,6 +4908,12 @@
             "state" : "translated",
             "value" : "Ergänzung"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่วนเสริม"
+          }
         }
       }
     },
@@ -4469,6 +4925,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Synchronisierungsproblem"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปัญหาการซิงค์"
           }
         }
       }
@@ -4526,6 +4988,12 @@
             "state" : "translated",
             "value" : "Tabelle"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตาราง"
+          }
         }
       }
     },
@@ -4535,6 +5003,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tag"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แท็ก"
           }
         }
       }
@@ -4720,6 +5194,12 @@
             "state" : "translated",
             "value" : "Eingabe"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พิมพ์"
+          }
         }
       }
     },
@@ -4792,6 +5272,12 @@
             "state" : "translated",
             "value" : "Order aktuallisert"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดตโฟลเดอร์"
+          }
         }
       }
     },
@@ -4840,7 +5326,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ใช้[หน้าสนับสนุน](https://github.com/Andrenalin/MasterRPG)ฟรี"
+            "value" : "ใช้[หน้าสนับสนุนฟรี](https://github.com/Andrenalin/MasterRPG)"
           }
         }
       }
@@ -4864,6 +5350,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ansicht"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดู"
           }
         }
       }
@@ -4910,6 +5402,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vorher:"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เดิม:"
           }
         }
       }
