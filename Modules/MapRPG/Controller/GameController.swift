@@ -138,20 +138,27 @@ extension GameController: MapGameStorable {
     }
 
     func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
-        // Compute the referenced photo version first. The generic photo
-        // controller lazily backfills its content hash, and the following full
-        // export then carries that same stable metadata to the receiver.
-        let assetVersion = await mapAssetVersion(for: itemId)
-        let base = try await createGameData(for: itemId)
-        let contentVersion = await mapContentVersion(for: itemId)
-        return NetworkCodableDataType(
-            id: base.id,
-            type: base.type,
-            version: base.version,
-            data: base.data,
-            assetVersion: assetVersion,
-            contentVersion: contentVersion
-        )
+        // Export suspends while dependent assets are collected. Validate the
+        // generation on both sides of that suspension so the bytes and their
+        // advertised fingerprints cannot describe two different map edits.
+        for _ in 0..<Self.maximumPackageExportAttempts {
+            guard let before = await stablePackageMetadata(for: itemId) else { continue }
+            let base = try await createGameData(for: itemId)
+            guard let after = await stablePackageMetadata(for: itemId),
+                  before == after,
+                  base.version == after.version else {
+                continue
+            }
+            return NetworkCodableDataType(
+                id: base.id,
+                type: base.type,
+                version: after.version,
+                data: base.data,
+                assetVersion: after.assetVersion,
+                contentVersion: after.contentVersion
+            )
+        }
+        throw MapGameStorableError.packageChangedDuringExport
     }
 
     func networkMapContentUpdate(for itemId: UUID) async -> NetworkCodableDataType {
@@ -209,23 +216,38 @@ extension GameController: MapGameStorable {
         let photoId = root.characterRoot.valueGameControllable.playerPinPhoto(for: characterId)
 
         if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == playerId }) {
+            mapGameModel.playerPins[index].name = name
             mapGameModel.playerPins[index].photoId = photoId
+            mapGameModel.playerPins[index].characterId = characterId
+            mapGameModel.playerPins[index].isPlayer = true
+            mapGameModel.playerPins[index].players = [playerId]
         } else {
-            let pin = MapPinModel(id: playerId, name: name, color: Color.random, photoId: photoId, size: .normal, isPlayer: true, players: [playerId])
+            let pin = MapPinModel(id: playerId, name: name, color: Color.random, photoId: photoId, characterId: characterId, size: .normal, isPlayer: true, players: [playerId])
             mapGameModel.playerPins.append(pin)
+        }
+
+        // A Character package can arrive after the roster has already placed
+        // this player on one or more live maps. Refresh only the associated
+        // metadata so every map gains the Character link without resetting its
+        // independent position or other runtime state.
+        guard let playerPin = mapGameModel.playerPins.first(where: { $0.id == playerId }) else { return }
+        for itemId in gameModel.items {
+            let map = gameItem(for: itemId)
+            guard let index = map.mapPins.firstIndex(where: { $0.id == playerId }) else { continue }
+            Self.applyPlayerMetadata(from: playerPin, to: &map.mapPins[index])
         }
     }
 
     @MainActor
     func resetPlayerPins(for players: [PlayerGameModel]) {
-        let playerIds = players.map { $0.id }
-        let removedIds = Set(mapGameModel.playerPins.map { $0.id }).subtracting(playerIds)
-        removedIds.forEach { playerId in
-            if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == playerId }) {
-                let pin = mapGameModel.playerPins.remove(at: index)
-                for itemId in gameModel.items {
-                    gameItem(for: itemId).mapPins.removeAll(where: { $0.id == pin.id })
-                }
+        let playerIds = Set(players.map(\.id))
+        mapGameModel.playerPins.removeAll { !playerIds.contains($0.id) }
+        // The roster is authoritative. Scan every live map as well as the
+        // central cache because an older snapshot may hold a player pin that
+        // is no longer represented in `mapGameModel.playerPins`.
+        for itemId in gameModel.items {
+            gameItem(for: itemId).mapPins.removeAll { pin in
+                pin.isPlayer && !playerIds.contains(pin.id)
             }
         }
         for player in players {
@@ -488,12 +510,21 @@ extension GameController: MapGameStorable {
             type: .map,
             version: item.version,
             data: mapUpdateResult(for: itemId).data(using: .utf8),
+            assetVersion: currentMapAssetVersion(for: itemId),
             contentVersion: mapContentVersion(for: itemId)
         )
     }
 
+    @MainActor
     func networkPin(itemId: UUID, position: MapPinModel) -> NetworkCodableDataType {
-        NetworkCodableDataType(id: itemId, type: .map, version: 0, data: position.encodeData())
+        let item = gameItem(for: itemId)
+        return NetworkCodableDataType(
+            id: itemId,
+            type: .map,
+            version: item.version,
+            data: position.encodeData(),
+            contentVersion: mapContentVersion(for: itemId)
+        )
     }
     
     @MainActor
@@ -521,6 +552,77 @@ extension GameController: MapGameStorable {
 
 private extension GameController {
     static let maximumFuturePinTimestampSkew: TimeInterval = 5 * 60
+    static let maximumPackageExportAttempts = 3
+
+    struct PackageMetadata: Equatable, Sendable {
+        let version: Int
+        let assetVersion: Int
+        let contentVersion: Int
+    }
+
+    struct PackageCoreMetadata: Equatable, Sendable {
+        let version: Int
+        let contentVersion: Int
+        let backgroundPhotoId: UUID?
+    }
+
+    func stablePackageMetadata(for itemId: UUID) async -> PackageMetadata? {
+        for _ in 0..<Self.maximumPackageExportAttempts {
+            let before = await packageCoreMetadata(for: itemId)
+            let backgroundPhotoVersion: Int?
+            if let photoId = before.backgroundPhotoId {
+                backgroundPhotoVersion = await root.photoRoot.gameControllable.networkVersion(for: photoId)
+            } else {
+                backgroundPhotoVersion = nil
+            }
+            let after = await packageCoreMetadata(for: itemId)
+            guard before == after else { continue }
+            return PackageMetadata(
+                version: after.version,
+                assetVersion: MapAssetFingerprint(
+                    mapId: itemId,
+                    backgroundPhotoId: after.backgroundPhotoId,
+                    backgroundPhotoVersion: backgroundPhotoVersion
+                ).version,
+                contentVersion: after.contentVersion
+            )
+        }
+        return nil
+    }
+
+    @MainActor
+    func packageCoreMetadata(for itemId: UUID) -> PackageCoreMetadata {
+        let item = gameItem(for: itemId)
+        return PackageCoreMetadata(
+            version: item.version,
+            contentVersion: MapUpdatePayload(model: item).contentVersion,
+            backgroundPhotoId: item.photoId
+        )
+    }
+
+    @MainActor
+    func currentMapAssetVersion(for itemId: UUID) -> Int {
+        let backgroundPhotoId = gameItem(for: itemId).photoId
+        let backgroundPhotoVersion = backgroundPhotoId.flatMap { photoId in
+            let gamePhoto = root.photoRoot.gameControllable.gameModel.itemData[photoId] as? PhotoModel
+            let persistentPhoto = root.photoRoot.itemControllable.itemSync(for: photoId) as? PhotoModel
+            return (gamePhoto ?? persistentPhoto)?.version
+        }
+        return MapAssetFingerprint(
+            mapId: itemId,
+            backgroundPhotoId: backgroundPhotoId,
+            backgroundPhotoVersion: backgroundPhotoVersion
+        ).version
+    }
+
+    static func applyPlayerMetadata(from source: MapPinModel, to destination: inout MapPinModel) {
+        destination.name = source.name
+        destination.color = source.color
+        destination.photoId = source.photoId
+        destination.characterId = source.characterId
+        destination.isPlayer = true
+        destination.players = source.players
+    }
 
     @MainActor
     private func updateMap(for itemId: UUID, with result: String) {
@@ -556,12 +658,14 @@ private extension GameController {
         }
 
         subData.dropLast().forEach {
-            let entryState = $0.split(separator: ":")
-            guard let uuidString = entryState.first, let entryId = UUID(uuidString: String(uuidString)) else { return }
-
-            let shown = entryState[1] == "true"
-            let focused = entryState.last ?? "false" == "true"
-            guard let entryIndex = entries.firstIndex(where: { $0.id == entryId }) else { return }
+            let entryState = $0.split(separator: ":", omittingEmptySubsequences: false)
+            guard entryState.count == 3,
+                  let entryId = UUID(uuidString: String(entryState[0])),
+                  let shown = Bool(String(entryState[1])),
+                  let focused = Bool(String(entryState[2])),
+                  let entryIndex = entries.firstIndex(where: { $0.id == entryId }) else {
+                return
+            }
             entries[entryIndex].isShown = shown
             entries[entryIndex].focused = focused
         }
@@ -587,4 +691,8 @@ private extension GameController {
         }
         return true
     }
+}
+
+private enum MapGameStorableError: Error {
+    case packageChangedDuringExport
 }

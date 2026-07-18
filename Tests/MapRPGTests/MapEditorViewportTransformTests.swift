@@ -196,6 +196,101 @@ struct MapEditorViewportTransformTests {
         #expect(sut.viewport.isAtFit)
     }
 
+    @Test("First appearance remains hidden until a valid window measurement completes the fit")
+    func firstAppearanceWaitsForValidWindowMeasurement() {
+        // Given
+        let map = makeMap(name: "Deferred window map", size: CGSize(width: 1_200, height: 800))
+        let sut = makeSession(map: map, containerSize: .zero)
+
+        // When
+        sut.firstAppear(map: map)
+
+        // Then
+        #expect(!sut.appeared)
+        #expect(sut.viewport.configuration.containerSize == .zero)
+
+        // When
+        let windowSize = CGSize(width: 600, height: 400)
+        sut.updateContainerSize(windowSize)
+
+        // Then
+        #expect(sut.appeared)
+        #expect(sut.viewport.configuration.containerSize == windowSize)
+        #expect(sut.viewport.isAtFit)
+        expectApproximately(sut.viewport.transform.scale, 0.5)
+    }
+
+    @Test("Initial room selection preserves fit and selecting the next room focuses it")
+    func laterRoomSelectionFocusesActiveRoom() throws {
+        // Given
+        let initialRoom = MapEntryModel(
+            id: UUID(),
+            name: "Initial room",
+            content: "",
+            coordinates: [
+                CGPoint(x: 100, y: 100),
+                CGPoint(x: 300, y: 100),
+                CGPoint(x: 300, y: 300),
+                CGPoint(x: 100, y: 300)
+            ]
+        )
+        let nextRoom = MapEntryModel(
+            id: UUID(),
+            name: "Next room",
+            content: "",
+            coordinates: [
+                CGPoint(x: 500, y: 300),
+                CGPoint(x: 700, y: 300),
+                CGPoint(x: 700, y: 500),
+                CGPoint(x: 500, y: 500)
+            ]
+        )
+        let map = MapModel(
+            id: UUID(),
+            name: "Room navigation map",
+            entries: [initialRoom, nextRoom],
+            width: 1_200,
+            height: 800
+        )
+        let editorModel = makeSession(
+            map: map,
+            containerSize: CGSize(width: 600, height: 400)
+        )
+        let sut = MapEditController(editController: .preview)
+        sut.prepareWorkingCopy(from: map, editorModel: editorModel)
+
+        // When: the persisted/editor selection is installed before the window appears.
+        sut.changeMap(
+            map: map,
+            currentEntryId: initialRoom.id,
+            editorModel: editorModel
+        )
+        editorModel.firstAppear(map: map)
+
+        // Then: initial presentation always shows the complete map.
+        #expect(editorModel.appeared)
+        #expect(editorModel.viewport.isAtFit)
+        #expect(editorModel.editEntries.entries.first?.id == initialRoom.id)
+
+        // When: the user explicitly moves to the next room after presentation.
+        sut.changeMap(
+            map: map,
+            currentEntryId: nextRoom.id,
+            editorModel: editorModel
+        )
+
+        // Then: the newly active room is centered and zoomed in.
+        let activeRoom = try #require(editorModel.editEntries.roomNode(for: nextRoom.id))
+        let viewportCenter = editorModel.viewport.geometry.containerCenter
+        #expect(editorModel.editEntries.entries.first?.id == nextRoom.id)
+        #expect(!editorModel.viewport.isAtFit)
+        #expect(editorModel.viewport.transform.scale > editorModel.viewport.geometry.fitScale)
+        expectApproximately(
+            editorModel.contentPoint(fromViewport: viewportCenter),
+            CGPoint(x: activeRoom.bounds.midX, y: activeRoom.bounds.midY)
+        )
+    }
+
     @Test("A transient zero measurement does not destroy a manually zoomed viewport")
     func zeroMeasurementIsIgnored() {
         let map = makeMap(name: "Stable map", size: CGSize(width: 1_200, height: 800))

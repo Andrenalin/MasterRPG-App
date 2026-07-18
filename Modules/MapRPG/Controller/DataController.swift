@@ -177,6 +177,7 @@ extension DataController: CoreDataSnapshotPersistable {
             name: model.name ?? "",
             color: color?.color ?? .red,
             photoId: model.photoUUID,
+            characterId: model.characterId,
             location: CGPoint(x: model.location?.xPos ?? 0.0, y: model.location?.yPos ?? 0.0),
             size: MapPinModel.MapPinSize(rawValue: Int(model.size)) ?? .normal,
             isShown: model.isShown,
@@ -245,6 +246,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.color = JSONString.encode(value: CodableColor(viewModel.color)) ?? ""
         model.index = Int16(index)
         model.photoUUID = viewModel.photoId
+        model.characterId = viewModel.characterId
 
         let coordinate = model.coordinateOrNew(for: UUID())
         map(viewModel.location, into: coordinate, index: 0)

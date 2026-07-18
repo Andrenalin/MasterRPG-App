@@ -33,10 +33,12 @@ struct GameControllerTests {
         sut.mapGameModel.playerPins = [stalePin]
         sut.setPlayerPin(for: playerId, name: "Hero", characterId: characterId)
         #expect(sut.mapGameModel.playerPins.map(\.id).contains(playerId))
+        #expect(sut.mapGameModel.playerPins.first { $0.id == playerId }?.characterId == characterId)
 
         sut.resetPlayerPins(for: [PlayerGameModel(id: playerId, type: .player, name: "Hero", characterId: characterId)])
         #expect(!sut.mapGameModel.playerPins.map(\.id).contains(oldPlayerId))
         #expect(sut.gameItem(for: mapId).mapPins.map(\.id).contains(playerId))
+        #expect(sut.gameItem(for: mapId).mapPins.first { $0.id == playerId }?.characterId == characterId)
 
         let updatedPin = MapPinModel(
             id: playerId,
@@ -48,6 +50,7 @@ struct GameControllerTests {
         )
         #expect(sut.updatePin(itemId: mapId, data: updatedPin.encodeData(), playerId: playerId))
         #expect(sut.gameItem(for: mapId)[MapPinId.id, playerId].location == CGPoint(x: 12, y: 34))
+        #expect(sut.gameItem(for: mapId)[MapPinId.id, playerId].characterId == characterId)
 
         let staleUpdate = MapPinModel(
             id: playerId,

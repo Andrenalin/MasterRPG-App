@@ -28,7 +28,9 @@ struct RootCanvasMap: View {
         self.playerPinId = playerPinId
         self.registersGameToolbarSession = registersGameToolbarSession
         self.loadsImage = loadsImage
-        self._image = State(wrappedValue: initialImage)
+        // Install the map/session immediately so game chrome never disappears
+        // while the backing photo is loading or unavailable.
+        self._image = State(wrappedValue: initialImage ?? AKImage())
         self._degrees = State(wrappedValue: initialDegrees)
     }
 
@@ -40,24 +42,20 @@ struct RootCanvasMap: View {
     private let loadsImage: Bool
 
     @State private var dropPinModel = DropPinModel()
-    @State private var image: AKImage?
+    @State private var image: AKImage
     @State private var degrees: Double = 0
 
     var body: some View {
-        ZStack {
-            if let image {
-                RootGameMapViewer(
-                    root: root,
-                    itemId: itemId,
-                    mode: mode,
-                    playerPinId: playerPinId,
-                    registersGameToolbarSession: registersGameToolbarSession,
-                    image: image,
-                    degrees: degrees
-                )
-                .environment(dropPinModel)
-            }
-        }
+        RootGameMapViewer(
+            root: root,
+            itemId: itemId,
+            mode: mode,
+            playerPinId: playerPinId,
+            registersGameToolbarSession: registersGameToolbarSession,
+            image: image,
+            degrees: degrees
+        )
+        .environment(dropPinModel)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task(id: imageLoadIdentity) {
             guard loadsImage else { return }
@@ -101,7 +99,7 @@ private extension RootCanvasMap {
             useGame: true
         ) ?? (nil, 0)
         guard !Task.isCancelled, imageLoadIdentity == identity else { return }
-        image = updateImage
+        image = updateImage ?? AKImage()
         degrees <=> updateDegrees
     }
 }

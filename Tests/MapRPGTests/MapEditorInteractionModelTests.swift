@@ -139,6 +139,52 @@ struct MapEditorInteractionModelTests {
         #expect(emittedPin.size == .large)
     }
 
+    @Test("Replacing a pin photo preserves its character and emits one editor change")
+    func replacingPinPhotoIsAnIsolatedChange() throws {
+        let oldPhotoId = UUID()
+        let replacementPhotoId = UUID()
+        let characterId = UUID()
+        let playerId = UUID()
+        let original = MapPinModel(
+            id: UUID(),
+            name: "Character token",
+            color: .indigo,
+            photoId: oldPhotoId,
+            characterId: characterId,
+            location: CGPoint(x: 73, y: 41),
+            size: .huge,
+            isShown: false,
+            isPlayer: true,
+            players: [playerId],
+            timeInterval: 123,
+            isZoom: true,
+            isDead: true,
+            isHighlighted: true
+        )
+        let model = MapPinViewModel(mapPins: [original], pointer: .empty)
+        let node = try #require(model.pinNode(for: original.id))
+        var events: [MapPinInteractionEvent] = []
+        model.configureInteractionHandler { events.append($0) }
+
+        node.replacePhoto(with: replacementPhotoId)
+
+        var expected = original
+        expected.photoId = replacementPhotoId
+        #expect(node.pin == expected)
+        #expect(node.pin.characterId == characterId)
+        #expect(events.count == 1)
+        guard case let .action(.photo, emittedPin, false, .editor) = events[0] else {
+            Issue.record("Expected one editor photo event")
+            return
+        }
+        #expect(emittedPin == expected)
+
+        // Re-dropping the displayed photo is not a domain change and should
+        // not produce another persistence/network event.
+        node.replacePhoto(with: replacementPhotoId)
+        #expect(events.count == 1)
+    }
+
     @Test("Successive pin taps open and close the action menu")
     func pinTapTogglesActionMenu() throws {
         let pin = MapPinModel(id: UUID(), name: "Token")

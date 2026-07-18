@@ -79,6 +79,7 @@ final class MapEditorSession {
     private var canvasSize: CGSize
     private var containerSize: CGSize
     private var pendingInitialFitMapId: UUID?
+    private var presentationIsActive = false
     @ObservationIgnored private var actionRouter: MapEditorActionRouter?
 
     // MARK: - Initialization
@@ -211,7 +212,7 @@ final class MapEditorSession {
         guard Self.isValidSize(newSize) else { return }
         guard containerSize != newSize else { return }
         containerSize = newSize
-        if applyPendingInitialFitIfPossible() {
+        if completePendingInitialFitIfPossible() {
             return
         }
         viewport.resize(to: makeViewportConfiguration())
@@ -234,7 +235,7 @@ final class MapEditorSession {
         self.photoDegrees = photoDegrees
         canvasSize = newCanvasSize
 
-        if applyPendingInitialFitIfPossible() {
+        if completePendingInitialFitIfPossible() {
             return
         }
         if geometryChanged {
@@ -355,7 +356,6 @@ final class MapEditorSession {
             // Content identity is part of viewport state. Reset even when the
             // replacement map happens to have the same image dimensions.
             viewport.configure(makeViewportConfiguration())
-            _ = applyPendingInitialFitIfPossible()
         }
         changeMap(map: map)
     }
@@ -373,13 +373,15 @@ final class MapEditorSession {
 
     func firstAppear(map: MapModel) {
         guard mapId == map.id else { return }
+        presentationIsActive = true
+        appeared = false
         pendingInitialFitMapId = map.id
         resetEntries(newEntries: map.entries, map: map, appliesFocus: false)
-        _ = applyPendingInitialFitIfPossible()
-        appeared = true
+        _ = completePendingInitialFitIfPossible()
     }
 
     func disappear() {
+        presentationIsActive = false
         appeared = false
         editEntries.needleInteraction.dragCoordinate = nil
     }
@@ -401,7 +403,29 @@ final class MapEditorSession {
             return
         }
 
-        let bounds = focusRoom.bounds
+        focus(on: focusRoom.bounds)
+    }
+
+    /// Explicit editor room navigation focuses the active working-copy room.
+    /// Persisted game focus is still retained without overriding initial fit.
+    func focusActiveEntry() {
+        guard let activeEntryId = editEntries.entries.first?.id,
+              let activeRoom = editEntries.roomNode(for: activeEntryId) else {
+            resetZoom()
+            return
+        }
+        focus(on: activeRoom.bounds)
+    }
+
+    private func focus(on bounds: CGRect) {
+        guard bounds.width.isFinite,
+              bounds.height.isFinite,
+              bounds.width > 0,
+              bounds.height > 0,
+              Self.isValidSize(containerSize) else {
+            resetZoom()
+            return
+        }
         let sw = containerSize.width / (bounds.width + 50)
         let sh = containerSize.height / (bounds.height + 50)
         let newScale = min(sw, sh)
@@ -448,6 +472,15 @@ final class MapEditorSession {
             viewport.reset()
         }
         pendingInitialFitMapId = nil
+        return true
+    }
+
+    @discardableResult
+    private func completePendingInitialFitIfPossible() -> Bool {
+        guard applyPendingInitialFitIfPossible() else { return false }
+        if presentationIsActive {
+            appeared = true
+        }
         return true
     }
 

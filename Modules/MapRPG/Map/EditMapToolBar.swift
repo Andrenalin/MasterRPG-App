@@ -56,33 +56,38 @@ struct EditToolBarViewModifier: ViewModifier {
             // Normal Edit Mode
             content
             .overlay(alignment: .bottom) {
-                GlassEffectContainerView {
-                    VStack(spacing: 8) {
-                        PinScaleView(model: editorModel)
+                if !hideScales {
+                    GlassEffectContainerView {
+                        VStack(spacing: 8) {
+                            PinScaleView(model: editorModel)
 
-                        HexMapScaleView(model: editorModel) { scale in
-                            mapEditController.updateHexScale(scale, editorModel: editorModel)
-                        }
+                            HStack {
+                                HexMapScaleView(model: editorModel) { scale in
+                                    mapEditController.updateHexScale(scale, editorModel: editorModel)
+                                }
 
-                        MaxSizeScaleView(model: editorModel) { ratio in
-                            mapEditController.updateMaxWidth(ratio, editorModel: editorModel)
-                        } onMaxHeightChanged: { ratio in
-                            mapEditController.updateMaxHeight(ratio, editorModel: editorModel)
+                                hexCreationButton
+                                    .buttonStyle(.bordered)
+                            }
+
+                            MaxSizeScaleView(model: editorModel) { ratio in
+                                mapEditController.updateMaxWidth(ratio, editorModel: editorModel)
+                            } onMaxHeightChanged: { ratio in
+                                mapEditController.updateMaxHeight(ratio, editorModel: editorModel)
+                            }
                         }
+                        .padding()
+                        .frame(maxWidth: 520)
+#if !os(visionOS)
+                        .glassEffect(.clear)
+#endif
                     }
-                    .padding()
-                    #if !os(visionOS)
-                    .glassEffect(.clear)
-                    #endif
-                    .offset(x: hideScales ? -2500 : 0)
-                    .opacity(hideScales ? 0 : 1)
-                    .allowsHitTesting(!hideScales)
-                    .accessibilityHidden(hideScales)
-                    .animation(reduceMotion ? nil : .bouncy, value: hideScales)
+                    .padding(.horizontal)
+                    .padding(.bottom, bottomPadding)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                .padding(.horizontal)
-                .padding(.bottom, bottomPadding)
             }
+            .animation(reduceMotion ? nil : .bouncy, value: hideScales)
             .sheet(isPresented: $showPinSelection) {
                 ManagedPresentationView {
                     root.viewController.characterSelection(root: root, selectionModel: selectedPin)
@@ -147,7 +152,6 @@ struct EditToolBarViewModifier: ViewModifier {
                     redoButton
 
                     toggleDisplayModeButton
-                    hexCreationButton
 
                     showPinSelectionButton
                         .matchedTransitionSource(id: "pin", in: pinSpace)
@@ -177,9 +181,9 @@ struct EditToolBarViewModifier: ViewModifier {
 private extension EditToolBarViewModifier {
     var bottomPadding: CGFloat {
 #if os(macOS)
-        16
+        32
 #else
-        80
+        92
 #endif
     }
 

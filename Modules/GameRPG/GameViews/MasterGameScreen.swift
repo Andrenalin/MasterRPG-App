@@ -32,22 +32,9 @@ struct MasterGameScreen: View {
                 gameScreenModel: gameScreenModel
             )
         } chrome: {
-            ZStack(alignment: .topLeading) {
-                MasterOverlayMenu(root: root, adventureId: adventureId, playerController: playerController)
-                    .environment(diceShowOptionModel)
-                    .environment(gameScreenModel)
-                    .zIndex(10)
-
-#if os(macOS)
-                if gameScreenModel.isSideMenuVisible {
-                    MasterSideMenu(adventureId: adventureId)
-                        .environment(gameScreenModel)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                        .zIndex(2)
-                }
-#endif
-            }
+            MasterOverlayMenu(root: root, adventureId: adventureId, playerController: playerController)
+                .environment(diceShowOptionModel)
+                .environment(gameScreenModel)
         }
         .focusSectionAll()
         .sheet(isPresented: $gameScreenModel.showExport) {
@@ -81,6 +68,9 @@ struct MasterGameScreen: View {
         }
         .task {
             await prepareWindows()
+        }
+        .onDisappear {
+            root.mapRoot.rootModel.clearGameEditorSession()
         }
         .onChange(of: gameScreenModel.showExport, initial: false) { old, new in
             if old == true && new == false {

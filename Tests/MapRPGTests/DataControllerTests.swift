@@ -20,12 +20,15 @@ struct DataControllerTests {
         let sut = DataController(context: store.context, batchContext: store.batchContext, token: NetworkModules.map.token)
         let pinEntity = try #require(store.container.managedObjectModel.entitiesByName["RPGMapPin"])
         let deadAttribute = try #require(pinEntity.attributesByName["isDead"])
+        let characterAttribute = try #require(pinEntity.attributesByName["characterId"])
         #expect(!deadAttribute.isOptional)
         #expect((deadAttribute.defaultValue as? NSNumber)?.boolValue == false)
+        #expect(characterAttribute.isOptional)
 
         let itemId = UUID()
         let parentId = UUID()
         let photoId = UUID()
+        let characterId = UUID()
         let firstEntry = MapEntryModel(
             id: UUID(),
             name: "Hall",
@@ -52,6 +55,7 @@ struct DataControllerTests {
             id: UUID(),
             name: "Start",
             photoId: UUID(),
+            characterId: characterId,
             location: CGPoint(x: 13, y: 14),
             size: .large,
             isShown: true,
@@ -106,6 +110,7 @@ struct DataControllerTests {
         #expect(fetchedOriginal.mapPins.first?.location == firstPin.location)
         #expect(fetchedOriginal.mapPins.first?.size == .large)
         #expect(fetchedOriginal.mapPins.first?.photoId == firstPin.photoId)
+        #expect(fetchedOriginal.mapPins.first?.characterId == characterId)
         #expect(fetchedOriginal.mapPins.first?.isShown == true)
         #expect(fetchedOriginal.mapPins.first?.isDead == true)
         #expect(fetchedOriginal.mapPins.first?.isHighlighted == false)
@@ -178,6 +183,7 @@ struct DataControllerTests {
         #expect(fetchedUpdated.mapPins.first?.size == .huge)
         #expect(fetchedUpdated.mapPins.first?.isShown == true)
         #expect(fetchedUpdated.mapPins.first?.isDead == false)
+        #expect(fetchedUpdated.mapPins.first?.characterId == nil)
         #expect(fetchedUpdated.pinScale == 1.5)
         #expect(fetchedUpdated.hexMapScale == 10)
         #expect(fetchedUpdated.parentId == nil)

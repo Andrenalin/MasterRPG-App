@@ -148,6 +148,9 @@ extension LinkController {
             if let id = $0.photoId {
                photoIds.append(id)
             }
+            if let characterId = $0.characterId {
+                photoIds.append(contentsOf: characterRoot.linkControllable.collectLinks(of: module, from: characterId))
+            }
         }
         return Array(Set(photoIds))
     }

@@ -15,6 +15,13 @@ import SwiftUI
 public final class RootModel: Sendable {
     @MainActor
     var gameEditorModel: MapEditorSession? = nil
+
+    /// The game screen retains its map session across map replacement so the
+    /// bottom toolbar does not blink out. The owning game screen clears that
+    /// retained session explicitly when the whole screen leaves the hierarchy.
+    @MainActor public func clearGameEditorSession() {
+        gameEditorModel = nil
+    }
 }
 
 @MainActor @Observable

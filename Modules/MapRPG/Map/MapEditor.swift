@@ -54,66 +54,76 @@ struct MapEditor: View {
     }
 
     var body: some View {
-        ManagedNavigationStack(name: "MapEditor") { _ in
-            MapEditorCanvas(
-                session: session,
-                image: image,
-                degrees: photoDegrees,
-                map: map
-            )
-            .background {
-                Rectangle()
-                    .fill(Color.black.gradient)
-                    .ignoresSafeArea()
-            }
-            .overlay {
-                appearanceBackground.opacity(session.appeared ? 0 : 1)
-            }
-            .onChange(
-                of: editController.editorModel.sheetEditorModel.entryId,
-                initial: true
-            ) {
-                handleEntrySelectionChange()
-            }
-            .onChange(of: map.mapPins) {
-                handleExternalPinChange()
-            }
-            .onChange(of: map.entries) {
-                handleExternalEntryChange()
-            }
-            .onChange(of: map.pointer) {
-                session.resetPointer(map: map)
-            }
-            .onChange(of: canvasConfiguration, initial: true) {
-                synchronizeCanvas()
-            }
-            .onChange(of: dropPinModel.items) {
-                dropPin()
-            }
-            .onChange(of: map.pinScale) {
-                guard session.mapMode != .edit, map.pinScale != session.pinScale else { return }
-                session.pinScale = map.pinScale
-            }
-            .onChange(of: session.pinScale) {
-                guard session.mapMode != .edit else { return }
-                map.pinScale = session.pinScale
-            }
-            .onChange(of: session.hexScale) {
-                guard session.mapMode != .edit,
-                      session.hexScale != 0,
-                      session.hexScale != map.hexMapScale else { return }
-                editController.createHexMap(model: map, hexMapScale: session.hexScale)
-            }
-            .onAppear(perform: appear)
-            .onDisappear(perform: disappear)
-            .modifier(
-                EditToolBarViewModifier(
-                    mapEditController: mapEditController,
-                    editorModel: session,
-                    isTileEditor: configuration.isTileEditor
+        Group {
+            if configuration.mode == .edit {
+                ManagedNavigationStack(name: "MapEditor") { _ in
+                    MapEditorWindowStage(
+                        session: session,
+                        image: image,
+                        degrees: photoDegrees,
+                        map: map,
+                        colorScheme: colorScheme
+                    )
+                    .modifier(
+                        EditToolBarViewModifier(
+                            mapEditController: mapEditController,
+                            editorModel: session,
+                            isTileEditor: configuration.isTileEditor
+                        )
+                    )
+                }
+            } else {
+                // A game surface belongs to GameScreenLayer's window viewport.
+                // It must not introduce a nested navigation/safe-area owner.
+                MapEditorWindowStage(
+                    session: session,
+                    image: image,
+                    degrees: photoDegrees,
+                    map: map,
+                    colorScheme: colorScheme
                 )
-            )
+            }
         }
+        .onChange(
+            of: editController.editorModel.sheetEditorModel.entryId,
+            initial: false
+        ) {
+            handleEntrySelectionChange()
+        }
+        .onChange(of: map.mapPins) {
+            handleExternalPinChange()
+        }
+        .onChange(of: map.entries) {
+            handleExternalEntryChange()
+        }
+        .onChange(of: map.pointer) {
+            guard session.mapId == map.id else { return }
+            session.resetPointer(map: map)
+        }
+        .onChange(of: canvasConfiguration, initial: true) {
+            synchronizeCanvas()
+        }
+        .onChange(of: dropPinModel.items) {
+            dropPin()
+        }
+        .onChange(of: map.pinScale) {
+            guard session.mapId == map.id,
+                  session.mapMode != .edit,
+                  map.pinScale != session.pinScale else { return }
+            session.pinScale = map.pinScale
+        }
+        .onChange(of: session.pinScale) {
+            guard session.mapMode != .edit else { return }
+            map.pinScale = session.pinScale
+        }
+        .onChange(of: session.hexScale) {
+            guard session.mapMode != .edit,
+                  session.hexScale != 0,
+                  session.hexScale != map.hexMapScale else { return }
+            editController.createHexMap(model: map, hexMapScale: session.hexScale)
+        }
+        .onAppear(perform: appear)
+        .onDisappear(perform: disappear)
     }
 }
 
@@ -127,15 +137,6 @@ private extension MapEditor {
             image: image,
             photoDegrees: photoDegrees
         )
-    }
-
-    @ViewBuilder
-    var appearanceBackground: some View {
-        if colorScheme == .dark {
-            Color.black.ignoresSafeArea()
-        } else {
-            Color.white.ignoresSafeArea()
-        }
     }
 
     func appear() {
@@ -159,6 +160,11 @@ private extension MapEditor {
                 mapEditController.prepareTileWorkingCopy(from: map, editorModel: session)
             } else {
                 mapEditController.prepareWorkingCopy(from: map, editorModel: session)
+                mapEditController.changeMap(
+                    map: map,
+                    currentEntryId: editController.editorModel.sheetEditorModel.entryId,
+                    editorModel: session
+                )
             }
         }
         session.firstAppear(map: map)
@@ -166,6 +172,7 @@ private extension MapEditor {
 
     func disappear() {
         if configuration.registersGameToolbarSession,
+           root.gameController.gameModel.currentItemId == nil,
            root.rootModel.gameEditorModel === session {
             root.rootModel.gameEditorModel = nil
         }
@@ -214,6 +221,7 @@ private extension MapEditor {
     }
 
     func handleExternalPinChange() {
+        guard session.mapId == map.id else { return }
         mapEditController.mergeExternalPins(newMap: map, editorModel: session)
         let pins = session.mapMode == .edit
             ? session.workingCopy?.mapPins ?? map.mapPins
@@ -222,6 +230,7 @@ private extension MapEditor {
     }
 
     func handleExternalEntryChange() {
+        guard session.mapId == map.id else { return }
         session.resetEntries(newEntries: map.entries, map: map)
         mapEditController.mergeExternalEntries(newMap: map, editorModel: session)
     }
@@ -250,6 +259,49 @@ private extension MapEditor {
         }
         dropPinModel.items = []
         dropPinModel.isTarget = false
+    }
+}
+
+/// A window-sized layout owner with the map viewport installed as a non-sizing
+/// child. Editor chrome is applied to this stage, never to `MapEditorCanvas`.
+private struct MapEditorWindowStage: View {
+    let session: MapEditorSession
+    let image: AKImage
+    let degrees: Double
+    let map: MapModel
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        Color.clear
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background {
+                Rectangle()
+                    .fill(Color.black.gradient)
+                    .ignoresSafeArea()
+            }
+            .overlay {
+                MapEditorCanvas(
+                    session: session,
+                    image: image,
+                    degrees: degrees,
+                    map: map
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .clipped()
+            .overlay {
+                if !session.appeared {
+                    Group {
+                        if colorScheme == .dark {
+                            Color.black
+                        } else {
+                            Color.white
+                        }
+                    }
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                }
+            }
     }
 }
 

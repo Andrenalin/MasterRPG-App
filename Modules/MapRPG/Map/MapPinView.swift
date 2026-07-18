@@ -163,6 +163,7 @@ final class MapPinViewModel {
     func replacePhoto(pinId: UUID, itemId: UUID?) {
         guard let node = pinNode(for: pinId) else { return }
         var updatedPin = node.pin
+        guard updatedPin.photoId != itemId else { return }
         updatedPin.photoId = itemId
         node.update(pin: updatedPin)
         interactionHandler?(.action(
@@ -411,6 +412,17 @@ struct MapPinView: View {
             actionContext: actionContext,
             reduceMotion: reduceMotion
         ))
+#if os(macOS) || os(visionOS)
+        .dropDestination(
+            for: LinkPhotoData.self,
+            isEnabled: actionContext == .editor
+        ) { photos, _ in
+            guard let photo = photos.first else { return }
+            // A pin owns one displayed photo. Accept only the first dropped
+            // item so one user drop produces one model/persistence event.
+            model.replacePhoto(with: photo.itemId)
+        }
+#endif
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(pinAccessibilityLabel)
         .accessibilityValue(pinAccessibilityValue)

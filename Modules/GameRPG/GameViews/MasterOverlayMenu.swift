@@ -9,6 +9,8 @@ struct MasterOverlayMenu: View {
     let adventureId: UUID
     let playerController: PlayerController
 
+    @Environment(GameScreenModel.self) private var gameScreenModel
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         OverlayGameLayout(root: root, hideDice: false) {
@@ -19,6 +21,15 @@ struct MasterOverlayMenu: View {
 #endif
         } sideOverlay: {
             OverlayMasterTabBar(root: root, adventureId: adventureId)
+        } moduleMenuOverlay: {
+#if os(macOS)
+            if gameScreenModel.isSideMenuVisible {
+                MasterSideMenu(adventureId: adventureId)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+#else
+            EmptyView()
+#endif
         } toolBarOverlay: {
             OverlayToolBar(root: root, playerController: playerController, isMaster: true)
         }

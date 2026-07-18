@@ -32,6 +32,13 @@ struct GameToolbarContent: ToolbarContent {
             }
         }
 
+        ToolbarItem(placement: .automatic) {
+            // iOS exposes this control in OverlayGameMenu. macOS uses the
+            // native window toolbar, so keep the same in-place 2D/3D switch
+            // available here instead of requiring a separate table window.
+            GameTableWindowButton()
+        }
+
         if role == .master || root.gameModel.gameType != .observer {
             ToolbarItem(placement: .automatic) {
                 GameSidebarToolbarMenu(role: role)

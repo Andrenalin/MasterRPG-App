@@ -14,9 +14,11 @@ struct MapPinVisibilityTests {
 
     @Test func pinCodableRoundTripAndLegacyDefaults() throws {
         // Given
+        let characterId = UUID()
         let pin = MapPinModel(
             id: UUID(),
             name: "Fallen Hero",
+            characterId: characterId,
             isDead: true,
             isHighlighted: true
         )
@@ -42,6 +44,7 @@ struct MapPinVisibilityTests {
         var legacyObject = encodedObject
         legacyObject.removeValue(forKey: "isDead")
         legacyObject.removeValue(forKey: "isHighlighted")
+        legacyObject.removeValue(forKey: "characterId")
         let legacyPin = try JSONDecoder().decode(
             MapPinModel.self,
             from: JSONSerialization.data(withJSONObject: legacyObject)
@@ -50,12 +53,14 @@ struct MapPinVisibilityTests {
         // Then
         #expect(decoded.isDead)
         #expect(decoded.isHighlighted)
+        #expect(decoded.characterId == characterId)
         #expect(!missingDeadPin.isDead)
         #expect(missingDeadPin.isHighlighted)
         #expect(missingHighlightPin.isDead)
         #expect(!missingHighlightPin.isHighlighted)
         #expect(!legacyPin.isDead)
         #expect(!legacyPin.isHighlighted)
+        #expect(legacyPin.characterId == nil)
     }
 
     @Test func entryContainsPoint() {

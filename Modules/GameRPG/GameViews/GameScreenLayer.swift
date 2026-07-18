@@ -20,15 +20,20 @@ struct GameScreenLayer<Surface: View, Chrome: View>: View {
 
     var body: some View {
         ManagedNavigationStack {
-            ZStack(alignment: .topLeading) {
-                surface
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                chrome
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .zIndex(100)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // The clear window-sized view is the only layout participant.
+            // Both overlays receive the window proposal, but neither the map's
+            // logical size nor a RealityView's ideal size can resize the chrome.
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay {
+                    surface
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .ignoresSafeArea()
+                }
+                .overlay(alignment: .topLeading) {
+                    chrome
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
         }
     }
 }

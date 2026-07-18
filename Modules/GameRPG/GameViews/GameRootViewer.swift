@@ -167,15 +167,19 @@ private struct GameContentLayer<Content: View, Presentation: View>: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            presentation
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .zIndex(1)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Keep the map/table alive behind temporary presentations without
+        // allowing its intrinsic size to become the game window's size.
+        Color.clear
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay {
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .clipped()
+            .overlay(alignment: .topLeading) {
+                presentation
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
     }
 }
 

@@ -161,7 +161,7 @@ extension MapEditController {
         }
 
         if editorModel.appeared {
-            editorModel.resetZoom()
+            editorModel.focusActiveEntry()
         }
     }
 }
@@ -220,6 +220,7 @@ extension MapEditController {
                     name: editController.root.characterRoot.linkControllable.name(for: monster.itemId),
                     color: .random,
                     photoId: editController.root.characterRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(),
+                    characterId: monster.itemId,
                     location: location ?? .zero,
                     size: .normal,
                     isShown: true

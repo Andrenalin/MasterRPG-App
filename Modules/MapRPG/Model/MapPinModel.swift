@@ -4,11 +4,12 @@ import CoreRPG
 import SwiftUI
 
 public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
-    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false, isDead: Bool = false, isHighlighted: Bool = false) {
+    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, characterId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false, isDead: Bool = false, isHighlighted: Bool = false) {
         self.id = id
         self.name = name
         self.color = color
         self.photoId = photoId
+        self.characterId = characterId
         self.location = location
         self.size = size
         self.isShown = isShown
@@ -82,6 +83,7 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
     public var name: String
     public var color: Color = .red
     public var photoId: UUID?
+    public var characterId: UUID?
     public var location: CGPoint = .zero
     public var size: MapPinSize = .normal
     public var isShown: Bool = true
@@ -99,6 +101,7 @@ extension MapPinModel: Codable {
         case name
         case color
         case photoId
+        case characterId
         case location
         case size
         case isShown
@@ -117,6 +120,7 @@ extension MapPinModel: Codable {
         try container.encode(location, forKey: .location)
         try container.encode(CodableColor(color), forKey: .color)
         try container.encode(photoId, forKey: .photoId)
+        try container.encode(characterId, forKey: .characterId)
         try container.encode(size, forKey: .size)
         try container.encode(isShown, forKey: .isShown)
         try container.encode(isPlayer, forKey: .isPlayer)
@@ -135,6 +139,7 @@ extension MapPinModel: Codable {
         let ccolor = try values.decode(CodableColor.self, forKey: .color)
         color = ccolor.color
         photoId = try values.decodeIfPresent(UUID.self, forKey: .photoId)
+        characterId = try values.decodeIfPresent(UUID.self, forKey: .characterId)
         size = try values.decode(MapPinSize.self, forKey: .size)
         isShown = try values.decode(Bool.self, forKey: .isShown)
         isPlayer = try values.decodeIfPresent(Bool.self, forKey: .isPlayer) ?? false

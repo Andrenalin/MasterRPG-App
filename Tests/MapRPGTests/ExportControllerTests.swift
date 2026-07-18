@@ -8,7 +8,7 @@ import AudioRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
-import CharacterRPG
+@testable import CharacterRPG
 import Testing
 
 @testable import MapRPG
@@ -90,6 +90,30 @@ struct ExportControllerTests {
         #expect(mapIds!.contains(itemId))
         #expect(mapIds!.contains(newId))
         #expect(!mapIds!.contains(notConnected))
+    }
+
+    @Test func exportingMapIncludesCharacterAssociatedWithPin() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        await root.itemController.resetData()
+        let mapId = await root.itemController.addNew(type: .item)
+        let characterId = await root.characterRoot.itemController.addNew(type: .item)
+        let map = root.itemController.itemOrEmpty(for: mapId)
+        map.mapPins = [
+            MapPinModel(
+                id: UUID(),
+                name: "Associated character",
+                characterId: characterId
+            )
+        ]
+
+        // When
+        let ids = root.exportController.exporting(
+            itemIds: ItemModuleIds(ids: Set([mapId]), module: .map)
+        )
+
+        // Then
+        #expect(ids.ids[.value]?.contains(characterId) == true)
     }
 }
 #endif

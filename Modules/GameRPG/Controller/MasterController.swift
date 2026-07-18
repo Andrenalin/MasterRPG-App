@@ -500,11 +500,15 @@ extension MasterController: MasterNetworkStoreDelegate {
 
         do {
             try Task.checkCancellation()
-            if let requestedData = try await handle(model) {
+            if let requestedData = try await handle(model, connectionId: event.connectionId) {
                 try Task.checkCancellation()
-                if requestedData.data != nil {
+                if requestedData.data != nil, requestedData.type != .map {
                     // The full payload went out — a later reshow can rely on
                     // the reference no matter which path delivered first.
+                    // Map is deliberately excluded: all Map request responses
+                    // are requester-only repairs (including photo-free generic
+                    // updates). Only show(for:) publishes the full Map package
+                    // to the group and may establish the shared sent baseline.
                     await gameModel.markSentGameItem(type: requestedData.type, id: requestedData.id, version: requestedData.effectiveAssetVersion)
                 }
                 // Target the answer at the requester: an untargeted full payload
@@ -538,7 +542,10 @@ extension MasterController: MasterNetworkStoreDelegate {
 }
 
 extension MasterController {
-    func handle(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
+    func handle(
+        _ model: GameNetworkModel,
+        connectionId: ConnectionController.ID? = nil
+    ) async throws -> NetworkCodableDataType? {
         switch model.data.type {
         case .adventure, .none, .setting, .editor, .generator, .search:
             Logger.networking.error("MasterController: Request \(model.type.debugDescription, privacy: .public) but model request data is not supported. \(model.debugDescription, privacy: .public)")
@@ -550,7 +557,7 @@ extension MasterController {
         case .game:
             return try await handleGame(model)
         case .map:
-            return try await handleMap(model)
+            return try await handleMap(model, connectionId: connectionId)
         case .pdf:
             return try await handlePdf(model)
         case .photo:
@@ -710,9 +717,14 @@ extension MasterController {
         return nil
     }
     
-    func handleMap(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
+    func handleMap(
+        _ model: GameNetworkModel,
+        connectionId: ConnectionController.ID? = nil
+    ) async throws -> NetworkCodableDataType? {
         if model.subType == .ok {
-            await root.mapRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
+            // Maps are session-memory presentations, not player-owned assets.
+            // Acknowledgements therefore carry no availability meaning and
+            // must not populate the generic player-report store.
             return nil
         }
         guard model.subType != .failed else { return nil }
@@ -720,16 +732,17 @@ extension MasterController {
         switch model.type {
         case .reveal:
             let mapData = try await root.mapRoot.mapGameControllable.createMapGameData(for: model.data.id)
-            // The full package went out through the request path — reshows can
-            // rely on the reference no matter which path delivered first.
-            await MainActor.run {
-                gameModel.markSentGameItem(type: .map, id: mapData.id, version: mapData.effectiveAssetVersion)
-            }
             if model.subType == .mapState {
                 // Targeted at the recovering player: everyone else already has
                 // the map, and over SharePlay an untargeted full payload would
                 // be skipped as identical to the published journal attachment.
-                await send(type: .reveal, subtype: .store, updated: mapData, playerId: model.sender.id)
+                await send(
+                    type: .reveal,
+                    subtype: .store,
+                    updated: mapData,
+                    connectionId: connectionId,
+                    playerId: model.sender.id
+                )
                 // Send the live map state (not the request echo, whose data is
                 // nil) so the recovering player syncs room visibility and pins.
                 // Targeted: the other players are already up to date.
@@ -737,9 +750,16 @@ extension MasterController {
                     type: .update,
                     subtype: .generic,
                     updated: await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: model.data.id),
+                    connectionId: connectionId,
                     playerId: model.sender.id
                 )
-                await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id), playerId: model.sender.id)
+                await send(
+                    type: .update,
+                    subtype: .mapState,
+                    updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id),
+                    connectionId: connectionId,
+                    playerId: model.sender.id
+                )
             } else {
                 return mapData
             }
@@ -758,7 +778,8 @@ extension MasterController {
                 // never get from players mapState updates, only as resend from SharePlay?
                 break
             case .mapPin:
-                if await root.mapRoot.mapGameControllable.updatePin(
+                if await isCurrentMapCommand(model.data),
+                   await root.mapRoot.mapGameControllable.updatePin(
                     itemId: model.data.id,
                     data: model.data.data,
                     playerId: model.sender.id
@@ -775,6 +796,22 @@ extension MasterController {
             }
         }
         return nil
+    }
+
+    /// Player-origin Map commands apply only to the currently presented Map.
+    /// Current peers also carry the photo-free structural generation so a
+    /// delayed command from a replaced Map cannot mutate the new generation.
+    /// Generation-less commands are rejected: they cannot distinguish a stale
+    /// command for an earlier incarnation of the same Map id.
+    private func isCurrentMapCommand(_ data: NetworkCodableDataType) async -> Bool {
+        guard await root.mapRoot.mapGameControllable.gameModel.currentItemId == data.id else {
+            return false
+        }
+        guard let requestedContentVersion = data.contentVersion,
+              await root.mapRoot.mapGameControllable.mapContentVersion(for: data.id) == requestedContentVersion
+        else { return false }
+        guard let requestedAssetVersion = data.assetVersion else { return true }
+        return await root.mapRoot.mapGameControllable.mapAssetVersion(for: data.id) == requestedAssetVersion
     }
 
     func handlePdf(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
@@ -1034,6 +1071,7 @@ extension MasterController {
                     name: model.senderName,
                     characterId: characterId
                 )
+                await publishCurrentMapAfterPlayerPinChange()
                 return nil
             }
             return model.data
@@ -1045,7 +1083,28 @@ extension MasterController {
             name: model.senderName,
             characterId: characterId
         )
+        await publishCurrentMapAfterPlayerPinChange()
         return nil
+    }
+
+    /// Character synchronization can finish after resetPlayers() created and
+    /// broadcast a pin without its Character photo. Re-publish both the
+    /// structural pin metadata and authoritative live state once the Character
+    /// is known so every peer replaces that bootstrap copy immediately.
+    private func publishCurrentMapAfterPlayerPinChange() async {
+        guard let mapId = await root.mapRoot.mapGameControllable.gameModel.currentItemId else {
+            return
+        }
+        await send(
+            type: .update,
+            subtype: .generic,
+            updated: await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
+        )
+        await send(
+            type: .update,
+            subtype: .mapState,
+            updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId)
+        )
     }
     
     func handleWeather(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
@@ -1282,7 +1341,8 @@ private extension MasterController {
         if model.data.type == .map, model.type == .update, model.subType == .mapPin {
             // Update the host's own map first, then tell the master.
             let hostId = await root.gameModel.gameConfig.id
-            guard await root.mapRoot.mapGameControllable.updatePin(
+            guard await isCurrentMapCommand(model.data),
+                  await root.mapRoot.mapGameControllable.updatePin(
                 itemId: model.data.id,
                 data: model.data.data,
                 playerId: hostId
@@ -1358,7 +1418,19 @@ private extension MasterController {
             return await root.spaceRoot.gameControllable.hasLocalFileData(for: data.id)
         case .map:
             guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: data.id) else { return false }
-            return await root.mapRoot.mapGameControllable.missingMapImages(itemId: data.id).isEmpty
+            guard await root.mapRoot.mapGameControllable.missingMapImages(itemId: data.id).isEmpty else {
+                return false
+            }
+            let localReference = await root.mapRoot.mapGameControllable.shareMap(id: data.id)
+            if let requestedAssetVersion = data.assetVersion,
+               requestedAssetVersion != localReference.assetVersion {
+                return false
+            }
+            if let requestedContentVersion = data.contentVersion,
+               requestedContentVersion != localReference.contentVersion {
+                return false
+            }
+            return true
         case .weather:
             return await root.weatherRoot.weatherGameControllable.isWeatherAvailable(
                 itemId: data.id,

@@ -74,6 +74,7 @@ extension ExportController: ExportControllable {
             results.insert(id)
 
             photoIds.formUnion(item.mapPins.compactMap { $0.photoId }.compactMap { photoRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
+            valueIds.formUnion(item.mapPins.compactMap { $0.characterId }.compactMap { characterRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
             if let photoId = item.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
             }
@@ -134,6 +135,10 @@ extension ExportController: ExportControllable {
             photoIds.formUnion(root.gameController.mapGameModel.playerPins.compactMap { pin in
                 guard let photoId = pin.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) else { return nil }
                 return photoId
+            })
+            valueIds.formUnion(root.gameController.mapGameModel.playerPins.compactMap { pin in
+                guard let characterId = pin.characterId, characterRoot.linkControllable.validateLink(itemId: characterId) else { return nil }
+                return characterId
             })
         }
 

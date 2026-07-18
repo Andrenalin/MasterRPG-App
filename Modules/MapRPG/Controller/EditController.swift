@@ -312,6 +312,7 @@ extension EditController {
         var pin = item[MapPinId.id, pinId]
         pin.name = name
         pin.photoId = photoId
+        pin.characterId = valueId
         item[MapPinId.id, pinId] = pin
         save(updated: item, message: String(localized: "Updated pin from charakter", bundle: .module).localizedString)
     }
@@ -330,7 +331,7 @@ extension EditController {
         var pins: [MapPinModel] = []
         for _ in 0..<pinNumber {
             pins.append(contentsOf: monsters.map { monster in
-                MapPinModel(id: UUID(), name: root.characterRoot.linkControllable.name(for: monster.itemId), color: .random, photoId: root.characterRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(), location: location ?? .zero, size: .normal, isShown: true)
+                MapPinModel(id: UUID(), name: root.characterRoot.linkControllable.name(for: monster.itemId), color: .random, photoId: root.characterRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(), characterId: monster.itemId, location: location ?? .zero, size: .normal, isShown: true)
             })
         }
         

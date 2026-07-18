@@ -30,22 +30,9 @@ struct PlayerGameScreen: View {
                 gameScreenModel: gameScreenModel
             )
         } chrome: {
-            ZStack(alignment: .topLeading) {
-                PlayerOverlayMenu(root: root, playerController: playerController)
-                    .environment(diceShowOptionModel)
-                    .environment(gameScreenModel)
-                    .zIndex(10)
-
-#if os(macOS)
-                if gameScreenModel.isSideMenuVisible {
-                    PlayerSideMenu(root: root)
-                        .environment(gameScreenModel)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                        .zIndex(2)
-                }
-#endif
-            }
+            PlayerOverlayMenu(root: root, playerController: playerController)
+                .environment(diceShowOptionModel)
+                .environment(gameScreenModel)
         }
         .focusSectionAll()
         .alert(Text("Quit Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
@@ -63,6 +50,9 @@ struct PlayerGameScreen: View {
         }
         .task {
             await prepareWindows()
+        }
+        .onDisappear {
+            root.mapRoot.rootModel.clearGameEditorSession()
         }
 #if os(visionOS)
         .gameImmersiveSpaceSync(root: root)

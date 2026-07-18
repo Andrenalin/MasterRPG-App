@@ -138,6 +138,7 @@ struct EditControllerTests {
 
         #expect(monsterMap.mapPins.count == 2)
         #expect(monsterMap.mapPins.allSatisfy { $0.name == "Sentinel" })
+        #expect(monsterMap.mapPins.allSatisfy { $0.characterId == valueId })
         #expect(monsterMap.mapPins.map(\.location) == [CGPoint(x: 25, y: 40), CGPoint(x: 74, y: 89)])
     }
 

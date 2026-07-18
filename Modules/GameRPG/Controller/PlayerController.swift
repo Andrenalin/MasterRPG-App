@@ -71,6 +71,11 @@ final class PlayerControllerModel: Sendable {
         let counter: Int
     }
 
+    private struct PendingMapRepair: Equatable, Sendable {
+        let assetVersion: Int?
+        let contentVersion: Int?
+    }
+
     var gameUpdateType: NetworkModules = .none
     var messageCounter: Int = 0
     private var outgoingMessageCounter: Int = 1
@@ -112,10 +117,6 @@ final class PlayerControllerModel: Sendable {
     // Space ids with one outstanding full-file repair request. A permanently
     // unavailable USDZ must not create an endless reveal/store response loop.
     var requestedSpaceRepairIds: Set<UUID> = []
-    // Maps whose background photo was missing after a delivery and triggered one
-    // full-map re-request. The background belongs exclusively to the full map
-    // package, so the single retry prevents a full-payload request loop.
-    var requestedFullMapIds: Set<UUID> = []
     /// Latest structural update received before its Journal-backed base map.
     /// Only one value per map is retained, so interleaved chunk streams cannot
     /// roll a newer editor refresh back.
@@ -123,7 +124,9 @@ final class PlayerControllerModel: Sendable {
     private var pendingMapStates: [UUID: PendingMapState] = [:]
     private var lastMapContentUpdateCounters: [UUID: Int] = [:]
     private var lastFullMapContentCounters: [UUID: Int] = [:]
+    private var lastMapStateCounters: [UUID: Int] = [:]
     private var mapContentVersions: [UUID: Int] = [:]
+    private var pendingMapRepairs: [UUID: PendingMapRepair] = [:]
 
     func increaseMessageCounter() {
         messageCounter += 1
@@ -405,11 +408,18 @@ final class PlayerControllerModel: Sendable {
             )
         }
 
+        let recordedVersion = if current.module == module,
+                                 current.itemId == itemId,
+                                 version == 0 {
+            current.version
+        } else {
+            version
+        }
         presentationIntents[masterId] = PresentationIntent(
             module: module,
             counter: counter,
             itemId: itemId,
-            version: version
+            version: recordedVersion
         )
         return true
     }
@@ -468,6 +478,7 @@ final class PlayerControllerModel: Sendable {
     }
 
     func queueMapState(_ data: NetworkCodableDataType, counter: Int) {
+        guard shouldApplyMapState(itemId: data.id, counter: counter) else { return }
         if let current = pendingMapStates[data.id],
            counter != 0,
            current.counter >= counter {
@@ -476,8 +487,9 @@ final class PlayerControllerModel: Sendable {
         pendingMapStates[data.id] = PendingMapState(data: data, counter: counter)
     }
 
-    func pendingMapState(for itemId: UUID) -> NetworkCodableDataType? {
-        pendingMapStates[itemId]?.data
+    func pendingMapState(for itemId: UUID) -> (data: NetworkCodableDataType, counter: Int)? {
+        guard let pending = pendingMapStates[itemId] else { return nil }
+        return (pending.data, pending.counter)
     }
 
     func discardPendingMapState(itemId: UUID) {
@@ -489,6 +501,20 @@ final class PlayerControllerModel: Sendable {
             lastMapContentUpdateCounters[itemId] ?? 0,
             lastFullMapContentCounters[itemId] ?? 0
         )
+    }
+
+    func shouldApplyMapState(itemId: UUID, counter: Int) -> Bool {
+        if counter == 0 {
+            return lastMapStateCounters[itemId] == nil
+        }
+        return counter > (lastMapStateCounters[itemId] ?? 0)
+    }
+
+    func markMapStateApplied(itemId: UUID, counter: Int) {
+        if counter > 0 {
+            lastMapStateCounters[itemId] = counter
+        }
+        pendingMapStates[itemId] = nil
     }
 
     /// A Journal-backed full map may finish after a newer messenger mapUpdate.
@@ -505,17 +531,13 @@ final class PlayerControllerModel: Sendable {
         if counter > 0 {
             lastMapContentUpdateCounters[itemId] = counter
         }
-        if let contentVersion {
-            mapContentVersions[itemId] = contentVersion
-        }
+        mapContentVersions[itemId] = contentVersion
         pendingMapContentUpdates[itemId] = nil
     }
 
     func recordFullMapContentVersion(itemId: UUID, contentVersion: Int?, counter: Int) {
         guard shouldImportFullMapContent(itemId: itemId, counter: counter) else { return }
-        if let contentVersion {
-            mapContentVersions[itemId] = contentVersion
-        }
+        mapContentVersions[itemId] = contentVersion
         if counter > 0 {
             lastFullMapContentCounters[itemId] = max(lastFullMapContentCounters[itemId] ?? 0, counter)
         }
@@ -526,12 +548,51 @@ final class PlayerControllerModel: Sendable {
         return mapContentVersions[itemId] == contentVersion
     }
 
+    /// Starts one exact-version full-map repair. Repeated state/reference
+    /// messages for the same missing generation are coalesced, while a later
+    /// structural or asset generation can start its own repair.
+    func beginMapRepair(
+        itemId: UUID,
+        assetVersion: Int?,
+        contentVersion: Int?
+    ) -> Bool {
+        let repair = PendingMapRepair(
+            assetVersion: assetVersion,
+            contentVersion: contentVersion
+        )
+        guard pendingMapRepairs[itemId] != repair else { return false }
+        pendingMapRepairs[itemId] = repair
+        pendingMapRequests.insert(itemId)
+        return true
+    }
+
+    func pendingMapRepairMatches(_ data: NetworkCodableDataType) -> Bool {
+        guard let repair = pendingMapRepairs[data.id] else { return true }
+        if let assetVersion = repair.assetVersion,
+           data.assetVersion != assetVersion {
+            return false
+        }
+        if let contentVersion = repair.contentVersion,
+           data.contentVersion != contentVersion {
+            return false
+        }
+        return true
+    }
+
+    func completeMapRepair(itemId: UUID) -> Bool {
+        pendingMapRepairs[itemId] = nil
+        return pendingMapRequests.remove(itemId) != nil
+    }
+
     func resetMapContentSequence() {
         pendingMapContentUpdates.removeAll()
         pendingMapStates.removeAll()
         lastMapContentUpdateCounters.removeAll()
         lastFullMapContentCounters.removeAll()
+        lastMapStateCounters.removeAll()
         mapContentVersions.removeAll()
+        pendingMapRepairs.removeAll()
+        pendingMapRequests.removeAll()
     }
 
     func reset(lostMaster: Bool) {
@@ -613,7 +674,6 @@ extension PlayerController {
         gameModel.requestedRepairIds = []
         gameModel.requestedPdfRepairIds = []
         gameModel.requestedSpaceRepairIds = []
-        gameModel.requestedFullMapIds = []
         gameModel.resetMasterStateSequence()
         gameModel.resetAudioListSequence()
         gameModel.resetPhotoListSequence()
@@ -908,7 +968,6 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             gameModel.requestedRepairIds = []
             gameModel.requestedPdfRepairIds = []
             gameModel.requestedSpaceRepairIds = []
-            gameModel.requestedFullMapIds = []
             gameModel.resetMasterStateSequence()
             gameModel.resetAudioListSequence()
             gameModel.resetPhotoListSequence()
@@ -1046,14 +1105,34 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         // Value messages synchronize the joining player's Character and are
         // not part of the presentation ordering state machine.
         if model.data.type != .value, model.isPresentationIntent || model.isMapPresentationRepair {
+            let presentationVersion: Int
+            let allowsUnversionedMapState: Bool
+            if model.data.type == .map,
+               model.type == .update,
+               model.subType == .mapState {
+                // Live state belongs to the currently intended Map asset. New
+                // peers include the asset fingerprint; legacy peers are allowed
+                // to repair the same item with an unversioned state only.
+                presentationVersion = model.data.assetVersion ?? 0
+                allowsUnversionedMapState = model.data.assetVersion == nil
+            } else if model.data.type == .map {
+                // The legacy MapModel.version covers scales only. The background
+                // asset fingerprint is the presentation generation that must
+                // reject a delayed Journal attachment for an older background.
+                presentationVersion = model.data.effectiveAssetVersion
+                allowsUnversionedMapState = false
+            } else {
+                presentationVersion = model.data.version
+                allowsUnversionedMapState = false
+            }
             let shouldProcess = await gameModel.shouldProcessPresentation(
                 from: model.masterId,
                 module: model.data.type,
                 itemId: model.data.id,
-                version: model.data.version,
+                version: presentationVersion,
                 counter: model.counter,
                 isRepair: model.targetId != nil || model.isMapPresentationRepair,
-                allowsUnversionedStateRepair: model.isTargetedMapStatePresentationRepair
+                allowsUnversionedStateRepair: model.isTargetedMapStatePresentationRepair || allowsUnversionedMapState
             )
             guard shouldProcess else {
                 Logger.networking.debug("PlayerController: Stale presentation ignored \(model.counter, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")

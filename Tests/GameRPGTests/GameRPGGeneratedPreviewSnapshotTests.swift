@@ -360,6 +360,8 @@ struct GameRPGGeneratedPreviewSnapshotTests {
                     } sideOverlay: {
                         Color.red
                             .frame(width: 200)
+                    } moduleMenuOverlay: {
+                        EmptyView()
                     } toolBarOverlay: {
                         Button { } label: {
                             Image(systemName: "eraser")

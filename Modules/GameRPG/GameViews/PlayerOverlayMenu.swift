@@ -7,6 +7,8 @@ struct PlayerOverlayMenu: View {
     let root: GameRoot
     let playerController: PlayerController
 
+    @Environment(GameScreenModel.self) private var gameScreenModel
+
     var body: some View {
         OverlayGameLayout(root: root, hideDice: root.gameModel.gameType == .observer) {
 #if os(visionOS) || os(macOS)
@@ -16,6 +18,15 @@ struct PlayerOverlayMenu: View {
 #endif
         } sideOverlay: {
             OverlayPlayerTabBar(root: root)
+        } moduleMenuOverlay: {
+#if os(macOS)
+            if gameScreenModel.isSideMenuVisible {
+                PlayerSideMenu(root: root)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+#else
+            EmptyView()
+#endif
         } toolBarOverlay: {
             OverlayToolBar(root: root, playerController: playerController, isMaster: false)
         }
