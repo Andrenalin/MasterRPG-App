@@ -641,12 +641,13 @@ extension PlayerController {
 
 extension PlayerController {
     func send(updated: NetworkCodableDataType) async {
+        guard updated.type != .value else { return }
         await send(type: .store, subType: .store, updated: updated)
     }
     
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType) async {
         // Players cannot publish Weather and Weather has no live updates yet.
-        guard message.type != .table, message.type != .weather else { return }
+        guard message.type != .table, message.type != .value, message.type != .weather else { return }
         if message.type == .photo, actionType == .generic {
             await sharePhoto(message)
             return
@@ -996,7 +997,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         // still forwarded to local proxy clients: the addressee may sit behind
         // this player's proxy server.
         if let targetId = model.targetId, await targetId != root.gameModel.gameConfig.id {
-            if !event.fromProxy, !model.isAcknowledgement {
+            if !event.fromProxy, !model.isAcknowledgement, model.data.type != .value {
                 await root.networkProxyStore.sendPlayer(data: model)
             }
             Logger.networking.debug("PlayerController: Message ignored, targeted at \(targetId, privacy: .public)")
@@ -1042,7 +1043,9 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             }
         }
 
-        if model.isPresentationIntent || model.isMapPresentationRepair {
+        // Value messages synchronize the joining player's Character and are
+        // not part of the presentation ordering state machine.
+        if model.data.type != .value, model.isPresentationIntent || model.isMapPresentationRepair {
             let shouldProcess = await gameModel.shouldProcessPresentation(
                 from: model.masterId,
                 module: model.data.type,
@@ -1059,15 +1062,18 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         }
 
         if !event.fromProxy, !model.isAcknowledgement {
-            // Proxy clients mirror this player: an answer addressed to this
-            // device must be processed by them too, so clear the target before
-            // forwarding. (Messages targeted at OTHERS were already forwarded
-            // above and never reach this point.)
-            var forwarded = model
-            if await forwarded.targetId == root.gameModel.gameConfig.id {
-                forwarded.targetId = nil
+            if model.data.type != .value {
+                // Proxy clients mirror this player: an answer addressed to this
+                // device must be processed by them too, so clear the target before
+                // forwarding. (Messages targeted at OTHERS were already forwarded
+                // above and never reach this point.) Character bootstrap bypasses
+                // this path and is sent directly by the proxy master controller.
+                var forwarded = model
+                if await forwarded.targetId == root.gameModel.gameConfig.id {
+                    forwarded.targetId = nil
+                }
+                await root.networkProxyStore.sendPlayer(data: forwarded)
             }
-            await root.networkProxyStore.sendPlayer(data: forwarded)
             await scheduleSendCharacter()
         }
         return true
@@ -2077,38 +2083,30 @@ extension PlayerController {
     
     func handleValue(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
         guard await root.gameModel.gameType != .proxy else { return try await handleProxyValue(model) }
-        guard model.sender.isMaster else { return nil }
-        switch model.type {
-        case .reveal:
-            if try await root.characterRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                await MainActor.run {
-                    gameModel.gameUpdateType = .value
-                }
-                return await response(for: model, isSuccess: true, requestData: false)
-            } else {
-                return await response(for: model, isSuccess: true, requestData: true)
-            }
-        case .store:
-            try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
-            return await response(for: model, isSuccess: true, requestData: false)
-        case .update:
-            switch model.subType {
-            case .generic:
-                if let characterId = await root.gameModel.gamePlayer.characterId {
-                    await root.characterRoot.valueGameControllable.addItem(id: model.data.id, data: model.data, for: characterId)
-                }
-            case .valueResult:
-                if let characterId = await root.gameModel.gamePlayer.characterId {
-                    await root.characterRoot.valueGameControllable.add(result: model.data, for: characterId)
-                }
-            default:
-                if await root.characterRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                    await MainActor.run {
-                        gameModel.gameUpdateType = .value
-                    }
-                }
-            }
-        }
+        // A normal player accepts only the master's targeted response to the
+        // join announcement. No Value reveal, result, loot, or live update is
+        // processed during the game.
+        guard model.sender.isMaster,
+              model.type == .update,
+              model.subType == .store,
+              model.data.data == nil,
+              let characterId = await root.gameModel.gamePlayer.characterId,
+              characterId == model.data.id
+        else { return nil }
+
+        try Task.checkCancellation()
+        let package = try await root.characterRoot.gameControllable.createGameData(for: characterId)
+        try Task.checkCancellation()
+        // Character packages can be large, but only the game master consumes
+        // them. Keep them off the SharePlay Journal and away from local proxy
+        // clients; SharePlay peers may see the Messenger message and ignore it.
+        await send(
+            type: .update,
+            subType: .store,
+            updated: package,
+            useJournal: false,
+            relayToProxyClients: false
+        )
         return nil
     }
     
@@ -2285,15 +2283,17 @@ extension PlayerController {
     }
     
     func handleProxyValue(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        switch model.type {
-        case .reveal, .store:
-            return nil
-        case .update:
-            try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: false, deep: true)
-            let characterId = model.data.id
-            await scheduleProxyFocus(characterId: characterId)
-            return nil
-        }
+        // The one proxy-specific Value flow is the host Character bootstrap.
+        // Ignore every other legacy Value action or metadata-only message.
+        guard model.sender.isMaster,
+              model.type == .update,
+              model.subType == .store,
+              model.data.data != nil
+        else { return nil }
+
+        try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: false, deep: true)
+        await scheduleProxyFocus(characterId: model.data.id)
+        return nil
     }
     
     nonisolated func response(
@@ -2405,9 +2405,18 @@ extension PlayerController {
 
         do {
             try Task.checkCancellation()
-            let result = try await root.characterRoot.gameControllable.createGameData(for: characterId)
+            let reference = await root.characterRoot.gameControllable.share(id: characterId)
             try Task.checkCancellation()
-            await send(type: .update, subType: .store, updated: result, useJournal: true)
+            // First advertise only the Character ID and deterministic version.
+            // The master requests the full package only when its local version
+            // differs. Value messages never use the SharePlay Journal.
+            await send(
+                type: .update,
+                subType: .store,
+                updated: reference,
+                useJournal: false,
+                relayToProxyClients: false
+            )
             let lostMaster = await gameModel.lostMaster
             guard !Task.isCancelled, !lostMaster else { return }
             await gameModel.reset(sendPlayer: true)

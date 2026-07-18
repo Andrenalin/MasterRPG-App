@@ -21,7 +21,7 @@ struct PlayerGameScreen: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        ManagedNavigationStack {
+        GameScreenLayer {
             GameRootViewer(
                 root: root,
                 playerController: playerController,
@@ -29,11 +29,23 @@ struct PlayerGameScreen: View {
                 contentType: .player,
                 gameScreenModel: gameScreenModel
             )
-        }
-        .overlay(alignment: .topLeading) {
-            PlayerOverlayMenu(root: root, playerController: playerController)
-                .environment(diceShowOptionModel)
-                .environment(gameScreenModel)
+        } chrome: {
+            ZStack(alignment: .topLeading) {
+                PlayerOverlayMenu(root: root, playerController: playerController)
+                    .environment(diceShowOptionModel)
+                    .environment(gameScreenModel)
+                    .zIndex(10)
+
+#if os(macOS)
+                if gameScreenModel.isSideMenuVisible {
+                    PlayerSideMenu(root: root)
+                        .environment(gameScreenModel)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .zIndex(2)
+                }
+#endif
+            }
         }
         .focusSectionAll()
         .alert(Text("Quit Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
@@ -52,15 +64,6 @@ struct PlayerGameScreen: View {
         .task {
             await prepareWindows()
         }
-#if os(macOS)
-        .overlay(alignment: .trailing) {
-            if gameScreenModel.isSideMenuVisible {
-                PlayerSideMenu(root: root)
-                    .environment(gameScreenModel)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-            }
-        }
-#endif
 #if os(visionOS)
         .gameImmersiveSpaceSync(root: root)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {

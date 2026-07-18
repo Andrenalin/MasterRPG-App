@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import CryptoKit
 import Foundation
 import Observation
 
@@ -250,6 +251,80 @@ extension ValueModel: nonisolated ItemDiffComparable {
             }
     
         }
+    }
+
+    /// Deterministic identity of the Character content exchanged during game
+    /// setup. Linked asset identifiers are part of the Character, but their
+    /// bytes and device-local availability are deliberately not represented.
+    public var version: Int {
+        StableValueVersion.digest(CanonicalValueContent(self))
+    }
+}
+
+private struct CanonicalValueContent: Codable, Sendable {
+    let id: UUID
+    let name: String
+    let description: String
+    let tags: [String]
+    let category: ItemListCategory
+    let displayState: Int
+    let photoId: UUID?
+    let photos: [UUID]
+    let entries: [CanonicalValueEntry]
+    let parentId: UUID?
+    let diceId: UUID?
+    let groupId: UUID?
+
+    @MainActor
+    init(_ model: ValueModel) {
+        id = model.id
+        name = model.name
+        description = model.description
+        tags = model.tags
+        category = model.category
+        displayState = model.displayState
+        photoId = model.photoId
+        photos = model.photos
+        entries = model.entries.map(CanonicalValueEntry.init)
+        parentId = model.parentId
+        diceId = model.diceId
+        groupId = model.groupId
+    }
+}
+
+private struct CanonicalValueEntry: Codable, Sendable {
+    let id: UUID
+    let name: String
+    let type: ValueEntryModel.ValueType
+    let isGenerator: Bool
+    let value: String
+    let diceId: UUID?
+    let valueId: UUID?
+    let displayState: Int
+
+    init(_ entry: ValueEntryModel) {
+        id = entry.id
+        name = entry.name
+        type = entry.type
+        isGenerator = entry.isGenerator
+        value = entry.value
+        diceId = entry.diceId
+        valueId = entry.valueId
+        displayState = entry.displayState
+    }
+}
+
+private enum StableValueVersion {
+    static func digest<Value: Encodable>(_ value: Value) -> Int {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(value) else { return 1 }
+        let digest = SHA256.hash(data: data)
+        let rawValue = digest.prefix(8).reduce(UInt64(0)) { partialResult, byte in
+            partialResult << 8 | UInt64(byte)
+        }
+        let version = Int(bitPattern: UInt(truncatingIfNeeded: rawValue))
+        return version == 0 ? 1 : version
     }
 }
 

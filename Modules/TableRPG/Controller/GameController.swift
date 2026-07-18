@@ -6,7 +6,6 @@ import Foundation
 
 public protocol TableGameStorable {
     @MainActor func addResult(_ result: ResultCategory, value: String)
-    func requestTableResult(for itemId: UUID, diceId: UUID, diceResult: String, networkActions: NetworkActions?, valueActions: ValueActions) async
     @MainActor func isTableAvailable(itemId: UUID, version: Int) -> Bool
     func receiveTable(itemId: UUID, data: NetworkCodableDataType, makeCurrent: Bool) async throws -> Bool
 }
@@ -86,21 +85,6 @@ extension GameController: TableGameStorable {
         }
     }
     
-    func requestTableResult(for itemId: UUID, diceId: UUID, diceResult: String, networkActions: NetworkActions?, valueActions: ValueActions) async {
-        guard let networkActions else { return }
-        _ = await setCurrent(itemId: itemId)
-        let diceNum = await diceRoot.diceGameControllable.number(for: diceId, result: diceResult)
-        guard let entryId = await entry(for: itemId, with: diceNum) else { return }
-
-        // Model access is MainActor-isolated; extract the Sendable strings there.
-        let (name, value) = await MainActor.run {
-            let model = gameItem(for: itemId)
-            return (model.name, "\(model[entryId].content) 🎲 \(diceResult)")
-        }
-        let result = valueActions.createEntryResult(name, value, ResultCategory(id: itemId, childId: entryId, module: itemController.config.module))
-        await networkActions.game(result, .valueResult, nil)
-    }
-
     @MainActor
     func entry(for id: UUID, with result: Int) -> UUID? {
         let item = gameItem(for: id)

@@ -4,8 +4,6 @@ import SwiftUI
 
 @MainActor @Observable
 final class GameScreenModel {
-
-    static let mapSidebarSpacing: CGFloat = 12
     
     private enum WidthValues {
 #if os(macOS)
@@ -78,8 +76,4 @@ final class GameScreenModel {
         showMainTab != .none || showSettingTab != .none
     }
 
-    func mapTrailingReservation(usesInlineSidebarLayout: Bool) -> CGFloat {
-        guard usesInlineSidebarLayout, isInlineSidebarVisible else { return 0 }
-        return sideBarWidth + Self.mapSidebarSpacing
-    }
 }

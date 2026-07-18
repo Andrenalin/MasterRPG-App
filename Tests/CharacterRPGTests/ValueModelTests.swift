@@ -108,6 +108,69 @@ struct ValueModelTests {
         #expect(m2.entries == sut.entries)
     }
 
+    @Test("Character version is stable and tracks Character content including the player photo")
+    func stableCharacterVersion() throws {
+        // Given
+        let characterId = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let photoId = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let listedPhotoId = try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333"))
+        let entryId = try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444"))
+        let diceId = try #require(UUID(uuidString: "55555555-5555-5555-5555-555555555555"))
+        let linkedValueId = try #require(UUID(uuidString: "66666666-6666-6666-6666-666666666666"))
+        let replacementPhotoId = try #require(UUID(uuidString: "77777777-7777-7777-7777-777777777777"))
+        let makeCharacter = {
+            ValueModel(
+                id: characterId,
+                name: "Mira",
+                description: "Scout",
+                tags: ["player"],
+                category: .character,
+                displayState: 2,
+                photoId: photoId,
+                photos: [listedPhotoId],
+                entries: [
+                    ValueEntryModel(
+                        id: entryId,
+                        name: "Agility",
+                        type: .number,
+                        isGenerator: true,
+                        value: "12",
+                        diceId: diceId,
+                        valueId: linkedValueId,
+                        displayState: 1
+                    ),
+                ],
+                parentId: linkedValueId,
+                diceId: diceId,
+                groupId: linkedValueId
+            )
+        }
+        let character = makeCharacter()
+        let independentlyCreated = makeCharacter()
+        let originalVersion = character.version
+
+        // When / Then
+        #expect(originalVersion != 0)
+        #expect(independentlyCreated.version == originalVersion)
+
+        let renamedCharacter = character.copy()
+        renamedCharacter.name = "Mira Swiftstep"
+        #expect(renamedCharacter.version != originalVersion)
+
+        let changedEntryCharacter = character.copy()
+        var changedEntries = changedEntryCharacter.entries
+        changedEntries[0].value = "13"
+        changedEntryCharacter.entries = changedEntries
+        #expect(changedEntryCharacter.version != originalVersion)
+
+        let changedPhotoCharacter = character.copy()
+        changedPhotoCharacter.photoId = replacementPhotoId
+        #expect(changedPhotoCharacter.version != originalVersion)
+
+        character.quickEditEntries.insert(entryId)
+        #expect(character.version == originalVersion)
+    }
+
     @Test func folderMergeCombinesAndSortsChildren() {
         let folderId = UUID()
         let folder1 = ValueModel(

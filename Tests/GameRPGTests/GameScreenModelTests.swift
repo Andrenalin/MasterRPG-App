@@ -3,8 +3,6 @@
 #if canImport(Testing)
 import CoreGraphics
 import CoreRPG
-import MapRPG
-import SwiftUI
 import Testing
 
 @testable import GameRPG
@@ -12,48 +10,28 @@ import Testing
 @MainActor
 @Suite("Game screen map layout")
 struct GameScreenModelTests {
-    @Test("Map reserves only a visible inline sidebar")
-    func mapReservationTracksInlineVisibility() {
+    @Test("Sidebar visibility remains independent overlay state")
+    func sidebarVisibilityState() {
         let model = GameScreenModel()
 
-        #expect(model.mapTrailingReservation(usesInlineSidebarLayout: true) == 0)
+        #expect(!model.isInlineSidebarVisible)
 
         model.showMainTab = .game
-        #expect(
-            model.mapTrailingReservation(usesInlineSidebarLayout: true)
-                == model.sideBarWidth + GameScreenModel.mapSidebarSpacing
-        )
-
-        #expect(model.mapTrailingReservation(usesInlineSidebarLayout: false) == 0)
+        #expect(model.isInlineSidebarVisible)
 
         model.showMainTab = .none
         model.showSettingTab = .setting
-        #expect(
-            model.mapTrailingReservation(usesInlineSidebarLayout: true)
-                == model.sideBarWidth + GameScreenModel.mapSidebarSpacing
-        )
+        #expect(model.isInlineSidebarVisible)
     }
 
-    @Test("Changing the sidebar width updates the map reservation")
-    func mapReservationTracksSidebarWidth() {
+    @Test("Changing sidebar width mutates only sidebar presentation state")
+    func sidebarWidthState() {
         let model = GameScreenModel()
-        model.showMainTab = .game
-        let compactReservation = model.mapTrailingReservation(usesInlineSidebarLayout: true)
+        let compactWidth = model.sideBarWidth
 
         model.toggleSideBarWidth()
 
-        #expect(model.mapTrailingReservation(usesInlineSidebarLayout: true) > compactReservation)
-    }
-
-    @Test("Map viewport inset is an explicit environment value")
-    func mapViewportEnvironmentValue() {
-        var environment = EnvironmentValues()
-
-        #expect(environment.mapViewportTrailingInset == 0)
-
-        environment.mapViewportTrailingInset = 312
-
-        #expect(environment.mapViewportTrailingInset == 312)
+        #expect(model.sideBarWidth > compactWidth)
     }
 
     @Test("3D table remains local to the main game display")

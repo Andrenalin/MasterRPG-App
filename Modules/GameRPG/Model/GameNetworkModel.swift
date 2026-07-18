@@ -211,7 +211,7 @@ extension GameNetworkModel {
 
         if type == .reveal, subType == .show {
             return switch data.type {
-            case .map, .photo, .pdf, .space, .table, .value, .weather:
+            case .map, .photo, .pdf, .space, .table, .weather:
                 true
             default:
                 false
@@ -227,7 +227,7 @@ extension GameNetworkModel {
         case .weather:
             false
         case .value:
-            subType != .generic && subType != .valueResult
+            false
         case .space:
             subType != .spaceTransform && subType != .spaceList
         default:

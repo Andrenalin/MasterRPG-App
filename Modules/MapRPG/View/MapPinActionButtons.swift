@@ -41,7 +41,6 @@ struct MapPinActionButtons: View {
         .foregroundStyle(.white)
         .background(type.tint(for: pin).opacity(0.78), in: .circle)
         .help(Text(type.localizedLabel(for: pin)))
-        .position(placement.center(at: index) ?? placement.sourceAnchor)
 #if !os(visionOS)
         .applyIf(usesGlassEffects) {
             $0.glassEffect(.regular.tint(type.tint(for: pin).opacity(0.8)).interactive())
@@ -54,6 +53,9 @@ struct MapPinActionButtons: View {
         .applyIf(type == .photo) {
             $0.matchedTransitionSource(id: type.label, in: photoSpace)
         }
+        // Position must remain the outer layout modifier. Applying glass or a
+        // content shape after `position` resolves them against the full map.
+        .position(placement.center(at: index) ?? placement.sourceAnchor)
     }
 }
 

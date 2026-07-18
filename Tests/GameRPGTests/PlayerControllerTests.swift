@@ -299,54 +299,112 @@ struct PlayerControllerTests {
         #expect(env.root.audioRoot.audioController.model.currentId == audioId)
     }
 
-    @Test("Handle value reveal, store, item update and result update from master")
-    func handleValueFromMaster() async throws {
+    @Test("Character join advertises metadata and sends the full package only when requested")
+    func characterJoinHandshake() async throws {
+        // Given
         let env = try await PlayerControllerTestEnvironment.create()
         let root = env.root
         let sut = env.playerController
-
         let characterId = await root.characterRoot.itemController.addNew(type: .character)
         root.characterRoot.editController.reset(name: "Mira", itemId: characterId)
-        let itemId = await root.characterRoot.itemController.addNew(type: .item)
-        root.characterRoot.editController.reset(name: "Lantern", itemId: itemId)
         root.gameModel.reset(
             gameConfig: env.gameConfig,
             gameRoster: GameRosterModel(players: [
                 PlayerGameModel(id: env.gameConfig.id, type: .player, name: "AndrenalinPlayer", characterId: characterId)
             ])
         )
+        sut.gameModel.lostMaster = false
 
-        let masterConfig = Self.masterConfig()
-        let characterData = try await root.characterRoot.gameControllable.createGameData(for: characterId)
-        var response = try await sut.handle(Self.networkModel(type: .reveal, data: characterData, gameConfig: masterConfig))
-        #expect(response?.subType == .ok)
-        #expect(await root.characterRoot.gameControllable.currentId == characterId)
-        #expect(sut.gameModel.gameUpdateType == .value)
+        // When: the player joins.
+        await sut.sendCharacter()
 
-        let missingId = UUID()
-        let missingData = NetworkCodableDataType(id: missingId, type: .value, version: 1)
-        response = try await sut.handle(Self.networkModel(type: .reveal, data: missingData, gameConfig: masterConfig))
-        #expect(response?.subType == .show)
-        #expect(response?.data.id == missingId)
+        // Then: only ID and recursive package version are sent.
+        let reference = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        let expectedVersion = await root.characterRoot.gameControllable.networkVersion(for: characterId)
+        #expect(reference.type == .update)
+        #expect(reference.subType == .store)
+        #expect(reference.data.id == characterId)
+        #expect(reference.data.version == expectedVersion)
+        #expect(reference.data.data == nil)
+        #expect(!PlayerController.usesFileJournal(for: reference))
+        #expect(sut.gameModel.hasSendPlayer)
 
-        response = try await sut.handle(Self.networkModel(type: .store, subType: .store, data: characterData, gameConfig: masterConfig))
-        #expect(response?.subType == .ok)
-
-        let itemData = try await root.characterRoot.gameControllable.createGameData(for: itemId)
-        response = try await sut.handle(Self.networkModel(type: .update, subType: .generic, data: itemData, gameConfig: masterConfig))
-        #expect(response == nil)
-
-        let resultData = root.characterRoot.valueGameControllable.create(
-            name: "Clue",
-            value: "The door is warm",
-            resultCategory: ResultCategory(id: UUID(), module: .value)
+        // When: the master requests the mismatched package.
+        let request = Self.networkModel(
+            type: .update,
+            subType: .store,
+            data: reference.data,
+            gameConfig: Self.masterConfig()
         )
-        response = try await sut.handle(Self.networkModel(type: .update, subType: .valueResult, data: resultData, gameConfig: masterConfig))
-        #expect(response == nil)
+        let response = try await sut.handle(request)
 
-        let playerConfig = Self.playerConfig(masterId: masterConfig.master.id)
-        response = try await sut.handle(Self.networkModel(type: .update, subType: .generic, data: itemData, gameConfig: playerConfig))
+        // Then: the second message carries the full package without Journal.
         #expect(response == nil)
+        let messages = env.playerNetworkSpy.requestHistory.compactMap { $0 as? GameNetworkModel }
+        #expect(messages.count == 2)
+        let package = try #require(messages.last)
+        #expect(package.type == .update)
+        #expect(package.subType == .store)
+        #expect(package.data.id == characterId)
+        #expect(package.data.version == reference.data.version)
+        #expect(package.data.data != nil)
+        #expect(!PlayerController.usesFileJournal(for: package))
+
+        // Legacy master presentation and generic-update flows are ignored.
+        let legacyReveal = Self.networkModel(
+            type: .reveal,
+            data: package.data,
+            gameConfig: Self.masterConfig()
+        )
+        let legacyGeneric = Self.networkModel(
+            type: .update,
+            subType: .generic,
+            data: package.data,
+            gameConfig: Self.masterConfig()
+        )
+        let legacyRevealResponse = try await sut.handle(legacyReveal)
+        let legacyGenericResponse = try await sut.handle(legacyGeneric)
+        #expect(legacyRevealResponse == nil)
+        #expect(legacyGenericResponse == nil)
+        #expect(env.playerNetworkSpy.calledRequest == 2)
+        #expect(sut.gameModel.gameUpdateType != .value)
+    }
+
+    @Test(
+        "SharePlay peers ignore another player's Character synchronization",
+        arguments: [false, true]
+    )
+    func sharePlayPeerIgnoresPlayerCharacter(includesPackage: Bool) async throws {
+        // Given
+        let env = try await PlayerControllerTestEnvironment.create()
+        let remotePlayerId = UUID()
+        let remoteCharacterId = UUID()
+        let message = GameNetworkModel(
+            counter: 8,
+            proxyCounter: 0,
+            type: .update,
+            subType: .store,
+            masterId: UUID(),
+            sender: GameSenderModel(
+                id: remotePlayerId,
+                role: .player,
+                name: "Remote Player",
+                characterId: remoteCharacterId
+            ),
+            data: NetworkCodableDataType(
+                id: remoteCharacterId,
+                type: .value,
+                version: 42,
+                data: includesPackage ? Data("Character package".utf8) : nil
+            )
+        )
+
+        // When
+        await env.playerController.receivedSharePlay(message, participantId: remotePlayerId)
+
+        // Then
+        #expect(env.playerNetworkSpy.calledRequest == 0)
+        #expect(await env.root.characterRoot.itemController.item(for: remoteCharacterId) == nil)
     }
 
     @Test("Handle proxy value update focuses the forwarded character")
@@ -365,8 +423,26 @@ struct PlayerControllerTests {
         )
 
         let characterData = try await root.characterRoot.gameControllable.createGameData(for: characterId)
+        let characterReference = await root.characterRoot.gameControllable.share(id: characterId)
+        let metadataResponse = try await sut.handle(
+            Self.networkModel(
+                type: .update,
+                subType: .store,
+                data: characterReference,
+                gameConfig: Self.masterConfig()
+            )
+        )
+        let legacyRevealResponse = try await sut.handle(
+            Self.networkModel(type: .reveal, data: characterData, gameConfig: Self.masterConfig())
+        )
+        #expect(metadataResponse == nil)
+        #expect(legacyRevealResponse == nil)
+        #expect(sut.gameModel.proxyFocusTask == nil)
+
         let response = try await sut.handle(Self.networkModel(type: .update, subType: .store, data: characterData, gameConfig: Self.masterConfig()))
         #expect(response == nil)
+        #expect(characterData.data != nil)
+        #expect(characterData.version != 0)
         let focusTask = try #require(sut.gameModel.proxyFocusTask)
 
         await focusTask.value

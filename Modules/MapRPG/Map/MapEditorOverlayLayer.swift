@@ -222,7 +222,6 @@ private struct MapNeedleViewportMenu: View {
                 .help(
                     Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module)
                 )
-                .position(placement.center(at: index) ?? placement.sourceAnchor)
 #if !os(visionOS)
                 .glassEffect(
                     .regular.tint(
@@ -232,6 +231,9 @@ private struct MapNeedleViewportMenu: View {
                 .glassEffectID(type.label, in: glassNamespace)
 #endif
                 .contentShape(.circle)
+                // Keep the Liquid Glass and hit shape on the fixed 48-point
+                // leaf, then move that complete leaf into viewport space.
+                .position(placement.center(at: index) ?? placement.sourceAnchor)
                 .zIndex(Double(index + 1))
             }
         }

@@ -101,9 +101,15 @@ struct MapEditorViewportTransformTests {
             )
         )
         let newMapSize = CGSize(width: 800, height: 1_600)
+        let resizedMap = MapModel(
+            id: map.id,
+            name: map.name,
+            width: newMapSize.width,
+            height: newMapSize.height
+        )
 
         // When
-        sut.updateCanvas(image: AKImage(), photoDegrees: 0, mapSize: newMapSize)
+        sut.updateCanvas(map: resizedMap, image: AKImage(), photoDegrees: 0)
 
         // Then
         #expect(sut.mapCanvasSize == newMapSize)
@@ -112,7 +118,7 @@ struct MapEditorViewportTransformTests {
     }
 
     @Test("Editor first appearance refits while retaining a persisted room focus")
-    func editorFirstAppearanceRefitsWhileRetainingFocus() async throws {
+    func editorFirstAppearanceRefitsWhileRetainingFocus() {
         // Given
         let focusedRoom = MapEntryModel(
             id: UUID(),
@@ -147,7 +153,6 @@ struct MapEditorViewportTransformTests {
 
         // When
         sut.firstAppear(map: map)
-        try await Task.sleep(for: .milliseconds(100))
         // macOS can perform a final content-size pass after installing the
         // window toolbar. A fitted editor must remain fitted through it.
         let finalWindowSize = CGSize(width: 620, height: 380)
@@ -158,6 +163,58 @@ struct MapEditorViewportTransformTests {
         #expect(sut.viewport.isAtFit)
         expectApproximately(sut.viewport.transform.scale, sut.viewport.geometry.fitScale)
         #expect(sut.focusId == focusedRoom.id)
+    }
+
+    @Test("Game map waits for valid geometry, then initially fits instead of applying persisted focus")
+    func gameInitialFitWaitsForGeometry() {
+        let focusedRoom = MapEntryModel(
+            id: UUID(),
+            name: "Persisted game focus",
+            content: "",
+            coordinates: [
+                CGPoint(x: 300, y: 200),
+                CGPoint(x: 500, y: 200),
+                CGPoint(x: 500, y: 400),
+                CGPoint(x: 300, y: 400)
+            ],
+            focused: true
+        )
+        let map = MapModel(
+            id: UUID(),
+            name: "Game map",
+            entries: [focusedRoom],
+            width: 1_200,
+            height: 800
+        )
+        let sut = makeSession(map: map, containerSize: .zero, mode: .gameMaster)
+
+        sut.firstAppear(map: map)
+        sut.updateContainerSize(CGSize(width: 600, height: 400))
+
+        #expect(sut.focusId == focusedRoom.id)
+        #expect(sut.viewport.configuration.id == map.id)
+        #expect(sut.viewport.isAtFit)
+    }
+
+    @Test("A transient zero measurement does not destroy a manually zoomed viewport")
+    func zeroMeasurementIsIgnored() {
+        let map = makeMap(name: "Stable map", size: CGSize(width: 1_200, height: 800))
+        let containerSize = CGSize(width: 600, height: 400)
+        let sut = makeSession(map: map, containerSize: containerSize)
+        sut.firstAppear(map: map)
+        sut.viewport.commit(
+            sut.viewport.geometry.zoomed(
+                from: sut.viewport.transform,
+                toScale: 1,
+                anchor: sut.viewport.geometry.containerCenter
+            )
+        )
+        let zoomed = sut.viewport.transform
+
+        sut.updateContainerSize(.zero)
+
+        #expect(sut.viewport.configuration.containerSize == containerSize)
+        #expect(sut.viewport.transform == zoomed)
     }
 }
 
@@ -173,7 +230,8 @@ private extension MapEditorViewportTransformTests {
 
     func makeSession(
         map: MapModel,
-        containerSize: CGSize
+        containerSize: CGSize,
+        mode: MapMode = .edit
     ) -> MapEditorSession {
         MapEditorSession(
             map: map,
@@ -181,7 +239,7 @@ private extension MapEditorViewportTransformTests {
             photoDegrees: 0,
             containerSize: containerSize,
             configuration: MapEditorConfiguration(
-                mode: .edit,
+                mode: mode,
                 displayMode: .master
             )
         )

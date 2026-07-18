@@ -269,6 +269,10 @@ extension MasterController {
 
 extension MasterController {
     func show(for idType: NetworkCodableDataType) async {
+        // Values are exchanged only as the joining player's Character. There
+        // is no general Character/Value presentation protocol during a game.
+        guard idType.type != .value else { return }
+
         // Map call sites from older modules/tests still construct the legacy
         // scale-only reference. Resolve the current background/content
         // fingerprints here so the Journal cache never falls back to that
@@ -341,7 +345,9 @@ extension MasterController {
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType, playerId: UUID? = nil) async {
         // Weather is immutable during a game. It is presented and repaired via
         // reveal messages only; live update messages are not supported yet.
-        guard message.type != .table, message.type != .weather else { return }
+        // Character/Value updates likewise have no in-game protocol; the only
+        // supported Value exchange is the player join handshake below.
+        guard message.type != .table, message.type != .value, message.type != .weather else { return }
         if message.type == .audio, actionType == .playAudio {
             await requestAudioPlay(message)
             return
@@ -364,6 +370,7 @@ extension MasterController {
     }
     
     func send(updated: NetworkCodableDataType) async {
+        guard updated.type != .value else { return }
         await send(type: .store, subtype: .store, updated: updated)
     }
     
@@ -1005,22 +1012,39 @@ extension MasterController {
     }
 
     func handleValue(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
-        if model.subType == .ok {
-            await root.characterRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
-            return nil
-        }
-        guard model.subType != .failed else { return nil }
+        // Character/Value messages have one normal-game purpose: synchronize
+        // the selected Character when a player joins. Presentation, loot,
+        // result, acknowledgement, and live-update variants are intentionally
+        // unsupported until they get their own protocols.
+        guard model.type == .update,
+              model.subType == .store,
+              model.senderType == .player,
+              let characterId = model.sender.characterId,
+              characterId == model.data.id
+        else { return nil }
 
-        switch model.type {
-        case .reveal, .store:
-            return try await root.characterRoot.gameControllable.createGameData(for: model.data.id)
-        case .update:
-            guard model.senderType != .observer else { return nil }
-            try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data)
-            if let characterId = model.sender.characterId {
-                await root.mapRoot.mapGameControllable.setPlayerPin(for: model.sender.id, name: model.senderName, characterId: characterId)
+        if model.data.data == nil {
+            let localVersion = await root.characterRoot.gameControllable.networkVersion(for: characterId)
+            // Exact versions mean the master already owns this Character
+            // package. Silence is the successful response; only a mismatch
+            // asks the originating player for its potentially large package.
+            guard localVersion != model.data.version else {
+                await root.mapRoot.mapGameControllable.setPlayerPin(
+                    for: model.sender.id,
+                    name: model.senderName,
+                    characterId: characterId
+                )
+                return nil
             }
+            return model.data
         }
+
+        try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data)
+        await root.mapRoot.mapGameControllable.setPlayerPin(
+            for: model.sender.id,
+            name: model.senderName,
+            characterId: characterId
+        )
         return nil
     }
     
@@ -1210,7 +1234,13 @@ extension MasterController: MasterNetworkProxyControllerDelegate {
         await replayCurrentPresentation(to: connectionId)
         guard let characterId = await root.gameModel.gamePlayer.characterId else { return }
         if let data = try? await root.characterRoot.gameControllable.createGameData(for: characterId) {
-            await send(type: .update, subtype: .store, updated: data, connectionId: connectionId)
+            await send(
+                type: .update,
+                subtype: .store,
+                updated: data,
+                connectionId: connectionId,
+                authoritativeMaster: true
+            )
         }
     }
     
@@ -1377,11 +1407,9 @@ private extension MasterController {
             // master never sent.
             reference = nil
         case .value:
-            reference = if let id = await root.characterRoot.gameControllable.gameModel.currentItemId {
-                await root.characterRoot.gameControllable.share(id: id)
-            } else {
-                nil
-            }
+            // Values are not presentations. A proxy receives the host's full
+            // Character through readyProxy(for:) immediately below instead.
+            reference = nil
         case .weather:
             reference = if let id = await root.weatherRoot.gameControllable.gameModel.currentItemId {
                 await root.weatherRoot.weatherGameControllable.shareWeather(id: id)

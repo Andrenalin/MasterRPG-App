@@ -458,7 +458,8 @@ extension RPGSharePlayController {
     /// answers of the other modules ride the messenger; full photo stores are
     /// normalized there into one coalesced group repair.
     static func usesJournalTransport(for model: GameNetworkModel, fileJournal: Bool, journalAvailable: Bool) -> Bool {
-        fileJournal &&
+        model.data.type != .value &&
+            fileJournal &&
             journalAvailable &&
             model.data.data != nil &&
             (model.targetId == nil || model.data.type == .audio || model.data.type == .weather)

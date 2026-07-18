@@ -81,6 +81,55 @@ struct GameMessageCorrectnessRegressionTests {
         #expect(playerSpy.calledFileReceived == 0)
     }
 
+    @Test("SharePlay Character synchronization is not bridged into the LAN")
+    func sharePlayCharacterSynchronizationIsNotBridgedToLocalPlayers() async {
+        // Given
+        let masterSpy = MasterNetworkStoreDelegateMock()
+        let playerSpy = PlayerNetworkStoreDelegateMock()
+        let masterNetworkSpy = MasterNetworkControllableMock()
+        let playerNetworkSpy = PlayerStoreAbstractionMock()
+        let network = GameNetworkController(
+            name: "SharePlay Character routing",
+            proxy: false,
+            masterBuilder: { _, _ in masterNetworkSpy },
+            playerBuilder: { _, _ in playerNetworkSpy }
+        )
+        network.model.setMasterDelegate(masterSpy)
+        network.model.setPlayerDelegate(playerSpy)
+        network.setupLocal()
+
+        let masterId = UUID()
+        let playerId = UUID()
+        let characterId = UUID()
+        let message = GameNetworkModel(
+            counter: 2,
+            proxyCounter: 0,
+            type: .update,
+            subType: .store,
+            masterId: masterId,
+            sender: GameSenderModel(
+                id: playerId,
+                role: .player,
+                name: "Player",
+                characterId: characterId
+            ),
+            data: NetworkCodableDataType(
+                id: characterId,
+                type: .value,
+                version: 42,
+                data: Data("Character package".utf8)
+            )
+        )
+
+        // When
+        await network.routeSharePlayUpdate(message, id: playerId)
+
+        // Then
+        #expect(masterSpy.calledReceived == 1)
+        #expect(playerSpy.calledReceived == 0)
+        #expect(masterNetworkSpy.calledSendResponseAll == 0)
+    }
+
     @Test("Older master snapshot cannot roll player state backward")
     func staleMasterStateIsIgnored() async throws {
         // Given

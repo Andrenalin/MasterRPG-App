@@ -20,15 +20,11 @@ final class ValueGameModel: Sendable {
 }
 
 public protocol ValueGameStorable {
-    func addItem(id: UUID, data: NetworkCodableDataType, for characterId: UUID) async
     @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func imageIds(for id: UUID) -> [UUID]
     @MainActor func playerPinPhoto(for characterId: UUID) -> UUID?
     @MainActor func startGame(for id: UUID?) async
     func updatePlayer(data: NetworkCodableDataType) async throws
-    
-    @MainActor func create(name: String, value: String, resultCategory: ResultCategory) -> NetworkCodableDataType
-    func add(result: NetworkCodableDataType, for characterId: UUID?) async
 }
 
 struct GameController: Sendable {
@@ -131,33 +127,6 @@ extension GameController: GameControllable {
 }
 
 extension GameController: ValueGameStorable {
-    public func addItem(id: UUID, data: NetworkCodableDataType, for characterId: UUID) async {
-        let adventureValue: ValueModel?
-
-        if let character = await MainActor.run(body: { () -> ValueModel? in
-            guard let characterId = root.linkController.validate(id: characterId) else { return nil }
-            return itemController.itemOrEmpty(for: characterId)
-        }) {
-            adventureValue = await adventureModel(for: character)
-        } else {
-            adventureValue = nil
-        }
-        guard let adventureValue else { return }
-        
-        let hasItem = await MainActor.run {
-            itemController.itemDataModel.items.contains { $0 == id }
-        }
-        try? await updateGame(data: data, hide: false, deep: true)
-        let valueId = await root.editController.duplicate(itemId: id, withCopy: false)
-        if !hasItem {
-            await root.editController.delete(itemId: id)
-        }
-        let entry = ValueEntryModel(id: UUID(), name: "", type: .text, value: "", valueId: valueId)
-        await MainActor.run {
-            root.editController.add(entry: entry, into: adventureValue.id)
-        }
-    }
-
     @MainActor
     public func focusDice(for itemId: UUID) -> UUID? {
         if let diceId = itemController.itemOrEmpty(for: itemId).diceId {
@@ -185,68 +154,9 @@ extension GameController: ValueGameStorable {
     }
 
     public func updatePlayer(data: NetworkCodableDataType) async throws {
-        if let encodedData = data.data {
-            try await importNetwork(from: encodedData, forceSave: true)
-        } else {
-            guard data.type == itemControllable.config.module else { throw ItemGameStorableError.wrongData }
-        }
-    }
-
-    @MainActor
-    func create(name: String, value: String, resultCategory: ResultCategory) -> NetworkCodableDataType {
-        let entry = ValueEntryModel(id: UUID(), name: name, type: .text, value: value)
-        let result = ValueResultModel(valueModels: [], valueEntryModels: [entry])
-        return NetworkCodableDataType(id: UUID(), type: itemController.config.module, version: 0, data: result.encodeData())
-    }
-
-    @MainActor
-    func create(name: String, description: String, entries: [(String, String)], resultCategory: ResultCategory) -> NetworkCodableDataType {
-
-        let valueEntries = entries.map {
-            ValueEntryModel(id: UUID(), name: $0.0, type: .text, value: $0.1)
-        }
-
-        let model = ValueModel(id: UUID(), name: name, description: description, category: .item, entries: valueEntries)
-
-        let result = ValueResultModel(valueModels: [model], valueEntryModels: [])
-        return NetworkCodableDataType(id: UUID(), type: itemController.config.module, version: 0, data: result.encodeData())
-    }
-
-    @MainActor func add(result: NetworkCodableDataType, for characterId: UUID?) async {
-        guard let valueResult = ValueResultModel.decodeData(of: result.data) else { return }
-
-        let adventureValue: ValueModel?
-
-        if let characterId = root.linkController.validate(id: characterId) {
-            let character = itemController.itemOrEmpty(for: characterId)
-            adventureValue = await adventureModel(for: character)
-        } else {
-            adventureValue = nil
-        }
-        for valueModel in valueResult.valueModels {
-            let model = valueModel.duplicateWithoutCopy()
-            root.itemController.replace(model: model, isInsert: true)
-            root.editController.add(model: model, into: adventureValue?.id)
-        }
-        guard let adventureValue else { return }
-        for entryModel in valueResult.valueEntryModels {
-            let entry = entryModel.duplicate()
-            root.editController.add(entry: entry, into: adventureValue.id)
-        }
-    }
-
-    @MainActor private func adventureModel(for character: ValueModel) async -> ValueModel {
-        let name = String(localized: "Adventure", bundle: .module).localizedString
-        if let adventureEntry = character.entries.first(where: { $0.name == name }), let adventureValueId = adventureEntry.valueId {
-            return itemController.itemOrEmpty(for: adventureValueId)
-        }
-        let description = String(localized: "Items sent from the gamemaster", bundle: .module).localizedString
-        let adventureValue = ValueModel(id: UUID(), name: name, description: description, tags: [name], category: .item, photoId: character.photoId, photos: character.photos)
-        adventureValue.isGroupHiddenToggle.toggle()
-        
-        itemController.replace(model: adventureValue, isInsert: true)
-        let entry = ValueEntryModel(id: UUID(), name: name, type: .text, isGenerator: false, value: description, diceId: nil, valueId: adventureValue.id)
-        root.editController.add(entry: entry, into: character.id)
-        return adventureValue
+        guard data.type == itemControllable.config.module,
+              let encodedData = data.data
+        else { throw ItemGameStorableError.wrongData }
+        try await importNetwork(from: encodedData, forceSave: true)
     }
 }

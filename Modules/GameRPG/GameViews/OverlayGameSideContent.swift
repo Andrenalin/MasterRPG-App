@@ -10,22 +10,25 @@ struct OverlayGameSideContent<Side: View, ToolBar: View, Dice: View>: View {
     let showsDice: Bool
 
     var body: some View {
-        HStack {
+        ZStack(alignment: .topLeading) {
             side
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-        .overlay(alignment: .topLeading) {
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .zIndex(1)
+
 #if !os(visionOS)
             if showsDice {
                 dice
                     .transition(.move(edge: .leading))
+                    .zIndex(2)
             }
 #endif
-        }
-        .overlay(alignment: .bottomLeading) {
+
             toolbar
                 .padding(.bottom, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .zIndex(3)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

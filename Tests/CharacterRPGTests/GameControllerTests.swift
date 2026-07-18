@@ -55,65 +55,6 @@ struct GameControllerTests {
         #expect(root.diceRoot.diceGameControllable.gameModel.itemData[directDice] != nil)
     }
 
-    @Test("Add item attaches a duplicated value under the character adventure group")
-    func addItem() async throws {
-        let root = Self.makeRoot()
-        let sut = root.gameController
-        let characterId = UUID()
-        let itemId = UUID()
-        let character = ValueModel(id: characterId, name: "Mira", category: .character)
-        let item = ValueModel(id: itemId, name: "Lantern", category: .item)
-        root.itemController.replace(model: character, isInsert: true)
-        root.itemController.replace(model: item, isInsert: true)
-
-        let itemData = try await sut.createGameData(for: itemId)
-        await sut.addItem(id: itemId, data: itemData, for: characterId)
-
-        let updatedCharacter = root.itemController.itemOrEmpty(for: characterId)
-        let adventureValueId = try #require(updatedCharacter.entries.first { $0.valueId != nil }?.valueId)
-        let adventureValue = root.itemController.itemOrEmpty(for: adventureValueId)
-        let linkedValueIds = adventureValue.entries.compactMap(\.valueId)
-        #expect(linkedValueIds.contains { root.itemController.itemOrEmpty(for: $0).name == "Lantern" })
-    }
-
-    @Test("Value results create and add entry and model payloads")
-    func createAndAddResults() async throws {
-        let root = Self.makeRoot()
-        let sut = root.gameController
-        let characterId = UUID()
-        let character = ValueModel(id: characterId, name: "Mira", category: .character)
-        root.itemController.replace(model: character, isInsert: true)
-        let resultCategory = ResultCategory(id: UUID(), module: .table)
-
-        let entryData = sut.create(name: "Clue", value: "The door is warm", resultCategory: resultCategory)
-        let entryResult = try #require(ValueResultModel.decodeData(of: entryData.data))
-        #expect(entryResult.valueEntryModels.first?.name == "Clue")
-        #expect(entryResult.valueEntryModels.first?.value == "The door is warm")
-
-        await sut.add(result: entryData, for: characterId)
-        let updatedCharacter = root.itemController.itemOrEmpty(for: characterId)
-        let adventureValueId = try #require(updatedCharacter.entries.first { $0.valueId != nil }?.valueId)
-        let adventureValue = root.itemController.itemOrEmpty(for: adventureValueId)
-        #expect(adventureValue.entries.contains { $0.name == "Clue" })
-
-        let modelData = sut.create(
-            name: "Treasure",
-            description: "Glittering coins",
-            entries: [("Coins", "12"), ("Gems", "2")],
-            resultCategory: resultCategory
-        )
-        let modelResult = try #require(ValueResultModel.decodeData(of: modelData.data))
-        #expect(modelResult.valueModels.first?.name == "Treasure")
-        #expect(modelResult.valueModels.first?.entries.count == 2)
-
-        await sut.add(result: modelData, for: characterId)
-        let addedNames = root.itemController.itemDataModel.items.map { root.itemController.itemOrEmpty(for: $0).name }
-        #expect(addedNames.contains("Treasure"))
-
-        let invalidData = NetworkCodableDataType(id: UUID(), type: .value, version: 0)
-        await sut.add(result: invalidData, for: characterId)
-    }
-
     @Test("Update player accepts value payloads and rejects wrong modules")
     func updatePlayer() async throws {
         let root = Self.makeRoot()

@@ -78,7 +78,7 @@ final class MapEditorSession {
     private var photoDegrees: Double
     private var canvasSize: CGSize
     private var containerSize: CGSize
-    @ObservationIgnored private var appearanceTask: Task<Void, Never>?
+    private var pendingInitialFitMapId: UUID?
     @ObservationIgnored private var actionRouter: MapEditorActionRouter?
 
     // MARK: - Initialization
@@ -109,6 +109,10 @@ final class MapEditorSession {
         self.isHexMap = map.entries.contains(where: { $0.isHexGrid })
         self.displayMode = configuration.displayMode
         self.mapId = map.id
+        self.pendingInitialFitMapId = Self.isValidSize(containerSize)
+            && Self.isValidSize(resolvedCanvasSize)
+            ? nil
+            : map.id
 
         let viewportConfiguration = ViewportConfiguration(
             id: map.id,
@@ -204,14 +208,21 @@ final class MapEditorSession {
     // MARK: - Container Size Updates
 
     func updateContainerSize(_ newSize: CGSize) {
+        guard Self.isValidSize(newSize) else { return }
         guard containerSize != newSize else { return }
         containerSize = newSize
+        if applyPendingInitialFitIfPossible() {
+            return
+        }
         viewport.resize(to: makeViewportConfiguration())
     }
 
-    func updateCanvas(image: AKImage, photoDegrees: Double, mapSize: CGSize) {
+    func updateCanvas(map: MapModel, image: AKImage, photoDegrees: Double) {
+        if mapId != map.id {
+            changeImage(map: map)
+        }
         let newCanvasSize = Self.resolvedCanvasSize(
-            mapSize: mapSize,
+            mapSize: CGSize(width: map.width, height: map.height),
             image: image,
             degrees: photoDegrees
         )
@@ -223,8 +234,12 @@ final class MapEditorSession {
         self.photoDegrees = photoDegrees
         canvasSize = newCanvasSize
 
-        guard geometryChanged else { return }
-        viewport.configure(makeViewportConfiguration())
+        if applyPendingInitialFitIfPossible() {
+            return
+        }
+        if geometryChanged {
+            viewport.configure(makeViewportConfiguration())
+        }
     }
 
     // MARK: - Pins Management
@@ -258,7 +273,11 @@ final class MapEditorSession {
 
     // MARK: - Entries Management
 
-    func resetEntries(newEntries: [MapEntryModel], map: MapModel) {
+    func resetEntries(
+        newEntries: [MapEntryModel],
+        map: MapModel,
+        appliesFocus: Bool = true
+    ) {
         let activeEntryId = editEntries.entries.first?.id
 
         // Merge incoming entries: prefer working-copy version for any entry that has
@@ -291,17 +310,23 @@ final class MapEditorSession {
         }
         let final = merged + hexToAppend
 
-        guard entries.entries != final else { return }
-
-        withAnimation(.bouncy) {
-            entries.resetEntries(mapId: map.id, entries: final)
-        }
-        isHexMap = final.contains(where: { $0.isHexGrid })
-
-        // Update focus if needed
+        // Seed persisted focus regardless of whether game-mode entries were
+        // already installed at session creation. Initial synchronization keeps
+        // the focus value but deliberately does not zoom to it.
         let focus = final.first(where: { $0.focused })?.id
-        if focus != focusId {
+        let focusChanged = focus != focusId
+        if focusChanged {
             focusId = focus
+        }
+
+        if entries.entries != final {
+            withAnimation(.bouncy) {
+                entries.resetEntries(mapId: map.id, entries: final)
+            }
+            isHexMap = final.contains(where: { $0.isHexGrid })
+        }
+
+        if focusChanged, appliesFocus, appeared {
             focusedMap()
         }
     }
@@ -309,8 +334,6 @@ final class MapEditorSession {
     // MARK: - Change Management (view state only — no save)
 
     func changeImage(map: MapModel) {
-        appearanceTask?.cancel()
-        appearanceTask = nil
         let changedMap = mapId != map.id
         mapId = map.id
         hexScale = map.hexMapScale
@@ -319,6 +342,7 @@ final class MapEditorSession {
 
         if changedMap {
             appeared = false
+            pendingInitialFitMapId = map.id
             focusId = nil
             workingCopy = nil
             clearSelections()
@@ -331,6 +355,7 @@ final class MapEditorSession {
             // Content identity is part of viewport state. Reset even when the
             // replacement map happens to have the same image dimensions.
             viewport.configure(makeViewportConfiguration())
+            _ = applyPendingInitialFitIfPossible()
         }
         changeMap(map: map)
     }
@@ -347,36 +372,14 @@ final class MapEditorSession {
     // MARK: - First Appear
 
     func firstAppear(map: MapModel) {
-        appearanceTask?.cancel()
-        let expectedMapId = map.id
-        appearanceTask = Task { [weak self] in
-            guard let self else { return }
-            let delay: Duration = mapMode == .edit ? .milliseconds(50) : .milliseconds(150)
-            do {
-                try await Task.sleep(for: delay)
-            } catch {
-                return
-            }
-            guard !Task.isCancelled, self.mapId == expectedMapId else { return }
-            appeared = true
-            resetEntries(newEntries: map.entries, map: map)
-            withAnimation {
-                // A persisted room focus is runtime/game state. The editor must
-                // always open with the complete map visible; later explicit
-                // focus actions can still zoom to an individual room.
-                if mapMode == .edit || focusId == nil {
-                    resetZoom()
-                } else {
-                    focusedMap()
-                }
-            }
-            appearanceTask = nil
-        }
+        guard mapId == map.id else { return }
+        pendingInitialFitMapId = map.id
+        resetEntries(newEntries: map.entries, map: map, appliesFocus: false)
+        _ = applyPendingInitialFitIfPossible()
+        appeared = true
     }
 
     func disappear() {
-        appearanceTask?.cancel()
-        appearanceTask = nil
         appeared = false
         editEntries.needleInteraction.dragCoordinate = nil
     }
@@ -431,6 +434,28 @@ final class MapEditorSession {
             maximumScaleMultiplier: 8,
             panPolicy: .minimumVisible(44)
         )
+    }
+
+    @discardableResult
+    private func applyPendingInitialFitIfPossible() -> Bool {
+        guard pendingInitialFitMapId == mapId,
+              Self.isValidSize(containerSize),
+              Self.isValidSize(canvasSize) else { return false }
+        let configuration = makeViewportConfiguration()
+        if viewport.configuration != configuration {
+            viewport.configure(configuration)
+        } else {
+            viewport.reset()
+        }
+        pendingInitialFitMapId = nil
+        return true
+    }
+
+    private static func isValidSize(_ size: CGSize) -> Bool {
+        size.width.isFinite
+            && size.height.isFinite
+            && size.width > 0
+            && size.height > 0
     }
 
     private static func resolvedCanvasSize(

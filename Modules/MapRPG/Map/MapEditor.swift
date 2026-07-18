@@ -33,7 +33,6 @@ struct MapEditor: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(MapRootModel.self) private var root
     @Environment(DropPinModel.self) private var dropPinModel
-    @Environment(\.mapViewportTrailingInset) private var viewportTrailingInset
 
     private let editController: EditController
     private let image: AKImage
@@ -62,7 +61,6 @@ struct MapEditor: View {
                 degrees: photoDegrees,
                 map: map
             )
-            .padding(.trailing, max(0, viewportTrailingInset))
             .background {
                 Rectangle()
                     .fill(Color.black.gradient)
@@ -70,9 +68,6 @@ struct MapEditor: View {
             }
             .overlay {
                 appearanceBackground.opacity(session.appeared ? 0 : 1)
-            }
-            .onChange(of: editController.editorModel.sheetEditorModel.itemId) {
-                handleMapSelectionChange()
             }
             .onChange(
                 of: editController.editorModel.sheetEditorModel.entryId,
@@ -90,11 +85,7 @@ struct MapEditor: View {
                 session.resetPointer(map: map)
             }
             .onChange(of: canvasConfiguration, initial: true) {
-                session.updateCanvas(
-                    image: image,
-                    photoDegrees: photoDegrees,
-                    mapSize: canvasConfiguration.mapSize
-                )
+                synchronizeCanvas()
             }
             .onChange(of: dropPinModel.items) {
                 dropPin()
@@ -127,6 +118,17 @@ struct MapEditor: View {
 }
 
 private extension MapEditor {
+    func synchronizeCanvas() {
+        if session.mapId != map.id {
+            handleMapSelectionChange()
+        }
+        session.updateCanvas(
+            map: map,
+            image: image,
+            photoDegrees: photoDegrees
+        )
+    }
+
     @ViewBuilder
     var appearanceBackground: some View {
         if colorScheme == .dark {
@@ -152,13 +154,14 @@ private extension MapEditor {
             session.resetReshare()
         }
 
-        session.firstAppear(map: map)
-        guard session.mapMode == .edit else { return }
-        if configuration.isTileEditor {
-            mapEditController.prepareTileWorkingCopy(from: map, editorModel: session)
-        } else {
-            mapEditController.prepareWorkingCopy(from: map, editorModel: session)
+        if session.mapMode == .edit {
+            if configuration.isTileEditor {
+                mapEditController.prepareTileWorkingCopy(from: map, editorModel: session)
+            } else {
+                mapEditController.prepareWorkingCopy(from: map, editorModel: session)
+            }
         }
+        session.firstAppear(map: map)
     }
 
     func disappear() {

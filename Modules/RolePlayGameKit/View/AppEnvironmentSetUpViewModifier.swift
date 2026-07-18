@@ -59,7 +59,6 @@ struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
         content
             .environment(\.mapActions, appModel.mapRoot.mapActions)
             .environment(\.routeActions, appModel.routeActions)
-            .environment(\.valueActions, appModel.characterRoot.valueActions)
             .environment(\.networkActions, appModel.gameRoot.networkActions)
             .environment(\.sharingControlActions, appModel.gameRoot.sharingControlActions)
             .environment(\.sharingFeatureActions, appModel.gameRoot.sharingFeatureActions)

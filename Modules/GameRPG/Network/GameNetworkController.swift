@@ -21,6 +21,12 @@ final class GameNetworkController: Sendable {
     @MainActor
     private var delegateTasks: [UUID: Task<Void, Never>] = [:]
 
+    /// A player's Character package is master-only. Master-origin requests may
+    /// still cross a LAN bridge so they can reach the targeted player.
+    nonisolated static func shouldRelayToLAN(_ model: GameNetworkModel) -> Bool {
+        model.sender.isMaster || model.data.type != .value
+    }
+
     // MARK: Static builders
 
     @MainActor static let defaultMasterStoreBuilder: (String, MasterNetworkControllerDelegate) -> any MasterNetworkControllable = { name, delegate in
@@ -222,8 +228,12 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
             // Don't resend in proxy mode — would cause an endless relay loop
             await model.masterProxyDelegate?.receivedServerProxy(gameData)
         } else {
-            // Fan-out received data to all other peers + SharePlay
-            await model.masterStore?.sendResponse(data: gameData, except: connectionId)
+            // A player's Character is private input for the game master. Do not
+            // fan it out to other LAN peers. It still crosses SharePlay via the
+            // Messenger, where non-master players reject the player-origin Value.
+            if Self.shouldRelayToLAN(gameData) {
+                await model.masterStore?.sendResponse(data: gameData, except: connectionId)
+            }
             let useFileJournal = fileJournal || gameData.usesFileJournal
             await MainActor.run { sharePlayStore.sendData(gameData, fileJournal: useFileJournal) }
             await model.masterDelegate?.received(gameData, connectionId: connectionId)
@@ -339,7 +349,10 @@ extension GameNetworkController: SharePlayControllerDelegate {
             }
         }
 
-        if model.hasLocalPlayer {
+        // Never bridge a player Character from SharePlay into the LAN. It is a
+        // master-only join payload; SharePlay peers have already received and
+        // ignored the original message.
+        if model.hasLocalPlayer, Self.shouldRelayToLAN(message) {
             await model.masterStore?.sendResponse(data: message)
         }
     }
@@ -355,7 +368,7 @@ extension GameNetworkController: SharePlayControllerDelegate {
             }
         }
 
-        if model.hasLocalPlayer {
+        if model.hasLocalPlayer, Self.shouldRelayToLAN(message) {
             await model.masterStore?.sendResponse(data: message)
         }
     }

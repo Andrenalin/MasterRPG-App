@@ -23,7 +23,7 @@ struct MasterGameScreen: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        ManagedNavigationStack {
+        GameScreenLayer {
             GameRootViewer(
                 root: root,
                 playerController: playerController,
@@ -31,11 +31,23 @@ struct MasterGameScreen: View {
                 contentType: .master,
                 gameScreenModel: gameScreenModel
             )
-        }
-        .overlay(alignment: .topLeading) {
-            MasterOverlayMenu(root: root, adventureId: adventureId, playerController: playerController)
-                .environment(diceShowOptionModel)
-                .environment(gameScreenModel)
+        } chrome: {
+            ZStack(alignment: .topLeading) {
+                MasterOverlayMenu(root: root, adventureId: adventureId, playerController: playerController)
+                    .environment(diceShowOptionModel)
+                    .environment(gameScreenModel)
+                    .zIndex(10)
+
+#if os(macOS)
+                if gameScreenModel.isSideMenuVisible {
+                    MasterSideMenu(adventureId: adventureId)
+                        .environment(gameScreenModel)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .zIndex(2)
+                }
+#endif
+            }
         }
         .focusSectionAll()
         .sheet(isPresented: $gameScreenModel.showExport) {
@@ -75,15 +87,6 @@ struct MasterGameScreen: View {
                 endGame()
             }
         }
-#if os(macOS)
-        .overlay(alignment: .trailing) {
-            if gameScreenModel.isSideMenuVisible {
-                MasterSideMenu(adventureId: adventureId)
-                    .environment(gameScreenModel)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-            }
-        }
-#endif
 #if os(visionOS)
         .gameImmersiveSpaceSync(root: root)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {

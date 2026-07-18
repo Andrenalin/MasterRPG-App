@@ -114,6 +114,48 @@ struct NetworkStoreTests {
         #expect(env.masterNetworkSpy.calledStopStreaming == 1)
     }
 
+    @Test(
+        "Player Character synchronization is delivered to the master without LAN fan-out",
+        arguments: [false, true]
+    )
+    func playerCharacterSynchronizationIsMasterOnlyOnLocalNetwork(includesPackage: Bool) async throws {
+        // Given
+        let env = try await NetworkStoreTestEnvironment.create()
+        let masterId = UUID()
+        let playerId = UUID()
+        let characterId = UUID()
+        let message = GameNetworkModel(
+            counter: 3,
+            proxyCounter: 0,
+            type: .update,
+            subType: .store,
+            masterId: masterId,
+            sender: GameSenderModel(
+                id: playerId,
+                role: .player,
+                name: "Player",
+                characterId: characterId
+            ),
+            data: NetworkCodableDataType(
+                id: characterId,
+                type: .value,
+                version: 42,
+                data: includesPackage ? Data("Character package".utf8) : nil
+            )
+        )
+
+        // When
+        await env.networkController.masterReceived(
+            data: message.encodeData(),
+            for: ConnectionController.ID(),
+            fileJournal: false
+        )
+
+        // Then
+        #expect(env.masterNetworkSpy.calledSendResponseExcept == 0)
+        #expect(env.masterDelegateSpy.calledReceived == 1)
+    }
+
     @Test("Player game network flow")
     func playerGame() async throws {
         // Arrange

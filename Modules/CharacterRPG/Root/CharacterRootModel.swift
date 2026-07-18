@@ -193,11 +193,6 @@ extension CharacterRootModel {
 
 extension CharacterRootModel {
     @MainActor
-    public var valueActions: ValueActions {
-        ValueActions(addResult: gameController.add(result:for:), createModelResult: gameController.create(name:description:entries:resultCategory:), createEntryResult: gameController.create(name:value:resultCategory:))
-    }
-
-    @MainActor
     public func listItems() -> [ValueModel] {
         itemController.itemDataModel.items.map {
             itemController.itemOrEmpty(for: $0)

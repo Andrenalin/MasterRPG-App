@@ -524,39 +524,77 @@ struct PlayerMasterControllerTests {
         #expect(await env.masterRoot.spaceRoot.gameController.currentId != spaceId)
     }
 
-    @Test("Player sends character update to master")
-    func handleCharacterUpdate() async throws {
-        // Arrange
+    @Test("Master requests and imports a Character package only after a version mismatch")
+    func characterJoinHandshake() async throws {
+        // Given
         let env = try await PlayerMasterControllerTestEnvironment.create()
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot)
-        #expect(env.playerRoot.characterRoot.itemController.itemDataModel.items.count == 13)
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
 
-        let characterId = env.playerRoot.characterRoot.itemController.itemDataModel.items[1]
-        let photoId = env.playerRoot.characterRoot.itemController.itemOrEmpty(for: characterId).photoId
-        #expect(nil != photoId)
+        let characterId = try #require(
+            env.playerRoot.characterRoot.itemController.itemDataModel.items.first {
+                let item = env.playerRoot.characterRoot.itemController.itemOrEmpty(for: $0)
+                return item.category == .character && item.photoId != nil
+            }
+        )
+        let playerCharacter = env.playerRoot.characterRoot.itemController.itemOrEmpty(for: characterId)
+        let photoId = try #require(playerCharacter.photoId)
+        env.playerRoot.gameModel.reset(
+            gameConfig: GameConfigModel(
+                id: env.playerGameConfig.id,
+                state: .started,
+                master: env.masterGameConfig.master
+            ),
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(
+                    id: env.playerGameConfig.id,
+                    type: .player,
+                    name: "AndrenalinPlayer",
+                    characterId: characterId
+                ),
+            ])
+        )
+        env.player.gameModel.lostMaster = false
 
-        // Act - Player sends character update to master
-        let characterData = try? await env.playerRoot.characterRoot.gameControllable.createGameData(for: characterId)
-        #expect(nil != characterData)
-        await env.player.send(counter: 0, type: .update, subType: .store, updated: characterData!, useJournal: true)
-        let sendedCharacterData = env.playerNetworkSpy.requestData as? GameNetworkModel
-        #expect(nil != sendedCharacterData)
+        // When: the player advertises only ID and version.
+        await env.player.sendCharacter()
+        let reference = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
 
-        // Assert - Master receives and stores character
-        var result = try await env.master.handle(sendedCharacterData!)
-        #expect(nil == result)
-        #expect(env.masterRoot.characterRoot.itemController.itemDataModel.items.count == 6)
-        #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.contains(photoId!))
+        // Then: a missing Character makes the master request the package.
+        #expect(reference.data.data == nil)
+        #expect(reference.data.version != 0)
+        let requestedData = try #require(try await env.master.handle(reference))
+        #expect(requestedData == reference.data)
 
-        // Act - Send same character update again
-        result = try await env.master.handle(sendedCharacterData!)
+        // When: the targeted request reaches the player.
+        let request = env.masterRoot.gameModel.outgoingMessage(
+            counter: reference.counter,
+            type: .update,
+            subType: .store,
+            asMaster: true,
+            targetId: env.playerGameConfig.id,
+            data: requestedData
+        )
+        _ = try await env.player.handle(request)
+        let messages = env.playerNetworkSpy.requestHistory.compactMap { $0 as? GameNetworkModel }
+        let package = try #require(messages.last)
+        #expect(messages.count == 2)
+        #expect(package.data.data != nil)
+        #expect(package.data.version == reference.data.version)
+        #expect(!PlayerController.usesFileJournal(for: package))
 
-        // Assert - Master handles duplicate update gracefully
-        #expect(nil == result)
-        #expect(env.masterRoot.characterRoot.itemController.itemDataModel.items.count == 6)
-        #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.contains(photoId!))
+        // Then: the master imports the recursive package, including the pin photo.
+        let importResponse = try await env.master.handle(package)
+        #expect(importResponse == nil)
+        let masterCharacter = try #require(await env.masterRoot.characterRoot.itemController.item(for: characterId))
+        #expect(masterCharacter.name == playerCharacter.name)
+        #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.contains(photoId))
+        #expect(await env.masterRoot.characterRoot.gameControllable.networkVersion(for: characterId) == reference.data.version)
+
+        // And: the same metadata now needs no package request.
+        let matchingResponse = try await env.master.handle(reference)
+        #expect(matchingResponse == nil)
     }
 }
 #endif

@@ -147,6 +147,7 @@ public protocol GameControllable: Sendable {
     func focus(on focusIds: [UUID]) async
 
     // network game data
+    func networkVersion(for itemId: UUID) async -> Int
     func createGameData(for itemId: UUID) async throws -> NetworkCodableDataType
     func share(id: UUID) async -> NetworkCodableDataType
     func reveal(itemId: UUID, data: NetworkCodableDataType, save: Bool) async throws -> Bool

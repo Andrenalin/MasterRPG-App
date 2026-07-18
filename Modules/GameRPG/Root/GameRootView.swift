@@ -59,7 +59,6 @@ struct GameActionEnvironmentSetUpViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(\.mapActions, root.mapRoot.mapActions)
-            .environment(\.valueActions, root.characterRoot.valueActions)
             .environment(\.networkActions, root.networkActions)
             .environment(\.sharingControlActions, root.sharingControlActions)
             .environment(\.sharingFeatureActions, root.sharingFeatureActions)

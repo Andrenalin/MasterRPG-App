@@ -32,10 +32,6 @@ struct GameRootViewer: View {
 #if os(iOS) || os(macOS)
     @Environment(AppSettingsModel.self) private var appSettingsModel
 #endif
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-#endif
-
     init(
         root: GameRoot,
         playerController: PlayerController,
@@ -53,35 +49,25 @@ struct GameRootViewer: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         
-        Group {
+        GameContentLayer {
             if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
                 mapView(for: mapId)
                     .id(mapId)
-                    .environment(\.mapViewportTrailingInset, mapTrailingReservation)
-                    .overlay {
-                        if playerController.gameModel.gameUpdateType != .map {
-                            ZStack {
-                                Color.black.opacity(0.80)
-
-                                otherViews { EmptyView() }
-                            }
-                        }
-                    }
             } else {
+                Color.clear
+            }
+        } presentation: {
+            if root.mapRoot.gameControllable.gameModel.currentItemId == nil {
                 otherViews {
-                    ZStack(alignment: .center) {
-                        MeshAnimationView()
-                        
-                        VStack {
-                            Spacer()
-                            Text(emptyTitle, bundle: .module)
-                            Text(root.gameModel.startGameTime, style: .relative)
-                            Spacer()
-                        }
-                        .font(.largeTitle)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .center)
-                    }
+                    EmptyGameContent(
+                        title: emptyTitle,
+                        startTime: root.gameModel.startGameTime
+                    )
+                }
+            } else if playerController.gameModel.gameUpdateType != .map {
+                ZStack {
+                    Color.black.opacity(0.80)
+                    otherViews { EmptyView() }
                 }
             }
         }
@@ -98,29 +84,12 @@ struct GameRootViewer: View {
 #endif
     }
 
-    private var mapTrailingReservation: CGFloat {
-        gameScreenModel?.mapTrailingReservation(
-            usesInlineSidebarLayout: usesInlineSidebarLayout
-        ) ?? 0
-    }
-
-    private var usesInlineSidebarLayout: Bool {
-#if os(macOS)
-        true
-#elseif os(iOS)
-        horizontalSizeClass == .regular
-#else
-        false
-#endif
-    }
-    
     @ViewBuilder
     private func mapView(for mapId: UUID) -> some View {
 #if os(iOS) || os(macOS)
         if appSettingsModel.showGameTableVolume,
            contentType.supportsInlineThreeDTable {
             GameTableView(root: root, retentionModel: gameScreenModel)
-                .padding(.trailing, mapTrailingReservation)
         } else {
             twoDimensionalMapView(for: mapId)
         }
@@ -178,6 +147,55 @@ struct GameRootViewer: View {
                 return root.weatherRoot.gameControllable.gameModel.currentItemId ?? Self.defaultViewId
             default:
                 return Self.defaultViewId
+        }
+    }
+}
+
+/// Stable full-window parent for the active map/table surface and temporary
+/// non-map presentation. Game chrome is installed above this layer by the
+/// owning game screen and therefore never participates in map layout.
+private struct GameContentLayer<Content: View, Presentation: View>: View {
+    let content: Content
+    let presentation: Presentation
+
+    init(
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder presentation: () -> Presentation
+    ) {
+        self.content = content()
+        self.presentation = presentation()
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            presentation
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .zIndex(1)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct EmptyGameContent: View {
+    let title: LocalizedStringKey
+    let startTime: Date
+
+    var body: some View {
+        ZStack(alignment: .center) {
+            MeshAnimationView()
+
+            VStack {
+                Spacer()
+                Text(title, bundle: .module)
+                Text(startTime, style: .relative)
+                Spacer()
+            }
+            .font(.largeTitle)
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 }
