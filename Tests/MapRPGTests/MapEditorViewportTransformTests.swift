@@ -57,6 +57,123 @@ struct MapEditorViewportTransformTests {
         expectApproximately(sut.contentPoint(fromViewport: newCenter), logicalPoint)
     }
 
+    @Test("A visible game overlay refits into the measured unobscured map width")
+    func trailingOverlayReservationRefitsMap() {
+        let map = makeMap(name: "Sidebar map", size: CGSize(width: 1_200, height: 800))
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 1_000, height: 600),
+            mode: .gameMaster
+        )
+        sut.firstAppear(map: map)
+
+        sut.updateTrailingViewportReservation(308)
+
+        let effectiveSize = CGSize(width: 692, height: 600)
+        #expect(sut.viewport.configuration.containerSize == effectiveSize)
+        #expect(sut.viewport.isAtFit)
+        expectApproximately(
+            sut.contentPoint(fromViewport: sut.viewport.geometry.containerCenter),
+            CGPoint(x: map.width / 2, y: map.height / 2)
+        )
+    }
+
+    @Test("Changing game overlay width preserves manual zoom beneath the available center")
+    func trailingOverlayReservationPreservesManualCenter() {
+        let map = makeMap(name: "Zoomed sidebar map", size: CGSize(width: 1_200, height: 800))
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 1_000, height: 600),
+            mode: .gameMaster
+        )
+        sut.firstAppear(map: map)
+        let oldCenter = sut.viewport.geometry.containerCenter
+        sut.viewport.commit(
+            sut.viewport.geometry.zoomed(
+                from: sut.viewport.transform,
+                toScale: 1,
+                anchor: oldCenter
+            )
+        )
+        let oldScale = sut.viewport.transform.scale
+        let logicalPoint = sut.contentPoint(fromViewport: oldCenter)
+
+        sut.updateTrailingViewportReservation(308)
+
+        #expect(sut.viewport.transform.scale == oldScale)
+        expectApproximately(
+            sut.contentPoint(fromViewport: sut.viewport.geometry.containerCenter),
+            logicalPoint
+        )
+    }
+
+    @Test("Room focus uses the center of the unobscured game viewport")
+    func trailingOverlayReservationCentersRoomFocus() {
+        let roomId = UUID()
+        let room = MapEntryModel(
+            id: roomId,
+            name: "Focus room",
+            content: "",
+            coordinates: [
+                CGPoint(x: 700, y: 300),
+                CGPoint(x: 900, y: 300),
+                CGPoint(x: 900, y: 500),
+                CGPoint(x: 700, y: 500),
+            ]
+        )
+        let map = MapModel(
+            id: UUID(),
+            name: "Focused sidebar map",
+            entries: [room],
+            width: 1_200,
+            height: 800
+        )
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 1_000, height: 600),
+            mode: .gameMaster
+        )
+        sut.firstAppear(map: map)
+        sut.updateTrailingViewportReservation(308)
+        let focusedRoom = MapEntryModel(
+            id: roomId,
+            name: room.name,
+            content: room.content,
+            coordinates: room.coordinates,
+            focused: true
+        )
+        let focusedMap = MapModel(
+            id: map.id,
+            name: map.name,
+            entries: [focusedRoom],
+            width: map.width,
+            height: map.height
+        )
+
+        sut.resetEntries(newEntries: [focusedRoom], map: focusedMap)
+
+        #expect(sut.focusId == roomId)
+        expectApproximately(
+            sut.contentPoint(fromViewport: sut.viewport.geometry.containerCenter),
+            CGPoint(x: 800, y: 400)
+        )
+    }
+
+    @Test("Game overlay reservation retains a recoverable viewport in narrow windows")
+    func trailingOverlayReservationKeepsMinimumViewportWidth() {
+        let map = makeMap(name: "Narrow sidebar map", size: CGSize(width: 1_200, height: 800))
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 320, height: 480),
+            mode: .gameMaster
+        )
+
+        sut.updateTrailingViewportReservation(500)
+
+        #expect(sut.viewport.configuration.containerSize == CGSize(width: 44, height: 480))
+        #expect(sut.viewport.isAtFit)
+    }
+
     @Test("Switching maps with equal dimensions resets viewport identity and transform")
     func mapSwitchResetsViewportIdentity() {
         // Given

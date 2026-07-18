@@ -454,6 +454,206 @@ struct MapMasterMessageFlowTests {
         )
     }
 
+    @Test("A master battle-round update presents the shared round and attacker on a player")
+    func masterBattleRoundUpdateAppliesOnPlayer() async throws {
+        // Given: the master starts a battle using a session player pin.
+        let fixture = try await MapMasterRoutingFixture.makeMaster()
+        let mapId = fixture.currentMapId
+        let characterId = UUID()
+        fixture.root.characterRoot.itemController.replace(
+            model: ValueModel(id: characterId, name: "Battle hero"),
+            isInsert: true
+        )
+        let masterMap = fixture.root.mapRoot.gameController.gameItem(for: mapId)
+        let playerPin = MapPinModel(
+            id: fixture.playerId,
+            name: fixture.playerName,
+            characterId: characterId,
+            location: CGPoint(x: 20, y: 30),
+            isPlayer: true,
+            players: [fixture.playerId]
+        )
+        masterMap.mapPins.removeAll { $0.id == fixture.playerId }
+        masterMap.mapPins.append(playerPin)
+        fixture.root.mapRoot.gameController.mapGameModel.playerPins = [playerPin]
+        #expect(fixture.root.mapRoot.gameController.startBattle(
+            itemId: mapId,
+            initiativeOrder: .descending
+        ))
+        #expect(fixture.root.mapRoot.gameController.nextBattleRound(itemId: mapId))
+        let fullMap = try await fixture.root.mapRoot.mapGameControllable.createMapGameData(
+            for: mapId
+        )
+        let battleUpdate = try #require(
+            fixture.root.mapRoot.mapGameControllable.networkBattleRoundUpdate(for: mapId)
+        )
+
+        // And: a separate player accepts the same authoritative Map generation.
+        let playerRoot = try await MockRoot.createGameRoot()
+        try await MockRoot.resetTestData(for: playerRoot.adventureRoot)
+        try await MockRoot.resetGameController(for: playerRoot)
+        playerRoot.gameModel.reset(
+            gameConfig: GameConfigModel(
+                id: fixture.playerId,
+                state: .started,
+                master: MasterGameModel(
+                    id: fixture.masterId,
+                    type: .master,
+                    name: "Map master"
+                )
+            ),
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(
+                    id: fixture.playerId,
+                    type: .player,
+                    name: fixture.playerName,
+                    characterId: characterId
+                ),
+            ])
+        )
+        let player = PlayerController(root: playerRoot, asGameMaster: false)
+        let sender = GameSenderModel(
+            id: fixture.masterId,
+            role: .master,
+            name: "Map master",
+            characterId: nil
+        )
+        _ = try await player.handleMap(GameNetworkModel(
+            counter: 90,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: fixture.masterId,
+            sender: sender,
+            data: fullMap
+        ))
+
+        // When
+        _ = try await player.handleMap(GameNetworkModel(
+            counter: 91,
+            proxyCounter: 0,
+            type: .update,
+            subType: .battleRound,
+            masterId: fixture.masterId,
+            sender: sender,
+            data: battleUpdate
+        ))
+
+        // Then
+        let playerBattle = playerRoot.mapRoot.mapGameControllable.battleRoundModel
+        #expect(playerBattle.isRunning)
+        #expect(playerBattle.mapId == mapId)
+        #expect(playerBattle.roundCounter == 1)
+        #expect(playerBattle.activePinId == fixture.playerId)
+        #expect(player.gameModel.gameUpdateType == .map)
+    }
+
+    @Test("A player pin highlight updates the active defender list and is rebroadcast by the master")
+    func playerHighlightSynchronizesBattleDefenders() async throws {
+        // Given
+        let fixture = try await MapMasterRoutingFixture.makeMaster()
+        let mapId = fixture.currentMapId
+        let playerCharacterId = UUID()
+        let defenderCharacterId = UUID()
+        fixture.root.characterRoot.itemController.replace(
+            model: ValueModel(id: playerCharacterId, name: "Battle hero"),
+            isInsert: true
+        )
+        fixture.root.characterRoot.itemController.replace(
+            model: ValueModel(id: defenderCharacterId, name: "Target"),
+            isInsert: true
+        )
+        let map = fixture.root.mapRoot.gameController.gameItem(for: mapId)
+        let playerPin = MapPinModel(
+            id: fixture.playerId,
+            name: fixture.playerName,
+            characterId: playerCharacterId,
+            location: CGPoint(x: 10, y: 10),
+            isPlayer: true,
+            players: [fixture.playerId]
+        )
+        let defenderPin = MapPinModel(
+            id: UUID(),
+            name: "Target",
+            characterId: defenderCharacterId,
+            location: CGPoint(x: 40, y: 40),
+            isShown: true
+        )
+        map.mapPins.removeAll { $0.id == fixture.playerId }
+        map.mapPins.append(contentsOf: [playerPin, defenderPin])
+        fixture.root.mapRoot.gameController.mapGameModel.playerPins = [playerPin]
+        #expect(fixture.root.mapRoot.gameController.startBattle(
+            itemId: mapId,
+            initiativeOrder: .descending
+        ))
+        let attacker = try #require(
+            fixture.root.mapRoot.mapGameControllable.battleRoundModel.combatant(
+                pinId: fixture.playerId
+            )
+        )
+        #expect(fixture.root.mapRoot.gameController.activateBattleAttacker(
+            itemId: mapId,
+            combatantId: attacker.id
+        ))
+        let generation = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+
+        func command(for pin: MapPinModel, counter: Int) -> GameNetworkModel {
+            fixture.playerMessage(
+                counter: counter,
+                type: .update,
+                subType: .mapPin,
+                data: NetworkCodableDataType(
+                    id: mapId,
+                    type: .map,
+                    version: generation.version,
+                    data: pin.encodeData(),
+                    assetVersion: generation.assetVersion,
+                    contentVersion: generation.contentVersion
+                )
+            )
+        }
+
+        // When: the player highlights a visible foreign pin.
+        var highlightedDefender = defenderPin
+        highlightedDefender.isHighlighted = true
+        highlightedDefender.timeInterval = Date.now.timeIntervalSince1970
+        _ = try await fixture.master.handleMap(command(for: highlightedDefender, counter: 92))
+
+        // Then: it becomes a defender for the active attacker and the master
+        // immediately rebroadcasts the authoritative map state.
+        let battle = fixture.root.mapRoot.mapGameControllable.battleRoundModel
+        let defender = try #require(battle.combatant(pinId: defenderPin.id))
+        let entry = try #require(battle.activeEntry)
+        #expect(entry.defenderIds == [defender.id])
+        #expect(map.mapPins.first { $0.id == defenderPin.id }?.isHighlighted == true)
+        var broadcasts = fixture.directMasterSpy.sendResponseHistory.compactMap {
+            $0 as? GameNetworkModel
+        }
+        #expect(broadcasts.last?.type == .update)
+        #expect(broadcasts.last?.subType == .mapState)
+        #expect(broadcasts.last?.targetId == nil)
+
+        // When: the active player tries to remove its own mandatory highlight.
+        var dehighlightedAttacker = try #require(
+            map.mapPins.first { $0.id == fixture.playerId }
+        )
+        dehighlightedAttacker.isHighlighted = false
+        dehighlightedAttacker.timeInterval = max(
+            Date.now.timeIntervalSince1970,
+            dehighlightedAttacker.timeInterval.nextUp
+        )
+        _ = try await fixture.master.handleMap(command(for: dehighlightedAttacker, counter: 93))
+
+        // Then: synchronization repairs the attacker and publishes the repair.
+        #expect(map.mapPins.first { $0.id == fixture.playerId }?.isHighlighted == true)
+        #expect(try #require(battle.activeEntry).defenderIds == [defender.id])
+        broadcasts = fixture.directMasterSpy.sendResponseHistory.compactMap {
+            $0 as? GameNetworkModel
+        }
+        #expect(broadcasts.count == 2)
+        #expect(broadcasts.allSatisfy { $0.subType == .mapState })
+    }
+
     @Test("Proxy serves only a complete Map matching the requested asset and content generations")
     func proxyMapRepairChecksVersions() async throws {
         // Given

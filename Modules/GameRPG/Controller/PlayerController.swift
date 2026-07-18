@@ -1924,6 +1924,12 @@ extension PlayerController {
             case .mapPin:
                 // master will never send mapPin updates, they come only from players.
                 return nil
+            case .battleRound:
+                guard await root.mapRoot.mapGameControllable.applyBattleRoundUpdate(
+                    for: model.data.id,
+                    with: model.data
+                ) else { return nil }
+                await MainActor.run { gameModel.gameUpdateType = .map }
             default:
                 return nil
             }

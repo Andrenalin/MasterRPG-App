@@ -5,6 +5,7 @@ import Foundation
 extension SceneId {
     public static var additionalEditor: Self { .init(rawValue: "additionalEditor") }
     public static var adventureViewer: Self { .init(rawValue: "adventureViewer") }
+    public static var battleRound: Self { .init(rawValue: "battleRound") }
     public static var editor: Self { .init(rawValue: "editor") }
     public static var game: Self { .init(rawValue: "game") }
     public static var gameStatistics: Self { .init(rawValue: "gameStatistics") }

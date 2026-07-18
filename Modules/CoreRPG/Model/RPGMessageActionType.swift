@@ -19,6 +19,7 @@ public enum RPGMessageActionType: Int, Codable, Hashable, Sendable {
 
     case mapState = 3
     case mapPin = 4
+    case battleRound = 14
 
     case spaceTransform = 9
 }
@@ -52,6 +53,8 @@ extension RPGMessageActionType: CustomDebugStringConvertible {
             return "MapState"
         case .mapPin:
             return "MapPin"
+        case .battleRound:
+            return "BattleRound"
         case .spaceTransform:
             return "SpaceTransform"
         }

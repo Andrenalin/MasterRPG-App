@@ -33,6 +33,13 @@ struct MasterModuleWindowMenu: View {
                 }
 
                 GameWindowButtonView(
+                    title: String(localized: "Battle Round", bundle: .module),
+                    systemImage: "shield.lefthalf.filled",
+                    tint: NetworkModules.map.tint,
+                    sceneId: .battleRound
+                )
+
+                GameWindowButtonView(
                     title: String(localized: "Logs", bundle: .module),
                     systemImage: "doc.text.magnifyingglass",
                     tint: NetworkModules.game.tint,

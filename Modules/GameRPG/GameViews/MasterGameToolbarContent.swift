@@ -3,6 +3,7 @@
 #if os(macOS)
 import AudioRPG
 import CoreRPG
+import MapRPG
 import SwiftUI
 
 enum GameToolbarRole: Equatable {
@@ -14,6 +15,8 @@ struct GameToolbarContent: ToolbarContent {
     let root: GameRoot
     let role: GameToolbarRole
     let playerController: PlayerController?
+
+    @Environment(ScenesManager.self) private var scenesManager
 
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .navigation) {
@@ -31,6 +34,23 @@ struct GameToolbarContent: ToolbarContent {
 
             if let playerController {
                 PlayerConnectionStatusView(playerController: playerController)
+            }
+        }
+
+        if root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
+            ToolbarItem(placement: .automatic) {
+                if role == .master {
+                    BattleRoundStatusButton(
+                        model: root.mapRoot.mapGameControllable.battleRoundModel
+                    ) {
+                        scenesManager.openWindow(.battleRound)
+                    }
+                } else {
+                    BattleRoundCounterView(
+                        model: root.mapRoot.mapGameControllable.battleRoundModel,
+                        style: .compact
+                    )
+                }
             }
         }
 

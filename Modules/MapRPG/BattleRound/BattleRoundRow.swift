@@ -1,529 +1,950 @@
 // @copyright André Trettin
 
+import CharacterRPG
 import CoreRPG
+import PhotoRPG
 import SwiftUI
 
-// MARK: - Domain Models
+/// Stable, window-level actions keep networking and persistence out of the
+/// individual combatant rows. Row views only edit their local text field and
+/// commit one domain action when editing ends.
+public struct BattleRoundActions {
+    public init(
+        start: @escaping @MainActor () -> Void,
+        end: @escaping @MainActor () -> Void,
+        nextAttacker: @escaping @MainActor () -> Void,
+        nextRound: @escaping @MainActor () -> Void,
+        setInitiative: @escaping @MainActor (UUID, Int?) -> Void,
+        adjustInitiative: @escaping @MainActor (UUID, Int) -> Void,
+        setInitiativeOrder: @escaping @MainActor (BattleInitiativeOrder) -> Void,
+        moveEntries: @escaping @MainActor (IndexSet, Int) -> Void,
+        activateAttacker: @escaping @MainActor (UUID) -> Void,
+        selectRollRecipient: @escaping @MainActor (UUID) -> Void,
+        setDead: @escaping @MainActor (UUID, Bool) -> Void
+    ) {
+        self.start = start
+        self.end = end
+        self.nextAttacker = nextAttacker
+        self.nextRound = nextRound
+        self.setInitiative = setInitiative
+        self.adjustInitiative = adjustInitiative
+        self.setInitiativeOrder = setInitiativeOrder
+        self.moveEntries = moveEntries
+        self.activateAttacker = activateAttacker
+        self.selectRollRecipient = selectRollRecipient
+        self.setDead = setDead
+    }
 
-struct BattleRoundEntry: Identifiable {
-    var id: UUID { pin.id }
-    var pin: MapPinModel
-    var opponent: MapPinModel? = nil
-    var root: ItemRootController? = nil
-    var sheetRootModel: SheetRootModel? = nil
+    let start: @MainActor () -> Void
+    let end: @MainActor () -> Void
+    let nextAttacker: @MainActor () -> Void
+    let nextRound: @MainActor () -> Void
+    let setInitiative: @MainActor (UUID, Int?) -> Void
+    let adjustInitiative: @MainActor (UUID, Int) -> Void
+    let setInitiativeOrder: @MainActor (BattleInitiativeOrder) -> Void
+    let moveEntries: @MainActor (IndexSet, Int) -> Void
+    let activateAttacker: @MainActor (UUID) -> Void
+    let selectRollRecipient: @MainActor (UUID) -> Void
+    let setDead: @MainActor (UUID, Bool) -> Void
 }
 
-@MainActor @Observable
-final class BattleRoundModel {
-    var roundCounter: Int = 1
-    var entries: [BattleRoundEntry] = []
-
-    func nextRound() {
-        withAnimation(.spring(duration: 0.3)) { roundCounter += 1 }
+public struct BattleRoundView: View {
+    public init(model: BattleRoundModel, actions: BattleRoundActions) {
+        self.model = model
+        self.actions = actions
     }
 
-    func move(from source: IndexSet, to destination: Int) {
-        withAnimation { entries.move(fromOffsets: source, toOffset: destination) }
-    }
-
-    func setOpponent(_ opponent: MapPinModel?, for pinId: UUID) {
-        guard let i = entries.firstIndex(where: { $0.id == pinId }) else { return }
-        withAnimation { entries[i].opponent = opponent }
-    }
-}
-
-// MARK: - Platform-Conditional Modifiers
-
-private extension View {
-    @ViewBuilder
-    func battleInsetGroupedListStyle() -> some View {
-        #if os(iOS) || os(visionOS)
-        self.listStyle(.insetGrouped)
-        #else
-        self.listStyle(.inset)
-        #endif
-    }
-
-    @ViewBuilder
-    func battleEditMode() -> some View {
-        #if os(iOS) || os(visionOS)
-        self.environment(\.editMode, .constant(.active))
-        #else
-        self
-        #endif
-    }
-
-    @ViewBuilder
-    func inlineNavBarTitle() -> some View {
-        #if os(iOS) || os(visionOS)
-        self.navigationBarTitleDisplayMode(.inline)
-        #else
-        self
-        #endif
-    }
-}
-
-// MARK: - Shared Subviews
-
-private struct PinAvatar: View {
-    let pin: MapPinModel
-    let diameter: CGFloat
-
-    var body: some View {
-        ZStack {
-            Circle().fill(pin.color.opacity(0.18))
-            Circle().strokeBorder(pin.color, lineWidth: 1.5)
-            Text(pin.name.prefix(1).uppercased())
-                .font(.system(size: diameter * 0.44, weight: .bold))
-                .foregroundStyle(pin.color)
-        }
-        .frame(width: diameter, height: diameter)
-    }
-}
-
-private struct OpponentSlot: View {
-    let opponent: MapPinModel?
-    let diameter: CGFloat
-
-    var body: some View {
-        if let opp = opponent {
-            PinAvatar(pin: opp, diameter: diameter)
-        } else {
-            ZStack {
-                Circle().strokeBorder(.quaternary, lineWidth: 1.5)
-                Image(systemName: "person.badge.plus")
-                    .font(.system(size: diameter * 0.32))
-                    .foregroundStyle(.quaternary)
-            }
-            .frame(width: diameter, height: diameter)
-        }
-    }
-}
-
-private struct StatsExpansionView: View {
-    let entry: BattleRoundEntry
-
-    var body: some View {
-        if let root = entry.root, let sheet = entry.sheetRootModel {
-            SheetRootView(root: root, rootModel: sheet, linkTypes: EmptyLinkTransferable.self)
-                .frame(maxHeight: 280)
-        } else {
-            Label("No stats linked", systemImage: "doc.text.magnifyingglass")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 14)
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MARK: - A · Initiative Table
-// Dense columnar list — all data visible, drag handles exposed permanently.
-// Name tap expands inline stats sheet.
-// ─────────────────────────────────────────────────────────────────────────────
-
-struct BattleRoundViewA: View {
     let model: BattleRoundModel
-    @State private var expandedId: UUID?
+    let actions: BattleRoundActions
+
+    @Environment(MapRootModel.self) private var root
+    @State private var selectedSheet: BattleCharacterSheetPresentation?
+
+    public var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                BattleRoundHeader(model: model, actions: actions)
+
+                if model.isRunning, !model.entries.isEmpty {
+                    BattleRoundList(
+                        model: model,
+                        actions: actions,
+                        showCharacter: showCharacterSheet
+                    )
+                } else {
+                    BattleRoundEmptyState(isRunning: model.isRunning, start: actions.start)
+                }
+            }
+            .navigationTitle(Text("Battle Round", bundle: .module))
+            .battleInlineNavigationTitle()
+        }
+        .sheet(item: $selectedSheet) { presentation in
+            BattleCharacterSheetPresentationView(presentation: presentation)
+        }
+    }
+
+    private func showCharacterSheet(_ combatant: BattleCombatant) {
+        selectedSheet = BattleCharacterSheetFactory(root: root).presentation(for: combatant)
+    }
+}
+
+private struct BattleCharacterSheetPresentationView: View {
+    let presentation: BattleCharacterSheetPresentation
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            SheetRootView(
+                root: presentation.root,
+                rootModel: presentation.sheet,
+                linkTypes: EmptyLinkTransferable.self
+            )
+            .navigationTitle(Text(verbatim: presentation.name))
+            .battleInlineNavigationTitle()
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", systemImage: "xmark") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct BattleRoundHeader: View {
+    let model: BattleRoundModel
+    let actions: BattleRoundActions
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                BattleRoundHeading(model: model)
+                Spacer(minLength: 8)
+                BattleInitiativeOrderMenu(
+                    selection: initiativeOrderBinding,
+                    isDisabled: model.isRunning && model.entries.isEmpty
+                )
+                BattleRoundHeaderActions(model: model, actions: actions)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    BattleRoundHeading(model: model)
+                    Spacer(minLength: 4)
+                    BattleInitiativeOrderMenu(
+                        selection: initiativeOrderBinding,
+                        isDisabled: model.isRunning && model.entries.isEmpty
+                    )
+                }
+                BattleRoundHeaderActions(model: model, actions: actions)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+#if os(tvOS)
+        .background(Color.black.opacity(0.35))
+#else
+        .background(.bar)
+#endif
+    }
+
+    private var initiativeOrderBinding: Binding<BattleInitiativeOrder> {
+        Binding(
+            get: { model.initiativeOrder },
+            set: actions.setInitiativeOrder
+        )
+    }
+}
+
+private struct BattleRoundHeading: View {
+    let model: BattleRoundModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if model.isRunning {
+                BattleRoundHeaderTitle(round: model.roundCounter)
+                    .font(.title2.bold())
+                    .monospacedDigit()
+
+                if let entry = model.activeEntry,
+                   let attacker = model.attacker(for: entry) {
+                    Text(attacker.name)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            } else {
+                Text("Initiative", bundle: .module)
+                    .font(.title2.bold())
+            }
+        }
+    }
+}
+
+private struct BattleInitiativeOrderMenu: View {
+    @Binding var selection: BattleInitiativeOrder
+    let isDisabled: Bool
+
+    var body: some View {
+        Picker("Initiative Order", selection: $selection) {
+            Label {
+                Text("Descending", bundle: .module)
+            } icon: {
+                Image(systemName: "arrow.down")
+            }
+            .tag(BattleInitiativeOrder.descending)
+
+            Label {
+                Text("Ascending", bundle: .module)
+            } icon: {
+                Image(systemName: "arrow.up")
+            }
+            .tag(BattleInitiativeOrder.ascending)
+        }
+        .pickerStyle(.menu)
+        .disabled(isDisabled)
+    }
+}
+
+private struct BattleRoundHeaderActions: View {
+    let model: BattleRoundModel
+    let actions: BattleRoundActions
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if model.isRunning {
+                Button("Next Turn", systemImage: "person.line.dotted.person.fill", action: actions.nextAttacker)
+                    .buttonStyle(.bordered)
+
+                Button("Next Round", systemImage: "chevron.right.2", action: actions.nextRound)
+                    .buttonStyle(.borderedProminent)
+
+                Menu {
+                    Button("End Battle", systemImage: "stop.fill", role: .destructive, action: actions.end)
+                } label: {
+                    Label("More Battle Actions", systemImage: "ellipsis.circle")
+                        .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.bordered)
+            } else {
+                Button("Start Battle", systemImage: "play.fill", action: actions.start)
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .controlSize(.small)
+    }
+}
+
+private struct BattleRoundHeaderTitle: View {
+    let round: Int
+
+    var body: some View {
+        if round == 0 {
+            Text("Surprise", bundle: .module)
+        } else {
+            Text("Round \(round)", bundle: .module)
+        }
+    }
+}
+
+private struct BattleRoundEmptyState: View {
+    let isRunning: Bool
+    let start: @MainActor () -> Void
+
+    var body: some View {
+        ContentUnavailableView {
+            Label {
+                Text(isRunning ? "No Combatants" : "No Battle Running", bundle: .module)
+            } icon: {
+                Image(systemName: "shield.lefthalf.filled")
+            }
+        } description: {
+            Text(
+                isRunning
+                    ? "The selected map has no player or active-room combatants."
+                    : "Start a battle with player pins and the monsters in the selected room.",
+                bundle: .module
+            )
+        } actions: {
+            if !isRunning {
+                Button("Start Battle", systemImage: "play.fill", action: start)
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct BattleRoundList: View {
+    let model: BattleRoundModel
+    let actions: BattleRoundActions
+    let showCharacter: @MainActor (BattleCombatant) -> Void
 
     var body: some View {
         List {
             Section {
                 ForEach(model.entries) { entry in
-                    BattleRoundRowA(
+                    BattleRoundCard(
+                        model: model,
                         entry: entry,
-                        rank: rank(of: entry),
-                        isExpanded: expandedId == entry.id,
-                        onToggle: { toggle(entry.id) }
+                        rank: rank(for: entry),
+                        actions: actions,
+                        showCharacter: showCharacter
                     )
-                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 12))
+                    .listRowBackground(Color.clear)
+                    .battleHiddenRowSeparator()
+                    .listRowInsets(
+                        EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12)
+                    )
                 }
-                .onMove(perform: model.move)
+                .onMove(perform: actions.moveEntries)
             } header: {
                 HStack {
-                    Label("Round \(model.roundCounter)", systemImage: "shield.lefthalf.filled")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                        .textCase(nil)
+                    Text("Turn Order", bundle: .module)
                     Spacer()
-                    Button("Next Round", systemImage: "forward.fill", action: model.nextRound)
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
+                    Text("Drag to reorder", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                         .textCase(nil)
                 }
-                .padding(.bottom, 4)
             }
         }
-        .battleInsetGroupedListStyle()
-        .battleEditMode()
+        .battleInitiativeListStyle()
+        .battleAlwaysEditableList()
     }
 
-    private func rank(of entry: BattleRoundEntry) -> Int {
+    private func rank(for entry: BattleRoundEntry) -> Int {
         (model.entries.firstIndex(where: { $0.id == entry.id }) ?? 0) + 1
     }
-
-    private func toggle(_ id: UUID) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            expandedId = expandedId == id ? nil : id
-        }
-    }
 }
 
-private struct BattleRoundRowA: View {
-    let entry: BattleRoundEntry
-    let rank: Int
-    let isExpanded: Bool
-    let onToggle: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Text("\(rank)")
-                    .font(.callout.bold().monospacedDigit())
-                    .foregroundStyle(entry.pin.color)
-                    .frame(width: 22, alignment: .center)
-
-                PinAvatar(pin: entry.pin, diameter: 34)
-
-                Button(action: onToggle) {
-                    HStack(spacing: 3) {
-                        Text(entry.pin.name)
-                            .font(.body)
-                            .foregroundStyle(.primary)
-                        if entry.pin.isDead {
-                            Image(systemName: "skull")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                HStack(spacing: 5) {
-                    Image(systemName: "arrow.right")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                    OpponentSlot(opponent: entry.opponent, diameter: 28)
-                }
-            }
-
-            if isExpanded {
-                StatsExpansionView(entry: entry)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
-        .animation(.easeInOut(duration: 0.2), value: isExpanded)
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MARK: - B · Initiative Cards
-// Floating cards with a color accent stripe — visual-first layout.
-// The initiative badge overlays the avatar for quick scanning.
-// ─────────────────────────────────────────────────────────────────────────────
-
-struct BattleRoundViewB: View {
+private struct BattleRoundCard: View {
     let model: BattleRoundModel
-    @State private var expandedId: UUID?
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Label("Round \(model.roundCounter)", systemImage: "shield.lefthalf.filled")
-                    .font(.title3.bold())
-                Spacer()
-                Button("Next Round", systemImage: "chevron.right.2", action: model.nextRound)
-                    .buttonStyle(.borderedProminent)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(.bar)
-
-            List {
-                ForEach(model.entries) { entry in
-                    BattleRoundCardB(
-                        entry: entry,
-                        rank: rank(of: entry),
-                        isExpanded: expandedId == entry.id,
-                        onToggle: { toggle(entry.id) }
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-                }
-                .onMove(perform: model.move)
-            }
-            .listStyle(.plain)
-            .battleEditMode()
-        }
-    }
-
-    private func rank(of entry: BattleRoundEntry) -> Int {
-        (model.entries.firstIndex(where: { $0.id == entry.id }) ?? 0) + 1
-    }
-
-    private func toggle(_ id: UUID) {
-        withAnimation(.spring(duration: 0.25)) {
-            expandedId = expandedId == id ? nil : id
-        }
-    }
-}
-
-private struct BattleRoundCardB: View {
     let entry: BattleRoundEntry
     let rank: Int
-    let isExpanded: Bool
-    let onToggle: () -> Void
+    let actions: BattleRoundActions
+    let showCharacter: @MainActor (BattleCombatant) -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
-        VStack(spacing: 2) {
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(entry.pin.color)
-                    .frame(width: 4)
+        if let attacker = model.attacker(for: entry) {
+            let isActive = model.activeAttackerId == attacker.id
+            let defenders = model.defenders(for: entry)
 
-                HStack(spacing: 10) {
-                    ZStack(alignment: .bottomTrailing) {
-                        PinAvatar(pin: entry.pin, diameter: 42)
-                        Text("\(rank)")
-                            .font(.system(size: 10, weight: .bold).monospacedDigit())
-                            .foregroundStyle(.white)
-                            .frame(width: 18, height: 18)
-                            .background(entry.pin.color, in: Circle())
-                            .offset(x: 2, y: 2)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Button(action: onToggle) {
-                            HStack(spacing: 4) {
-                                Text(entry.pin.name)
-                                    .font(.headline)
-                                    .foregroundStyle(.primary)
-                                Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle")
-                                    .font(.caption)
-                                    .foregroundStyle(entry.pin.color.opacity(0.8))
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        if entry.pin.isDead {
-                            Label("Dead", systemImage: "skull.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .center, spacing: 2) {
-                        Text("vs")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                        OpponentSlot(opponent: entry.opponent, diameter: 36)
-                    }
-                }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity)
-                .background(.regularMaterial)
-            }
-            .clipShape(.rect(cornerRadius: 10))
-
-            if isExpanded {
-                StatsExpansionView(entry: entry)
-                    .padding(12)
-                    .background(.regularMaterial, in: .rect(cornerRadius: 10))
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
-        .animation(.spring(duration: 0.25), value: isExpanded)
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MARK: - C · Timeline View
-// Numbered circles on the left rail show turn order at a glance.
-// Rank 1 (current turn) is highlighted; others are de-emphasized.
-// ─────────────────────────────────────────────────────────────────────────────
-
-struct BattleRoundViewC: View {
-    let model: BattleRoundModel
-    @State private var expandedId: UUID?
-
-    var body: some View {
-        NavigationStack {
-            List {
-                ForEach(model.entries) { entry in
-                    BattleRoundTimelineRowC(
-                        entry: entry,
-                        rank: rank(of: entry),
-                        isExpanded: expandedId == entry.id,
-                        onToggle: { toggle(entry.id) }
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
-                }
-                .onMove(perform: model.move)
-            }
-            .listStyle(.plain)
-            .battleEditMode()
-            .navigationTitle("Round \(model.roundCounter)")
-            .inlineNavBarTitle()
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Next Round", systemImage: "chevron.right.2", action: model.nextRound)
-                }
-            }
-        }
-    }
-
-    private func rank(of entry: BattleRoundEntry) -> Int {
-        (model.entries.firstIndex(where: { $0.id == entry.id }) ?? 0) + 1
-    }
-
-    private func toggle(_ id: UUID) {
-        withAnimation(.easeInOut(duration: 0.22)) {
-            expandedId = expandedId == id ? nil : id
-        }
-    }
-}
-
-private struct BattleRoundTimelineRowC: View {
-    let entry: BattleRoundEntry
-    let rank: Int
-    let isExpanded: Bool
-    let onToggle: () -> Void
-
-    private var isCurrent: Bool { rank == 1 }
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            // Timeline badge
-            ZStack {
-                Circle()
-                    .fill(isCurrent ? entry.pin.color : Color.secondary.opacity(0.15))
-                Circle()
-                    .strokeBorder(
-                        isCurrent ? entry.pin.color : Color.secondary.opacity(0.3),
-                        lineWidth: 1.5
-                    )
-                Text("\(rank)")
-                    .font(.caption.monospacedDigit().bold())
-                    .foregroundStyle(isCurrent ? .white : .secondary)
-            }
-            .frame(width: 28, height: 28)
-            .padding(.top, 9)
-
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 10) {
-                    PinAvatar(pin: entry.pin, diameter: isCurrent ? 44 : 34)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Button(action: onToggle) {
-                            HStack(spacing: 4) {
-                                Text(entry.pin.name)
-                                    .font(isCurrent ? .headline : .subheadline)
-                                    .foregroundStyle(isCurrent ? .primary : .secondary)
-                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-
-                        if let opp = entry.opponent {
-                            HStack(spacing: 3) {
-                                Image(systemName: "arrow.right")
-                                    .font(.caption2)
-                                Text(opp.name)
-                                    .font(.caption2)
-                            }
-                            .foregroundStyle(.secondary)
-                        } else if entry.pin.isDead {
-                            Label("Dead", systemImage: "skull")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Spacer()
-
-                    OpponentSlot(opponent: entry.opponent, diameter: isCurrent ? 38 : 26)
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 8)
-                .background(
-                    isCurrent ? entry.pin.color.opacity(0.08) : Color.clear,
-                    in: .rect(cornerRadius: 10)
+            ViewThatFits(in: .horizontal) {
+                BattleRoundWideCardLayout(
+                    model: model,
+                    entry: entry,
+                    attacker: attacker,
+                    defenders: defenders,
+                    rank: rank,
+                    isActive: isActive,
+                    actions: actions,
+                    showCharacter: showCharacter
                 )
 
-                if isExpanded {
-                    StatsExpansionView(entry: entry)
-                        .padding(.horizontal, 8)
-                        .padding(.top, 4)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
+                BattleRoundCompactCardLayout(
+                    model: model,
+                    entry: entry,
+                    attacker: attacker,
+                    defenders: defenders,
+                    rank: rank,
+                    isActive: isActive,
+                    actions: actions,
+                    showCharacter: showCharacter
+                )
             }
-            .animation(.easeInOut(duration: 0.22), value: isExpanded)
+            .padding(10)
+            .background(
+                isActive ? attacker.color.opacity(0.14) : Color.secondary.opacity(0.07),
+                in: .rect(cornerRadius: 12)
+            )
+            .overlay(alignment: .leading) {
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 12,
+                    bottomLeadingRadius: 12
+                )
+                .fill(isActive ? attacker.color : .clear)
+                .frame(width: 4)
+                .accessibilityHidden(true)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(
+                        isActive ? attacker.color.opacity(0.65) : .clear,
+                        lineWidth: 1
+                    )
+                    .accessibilityHidden(true)
+            }
+            .opacity(attacker.isDead ? 0.58 : 1)
+            .animation(
+                accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2),
+                value: isActive
+            )
+            .accessibilityElement(children: .contain)
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MARK: - Previews
-// ─────────────────────────────────────────────────────────────────────────────
+private struct BattleRoundWideCardLayout: View {
+    let model: BattleRoundModel
+    let entry: BattleRoundEntry
+    let attacker: BattleCombatant
+    let defenders: [BattleCombatant]
+    let rank: Int
+    let isActive: Bool
+    let actions: BattleRoundActions
+    let showCharacter: @MainActor (BattleCombatant) -> Void
 
-private extension BattleRoundModel {
-    @MainActor
-    static func make(round: Int = 3, withOpponents: Bool = true) -> BattleRoundModel {
-        let model = BattleRoundModel()
-        model.roundCounter = round
-        let pins = MapPinModel.previewPins
-        model.entries = pins.enumerated().map { index, pin in
-            var entry = BattleRoundEntry(pin: pin)
-            if withOpponents {
-                if index == 0 { entry.opponent = pins[safe: 1] }
-                if index == 2 { entry.opponent = pins[safe: 0] }
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            BattleRankBadge(rank: rank, color: attacker.color, isActive: isActive)
+            BattleAttackerPhoto(
+                model: model,
+                entry: entry,
+                attacker: attacker,
+                isActive: isActive,
+                actions: actions,
+                showCharacter: showCharacter
+            )
+            BattleAttackerDetails(combatant: attacker, isActive: isActive, actions: actions)
+            Spacer(minLength: 8)
+            Image(systemName: "arrow.right")
+                .foregroundStyle(.tertiary)
+                .padding(.top, 20)
+                .accessibilityHidden(true)
+            BattleDefenderStrip(
+                model: model,
+                entry: entry,
+                defenders: defenders,
+                isActiveEntry: isActive,
+                actions: actions,
+                showCharacter: showCharacter
+            )
+        }
+    }
+}
+
+private struct BattleRoundCompactCardLayout: View {
+    let model: BattleRoundModel
+    let entry: BattleRoundEntry
+    let attacker: BattleCombatant
+    let defenders: [BattleCombatant]
+    let rank: Int
+    let isActive: Bool
+    let actions: BattleRoundActions
+    let showCharacter: @MainActor (BattleCombatant) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                BattleRankBadge(rank: rank, color: attacker.color, isActive: isActive)
+                BattleAttackerPhoto(
+                    model: model,
+                    entry: entry,
+                    attacker: attacker,
+                    isActive: isActive,
+                    actions: actions,
+                    showCharacter: showCharacter
+                )
+                BattleAttackerDetails(combatant: attacker, isActive: isActive, actions: actions)
+                Spacer(minLength: 0)
             }
-            return entry
+
+            Divider()
+
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "arrow.turn.down.right")
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 18)
+                    .accessibilityHidden(true)
+                BattleDefenderStrip(
+                    model: model,
+                    entry: entry,
+                    defenders: defenders,
+                    isActiveEntry: isActive,
+                    actions: actions,
+                    showCharacter: showCharacter
+                )
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+    }
+}
+
+private struct BattleAttackerPhoto: View {
+    let model: BattleRoundModel
+    let entry: BattleRoundEntry
+    let attacker: BattleCombatant
+    let isActive: Bool
+    let actions: BattleRoundActions
+    let showCharacter: @MainActor (BattleCombatant) -> Void
+
+    var body: some View {
+        BattleParticipantColumn(
+            combatant: attacker,
+            rolls: model.rolls(for: attacker.id, in: entry),
+            isAttacker: true,
+            isActive: isActive,
+            canReceiveRoll: isActive,
+            isRollRecipient: model.rollRecipientCombatantId == attacker.id,
+            showCharacter: showCharacter,
+            selectRollRecipient: actions.selectRollRecipient,
+            toggleDead: { actions.setDead(attacker.id, !attacker.isDead) }
+        )
+    }
+}
+
+private struct BattleRankBadge: View {
+    let rank: Int
+    let color: Color
+    let isActive: Bool
+
+    var body: some View {
+        Text(rank, format: .number)
+            .font(.callout.bold().monospacedDigit())
+            .foregroundStyle(isActive ? .white : color)
+            .frame(minWidth: 28, minHeight: 28)
+            .background(isActive ? color : color.opacity(0.14), in: .circle)
+            .padding(.top, 8)
+            .accessibilityLabel(Text("Initiative position \(rank)", bundle: .module))
+    }
+}
+
+private struct BattleAttackerDetails: View {
+    let combatant: BattleCombatant
+    let isActive: Bool
+    let actions: BattleRoundActions
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Text(combatant.name)
+                    .font(.headline)
+                    .lineLimit(1)
+
+                if combatant.isPlayer {
+                    Image(systemName: "person.fill")
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(Text("Player", bundle: .module))
+                }
+                if combatant.isDead {
+                    Image(systemName: "skull.fill")
+                        .foregroundStyle(.red)
+                        .accessibilityLabel(Text("Dead", bundle: .module))
+                }
+                if combatant.isHighlighted {
+                    Image(systemName: "scope")
+                        .foregroundStyle(.blue)
+                        .accessibilityLabel(Text("Highlighted", bundle: .module))
+                }
+            }
+
+            BattleInitiativeEditor(
+                combatantId: combatant.id,
+                value: combatant.initiative,
+                setValue: actions.setInitiative,
+                adjust: actions.adjustInitiative
+            )
+
+            Button(
+                isActive ? "Active Attacker" : "Make Active",
+                systemImage: isActive ? "scope" : "scope",
+                action: { actions.activateAttacker(combatant.id) }
+            )
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+            .disabled(isActive || combatant.isDead)
+        }
+        .frame(minWidth: 128, alignment: .leading)
+        .padding(.top, 4)
+    }
+}
+
+private struct BattleInitiativeEditor: View {
+    let combatantId: UUID
+    let value: Int?
+    let setValue: @MainActor (UUID, Int?) -> Void
+    let adjust: @MainActor (UUID, Int) -> Void
+
+    @State private var text = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button("Decrease Initiative", systemImage: "minus") {
+                commit()
+                adjust(combatantId, -1)
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+
+            TextField("Initiative", text: $text)
+                .battleInitiativeTextFieldStyle()
+                .multilineTextAlignment(.center)
+                .monospacedDigit()
+                .frame(width: 64)
+                .focused($isFocused)
+                .battleNumberKeyboard()
+                .onSubmit(commit)
+
+            Button("Increase Initiative", systemImage: "plus") {
+                commit()
+                adjust(combatantId, 1)
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+        }
+        .onChange(of: value, initial: true) { _, newValue in
+            guard !isFocused else { return }
+            text = newValue.map(String.init) ?? ""
+        }
+        .onChange(of: isFocused) { oldValue, newValue in
+            guard oldValue && !newValue else { return }
+            commit()
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func commit() {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parsed = trimmed.isEmpty ? nil : Int(trimmed)
+        guard parsed != value else { return }
+        setValue(combatantId, parsed)
+    }
+}
+
+private struct BattleDefenderStrip: View {
+    let model: BattleRoundModel
+    let entry: BattleRoundEntry
+    let defenders: [BattleCombatant]
+    let isActiveEntry: Bool
+    let actions: BattleRoundActions
+    let showCharacter: @MainActor (BattleCombatant) -> Void
+
+    var body: some View {
+        if defenders.isEmpty {
+            VStack(spacing: 4) {
+                Image(systemName: "person.badge.plus")
+                    .foregroundStyle(.tertiary)
+                Text("Highlight defenders on the map", bundle: .module)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(minWidth: 100, minHeight: 74)
+        } else {
+            ScrollView(.horizontal) {
+                HStack(alignment: .top, spacing: 10) {
+                    ForEach(defenders) { defender in
+                        BattleParticipantColumn(
+                            combatant: defender,
+                            rolls: model.rolls(for: defender.id, in: entry),
+                            isAttacker: false,
+                            isActive: false,
+                            canReceiveRoll: isActiveEntry,
+                            isRollRecipient: model.rollRecipientCombatantId == defender.id,
+                            showCharacter: showCharacter,
+                            selectRollRecipient: actions.selectRollRecipient,
+                            toggleDead: { actions.setDead(defender.id, !defender.isDead) }
+                        )
+                    }
+                }
+            }
+            .scrollIndicators(.hidden)
+            .frame(maxWidth: 280, alignment: .trailing)
+        }
+    }
+}
+
+private struct BattleParticipantColumn: View {
+    let combatant: BattleCombatant
+    let rolls: [BattleRollResult]
+    let isAttacker: Bool
+    let isActive: Bool
+    let canReceiveRoll: Bool
+    let isRollRecipient: Bool
+    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let selectRollRecipient: @MainActor (UUID) -> Void
+    let toggleDead: @MainActor () -> Void
+
+    @Environment(MapRootModel.self) private var root
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Button {
+                showCharacter(combatant)
+            } label: {
+                ZStack {
+                    root.photoRoot.viewController.mapImage(
+                        root: root.photoRoot,
+                        for: combatant.photoId,
+                        size: CGSize(width: 48, height: 48),
+                        color: combatant.color
+                    )
+                    .frame(width: 48, height: 48)
+                    .clipShape(.circle)
+
+                    if combatant.isDead {
+                        Circle()
+                            .fill(.black.opacity(0.54))
+                        Image(systemName: "xmark")
+                            .font(.title2.bold())
+                            .foregroundStyle(.white)
+                    }
+                }
+                .overlay {
+                    Circle()
+                        .strokeBorder(haloColor, lineWidth: haloWidth)
+                }
+                .shadow(
+                    color: isActive ? combatant.color.opacity(0.5) : .black.opacity(0.2),
+                    radius: isActive ? 6 : 2,
+                    y: 2
+                )
+            }
+            .buttonStyle(.plain)
+            .help(Text("Open character sheet", bundle: .module))
+            .accessibilityLabel(
+                Text("Open character sheet for \(combatant.name)", bundle: .module)
+            )
+            .contextMenu {
+                Button(
+                    combatant.isDead ? "Mark Alive" : "Mark Dead",
+                    systemImage: combatant.isDead ? "heart.fill" : "skull.fill",
+                    action: toggleDead
+                )
+            }
+
+            if canReceiveRoll {
+                Button {
+                    selectRollRecipient(combatant.id)
+                } label: {
+                    Label {
+                        Text("Roll Target", bundle: .module)
+                    } icon: {
+                        Image(systemName: isRollRecipient ? "dice.fill" : "dice")
+                    }
+                    .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(isRollRecipient ? combatant.color : .secondary)
+                .help(Text("Assign the next master roll to this combatant", bundle: .module))
+                .accessibilityValue(
+                    Text(isRollRecipient ? "Selected" : "Not selected", bundle: .module)
+                )
+            }
+
+            BattleRollResults(results: rolls, tint: combatant.color)
+
+            if !isAttacker {
+                Text(combatant.name)
+                    .font(.caption2)
+                    .lineLimit(1)
+                    .frame(maxWidth: 72)
+            }
+        }
+        .opacity(combatant.isDead ? 0.62 : 1)
+    }
+
+    private var haloColor: Color {
+        if isRollRecipient { return combatant.color }
+        if combatant.isHighlighted { return .blue }
+        if isActive { return combatant.color }
+        return .secondary.opacity(0.45)
+    }
+
+    private var haloWidth: CGFloat {
+        isRollRecipient || combatant.isHighlighted || isActive ? 3 : 1
+    }
+}
+
+private struct BattleRollResults: View {
+    let results: [BattleRollResult]
+    let tint: Color
+
+    var body: some View {
+        if !results.isEmpty {
+            ScrollView(.horizontal) {
+                HStack(spacing: 3) {
+                    ForEach(results) { result in
+                        Text(result.total, format: .number)
+                            .font(.caption2.bold().monospacedDigit())
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(tint.opacity(0.18), in: .capsule)
+                            .help(result.expression.map(Text.init(verbatim:)) ?? Text("Dice result", bundle: .module))
+                    }
+                }
+            }
+            .scrollIndicators(.hidden)
+            .frame(width: 76)
+            .accessibilityLabel(Text("Dice results", bundle: .module))
+        }
+    }
+}
+
+private struct BattleCharacterSheetPresentation: Identifiable {
+    let id: UUID
+    let name: String
+    let root: ItemRootController
+    let sheet: SheetRootModel
+}
+
+@MainActor
+private struct BattleCharacterSheetFactory {
+    let root: MapRootModel
+
+    func presentation(for combatant: BattleCombatant) -> BattleCharacterSheetPresentation? {
+        let characterRoot = root.characterRoot
+        guard let baseRootManager = characterRoot.rootManager else { return nil }
+
+        let itemId: UUID
+        let sheetRootManager: RootManager
+        if let gameCharacterId = combatant.gameCharacterId,
+           let clone = characterRoot.valueGameControllable.battleCharacterCopy(for: gameCharacterId) {
+            let items: [UUID: any ItemDataAccessable] = [clone.id: clone]
+            itemId = clone.id
+            sheetRootManager = baseRootManager.with(
+                reviewSheetMemory: ReviewSheetMemory(items: [.value: items])
+            )
+        } else if let sourceCharacterId = combatant.sourceCharacterId {
+            itemId = sourceCharacterId
+            sheetRootManager = baseRootManager
+        } else {
+            return nil
+        }
+
+        let controller = characterRoot.rootController
+        let sheet = SheetRootModel(
+            rootManager: sheetRootManager,
+            linkControllable: controller.linkControllable,
+            sheetControllable: controller.sheetControllable,
+            itemId: itemId,
+            isEditor: false
+        )
+        return BattleCharacterSheetPresentation(
+            id: combatant.id,
+            name: combatant.name,
+            root: controller,
+            sheet: sheet
+        )
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func battleInitiativeListStyle() -> some View {
+#if os(iOS) || os(visionOS)
+        listStyle(.insetGrouped)
+#elseif os(tvOS)
+        listStyle(.plain)
+#else
+        listStyle(.inset)
+#endif
+    }
+
+    @ViewBuilder
+    func battleHiddenRowSeparator() -> some View {
+#if os(tvOS)
+        self
+#else
+        listRowSeparator(.hidden)
+#endif
+    }
+
+    @ViewBuilder
+    func battleInitiativeTextFieldStyle() -> some View {
+#if os(tvOS)
+        self
+#else
+        textFieldStyle(.roundedBorder)
+#endif
+    }
+
+    @ViewBuilder
+    func battleAlwaysEditableList() -> some View {
+#if os(iOS) || os(visionOS)
+        environment(\.editMode, .constant(.active))
+#else
+        self
+#endif
+    }
+
+    @ViewBuilder
+    func battleInlineNavigationTitle() -> some View {
+#if os(iOS) || os(visionOS)
+        navigationBarTitleDisplayMode(.inline)
+#else
+        self
+#endif
+    }
+
+    @ViewBuilder
+    func battleNumberKeyboard() -> some View {
+#if os(iOS)
+        keyboardType(.numberPad)
+#else
+        self
+#endif
+    }
+}
+
+#Preview("Battle Round Cards") {
+    let root = MapRootModel.preview
+    let model = BattleRoundModel.previewCards
+    BattleRoundView(model: model, actions: .preview(model: model))
+        .environment(root)
+}
+
+@MainActor
+private extension BattleRoundModel {
+    static var previewCards: BattleRoundModel {
+        let model = BattleRoundModel()
+        let pins = MapPinModel.previewPins
+        let players = pins.prefix(2).map {
+            BattleCombatant(pin: $0, sourceCharacterId: nil, gameCharacterId: nil, isPlayer: true)
+        }
+        let monsters = pins.dropFirst(2).map {
+            BattleCombatant(pin: $0, sourceCharacterId: nil, gameCharacterId: nil, isPlayer: false)
+        }
+        model.begin(
+            mapId: MapModel.previewId,
+            players: players,
+            roomCombatants: monsters,
+            initiativeOrder: .descending
+        )
+        for (index, combatant) in model.combatants.enumerated() {
+            _ = model.setInitiative(18 - (index * 3), for: combatant.id)
+        }
+        if let first = model.entries.first {
+            _ = model.activateAttacker(first.attackerId)
+            _ = model.addRoll(combatantId: first.attackerId, total: 17, expression: "1d20 + 4")
+            _ = model.addRoll(combatantId: first.attackerId, total: 9, expression: "1d12 + 2")
         }
         return model
     }
 }
 
-private extension Array {
-    subscript(safe index: Index) -> Element? {
-        indices.contains(index) ? self[index] : nil
+@MainActor
+private extension BattleRoundActions {
+    static func preview(model: BattleRoundModel) -> BattleRoundActions {
+        BattleRoundActions(
+            start: {},
+            end: { model.end() },
+            nextAttacker: { _ = model.nextAttacker() },
+            nextRound: { _ = model.nextRound() },
+            setInitiative: { id, value in _ = model.setInitiative(value, for: id) },
+            adjustInitiative: { id, amount in _ = model.adjustInitiative(by: amount, for: id) },
+            setInitiativeOrder: { order in _ = model.setInitiativeOrder(order) },
+            moveEntries: model.moveEntries,
+            activateAttacker: { _ = model.activateAttacker($0) },
+            selectRollRecipient: { model.selectRollRecipient($0) },
+            setDead: { _, _ in }
+        )
     }
-}
-
-#Preview("A · Table — Round 3 with opponents") {
-    BattleRoundViewA(model: .make())
-}
-
-#Preview("A · Table — Round 1 empty opponents") {
-    BattleRoundViewA(model: .make(round: 1, withOpponents: false))
-}
-
-#Preview("B · Cards — Round 3 with opponents") {
-    BattleRoundViewB(model: .make())
-}
-
-#Preview("B · Cards — Round 1 empty opponents") {
-    BattleRoundViewB(model: .make(round: 1, withOpponents: false))
-}
-
-#Preview("C · Timeline — Round 3 with opponents") {
-    BattleRoundViewC(model: .make())
-}
-
-#Preview("C · Timeline — Round 1 empty opponents") {
-    BattleRoundViewC(model: .make(round: 1, withOpponents: false))
 }

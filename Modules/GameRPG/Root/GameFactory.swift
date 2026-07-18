@@ -43,4 +43,8 @@ public enum GameFactory {
             gameCenterController: root.gameCenterController
         )
     }
+
+    @MainActor public static func battleRoundView(root: GameRoot) -> some View {
+        BattleRoundWindowView(root: root)
+    }
 }

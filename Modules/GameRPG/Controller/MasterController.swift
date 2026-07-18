@@ -266,6 +266,12 @@ extension MasterController {
                     updated: await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
                 )
                 await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId))
+                if await root.mapRoot.mapGameControllable.battleRoundModel.isRunning,
+                   let battleUpdate = await root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
+                       for: mapId
+                   ) {
+                    await send(type: .update, subtype: .battleRound, updated: battleUpdate)
+                }
             }
         }
         // A newly joined player reports its database-backed audio list from
@@ -321,11 +327,25 @@ extension MasterController {
                     gameModel.markSentGameItem(type: fullData.type, id: fullData.id, version: fullData.effectiveAssetVersion)
                 }
                 await send(type: .reveal, subtype: .show, updated: fullData)
+                if fullData.type == .map,
+                   let battleUpdate = await root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
+                       for: fullData.id
+                   ),
+                   await root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
+                    await send(type: .update, subtype: .battleRound, updated: battleUpdate)
+                }
                 return
             }
             Logger.networking.error("MasterController: Cannot create package for \(resolvedIdType.type.token, privacy: .public) \(resolvedIdType.id, privacy: .public) — sending reference instead")
         }
         await send(type: .reveal, subtype: .show, updated: resolvedIdType)
+        if resolvedIdType.type == .map,
+           let battleUpdate = await root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
+               for: resolvedIdType.id
+           ),
+           await root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
+            await send(type: .update, subtype: .battleRound, updated: battleUpdate)
+        }
     }
 
     static func sendsFullPayloadOnFirstShow(_ type: NetworkModules) -> Bool {
@@ -360,6 +380,15 @@ extension MasterController {
         // Character/Value updates likewise have no in-game protocol; the only
         // supported Value exchange is the player join handshake below.
         guard message.type != .table, message.type != .value, message.type != .weather else { return }
+        if message.type == .dice,
+           actionType == .generic,
+           let diceResult = DiceResultModel.decodeData(of: message.data) {
+            await root.recordBattleDiceResult(
+                diceResult,
+                senderId: root.gameModel.gameConfig.id,
+                isMaster: true
+            )
+        }
         if message.type == .audio, actionType == .playAudio {
             await requestAudioPlay(message)
             return
@@ -716,6 +745,13 @@ extension MasterController {
         case .reveal, .store:
             return try await root.diceRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
+            if let diceResult = DiceResultModel.decodeData(of: model.data.data) {
+                await root.recordBattleDiceResult(
+                    diceResult,
+                    senderId: model.sender.id,
+                    isMaster: model.sender.isMaster
+                )
+            }
             let (diceResult, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.senderName, isGameMaster: model.sender.isMaster)
             if let diceResult, let resultCategory {
                 await root.tableRoot.tableGameControllable.addResult(resultCategory, value: diceResult)
@@ -784,6 +820,18 @@ extension MasterController {
                     playerId: model.sender.id,
                     authoritativeMaster: true
                 )
+                if let battleUpdate = await root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
+                    for: model.data.id
+                ), await root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
+                    await send(
+                        type: .update,
+                        subtype: .battleRound,
+                        updated: battleUpdate,
+                        connectionId: connectionId,
+                        playerId: model.sender.id,
+                        authoritativeMaster: true
+                    )
+                }
             } else {
                 return recovery.full
             }
@@ -818,6 +866,9 @@ extension MasterController {
                     data: model.data,
                     playerId: model.sender.id
                 ) {
+                    _ = await root.mapRoot.mapGameControllable.synchronizeBattleDefenders(
+                        itemId: model.data.id
+                    )
                     #if !os(tvOS)
                     await MainActor.run {
                         root.gameModel.gameTableModel?.syncPawnsWithMapPins()

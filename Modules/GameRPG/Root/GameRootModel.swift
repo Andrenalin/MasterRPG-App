@@ -451,6 +451,7 @@ extension GameRoot {
     // both
     func stopGame() async {
         cancelOwnedTasks()
+        mapRoot.mapGameControllable.resetBattleRound()
         await statisticsModel.checkpoint(participants: currentStatisticParticipants())
         await statisticsModel.finishSession()
         gameModel.playerGameStarted = false

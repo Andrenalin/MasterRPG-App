@@ -10,6 +10,7 @@ struct RootGameMapViewer: View {
         mode: MapDisplayMode,
         playerPinId: UUID?,
         registersGameToolbarSession: Bool = true,
+        trailingViewportReservation: CGFloat = 0,
         image: AKImage,
         degrees: Double
     ) {
@@ -18,6 +19,7 @@ struct RootGameMapViewer: View {
         self.mode = mode
         self.playerPinId = playerPinId
         self.registersGameToolbarSession = registersGameToolbarSession
+        self.trailingViewportReservation = trailingViewportReservation
         self.image = image
         self.degrees = degrees
     }
@@ -27,6 +29,7 @@ struct RootGameMapViewer: View {
     let mode: MapDisplayMode
     let playerPinId: UUID?
     let registersGameToolbarSession: Bool
+    let trailingViewportReservation: CGFloat
     let image: AKImage
     let degrees: Double
 
@@ -38,6 +41,7 @@ struct RootGameMapViewer: View {
             image: image,
             photoDegrees: degrees,
             map: mapModel,
+            trailingViewportReservation: trailingViewportReservation,
             configuration: MapEditorConfiguration(
                 mode: mode == .player ? .player : .gameMaster,
                 displayMode: mode == .player ? .player : .master,
@@ -59,6 +63,7 @@ struct RootGameMapViewer: View {
 
     private func sendMapUpdates() {
         if mode == .master {
+            _ = root.mapGameControllable.synchronizeBattleDefenders(itemId: itemId)
             networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
         } else if mapModel.pointer.isShown {
             networkActions?.game(root.gameController.networkPin(itemId: itemId, position: mapModel.pointer), .mapPin, nil)

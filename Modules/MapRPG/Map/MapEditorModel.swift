@@ -77,7 +77,9 @@ final class MapEditorSession {
     private var image: AKImage
     private var photoDegrees: Double
     private var canvasSize: CGSize
+    private var measuredContainerSize: CGSize
     private var containerSize: CGSize
+    private var trailingViewportReservation: CGFloat = 0
     private var pendingInitialFitMapId: UUID?
     private var awaitingInitialRoomHydration = false
     private var presentationIsActive = false
@@ -91,7 +93,8 @@ final class MapEditorSession {
         photoDegrees: Double,
         containerSize: CGSize = .zero,
         configuration: MapEditorConfiguration,
-        actions: MapEditorActions = MapEditorActions()
+        actions: MapEditorActions = MapEditorActions(),
+        trailingViewportReservation: CGFloat = 0
     ) {
         self.configuration = configuration
         self.actions = actions
@@ -102,8 +105,17 @@ final class MapEditorSession {
             image: image,
             degrees: photoDegrees
         )
+        let normalizedTrailingReservation = trailingViewportReservation.isFinite
+            ? max(0, trailingViewportReservation)
+            : 0
+        let effectiveContainerSize = Self.effectiveContainerSize(
+            measuredSize: containerSize,
+            trailingReservation: normalizedTrailingReservation
+        )
         self.canvasSize = resolvedCanvasSize
-        self.containerSize = containerSize
+        self.measuredContainerSize = containerSize
+        self.containerSize = effectiveContainerSize
+        self.trailingViewportReservation = normalizedTrailingReservation
         self.pinScale = map.pinScale
         self.hexScale = map.hexMapScale
         self.lastPinScale = map.pinScale
@@ -111,7 +123,7 @@ final class MapEditorSession {
         self.isHexMap = map.entries.contains(where: { $0.isHexGrid })
         self.displayMode = configuration.displayMode
         self.mapId = map.id
-        self.pendingInitialFitMapId = Self.isValidSize(containerSize)
+        self.pendingInitialFitMapId = Self.isValidSize(effectiveContainerSize)
             && Self.isValidSize(resolvedCanvasSize)
             ? nil
             : map.id
@@ -119,7 +131,7 @@ final class MapEditorSession {
         let viewportConfiguration = ViewportConfiguration(
             id: map.id,
             contentSize: resolvedCanvasSize,
-            containerSize: containerSize,
+            containerSize: effectiveContainerSize,
             maximumScaleMultiplier: 8,
             panPolicy: .minimumVisible(44)
         )
@@ -211,12 +223,19 @@ final class MapEditorSession {
 
     func updateContainerSize(_ newSize: CGSize) {
         guard Self.isValidSize(newSize) else { return }
-        guard containerSize != newSize else { return }
-        containerSize = newSize
-        if completePendingInitialFitIfPossible() {
-            return
-        }
-        viewport.resize(to: makeViewportConfiguration())
+        guard measuredContainerSize != newSize else { return }
+        measuredContainerSize = newSize
+        updateEffectiveContainerSize()
+    }
+
+    /// Reserves only viewport geometry, never SwiftUI layout. The map canvas
+    /// remains a full-window sibling of the game chrome while fit, focus, pan
+    /// recovery, and viewport-space menus use the unobscured left-hand area.
+    func updateTrailingViewportReservation(_ newReservation: CGFloat) {
+        let reservation = newReservation.isFinite ? max(0, newReservation) : 0
+        guard trailingViewportReservation != reservation else { return }
+        trailingViewportReservation = reservation
+        updateEffectiveContainerSize()
     }
 
     func updateCanvas(map: MapModel, image: AKImage, photoDegrees: Double) {
@@ -466,6 +485,22 @@ final class MapEditorSession {
         )
     }
 
+    private func updateEffectiveContainerSize() {
+        let effectiveSize = Self.effectiveContainerSize(
+            measuredSize: measuredContainerSize,
+            trailingReservation: trailingViewportReservation
+        )
+        guard containerSize != effectiveSize else { return }
+        containerSize = effectiveSize
+        if completePendingInitialFitIfPossible() {
+            return
+        }
+        // ViewportModel.resize refits a fitted map. At manual zoom it keeps
+        // the logical point beneath the old available center beneath the new
+        // available center, which is also the desired sidebar transition.
+        viewport.resize(to: makeViewportConfiguration())
+    }
+
     @discardableResult
     private func applyPendingInitialFitIfPossible() -> Bool {
         guard pendingInitialFitMapId == mapId,
@@ -495,6 +530,21 @@ final class MapEditorSession {
             && size.height.isFinite
             && size.width > 0
             && size.height > 0
+    }
+
+    private static func effectiveContainerSize(
+        measuredSize: CGSize,
+        trailingReservation: CGFloat
+    ) -> CGSize {
+        guard isValidSize(measuredSize) else { return .zero }
+        let reservation = trailingReservation.isFinite
+            ? max(0, trailingReservation)
+            : 0
+        let minimumRecoverableWidth = min(44, measuredSize.width)
+        return CGSize(
+            width: max(minimumRecoverableWidth, measuredSize.width - reservation),
+            height: measuredSize.height
+        )
     }
 
     private static func resolvedCanvasSize(

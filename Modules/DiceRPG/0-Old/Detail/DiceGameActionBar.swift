@@ -19,14 +19,15 @@ struct DiceGameActionBar: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
-        HStack(spacing: 8) {
-            if !root.gameController.isPlayerDice(itemId: itemId) {
-                if !hideOwnDice {
-                    Button {
+        GlassEffectContainerAll {
+            HStack(spacing: 8) {
+                if !root.gameController.isPlayerDice(itemId: itemId) {
+                    if !hideOwnDice {
+                        Button {
                         withAnimation(reduceMotion ? nil : .default) {
                             diceDisplayModel.isEditing.toggle()
                         }
-                    } label: {
+                        } label: {
                         Label {
                             if diceDisplayModel.isEditing {
                                 Text("Finish editing dice", bundle: .module)
@@ -38,18 +39,16 @@ struct DiceGameActionBar: View {
                                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                         }
                         .labelStyle(.iconOnly)
-                        .frame(minWidth: 32, minHeight: 32)
-                    }
-#if !os(tvOS)
-                    .buttonStyle(.borderedProminent)
-#endif
-                    .disabled(!root.gameController.canEditDice(itemId: itemId, isGameMode: appGameStateModel.isGameRunning))
-                    .opacity(root.gameController.canEditDice(itemId: itemId, isGameMode: appGameStateModel.isGameRunning) ? 1 : 0.5)
-                    .onChange(of: root.gameController.gameItem(for: itemId).entries) {
-                        diceRollResult = root.gameController.result(itemId: itemId).checked
-                    }
+                        .frame(minWidth: 44, minHeight: 44)
+                        }
+                        .gameOverlayControlStyle(isSelected: diceDisplayModel.isEditing)
+                        .disabled(!root.gameController.canEditDice(itemId: itemId, isGameMode: appGameStateModel.isGameRunning))
+                        .opacity(root.gameController.canEditDice(itemId: itemId, isGameMode: appGameStateModel.isGameRunning) ? 1 : 0.5)
+                        .onChange(of: root.gameController.gameItem(for: itemId).entries) {
+                            diceRollResult = root.gameController.result(itemId: itemId).checked
+                        }
 #if !os(visionOS)
-                    .sensoryFeedback(diceRollResult ? .success : .error, trigger: diceRollResult)
+                        .sensoryFeedback(diceRollResult ? .success : .error, trigger: diceRollResult)
 #endif
                     
                     Button {
@@ -71,9 +70,7 @@ struct DiceGameActionBar: View {
                         .labelStyle(.iconOnly)
                         .frame(minWidth: 44, minHeight: 44)
                     }
-#if !os(tvOS)
-                    .buttonStyle(.borderedProminent)
-#endif
+                    .gameOverlayControlStyle()
                 }
 
                 if canShowPlayer {
@@ -95,7 +92,7 @@ struct DiceGameActionBar: View {
                             .labelStyle(.iconOnly)
                             .frame(minWidth: 44, minHeight: 44)
                         }
-                        .buttonStyle(.borderedProminent)
+                        .gameOverlayControlStyle(isSelected: diceDisplayModel.showPlayerDice)
                     }
                 }
                 
@@ -115,9 +112,7 @@ struct DiceGameActionBar: View {
                         .labelStyle(.iconOnly)
                         .frame(minWidth: 44, minHeight: 44)
                     }
-#if !os(tvOS)
-                    .buttonStyle(.borderedProminent)
-#endif
+                    .gameOverlayControlStyle()
 
                 }
                 if showFocusButton && !root.gameController.isFocusedDice(itemId: itemId) {
@@ -136,9 +131,8 @@ struct DiceGameActionBar: View {
                         .labelStyle(.iconOnly)
                         .frame(minWidth: 44, minHeight: 44)
                     }
-#if !os(tvOS)
-                    .buttonStyle(.borderedProminent)
-#endif
+                    .gameOverlayControlStyle()
+                }
                 }
             }
         }
