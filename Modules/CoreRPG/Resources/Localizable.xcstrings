@@ -32,6 +32,12 @@
             "state" : "new",
             "value" : "%1$@ - %2$lld"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ - %2$lld"
+          }
         }
       }
     },
@@ -91,6 +97,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : "%1$@: %2$@"
           }
         }
@@ -451,6 +463,12 @@
             "state" : "translated",
             "value" : "Hinzufügen Eintrag"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มรายการ"
+          }
         }
       }
     },
@@ -536,6 +554,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tag hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มแท็ก"
           }
         }
       }
@@ -690,6 +714,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Analysiert ausgewählte Elemente mit KI"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วิเคราะห์รายการที่เลือกด้วย AI"
           }
         }
       }
@@ -934,6 +964,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anzeige ändern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนการแสดงผล"
           }
         }
       }
@@ -1495,6 +1531,12 @@
             "state" : "translated",
             "value" : "Element löschen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบรายการ"
+          }
         }
       }
     },
@@ -1752,6 +1794,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hier ablegen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วางที่นี่"
           }
         }
       }
@@ -2180,9 +2228,69 @@
     "Export is finished, %lld are successfully exported." : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Export abgeschlossen, %lld erfolgreich exportiert."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Export abgeschlossen, %lld erfolgreich exportiert."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export abgeschlossen, %lld erfolgreich exportiert."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Export abgeschlossen, %lld erfolgreich exportiert."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Export is finished, %lld is successfully exported."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Export is finished, %lld are successfully exported."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Export is finished, %lld are successfully exported."
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "การส่งออกเสร็จสมบูรณ์ ส่งออกสำเร็จ %lld รายการ"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "การส่งออกเสร็จสมบูรณ์ ส่งออกสำเร็จ %lld รายการ"
+                }
+              }
+            }
           }
         }
       }
@@ -2452,6 +2560,12 @@
             "state" : "translated",
             "value" : "Gruppeneditor für %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวแก้ไขกลุ่มสำหรับ %@"
+          }
         }
       }
     },
@@ -2474,6 +2588,12 @@
             "state" : "translated",
             "value" : "Versteckt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อน"
+          }
         }
       }
     },
@@ -2483,6 +2603,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verstecken"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อน"
           }
         }
       }
@@ -2715,6 +2841,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vorinstallierte Beispiele importieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำเข้าตัวอย่างที่มาพร้อมแอป"
           }
         }
       }
@@ -3230,6 +3362,12 @@
             "state" : "translated",
             "value" : "Nach oben"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลื่อนขึ้น"
+          }
         }
       }
     },
@@ -3534,6 +3672,12 @@
             "state" : "translated",
             "value" : "Kein Name gefunden"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบชื่อ"
+          }
         }
       }
     },
@@ -3707,6 +3851,12 @@
             "state" : "translated",
             "value" : "Fenster „%@“ öffnen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดหน้าต่าง %@"
+          }
         }
       }
     },
@@ -3734,6 +3884,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ordner öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดโฟลเดอร์"
           }
         }
       }
@@ -4291,6 +4447,12 @@
             "state" : "translated",
             "value" : "Aufgelöst"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แก้ไขแล้ว"
+          }
         }
       }
     },
@@ -4319,7 +4481,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "คืนค่ารายการแม่แล้ว"
+            "value" : "กู้คืนรายการแม่แล้ว"
           }
         }
       }
@@ -4360,6 +4522,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Draussen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หลัก"
           }
         }
       }
@@ -4418,6 +4586,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eintrag speichern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บันทึกรายการ"
           }
         }
       }
@@ -4556,6 +4730,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Element auswählen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกรายการ"
           }
         }
       }
@@ -4748,6 +4928,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ anzeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดง %@"
           }
         }
       }
@@ -5328,6 +5514,12 @@
             "state" : "translated",
             "value" : "Wert"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค่า"
+          }
         }
       }
     },
@@ -5483,6 +5675,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ja"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ใช่"
           }
         }
       }

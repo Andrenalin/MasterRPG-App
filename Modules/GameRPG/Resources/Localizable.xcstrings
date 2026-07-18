@@ -996,9 +996,6 @@
     "Hidden, Dead, Not Highlighted" : {
 
     },
-    "Hide 3D Table" : {
-
-    },
     "Hide All Rooms" : {
 
     },
@@ -1130,6 +1127,9 @@
           }
         }
       }
+    },
+    "Loading 3D Table" : {
+
     },
     "Loading Statistics" : {
       "localizations" : {
@@ -1901,6 +1901,9 @@
           }
         }
       }
+    },
+    "Show 2D Map" : {
+
     },
     "Show 3D Table" : {
 
