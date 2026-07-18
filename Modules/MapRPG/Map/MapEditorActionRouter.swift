@@ -195,7 +195,7 @@ final class MapEditorActionRouter {
     ) {
         guard !isPointer else { return }
         if context == .editor {
-            session.workingCopy?.mapPins = session.pins.mapPins
+            mapEditController.commitPinMutation(editorModel: session)
             return
         }
         guard context == .gameMaster else { return }

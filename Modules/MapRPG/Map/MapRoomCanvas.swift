@@ -90,15 +90,18 @@ struct MapPassiveRoomCanvas: View {
             return
         }
 
-        guard let tileDrawPlans = tileDrawPlans(for: coveragePlan, tile: tile) else {
-            drawSolidFog(coveragePlan, in: &context)
-            return
-        }
+        let tilePlanner = MapFogTilePlanner(tileRectangle: tile)
 
         // Keep every room in its own source-over layer. A compound path can
         // cancel where polygons use opposite winding, exposing the base map,
         // and it also flattens the intended coverage in overlapping rooms.
-        for drawPlan in tileDrawPlans {
+        for snapshot in coveragePlan.snapshots {
+            // A pathological room must not disable the selected tile for every
+            // other room. Fall back only for the room that cannot be planned.
+            guard let drawPlan = tilePlanner.drawPlan(for: snapshot) else {
+                context.fill(snapshot.path, with: .color(displayConfig.color))
+                continue
+            }
             context.drawLayer { layer in
                 layer.clip(to: drawPlan.snapshot.path)
                 for x in drawPlan.columns {
@@ -127,47 +130,6 @@ struct MapPassiveRoomCanvas: View {
         }
     }
 
-    private func tileDrawPlans(
-        for coveragePlan: MapFogCoveragePlan,
-        tile: CGRect
-    ) -> [MapFogTileDrawPlan]? {
-        var totalTileCount = 0
-        var drawPlans: [MapFogTileDrawPlan] = []
-        drawPlans.reserveCapacity(coveragePlan.snapshots.count)
-
-        for snapshot in coveragePlan.snapshots {
-            let columns = tileOrigins(
-                minimum: snapshot.bounds.minX,
-                maximum: snapshot.bounds.maxX,
-                sourceMinimum: tile.minX,
-                length: tile.width
-            )
-            let rows = tileOrigins(
-                minimum: snapshot.bounds.minY,
-                maximum: snapshot.bounds.maxY,
-                sourceMinimum: tile.minY,
-                length: tile.height
-            )
-            guard !columns.isEmpty, !rows.isEmpty else { return nil }
-
-            let (tileCount, didOverflow) = columns.count.multipliedReportingOverflow(
-                by: rows.count
-            )
-            guard !didOverflow else { return nil }
-            let (updatedTotal, totalDidOverflow) = totalTileCount.addingReportingOverflow(
-                tileCount
-            )
-            guard !totalDidOverflow, updatedTotal <= 4_096 else { return nil }
-            totalTileCount = updatedTotal
-
-            drawPlans.append(
-                MapFogTileDrawPlan(snapshot: snapshot, columns: columns, rows: rows)
-            )
-        }
-
-        return drawPlans
-    }
-
     private var tileRectangle: CGRect? {
         let coordinates = displayConfig.tileCoordinates
         guard coordinates.count == 4,
@@ -188,22 +150,6 @@ struct MapPassiveRoomCanvas: View {
         return rectangle
     }
 
-    private func tileOrigins(
-        minimum: CGFloat,
-        maximum: CGFloat,
-        sourceMinimum: CGFloat,
-        length: CGFloat
-    ) -> [CGFloat] {
-        guard minimum.isFinite,
-              maximum.isFinite,
-              sourceMinimum.isFinite,
-              length.isFinite,
-              length > 0 else { return [] }
-        let first = floor((minimum - sourceMinimum) / length) * length + sourceMinimum
-        let count = max(1, Int(ceil((maximum - first) / length)) + 1)
-        guard count <= 4_096 else { return [] }
-        return (0..<count).map { first + CGFloat($0) * length }
-    }
 }
 
 struct MapActiveRoomLayer: View {
@@ -346,10 +292,74 @@ struct MapFogCoveragePlan {
     }
 }
 
-private struct MapFogTileDrawPlan {
+struct MapFogTileDrawPlan {
     let snapshot: MapRoomSnapshot
     let columns: [CGFloat]
     let rows: [CGFloat]
+
+    var tileCount: Int { columns.count * rows.count }
+}
+
+/// Plans repeated fog tiles independently for each room. The former global
+/// limit made a group of otherwise inexpensive rooms lose its tile whenever
+/// their aggregate count crossed the threshold.
+struct MapFogTilePlanner {
+    init(tileRectangle: CGRect, maximumTilesPerRoom: Int = 4_096) {
+        self.tileRectangle = tileRectangle
+        self.maximumTilesPerRoom = maximumTilesPerRoom
+    }
+
+    let tileRectangle: CGRect
+    let maximumTilesPerRoom: Int
+
+    func drawPlan(for snapshot: MapRoomSnapshot) -> MapFogTileDrawPlan? {
+        guard maximumTilesPerRoom > 0 else { return nil }
+        let maximumOriginsPerAxis = min(maximumTilesPerRoom, 4_096)
+        let columns = tileOrigins(
+            minimum: snapshot.bounds.minX,
+            maximum: snapshot.bounds.maxX,
+            sourceMinimum: tileRectangle.minX,
+            length: tileRectangle.width,
+            maximumCount: maximumOriginsPerAxis
+        )
+        let rows = tileOrigins(
+            minimum: snapshot.bounds.minY,
+            maximum: snapshot.bounds.maxY,
+            sourceMinimum: tileRectangle.minY,
+            length: tileRectangle.height,
+            maximumCount: maximumOriginsPerAxis
+        )
+        guard !columns.isEmpty, !rows.isEmpty else { return nil }
+
+        let (tileCount, didOverflow) = columns.count.multipliedReportingOverflow(by: rows.count)
+        guard !didOverflow, tileCount <= maximumTilesPerRoom else { return nil }
+        return MapFogTileDrawPlan(snapshot: snapshot, columns: columns, rows: rows)
+    }
+
+    private func tileOrigins(
+        minimum: CGFloat,
+        maximum: CGFloat,
+        sourceMinimum: CGFloat,
+        length: CGFloat,
+        maximumCount: Int
+    ) -> [CGFloat] {
+        guard minimum.isFinite,
+              maximum.isFinite,
+              maximum >= minimum,
+              sourceMinimum.isFinite,
+              length.isFinite,
+              length > 0,
+              maximumCount > 0 else { return [] }
+
+        let first = floor((minimum - sourceMinimum) / length) * length + sourceMinimum
+        let rawCount = ceil((maximum - first) / length) + 1
+        guard rawCount.isFinite,
+              rawCount > 0,
+              rawCount <= CGFloat(maximumCount) else { return [] }
+
+        let count = max(1, Int(rawCount))
+        return (0..<count).map { first + CGFloat($0) * length }
+    }
 }
 
 private enum MapRoomCanvasSymbol: Hashable {

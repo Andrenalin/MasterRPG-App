@@ -79,6 +79,7 @@ final class MapEditorSession {
     private var canvasSize: CGSize
     private var containerSize: CGSize
     private var pendingInitialFitMapId: UUID?
+    private var pendingEntryFocusId: UUID?
     private var presentationIsActive = false
     @ObservationIgnored private var actionRouter: MapEditorActionRouter?
 
@@ -344,10 +345,15 @@ final class MapEditorSession {
         if changedMap {
             appeared = false
             pendingInitialFitMapId = map.id
+            pendingEntryFocusId = nil
             focusId = nil
             workingCopy = nil
             clearSelections()
-            pins.mapPins = map.mapPins
+            if mapMode == .edit {
+                pins.resetEditorHistory(to: map.mapPins)
+            } else {
+                pins.mapPins = map.mapPins
+            }
             pins.pointer = map.pointer
             rooms.reset(
                 mapId: map.id,
@@ -376,6 +382,7 @@ final class MapEditorSession {
         presentationIsActive = true
         appeared = false
         pendingInitialFitMapId = map.id
+        pendingEntryFocusId = nil
         resetEntries(newEntries: map.entries, map: map, appliesFocus: false)
         _ = completePendingInitialFitIfPossible()
     }
@@ -383,6 +390,7 @@ final class MapEditorSession {
     func disappear() {
         presentationIsActive = false
         appeared = false
+        pendingEntryFocusId = nil
         editEntries.needleInteraction.dragCoordinate = nil
     }
 
@@ -415,6 +423,21 @@ final class MapEditorSession {
             return
         }
         focus(on: activeRoom.bounds)
+    }
+
+    /// Applies explicit room navigation after the initial full-map fit. If a
+    /// selection arrives during the first window measurement, retain it until
+    /// the viewport has valid geometry instead of silently dropping it.
+    func focusActiveEntryWhenReady() {
+        guard presentationIsActive,
+              let activeEntryId = editEntries.entries.first?.id else { return }
+        guard pendingInitialFitMapId == nil,
+              Self.isValidSize(containerSize) else {
+            pendingEntryFocusId = activeEntryId
+            return
+        }
+        pendingEntryFocusId = nil
+        focusActiveEntry()
     }
 
     private func focus(on bounds: CGRect) {
@@ -480,6 +503,10 @@ final class MapEditorSession {
         guard applyPendingInitialFitIfPossible() else { return false }
         if presentationIsActive {
             appeared = true
+            if pendingEntryFocusId == editEntries.entries.first?.id {
+                pendingEntryFocusId = nil
+                focusActiveEntry()
+            }
         }
         return true
     }

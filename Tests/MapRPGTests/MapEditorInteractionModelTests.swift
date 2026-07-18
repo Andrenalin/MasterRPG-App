@@ -139,6 +139,74 @@ struct MapEditorInteractionModelTests {
         #expect(emittedPin.size == .large)
     }
 
+    @Test("A completed editor pin drag creates one working-copy undo step")
+    func pinDragCanBeUndoneAndRedone() throws {
+        let pin = MapPinModel(
+            id: UUID(),
+            name: "Draggable token",
+            location: CGPoint(x: 20, y: 30)
+        )
+        let map = MapModel(id: UUID(), name: "Undo map", mapPins: [pin])
+        let session = MapEditorSession(
+            map: map,
+            image: AKImage(),
+            photoDegrees: 0,
+            containerSize: CGSize(width: 800, height: 600),
+            configuration: MapEditorConfiguration(mode: .edit, displayMode: .master)
+        )
+        let root = MapRootModel.preview
+        let controller = MapEditController(editController: root.editController)
+        controller.prepareWorkingCopy(from: map, editorModel: session)
+        session.installActionRouter(MapEditorActionRouter(
+            session: session,
+            editController: root.editController,
+            mapEditController: controller,
+            map: map,
+            root: root
+        ))
+        let node = try #require(session.pins.pinNode(for: pin.id))
+
+        node.move(by: CGSize(width: 40, height: 50))
+
+        #expect(session.pins.canUndoEditorMutation)
+        #expect(session.workingCopy?.mapPins.first?.location == CGPoint(x: 60, y: 80))
+        #expect(controller.undoPinMutation(editorModel: session))
+        #expect(session.pins.pinNode(for: pin.id) === node)
+        #expect(session.workingCopy?.mapPins == [pin])
+        #expect(controller.redoPinMutation(editorModel: session))
+        #expect(session.workingCopy?.mapPins.first?.location == CGPoint(x: 60, y: 80))
+    }
+
+    @Test("Structural editor pin actions participate in the same undo history")
+    func removedPinCanBeUndone() throws {
+        let pin = MapPinModel(id: UUID(), name: "Removable token")
+        let map = MapModel(id: UUID(), name: "Undo map", mapPins: [pin])
+        let session = MapEditorSession(
+            map: map,
+            image: AKImage(),
+            photoDegrees: 0,
+            containerSize: CGSize(width: 800, height: 600),
+            configuration: MapEditorConfiguration(mode: .edit, displayMode: .master)
+        )
+        let root = MapRootModel.preview
+        let controller = MapEditController(editController: root.editController)
+        controller.prepareWorkingCopy(from: map, editorModel: session)
+        session.installActionRouter(MapEditorActionRouter(
+            session: session,
+            editController: root.editController,
+            mapEditController: controller,
+            map: map,
+            root: root
+        ))
+        let node = try #require(session.pins.pinNode(for: pin.id))
+
+        node.perform(.remove, context: .editor)
+
+        #expect(session.workingCopy?.mapPins.isEmpty == true)
+        #expect(controller.undoPinMutation(editorModel: session))
+        #expect(session.workingCopy?.mapPins == [pin])
+    }
+
     @Test("Replacing a pin photo preserves its character and emits one editor change")
     func replacingPinPhotoIsAnIsolatedChange() throws {
         let oldPhotoId = UUID()

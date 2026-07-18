@@ -85,6 +85,40 @@ struct MapEditorViewportTransformTests {
         #expect(sut.viewport.isAtFit)
     }
 
+    @Test("A retained editor fits a replacement map using its new canvas geometry")
+    func replacementMapUsesNewCanvasBeforeCompletingFit() {
+        let firstMap = makeMap(
+            name: "Landscape",
+            size: CGSize(width: 1_200, height: 800)
+        )
+        let secondMap = makeMap(
+            name: "Portrait",
+            size: CGSize(width: 500, height: 1_500)
+        )
+        let windowSize = CGSize(width: 600, height: 400)
+        let sut = makeSession(map: firstMap, containerSize: windowSize)
+        sut.firstAppear(map: firstMap)
+        sut.viewport.commit(
+            sut.viewport.geometry.zoomed(
+                from: sut.viewport.transform,
+                toScale: 1,
+                anchor: sut.viewport.geometry.containerCenter
+            )
+        )
+        #expect(!sut.viewport.isAtFit)
+
+        sut.changeImage(map: secondMap)
+        sut.updateCanvas(map: secondMap, image: AKImage(), photoDegrees: 0)
+        sut.firstAppear(map: secondMap)
+
+        #expect(sut.mapId == secondMap.id)
+        #expect(sut.viewport.configuration.id == secondMap.id)
+        #expect(sut.viewport.configuration.contentSize == CGSize(width: 500, height: 1_500))
+        #expect(sut.viewport.configuration.containerSize == windowSize)
+        #expect(sut.viewport.isAtFit)
+        expectApproximately(sut.viewport.transform.scale, 400 / 1_500)
+    }
+
     @Test("Changing logical map bounds atomically refits the viewport")
     func canvasGeometryChangeRefitsViewport() {
         // Given
@@ -289,6 +323,82 @@ struct MapEditorViewportTransformTests {
             editorModel.contentPoint(fromViewport: viewportCenter),
             CGPoint(x: activeRoom.bounds.midX, y: activeRoom.bounds.midY)
         )
+    }
+
+    @Test("A room selection made while window geometry is pending focuses after measurement")
+    func deferredRoomSelectionIsNotDropped() throws {
+        let initialRoom = MapEntryModel(
+            id: UUID(),
+            name: "Initial room",
+            content: "",
+            coordinates: [
+                CGPoint(x: 100, y: 100),
+                CGPoint(x: 300, y: 100),
+                CGPoint(x: 300, y: 300),
+                CGPoint(x: 100, y: 300)
+            ]
+        )
+        let selectedRoom = MapEntryModel(
+            id: UUID(),
+            name: "Deferred selection",
+            content: "",
+            coordinates: [
+                CGPoint(x: 700, y: 400),
+                CGPoint(x: 850, y: 400),
+                CGPoint(x: 850, y: 550),
+                CGPoint(x: 700, y: 550)
+            ]
+        )
+        let map = MapModel(
+            id: UUID(),
+            name: "Deferred room map",
+            entries: [initialRoom, selectedRoom],
+            width: 1_200,
+            height: 800
+        )
+        let editorModel = makeSession(map: map, containerSize: .zero)
+        let sut = MapEditController(editController: .preview)
+        sut.prepareWorkingCopy(from: map, editorModel: editorModel)
+        sut.changeMap(
+            map: map,
+            currentEntryId: initialRoom.id,
+            editorModel: editorModel
+        )
+        editorModel.firstAppear(map: map)
+
+        sut.changeMap(
+            map: map,
+            currentEntryId: selectedRoom.id,
+            editorModel: editorModel
+        )
+        editorModel.updateContainerSize(CGSize(width: 600, height: 400))
+
+        let activeRoom = try #require(editorModel.editEntries.roomNode(for: selectedRoom.id))
+        #expect(editorModel.appeared)
+        #expect(editorModel.viewport.transform.scale > editorModel.viewport.geometry.fitScale)
+        expectApproximately(
+            editorModel.contentPoint(
+                fromViewport: editorModel.viewport.geometry.containerCenter
+            ),
+            CGPoint(x: activeRoom.bounds.midX, y: activeRoom.bounds.midY)
+        )
+    }
+
+    @Test("A logical-canvas pinch anchor converts into viewport coordinates")
+    func logicalCanvasPinchAnchorUsesViewportSpace() {
+        let mapSize = CGSize(width: 1_200, height: 800)
+        let map = makeMap(name: "Pinch anchor", size: mapSize)
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 600, height: 400)
+        )
+
+        let anchor = MapViewportGestureSurface.content(mapSize).viewportAnchor(
+            for: UnitPoint(x: 0.75, y: 0.25),
+            session: sut
+        )
+
+        expectApproximately(anchor, CGPoint(x: 450, y: 100))
     }
 
     @Test("A transient zero measurement does not destroy a manually zoomed viewport")

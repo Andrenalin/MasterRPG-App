@@ -14,6 +14,10 @@ struct GameSidebarToolbarMenu: View {
 
     var body: some View {
         Menu {
+            GameTableMenuToggle()
+
+            Divider()
+
             Toggle(isOn: gameSidebarBinding) {
                 Label {
                     Text("Game Sidebar", bundle: .module)

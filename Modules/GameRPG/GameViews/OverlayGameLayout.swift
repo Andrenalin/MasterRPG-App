@@ -30,6 +30,9 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
     
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+#if os(iOS)
+    @State private var topMenuHeight: CGFloat = 0
+#endif
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -37,10 +40,18 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
         ZStack(alignment: .topLeading) {
             sideOverlay()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+#if os(iOS)
+                // Keep sidebar content below the game menu while leaving the
+                // independent map surface visible beneath both layers.
+                .padding(.top, topMenuHeight)
+#endif
                 .zIndex(10)
 
             moduleMenuOverlay()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+#if os(iOS)
+                .padding(.top, topMenuHeight)
+#endif
                 .zIndex(20)
 
 #if !os(visionOS)
@@ -57,6 +68,13 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 .zIndex(40)
 
             menuOverlay()
+#if os(iOS)
+                .onGeometryChange(for: CGFloat.self) { proxy in
+                    proxy.size.height
+                } action: { newHeight in
+                    topMenuHeight = newHeight
+                }
+#endif
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .zIndex(50)
         }

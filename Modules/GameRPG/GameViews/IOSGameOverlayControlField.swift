@@ -14,7 +14,6 @@ struct IOSGameOverlayControlField: View {
     var body: some View {
         HStack(spacing: spacing) {
             root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot)
-            GameTableWindowButton()
 
             if isMaster {
                 ControlSharingView(alignment: .bottom, embeddedInGlass: true) {}

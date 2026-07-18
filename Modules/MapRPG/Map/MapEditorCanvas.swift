@@ -24,7 +24,8 @@ struct MapEditorCanvas: View {
         ZStack(alignment: .topLeading) {
             MapViewportInteractionPlane(
                 session: session,
-                interactionTransform: $interactionTransform
+                interactionTransform: $interactionTransform,
+                surface: .viewport
             )
 
             MapLogicalCanvas(
@@ -75,15 +76,18 @@ private struct MapViewportMetrics: Equatable {
 private struct MapViewportInteractionPlane: View {
     let session: MapEditorSession
     let interactionTransform: GestureState<ViewportTransform?>
+    let surface: MapViewportGestureSurface
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         session: MapEditorSession,
-        interactionTransform: GestureState<ViewportTransform?>
+        interactionTransform: GestureState<ViewportTransform?>,
+        surface: MapViewportGestureSurface
     ) {
         self.session = session
         self.interactionTransform = interactionTransform
+        self.surface = surface
     }
 
     private var isActive: Bool { session.mapMode != .viewer }
@@ -99,7 +103,8 @@ private struct MapViewportInteractionPlane: View {
                 MapViewportGestureModifier(
                     session: session,
                     interactionTransform: interactionTransform,
-                    isEnabled: isActive
+                    isEnabled: isActive,
+                    surface: surface
                 )
             )
 #endif
@@ -107,8 +112,16 @@ private struct MapViewportInteractionPlane: View {
 
 #if !os(tvOS)
     private var tapGesture: some Gesture {
-        SpatialTapGesture(count: 2)
-            .exclusively(before: SpatialTapGesture(count: 1))
+        SpatialTapGesture(
+            count: 2,
+            coordinateSpace: .named(MapViewportCoordinateSpace.name)
+        )
+            .exclusively(
+                before: SpatialTapGesture(
+                    count: 1,
+                    coordinateSpace: .named(MapViewportCoordinateSpace.name)
+                )
+            )
             .onEnded { value in
                 switch value {
                 case .first(let doubleTap):
@@ -136,6 +149,7 @@ struct MapViewportGestureModifier: ViewModifier {
     let session: MapEditorSession
     let interactionTransform: GestureState<ViewportTransform?>
     let isEnabled: Bool
+    var surface: MapViewportGestureSurface = .viewport
 
     func body(content: Content) -> some View {
 #if os(tvOS)
@@ -168,10 +182,10 @@ struct MapViewportGestureModifier: ViewModifier {
     ) -> ViewportTransform {
         let translation = value.first?.translation ?? .zero
         let magnification = value.second?.magnification ?? 1
-        let anchor = value.second.map { magnification in
-            CGPoint(
-                x: session.viewport.configuration.containerSize.width * magnification.startAnchor.x,
-                y: session.viewport.configuration.containerSize.height * magnification.startAnchor.y
+        let anchor = value.second.map {
+            surface.viewportAnchor(
+                for: $0.startAnchor,
+                session: session
             )
         } ?? session.viewport.geometry.containerCenter
         return session.viewport.geometry.interacting(
@@ -182,6 +196,35 @@ struct MapViewportGestureModifier: ViewModifier {
         )
     }
 #endif
+}
+
+enum MapViewportGestureSurface {
+    case viewport
+    case content(CGSize)
+
+    @MainActor
+    func viewportAnchor(
+        for unitPoint: UnitPoint,
+        session: MapEditorSession
+    ) -> CGPoint {
+        switch self {
+        case .viewport:
+            let size = session.viewport.configuration.containerSize
+            return CGPoint(
+                x: size.width * unitPoint.x,
+                y: size.height * unitPoint.y
+            )
+        case .content(let size):
+            let contentPoint = CGPoint(
+                x: size.width * unitPoint.x,
+                y: size.height * unitPoint.y
+            )
+            return session.viewport.geometry.viewportPoint(
+                fromContent: contentPoint,
+                transform: session.viewport.transform
+            )
+        }
+    }
 }
 
 private struct MapLogicalCanvas: View {
@@ -202,6 +245,18 @@ private struct MapLogicalCanvas: View {
         ZStack(alignment: .topLeading) {
             MapOrientedImage(image: image, degrees: degrees, canvasSize: canvasSize)
                 .allowsHitTesting(false)
+
+            // Keep an interaction surface in the logical canvas as well as
+            // behind it. Passive drawing layers deliberately do not receive
+            // hits, but their full-size containers can otherwise prevent a
+            // pinch from reaching the background plane on editor surfaces.
+            // Pins, room hit targets, and needles are rendered above this
+            // plane and retain their higher-priority gestures.
+            MapViewportInteractionPlane(
+                session: session,
+                interactionTransform: interactionTransform,
+                surface: .content(canvasSize)
+            )
 
             if !session.configuration.isTileEditor {
                 MapPassiveRoomCanvas(

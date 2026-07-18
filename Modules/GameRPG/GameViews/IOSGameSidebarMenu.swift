@@ -20,6 +20,10 @@ struct IOSGameSidebarMenu: View {
         }
 
         Menu {
+            GameTableMenuToggle()
+
+            Divider()
+
             Toggle(isOn: sidebarVisibilityBinding) {
                 Label {
                     Text("Sidebar", bundle: .module)

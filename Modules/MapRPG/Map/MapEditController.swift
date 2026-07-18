@@ -18,6 +18,7 @@ extension MapEditController {
         editorModel.undoDepthAtOpen = editController.editorModel.undoManaged.undoDepth
         editorModel.isHexMap = editorModel.workingCopy?.entries.contains(where: { $0.isHexGrid }) ?? false
         if let copy = editorModel.workingCopy {
+            editorModel.pins.resetEditorHistory(to: copy.mapPins)
             editorModel.maxWidthRatio = editController.maxWidthRatio(for: copy)
             editorModel.maxHeightRatio = editController.maxHeightRatio(for: copy)
         }
@@ -95,6 +96,10 @@ extension MapEditController {
         // pins currently being positioned, since workingCopy will be saved on checkmark.
         let merged = copy.mapPins_.merged(other: newMap.mapPins_)
         copy.mapPins_ = merged
+        // External CRDT state becomes the new editor baseline. Keeping stale
+        // local snapshots here could make Undo resurrect pins removed in
+        // another window or discard a newly merged pin.
+        editorModel.pins.resetEditorHistory(to: copy.mapPins)
     }
 
     @MainActor
@@ -121,18 +126,41 @@ extension MapEditController {
 // MARK: - Pin Mutations (working copy only)
 
 extension MapEditController {
+    /// Records one completed pin action or drag. Pin leaf views keep transient
+    /// drag state locally; this is the only point that updates the working copy.
+    @MainActor @discardableResult
+    func commitPinMutation(editorModel: MapEditorSession) -> Bool {
+        guard editorModel.pins.commitEditorMutation() else { return false }
+        editorModel.workingCopy?.mapPins = editorModel.pins.mapPins
+        return true
+    }
+
+    @MainActor @discardableResult
+    func undoPinMutation(editorModel: MapEditorSession) -> Bool {
+        guard let pins = editorModel.pins.undoEditorMutation() else { return false }
+        editorModel.workingCopy?.mapPins = pins
+        return true
+    }
+
+    @MainActor @discardableResult
+    func redoPinMutation(editorModel: MapEditorSession) -> Bool {
+        guard let pins = editorModel.pins.redoEditorMutation() else { return false }
+        editorModel.workingCopy?.mapPins = pins
+        return true
+    }
+
     @MainActor
     func updatePinMove(pin: MapPinModel, editorModel: MapEditorSession) {
-        editorModel.workingCopy?.setPinPointer(updatedPin: pin)
         editorModel.pins.setPinPointer(updatedPin: pin)
+        commitPinMutation(editorModel: editorModel)
     }
 
     @MainActor
     func togglePinVisibility(pinId: UUID, editorModel: MapEditorSession) {
         guard var pin = editorModel.pins.pinPointer(for: pinId) else { return }
         pin.isShown.toggle()
-        editorModel.workingCopy?.setPinPointer(updatedPin: pin)
         editorModel.pins.setPinPointer(updatedPin: pin)
+        commitPinMutation(editorModel: editorModel)
     }
 }
 
@@ -160,9 +188,7 @@ extension MapEditController {
             }
         }
 
-        if editorModel.appeared {
-            editorModel.focusActiveEntry()
-        }
+        editorModel.focusActiveEntryWhenReady()
     }
 }
 
@@ -232,12 +258,8 @@ extension MapEditController {
             pins = calculatePinLocations(in: copy, for: pins, entryId: entryId)
         }
 
-        for pin in pins {
-            let index = copy.mapPins.count
-            copy.mapPins.insert(pin, at: index)
-        }
-
-        editorModel.pins.mapPins = copy.mapPins
+        editorModel.pins.mapPins = copy.mapPins + pins
+        commitPinMutation(editorModel: editorModel)
     }
 
     @MainActor private func calculatePinLocations(in model: MapModel, for pins: [MapPinModel], entryId: UUID) -> [MapPinModel] {
@@ -372,7 +394,7 @@ extension MapEditController {
         // Reload the active entry so it picks up its rescaled coordinates
         let rescaledActive = editorModel.editEntries.entries.map { copy[$0.id] }
         editorModel.editEntries.resetEntries(mapId: copy.id, entries: rescaledActive)
-        editorModel.pins.mapPins = copy.mapPins
+        editorModel.pins.resetEditorHistory(to: copy.mapPins)
         syncDisplayEntries(from: copy, editorModel: editorModel)
     }
 }

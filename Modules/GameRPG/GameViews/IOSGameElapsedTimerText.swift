@@ -18,13 +18,13 @@ struct IOSGameElapsedTimerText: View {
             if let referenceDate {
                 Text(
                     elapsedDuration(at: referenceDate),
-                    format: .time(pattern: .hourMinuteSecond(padHourToLength: 2))
+                    format: .time(pattern: .hourMinute(padHourToLength: 2))
                 )
             } else {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(
                         elapsedDuration(at: context.date),
-                        format: .time(pattern: .hourMinuteSecond(padHourToLength: 2))
+                        format: .time(pattern: .hourMinute(padHourToLength: 2))
                     )
                 }
             }

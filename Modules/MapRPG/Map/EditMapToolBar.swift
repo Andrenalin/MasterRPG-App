@@ -366,24 +366,32 @@ private extension EditToolBarViewModifier {
 
     @ViewBuilder var undoButton: some View {
         Button {
-            withAnimation(reduceMotion ? nil : .default) { editController.undo() }
+            withAnimation(reduceMotion ? nil : .default) {
+                if !mapEditController.undoPinMutation(editorModel: editorModel) {
+                    editController.undo()
+                }
+            }
         } label: {
             let symbolName = "arrow.uturn.backward"
             Image(systemName: symbolName)
                 .accessibilityLabel(Text("Undo", bundle: .module))
         }
-        .disabled(!editController.canUndo)
+        .disabled(!editorModel.pins.canUndoEditorMutation && !editController.canUndo)
     }
 
     @ViewBuilder var redoButton: some View {
         Button {
-            withAnimation(reduceMotion ? nil : .default) { editController.redo() }
+            withAnimation(reduceMotion ? nil : .default) {
+                if !mapEditController.redoPinMutation(editorModel: editorModel) {
+                    editController.redo()
+                }
+            }
         } label: {
             let symbolName = "arrow.uturn.forward"
             Image(systemName: symbolName)
                 .accessibilityLabel(Text("Redo", bundle: .module))
         }
-        .disabled(!editController.canRedo)
+        .disabled(!editorModel.pins.canRedoEditorMutation && !editController.canRedo)
     }
 
     func resetSelectedIndex(shouldIncrease: Bool) {

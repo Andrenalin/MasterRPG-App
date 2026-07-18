@@ -61,7 +61,8 @@ struct GameRootViewer: View {
                 otherViews {
                     EmptyGameContent(
                         title: emptyTitle,
-                        startTime: root.gameModel.startGameTime
+                        startTime: root.gameModel.startGameTime,
+                        showsElapsedTime: contentType == .master
                     )
                 }
             } else if playerController.gameModel.gameUpdateType != .map {
@@ -186,6 +187,7 @@ private struct GameContentLayer<Content: View, Presentation: View>: View {
 private struct EmptyGameContent: View {
     let title: LocalizedStringKey
     let startTime: Date
+    let showsElapsedTime: Bool
 
     var body: some View {
         ZStack(alignment: .center) {
@@ -194,13 +196,26 @@ private struct EmptyGameContent: View {
             VStack {
                 Spacer()
                 Text(title, bundle: .module)
-                Text(startTime, style: .relative)
+                if showsElapsedTime {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        Text(
+                            elapsedDuration(at: context.date),
+                            format: .time(pattern: .hourMinute(padHourToLength: 2))
+                        )
+                        .monospacedDigit()
+                    }
+                }
                 Spacer()
             }
             .font(.largeTitle)
             .padding()
             .frame(maxWidth: .infinity, alignment: .center)
         }
+    }
+
+    private func elapsedDuration(at date: Date) -> Duration {
+        let elapsedSeconds = max(0, date.timeIntervalSince(startTime)).rounded(.down)
+        return .seconds(elapsedSeconds)
     }
 }
 

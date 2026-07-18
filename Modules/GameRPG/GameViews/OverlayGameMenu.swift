@@ -71,9 +71,6 @@ private extension OverlayGameMenu {
                 
                 toolIconView
                 enlargerView
-#if !os(tvOS)
-                GameTableWindowButton()
-#endif
 
                 wifiView
             }
@@ -103,13 +100,17 @@ private extension OverlayGameMenu {
     
     @ViewBuilder
     var titleView: some View {
+#if os(macOS) || os(visionOS)
         if isMaster && appWindowSizeModel.mode == .regular {
-            Text(root.gameModel.startGameTime, style: .relative)
+            GameElapsedTimerText(startDate: root.gameModel.startGameTime)
                 .font(.caption)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             Spacer()
         }
+#else
+        Spacer()
+#endif
     }
 
     var closeFieldView: some View {

@@ -121,7 +121,7 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         await root.itemController.resetData()
         let mapId = await root.itemController.addNew(type: .item)
-        let pdfId = await root.pdfRoot.itemController.addNew(type: .item)
+        let pdfId = await root.pdfRoot.itemControllable.addNew(type: .item)
         let linkedCharacterId = await root.characterRoot.itemController.addNew(type: .item)
         let pinnedCharacterId = await root.characterRoot.itemController.addNew(type: .item)
         let sessionCharacterId = await root.characterRoot.itemController.addNew(type: .item)

@@ -123,11 +123,22 @@ struct GameToolBar: View {
             let map = root.gameController.currentItem()
             let monsters = selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }
             withAnimation(reduceMotion ? nil : .bouncy) {
-                root.editController.addMonsters(map: map, entryId: nil, location: nil, monsters: monsters, number: 1)
+                root.editController.addMonsters(
+                    map: map,
+                    entryId: selectedRoomId,
+                    location: nil,
+                    monsters: monsters,
+                    number: 1
+                )
             }
             if model.isStreaming { model.actions.sendMapUpdates?() }
             selectedPin.resetSelection(itemId: nil, entryId: nil)
         }
+    }
+
+    private var selectedRoomId: UUID? {
+        model.focusId
+            ?? model.entries.entries.first(where: \.focused)?.id
     }
 
     @ViewBuilder

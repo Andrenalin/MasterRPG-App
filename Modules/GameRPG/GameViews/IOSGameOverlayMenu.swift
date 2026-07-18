@@ -19,7 +19,9 @@ struct IOSGameOverlayMenu: View {
                         if isMaster || root.gameModel.gameType != .observer {
                             IOSGameDiceToggleButtonField()
                         }
-                        IOSGameElapsedTimerText(startDate: root.gameModel.startGameTime)
+                        if isMaster {
+                            IOSGameElapsedTimerText(startDate: root.gameModel.startGameTime)
+                        }
                         Spacer()
                         IOSGameSidebarMenu(
                             isMaster: isMaster,

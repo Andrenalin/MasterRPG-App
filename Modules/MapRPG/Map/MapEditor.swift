@@ -71,6 +71,14 @@ struct MapEditor: View {
                             isTileEditor: configuration.isTileEditor
                         )
                     )
+#if os(iOS)
+                    // The map renders beneath the editor bars, while their
+                    // material remains an explicit non-map interaction layer.
+                    // Toolbar taps therefore cannot fall through and append a
+                    // room coordinate.
+                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar, .bottomBar)
+                    .toolbarBackgroundVisibility(.visible, for: .navigationBar, .bottomBar)
+#endif
                 }
             } else {
                 // A game surface belongs to GameScreenLayer's window viewport.
@@ -87,8 +95,9 @@ struct MapEditor: View {
         .onChange(
             of: editController.editorModel.sheetEditorModel.entryId,
             initial: false
-        ) {
-            handleEntrySelectionChange()
+        ) { previousEntryId, currentEntryId in
+            guard previousEntryId != currentEntryId else { return }
+            handleEntrySelectionChange(currentEntryId: currentEntryId)
         }
         .onChange(of: map.mapPins) {
             handleExternalPinChange()
@@ -129,14 +138,26 @@ struct MapEditor: View {
 
 private extension MapEditor {
     func synchronizeCanvas() {
-        if session.mapId != map.id {
-            handleMapSelectionChange()
+        let mapChanged = session.mapId != map.id
+        if mapChanged {
+            session.changeImage(map: map)
+            installActionRouter()
         }
+
+        // Install the replacement map's actual logical/image geometry before
+        // completing its first fit. This prevents a retained MapEditor view
+        // from briefly fitting the previous map and treating that stale size
+        // as its completed presentation.
         session.updateCanvas(
             map: map,
             image: image,
             photoDegrees: photoDegrees
         )
+
+        if mapChanged {
+            prepareEditorForCurrentMap()
+            session.firstAppear(map: map)
+        }
     }
 
     func appear() {
@@ -155,18 +176,7 @@ private extension MapEditor {
             session.resetReshare()
         }
 
-        if session.mapMode == .edit {
-            if configuration.isTileEditor {
-                mapEditController.prepareTileWorkingCopy(from: map, editorModel: session)
-            } else {
-                mapEditController.prepareWorkingCopy(from: map, editorModel: session)
-                mapEditController.changeMap(
-                    map: map,
-                    currentEntryId: editController.editorModel.sheetEditorModel.entryId,
-                    editorModel: session
-                )
-            }
-        }
+        prepareEditorForCurrentMap()
         session.firstAppear(map: map)
     }
 
@@ -192,30 +202,25 @@ private extension MapEditor {
         )
     }
 
-    func handleMapSelectionChange() {
-        session.changeImage(map: map)
-        installActionRouter()
-
-        if session.mapMode == .edit {
-            if configuration.isTileEditor {
-                mapEditController.prepareTileWorkingCopy(from: map, editorModel: session)
-            } else {
-                mapEditController.prepareWorkingCopy(from: map, editorModel: session)
-                mapEditController.changeMap(
-                    map: map,
-                    currentEntryId: editController.editorModel.sheetEditorModel.entryId,
-                    editorModel: session
-                )
-            }
+    func prepareEditorForCurrentMap() {
+        guard session.mapMode == .edit else { return }
+        if configuration.isTileEditor {
+            mapEditController.prepareTileWorkingCopy(from: map, editorModel: session)
+        } else {
+            mapEditController.prepareWorkingCopy(from: map, editorModel: session)
+            mapEditController.changeMap(
+                map: map,
+                currentEntryId: editController.editorModel.sheetEditorModel.entryId,
+                editorModel: session
+            )
         }
-        session.firstAppear(map: map)
     }
 
-    func handleEntrySelectionChange() {
+    func handleEntrySelectionChange(currentEntryId: UUID?) {
         guard session.mapMode == .edit else { return }
         mapEditController.changeMap(
             map: map,
-            currentEntryId: editController.editorModel.sheetEditorModel.entryId,
+            currentEntryId: currentEntryId,
             editorModel: session
         )
     }
@@ -287,8 +292,12 @@ private struct MapEditorWindowStage: View {
                     map: map
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .modifier(
+                    MapEditorCanvasSafeAreaModifier(
+                        extendsUnderSystemBars: session.mapMode == .edit
+                    )
+                )
             }
-            .clipped()
             .overlay {
                 if !session.appeared {
                     Group {
@@ -302,6 +311,22 @@ private struct MapEditorWindowStage: View {
                     .allowsHitTesting(false)
                 }
             }
+    }
+}
+
+private struct MapEditorCanvasSafeAreaModifier: ViewModifier {
+    let extendsUnderSystemBars: Bool
+
+    func body(content: Content) -> some View {
+#if os(iOS) || os(visionOS)
+        if extendsUnderSystemBars {
+            content.ignoresSafeArea(.container, edges: [.top, .bottom])
+        } else {
+            content
+        }
+#else
+        content
+#endif
     }
 }
 
