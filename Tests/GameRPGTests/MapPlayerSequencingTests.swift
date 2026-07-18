@@ -409,7 +409,7 @@ final class MapPlayerSequencingTests {
                 == reference.assetVersion
         )
         #expect(
-            await playerController.gameModel.hasMapContentVersion(
+            playerController.gameModel.hasMapContentVersion(
                 itemId: initial.itemId,
                 contentVersion: reference.contentVersion
             )

@@ -1014,7 +1014,7 @@ final class MasterPlayerControllerTests {
                 == advertisedReference.assetVersion
         )
         #expect(
-            await sutPlayer.gameModel.hasMapContentVersion(
+            sutPlayer.gameModel.hasMapContentVersion(
                 itemId: mapId,
                 contentVersion: advertisedReference.contentVersion
             )

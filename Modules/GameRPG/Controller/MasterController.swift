@@ -837,7 +837,18 @@ extension MasterController {
     /// fingerprints and retry instead of sending a torn recovery sequence.
     private func stableMapRecoveryBundle(for itemId: UUID) async throws -> MapRecoveryBundle {
         for _ in 0..<Self.maximumMapRecoveryCaptureAttempts {
-            let full = try await root.mapRoot.mapGameControllable.createMapGameData(for: itemId)
+            try Task.checkCancellation()
+            let full: NetworkCodableDataType
+            do {
+                full = try await root.mapRoot.mapGameControllable.createMapGameData(for: itemId)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                // Map package export has its own bounded stability check. If
+                // an edit crosses that capture window, retry the whole bundle
+                // so the player's coalesced repair is not silently dropped.
+                continue
+            }
             let content = await root.mapRoot.mapGameControllable.networkMapContentUpdate(
                 for: itemId
             )

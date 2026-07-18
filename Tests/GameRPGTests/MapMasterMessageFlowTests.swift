@@ -84,6 +84,73 @@ struct MapMasterMessageFlowTests {
         #expect(fixture.root.mapRoot.gameControllable.gameModel.playerReport(for: mapId).isEmpty)
     }
 
+    @Test("An obsolete mapState repair is superseded by one coherent current Map generation")
+    func obsoleteMapStateRepairPublishesCurrentGeneration() async throws {
+        // Given
+        let fixture = try await MapMasterRoutingFixture.makeMaster()
+        let mapId = fixture.currentMapId
+        let obsoleteReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+        fixture.root.mapRoot.gameController.gameItem(for: mapId).name = "Structurally updated Map"
+        let currentReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+        #expect(currentReference.assetVersion == obsoleteReference.assetVersion)
+        #expect(currentReference.contentVersion != obsoleteReference.contentVersion)
+        let connectionId = ConnectionController.ID()
+        let request = fixture.playerMessage(
+            counter: 44,
+            type: .reveal,
+            subType: .mapState,
+            data: obsoleteReference
+        )
+
+        // When
+        await fixture.master.receivedProcess(request, connectionId: connectionId)
+
+        // Then: this is a fresh presentation intent, not a targeted answer to
+        // the impossible old repair. All three messages describe one capture.
+        let responses = fixture.directMasterSpy.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
+        #expect(fixture.directMasterSpy.calledSendResponseId == 3)
+        #expect(fixture.directMasterSpy.calledSendResponseAll == 0)
+        #expect(responses.map(\.subType) == [.show, .generic, .mapState])
+        #expect(responses.allSatisfy { $0.targetId == nil && $0.data.id == mapId })
+        #expect(responses.first?.data.data != nil)
+        #expect(responses.allSatisfy {
+            $0.data.assetVersion == currentReference.assetVersion
+                && $0.data.contentVersion == currentReference.contentVersion
+        })
+    }
+
+    @Test("An obsolete structural repair is superseded instead of applying unrelated Map content")
+    func obsoleteMapContentRepairPublishesCurrentGeneration() async throws {
+        // Given
+        let fixture = try await MapMasterRoutingFixture.makeMaster()
+        let mapId = fixture.currentMapId
+        let obsoleteReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+        fixture.root.mapRoot.gameController.gameItem(for: mapId).name = "New structural generation"
+        let currentReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+        #expect(currentReference.contentVersion != obsoleteReference.contentVersion)
+        let connectionId = ConnectionController.ID()
+        let request = fixture.playerMessage(
+            counter: 45,
+            type: .update,
+            subType: .generic,
+            data: obsoleteReference
+        )
+
+        // When
+        await fixture.master.receivedProcess(request, connectionId: connectionId)
+
+        // Then
+        let responses = fixture.directMasterSpy.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
+        #expect(fixture.directMasterSpy.calledSendResponseId == 3)
+        #expect(fixture.directMasterSpy.calledSendResponseAll == 0)
+        #expect(responses.map(\.subType) == [.show, .generic, .mapState])
+        #expect(responses.allSatisfy { $0.targetId == nil && $0.data.id == mapId })
+        #expect(responses.allSatisfy {
+            $0.data.assetVersion == currentReference.assetVersion
+                && $0.data.contentVersion == currentReference.contentVersion
+        })
+    }
+
     @Test("A failed Map response is ignored by the master")
     func failedMapResponseIsIgnored() async throws {
         // Given
@@ -143,6 +210,8 @@ struct MapMasterMessageFlowTests {
         let otherReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: otherMapId)
         let contentVersion = try #require(reference.contentVersion)
         let assetVersion = try #require(reference.assetVersion)
+        let otherContentVersion = try #require(otherReference.contentVersion)
+        let otherAssetVersion = try #require(otherReference.assetVersion)
         var incomingPin = currentPin
         incomingPin.location = CGPoint(x: 10, y: 12)
         incomingPin.timeInterval = 2
@@ -181,8 +250,8 @@ struct MapMasterMessageFlowTests {
         ))
         _ = try await fixture.master.handleMap(command(
             id: otherMapId,
-            contentVersion: try #require(otherReference.contentVersion),
-            assetVersion: try #require(otherReference.assetVersion)
+            contentVersion: otherContentVersion,
+            assetVersion: otherAssetVersion
         ))
 
         // Then: no stale command changed either Map.
