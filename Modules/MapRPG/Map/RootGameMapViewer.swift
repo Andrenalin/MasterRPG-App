@@ -74,6 +74,7 @@ struct RootGameMapViewer: View {
     }
 
     private func focused() {
+        guard mode == .master else { return }
         networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
     }
 }

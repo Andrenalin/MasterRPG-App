@@ -39,6 +39,7 @@ public protocol MapGameStorable {
     func missingMapImages(itemId: UUID) async -> [NetworkCodableDataType]
     @MainActor func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool
     @MainActor func toggleRoom(itemId: UUID, roomId: UUID) -> Bool
+    @MainActor func toggleRoomFocus(itemId: UUID, roomId: UUID) -> Bool
     @MainActor func setRoomsShown(itemId: UUID, roomIds: [UUID], isShown: Bool) -> Bool
     @MainActor func movePointer(itemId: UUID, location: CGPoint) -> Bool
     @MainActor func togglePointer(itemId: UUID) -> Bool
@@ -399,6 +400,17 @@ extension GameController: MapGameStorable {
         let item = gameItem(for: itemId)
         guard item.entries.contains(where: { $0.id == roomId }) else { return false }
         item.toggle(roomId)
+        return true
+    }
+
+    /// Toggles the focused room on the authoritative live game map. Focusing
+    /// one room clears every other room's focus through the domain behavior,
+    /// and toggling the current room clears focus entirely.
+    @MainActor
+    func toggleRoomFocus(itemId: UUID, roomId: UUID) -> Bool {
+        let item = gameItem(for: itemId)
+        guard let room = item.entries.first(where: { $0.id == roomId }) else { return false }
+        item.focused(room)
         return true
     }
 

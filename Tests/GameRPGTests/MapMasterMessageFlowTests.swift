@@ -266,6 +266,43 @@ struct MapMasterMessageFlowTests {
 
         // Then
         #expect(currentMap.mapPins.first { $0.id == fixture.playerId }?.location == incomingPin.location)
+        let broadcasts = fixture.directMasterSpy.sendResponseHistory.compactMap {
+            $0 as? GameNetworkModel
+        }
+        #expect(broadcasts.count == 1)
+        let broadcast = try #require(broadcasts.first)
+        #expect(broadcast.type == .update)
+        #expect(broadcast.subType == .mapState)
+        #expect(broadcast.targetId == nil)
+        let expectedBroadcast = fixture.root.mapRoot.gameController.networkMapUpdate(
+            for: currentMapId
+        )
+        #expect(broadcast.data.id == expectedBroadcast.id)
+        #expect(broadcast.data.type == expectedBroadcast.type)
+        #expect(broadcast.data.version == expectedBroadcast.version)
+        #expect(broadcast.data.assetVersion == expectedBroadcast.assetVersion)
+        #expect(broadcast.data.contentVersion == expectedBroadcast.contentVersion)
+
+        // `Color` may use a different, but semantically equivalent, JSON
+        // representation each time mapState is encoded. Decode the live-state
+        // payload instead of comparing its bytes so this verifies the pin the
+        // master actually authorized and rebroadcast.
+        let broadcastText = try #require(
+            broadcast.data.data.flatMap { String(data: $0, encoding: .utf8) }
+        )
+        let pinArrayStart = try #require(broadcastText.firstIndex(of: "["))
+        let broadcastPins = try JSONDecoder().decode(
+            [MapPinModel].self,
+            from: Data(broadcastText[pinArrayStart...].utf8)
+        )
+        let broadcastPin = try #require(
+            broadcastPins.dropFirst().first { $0.id == fixture.playerId }
+        )
+        #expect(broadcastPin.id == incomingPin.id)
+        #expect(broadcastPin.location == incomingPin.location)
+        #expect(broadcastPin.timeInterval == incomingPin.timeInterval)
+        #expect(broadcastPin.isPlayer == incomingPin.isPlayer)
+        #expect(broadcastPin.players == incomingPin.players)
     }
 
     @Test("Proxy serves only a complete Map matching the requested asset and content generations")

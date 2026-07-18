@@ -33,6 +33,19 @@ final class MapEditorActionRouter {
     private let map: MapModel
     private let root: MapRootModel
 
+    /// A retained MapEditor can survive replacement of the live game map with
+    /// another model that has the same id. Editor actions intentionally keep
+    /// using their working source map, while game actions must resolve the
+    /// controller's current model at the moment the interaction commits.
+    private var interactionMap: MapModel {
+        switch session.mapMode {
+        case .gameMaster, .player:
+            root.gameController.gameItem(for: session.mapId)
+        case .edit, .viewer:
+            map
+        }
+    }
+
     func handle(_ event: MapEditorEvent) {
         switch event {
         case let .pin(event):
@@ -62,7 +75,7 @@ final class MapEditorActionRouter {
                 hasEditableEntry: !session.editEntries.entries.isEmpty
             )
         } else if session.mapMode != .viewer {
-            session.updatePointer(location: location, map: map)
+            session.updatePointer(location: location, map: interactionMap)
         }
     }
 
@@ -71,7 +84,7 @@ final class MapEditorActionRouter {
         case .edit:
             guard let mapModel = editController.editModel(for: map.id) else { return }
             mapModel.toggle(entryId)
-            synchronizeVisibleRooms(from: mapModel)
+            synchronizeRooms(from: mapModel)
             editController.save(
                 updated: mapModel,
                 message: String(localized: "update entry", bundle: .module).localizedString
@@ -87,7 +100,7 @@ final class MapEditorActionRouter {
                 roomId: entryId
             ) else { return }
             let liveMap = root.gameController.gameItem(for: session.mapId)
-            synchronizeVisibleRooms(from: liveMap)
+            synchronizeRooms(from: liveMap)
             session.actions.sendMapUpdates?()
 
         case .player, .viewer:
@@ -95,7 +108,7 @@ final class MapEditorActionRouter {
         }
     }
 
-    private func synchronizeVisibleRooms(from source: MapModel) {
+    private func synchronizeRooms(from source: MapModel) {
         let updatedById = Dictionary(uniqueKeysWithValues: source.entries.map { ($0.id, $0) })
         for entry in session.entries.entries {
             guard let updated = updatedById[entry.id] else { continue }
@@ -104,25 +117,43 @@ final class MapEditorActionRouter {
     }
 
     private func toggleRoomFocus(_ entryId: UUID) {
-        guard let entry = session.entries.entries.first(where: { $0.id == entryId }) else { return }
-        let shouldFocus = !entry.focused
-        for var candidate in session.entries.entries {
-            candidate.focused = shouldFocus && candidate.id == entryId
-            session.entries.setEntry(entry: candidate)
-        }
-        session.focusId = shouldFocus ? entryId : nil
-        session.focusedMap()
+        switch session.mapMode {
+        case .edit:
+            guard let entry = session.entries.entries.first(where: { $0.id == entryId }) else { return }
+            let shouldFocus = !entry.focused
+            for var candidate in session.entries.entries {
+                candidate.focused = shouldFocus && candidate.id == entryId
+                session.entries.setEntry(entry: candidate)
+            }
+            session.focusId = shouldFocus ? entryId : nil
+            session.focusedMap()
 
-        if session.mapMode == .edit {
             guard let mapModel = editController.editModel(for: map.id) else { return }
             mapModel.focused(entry)
             editController.save(
                 updated: mapModel,
                 message: String(localized: "focus entry", bundle: .module).localizedString
             )
-        } else {
-            map.focused(entry)
+
+        case .gameMaster:
+            // Focus is authoritative shared game state. Resolve the current
+            // live map through GameController instead of mutating the map
+            // captured when this router was installed; retained views can
+            // otherwise publish a payload whose focus was never changed.
+            guard root.gameController.toggleRoomFocus(
+                itemId: session.mapId,
+                roomId: entryId
+            ) else { return }
+            let liveMap = root.gameController.gameItem(for: session.mapId)
+            synchronizeRooms(from: liveMap)
+            session.focusId = liveMap.entries.first(where: \.focused)?.id
+            session.focusedMap()
             session.actions.focused?()
+
+        case .player, .viewer:
+            // Room focus is a master-to-player viewport command. Players may
+            // send their own pin state, but never room/mapState mutations.
+            break
         }
     }
 
@@ -152,7 +183,7 @@ final class MapEditorActionRouter {
     private func handlePinSingleTap(pinId: UUID, isPointer: Bool) {
         guard session.mapMode == .player, !isPointer else { return }
         performPlayerMutation(pinId: pinId) {
-            root.gameController.toggleHighlightPin(itemId: map.id, pinId: pinId)
+            root.gameController.toggleHighlightPin(itemId: session.mapId, pinId: pinId)
         }
     }
 
@@ -171,11 +202,11 @@ final class MapEditorActionRouter {
             mapEditController.togglePinVisibility(pinId: pinId, editorModel: session)
         case .gameMaster:
             performGameMasterMutation(pinId: pinId) {
-                root.gameController.zoomPin(itemId: map.id, pinId: pinId)
+                root.gameController.zoomPin(itemId: session.mapId, pinId: pinId)
             }
         case .player:
             performPlayerMutation(pinId: pinId) {
-                root.gameController.zoomPin(itemId: map.id, pinId: pinId)
+                root.gameController.zoomPin(itemId: session.mapId, pinId: pinId)
             }
         case .viewer:
             break
@@ -184,16 +215,28 @@ final class MapEditorActionRouter {
 
     private func handlePinMove(_ pin: MapPinModel, isPointer: Bool) {
         if isPointer {
-            session.updatePointer(location: pin.location, map: map, withOutRelocation: true)
+            session.updatePointer(
+                location: pin.location,
+                map: interactionMap,
+                withOutRelocation: true
+            )
         } else if session.mapMode == .edit {
             mapEditController.updatePinMove(pin: pin, editorModel: session)
         } else if session.mapMode == .gameMaster {
             performGameMasterMutation(pinId: pin.id) {
-                root.gameController.movePin(itemId: map.id, pinId: pin.id, location: pin.location)
+                root.gameController.movePin(
+                    itemId: session.mapId,
+                    pinId: pin.id,
+                    location: pin.location
+                )
             }
         } else if session.mapMode == .player, pin.id == session.playerPinId {
             performPlayerMutation(pinId: pin.id) {
-                root.gameController.movePin(itemId: map.id, pinId: pin.id, location: pin.location)
+                root.gameController.movePin(
+                    itemId: session.mapId,
+                    pinId: pin.id,
+                    location: pin.location
+                )
             }
         }
     }
@@ -214,19 +257,19 @@ final class MapEditorActionRouter {
         switch type {
         case .dead:
             performGameMasterMutation(pinId: pin.id) {
-                root.gameController.toggleDeadPin(itemId: map.id, pinId: pin.id)
+                root.gameController.toggleDeadPin(itemId: session.mapId, pinId: pin.id)
             }
         case .visibility:
             performGameMasterMutation(pinId: pin.id) {
-                root.gameController.togglePin(itemId: map.id, pinId: pin.id)
+                root.gameController.togglePin(itemId: session.mapId, pinId: pin.id)
             }
         case .resize:
             performGameMasterMutation(pinId: pin.id) {
-                root.gameController.resizePin(itemId: map.id, pinId: pin.id)
+                root.gameController.resizePin(itemId: session.mapId, pinId: pin.id)
             }
         case .zoom:
             performGameMasterMutation(pinId: pin.id) {
-                root.gameController.zoomPin(itemId: map.id, pinId: pin.id)
+                root.gameController.zoomPin(itemId: session.mapId, pinId: pin.id)
             }
         case .remove, .copy, .photo:
             break
@@ -250,16 +293,15 @@ final class MapEditorActionRouter {
     }
 
     private func synchronizePinFromMap(pinId: UUID) {
-        guard let updatedPin = map.mapPins.first(where: { $0.id == pinId }) else { return }
+        guard let updatedPin = interactionMap.mapPins.first(where: { $0.id == pinId }) else { return }
         session.pins.setPinPointer(updatedPin: updatedPin)
     }
 
     private func togglePointerVisibility(pinId: UUID) {
-        guard var pointer = session.pins.pinPointer(for: pinId) else { return }
-        pointer.isShown.toggle()
-        pointer.timeInterval = max(Date.now.timeIntervalSince1970, pointer.timeInterval.nextUp)
-        session.pins.setPinPointer(updatedPin: pointer)
-        map.setPinPointer(updatedPin: pointer)
+        let currentMap = interactionMap
+        guard currentMap.pointer.id == pinId,
+              root.gameController.togglePointer(itemId: session.mapId) else { return }
+        session.pins.setPinPointer(updatedPin: currentMap.pointer)
         if session.isStreaming {
             session.actions.sendMapUpdates?()
         }

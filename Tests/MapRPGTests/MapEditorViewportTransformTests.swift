@@ -270,6 +270,72 @@ struct MapEditorViewportTransformTests {
         #expect(sut.viewport.transform == fittedTransform)
     }
 
+    @Test("Player initially fits, then applies a received room-focus change")
+    func playerReceiveFocusPreservesInitialFitThenFocusesViewport() throws {
+        var firstRoom = MapEntryModel(
+            id: UUID(),
+            name: "Initially focused",
+            content: "",
+            coordinates: [
+                CGPoint(x: 100, y: 100),
+                CGPoint(x: 250, y: 100),
+                CGPoint(x: 250, y: 250),
+                CGPoint(x: 100, y: 250)
+            ],
+            focused: true
+        )
+        var secondRoom = MapEntryModel(
+            id: UUID(),
+            name: "Master's next focus",
+            content: "",
+            coordinates: [
+                CGPoint(x: 750, y: 450),
+                CGPoint(x: 900, y: 450),
+                CGPoint(x: 900, y: 600),
+                CGPoint(x: 750, y: 600)
+            ]
+        )
+        let map = MapModel(
+            id: UUID(),
+            name: "Player focus map",
+            entries: [firstRoom, secondRoom],
+            width: 1_200,
+            height: 800
+        )
+        let sut = makeSession(
+            map: map,
+            containerSize: CGSize(width: 600, height: 400),
+            mode: .player
+        )
+
+        // Initial hydration records the shared focus but never overrides the
+        // requirement that a newly presented map shows completely.
+        sut.firstAppear(map: map)
+        #expect(sut.focusId == firstRoom.id)
+        #expect(sut.viewport.isAtFit)
+
+        // A later master mapState with the same room structure is a real
+        // focus command and should move the player's viewport.
+        firstRoom.focused = false
+        secondRoom.focused = true
+        let receivedMapState = MapModel(
+            id: map.id,
+            name: map.name,
+            entries: [firstRoom, secondRoom],
+            width: map.width,
+            height: map.height
+        )
+        sut.resetEntries(newEntries: receivedMapState.entries, map: receivedMapState)
+
+        let focusedNode = try #require(sut.entries.roomNode(for: secondRoom.id))
+        #expect(sut.focusId == secondRoom.id)
+        #expect(!sut.viewport.isAtFit)
+        expectApproximately(
+            sut.contentPoint(fromViewport: sut.viewport.geometry.containerCenter),
+            CGPoint(x: focusedNode.bounds.midX, y: focusedNode.bounds.midY)
+        )
+    }
+
     @Test("Focus-only changes after late hydration retain game room focusing")
     func focusOnlyChangeAfterLateHydrationFocusesRoom() throws {
         let map = makeMap(
@@ -556,7 +622,7 @@ private extension MapEditorViewportTransformTests {
             containerSize: containerSize,
             configuration: MapEditorConfiguration(
                 mode: mode,
-                displayMode: .master
+                displayMode: mode == .player ? .player : .master
             )
         )
     }

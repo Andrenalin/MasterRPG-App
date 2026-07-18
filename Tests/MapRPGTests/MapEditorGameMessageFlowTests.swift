@@ -79,6 +79,33 @@ struct MapEditorGameMessageFlowTests {
         #expect(state.hasPrefix("\(room.id):true:true|"))
     }
 
+    @Test("Game-master room focus ignores a stale view map")
+    func roomFocusMutatesAuthoritativeLiveMap() throws {
+        // Given: retained views can briefly hold a different MapModel instance
+        // with the same id as the game controller's authoritative live item.
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Observatory",
+            content: "",
+            coordinates: Self.square,
+            isShown: true,
+            focused: false
+        )
+        let fixture = makeFixture(entries: [room], routerUsesLiveMap: false)
+
+        // When
+        fixture.session.route(.toggleRoomFocus(room.id))
+
+        // Then
+        #expect(fixture.liveMap.entries.first?.focused == true)
+        #expect(fixture.routerMap.entries.first?.focused == false)
+        #expect(fixture.session.focusId == room.id)
+        #expect(fixture.updateSpy.updates.count == 1)
+        let update = try #require(fixture.updateSpy.updates.first)
+        let state = try #require(update.data.flatMap { String(data: $0, encoding: .utf8) })
+        #expect(state.hasPrefix("\(room.id):true:true|"))
+    }
+
     @Test("Player cannot toggle authoritative room visibility")
     func playerCannotToggleRoomVisibility() {
         // Given
@@ -100,9 +127,36 @@ struct MapEditorGameMessageFlowTests {
         #expect(fixture.updateSpy.updates.isEmpty)
     }
 
+    @Test("Player cannot initiate authoritative room focus")
+    func playerCannotToggleRoomFocus() {
+        // Given
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Master focus only",
+            content: "",
+            coordinates: Self.square,
+            isShown: true,
+            focused: false
+        )
+        let fixture = makeFixture(entries: [room], mode: .player)
+        let viewportBeforeAttempt = fixture.session.viewport.transform
+
+        // When: exercise the router directly as a defense-in-depth check;
+        // player room hit targets are also disabled in the view layer.
+        fixture.session.route(.toggleRoomFocus(room.id))
+
+        // Then
+        #expect(fixture.liveMap.entries.first?.focused == false)
+        #expect(fixture.session.entries.entry(room.id).focused == false)
+        #expect(fixture.session.focusId == nil)
+        #expect(fixture.session.viewport.transform == viewportBeforeAttempt)
+        #expect(fixture.updateSpy.updates.isEmpty)
+    }
+
     private func makeFixture(
         entries: [MapEntryModel],
-        mode: MapMode = .gameMaster
+        mode: MapMode = .gameMaster,
+        routerUsesLiveMap: Bool = true
     ) -> MapEditorGameMessageFixture {
         let persistentMap = MapModel(
             id: MapModel.previewId,
@@ -111,6 +165,7 @@ struct MapEditorGameMessageFlowTests {
         )
         let root = MapRootModel.previewFixture(models: [persistentMap])
         let liveMap = root.gameController.gameItem(for: persistentMap.id)
+        let routerMap = routerUsesLiveMap ? liveMap : persistentMap
         let updateSpy = MapStateUpdateSpy()
         let actions = MapEditorActions(
             sendMapUpdates: {
@@ -140,7 +195,7 @@ struct MapEditorGameMessageFlowTests {
                 session: session,
                 editController: root.editController,
                 mapEditController: MapEditController(editController: root.editController),
-                map: liveMap,
+                map: routerMap,
                 root: root
             )
         )
@@ -148,6 +203,7 @@ struct MapEditorGameMessageFlowTests {
         return MapEditorGameMessageFixture(
             root: root,
             liveMap: liveMap,
+            routerMap: routerMap,
             session: session,
             updateSpy: updateSpy
         )
@@ -165,6 +221,7 @@ struct MapEditorGameMessageFlowTests {
 private struct MapEditorGameMessageFixture {
     let root: MapRootModel
     let liveMap: MapModel
+    let routerMap: MapModel
     let session: MapEditorSession
     let updateSpy: MapStateUpdateSpy
 }
