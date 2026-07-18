@@ -67,7 +67,8 @@ final class MapEditorActionRouter {
     }
 
     private func toggleRoomVisibility(_ entryId: UUID) {
-        if session.mapMode == .edit {
+        switch session.mapMode {
+        case .edit:
             guard let mapModel = editController.editModel(for: map.id) else { return }
             mapModel.toggle(entryId)
             synchronizeVisibleRooms(from: mapModel)
@@ -75,12 +76,22 @@ final class MapEditorActionRouter {
                 updated: mapModel,
                 message: String(localized: "update entry", bundle: .module).localizedString
             )
-        } else {
-            map.toggle(entryId)
-            synchronizeVisibleRooms(from: map)
-            if session.isStreaming {
-                session.actions.sendMapUpdates?()
-            }
+
+        case .gameMaster:
+            // A room toggle is an authoritative game command, not an
+            // optional continuous-streaming update. Mutate the controller's
+            // current live map so the payload cannot be built from a stale
+            // MapEditor reference, then broadcast exactly one mapState.
+            guard root.gameController.toggleRoom(
+                itemId: session.mapId,
+                roomId: entryId
+            ) else { return }
+            let liveMap = root.gameController.gameItem(for: session.mapId)
+            synchronizeVisibleRooms(from: liveMap)
+            session.actions.sendMapUpdates?()
+
+        case .player, .viewer:
+            break
         }
     }
 
