@@ -362,12 +362,29 @@ final class MasterPlayerControllerTests {
         playerStoreAbstractionMock.requestHistory = []
         #expect(rootSut.mapRoot.gameController.gameItem(for: mapId)[entry.id].isShown)
         await sut.game(message: rootSut.mapRoot.gameController.networkMapUpdate(for: mapId), actionType: .mapState)
-        let updatedMapData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
-        #expect(nil != updatedMapData)
+        let updatedMapData = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
         #expect(!rootPlayer.mapRoot.gameController.gameItem(for: mapId).entries[0].isShown)
         
-        result = try await sutPlayer.handle(updatedMapData!)
-        #expect(nil == result)
+        result = try await sutPlayer.handle(updatedMapData)
+        let contentRequest = try #require(result)
+        #expect(contentRequest.type == .update)
+        #expect(contentRequest.subType == .generic)
+        #expect(contentRequest.data.id == mapId)
+        #expect(contentRequest.data.data == nil)
+        #expect(contentRequest.data.assetVersion == updatedMapData.data.assetVersion)
+        #expect(contentRequest.data.contentVersion == updatedMapData.data.contentVersion)
+
+        // Structural Map metadata is repaired separately from its live state.
+        // Applying it also releases the queued mapState in generation order.
+        let contentUpdate = rootSut.gameModel.outgoingMessage(
+            counter: updatedMapData.counter + 1,
+            type: .update,
+            subType: .generic,
+            asMaster: true,
+            data: await rootSut.mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
+        )
+        result = try await sutPlayer.handle(contentUpdate)
+        #expect(result == nil)
         let mapPlayer = rootPlayer.mapRoot.gameController.gameItem(for: mapId)
         let mapMaster = rootSut.mapRoot.gameController.gameItem(for: mapId)
         #expect(mapPlayer.entries[0].isShown)
@@ -595,7 +612,24 @@ final class MasterPlayerControllerTests {
 
         // The same legacy scale version with a different background fingerprint
         // is not reusable: a metadata-only reveal must request the full package.
-        let changedAssetVersion = localAssetVersion ^ 1
+        // Change the real background generation so the eventual package and its
+        // advertised asset fingerprint remain an internally consistent pair.
+        let backgroundPhotoId = try #require(masterMap.photoId)
+        let backgroundPhoto = rootSut.photoRoot.gameController.gameItem(for: backgroundPhotoId)
+        var replacementFile = try #require(backgroundPhoto.fileUrl)
+        let replacementImage = try #require(Data(base64Encoded:
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        ))
+        replacementFile.resetData(replacementImage)
+        backgroundPhoto.fileUrl = replacementFile
+        let replacementName = "Replacement background map"
+        masterMap.name = replacementName
+        let replacementBase = try await rootSut.mapRoot.mapGameControllable.createMapGameData(
+            for: mapId
+        )
+        let changedAssetVersion = try #require(replacementBase.assetVersion)
+        #expect(changedAssetVersion != localAssetVersion)
+        #expect(replacementBase.version == initialFullMap.data.version)
         var mismatchingReference = matchingReference
         mismatchingReference.counter = matchingAssetFull.counter + 1
         mismatchingReference.data = NetworkCodableDataType(
@@ -603,7 +637,7 @@ final class MasterPlayerControllerTests {
             type: .map,
             version: initialFullMap.data.version,
             assetVersion: changedAssetVersion,
-            contentVersion: initialFullMap.data.contentVersion
+            contentVersion: replacementBase.contentVersion
         )
         let request = try #require(try await sutPlayer.handleMap(mismatchingReference))
         #expect(request.subType == .show)
@@ -611,20 +645,9 @@ final class MasterPlayerControllerTests {
 
         // When those replacement bytes arrive, import them even though the
         // scale-derived legacy version is unchanged.
-        let replacementName = "Replacement background map"
-        masterMap.name = replacementName
-        let replacementBase = try await rootSut.mapRoot.gameController.createMapGameData(for: mapId)
-        #expect(replacementBase.version == initialFullMap.data.version)
         var replacementFull = initialFullMap
         replacementFull.counter = mismatchingReference.counter + 1
-        replacementFull.data = NetworkCodableDataType(
-            id: mapId,
-            type: .map,
-            version: replacementBase.version,
-            data: replacementBase.data,
-            assetVersion: changedAssetVersion,
-            contentVersion: replacementBase.contentVersion
-        )
+        replacementFull.data = replacementBase
         let replacementResponse = try #require(try await sutPlayer.handleMap(replacementFull))
         #expect(replacementResponse.subType == .ok)
         #expect(rootPlayer.mapRoot.gameController.gameItem(for: mapId).name == replacementName)
@@ -772,7 +795,10 @@ final class MasterPlayerControllerTests {
             asMaster: true,
             data: rootSut.mapRoot.mapGameControllable.networkMapUpdate(for: mapB)
         )
-        let fullMapB = try await rootSut.mapRoot.gameControllable.createGameData(for: mapB)
+        // Use the same stable, versioned package builder as the production
+        // master's targeted repair path. The generic export intentionally does
+        // not carry the independent Map asset/content fingerprints.
+        let fullMapB = try await rootSut.mapRoot.mapGameControllable.createMapGameData(for: mapB)
         let repairB = rootSut.gameModel.outgoingMessage(
             counter: 43,
             type: .reveal,
@@ -894,7 +920,7 @@ final class MasterPlayerControllerTests {
         rootPlayer.adventureRoot.startGame()
 
         let mapId = try #require(rootSut.mapRoot.itemController.itemDataModel.items.first)
-        let mapReference = await rootSut.mapRoot.gameController.share(id: mapId)
+        let mapReference = await rootSut.mapRoot.gameController.shareMap(id: mapId)
 
         await sut.show(for: mapReference)
         let firstShow = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
@@ -962,19 +988,41 @@ final class MasterPlayerControllerTests {
         let firstShow = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
         _ = try #require(try await sutPlayer.handle(firstShow))
         #expect(sutPlayer.gameModel.gameUpdateType == .map)
+        let advertisedReference = NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: firstShow.data.version,
+            assetVersion: firstShow.data.assetVersion,
+            contentVersion: firstShow.data.contentVersion
+        )
 
         // Break the background photo on the player: metadata stays, binary gone.
-        rootPlayer.photoRoot.gameController.gameItem(for: backgroundId).fileUrl = FileUrl(
-            fileId: UUID(),
+        let background = rootPlayer.photoRoot.gameController.gameItem(for: backgroundId)
+        let originalFile = try #require(background.fileUrl)
+        let contentHash = try #require(originalFile.contentHash)
+        background.fileUrl = FileUrl(
+            fileId: originalFile.fileId,
             url: URL(filePath: "/missing/background.png"),
-            location: .local,
-            module: "photo",
-            relativeUrl: nil
+            location: originalFile.location,
+            module: originalFile.module,
+            relativeUrl: nil,
+            contentHash: contentHash
         )
         sutPlayer.gameModel.gameUpdateType = .none
+        #expect(
+            await rootPlayer.mapRoot.mapGameControllable.mapAssetVersion(for: mapId)
+                == advertisedReference.assetVersion
+        )
+        #expect(
+            await sutPlayer.gameModel.hasMapContentVersion(
+                itemId: mapId,
+                contentVersion: advertisedReference.contentVersion
+            )
+        )
+        #expect(await !rootPlayer.mapRoot.mapGameControllable.hasBackgroundImage(itemId: mapId))
 
         // An incomplete map triggers one full-map re-request; the screen stays.
-        let repeatReveal = rootSut.gameModel.outgoingMessage(counter: 99, type: .reveal, subType: .show, asMaster: true, data: mapReference)
+        let repeatReveal = rootSut.gameModel.outgoingMessage(counter: 99, type: .reveal, subType: .show, asMaster: true, data: advertisedReference)
         let fullMapRequest = try #require(try await sutPlayer.handle(repeatReveal))
         #expect(fullMapRequest.subType == .show)
         #expect(fullMapRequest.data.id == mapId)
@@ -984,10 +1032,10 @@ final class MasterPlayerControllerTests {
         // pin-photo `.store/.store` repair path.
         playerStoreAbstractionMock.requestData = nil
         playerStoreAbstractionMock.requestHistory = []
-        let secondReveal = rootSut.gameModel.outgoingMessage(counter: 100, type: .reveal, subType: .show, asMaster: true, data: mapReference)
-        let acknowledgment = try #require(try await sutPlayer.handle(secondReveal))
-        #expect(acknowledgment.subType == .ok)
-        #expect(sutPlayer.gameModel.gameUpdateType == .map)
+        let secondReveal = rootSut.gameModel.outgoingMessage(counter: 100, type: .reveal, subType: .show, asMaster: true, data: advertisedReference)
+        let acknowledgment = try await sutPlayer.handle(secondReveal)
+        #expect(acknowledgment == nil)
+        #expect(sutPlayer.gameModel.gameUpdateType == .none)
         #expect(playerStoreAbstractionMock.requestData == nil)
         #expect(playerStoreAbstractionMock.requestHistory.isEmpty)
         #expect(!sutPlayer.gameModel.requestedRepairIds.contains(backgroundId))
@@ -1066,7 +1114,15 @@ final class MasterPlayerControllerTests {
         var pin = currentPin
         pin.location = CGPoint(x: 5, y: 6)
         pin.timeInterval = 99
-        let pinData = NetworkCodableDataType(id: mapId, type: .map, version: 0, data: pin.encodeData())
+        let mapReference = await rootPlayer.mapRoot.gameController.shareMap(id: mapId)
+        let pinData = NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: mapReference.version,
+            data: pin.encodeData(),
+            assetVersion: mapReference.assetVersion,
+            contentVersion: mapReference.contentVersion
+        )
 
         await proxyMaster.receivedServerProxy(proxyMessage(type: .update, subType: .mapPin, data: pinData, remoteId: remoteId))
 

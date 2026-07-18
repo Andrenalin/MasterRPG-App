@@ -150,6 +150,18 @@ final class MasterControllerModel: Sendable {
 }
 
 final class MasterController: Sendable {
+    private struct MapRecoveryBundle: Sendable {
+        let full: NetworkCodableDataType
+        let content: NetworkCodableDataType
+        let state: NetworkCodableDataType
+    }
+
+    private enum MapRecoveryError: Error {
+        case generationChanged
+    }
+
+    private static let maximumMapRecoveryCaptureAttempts = 3
+
     // Strong on purpose: an intentional, temporary cycle GameRoot → GameModel →
     // MasterController → GameRoot that stopGame() breaks by dropping the controllers.
     // `unowned` crashed here when in-flight controller tasks outlived
@@ -731,7 +743,16 @@ extension MasterController {
         
         switch model.type {
         case .reveal:
-            let mapData = try await root.mapRoot.mapGameControllable.createMapGameData(for: model.data.id)
+            let recovery = try await stableMapRecoveryBundle(for: model.data.id)
+            guard mapGeneration(of: recovery.full, matches: model.data) else {
+                // The requested generation disappeared while the player was
+                // asking for it. A proxy must defer to the real master; the
+                // real master explicitly publishes its new generation so the
+                // requester supersedes the now-impossible pending repair.
+                guard !asProxy else { throw MapRecoveryError.generationChanged }
+                await sendFreshMapRecovery(recovery, connectionId: connectionId)
+                return nil
+            }
             if model.subType == .mapState {
                 // Targeted at the recovering player: everyone else already has
                 // the map, and over SharePlay an untargeted full payload would
@@ -739,9 +760,10 @@ extension MasterController {
                 await send(
                     type: .reveal,
                     subtype: .store,
-                    updated: mapData,
+                    updated: recovery.full,
                     connectionId: connectionId,
-                    playerId: model.sender.id
+                    playerId: model.sender.id,
+                    authoritativeMaster: true
                 )
                 // Send the live map state (not the request echo, whose data is
                 // nil) so the recovering player syncs room visibility and pins.
@@ -749,19 +771,21 @@ extension MasterController {
                 await send(
                     type: .update,
                     subtype: .generic,
-                    updated: await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: model.data.id),
+                    updated: recovery.content,
                     connectionId: connectionId,
-                    playerId: model.sender.id
+                    playerId: model.sender.id,
+                    authoritativeMaster: true
                 )
                 await send(
                     type: .update,
                     subtype: .mapState,
-                    updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id),
+                    updated: recovery.state,
                     connectionId: connectionId,
-                    playerId: model.sender.id
+                    playerId: model.sender.id,
+                    authoritativeMaster: true
                 )
             } else {
-                return mapData
+                return recovery.full
             }
         case .store:
             break
@@ -773,15 +797,25 @@ extension MasterController {
                 // latest photo-free structural snapshot. The normal response
                 // path targets the small chunked answer at the requester.
                 guard model.data.data == nil else { return nil }
-                return await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: model.data.id)
+                let update = await root.mapRoot.mapGameControllable.networkMapContentUpdate(
+                    for: model.data.id
+                )
+                guard mapGeneration(of: update, matches: model.data) else {
+                    guard !asProxy else { throw MapRecoveryError.generationChanged }
+                    await sendFreshMapRecovery(
+                        try await stableMapRecoveryBundle(for: model.data.id),
+                        connectionId: connectionId
+                    )
+                    return nil
+                }
+                return update
             case .mapState:
                 // never get from players mapState updates, only as resend from SharePlay?
                 break
             case .mapPin:
-                if await isCurrentMapCommand(model.data),
-                   await root.mapRoot.mapGameControllable.updatePin(
+                if await root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
                     itemId: model.data.id,
-                    data: model.data.data,
+                    data: model.data,
                     playerId: model.sender.id
                 ) {
                     #if !os(tvOS)
@@ -798,30 +832,76 @@ extension MasterController {
         return nil
     }
 
-    /// Player-origin Map commands apply only to the currently presented Map.
-    /// Current peers also carry the photo-free structural generation so a
-    /// delayed command from a replaced Map cannot mutate the new generation.
-    /// Generation-less commands are rejected: they cannot distinguish a stale
-    /// command for an earlier incarnation of the same Map id.
-    private func isCurrentMapCommand(_ data: NetworkCodableDataType) async -> Bool {
-        guard let requestedContentVersion = data.contentVersion,
-              let requestedAssetVersion = data.assetVersion,
-              await root.mapRoot.mapGameControllable.gameModel.currentItemId == data.id
-        else { return false }
+    /// Captures the full package, structural snapshot, and live state from one
+    /// Map generation. Each component suspends independently, so compare their
+    /// fingerprints and retry instead of sending a torn recovery sequence.
+    private func stableMapRecoveryBundle(for itemId: UUID) async throws -> MapRecoveryBundle {
+        for _ in 0..<Self.maximumMapRecoveryCaptureAttempts {
+            let full = try await root.mapRoot.mapGameControllable.createMapGameData(for: itemId)
+            let content = await root.mapRoot.mapGameControllable.networkMapContentUpdate(
+                for: itemId
+            )
+            let state = await root.mapRoot.mapGameControllable.networkMapUpdate(for: itemId)
+            guard full.id == itemId,
+                  content.id == itemId,
+                  state.id == itemId,
+                  full.assetVersion == content.assetVersion,
+                  full.assetVersion == state.assetVersion,
+                  full.contentVersion == content.contentVersion,
+                  full.contentVersion == state.contentVersion
+            else { continue }
 
-        // Capture both fingerprints in one canonical snapshot. In particular,
-        // do not read the structural generation, suspend for the photo-backed
-        // asset generation, and then compare values that may describe two
-        // different incarnations of the Map.
-        let currentReference = await root.mapRoot.mapGameControllable.shareMap(id: data.id)
-        guard currentReference.contentVersion == requestedContentVersion,
-              currentReference.assetVersion == requestedAssetVersion
-        else { return false }
+            return MapRecoveryBundle(full: full, content: content, state: state)
+        }
+        throw MapRecoveryError.generationChanged
+    }
 
-        // The current presentation can change while shareMap builds its async
-        // photo-backed reference. Never apply the command to a Map that ceased
-        // to be current during that suspension.
-        return await root.mapRoot.mapGameControllable.gameModel.currentItemId == data.id
+    /// Nil fingerprints are legacy requests and remain compatible. Current
+    /// peers provide both values, which must match the captured response.
+    private func mapGeneration(
+        of response: NetworkCodableDataType,
+        matches request: NetworkCodableDataType
+    ) -> Bool {
+        if let requestedAssetVersion = request.assetVersion,
+           response.assetVersion != requestedAssetVersion {
+            return false
+        }
+        if let requestedContentVersion = request.contentVersion,
+           response.contentVersion != requestedContentVersion {
+            return false
+        }
+        return true
+    }
+
+    /// The requested generation no longer exists. On a direct master, publish
+    /// the newly captured generation as a fresh intent. A direct LAN connection
+    /// keeps this physical transfer requester-only; SharePlay broadcasts the
+    /// rare supersession so every participant advances consistently.
+    private func sendFreshMapRecovery(
+        _ recovery: MapRecoveryBundle,
+        connectionId: ConnectionController.ID?
+    ) async {
+        await send(
+            type: .reveal,
+            subtype: .show,
+            updated: recovery.full,
+            connectionId: connectionId,
+            authoritativeMaster: true
+        )
+        await send(
+            type: .update,
+            subtype: .generic,
+            updated: recovery.content,
+            connectionId: connectionId,
+            authoritativeMaster: true
+        )
+        await send(
+            type: .update,
+            subtype: .mapState,
+            updated: recovery.state,
+            connectionId: connectionId,
+            authoritativeMaster: true
+        )
     }
 
     func handlePdf(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
@@ -1350,10 +1430,9 @@ private extension MasterController {
         if model.data.type == .map, model.type == .update, model.subType == .mapPin {
             // Update the host's own map first, then tell the master.
             let hostId = await root.gameModel.gameConfig.id
-            guard await isCurrentMapCommand(model.data),
-                  await root.mapRoot.mapGameControllable.updatePin(
+            guard await root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
                 itemId: model.data.id,
-                data: model.data.data,
+                data: model.data,
                 playerId: hostId
             ) else {
                 return true

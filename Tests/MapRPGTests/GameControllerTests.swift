@@ -5,6 +5,7 @@ import CoreRPG
 import Foundation
 import Testing
 
+@testable import CharacterRPG
 @testable import MapRPG
 @testable import PhotoRPG
 
@@ -68,14 +69,17 @@ struct GameControllerTests {
         #expect(sut.gameItem(for: mapId)[roomEntry.id].isShown)
 
         let snapshot = sut.networkMapUpdate(for: mapId)
+        let expectedAssetVersion = await sut.mapAssetVersion(for: mapId)
         #expect(snapshot.version == sut.gameItem(for: mapId).version)
+        #expect(snapshot.assetVersion == expectedAssetVersion)
+        #expect(snapshot.contentVersion == sut.mapContentVersion(for: mapId))
         sut.gameItem(for: mapId).entries[0].isShown = false
         sut.updateMap(for: mapId, with: snapshot)
         #expect(sut.gameItem(for: mapId)[roomEntry.id].isShown)
 
         // The first pin photo exists only in the persistent photo controller
-        // and intentionally has no local file. SharePlay must not request it;
-        // the second photo is absent from both photo controllers.
+        // but has no local file; the second is absent from both controllers.
+        // Both are unusable and must be repaired.
         let unavailableFile = FileUrl(
             fileId: UUID(),
             url: URL.temporaryDirectory.appending(path: "missing-\(UUID().uuidString).jpg"),
@@ -103,7 +107,7 @@ struct GameControllerTests {
         let missingBackgroundPhotoId = UUID()
         sut.gameItem(for: mapId).photoId = missingBackgroundPhotoId
         let missingImages = await sut.missingMapImages(itemId: mapId)
-        #expect(missingImages.map(\.id) == [monsterPhotoId])
+        #expect(missingImages.map(\.id) == [photoId, monsterPhotoId])
         #expect(!missingImages.map(\.id).contains(missingBackgroundPhotoId))
         #expect(root.photoRoot.gameController.gameModel.itemData[photoId] != nil)
 
@@ -122,6 +126,187 @@ struct GameControllerTests {
 
         sut.resetGameState()
         #expect(sut.mapGameModel.playerPins.isEmpty)
+    }
+
+    @Test func lateCharacterMetadataRefreshesEveryLiveMapWithoutResettingPinState() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let firstMapId = UUID()
+        let secondMapId = UUID()
+        let playerId = UUID()
+        let characterId = UUID()
+        let photoId = UUID()
+        let firstMap = MapModel(id: firstMapId, name: "Dungeon")
+        let secondMap = MapModel(id: secondMapId, name: "Overworld")
+        root.itemController.replace(model: firstMap, isInsert: true)
+        root.itemController.replace(model: secondMap, isInsert: true)
+        sut.setGame(item: firstMap.copy(), itemId: firstMapId)
+        sut.setGame(item: secondMap.copy(), itemId: secondMapId)
+        root.characterRoot.itemController.replace(
+            model: ValueModel(id: characterId, name: "Hero"),
+            isInsert: true
+        )
+        sut.resetPlayerPins(for: [
+            PlayerGameModel(id: playerId, type: .player, name: "Old Name", characterId: characterId)
+        ])
+        let firstIndex = try #require(
+            sut.gameItem(for: firstMapId).mapPins.firstIndex { $0.id == playerId }
+        )
+        sut.gameItem(for: firstMapId).mapPins[firstIndex].location = CGPoint(x: 40, y: 50)
+        sut.gameItem(for: firstMapId).mapPins[firstIndex].size = .huge
+        sut.gameItem(for: firstMapId).mapPins[firstIndex].isShown = false
+        sut.gameItem(for: firstMapId).mapPins[firstIndex].isZoom = true
+        sut.gameItem(for: firstMapId).mapPins[firstIndex].isDead = true
+        sut.gameItem(for: firstMapId).mapPins[firstIndex].isHighlighted = true
+        sut.gameItem(for: firstMapId).mapPins[firstIndex].timeInterval = 99
+
+        let secondIndex = try #require(
+            sut.gameItem(for: secondMapId).mapPins.firstIndex { $0.id == playerId }
+        )
+        sut.gameItem(for: secondMapId).mapPins[secondIndex].location = CGPoint(x: 70, y: 80)
+        sut.gameItem(for: secondMapId).mapPins[secondIndex].size = .colossal
+        sut.gameItem(for: secondMapId).mapPins[secondIndex].isShown = true
+        sut.gameItem(for: secondMapId).mapPins[secondIndex].isZoom = false
+        sut.gameItem(for: secondMapId).mapPins[secondIndex].isDead = false
+        sut.gameItem(for: secondMapId).mapPins[secondIndex].isHighlighted = false
+        sut.gameItem(for: secondMapId).mapPins[secondIndex].timeInterval = 123
+
+        let sessionIndex = try #require(
+            sut.mapGameModel.playerPins.firstIndex { $0.id == playerId }
+        )
+        sut.mapGameModel.playerPins[sessionIndex].location = CGPoint(x: 10, y: 20)
+        sut.mapGameModel.playerPins[sessionIndex].size = .large
+        sut.mapGameModel.playerPins[sessionIndex].isShown = false
+        sut.mapGameModel.playerPins[sessionIndex].isHighlighted = true
+        sut.mapGameModel.playerPins[sessionIndex].timeInterval = 42
+        root.characterRoot.itemController.itemOrEmpty(for: characterId).photoId = photoId
+
+        // When
+        sut.setPlayerPin(for: playerId, name: "New Name", characterId: characterId)
+
+        // Then
+        let sessionPin = try #require(sut.mapGameModel.playerPins.first { $0.id == playerId })
+        #expect(sessionPin.name == "New Name")
+        #expect(sessionPin.photoId == photoId)
+        #expect(sessionPin.characterId == characterId)
+        #expect(sessionPin.isPlayer)
+        #expect(sessionPin.players == [playerId])
+        #expect(sessionPin.location == CGPoint(x: 10, y: 20))
+        #expect(sessionPin.size == .large)
+        #expect(!sessionPin.isShown)
+        #expect(sessionPin.isHighlighted)
+        #expect(sessionPin.timeInterval == 42)
+
+        let firstMapPin = try #require(
+            sut.gameItem(for: firstMapId).mapPins.first { $0.id == playerId }
+        )
+        #expect(firstMapPin.name == "New Name")
+        #expect(firstMapPin.color == sessionPin.color)
+        #expect(firstMapPin.photoId == photoId)
+        #expect(firstMapPin.characterId == characterId)
+        #expect(firstMapPin.isPlayer)
+        #expect(firstMapPin.players == [playerId])
+        #expect(firstMapPin.location == CGPoint(x: 40, y: 50))
+        #expect(firstMapPin.size == .huge)
+        #expect(!firstMapPin.isShown)
+        #expect(firstMapPin.isZoom)
+        #expect(firstMapPin.isDead)
+        #expect(firstMapPin.isHighlighted)
+        #expect(firstMapPin.timeInterval == 99)
+
+        let secondMapPin = try #require(
+            sut.gameItem(for: secondMapId).mapPins.first { $0.id == playerId }
+        )
+        #expect(secondMapPin.name == "New Name")
+        #expect(secondMapPin.color == sessionPin.color)
+        #expect(secondMapPin.photoId == photoId)
+        #expect(secondMapPin.characterId == characterId)
+        #expect(secondMapPin.isPlayer)
+        #expect(secondMapPin.players == [playerId])
+        #expect(secondMapPin.location == CGPoint(x: 70, y: 80))
+        #expect(secondMapPin.size == .colossal)
+        #expect(secondMapPin.isShown)
+        #expect(!secondMapPin.isZoom)
+        #expect(!secondMapPin.isDead)
+        #expect(!secondMapPin.isHighlighted)
+        #expect(secondMapPin.timeInterval == 123)
+    }
+
+    @Test func resetPlayerPinsRemovesDepartedPinsMissingFromTheCentralCache() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let currentPlayerId = UUID()
+        let departedPlayerId = UUID()
+        let characterId = UUID()
+        let departedPin = MapPinModel(
+            id: departedPlayerId,
+            name: "Departed",
+            isPlayer: true,
+            players: [departedPlayerId]
+        )
+        let map = MapModel(id: mapId, name: "Dungeon", mapPins: [departedPin])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        // Deliberately leave the departed pin out of this cache to reproduce an
+        // older structural snapshot diverging from the roster cache.
+        sut.mapGameModel.playerPins = []
+
+        // When
+        sut.resetPlayerPins(for: [
+            PlayerGameModel(
+                id: currentPlayerId,
+                type: .player,
+                name: "Current",
+                characterId: characterId
+            )
+        ])
+
+        // Then
+        #expect(!sut.gameItem(for: mapId).mapPins.contains { $0.id == departedPlayerId })
+        #expect(sut.gameItem(for: mapId).mapPins.contains { $0.id == currentPlayerId })
+    }
+
+    @Test func malformedLegacyMapStateFieldsAreIgnored() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let validRoom = MapEntryModel.fixture(name: "Valid", content: "")
+        let malformedRoom = MapEntryModel.fixture(name: "Malformed", content: "")
+        let map = MapModel(id: mapId, name: "Dungeon", entries: [validRoom, malformedRoom])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        let validState = sut.networkMapUpdate(for: mapId)
+        let validText = try #require(validState.data.flatMap { String(data: $0, encoding: .utf8) })
+        let pinArrayStart = try #require(validText.firstIndex(of: "["))
+        let text = [
+            "missing-fields",
+            "\(malformedRoom.id):true",
+            "\(malformedRoom.id):not-a-bool:false",
+            "\(validRoom.id):true:true"
+        ].joined(separator: "|") + "|" + String(validText[pinArrayStart...])
+        let update = NetworkCodableDataType(
+            id: mapId,
+            type: .map,
+            version: 0,
+            data: Data(text.utf8)
+        )
+
+        // When
+        let applied = sut.updateMap(for: mapId, with: update)
+
+        // Then
+        #expect(!applied)
+        #expect(!sut.gameItem(for: mapId)[validRoom.id].isShown)
+        #expect(!sut.gameItem(for: mapId)[validRoom.id].focused)
+        #expect(!sut.gameItem(for: mapId)[malformedRoom.id].isShown)
+        #expect(!sut.gameItem(for: mapId)[malformedRoom.id].focused)
     }
 
     @Test func mapContentVersionTracksStructureButIgnoresVolatileGameState() async throws {
@@ -175,11 +360,14 @@ struct GameControllerTests {
         // Then
         #expect(volatileStateVersion == initialVersion)
 
-        // When: persistent death state and other structural fields change.
+        // When: the remaining live pin fields change.
+        gameMap.mapPins[0].size = .colossal
         gameMap.mapPins[0].isDead.toggle()
-        let deadStateVersion = try #require(
+        let remainingLiveStateVersion = try #require(
             await sut.networkMapContentUpdate(for: mapId).contentVersion
         )
+
+        // When: structural fields change.
         gameMap.pinScale += 0.5
         gameMap.hexMapScale += 0.25
         let scaleVersion = try #require(
@@ -195,8 +383,8 @@ struct GameControllerTests {
         )
 
         // Then
-        #expect(deadStateVersion != volatileStateVersion)
-        #expect(scaleVersion != deadStateVersion)
+        #expect(remainingLiveStateVersion == volatileStateVersion)
+        #expect(scaleVersion != remainingLiveStateVersion)
         #expect(geometryVersion != scaleVersion)
         #expect(pinIdentityVersion != geometryVersion)
     }
@@ -253,7 +441,15 @@ struct GameControllerTests {
             isHighlighted: true
         )
         playerMap.pointer = localPointer
-        playerMap.mapPins[0] = newerLocalPin
+        let departedPlayerId = UUID()
+        let departedLocalPin = MapPinModel(
+            id: departedPlayerId,
+            name: "Departed",
+            isPlayer: true,
+            players: [departedPlayerId],
+            timeInterval: 100
+        )
+        playerMap.mapPins = [newerLocalPin, departedLocalPin]
         playerMap.pinScale = 1
         playerMap.hexMapScale = 0
 
@@ -277,6 +473,7 @@ struct GameControllerTests {
         #expect(appliedPin.isDead == newerLocalPin.isDead)
         #expect(appliedPin.isHighlighted == newerLocalPin.isHighlighted)
         #expect(appliedPin.timeInterval == newerLocalPin.timeInterval)
+        #expect(!playerMap.mapPins.contains { $0.id == departedPlayerId })
     }
 
     @Test func playerPinUpdatesMergeOnlyAuthorizedFields() async throws {

@@ -30,6 +30,11 @@ public protocol MapGameStorable {
     @MainActor func setPlayerPin(for playerId: UUID, name: String, characterId: UUID)
     @MainActor func resetPlayerPins(for players: [PlayerGameModel])
     @MainActor func updatePin(itemId: UUID, data: Data?, playerId: UUID) -> Bool
+    @MainActor func updatePinIfCurrentGeneration(
+        itemId: UUID,
+        data: NetworkCodableDataType,
+        playerId: UUID
+    ) -> Bool
     func hasBackgroundImage(itemId: UUID) async -> Bool
     func missingMapImages(itemId: UUID) async -> [NetworkCodableDataType]
     @MainActor func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool
@@ -313,6 +318,27 @@ extension GameController: MapGameStorable {
             mapGameModel.playerPins[playerPinIndex] = authorizedPin
         }
         return true
+    }
+
+    /// Validates the current presentation generation and applies a player pin
+    /// in one MainActor operation. Keeping these checks together prevents a
+    /// same-id Map edit from slipping between validation and mutation.
+    @MainActor
+    func updatePinIfCurrentGeneration(
+        itemId: UUID,
+        data: NetworkCodableDataType,
+        playerId: UUID
+    ) -> Bool {
+        guard data.id == itemId,
+              data.type == .map,
+              gameModel.currentItemId == itemId,
+              let assetVersion = data.assetVersion,
+              let contentVersion = data.contentVersion,
+              currentMapAssetVersion(for: itemId) == assetVersion,
+              mapContentVersion(for: itemId) == contentVersion
+        else { return false }
+
+        return updatePin(itemId: itemId, data: data.data, playerId: playerId)
     }
 
     /// Whether the map's background photo is usable on this device. A map

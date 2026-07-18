@@ -194,9 +194,13 @@ struct MapPinVisibilityTests {
         _ = sut.movePin(itemId: mapId, pinId: pinId, location: CGPoint(x: 7, y: 9))
 
         let data = try #require(sut.networkPin(itemId: mapId, pinId: pinId))
+        let expectedAssetVersion = await sut.mapAssetVersion(for: mapId)
 
         #expect(data.id == mapId)
         #expect(data.type == .map)
+        #expect(data.version == sut.gameItem(for: mapId).version)
+        #expect(data.assetVersion == expectedAssetVersion)
+        #expect(data.contentVersion == sut.mapContentVersion(for: mapId))
         let decoded = try #require(MapPinModel.decodeData(of: data.data))
         #expect(decoded.id == pinId)
         #expect(decoded.location == CGPoint(x: 7, y: 9))
