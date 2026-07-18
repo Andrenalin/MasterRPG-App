@@ -865,7 +865,6 @@ final class MasterPlayerControllerTests {
         #expect(fullMapRequest.data.data == nil)
         #expect(sutPlayer.gameModel.gameUpdateType == .table)
         #expect(await rootPlayer.mapRoot.gameController.currentId != mapId)
-        #expect(!rootPlayer.photoRoot.gameController.photoGameModel.openPhotoSpace)
 
         let fullMapPayload = try #require(try await sut.handle(fullMapRequest))
         #expect(fullMapPayload.id == mapId)
@@ -886,7 +885,6 @@ final class MasterPlayerControllerTests {
         #expect(mapRevealAck.subType == .ok)
         #expect(await rootPlayer.mapRoot.gameController.currentId == mapId)
         #expect(sutPlayer.gameModel.gameUpdateType == .map)
-        #expect(!rootPlayer.photoRoot.gameController.photoGameModel.openPhotoSpace)
     }
 
     @Test func repeatMapRevealUsesMemoryAndRepairsMissingPinPhotosOnce() async throws {
@@ -1100,11 +1098,13 @@ final class MasterPlayerControllerTests {
 
         await proxyMaster.receivedServerProxy(proxyMessage(type: .reveal, subType: .show, data: NetworkCodableDataType(id: photoId, type: .photo, version: 0), remoteId: remoteId))
 
-        // Served from the host's own data over the local proxy connection —
-        // stamped as master so the proxy's reveal guards accept it.
+        // Served from the host's own data as the player's show event. The
+        // master validates the photo-list baseline and only mirrors this event
+        // to its co-located player; the Journal/network fan-out is untargeted.
         let served = try #require(proxyMasterSpy.sendResponseData as? GameNetworkModel)
-        #expect(served.sender.isMaster)
-        #expect(served.targetId == remoteId)
+        #expect(served.sender.id == gameConfigModelPlayer.id)
+        #expect(!served.sender.isMaster)
+        #expect(served.targetId == nil)
         #expect(served.data.id == photoId)
         #expect(served.data.data != nil)
         #expect(playerStoreAbstractionMock.calledRequest == 0)
@@ -1360,9 +1360,12 @@ final class MasterPlayerControllerTests {
         let playerPhotoData = try await playerPhotoEnv.playerRoot.photoRoot.gameController.createGameData(for: playerPhotoId)
 
         await playerPhotoEnv.player.game(message: playerPhotoData, actionType: .generic)
-        #expect(playerPhotoEnv.masterRoot.photoRoot.gameController.gameModel.items.contains(playerPhotoId))
-        #expect(playerPhotoEnv.masterRoot.photoRoot.gameController.gameItem(for: playerPhotoId).version == playerPhotoVersion)
-        #expect(await playerPhotoEnv.masterRoot.photoRoot.gameController.hasLocalFileData(for: playerPhotoId))
+        // Player bytes never replace the gamemaster's canonical baseline. This
+        // master has no photo with that ID, so it neither imports nor reports
+        // the player's private asset.
+        #expect(!playerPhotoEnv.masterRoot.photoRoot.gameController.gameModel.items.contains(playerPhotoId))
+        #expect(playerPhotoEnv.masterRoot.photoRoot.itemController.itemSync(for: playerPhotoId, noGame: true) == nil)
+        #expect(playerPhotoEnv.playerRoot.photoRoot.itemController.itemOrEmpty(for: playerPhotoId).version == playerPhotoVersion)
     }
 
     @Test("V1 gamemaster and V2 player exchange dice and photo through controllers")
@@ -1429,9 +1432,12 @@ final class MasterPlayerControllerTests {
         let playerPhotoData = try await playerPhotoEnv.playerRoot.photoRoot.gameController.createGameData(for: playerPhotoId)
 
         await playerPhotoEnv.player.game(message: playerPhotoData, actionType: .generic)
-        #expect(playerPhotoEnv.masterRoot.photoRoot.gameController.gameModel.items.contains(playerPhotoId))
-        #expect(playerPhotoEnv.masterRoot.photoRoot.gameController.gameItem(for: playerPhotoId).version == playerPhotoVersion)
-        #expect(await playerPhotoEnv.masterRoot.photoRoot.gameController.hasLocalFileData(for: playerPhotoId))
+        // Player bytes never replace the gamemaster's canonical baseline. This
+        // master has no photo with that ID, so it neither imports nor reports
+        // the player's private asset.
+        #expect(!playerPhotoEnv.masterRoot.photoRoot.gameController.gameModel.items.contains(playerPhotoId))
+        #expect(playerPhotoEnv.masterRoot.photoRoot.itemController.itemSync(for: playerPhotoId, noGame: true) == nil)
+        #expect(playerPhotoEnv.playerRoot.photoRoot.itemController.itemOrEmpty(for: playerPhotoId).version == playerPhotoVersion)
     }
 
     @Test func handleSapce() async throws {

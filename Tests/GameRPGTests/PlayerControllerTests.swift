@@ -11,6 +11,8 @@ import Testing
 @testable import AudioRPG
 @testable import CharacterRPG
 @testable import PhotoRPG
+@testable import PdfRPG
+@testable import SpaceRPG
 import AdventureRPG
 @testable import WeatherRPG
 
@@ -99,6 +101,7 @@ struct PlayerControllerTests {
 
         var result = try await env.playerController.handle(gameNetworkModel)
         #expect(result?.subType == .ok)
+        #expect(result?.data.effectiveAssetVersion == netData.effectiveAssetVersion)
         #expect(await env.root.photoRoot.gameControllable.currentId == itemId)
 
         // Act & Assert - Reset and handle with ID only
@@ -132,14 +135,103 @@ struct PlayerControllerTests {
         )
         result = try await env.playerController.handle(gameNetworkModel)
         #expect(result?.subType == .ok)
+        #expect(result?.data.effectiveAssetVersion == netData.effectiveAssetVersion)
         #expect(await env.root.photoRoot.gameControllable.currentId == itemId)
         let restoredItem = await env.root.photoRoot.itemControllable.item(for: itemId)
         #expect(restoredItem != nil)
         #expect(restoredItem?.name == item?.name)
     }
 
-    @Test("Player photo reveal does not replace the map presentation")
-    func playerPhotoRevealDoesNotReplaceMapPresentation() async throws {
+    @Test("Player photo share chooses baseline request, full data, then reference from availability")
+    func playerPhotoShareUsesAvailability() async throws {
+        let env = try await PlayerControllerTestEnvironment.create()
+        try await MockRoot.importTestData(
+            into: env.root.adventureRoot,
+            name: ResourcesDebug.photoTestData,
+            itemCounter: 0
+        )
+        env.root.adventureRoot.startGame()
+
+        let photoId = try #require(env.root.photoRoot.itemController.itemDataModel.items.first {
+            env.root.photoRoot.itemController.itemSync(for: $0)?.fileUrl != nil
+        })
+        let photoData = try await env.root.photoRoot.gameControllable.createGameData(for: photoId)
+        let playerId = env.gameConfig.id
+        let masterId = UUID()
+        let missingPlayerId = UUID()
+        let baseline = photoData.effectiveAssetVersion
+
+        env.root.gameModel.reset(
+            gameConfig: GameConfigModel(
+                id: playerId,
+                state: .started,
+                master: MasterGameModel(id: masterId, type: .master, name: "Game Master")
+            ),
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")
+            ])
+        )
+
+        // An absent/mismatched player report is only a request for the
+        // master's canonical baseline; player bytes must not be uploaded.
+        let newerMasterBaseline = baseline + 1
+        await env.root.photoRoot.photoGameControllable.setMasterVersion(
+            itemId: photoId,
+            version: newerMasterBaseline,
+            masterId: masterId
+        )
+        await env.playerController.game(message: photoData, actionType: .generic)
+
+        var sent = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(sent.type == .reveal)
+        #expect(sent.subType == .show)
+        #expect(sent.data.id == photoId)
+        #expect(sent.data.effectiveAssetVersion == newerMasterBaseline)
+        #expect(sent.data.data == nil)
+        #expect(sent.usesFileJournal == false)
+
+        // Once the sender has the exact master version, include bytes while
+        // any reported participant is still missing the photo.
+        await env.root.photoRoot.photoGameControllable.setMasterVersion(
+            itemId: photoId,
+            version: baseline,
+            masterId: masterId
+        )
+        await env.root.photoRoot.photoGameControllable.markPhotoAvailable(
+            itemId: photoId,
+            version: baseline,
+            for: [masterId, playerId],
+            masterId: masterId
+        )
+        env.root.photoRoot.gameControllable.gameModel.currentPlayers = [masterId, playerId, missingPlayerId]
+        await env.playerController.game(message: photoData, actionType: .generic)
+
+        sent = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(sent.type == .reveal)
+        #expect(sent.subType == .show)
+        #expect(sent.data.effectiveAssetVersion == baseline)
+        #expect(sent.data.data == photoData.data)
+        #expect(sent.usesFileJournal)
+        #expect(await env.root.photoRoot.photoGameControllable.isPhotoAvailable(
+            itemId: photoId,
+            for: missingPlayerId,
+            masterId: masterId
+        ))
+
+        // The full Journal reveal marks the current roster available, so the
+        // next reveal carries only the canonical reference.
+        await env.playerController.game(message: photoData, actionType: .generic)
+
+        sent = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(sent.type == .reveal)
+        #expect(sent.subType == .show)
+        #expect(sent.data.effectiveAssetVersion == baseline)
+        #expect(sent.data.data == nil)
+        #expect(sent.usesFileJournal == false)
+    }
+
+    @Test("Player defers photo reveal without authoritative availability")
+    func playerDefersPhotoRevealWithoutAuthoritativeAvailability() async throws {
         // Arrange
         let env = try await PlayerControllerTestEnvironment.create()
         try await MockRoot.importTestData(into: env.root.adventureRoot)
@@ -147,14 +239,14 @@ struct PlayerControllerTests {
 
         let photoId = try #require(env.root.photoRoot.itemControllable.itemDataModel.items.first)
         let photoData = try await env.root.photoRoot.gameControllable.createGameData(for: photoId)
+        let masterId = UUID()
         env.playerController.gameModel.gameUpdateType = .map
         #expect(env.root.photoRoot.gameControllable.gameModel.currentItemId == nil)
-        #expect(!env.root.photoRoot.gameController.photoGameModel.openPhotoSpace)
 
         let playerMessage = Self.networkModel(
             type: .reveal,
             data: photoData,
-            gameConfig: Self.playerConfig(masterId: UUID())
+            gameConfig: Self.playerConfig(masterId: masterId)
         )
 
         // Act
@@ -162,9 +254,9 @@ struct PlayerControllerTests {
 
         // Assert
         #expect(response == nil)
+        #expect(env.playerController.gameModel.deferredPhotoReveals(from: masterId).count == 1)
         #expect(env.playerController.gameModel.gameUpdateType == .map)
         #expect(env.root.photoRoot.gameControllable.gameModel.currentItemId == nil)
-        #expect(!env.root.photoRoot.gameController.photoGameModel.openPhotoSpace)
     }
 
     @Test("SharePlay audio store completes a pending reveal and can play")
@@ -308,10 +400,11 @@ struct PlayerControllerTests {
         #expect(response?.subType == .ok)
 
         await root.weatherRoot.gameControllable.reset()
+        sut.gameModel.gameUpdateType = .none
         response = try await sut.handle(Self.networkModel(type: .update, subType: .show, data: weatherData, gameConfig: masterConfig))
         #expect(response == nil)
-        #expect(await root.weatherRoot.gameControllable.currentId == weatherId)
-        #expect(sut.gameModel.gameUpdateType == .weather)
+        #expect(await root.weatherRoot.gameControllable.currentId != weatherId)
+        #expect(sut.gameModel.gameUpdateType == .none)
     }
 
     @Test("Player connection delegates update state and process master messages")
@@ -323,13 +416,33 @@ struct PlayerControllerTests {
 
         await sut.readyProxy()
         #expect(sut.gameModel.lostMaster == false)
-        #expect(env.playerNetworkSpy.calledRequest == 1)
-        let initialAudioReport = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(env.playerNetworkSpy.calledRequest == 4)
+        let initialReports = env.playerNetworkSpy.requestHistory.compactMap { $0 as? GameNetworkModel }
+        let initialAudioReport = try #require(initialReports.first { $0.subType == .audioList })
         #expect(initialAudioReport.type == .update)
         #expect(initialAudioReport.subType == .audioList)
         #expect(initialAudioReport.sender.id == env.gameConfig.id)
         let initialAudioList = try #require(AudioListRequest.decodeData(of: initialAudioReport.data.data))
         #expect(initialAudioList.list.isEmpty)
+        let initialPhotoReport = try #require(initialReports.first { $0.subType == .photoList })
+        #expect(initialPhotoReport.type == .update)
+        #expect(initialPhotoReport.subType == .photoList)
+        #expect(initialPhotoReport.sender.id == env.gameConfig.id)
+        let initialPhotoList = try #require(PhotoListRequest.decodeData(of: initialPhotoReport.data.data))
+        #expect(initialPhotoList.list.isEmpty)
+        #expect(initialPhotoList.players.isEmpty)
+        let initialPdfReport = try #require(initialReports.first { $0.subType == .pdfList })
+        #expect(initialPdfReport.type == .update)
+        #expect(initialPdfReport.sender.id == env.gameConfig.id)
+        let initialPdfList = try #require(PdfListRequest.decodeData(of: initialPdfReport.data.data))
+        #expect(initialPdfList.list.isEmpty)
+        #expect(initialPdfList.players.isEmpty)
+        let initialSpaceReport = try #require(initialReports.first { $0.subType == .spaceList })
+        #expect(initialSpaceReport.type == .update)
+        #expect(initialSpaceReport.sender.id == env.gameConfig.id)
+        let initialSpaceList = try #require(SpaceListRequest.decodeData(of: initialSpaceReport.data.data))
+        #expect(initialSpaceList.list.isEmpty)
+        #expect(initialSpaceList.players.isEmpty)
 
         await sut.lostProxyConnection()
         #expect(sut.gameModel.lostMaster)
@@ -337,9 +450,9 @@ struct PlayerControllerTests {
 
         await sut.ready()
         #expect(sut.gameModel.lostMaster == false)
-        #expect(env.playerNetworkSpy.calledRequest == 2)
-        let reconnectAudioReport = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(reconnectAudioReport.subType == .audioList)
+        #expect(env.playerNetworkSpy.calledRequest == 8)
+        let reconnectReports = env.playerNetworkSpy.requestHistory.suffix(4).compactMap { $0 as? GameNetworkModel }
+        #expect(reconnectReports.map(\.subType) == [.audioList, .photoList, .pdfList, .spaceList])
         await sut.lostConnection()
         #expect(sut.gameModel.lostMaster)
         #expect(sut.gameModel.sendCharacterTask == nil)

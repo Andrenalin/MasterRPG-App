@@ -1052,22 +1052,21 @@ struct MultiConnectionPhotoTests {
         #expect(fullDataResponses.count == testCase.missingRoles.count)
 
         for fullData in fullDataResponses {
-            // The full payload is targeted at the requester: only the addressee
-            // imports and acknowledges it, everyone else ignores it — screens of
-            // participants that already show the photo no longer flip.
-            let targetId = try #require(fullData.targetId)
-            let addressee = try #require(env.participants.first { $0.config.id == targetId })
-            let response = try await addressee.receive(fullData)
-            #expect(response.subType == .ok)
-            await env.master.receivedProcess(response, connectionId: nil)
-
-            for participant in env.participants where participant.config.id != targetId {
-                #expect(await participant.receiveIgnored(fullData))
+            // A missing or mismatched participant requests the master's
+            // canonical baseline. The master republishes it as a group reveal
+            // so every transport, including SharePlay Journal, sees the same
+            // authoritative event.
+            #expect(fullData.targetId == nil)
+            for participant in env.participants {
+                let response = try await participant.receive(fullData)
+                #expect(response.subType == .ok)
+                await env.master.receivedProcess(response, connectionId: nil)
             }
         }
 
         let reports = env.masterRoot.photoRoot.gameController.gameModel.playerReport(for: photoId)
-        #expect(reports.sorted() == env.participantIds.sorted())
+        let expectedReports = env.participantIds + [env.masterConfig.id]
+        #expect(reports.sorted() == expectedReports.sorted())
 
         for participant in env.participants {
             #expect(await participant.root.photoRoot.gameController.currentId == photoId)

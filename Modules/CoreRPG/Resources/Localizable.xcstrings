@@ -2537,16 +2537,6 @@
         }
       }
     },
-    "Immersive" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Immersiv"
-          }
-        }
-      }
-    },
     "Import File" : {
       "localizations" : {
         "de" : {

@@ -13,11 +13,12 @@ public enum RPGMessageActionType: Int, Codable, Hashable, Sendable {
     
     case playAudio = 2
     case audioList = 8
+    case photoList = 11
+    case spaceList = 12
+    case pdfList = 13
 
     case mapState = 3
     case mapPin = 4
-
-    case photoSpace = 6
 
     case valueResult = 7
 
@@ -35,6 +36,12 @@ extension RPGMessageActionType: CustomDebugStringConvertible {
             return "Generic"
         case .audioList:
             return "AudioList"
+        case .photoList:
+            return "PhotoList"
+        case .spaceList:
+            return "SpaceList"
+        case .pdfList:
+            return "PdfList"
         case .playAudio:
             return "PlayAudio"
         case .screen:
@@ -47,8 +54,6 @@ extension RPGMessageActionType: CustomDebugStringConvertible {
             return "MapState"
         case .mapPin:
             return "MapPin"
-        case .photoSpace:
-            return "PhotoSpace"
         case .valueResult:
             return "ValueResult"
         case .spaceTransform:

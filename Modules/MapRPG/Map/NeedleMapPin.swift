@@ -33,7 +33,7 @@ struct NeedleMapPin: View {
     let viewportScale: CGFloat
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @GestureState private var dragTranslation: CGSize = .zero
+    @GestureState private var previewCoordinate: CGPoint?
 
     init(
         entries: MapEntryViewerModel,
@@ -67,7 +67,7 @@ struct NeedleMapPin: View {
                 .allowsHitTesting(false)
         }
         .shadow(radius: 4)
-        .offset(logicalTranslation(dragTranslation))
+        .offset(previewOffset)
     }
 
     private var needleHeader: some View {
@@ -131,26 +131,18 @@ struct NeedleMapPin: View {
             minimumDistance: 3,
             coordinateSpace: .named(MapViewportCoordinateSpace.name)
         )
-            .updating($dragTranslation) { value, state, _ in
-                state = value.translation
+            .updating($previewCoordinate) { value, state, _ in
+                state = coordinate(for: value)
             }
             .onChanged { value in
                 if entries.needleInteraction.dragPointId != point.id {
                     session?.beginNeedleDrag(point)
                 }
-                let translation = logicalTranslation(value.translation)
                 entries.needleInteraction.dragPointId = point.id
-                entries.needleInteraction.dragCoordinate = CGPoint(
-                    x: point.coordinate.x + translation.width,
-                    y: point.coordinate.y + translation.height
-                )
+                entries.needleInteraction.dragCoordinate = coordinate(for: value)
             }
             .onEnded { value in
-                let translation = logicalTranslation(value.translation)
-                let coordinate = CGPoint(
-                    x: point.coordinate.x + translation.width,
-                    y: point.coordinate.y + translation.height
-                )
+                let coordinate = coordinate(for: value)
                 entries.moveNeedle(point, to: coordinate, entryId: entryId)
                 entries.needleInteraction.dragCoordinate = nil
                 entries.needleInteraction.dragPointId = nil
@@ -171,6 +163,37 @@ struct NeedleMapPin: View {
     func updateCoordinate() {
         notifyCoordinatesChanged()
     }
+
+    private var previewOffset: CGSize {
+        guard let previewCoordinate else { return .zero }
+        return CGSize(
+            width: previewCoordinate.x - point.coordinate.x,
+            height: previewCoordinate.y - point.coordinate.y
+        )
+    }
+
+#if !os(tvOS)
+    /// Converts both gesture locations through the committed viewport. Using
+    /// the logical delta between those points keeps the needle preview, loupe
+    /// sample, and final coordinate on the same path at every zoom level.
+    private func coordinate(for value: DragGesture.Value) -> CGPoint {
+        guard let session else {
+            let translation = logicalTranslation(value.translation)
+            return CGPoint(
+                x: point.coordinate.x + translation.width,
+                y: point.coordinate.y + translation.height
+            )
+        }
+
+        return MapNeedleDragGeometry.coordinate(
+            originalCoordinate: point.coordinate,
+            startViewportPoint: value.startLocation,
+            currentViewportPoint: value.location,
+            viewportGeometry: session.viewport.geometry,
+            transform: session.viewport.transform
+        )
+    }
+#endif
 
     private func logicalTranslation(_ translation: CGSize) -> CGSize {
         let scale = viewportScale.isFinite && viewportScale > 0 ? viewportScale : 1

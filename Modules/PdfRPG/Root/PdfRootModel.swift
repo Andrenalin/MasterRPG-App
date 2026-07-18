@@ -171,6 +171,9 @@ extension PdfRootModel {
     public var gameControllable: any GameControllable {
         gameController
     }
+    public var pdfGameControllable: any (GameControllable & PdfGameControllable) {
+        gameController
+    }
     @MainActor public var itemControllable: any ItemControllable {
         itemController
     }

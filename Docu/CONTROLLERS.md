@@ -322,7 +322,7 @@ Module game controllers add specifics:
 - Map: separates full background-asset reveal from complete metadata-only map
   updates and volatile room/fog/pointer/pin state; it also repairs only genuinely
   absent pin photos and synchronizes visionOS board state.
-- Photo: synchronizes photo reveal and photo-space state.
+- Photo: synchronizes versioned availability lists and validated photo reveals.
 - PDF: synchronizes file-backed PDF reveal/store.
 - Table: reveals linked table data and receives dice/table result values.
 - Character/Value: sends player character data, updates player values, and feeds map pins.

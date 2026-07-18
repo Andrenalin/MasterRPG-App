@@ -86,6 +86,21 @@ struct SharePlayJournalTracker: Sendable {
         return publication.itemId != itemId || publication.version != version
     }
 
+    /// A targeted Weather repair must replace the current journal attachment
+    /// even when it carries the same item and photo-derived asset version. The
+    /// repair's recipient may have missed or failed to load that attachment;
+    /// reusing it would deliver no new journal event to that player.
+    func shouldPublish(model: GameNetworkModel) -> Bool {
+        if model.isTargetedWeatherJournalRepair {
+            return true
+        }
+        return shouldPublish(
+            module: model.data.type,
+            itemId: model.data.id,
+            version: model.data.effectiveAssetVersion
+        )
+    }
+
     mutating func didPublish(module: NetworkModules, itemId: UUID, version: Int, attachmentId: UUID) {
         publications[module] = Publication(attachmentId: attachmentId, itemId: itemId, version: version)
         processedAttachmentIds.insert(attachmentId)
@@ -348,11 +363,7 @@ extension RPGSharePlayController {
                     for: prepared.model
                 )
                 Logger.sharePlay.debug("Journal: message \(prepared.model.counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(prepared.model.debugDescription, privacy: .public)")
-                guard self.journalTracker.shouldPublish(
-                    module: moduleKey,
-                    itemId: prepared.model.data.id,
-                    version: prepared.model.data.effectiveAssetVersion
-                ) else {
+                guard self.journalTracker.shouldPublish(model: prepared.model) else {
                     self.recordJournalTransport(
                         state: .succeeded,
                         byteCount: attachmentData.count,
@@ -441,13 +452,16 @@ extension RPGSharePlayController {
     }
 
     /// The journal slot per module carries broadcast content — the master's
-    /// current presentation — plus audio, whose targeted repairs are morphed
-    /// into untargeted stores. Targeted answers of the other modules ride the
-    /// messenger; full photo stores are normalized there into one coalesced
-    /// group repair. Neither path can replace (and abort) an attachment that
-    /// participants are still downloading.
+    /// current presentation — plus audio and Weather repairs. Audio repairs are
+    /// morphed into untargeted stores, while Weather retains its recipient so a
+    /// repair cannot re-present the content on unrelated players. Targeted
+    /// answers of the other modules ride the messenger; full photo stores are
+    /// normalized there into one coalesced group repair.
     static func usesJournalTransport(for model: GameNetworkModel, fileJournal: Bool, journalAvailable: Bool) -> Bool {
-        fileJournal && journalAvailable && model.data.data != nil && (model.targetId == nil || model.data.type == .audio)
+        fileJournal &&
+            journalAvailable &&
+            model.data.data != nil &&
+            (model.targetId == nil || model.data.type == .audio || model.data.type == .weather)
     }
 
     static func journalMetadata(for model: GameNetworkModel) -> GameNetworkModel {

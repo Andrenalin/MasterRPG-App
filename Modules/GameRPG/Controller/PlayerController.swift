@@ -19,8 +19,41 @@ import AppKit
 import UIKit
 #endif
 
+private enum PlayerPhotoRevealValidation: Sendable {
+    case valid
+    case awaitingAuthoritativeList
+    case mismatch
+}
+
+private enum PlayerPdfRevealValidation: Sendable {
+    case valid
+    case awaitingAuthoritativeList
+    case mismatch
+}
+
+private enum PlayerSpaceRevealValidation: Sendable {
+    case valid
+    case awaitingAuthoritativeList
+    case mismatch
+}
+
 @MainActor @Observable
 final class PlayerControllerModel: Sendable {
+    private struct DeferredPhotoRevealKey: Hashable, Sendable {
+        let masterId: UUID
+        let senderId: UUID
+    }
+
+    private struct DeferredPdfRevealKey: Hashable, Sendable {
+        let masterId: UUID
+        let senderId: UUID
+    }
+
+    private struct DeferredSpaceRevealKey: Hashable, Sendable {
+        let masterId: UUID
+        let senderId: UUID
+    }
+
     private struct PresentationIntent {
         let module: NetworkModules
         let counter: Int
@@ -43,6 +76,18 @@ final class PlayerControllerModel: Sendable {
     private var outgoingMessageCounter: Int = 1
     private var lastMasterStateCounters: [UUID: Int] = [:]
     private var lastAudioListCounters: [UUID: Int] = [:]
+    private var lastPhotoListCounters: [UUID: Int] = [:]
+    private var lastPdfListCounters: [UUID: Int] = [:]
+    private var lastSpaceListCounters: [UUID: Int] = [:]
+    private var authoritativePhotoListMasters: Set<UUID> = []
+    private var authoritativePdfListMasters: Set<UUID> = []
+    private var authoritativeSpaceListMasters: Set<UUID> = []
+    private var deferredPhotoReveals: [DeferredPhotoRevealKey: GameNetworkModel] = [:]
+    private var deferredPhotoRevealOrder: [DeferredPhotoRevealKey] = []
+    private var deferredPdfReveals: [DeferredPdfRevealKey: GameNetworkModel] = [:]
+    private var deferredPdfRevealOrder: [DeferredPdfRevealKey] = []
+    private var deferredSpaceReveals: [DeferredSpaceRevealKey: GameNetworkModel] = [:]
+    private var deferredSpaceRevealOrder: [DeferredSpaceRevealKey] = []
     private var presentationIntents: [UUID: PresentationIntent] = [:]
     var lostMaster: Bool = true
     var hasSendPlayer = false
@@ -61,6 +106,12 @@ final class PlayerControllerModel: Sendable {
     // repair actually produced a local file — a permanently failing photo is
     // requested once instead of looping master responses forever.
     var requestedRepairIds: Set<UUID> = []
+    // PDF ids with one outstanding master-asset repair. This prevents a missing
+    // or corrupt file from bouncing reveal/store requests forever.
+    var requestedPdfRepairIds: Set<UUID> = []
+    // Space ids with one outstanding full-file repair request. A permanently
+    // unavailable USDZ must not create an endless reveal/store response loop.
+    var requestedSpaceRepairIds: Set<UUID> = []
     // Maps whose background photo was missing after a delivery and triggered one
     // full-map re-request. The background belongs exclusively to the full map
     // package, so the single retry prevents a full-payload request loop.
@@ -107,6 +158,183 @@ final class PlayerControllerModel: Sendable {
 
     func resetAudioListSequence() {
         lastAudioListCounters.removeAll()
+    }
+
+    func canApplyPhotoList(from masterId: UUID, counter: Int) -> Bool {
+        guard counter >= 0 else { return false }
+        guard counter > 0 else { return true }
+        return counter > (lastPhotoListCounters[masterId] ?? 0)
+    }
+
+    func recordPhotoList(counter: Int, from masterId: UUID) {
+        authoritativePhotoListMasters.insert(masterId)
+        if counter > 0 {
+            lastPhotoListCounters[masterId] = counter
+        }
+    }
+
+    func hasAuthoritativePhotoList(from masterId: UUID) -> Bool {
+        authoritativePhotoListMasters.contains(masterId)
+    }
+
+    /// Retains only the latest reveal from each sender and preserves the local
+    /// arrival order across senders. The fixed cap prevents a missing report
+    /// from growing memory without bound.
+    func deferPhotoReveal(_ model: GameNetworkModel) {
+        let key = DeferredPhotoRevealKey(masterId: model.masterId, senderId: model.sender.id)
+        deferredPhotoRevealOrder.removeAll { $0 == key }
+        deferredPhotoRevealOrder.append(key)
+        deferredPhotoReveals[key] = model
+
+        let maximumDeferredPhotoReveals = 32
+        while deferredPhotoRevealOrder.count > maximumDeferredPhotoReveals {
+            let oldestKey = deferredPhotoRevealOrder.removeFirst()
+            deferredPhotoReveals[oldestKey] = nil
+        }
+    }
+
+    func deferredPhotoReveals(from masterId: UUID) -> [GameNetworkModel] {
+        deferredPhotoRevealOrder.compactMap { key in
+            guard key.masterId == masterId else { return nil }
+            return deferredPhotoReveals[key]
+        }
+    }
+
+    func removeDeferredPhotoReveal(_ model: GameNetworkModel) {
+        let key = DeferredPhotoRevealKey(masterId: model.masterId, senderId: model.sender.id)
+        deferredPhotoReveals[key] = nil
+        deferredPhotoRevealOrder.removeAll { $0 == key }
+    }
+
+    func removeDeferredPhotoReveals(from masterId: UUID) {
+        let keys = deferredPhotoRevealOrder.filter { $0.masterId == masterId }
+        for key in keys {
+            deferredPhotoReveals[key] = nil
+        }
+        deferredPhotoRevealOrder.removeAll { $0.masterId == masterId }
+    }
+
+    func resetPhotoListSequence() {
+        lastPhotoListCounters.removeAll()
+        authoritativePhotoListMasters.removeAll()
+        deferredPhotoReveals.removeAll()
+        deferredPhotoRevealOrder.removeAll()
+    }
+
+    func canApplyPdfList(from masterId: UUID, counter: Int) -> Bool {
+        guard counter >= 0 else { return false }
+        guard counter > 0 else { return true }
+        return counter > (lastPdfListCounters[masterId] ?? 0)
+    }
+
+    func recordPdfList(counter: Int, from masterId: UUID) {
+        authoritativePdfListMasters.insert(masterId)
+        if counter > 0 {
+            lastPdfListCounters[masterId] = counter
+        }
+    }
+
+    func hasAuthoritativePdfList(from masterId: UUID) -> Bool {
+        authoritativePdfListMasters.contains(masterId)
+    }
+
+    func deferPdfReveal(_ model: GameNetworkModel) {
+        let key = DeferredPdfRevealKey(masterId: model.masterId, senderId: model.sender.id)
+        deferredPdfRevealOrder.removeAll { $0 == key }
+        deferredPdfRevealOrder.append(key)
+        deferredPdfReveals[key] = model
+
+        let maximumDeferredPdfReveals = 32
+        while deferredPdfRevealOrder.count > maximumDeferredPdfReveals {
+            let oldestKey = deferredPdfRevealOrder.removeFirst()
+            deferredPdfReveals[oldestKey] = nil
+        }
+    }
+
+    func deferredPdfReveals(from masterId: UUID) -> [GameNetworkModel] {
+        deferredPdfRevealOrder.compactMap { key in
+            guard key.masterId == masterId else { return nil }
+            return deferredPdfReveals[key]
+        }
+    }
+
+    func removeDeferredPdfReveal(_ model: GameNetworkModel) {
+        let key = DeferredPdfRevealKey(masterId: model.masterId, senderId: model.sender.id)
+        deferredPdfReveals[key] = nil
+        deferredPdfRevealOrder.removeAll { $0 == key }
+    }
+
+    func removeDeferredPdfReveals(from masterId: UUID) {
+        let keys = deferredPdfRevealOrder.filter { $0.masterId == masterId }
+        for key in keys {
+            deferredPdfReveals[key] = nil
+        }
+        deferredPdfRevealOrder.removeAll { $0.masterId == masterId }
+    }
+
+    func resetPdfListSequence() {
+        lastPdfListCounters.removeAll()
+        authoritativePdfListMasters.removeAll()
+        deferredPdfReveals.removeAll()
+        deferredPdfRevealOrder.removeAll()
+    }
+
+    func canApplySpaceList(from masterId: UUID, counter: Int) -> Bool {
+        guard counter >= 0 else { return false }
+        guard counter > 0 else { return true }
+        return counter > (lastSpaceListCounters[masterId] ?? 0)
+    }
+
+    func recordSpaceList(counter: Int, from masterId: UUID) {
+        authoritativeSpaceListMasters.insert(masterId)
+        if counter > 0 {
+            lastSpaceListCounters[masterId] = counter
+        }
+    }
+
+    func hasAuthoritativeSpaceList(from masterId: UUID) -> Bool {
+        authoritativeSpaceListMasters.contains(masterId)
+    }
+
+    func deferSpaceReveal(_ model: GameNetworkModel) {
+        let key = DeferredSpaceRevealKey(masterId: model.masterId, senderId: model.sender.id)
+        deferredSpaceRevealOrder.removeAll { $0 == key }
+        deferredSpaceRevealOrder.append(key)
+        deferredSpaceReveals[key] = model
+
+        let maximumDeferredSpaceReveals = 32
+        while deferredSpaceRevealOrder.count > maximumDeferredSpaceReveals {
+            let oldestKey = deferredSpaceRevealOrder.removeFirst()
+            deferredSpaceReveals[oldestKey] = nil
+        }
+    }
+
+    func deferredSpaceReveals(from masterId: UUID) -> [GameNetworkModel] {
+        deferredSpaceRevealOrder.compactMap { key in
+            guard key.masterId == masterId else { return nil }
+            return deferredSpaceReveals[key]
+        }
+    }
+
+    func removeDeferredSpaceReveal(_ model: GameNetworkModel) {
+        let key = DeferredSpaceRevealKey(masterId: model.masterId, senderId: model.sender.id)
+        deferredSpaceReveals[key] = nil
+        deferredSpaceRevealOrder.removeAll { $0 == key }
+    }
+
+    func removeDeferredSpaceReveals(from masterId: UUID) {
+        let keys = deferredSpaceRevealOrder.filter { $0.masterId == masterId }
+        for key in keys {
+            deferredSpaceReveals[key] = nil
+        }
+        deferredSpaceRevealOrder.removeAll { $0.masterId == masterId }
+    }
+
+    func resetSpaceListSequence() {
+        lastSpaceListCounters.removeAll()
+        authoritativeSpaceListMasters.removeAll()
+        deferredSpaceReveals.removeAll()
+        deferredSpaceRevealOrder.removeAll()
     }
 
     /// Accepts presentation content according to the latest master intent, not
@@ -383,9 +611,14 @@ extension PlayerController {
         gameModel.pendingMapRequests = []
         gameModel.pendingAudioRequests = []
         gameModel.requestedRepairIds = []
+        gameModel.requestedPdfRepairIds = []
+        gameModel.requestedSpaceRepairIds = []
         gameModel.requestedFullMapIds = []
         gameModel.resetMasterStateSequence()
         gameModel.resetAudioListSequence()
+        gameModel.resetPhotoListSequence()
+        gameModel.resetPdfListSequence()
+        gameModel.resetSpaceListSequence()
         gameModel.resetPresentationSequence()
         gameModel.resetMapContentSequence()
     }
@@ -394,6 +627,10 @@ extension PlayerController {
     func resetPlayers() {
         let players = root.gameModel.gameControl.controls.compactMap { $0.show ? $0.id : nil }
         root.audioRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
+        root.photoRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
+        root.pdfRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
+        root.spaceRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
+        root.weatherRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
         let playerNames = root.gameModel.gameControl.controls.map { $0.name }.sorted()
         root.diceRoot.diceGameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
     }
@@ -407,7 +644,176 @@ extension PlayerController {
     }
     
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType) async {
+        // Players cannot publish Weather and Weather has no live updates yet.
+        guard message.type != .weather else { return }
+        if message.type == .photo, actionType == .generic {
+            await sharePhoto(message)
+            return
+        }
+        if message.type == .pdf, actionType == .generic {
+            await sharePdf(message)
+            return
+        }
+        if message.type == .space, actionType == .generic {
+            await shareSpace(message)
+            return
+        }
+        if message.type == .space, actionType == .spaceTransform {
+            guard await root.gameModel.gameControl.features.spaceSharing else { return }
+        }
         await send(type: .update, subType: actionType, updated: message)
+    }
+
+    private func sharePhoto(_ fullData: NetworkCodableDataType) async {
+        let (playerId, masterId) = await MainActor.run {
+            (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
+        }
+        let baseline = await root.photoRoot.photoGameControllable.masterVersion(
+            for: fullData.id,
+            masterId: masterId
+        )
+        let senderIsAvailable = await root.photoRoot.photoGameControllable.isPhotoAvailable(
+            itemId: fullData.id,
+            for: playerId,
+            masterId: masterId
+        )
+        let matchesBaseline = baseline == fullData.effectiveAssetVersion
+
+        let outgoing: NetworkCodableDataType
+        if senderIsAvailable, matchesBaseline {
+            let allPlayersHavePhoto = await root.photoRoot.gameControllable.allPlayersReported(for: fullData.id)
+            outgoing = NetworkCodableDataType(
+                id: fullData.id,
+                type: fullData.type,
+                version: fullData.version,
+                data: allPlayersHavePhoto ? nil : fullData.data,
+                assetVersion: fullData.assetVersion,
+                contentVersion: fullData.contentVersion
+            )
+            if await root.photoRoot.gameControllable.setCurrent(itemId: fullData.id) {
+                await MainActor.run { gameModel.gameUpdateType = .photo }
+            }
+        } else {
+            // The master owns the canonical version. A player whose report is
+            // absent or mismatched sends only that baseline reference; the
+            // master answers by publishing its own bytes.
+            outgoing = NetworkCodableDataType(
+                id: fullData.id,
+                type: fullData.type,
+                version: baseline ?? fullData.effectiveAssetVersion
+            )
+        }
+
+        await send(type: .reveal, subType: .show, updated: outgoing)
+
+        if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
+            await root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(
+                itemId: fullData.id,
+                version: baseline,
+                masterId: masterId
+            )
+        }
+    }
+
+    private func sharePdf(_ fullData: NetworkCodableDataType) async {
+        let (playerId, masterId) = await MainActor.run {
+            (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
+        }
+        let baseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+            for: fullData.id,
+            masterId: masterId
+        )
+        let senderIsAvailable = await root.pdfRoot.pdfGameControllable.isPdfAvailable(
+            itemId: fullData.id,
+            for: playerId,
+            masterId: masterId
+        )
+        let matchesBaseline = baseline == fullData.effectiveAssetVersion
+
+        let outgoing: NetworkCodableDataType
+        if senderIsAvailable, matchesBaseline {
+            let allPlayersHavePdf = await root.pdfRoot.gameControllable.allPlayersReported(for: fullData.id)
+            outgoing = NetworkCodableDataType(
+                id: fullData.id,
+                type: fullData.type,
+                version: fullData.version,
+                data: allPlayersHavePdf ? nil : fullData.data,
+                assetVersion: fullData.assetVersion,
+                contentVersion: fullData.contentVersion
+            )
+            if await root.pdfRoot.gameControllable.setCurrent(itemId: fullData.id) {
+                await MainActor.run { gameModel.gameUpdateType = .pdf }
+            }
+        } else {
+            // The game master's file/version is canonical. A missing or stale
+            // player report is a request for that asset, never an upload.
+            outgoing = NetworkCodableDataType(
+                id: fullData.id,
+                type: fullData.type,
+                version: baseline ?? fullData.effectiveAssetVersion
+            )
+        }
+
+        await send(type: .reveal, subType: .show, updated: outgoing)
+
+        if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
+            await root.pdfRoot.pdfGameControllable.markPdfAvailableToCurrentPlayers(
+                itemId: fullData.id,
+                version: baseline,
+                masterId: masterId
+            )
+        }
+    }
+
+    private func shareSpace(_ fullData: NetworkCodableDataType) async {
+        guard await root.gameModel.gameControl.features.spaceSharing else { return }
+        let (playerId, masterId) = await MainActor.run {
+            (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
+        }
+        let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+            for: fullData.id,
+            masterId: masterId
+        )
+        let senderIsAvailable = await root.spaceRoot.spaceGameControllable.isSpaceAvailable(
+            itemId: fullData.id,
+            for: playerId,
+            masterId: masterId
+        )
+        let matchesBaseline = baseline == fullData.effectiveAssetVersion
+
+        let outgoing: NetworkCodableDataType
+        if senderIsAvailable, matchesBaseline {
+            let allPlayersHaveSpace = await root.spaceRoot.gameControllable.allPlayersReported(for: fullData.id)
+            outgoing = NetworkCodableDataType(
+                id: fullData.id,
+                type: fullData.type,
+                version: fullData.version,
+                data: allPlayersHaveSpace ? nil : fullData.data,
+                assetVersion: fullData.assetVersion,
+                contentVersion: fullData.contentVersion
+            )
+            if await root.spaceRoot.gameControllable.setCurrent(itemId: fullData.id) {
+                await MainActor.run { gameModel.gameUpdateType = .space }
+            }
+        } else {
+            // A peer never establishes a competing baseline. A missing or stale
+            // report becomes a request for the game master's canonical asset.
+            outgoing = NetworkCodableDataType(
+                id: fullData.id,
+                type: fullData.type,
+                version: baseline ?? fullData.effectiveAssetVersion
+            )
+        }
+
+        await send(type: .reveal, subType: .show, updated: outgoing)
+
+        if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
+            await root.spaceRoot.spaceGameControllable.markSpaceAvailableToCurrentPlayers(
+                itemId: fullData.id,
+                version: baseline,
+                masterId: masterId
+            )
+        }
     }
     
     func send(screen: AKImage, responseCounter: Int) async {
@@ -477,12 +883,18 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             gameModel.pendingMapRequests = []
             gameModel.pendingAudioRequests = []
             gameModel.requestedRepairIds = []
+            gameModel.requestedPdfRepairIds = []
+            gameModel.requestedSpaceRepairIds = []
             gameModel.requestedFullMapIds = []
             gameModel.resetMasterStateSequence()
             gameModel.resetAudioListSequence()
+            gameModel.resetPhotoListSequence()
+            gameModel.resetPdfListSequence()
+            gameModel.resetSpaceListSequence()
             gameModel.resetPresentationSequence()
             gameModel.resetMapContentSequence()
         }
+        await root.spaceRoot.spaceGameControllable.resetSpaceTransforms()
         await gameModel.reset(lostMaster: true)
         await gameModel.reset(sendPlayer: false)
     }
@@ -491,6 +903,9 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         Logger.networking.debug("PlayerController: Ready")
         await gameModel.reset(lostMaster: false)
         await sendAudioList()
+        await sendPhotoList()
+        await sendPdfList()
+        await sendSpaceList()
         await scheduleSendCharacter()
     }
     
@@ -582,11 +997,24 @@ extension PlayerController: PlayerNetworkStoreDelegate {
 
             let localId = await root.gameModel.gameConfig.id
             let type = await root.gameModel.gameType
+            let photoSharing = await root.gameModel.gameControl.features.photoSharing
+            let spaceSharing = await root.gameModel.gameControl.features.spaceSharing
             guard type == .proxy || type == .observer || controls.isEmpty || controls.contains(where: { $0.id == localId && $0.show == true }) else {
                 Logger.networking.debug("PlayerController: Message will be ignored because of controls \(controls, privacy: .public)")
                 return false
             }
-            guard await root.gameModel.gameType == .proxy || model.sender.isMaster || model.data.type == .dice || model.subType == .spaceTransform else {
+            let acceptsPlayerPhotoReveal = model.data.type == .photo &&
+                model.type == .reveal &&
+                model.subType == .show &&
+                photoSharing
+            let acceptsPlayerPdfReveal = model.data.type == .pdf &&
+                model.type == .reveal &&
+                model.subType == .show
+            let acceptsPlayerSpaceReveal = model.data.type == .space &&
+                model.type == .reveal &&
+                model.subType == .show &&
+                spaceSharing
+            guard await root.gameModel.gameType == .proxy || model.sender.isMaster || model.data.type == .dice || acceptsPlayerPhotoReveal || acceptsPlayerPdfReveal || acceptsPlayerSpaceReveal else {
                 Logger.networking.debug("PlayerController: Message will be ignored because it is send from Player \(model.senderName, privacy: .public)")
                 return false
             }
@@ -676,6 +1104,9 @@ extension PlayerController: PlayerNetworkProxyControllerDelegate {
         Logger.networking.debug("PlayerController: Proxy Ready")
         await gameModel.reset(lostMaster: false)
         await sendAudioList()
+        await sendPhotoList()
+        await sendPdfList()
+        await sendSpaceList()
         await scheduleSendCharacter()
     }
     
@@ -798,6 +1229,230 @@ extension PlayerController {
 
         gameModel.recordAudioList(counter: model.counter, from: model.masterId)
         return true
+    }
+
+    @MainActor
+    private func applyPhotoList(_ model: GameNetworkModel) async -> Bool {
+        guard model.sender.isMaster,
+              gameModel.canApplyPhotoList(from: model.masterId, counter: model.counter),
+              await root.photoRoot.photoGameControllable.applyPhotoList(
+                  data: model.data,
+                  for: model.masterId,
+                  with: model.masterId,
+                  authoritative: true
+              )
+        else { return false }
+
+        gameModel.recordPhotoList(counter: model.counter, from: model.masterId)
+        return true
+    }
+
+    private func playerPhotoRevealValidation(for model: GameNetworkModel) async -> PlayerPhotoRevealValidation {
+        if await gameModel.asGameMaster {
+            let senderIsAvailable = await root.photoRoot.photoGameControllable.isPhotoAvailable(
+                itemId: model.data.id,
+                for: model.sender.id,
+                masterId: model.masterId
+            )
+            let baseline = await root.photoRoot.photoGameControllable.masterVersion(
+                for: model.data.id,
+                masterId: model.masterId
+            )
+            return senderIsAvailable && baseline == model.data.effectiveAssetVersion ? .valid : .mismatch
+        }
+
+        guard await gameModel.hasAuthoritativePhotoList(from: model.masterId) else {
+            return .awaitingAuthoritativeList
+        }
+
+        guard let senderVersion = await root.photoRoot.photoGameControllable.reportedVersion(
+            for: model.data.id,
+            playerId: model.sender.id
+        ) else {
+            // Another player's report may simply not have reached the master
+            // when this authoritative snapshot was broadcast.
+            return .awaitingAuthoritativeList
+        }
+
+        guard senderVersion == model.data.effectiveAssetVersion else {
+            return .mismatch
+        }
+        guard let baseline = await root.photoRoot.photoGameControllable.masterVersion(
+            for: model.data.id,
+            masterId: model.masterId
+        ) else {
+            return .awaitingAuthoritativeList
+        }
+        return senderVersion == baseline ? .valid : .mismatch
+    }
+
+    private func retryDeferredPhotoReveals(from masterId: UUID) async {
+        let deferred = await gameModel.deferredPhotoReveals(from: masterId)
+        for model in deferred {
+            switch await playerPhotoRevealValidation(for: model) {
+            case .awaitingAuthoritativeList:
+                continue
+            case .mismatch:
+                await gameModel.removeDeferredPhotoReveal(model)
+            case .valid:
+                await gameModel.removeDeferredPhotoReveal(model)
+                do {
+                    if let response = try await handlePhoto(model) {
+                        await sendUpstream(model: response)
+                    }
+                } catch {
+                    // The original network event was already accepted. A bad
+                    // deferred payload must not make the photo-list update fail.
+                    Logger.networking.error("PlayerController: Deferred photo reveal failed: \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func applyPdfList(_ model: GameNetworkModel) async -> Bool {
+        guard model.sender.isMaster,
+              gameModel.canApplyPdfList(from: model.masterId, counter: model.counter),
+              await root.pdfRoot.pdfGameControllable.applyPdfList(
+                  data: model.data,
+                  for: model.masterId,
+                  with: model.masterId,
+                  authoritative: true
+              )
+        else { return false }
+
+        gameModel.recordPdfList(counter: model.counter, from: model.masterId)
+        return true
+    }
+
+    private func playerPdfRevealValidation(for model: GameNetworkModel) async -> PlayerPdfRevealValidation {
+        if await gameModel.asGameMaster {
+            let senderIsAvailable = await root.pdfRoot.pdfGameControllable.isPdfAvailable(
+                itemId: model.data.id,
+                for: model.sender.id,
+                masterId: model.masterId
+            )
+            let baseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+                for: model.data.id,
+                masterId: model.masterId
+            )
+            return senderIsAvailable && baseline == model.data.effectiveAssetVersion ? .valid : .mismatch
+        }
+
+        guard await gameModel.hasAuthoritativePdfList(from: model.masterId) else {
+            return .awaitingAuthoritativeList
+        }
+        guard let senderVersion = await root.pdfRoot.pdfGameControllable.reportedVersion(
+            for: model.data.id,
+            playerId: model.sender.id
+        ) else {
+            return .awaitingAuthoritativeList
+        }
+        guard senderVersion == model.data.effectiveAssetVersion else {
+            return .mismatch
+        }
+        guard let baseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+            for: model.data.id,
+            masterId: model.masterId
+        ) else {
+            return .awaitingAuthoritativeList
+        }
+        return senderVersion == baseline ? .valid : .mismatch
+    }
+
+    private func retryDeferredPdfReveals(from masterId: UUID) async {
+        let deferred = await gameModel.deferredPdfReveals(from: masterId)
+        for model in deferred {
+            switch await playerPdfRevealValidation(for: model) {
+            case .awaitingAuthoritativeList:
+                continue
+            case .mismatch:
+                await gameModel.removeDeferredPdfReveal(model)
+            case .valid:
+                await gameModel.removeDeferredPdfReveal(model)
+                do {
+                    if let response = try await handlePdf(model) {
+                        await sendUpstream(model: response)
+                    }
+                } catch {
+                    Logger.networking.error("PlayerController: Deferred PDF reveal failed: \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func applySpaceList(_ model: GameNetworkModel) async -> Bool {
+        guard model.sender.isMaster,
+              gameModel.canApplySpaceList(from: model.masterId, counter: model.counter),
+              await root.spaceRoot.spaceGameControllable.applySpaceList(
+                  data: model.data,
+                  for: model.masterId,
+                  with: model.masterId,
+                  authoritative: true
+              )
+        else { return false }
+
+        gameModel.recordSpaceList(counter: model.counter, from: model.masterId)
+        return true
+    }
+
+    private func playerSpaceRevealValidation(for model: GameNetworkModel) async -> PlayerSpaceRevealValidation {
+        if await gameModel.asGameMaster {
+            let senderIsAvailable = await root.spaceRoot.spaceGameControllable.isSpaceAvailable(
+                itemId: model.data.id,
+                for: model.sender.id,
+                masterId: model.masterId
+            )
+            let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+                for: model.data.id,
+                masterId: model.masterId
+            )
+            return senderIsAvailable && baseline == model.data.effectiveAssetVersion ? .valid : .mismatch
+        }
+
+        guard await gameModel.hasAuthoritativeSpaceList(from: model.masterId) else {
+            return .awaitingAuthoritativeList
+        }
+        guard let senderVersion = await root.spaceRoot.spaceGameControllable.reportedVersion(
+            for: model.data.id,
+            playerId: model.sender.id
+        ) else {
+            return .awaitingAuthoritativeList
+        }
+        guard senderVersion == model.data.effectiveAssetVersion else {
+            return .mismatch
+        }
+        guard let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+            for: model.data.id,
+            masterId: model.masterId
+        ) else {
+            return .awaitingAuthoritativeList
+        }
+        return senderVersion == baseline ? .valid : .mismatch
+    }
+
+    private func retryDeferredSpaceReveals(from masterId: UUID) async {
+        let deferred = await gameModel.deferredSpaceReveals(from: masterId)
+        for model in deferred {
+            switch await playerSpaceRevealValidation(for: model) {
+            case .awaitingAuthoritativeList:
+                continue
+            case .mismatch:
+                await gameModel.removeDeferredSpaceReveal(model)
+            case .valid:
+                await gameModel.removeDeferredSpaceReveal(model)
+                do {
+                    if let response = try await handleSpace(model) {
+                        await sendUpstream(model: response)
+                    }
+                } catch {
+                    // The list itself is valid. A bad deferred file must not make
+                    // availability sequencing fail or reserve a later counter.
+                    Logger.networking.error("PlayerController: Deferred Space reveal failed: \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
     }
 
     @MainActor
@@ -1145,54 +1800,213 @@ extension PlayerController {
     }
 
     func handlePdf(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        switch model.type {
-            case .reveal:
-                if try await root.pdfRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                    await MainActor.run {
-                        gameModel.gameUpdateType = .pdf
-                    }
-                    return await response(for: model, isSuccess: true, requestData: false)
-                } else {
-                    return await response(for: model, isSuccess: true, requestData: true)
-                }
-            case .store:
-                try await root.pdfRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
-                let hasLocalData = await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id)
-                return await response(for: model, isSuccess: hasLocalData, requestData: !hasLocalData)
-            case .update:
-                break
+        guard model.subType != .ok, model.subType != .failed else { return nil }
+
+        let masterId = model.masterId
+        if model.sender.isMaster,
+           model.type == .reveal,
+           model.subType == .show,
+           model.targetId == nil {
+            await gameModel.removeDeferredPdfReveals(from: masterId)
         }
-        return nil
+        if model.sender.isMaster,
+           !(model.type == .update && model.subType == .pdfList) {
+            let previousBaseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+                for: model.data.id,
+                masterId: masterId
+            )
+            if previousBaseline != nil, previousBaseline != model.data.effectiveAssetVersion {
+                await MainActor.run { _ = gameModel.requestedPdfRepairIds.remove(model.data.id) }
+            }
+            await root.pdfRoot.pdfGameControllable.setMasterVersion(
+                itemId: model.data.id,
+                version: model.data.effectiveAssetVersion,
+                masterId: masterId
+            )
+        }
+
+        let validPlayerReveal: Bool
+        if model.sender.isMaster || model.type != .reveal || model.subType != .show {
+            validPlayerReveal = false
+        } else {
+            switch await playerPdfRevealValidation(for: model) {
+            case .valid:
+                validPlayerReveal = true
+            case .awaitingAuthoritativeList:
+                await gameModel.deferPdfReveal(model)
+                return nil
+            case .mismatch:
+                return nil
+            }
+        }
+
+        guard model.sender.isMaster || model.type == .store || validPlayerReveal else { return nil }
+
+        switch model.type {
+        case .reveal:
+            if try await root.pdfRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
+                await MainActor.run {
+                    _ = gameModel.requestedPdfRepairIds.remove(model.data.id)
+                    gameModel.gameUpdateType = .pdf
+                }
+                let localPlayerId = await root.gameModel.gameConfig.id
+                await root.pdfRoot.pdfGameControllable.markPdfAvailable(
+                    itemId: model.data.id,
+                    version: model.data.effectiveAssetVersion,
+                    for: [localPlayerId, model.sender.id],
+                    masterId: masterId
+                )
+                if model.data.data != nil, model.targetId == nil {
+                    await root.pdfRoot.pdfGameControllable.markPdfAvailableToCurrentPlayers(
+                        itemId: model.data.id,
+                        version: model.data.effectiveAssetVersion,
+                        masterId: masterId
+                    )
+                }
+                return await response(for: model, isSuccess: true, requestData: false)
+            }
+
+            let isFirstRequest = await MainActor.run {
+                gameModel.requestedPdfRepairIds.insert(model.data.id).inserted
+            }
+            guard isFirstRequest else { return nil }
+            let baseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+                for: model.data.id,
+                masterId: masterId
+            )
+            var requestTrigger = model
+            requestTrigger.type = .store
+            requestTrigger.subType = .store
+            return await response(
+                for: requestTrigger,
+                isSuccess: true,
+                requestData: true,
+                requestedVersion: baseline
+            )
+        case .store:
+            try await root.pdfRoot.gameControllable.updateGame(
+                data: model.data,
+                hide: model.subType == .store,
+                deep: true
+            )
+            let hasLocalData = await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id)
+            if hasLocalData {
+                let completesReveal = await MainActor.run {
+                    gameModel.requestedPdfRepairIds.remove(model.data.id) != nil
+                }
+                if completesReveal, await root.pdfRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                    await MainActor.run { gameModel.gameUpdateType = .pdf }
+                }
+                let localPlayerId = await root.gameModel.gameConfig.id
+                await root.pdfRoot.pdfGameControllable.markPdfAvailable(
+                    itemId: model.data.id,
+                    version: model.data.effectiveAssetVersion,
+                    for: [localPlayerId],
+                    masterId: masterId
+                )
+                return await response(for: model, isSuccess: true, requestData: false)
+            }
+            return nil
+        case .update:
+            guard model.subType == .pdfList else { return nil }
+            guard await applyPdfList(model) else { return nil }
+            await retryDeferredPdfReveals(from: model.masterId)
+            return nil
+        }
     }
 
     func handlePhoto(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        // Player-originated reveal/update messages are requests relayed through
-        // SharePlay or a proxy, not presentation commands for this device.
-        guard model.sender.isMaster || model.type == .store else { return nil }
+        guard model.subType != .ok, model.subType != .failed else { return nil }
+
+        let masterId = model.masterId
+        if model.sender.isMaster,
+           model.type == .reveal,
+           model.subType == .show,
+           model.targetId == nil {
+            // A canonical master presentation supersedes any peer reveal that
+            // was waiting for availability evidence from this master.
+            await gameModel.removeDeferredPhotoReveals(from: masterId)
+        }
+        if model.sender.isMaster,
+           !(model.type == .update && model.subType == .photoList) {
+            await root.photoRoot.photoGameControllable.setMasterVersion(
+                itemId: model.data.id,
+                version: model.data.effectiveAssetVersion,
+                masterId: masterId
+            )
+        }
+
+        let validPlayerReveal: Bool
+        if model.sender.isMaster || model.type != .reveal || model.subType != .show {
+            validPlayerReveal = false
+        } else {
+            switch await playerPhotoRevealValidation(for: model) {
+            case .valid:
+                validPlayerReveal = true
+            case .awaitingAuthoritativeList:
+                await gameModel.deferPhotoReveal(model)
+                return nil
+            case .mismatch:
+                return nil
+            }
+        }
+
+        guard model.sender.isMaster || model.type == .store || validPlayerReveal else { return nil }
 
         switch model.type {
         case .reveal:
             if try await root.photoRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 await MainActor.run {
                     gameModel.gameUpdateType = .photo
-                    root.photoRoot.photoGameControllable.resetPhotoSpace()
                 }
-                
+
+                let localPlayerId = await root.gameModel.gameConfig.id
+                await root.photoRoot.photoGameControllable.markPhotoAvailable(
+                    itemId: model.data.id,
+                    version: model.data.effectiveAssetVersion,
+                    for: [localPlayerId, model.sender.id],
+                    masterId: masterId
+                )
+                if model.data.data != nil, model.targetId == nil {
+                    await root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(
+                        itemId: model.data.id,
+                        version: model.data.effectiveAssetVersion,
+                        masterId: masterId
+                    )
+                }
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
-                return await response(for: model, isSuccess: true, requestData: true)
+                let baseline = await root.photoRoot.photoGameControllable.masterVersion(
+                    for: model.data.id,
+                    masterId: masterId
+                )
+                return await response(
+                    for: model,
+                    isSuccess: true,
+                    requestData: true,
+                    requestedVersion: baseline
+                )
             }
         case .store:
             try await root.photoRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             let hasLocalData = await root.photoRoot.gameControllable.hasLocalFileData(for: model.data.id)
             if hasLocalData {
                 await MainActor.run { _ = gameModel.requestedRepairIds.remove(model.data.id) }
+                let localPlayerId = await root.gameModel.gameConfig.id
+                await root.photoRoot.photoGameControllable.markPhotoAvailable(
+                    itemId: model.data.id,
+                    version: model.data.effectiveAssetVersion,
+                    for: [localPlayerId],
+                    masterId: masterId
+                )
             }
             return await response(for: model, isSuccess: hasLocalData, requestData: !hasLocalData)
         case .update:
             switch model.subType {
-            case .photoSpace:
-                try await root.photoRoot.gameControllable.updateGame(data: model.data, subtype: model.subType)
+            case .photoList:
+                guard await applyPhotoList(model) else { return nil }
+                await retryDeferredPhotoReveals(from: model.masterId)
+                return nil
             default:
                 if model.data.data != nil {
                     try await root.photoRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
@@ -1265,9 +2079,14 @@ extension PlayerController {
     }
     
     func handleWeather(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+        guard model.subType != .ok, model.subType != .failed else { return nil }
+
         switch model.type {
         case .reveal:
-            if try await root.weatherRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
+            if try await root.weatherRoot.weatherGameControllable.revealWeather(
+                itemId: model.data.id,
+                data: model.data
+            ) {
                 await MainActor.run {
                     gameModel.gameUpdateType = .weather
                 }
@@ -1276,23 +2095,70 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
-            try await root.weatherRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
+            // Weather packages are game-session assets. Even legacy store
+            // messages must stay in game memory and never enter persistence.
+            try await root.weatherRoot.gameControllable.updateGame(data: model.data, hide: true, deep: true)
+            await root.weatherRoot.weatherGameControllable.markWeatherAvailable(
+                itemId: model.data.id,
+                version: model.data.version
+            )
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
-            if await root.weatherRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                await MainActor.run {
-                    gameModel.gameUpdateType = .weather
-                }
-            }
+            // Weather is immutable during a game. Presentation and repair use
+            // reveal messages; live update messages are intentionally ignored.
+            break
         }
         return nil
     }
     
     func handleSpace(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+        guard model.subType != .ok, model.subType != .failed else { return nil }
+
+        let masterId = model.masterId
+        if model.sender.isMaster,
+           model.type == .reveal,
+           model.subType == .show,
+           model.targetId == nil {
+            await gameModel.removeDeferredSpaceReveals(from: masterId)
+        }
+        if model.sender.isMaster,
+           !(model.type == .update && (model.subType == .spaceList || model.subType == .spaceTransform)) {
+            let previousBaseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+                for: model.data.id,
+                masterId: masterId
+            )
+            if previousBaseline != nil, previousBaseline != model.data.effectiveAssetVersion {
+                await MainActor.run { _ = gameModel.requestedSpaceRepairIds.remove(model.data.id) }
+            }
+            await root.spaceRoot.spaceGameControllable.setMasterVersion(
+                itemId: model.data.id,
+                version: model.data.effectiveAssetVersion,
+                masterId: masterId
+            )
+        }
+
+        let validPlayerReveal: Bool
+        if model.sender.isMaster || model.type != .reveal || model.subType != .show {
+            validPlayerReveal = false
+        } else {
+            switch await playerSpaceRevealValidation(for: model) {
+            case .valid:
+                validPlayerReveal = true
+            case .awaitingAuthoritativeList:
+                await gameModel.deferSpaceReveal(model)
+                return nil
+            case .mismatch:
+                return nil
+            }
+        }
+
+        guard model.sender.isMaster || model.type == .store || validPlayerReveal else { return nil }
+
         switch model.type {
         case .reveal:
             if try await root.spaceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 await MainActor.run {
+                    _ = gameModel.requestedSpaceRepairIds.remove(model.data.id)
                     gameModel.gameUpdateType = .space
 
                     #if os(visionOS)
@@ -1304,33 +2170,80 @@ extension PlayerController {
                     }
                     #endif
                 }
+                let localPlayerId = await root.gameModel.gameConfig.id
+                await root.spaceRoot.spaceGameControllable.markSpaceAvailable(
+                    itemId: model.data.id,
+                    version: model.data.effectiveAssetVersion,
+                    for: [localPlayerId, model.sender.id],
+                    masterId: masterId
+                )
+                if model.data.data != nil, model.targetId == nil {
+                    await root.spaceRoot.spaceGameControllable.markSpaceAvailableToCurrentPlayers(
+                        itemId: model.data.id,
+                        version: model.data.effectiveAssetVersion,
+                        masterId: masterId
+                    )
+                }
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
-                return await response(for: model, isSuccess: true, requestData: true)
+                let isFirstRequest = await MainActor.run {
+                    gameModel.requestedSpaceRepairIds.insert(model.data.id).inserted
+                }
+                guard isFirstRequest else { return nil }
+                let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+                    for: model.data.id,
+                    masterId: masterId
+                )
+                return await response(
+                    for: model,
+                    isSuccess: true,
+                    requestData: true,
+                    requestedVersion: baseline
+                )
             }
         case .store:
             try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             let hasLocalData = await root.spaceRoot.gameControllable.hasLocalFileData(for: model.data.id)
-            return await response(for: model, isSuccess: hasLocalData, requestData: !hasLocalData)
+            if hasLocalData {
+                await MainActor.run { _ = gameModel.requestedSpaceRepairIds.remove(model.data.id) }
+                let localPlayerId = await root.gameModel.gameConfig.id
+                await root.spaceRoot.spaceGameControllable.markSpaceAvailable(
+                    itemId: model.data.id,
+                    version: model.data.effectiveAssetVersion,
+                    for: [localPlayerId],
+                    masterId: masterId
+                )
+                return await response(for: model, isSuccess: true, requestData: false)
+            }
+            let isFirstRequest = await MainActor.run {
+                gameModel.requestedSpaceRepairIds.insert(model.data.id).inserted
+            }
+            guard isFirstRequest else { return nil }
+            return await response(for: model, isSuccess: true, requestData: true)
         case .update:
-            if model.subType == .spaceTransform {
-                // Manipulation sync (rotate / scale / move) — apply to the shared
-                // model state; transport-level fan-out already delivered it to everyone.
-                try await root.spaceRoot.gameControllable.updateGame(data: model.data, subtype: .spaceTransform)
+            switch model.subType {
+            case .spaceList:
+                guard await applySpaceList(model) else { return nil }
+                await retryDeferredSpaceReveals(from: model.masterId)
                 return nil
+            case .spaceTransform:
+                guard model.sender.isMaster else { return nil }
+                let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+                    for: model.data.id,
+                    masterId: model.masterId
+                )
+                guard baseline == nil || baseline == model.data.effectiveAssetVersion else { return nil }
+                _ = await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                    data: model.data,
+                    counter: model.counter
+                )
+                return nil
+            default:
+                break
             }
             if await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
                 await MainActor.run {
                     gameModel.gameUpdateType = .space
-                    
-                    // ✅ SharePlay: Update current selection in open immersive space
-                    #if os(visionOS)
-                    if root.networkStore.sharePlayStore.isActive,
-                       root.gameModel.shareState.mode == .immersive {
-                        // The immersive space is already open, selection will update via binding
-                        Logger.networking.debug("✅ Updated immersive space selection: \(model.data.id, privacy: .public)")
-                    }
-                    #endif
                 }
             }
         }
@@ -1349,7 +2262,12 @@ extension PlayerController {
         }
     }
     
-    nonisolated func response(for model: GameNetworkModel, isSuccess: Bool, requestData: Bool) async -> GameNetworkModel {
+    nonisolated func response(
+        for model: GameNetworkModel,
+        isSuccess: Bool,
+        requestData: Bool,
+        requestedVersion: Int? = nil
+    ) async -> GameNetworkModel {
         let subType: RPGMessageActionType = requestData ? model.subType : (isSuccess ? .ok : .failed)
         // A "please send more" request only needs to name the item: the master
         // rebuilds the payload from `data.id` via createGameData and never reads
@@ -1357,7 +2275,25 @@ extension PlayerController {
         // we just received — e.g. a map that's merely short its background photo
         // sent its whole multi-MB self straight back upstream over the slow,
         // small-message-oriented player→master path, for nothing.
-        let payload = NetworkCodableDataType(id: model.data.id, type: model.data.type, version: requestData ? model.data.version : 0, data: nil)
+        let preservesAssetVersion = model.data.type == .photo ||
+            model.data.type == .pdf ||
+            model.data.type == .space ||
+            model.data.type == .weather
+        let version = if requestData {
+            requestedVersion ?? model.data.version
+        } else if preservesAssetVersion {
+            model.data.version
+        } else {
+            0
+        }
+        let payload = NetworkCodableDataType(
+            id: model.data.id,
+            type: model.data.type,
+            version: version,
+            data: nil,
+            assetVersion: preservesAssetVersion && requestedVersion == nil ? model.data.assetVersion : nil,
+            contentVersion: preservesAssetVersion ? model.data.contentVersion : nil
+        )
         // Echo the counter of the message being answered (same precedent as the
         // mapState re-request below) instead of minting a fresh one. The pipeline
         // already deduplicates the incoming trigger, so this stays exactly-once;
@@ -1453,5 +2389,38 @@ extension PlayerController {
         guard await root.gameModel.gameType != .proxy else { return }
         let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id)
         await send(type: .update, subType: .audioList, updated: audioList, useJournal: false)
+    }
+
+    func sendPhotoList() async {
+        // A proxy is a private mirror of its host and must not become a separate
+        // availability-report participant.
+        guard await root.gameModel.gameType != .proxy else { return }
+        let photoList = await root.photoRoot.photoGameControllable.photoList(
+            allPlayers: false,
+            with: root.gameModel.gameConfig.master.id
+        )
+        await send(type: .update, subType: .photoList, updated: photoList, useJournal: false)
+    }
+
+    func sendPdfList() async {
+        // A proxy mirrors its host and must not become an availability-report
+        // participant of its own.
+        guard await root.gameModel.gameType != .proxy else { return }
+        let pdfList = await root.pdfRoot.pdfGameControllable.pdfList(
+            allPlayers: false,
+            with: root.gameModel.gameConfig.master.id
+        )
+        await send(type: .update, subType: .pdfList, updated: pdfList, useJournal: false)
+    }
+
+    func sendSpaceList() async {
+        // A proxy mirrors its host and must not appear as a separate participant
+        // in the Space availability/version matrix.
+        guard await root.gameModel.gameType != .proxy else { return }
+        let spaceList = await root.spaceRoot.spaceGameControllable.spaceList(
+            allPlayers: false,
+            with: root.gameModel.gameConfig.master.id
+        )
+        await send(type: .update, subType: .spaceList, updated: spaceList, useJournal: false)
     }
 }

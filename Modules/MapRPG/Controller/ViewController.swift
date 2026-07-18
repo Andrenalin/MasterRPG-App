@@ -95,7 +95,13 @@ public extension ViewController {
 public extension ViewController {
     @MainActor
     func gameMapView(root: MapRootModel, playerId: UUID, external: Bool = false) -> some View {
-        RootCanvasMap(root: root, itemId: root.gameController.gameModel.currentItemId ?? UUID(), mode: .player, playerPinId: playerId)
+        RootCanvasMap(
+            root: root,
+            itemId: root.gameController.gameModel.currentItemId ?? UUID(),
+            mode: .player,
+            playerPinId: playerId,
+            registersGameToolbarSession: !external
+        )
             .environment(root)
     }
 

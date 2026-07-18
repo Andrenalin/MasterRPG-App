@@ -165,6 +165,9 @@ extension SpaceRootModel {
     public var gameControllable: any GameControllable {
         gameController
     }
+    public var spaceGameControllable: any (GameControllable & SpaceGameControllable) {
+        gameController
+    }
     @MainActor public var itemControllable: any ItemControllable {
         itemController
     }

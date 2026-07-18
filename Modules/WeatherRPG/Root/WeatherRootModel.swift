@@ -167,6 +167,9 @@ extension WeatherRootModel {
     public var gameControllable: any GameControllable {
         gameController
     }
+    public var weatherGameControllable: any WeatherGameControllable {
+        gameController
+    }
     public var searchControllable: any SearchControllable { searchController }
     @MainActor public var itemControllable: any ItemControllable {
         itemController

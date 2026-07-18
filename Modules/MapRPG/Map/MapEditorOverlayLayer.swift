@@ -128,7 +128,11 @@ private struct MapNeedleViewportMenuLayer: View {
                     height: viewportRectangle.height,
                     alignment: .topLeading
                 )
-                .transition(.scale(scale: 0.8).combined(with: .opacity))
+                // Keep the visual and hit-test frames colocated from the first
+                // rendered frame. A scale transition leaves Button hit regions
+                // at their destination while the glass is visibly elsewhere.
+                .transition(.opacity)
+                .zIndex(10)
             }
         }
     }
@@ -180,6 +184,7 @@ private struct MapNeedleViewportMenu: View {
                     )
                 }
                 .borderLessTVBottonStyle()
+                .contentShape(.circle)
                 .foregroundStyle(.white)
                 .background(type == .remove ? Color.red.opacity(0.8) : Color.teal.opacity(0.8), in: .circle)
                 .help(
@@ -194,6 +199,7 @@ private struct MapNeedleViewportMenu: View {
                 .glassEffectID(type.label, in: glassNamespace)
 #endif
                 .position(placement.center(at: index) ?? placement.sourceAnchor)
+                .zIndex(Double(index + 1))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -270,10 +276,12 @@ private struct MapNeedleLoupe: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: false) { context, _ in
+            guard let map = context.resolveSymbol(id: MapLoupeCanvasSymbol.map) else { return }
+            context.draw(map, in: sampling.destinationRectangle(canvasSize: canvasSize))
+        } symbols: {
             MapOrientedImage(image: image, degrees: degrees, canvasSize: canvasSize)
-                .scaleEffect(sampling.scale, anchor: .topLeading)
-                .offset(x: sampling.offset.x, y: sampling.offset.y)
+                .tag(MapLoupeCanvasSymbol.map)
         }
         .frame(width: MapLoupeGeometry.size.width, height: MapLoupeGeometry.size.height)
         .clipShape(.circle)
@@ -289,6 +297,10 @@ private struct MapNeedleLoupe: View {
         }
         .shadow(radius: 4)
     }
+}
+
+private enum MapLoupeCanvasSymbol: Hashable {
+    case map
 }
 
 private struct MapLoupeCrosshair: Shape {

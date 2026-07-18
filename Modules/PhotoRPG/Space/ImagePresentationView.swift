@@ -29,7 +29,7 @@ struct ImagePresentationView: View {
                     .presentationScreenSize, presentationScreenSize != .zero else {
                         print("Unable to get a valid presentation screen size from the content entity.")
                         return
-                }
+                    }
                 // Position the entity at the back of the window.
                 let originalPosition = model.contentEntity.position(relativeTo: nil)
                 model.contentEntity.setPosition(SIMD3<Float>(originalPosition.x, originalPosition.y, 0.0), relativeTo: nil)

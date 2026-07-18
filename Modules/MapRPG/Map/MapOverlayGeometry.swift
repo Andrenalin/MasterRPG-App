@@ -1,7 +1,33 @@
 // @copyright André Trettin
 
 import CoreGraphics
+import CoreRPG
 import Foundation
+
+/// Pure needle-drag conversion. Gesture locations are expressed in viewport
+/// space while persisted room coordinates live in logical map space.
+enum MapNeedleDragGeometry {
+    static func coordinate(
+        originalCoordinate: CGPoint,
+        startViewportPoint: CGPoint,
+        currentViewportPoint: CGPoint,
+        viewportGeometry: ViewportGeometry,
+        transform: ViewportTransform
+    ) -> CGPoint {
+        let start = viewportGeometry.contentPoint(
+            fromViewport: startViewportPoint,
+            transform: transform
+        )
+        let current = viewportGeometry.contentPoint(
+            fromViewport: currentViewportPoint,
+            transform: transform
+        )
+        return CGPoint(
+            x: originalCoordinate.x + current.x - start.x,
+            y: originalCoordinate.y + current.y - start.y
+        )
+    }
+}
 
 /// The viewport-space quadrant occupied by an adaptive map action menu.
 enum MapOverlayQuadrant: CaseIterable, Equatable, Sendable {
@@ -409,6 +435,25 @@ struct MapLoupePlacement: Sendable {
 struct MapLoupeSampling: Equatable, Sendable {
     let scale: CGFloat
     let offset: CGPoint
+
+    /// Destination for a logical map canvas inside the fixed loupe. The
+    /// sampled content coordinate maps exactly to the loupe center.
+    func destinationRectangle(canvasSize: CGSize) -> CGRect {
+        guard canvasSize.width.isFinite,
+              canvasSize.height.isFinite,
+              canvasSize.width > 0,
+              canvasSize.height > 0,
+              scale.isFinite,
+              scale > 0,
+              offset.isFinite else { return .zero }
+        return CGRect(
+            origin: offset,
+            size: CGSize(
+                width: canvasSize.width * scale,
+                height: canvasSize.height * scale
+            )
+        )
+    }
 }
 
 /// Pure placement math for the fixed-size map needle loupe. Sampling geometry

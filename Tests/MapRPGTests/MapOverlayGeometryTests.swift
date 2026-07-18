@@ -2,6 +2,7 @@
 
 #if canImport(Testing)
 import CoreGraphics
+import CoreRPG
 import Foundation
 import Testing
 
@@ -181,9 +182,72 @@ struct MapOverlayGeometryTests {
             sampleCoordinate: CGPoint(x: 40, y: 60),
             viewportScale: 0.5
         )
+        let destination = sampling.destinationRectangle(
+            canvasSize: CGSize(width: 1_200, height: 800)
+        )
+        let sampledPoint = CGPoint(
+            x: destination.minX + 40 * sampling.scale,
+            y: destination.minY + 60 * sampling.scale
+        )
 
         #expect(sampling.scale == 1.5)
         #expect(sampling.offset == CGPoint(x: 20, y: -10))
+        #expect(sampledPoint == CGPoint(x: 80, y: 80))
+    }
+
+    @Test(
+        "Loupe centers the oriented needle-tip coordinate for every quarter turn",
+        arguments: [0.0, 90.0, 180.0, 270.0]
+    )
+    func loupeSamplingCentersRotatedTip(degrees: Double) {
+        let imageSize = CGSize(width: 400, height: 240)
+        let canvasSize = ViewportGeometry.rotatedContentSize(
+            imageSize,
+            rotationDegrees: degrees
+        )
+        let tip = ViewportGeometry.rotatedPoint(
+            fromContent: CGPoint(x: 75, y: 160),
+            contentSize: imageSize,
+            rotationDegrees: degrees
+        )
+        let sampling = MapLoupeGeometry.sampling(
+            sampleCoordinate: tip,
+            viewportScale: 0.75
+        )
+        let destination = sampling.destinationRectangle(canvasSize: canvasSize)
+        let sampledPoint = CGPoint(
+            x: destination.minX + tip.x * sampling.scale,
+            y: destination.minY + tip.y * sampling.scale
+        )
+
+        #expect(abs(sampledPoint.x - MapLoupeGeometry.size.width / 2) < 0.001)
+        #expect(abs(sampledPoint.y - MapLoupeGeometry.size.height / 2) < 0.001)
+    }
+
+    @Test("Needle drag converts viewport locations into one logical tip coordinate")
+    func needleDragCoordinateConversion() {
+        let configuration = ViewportConfiguration(
+            id: UUID(),
+            contentSize: CGSize(width: 1_200, height: 800),
+            containerSize: CGSize(width: 600, height: 400),
+            panPolicy: .minimumVisible(44)
+        )
+        let geometry = ViewportGeometry(configuration: configuration)
+        let transform = ViewportTransform(
+            scale: 1.5,
+            offset: CGPoint(x: -130, y: 25)
+        )
+
+        let coordinate = MapNeedleDragGeometry.coordinate(
+            originalCoordinate: CGPoint(x: 300, y: 240),
+            startViewportPoint: CGPoint(x: 170, y: 145),
+            currentViewportPoint: CGPoint(x: 260, y: 205),
+            viewportGeometry: geometry,
+            transform: transform
+        )
+
+        #expect(abs(coordinate.x - 360) < 0.001)
+        #expect(abs(coordinate.y - 280) < 0.001)
     }
 
     @Test("Touch loupe falls back to lower-trailing near the upper-leading edge")

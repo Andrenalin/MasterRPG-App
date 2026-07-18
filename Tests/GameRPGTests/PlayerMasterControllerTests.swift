@@ -155,11 +155,12 @@ struct PlayerMasterControllerTests {
         #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 2)
     }
 
-    @Test("Player sends photo to master and receives it back")
+    @Test("Available player reveals photo and master forwards only to its local player")
     func handlePhoto() async throws {
-        // Arrange
         let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
+        #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.count == 3)
         #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
@@ -167,50 +168,73 @@ struct PlayerMasterControllerTests {
         let photoId = try #require(env.playerRoot.photoRoot.itemController.itemDataModel.items.first {
             env.playerRoot.photoRoot.itemController.itemSync(for: $0)?.fileUrl != nil
         })
-        let version = env.playerRoot.photoRoot.itemController.itemOrEmpty(for: photoId).version
-        #expect(await env.playerRoot.photoRoot.gameController.currentId != photoId)
+        #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.contains(photoId))
+        let version = await env.masterRoot.photoRoot.gameController.networkVersion(for: photoId)
+        #expect(await env.playerRoot.photoRoot.gameController.networkVersion(for: photoId) == version)
 
-        // Act - Player sends photo to master
+        let playerId = env.playerGameConfig.id
+        env.playerRoot.gameModel.reset(
+            gameConfig: GameConfigModel(
+                id: playerId,
+                state: .started,
+                master: env.masterGameConfig.master
+            ),
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")
+            ])
+        )
+
+        // Report the player's versions first. The master answers with the
+        // authoritative matrix whose own asset versions are the baseline.
+        await env.player.sendPhotoList()
+        let playerReport = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(playerReport.type == .update)
+        #expect(playerReport.subType == .photoList)
+        _ = try await env.master.handle(playerReport)
+
+        let authoritativeReport = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(authoritativeReport.type == .update)
+        #expect(authoritativeReport.subType == .photoList)
+        _ = try await env.player.handle(authoritativeReport)
+
+        env.masterNetworkSpy.sendResponseData = nil
+        env.masterNetworkSpy.sendResponseHistory.removeAll()
+        let masterBroadcastCount = env.masterNetworkSpy.calledSendResponseAll
+        let localDeliveryCount = env.playerDelegateSpy.calledReceived
+
+        // All reported participants have the exact baseline, so this reveal is
+        // a reference. The transport already fans it out to remote peers; the
+        // master only replays it to the co-located PlayerController.
         let photoShareData = try await env.playerRoot.photoRoot.gameController.createGameData(for: photoId)
         await env.player.game(message: photoShareData, actionType: .generic)
         let sentPhotoData = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(sentPhotoData.type == .update)
-        #expect(sentPhotoData.subType == .generic)
+        #expect(sentPhotoData.type == .reveal)
+        #expect(sentPhotoData.subType == .show)
         #expect(sentPhotoData.data.id == photoId)
         #expect(sentPhotoData.data.type == .photo)
+        #expect(sentPhotoData.data.effectiveAssetVersion == version)
+        #expect(sentPhotoData.data.data == nil)
 
-        // Assert - Master receives, persists, and sends photo back
+        env.network.setupLocal()
+        env.network.model.setPlayerDelegate(env.playerDelegateSpy)
         let result = try await env.master.handle(sentPhotoData)
-        #expect(nil == result)
-        let resendPhotoData = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
-        #expect(resendPhotoData.type == .reveal)
-        #expect(resendPhotoData.subType == .show)
-        #expect(resendPhotoData.data.id == photoId)
-        #expect(resendPhotoData.data.type == .photo)
-        #expect(await env.masterRoot.photoRoot.gameController.currentId == photoId)
-        #expect(env.masterRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
-        #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.count == 1)
-        let persistedPhoto = try #require(env.masterRoot.photoRoot.itemController.itemSync(for: photoId, noGame: true))
-        #expect(persistedPhoto.version == version)
-        #expect(persistedPhoto.fileUrl != nil)
-        #expect(await env.playerRoot.photoRoot.gameController.currentId != photoId)
 
-        // Act - Player receives photo back from master
-        let playerResult = try await env.player.handle(resendPhotoData)
-
-        // Assert - Player now has photo displayed
-        let playerResponse = try #require(playerResult)
-        #expect(playerResponse.subType == .ok)
+        #expect(result == nil)
+        #expect(env.masterNetworkSpy.calledSendResponseAll == masterBroadcastCount)
+        #expect(env.masterNetworkSpy.sendResponseHistory.isEmpty)
+        #expect(env.playerDelegateSpy.calledReceived == localDeliveryCount + 1)
+        #expect(await env.masterRoot.photoRoot.gameController.currentId != photoId)
+        #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.count == 3)
+        #expect(await env.masterRoot.photoRoot.gameController.networkVersion(for: photoId) == version)
         #expect(await env.playerRoot.photoRoot.gameController.currentId == photoId)
-        #expect(env.playerRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
-        #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
     }
 
-    @Test("Player sends pdf to master, master saves it, and player receives it back")
+    @Test("Available player reveals PDF and master forwards only to its local player")
     func handlePdf() async throws {
-        // Arrange
         let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.pdfTestData, itemCounter: 0)
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.pdfTestData, itemCounter: 0)
+        #expect(env.masterRoot.pdfRoot.itemController.itemDataModel.items.count == 1)
         #expect(env.playerRoot.pdfRoot.itemController.itemDataModel.items.count == 1)
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
@@ -218,126 +242,286 @@ struct PlayerMasterControllerTests {
         let pdfId = try #require(env.playerRoot.pdfRoot.itemController.itemDataModel.items.first {
             env.playerRoot.pdfRoot.itemController.itemSync(for: $0)?.fileUrl != nil
         })
-        let version = env.playerRoot.pdfRoot.itemController.itemOrEmpty(for: pdfId).version
-        #expect(await env.playerRoot.pdfRoot.gameController.currentId != pdfId)
+        #expect(env.masterRoot.pdfRoot.itemController.itemDataModel.items.contains(pdfId))
+        let version = await env.masterRoot.pdfRoot.gameController.networkVersion(for: pdfId)
+        #expect(await env.playerRoot.pdfRoot.gameController.networkVersion(for: pdfId) == version)
 
-        // Act - Player sends pdf to master
+        let playerId = env.playerGameConfig.id
+        env.playerRoot.gameModel.reset(
+            gameConfig: GameConfigModel(
+                id: playerId,
+                state: .started,
+                master: env.masterGameConfig.master
+            ),
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")
+            ])
+        )
+
+        // Report the player's versions first. The master answers with the
+        // authoritative matrix whose own PDF versions are the baseline.
+        await env.player.sendPdfList()
+        let playerReport = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(playerReport.type == .update)
+        #expect(playerReport.subType == .pdfList)
+        _ = try await env.master.handle(playerReport)
+
+        let authoritativeReport = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(authoritativeReport.type == .update)
+        #expect(authoritativeReport.subType == .pdfList)
+        _ = try await env.player.handle(authoritativeReport)
+
+        env.masterNetworkSpy.sendResponseData = nil
+        env.masterNetworkSpy.sendResponseHistory.removeAll()
+        let masterBroadcastCount = env.masterNetworkSpy.calledSendResponseAll
+        let localDeliveryCount = env.playerDelegateSpy.calledReceived
+
+        // Every reported participant has the baseline, so the player sends a
+        // reference. Remote transports already fan it out; the master only
+        // delivers it to the co-located player.
         let pdfShareData = try await env.playerRoot.pdfRoot.gameController.createGameData(for: pdfId)
         await env.player.game(message: pdfShareData, actionType: .generic)
         let sentPdfData = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(sentPdfData.type == .update)
-        #expect(sentPdfData.subType == .generic)
+        #expect(sentPdfData.type == .reveal)
+        #expect(sentPdfData.subType == .show)
         #expect(sentPdfData.data.id == pdfId)
         #expect(sentPdfData.data.type == .pdf)
+        #expect(sentPdfData.data.effectiveAssetVersion == version)
+        #expect(sentPdfData.data.data == nil)
 
-        // Assert - Master receives, persists, and sends pdf back
+        env.network.setupLocal()
+        env.network.model.setPlayerDelegate(env.playerDelegateSpy)
         let result = try await env.master.handle(sentPdfData)
-        #expect(nil == result)
-        let resendPdfData = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
-        #expect(resendPdfData.type == .reveal)
-        #expect(resendPdfData.subType == .show)
-        #expect(resendPdfData.data.id == pdfId)
-        #expect(resendPdfData.data.type == .pdf)
-        #expect(await env.masterRoot.pdfRoot.gameController.currentId == pdfId)
-        #expect(env.masterRoot.pdfRoot.gameController.gameItem(for: pdfId).version == version)
-        let persistedPdf = try #require(env.masterRoot.pdfRoot.itemController.itemSync(for: pdfId, noGame: true))
-        #expect(persistedPdf.version == version)
-        #expect(persistedPdf.fileUrl != nil)
-        #expect(env.masterRoot.pdfRoot.itemController.itemDataModel.items.contains(pdfId))
-        #expect(await env.playerRoot.pdfRoot.gameController.currentId != pdfId)
 
-        // Act - Player receives pdf back from master
-        let playerResult = try await env.player.handle(resendPdfData)
-
-        // Assert - Player now has pdf displayed
-        let playerResponse = try #require(playerResult)
-        #expect(playerResponse.subType == .ok)
+        #expect(result == nil)
+        #expect(env.masterNetworkSpy.calledSendResponseAll == masterBroadcastCount)
+        #expect(env.masterNetworkSpy.sendResponseHistory.isEmpty)
+        #expect(env.playerDelegateSpy.calledReceived == localDeliveryCount + 1)
+        #expect(await env.masterRoot.pdfRoot.gameController.currentId != pdfId)
+        #expect(env.masterRoot.pdfRoot.itemController.itemDataModel.items.count == 1)
+        #expect(await env.masterRoot.pdfRoot.gameController.networkVersion(for: pdfId) == version)
         #expect(await env.playerRoot.pdfRoot.gameController.currentId == pdfId)
-        #expect(env.playerRoot.pdfRoot.gameController.gameItem(for: pdfId).version == version)
-        #expect(env.playerRoot.pdfRoot.itemController.itemDataModel.items.count == 1)
     }
 
-    @Test("Player sends multiple photos to master and master saves each one")
-    func handleMultiplePhotos() async throws {
-        // Arrange
+    @Test("Player PDF version mismatch makes master reveal its canonical asset")
+    func mismatchedPlayerPdfUsesMasterCanonicalAsset() async throws {
         let env = try await PlayerMasterControllerTestEnvironment.create()
-        try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
-        #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
+        try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.pdfTestData, itemCounter: 0)
+        #expect(env.masterRoot.pdfRoot.itemController.itemDataModel.items.count == 1)
         env.masterRoot.adventureRoot.startGame()
-        env.playerRoot.adventureRoot.startGame()
 
-        let photoIds = Array(env.playerRoot.photoRoot.itemController.itemDataModel.items.filter {
-            env.playerRoot.photoRoot.itemController.itemSync(for: $0)?.fileUrl != nil
-        }.prefix(2))
-        #expect(photoIds.count == 2)
+        let pdfId = try #require(env.masterRoot.pdfRoot.itemController.itemDataModel.items.first {
+            env.masterRoot.pdfRoot.itemController.itemSync(for: $0)?.fileUrl != nil
+        })
+        let canonical = try await env.masterRoot.pdfRoot.gameController.createGameData(for: pdfId)
+        let masterVersion = canonical.effectiveAssetVersion
+        let competingVersion = masterVersion + 1
+        let playerConfig = GameConfigModel(
+            id: env.playerGameConfig.id,
+            state: .started,
+            master: env.masterGameConfig.master
+        )
+        let competingBytes = Data("player-owned-competing-pdf".utf8)
+        let competingReveal = GameNetworkModel(
+            version: 1,
+            counter: 16,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            gameConfig: playerConfig,
+            data: NetworkCodableDataType(
+                id: pdfId,
+                type: .pdf,
+                version: competingVersion,
+                data: competingBytes
+            )
+        )
 
-        for photoId in photoIds {
-            let version = env.playerRoot.photoRoot.itemController.itemOrEmpty(for: photoId).version
+        let result = try await env.master.handle(competingReveal)
 
-            // Act - Player sends photo to master
-            let photoShareData = try await env.playerRoot.photoRoot.gameController.createGameData(for: photoId)
-            await env.player.game(message: photoShareData, actionType: .generic)
-            let sentPhotoData = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-
-            // Assert - Master imports and persists the photo
-            let result = try await env.master.handle(sentPhotoData)
-            #expect(nil == result)
-            #expect(await env.masterRoot.photoRoot.gameController.currentId == photoId)
-            #expect(env.masterRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
-
-            let masterPhoto = try #require(env.masterRoot.photoRoot.itemController.itemSync(for: photoId, noGame: true))
-            #expect(masterPhoto.version == version)
-            #expect(masterPhoto.fileUrl != nil)
-            #expect(masterPhoto.fileUrl?.contentHash != nil)
-        }
+        #expect(result == nil)
+        let resent = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(resent.type == .reveal)
+        #expect(resent.subType == .show)
+        #expect(resent.data.id == pdfId)
+        #expect(resent.data.type == .pdf)
+        #expect(resent.data.effectiveAssetVersion == masterVersion)
+        #expect(resent.data.data != nil)
+        #expect(resent.data.data != competingBytes)
+        #expect(await env.masterRoot.pdfRoot.gameController.networkVersion(for: pdfId) == masterVersion)
+        #expect(await env.masterRoot.pdfRoot.gameController.currentId != pdfId)
     }
 
-    @Test("Player sends space to master and receives it back")
-    func handleSpace() async throws {
-        // Arrange
+    @Test("Player photo version mismatch makes master reveal its canonical asset")
+    func mismatchedPlayerPhotoUsesMasterCanonicalAsset() async throws {
         let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
+        #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.count == 3)
+        env.masterRoot.adventureRoot.startGame()
+
+        let photoId = try #require(env.masterRoot.photoRoot.itemController.itemDataModel.items.first {
+            env.masterRoot.photoRoot.itemController.itemSync(for: $0)?.fileUrl != nil
+        })
+        let canonical = try await env.masterRoot.photoRoot.gameController.createGameData(for: photoId)
+        let masterVersion = canonical.effectiveAssetVersion
+        let competingVersion = masterVersion + 1
+        let playerConfig = GameConfigModel(
+            id: env.playerGameConfig.id,
+            state: .started,
+            master: env.masterGameConfig.master
+        )
+        let competingBytes = Data("player-owned-competing-photo".utf8)
+        let competingReference = NetworkCodableDataType(
+            id: photoId,
+            type: .photo,
+            version: competingVersion,
+            data: competingBytes
+        )
+        let reveal = GameNetworkModel(
+            version: 1,
+            counter: 17,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            gameConfig: playerConfig,
+            data: competingReference
+        )
+
+        let result = try await env.master.handle(reveal)
+
+        #expect(result == nil)
+        let resent = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(resent.type == .reveal)
+        #expect(resent.subType == .show)
+        #expect(resent.data.id == photoId)
+        #expect(resent.data.type == .photo)
+        #expect(resent.data.effectiveAssetVersion == masterVersion)
+        #expect(resent.data.data != nil)
+        #expect(resent.data.data != competingBytes)
+        #expect(await env.masterRoot.photoRoot.gameController.networkVersion(for: photoId) == masterVersion)
+        #expect(await env.masterRoot.photoRoot.gameController.currentId != photoId)
+    }
+
+    @Test("Available player reveals Space and master forwards only to its local player")
+    func handleSpace() async throws {
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.spaceTestData, itemCounter: 0)
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.spaceTestData, itemCounter: 0)
+        #expect(env.masterRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
         #expect(env.playerRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
 
-        let spaceId = env.playerRoot.spaceRoot.itemController.itemDataModel.items[0]
-        let version = env.playerRoot.spaceRoot.itemController.itemOrEmpty(for: spaceId).version
-        #expect(await env.playerRoot.spaceRoot.gameController.currentId != spaceId)
+        let spaceId = try #require(env.playerRoot.spaceRoot.itemController.itemDataModel.items.first)
+        #expect(env.masterRoot.spaceRoot.itemController.itemDataModel.items.contains(spaceId))
+        let version = await env.masterRoot.spaceRoot.gameController.networkVersion(for: spaceId)
+        #expect(await env.playerRoot.spaceRoot.gameController.networkVersion(for: spaceId) == version)
 
-        // Act - Player sends space to master
+        let playerId = env.playerGameConfig.id
+        env.playerRoot.gameModel.reset(
+            gameConfig: GameConfigModel(
+                id: playerId,
+                state: .started,
+                master: env.masterGameConfig.master
+            ),
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")
+            ])
+        )
+
+        // Report the player's versions first. The master answers with the
+        // authoritative matrix whose own Space versions are the baseline.
+        await env.player.sendSpaceList()
+        let playerReport = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(playerReport.type == .update)
+        #expect(playerReport.subType == .spaceList)
+        _ = try await env.master.handle(playerReport)
+
+        let authoritativeReport = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(authoritativeReport.type == .update)
+        #expect(authoritativeReport.subType == .spaceList)
+        _ = try await env.player.handle(authoritativeReport)
+
+        env.masterNetworkSpy.sendResponseData = nil
+        env.masterNetworkSpy.sendResponseHistory.removeAll()
+        let masterBroadcastCount = env.masterNetworkSpy.calledSendResponseAll
+        let localDeliveryCount = env.playerDelegateSpy.calledReceived
+
+        // Every reported participant has the baseline, so the player sends a
+        // reference. Remote transports already fan it out; the master only
+        // delivers it to the co-located player.
         let spaceShareData = try await env.playerRoot.spaceRoot.gameController.createGameData(for: spaceId)
         await env.player.game(message: spaceShareData, actionType: .generic)
         let sentSpaceData = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(sentSpaceData.type == .update)
-        #expect(sentSpaceData.subType == .generic)
+        #expect(sentSpaceData.type == .reveal)
+        #expect(sentSpaceData.subType == .show)
         #expect(sentSpaceData.data.id == spaceId)
         #expect(sentSpaceData.data.type == .space)
+        #expect(sentSpaceData.data.effectiveAssetVersion == version)
+        #expect(sentSpaceData.data.data == nil)
 
-        // Assert - Master receives, persists, and sends space back
+        env.network.setupLocal()
+        env.network.model.setPlayerDelegate(env.playerDelegateSpy)
         let result = try await env.master.handle(sentSpaceData)
-        #expect(nil == result)
-        let resendSpaceData = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
-        #expect(resendSpaceData.type == .reveal)
-        #expect(resendSpaceData.subType == .show)
-        #expect(resendSpaceData.data.id == spaceId)
-        #expect(resendSpaceData.data.type == .space)
-        #expect(await env.masterRoot.spaceRoot.gameController.currentId == spaceId)
-        #expect(env.masterRoot.spaceRoot.gameController.gameItem(for: spaceId).version == version)
+
+        #expect(result == nil)
+        #expect(env.masterNetworkSpy.calledSendResponseAll == masterBroadcastCount)
+        #expect(env.masterNetworkSpy.sendResponseHistory.isEmpty)
+        #expect(env.playerDelegateSpy.calledReceived == localDeliveryCount + 1)
+        #expect(await env.masterRoot.spaceRoot.gameController.currentId != spaceId)
         #expect(env.masterRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
-        let persistedSpace = try #require(env.masterRoot.spaceRoot.itemController.itemSync(for: spaceId, noGame: true))
-        #expect(persistedSpace.version == version)
-        #expect(await env.playerRoot.spaceRoot.gameController.currentId != spaceId)
-
-        // Act - Player receives space back from master
-        let playerResult = try await env.player.handle(resendSpaceData)
-
-        // Assert - Player now has space displayed
-        let playerResponse = try #require(playerResult)
-        #expect(playerResponse.subType == .ok)
+        #expect(await env.masterRoot.spaceRoot.gameController.networkVersion(for: spaceId) == version)
         #expect(await env.playerRoot.spaceRoot.gameController.currentId == spaceId)
-        #expect(env.playerRoot.spaceRoot.gameController.gameItem(for: spaceId).version == version)
-        #expect(env.playerRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
+    }
+
+    @Test("Player Space version mismatch makes master reveal its canonical asset")
+    func mismatchedPlayerSpaceUsesMasterCanonicalAsset() async throws {
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.spaceTestData, itemCounter: 0)
+        #expect(env.masterRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
+        env.masterRoot.adventureRoot.startGame()
+
+        let spaceId = try #require(env.masterRoot.spaceRoot.itemController.itemDataModel.items.first)
+        let canonical = try await env.masterRoot.spaceRoot.gameController.createGameData(for: spaceId)
+        let masterVersion = canonical.effectiveAssetVersion
+        let competingVersion = masterVersion + 1
+        let playerConfig = GameConfigModel(
+            id: env.playerGameConfig.id,
+            state: .started,
+            master: env.masterGameConfig.master
+        )
+        let competingBytes = Data("player-owned-competing-space".utf8)
+        let competingReveal = GameNetworkModel(
+            version: 1,
+            counter: 18,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            gameConfig: playerConfig,
+            data: NetworkCodableDataType(
+                id: spaceId,
+                type: .space,
+                version: competingVersion,
+                data: competingBytes
+            )
+        )
+
+        // The player has not reported a matching master baseline, and its bytes
+        // claim a competing version. This is a request for the master's asset,
+        // never an import that can replace it.
+        let result = try await env.master.handle(competingReveal)
+
+        #expect(result == nil)
+        let resent = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(resent.type == .reveal)
+        #expect(resent.subType == .show)
+        #expect(resent.data.id == spaceId)
+        #expect(resent.data.type == .space)
+        #expect(resent.data.effectiveAssetVersion == masterVersion)
+        #expect(resent.data.data != nil)
+        #expect(resent.data.data != competingBytes)
+        #expect(await env.masterRoot.spaceRoot.gameController.networkVersion(for: spaceId) == masterVersion)
+        #expect(await env.masterRoot.spaceRoot.gameController.currentId != spaceId)
     }
 
     @Test("Player sends character update to master")

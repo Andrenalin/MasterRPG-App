@@ -158,6 +158,16 @@ extension GameNetworkController {
 // MARK: - Master send
 
 extension GameNetworkController {
+    /// Delivers a relayed player presentation to the co-located player
+    /// controller on the game-master device. The originating message has
+    /// already been fanned out to LAN and SharePlay peers, so this path must not
+    /// publish it to either transport again.
+    @MainActor
+    func sendLocalPlayer(_ data: GameNetworkModel) async {
+        guard !proxy, model.hasLocalPlayer else { return }
+        await model.playerDelegate?.received(data)
+    }
+
     @MainActor
     func sendPlayer(_ data: GameNetworkModel, to connectionId: ConnectionController.ID) async {
         // The master receives SharePlay messages through the same delegate with

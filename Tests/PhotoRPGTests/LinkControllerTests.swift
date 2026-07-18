@@ -35,7 +35,6 @@ struct LinkControllerTests {
         )
 
         #expect(text.contains("[Share]"))
-        #expect(text.contains("[Immersive]"))
         #expect(text.contains("[Show]"))
         #expect(text.contains("[Remove]"))
         #expect(text.contains("Cloud city reference"))
@@ -63,18 +62,6 @@ struct LinkControllerTests {
             editAction: editAction()
         )
         #expect(shareText == text)
-
-        let immersiveText = sut.toggleTextLink(
-            linkNumber: LinkType.photoImmersive.linkNumberAddition + 7,
-            itemId: itemId,
-            entryId: nil,
-            command: LinkType.photoImmersive.rawValue,
-            in: text,
-            shareResult: shareResult,
-            toggler: toggler(),
-            editAction: editAction()
-        )
-        #expect(immersiveText == text)
 
         text = sut.toggleTextLink(
             linkNumber: LinkType.remove.linkNumberAddition + 7,

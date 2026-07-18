@@ -12,11 +12,6 @@ struct ViewerRootView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
-#if os(visionOS)
-    @Environment(\.openImmersiveSpace) private var openSpace
-    @Environment(\.dismissImmersiveSpace) private var dismissSpace
-#endif
-
     @State private var toolBarModel: GameToolBarModel = GameToolBarModel()
     @State private var cacheItemListModel = CacheItemListModel()
 

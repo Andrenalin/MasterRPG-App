@@ -31,6 +31,13 @@ final class GameScreenModel {
     var showExport: Bool = false
     var showQuitGameAlert: Bool = false
 
+#if os(iOS) || os(macOS)
+    /// Keeps the expensive RealityKit scene reusable while the 2D map is
+    /// selected. The active controller reference lives on `GameRootModel`
+    /// only while the 3D surface is actually visible.
+    var retainedGameTableModel: GameTableModel?
+#endif
+
     var isSideMenuVisible: Bool = true
 
     var showMainTab: NetworkModules = .none {

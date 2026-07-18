@@ -33,6 +33,7 @@ struct MapEditor: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(MapRootModel.self) private var root
     @Environment(DropPinModel.self) private var dropPinModel
+    @Environment(\.mapViewportTrailingInset) private var viewportTrailingInset
 
     private let editController: EditController
     private let image: AKImage
@@ -61,6 +62,7 @@ struct MapEditor: View {
                 degrees: photoDegrees,
                 map: map
             )
+            .padding(.trailing, max(0, viewportTrailingInset))
             .background {
                 Rectangle()
                     .fill(Color.black.gradient)
@@ -137,7 +139,8 @@ private extension MapEditor {
     func appear() {
         installActionRouter()
 
-        if session.mapMode != .edit {
+        if session.mapMode != .edit,
+           configuration.registersGameToolbarSession {
             if let previous = root.rootModel.gameEditorModel, previous !== session {
                 session.isStreaming = previous.isStreaming
                 session.isPointing = previous.isPointing
@@ -159,6 +162,10 @@ private extension MapEditor {
     }
 
     func disappear() {
+        if configuration.registersGameToolbarSession,
+           root.rootModel.gameEditorModel === session {
+            root.rootModel.gameEditorModel = nil
+        }
         session.disappear()
         session.installActionRouter(nil)
     }

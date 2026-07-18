@@ -4,7 +4,6 @@ import SwiftUI
 import os.log
 
 public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
-    case photoImmersive
     case play
     case remove
     case roll
@@ -14,7 +13,6 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
     
     var localizedTitle: LocalizedStringResource {
         switch self {
-        case .photoImmersive: LocalizedStringResource("Immersive", bundle: .module)
         case .play: LocalizedStringResource("Play", bundle: .module)
         case .remove: LocalizedStringResource("Remove", bundle: .module)
         case .roll: LocalizedStringResource("Roll", bundle: .module)
@@ -30,7 +28,6 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
     
     var icon: String {
         switch self {
-        case .photoImmersive: "photo.fill"
         case .play: "play.fill"
         case .remove: "trash.fill"
         case .roll: "dice.fill"
@@ -42,7 +39,6 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
     
     public var linkNumberAddition: Int {
         switch self {
-        case .photoImmersive: 100
         case .play: 200
         case .remove: 300
         case .roll: 400

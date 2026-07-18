@@ -46,6 +46,9 @@ struct MapEditorCanvas: View {
                 degrees: degrees,
                 transform: displayedTransform
             )
+            // Menus and the loupe live in viewport space and must remain above
+            // every transformed map hit target, including selected needles.
+            .zIndex(100)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .coordinateSpace(name: MapViewportCoordinateSpace.name)

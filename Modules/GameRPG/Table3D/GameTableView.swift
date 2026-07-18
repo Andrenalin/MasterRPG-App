@@ -210,12 +210,22 @@ import SwiftUI
 @MainActor
 public struct GameTableView: View {
     let root: GameRoot
+    private let retentionModel: GameScreenModel?
+    private let showsEmbeddedToolbar: Bool
 
     @State private var game: GameTableModel?
     @State private var accessibilitySubscriptions: [any Cancellable] = []
 
     public init(root: GameRoot) {
         self.root = root
+        retentionModel = nil
+        showsEmbeddedToolbar = true
+    }
+
+    init(root: GameRoot, retentionModel: GameScreenModel?) {
+        self.root = root
+        self.retentionModel = retentionModel
+        showsEmbeddedToolbar = false
     }
 
     public var body: some View {
@@ -223,7 +233,8 @@ public struct GameTableView: View {
             if let game {
                 GameTableRealityContent(
                     game: game,
-                    accessibilitySubscriptions: $accessibilitySubscriptions
+                    accessibilitySubscriptions: $accessibilitySubscriptions,
+                    showsEmbeddedToolbar: showsEmbeddedToolbar
                 )
             } else {
                 ProgressView()
@@ -242,6 +253,7 @@ public struct GameTableView: View {
         }
         .onDisappear {
             accessibilitySubscriptions.removeAll()
+            retentionModel?.retainedGameTableModel = game
             if root.gameModel.gameTableModel === game {
                 root.gameModel.gameTableModel = nil
             }
@@ -259,6 +271,21 @@ public struct GameTableView: View {
             )
             return
         }
+
+        if let retainedGame = retentionModel?.retainedGameTableModel {
+            retainedGame.networkActions = root.networkActions
+            retainedGame.isGameMaster = root.gameModel.gameConfig.isMaster
+            retainedGame.playerPinId = retainedGame.isGameMaster
+                ? nil
+                : root.gameModel.gameConfig.id
+            game = retainedGame
+            root.gameModel.gameTableModel = retainedGame
+            await retainedGame.handleMapChange(
+                isGameMaster: retainedGame.isGameMaster
+            )
+            return
+        }
+
         let initializedGame = GameTableModel(
             mapRoot: root.mapRoot,
             photoRoot: root.photoRoot
@@ -290,6 +317,7 @@ public typealias GameTableRealityView = GameTableView
 private struct GameTableRealityContent: View {
     let game: GameTableModel
     @Binding var accessibilitySubscriptions: [any Cancellable]
+    let showsEmbeddedToolbar: Bool
 
     var body: some View {
         RealityView { content in
@@ -305,8 +333,10 @@ private struct GameTableRealityContent: View {
         .simultaneousGesture(pinDragGesture)
         .simultaneousGesture(pinTapGesture)
         .overlay(alignment: .topTrailing) {
-            GameTableToolbar(game: game)
-                .padding()
+            if showsEmbeddedToolbar {
+                GameTableToolbar(game: game)
+                    .padding()
+            }
         }
         .overlay(alignment: .bottom) {
             GamePinActionMenu(game: game)

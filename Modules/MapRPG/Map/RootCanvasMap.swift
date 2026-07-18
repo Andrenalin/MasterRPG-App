@@ -17,6 +17,7 @@ struct RootCanvasMap: View {
         itemId: UUID,
         mode: MapDisplayMode,
         playerPinId: UUID? = nil,
+        registersGameToolbarSession: Bool = true,
         initialImage: AKImage? = nil,
         initialDegrees: Double = 0,
         loadsImage: Bool = true
@@ -25,6 +26,7 @@ struct RootCanvasMap: View {
         self.itemId = itemId
         self.mode = mode
         self.playerPinId = playerPinId
+        self.registersGameToolbarSession = registersGameToolbarSession
         self.loadsImage = loadsImage
         self._image = State(wrappedValue: initialImage)
         self._degrees = State(wrappedValue: initialDegrees)
@@ -34,6 +36,7 @@ struct RootCanvasMap: View {
     let itemId: UUID
     let mode: MapDisplayMode
     let playerPinId: UUID?
+    let registersGameToolbarSession: Bool
     private let loadsImage: Bool
 
     @State private var dropPinModel = DropPinModel()
@@ -48,6 +51,7 @@ struct RootCanvasMap: View {
                     itemId: itemId,
                     mode: mode,
                     playerPinId: playerPinId,
+                    registersGameToolbarSession: registersGameToolbarSession,
                     image: image,
                     degrees: degrees
                 )

@@ -9,6 +9,220 @@ import Testing
 
 @MainActor
 struct GameControllerTests {
+    @Test func photoListRequestRoundTrips() throws {
+        let firstPhotoId = UUID()
+        let secondPhotoId = UUID()
+        let masterId = UUID()
+        let playerId = UUID()
+        let request = PhotoListRequest(
+            list: [firstPhotoId: 3, secondPhotoId: 8],
+            players: [
+                firstPhotoId: [masterId: 3, playerId: 3],
+                secondPhotoId: [masterId: 8, playerId: 7]
+            ]
+        )
+
+        let encoded = try #require(request.encodeData())
+
+        #expect(PhotoListRequest.decodeData(of: encoded) == request)
+    }
+
+    @Test func playerPhotoListUsesLocalMasterVersionForAvailability() async throws {
+        let root = try await GameControllerTests.setupPhoto()
+        let sut = root.gameController
+        let masterId = UUID()
+        let matchingPlayerId = UUID()
+        let mismatchingPlayerId = UUID()
+        let localData = await sut.photoList(allPlayers: false, with: masterId)
+        let localRequest = try #require(PhotoListRequest.decodeData(of: localData.data))
+        let (photoId, masterVersion) = try #require(localRequest.list.first)
+
+        let matchingRequest = PhotoListRequest(list: [photoId: masterVersion], players: [:])
+        let matchingData = NetworkCodableDataType(
+            id: UUID(),
+            type: .photo,
+            version: 0,
+            data: matchingRequest.encodeData()
+        )
+        let appliedMatching = await sut.applyPhotoList(
+            data: matchingData,
+            for: matchingPlayerId,
+            with: masterId,
+            authoritative: false
+        )
+
+        let mismatchingRequest = PhotoListRequest(list: [photoId: masterVersion + 1], players: [:])
+        let mismatchingData = NetworkCodableDataType(
+            id: UUID(),
+            type: .photo,
+            version: 0,
+            data: mismatchingRequest.encodeData()
+        )
+        let appliedMismatching = await sut.applyPhotoList(
+            data: mismatchingData,
+            for: mismatchingPlayerId,
+            with: masterId,
+            authoritative: false
+        )
+
+        #expect(appliedMatching)
+        #expect(appliedMismatching)
+        #expect(sut.masterVersion(for: photoId, masterId: masterId) == masterVersion)
+        #expect(sut.isPhotoAvailable(itemId: photoId, for: masterId, masterId: masterId))
+        #expect(sut.isPhotoAvailable(itemId: photoId, for: matchingPlayerId, masterId: masterId))
+        #expect(!sut.isPhotoAvailable(itemId: photoId, for: mismatchingPlayerId, masterId: masterId))
+    }
+
+    @Test func authoritativePhotoListUsesMasterListAsBaseline() async {
+        let sut = PhotoRootModel.testRoot().gameController
+        let photoId = UUID()
+        let masterId = UUID()
+        let matchingPlayerId = UUID()
+        let mismatchingPlayerId = UUID()
+        let masterVersion = 7
+        let request = PhotoListRequest(
+            list: [photoId: masterVersion],
+            players: [
+                photoId: [
+                    masterId: masterVersion + 10,
+                    matchingPlayerId: masterVersion,
+                    mismatchingPlayerId: masterVersion - 1
+                ]
+            ]
+        )
+        let data = NetworkCodableDataType(
+            id: UUID(),
+            type: .photo,
+            version: 0,
+            data: request.encodeData()
+        )
+
+        let applied = await sut.applyPhotoList(
+            data: data,
+            for: masterId,
+            with: masterId,
+            authoritative: true
+        )
+
+        #expect(applied)
+        #expect(sut.masterVersion(for: photoId, masterId: masterId) == masterVersion)
+        #expect(sut.isPhotoAvailable(itemId: photoId, for: masterId, masterId: masterId))
+        #expect(sut.isPhotoAvailable(itemId: photoId, for: matchingPlayerId, masterId: masterId))
+        #expect(!sut.isPhotoAvailable(itemId: photoId, for: mismatchingPlayerId, masterId: masterId))
+        #expect(Set(sut.gameModel.playerReport(for: photoId)) == [masterId, matchingPlayerId])
+    }
+
+    @Test func authoritativePhotoListReplacesPriorReports() async {
+        let sut = PhotoRootModel.testRoot().gameController
+        let oldPhotoId = UUID()
+        let currentPhotoId = UUID()
+        let masterId = UUID()
+        let oldPlayerId = UUID()
+        let currentPlayerId = UUID()
+        sut.setMasterVersion(itemId: oldPhotoId, version: 2, masterId: masterId)
+        sut.markPhotoAvailable(
+            itemId: oldPhotoId,
+            version: 2,
+            for: [oldPlayerId],
+            masterId: masterId
+        )
+        let request = PhotoListRequest(
+            list: [currentPhotoId: 5],
+            players: [currentPhotoId: [currentPlayerId: 5]]
+        )
+        let data = NetworkCodableDataType(
+            id: UUID(),
+            type: .photo,
+            version: 0,
+            data: request.encodeData()
+        )
+
+        let applied = await sut.applyPhotoList(
+            data: data,
+            for: masterId,
+            with: masterId,
+            authoritative: true
+        )
+
+        #expect(applied)
+        #expect(sut.masterVersion(for: oldPhotoId, masterId: masterId) == nil)
+        #expect(sut.gameModel.playerReport(for: oldPhotoId).isEmpty)
+        #expect(sut.masterVersion(for: currentPhotoId, masterId: masterId) == 5)
+        #expect(sut.isPhotoAvailable(itemId: currentPhotoId, for: currentPlayerId, masterId: masterId))
+    }
+
+    @Test func removePhotoReportsRemovesPlayerFromEveryPhoto() {
+        let sut = PhotoRootModel.testRoot().gameController
+        let firstPhotoId = UUID()
+        let secondPhotoId = UUID()
+        let masterId = UUID()
+        let lostPlayerId = UUID()
+        let connectedPlayerId = UUID()
+        sut.setMasterVersion(itemId: firstPhotoId, version: 4, masterId: masterId)
+        sut.setMasterVersion(itemId: secondPhotoId, version: 9, masterId: masterId)
+        sut.markPhotoAvailable(
+            itemId: firstPhotoId,
+            version: 4,
+            for: [lostPlayerId, connectedPlayerId],
+            masterId: masterId
+        )
+        sut.markPhotoAvailable(
+            itemId: secondPhotoId,
+            version: 9,
+            for: [lostPlayerId, connectedPlayerId],
+            masterId: masterId
+        )
+
+        sut.removePhotoReports(for: lostPlayerId)
+
+        #expect(!sut.isPhotoAvailable(itemId: firstPhotoId, for: lostPlayerId, masterId: masterId))
+        #expect(!sut.isPhotoAvailable(itemId: secondPhotoId, for: lostPlayerId, masterId: masterId))
+        #expect(sut.isPhotoAvailable(itemId: firstPhotoId, for: connectedPlayerId, masterId: masterId))
+        #expect(sut.isPhotoAvailable(itemId: secondPhotoId, for: connectedPlayerId, masterId: masterId))
+        #expect(!sut.gameModel.playerReport(for: firstPhotoId).contains(lostPlayerId))
+        #expect(!sut.gameModel.playerReport(for: secondPhotoId).contains(lostPlayerId))
+    }
+
+    @Test func malformedPhotoListsAreIgnored() async {
+        let sut = PhotoRootModel.testRoot().gameController
+        let photoId = UUID()
+        let masterId = UUID()
+        let playerId = UUID()
+        sut.setMasterVersion(itemId: photoId, version: 6, masterId: masterId)
+        sut.markPhotoAvailable(itemId: photoId, version: 6, for: [playerId], masterId: masterId)
+        let originalVersions = sut.photoGameModel.playerVersions
+        let malformedData = NetworkCodableDataType(
+            id: UUID(),
+            type: .photo,
+            version: 0,
+            data: Data("not a photo list".utf8)
+        )
+        let missingData = NetworkCodableDataType(
+            id: UUID(),
+            type: .photo,
+            version: 0,
+            data: nil
+        )
+
+        let appliedMalformed = await sut.applyPhotoList(
+            data: malformedData,
+            for: playerId,
+            with: masterId,
+            authoritative: true
+        )
+        let appliedMissing = await sut.applyPhotoList(
+            data: missingData,
+            for: playerId,
+            with: masterId,
+            authoritative: false
+        )
+
+        #expect(!appliedMalformed)
+        #expect(!appliedMissing)
+        #expect(sut.photoGameModel.playerVersions == originalVersions)
+        #expect(sut.isPhotoAvailable(itemId: photoId, for: playerId, masterId: masterId))
+    }
+
     @Test func HasItem() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let sut = root.gameController

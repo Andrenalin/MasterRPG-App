@@ -4,10 +4,29 @@ import CoreRPG
 import SwiftUI
 
 struct RootGameMapViewer: View {
+    init(
+        root: MapRootModel,
+        itemId: UUID,
+        mode: MapDisplayMode,
+        playerPinId: UUID?,
+        registersGameToolbarSession: Bool = true,
+        image: AKImage,
+        degrees: Double
+    ) {
+        self.root = root
+        self.itemId = itemId
+        self.mode = mode
+        self.playerPinId = playerPinId
+        self.registersGameToolbarSession = registersGameToolbarSession
+        self.image = image
+        self.degrees = degrees
+    }
+
     let root: MapRootModel
     let itemId: UUID
     let mode: MapDisplayMode
     let playerPinId: UUID?
+    let registersGameToolbarSession: Bool
     let image: AKImage
     let degrees: Double
 
@@ -22,7 +41,8 @@ struct RootGameMapViewer: View {
             configuration: MapEditorConfiguration(
                 mode: mode == .player ? .player : .gameMaster,
                 displayMode: mode == .player ? .player : .master,
-                playerPinId: playerPinId
+                playerPinId: playerPinId,
+                registersGameToolbarSession: registersGameToolbarSession
             ),
             actions: MapEditorActions(
                 sendMapUpdates: sendMapUpdates,
@@ -65,6 +85,7 @@ struct RootGameMapViewer: View {
         itemId: MapModel.previewId,
         mode: .master,
         playerPinId: nil,
+        registersGameToolbarSession: true,
         image: AKImage(systemName: "photo") ?? AKImage(),
         degrees: 0
     )

@@ -3,6 +3,8 @@
 #if canImport(Testing)
 import CoreGraphics
 import CoreRPG
+import MapRPG
+import SwiftUI
 import Testing
 
 @testable import GameRPG
@@ -41,6 +43,24 @@ struct GameScreenModelTests {
         model.toggleSideBarWidth()
 
         #expect(model.mapTrailingReservation(usesInlineSidebarLayout: true) > compactReservation)
+    }
+
+    @Test("Map viewport inset is an explicit environment value")
+    func mapViewportEnvironmentValue() {
+        var environment = EnvironmentValues()
+
+        #expect(environment.mapViewportTrailingInset == 0)
+
+        environment.mapViewportTrailingInset = 312
+
+        #expect(environment.mapViewportTrailingInset == 312)
+    }
+
+    @Test("3D table remains local to the main game display")
+    func inlineTableSupportExcludesExternalPlayerDisplay() {
+        #expect(GameMapContentType.master.supportsInlineThreeDTable)
+        #expect(GameMapContentType.player.supportsInlineThreeDTable)
+        #expect(!GameMapContentType.externalPlayer.supportsInlineThreeDTable)
     }
 }
 #endif

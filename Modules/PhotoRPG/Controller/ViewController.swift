@@ -74,7 +74,7 @@ public extension ViewController {
 
 // MARK: - Special Viewers
 
-public extension ViewController {    
+public extension ViewController {
     @MainActor func mapImage(root: PhotoRootModel, for itemId: UUID?, size: CGSize, color: Color) -> some View {
         AsyncThumbnail(itemId: itemId, size: size, color: color)
             .environment(root)

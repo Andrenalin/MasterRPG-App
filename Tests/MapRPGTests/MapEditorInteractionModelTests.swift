@@ -12,6 +12,19 @@ import Testing
 @Suite("Map editor interaction models")
 @MainActor
 struct MapEditorInteractionModelTests {
+    @Test("External map surfaces do not own the shared game toolbar session")
+    func toolbarSessionRegistrationIsConfigurable() {
+        let main = MapEditorConfiguration(mode: .player, displayMode: .player)
+        let external = MapEditorConfiguration(
+            mode: .player,
+            displayMode: .player,
+            registersGameToolbarSession: false
+        )
+
+        #expect(main.registersGameToolbarSession)
+        #expect(!external.registersGameToolbarSession)
+    }
+
     @Test("Needles render from top-left to bottom-right without changing persisted indices")
     func needlePainterOrder() {
         let entryId = UUID()

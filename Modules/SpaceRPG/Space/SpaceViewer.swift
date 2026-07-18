@@ -48,6 +48,8 @@ struct SpaceViewer: View {
     @Environment(\.networkActions) private var networkActions
 
     @State private var lastSentTransform: SpaceTransformModel?
+    @State private var lastAcknowledgedTransform: SpaceTransformModel?
+    @State private var unacknowledgedTransformTicks = 0
     @State private var isSharedPlacement = false
 #endif
 
@@ -90,11 +92,20 @@ struct SpaceViewer: View {
             // for SharePlay — move the model from the head anchor to the shared origin.
             applySharedPlacementIfNeeded()
         }
-        .onChange(of: root.gameController.spaceGameModel.sharedTransform) { _, newValue in
+        .onChange(
+            of: root.gameController.spaceGameModel.transform(
+                for: id,
+                version: root.gameController.gameItem(for: id).version
+            ),
+            initial: true
+        ) { _, newValue in
             apply(remote: newValue)
         }
         .task(id: hasLoaded) {
             await sendTransformLoop()
+        }
+        .onDisappear {
+            sendTransformIfChanged()
         }
 #endif
     }
@@ -122,12 +133,20 @@ private extension SpaceViewer {
     @MainActor
     func apply(remote transform: SpaceTransformModel?) {
         guard isImmersiveSpace, let transform, let objectEntity else { return }
-        guard transform != lastSentTransform else { return }  // echo of our own send
+        if transform == lastSentTransform {
+            // The master rebroadcast is the acknowledgement for our optimistic
+            // local manipulation. Stop periodic retries without moving the model.
+            lastAcknowledgedTransform = transform
+            unacknowledgedTransformTicks = 0
+            return
+        }
 
         yaw = transform.yaw
         pitch = transform.pitch
         objectEntity.position = transform.position
         objectEntity.scale = transform.scale
+        lastAcknowledgedTransform = transform
+        unacknowledgedTransformTicks = 0
     }
 
     /// Broadcasts local manipulations (drag / magnify / rotate) on the game
@@ -148,14 +167,38 @@ private extension SpaceViewer {
         guard lastSentTransform != nil else {
             // Baseline after load — don't broadcast the initial pose.
             lastSentTransform = current
+            lastAcknowledgedTransform = current
             return
         }
         // Skip when nothing changed or when the current pose is one we just
         // received from another participant.
-        guard current != lastSentTransform, current != root.gameController.spaceGameModel.sharedTransform else { return }
-        lastSentTransform = current
-        guard let data = current.encodeData() else { return }
-        networkActions?.game(NetworkCodableDataType(id: id, type: .space, version: 0, data: data), .spaceTransform, nil)
+        let version = root.gameController.gameItem(for: id).version
+        let remote = root.gameController.spaceGameModel.transform(for: id, version: version)
+        if current == remote {
+            lastAcknowledgedTransform = current
+            unacknowledgedTransformTicks = 0
+            return
+        }
+        if current == lastSentTransform {
+            guard current != lastAcknowledgedTransform else { return }
+            unacknowledgedTransformTicks += 1
+            guard unacknowledgedTransformTicks >= 10 else { return }
+        }
+        broadcast(transform: current, version: version)
+    }
+
+    @MainActor
+    func broadcast(transform: SpaceTransformModel, version: Int) {
+        guard networkActions != nil else { return }
+        unacknowledgedTransformTicks = 0
+        lastAcknowledgedTransform = nil
+        lastSentTransform = transform
+        guard let data = transform.encodeData() else { return }
+        networkActions?.game(
+            NetworkCodableDataType(id: id, type: .space, version: version, data: data),
+            .spaceTransform,
+            nil
+        )
     }
 }
 #endif
@@ -392,6 +435,18 @@ private extension SpaceViewer {
 #endif
 
             self.loadedItemId = id
+
+            #if os(visionOS)
+            // Messenger can deliver the latest pose before the Journal-backed
+            // USDZ finishes loading. Apply the retained, item/version-scoped
+            // state now that the entity and anchor exist.
+            apply(
+                remote: root.gameController.spaceGameModel.transform(
+                    for: id,
+                    version: root.gameController.gameItem(for: id).version
+                )
+            )
+            #endif
 
         } catch let error as DecodingError {
             loadError = String(

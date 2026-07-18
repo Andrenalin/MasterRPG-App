@@ -128,7 +128,7 @@ struct SharePlayPackageTransportTests {
         #expect(metadata.data.data == nil)
     }
 
-    @Test("journal carries broadcasts and audio; targeted answers use packages")
+    @Test("journal carries broadcasts plus targeted audio and Weather repairs")
     func journalTransportSelection() {
         let broadcastPhoto = Self.message(type: .reveal, module: .photo, data: Data("photo".utf8))
         #expect(RPGSharePlayController.usesJournalTransport(for: broadcastPhoto, fileJournal: true, journalAvailable: true))
@@ -158,6 +158,104 @@ struct SharePlayPackageTransportTests {
         var targetedAudio = Self.message(type: .store, module: .audio, data: Data("audio".utf8))
         targetedAudio.targetId = UUID()
         #expect(RPGSharePlayController.usesJournalTransport(for: targetedAudio, fileJournal: true, journalAvailable: true))
+
+        // Weather packages can contain the linked photo. Full targeted repairs
+        // therefore stay on Journal; references without bytes stay ordered on
+        // the messenger like every other presentation reference.
+        for type in Self.journaledMessageTypes {
+            var targetedWeather = Self.message(type: type, module: .weather, data: Data("weather".utf8))
+            targetedWeather.targetId = UUID()
+            #expect(RPGSharePlayController.usesJournalTransport(
+                for: targetedWeather,
+                fileJournal: true,
+                journalAvailable: true
+            ))
+
+            var targetedWeatherReference = Self.message(type: type, module: .weather, data: nil)
+            targetedWeatherReference.targetId = targetedWeather.targetId
+            #expect(!RPGSharePlayController.usesJournalTransport(
+                for: targetedWeatherReference,
+                fileJournal: true,
+                journalAvailable: true
+            ))
+        }
+    }
+
+    @Test("targeted Weather journal metadata retains recipient and presentation semantics")
+    func targetedWeatherJournalMetadataRetainsTarget() {
+        let targetId = UUID()
+        let weatherId = UUID()
+
+        for type in Self.journaledMessageTypes {
+            let payload = Self.masterWeatherPayload(
+                type: type,
+                weatherId: weatherId,
+                version: 5,
+                targetId: targetId
+            )
+
+            let metadata = RPGSharePlayController.journalMetadata(for: payload)
+
+            #expect(metadata.targetId == targetId)
+            #expect(metadata.type == type)
+            #expect(metadata.subType == (type == .store ? .store : .show))
+            #expect(metadata.data.id == weatherId)
+            #expect(metadata.data.type == .weather)
+            #expect(metadata.data.version == 5)
+            #expect(metadata.data.data == nil)
+        }
+    }
+
+    @Test("targeted same-version Weather repair replaces cached journal publication")
+    func targetedSameVersionWeatherRepairRepublishes() {
+        let weatherId = UUID()
+        let targetId = UUID()
+        let attachmentId = UUID()
+        var tracker = SharePlayJournalTracker()
+        tracker.didPublish(
+            module: .weather,
+            itemId: weatherId,
+            version: 9,
+            attachmentId: attachmentId
+        )
+        let broadcast = Self.masterWeatherPayload(
+            type: .reveal,
+            weatherId: weatherId,
+            version: 9,
+            targetId: nil
+        )
+
+        #expect(!tracker.shouldPublish(model: broadcast))
+        for type in Self.journaledMessageTypes {
+            let targetedRepair = Self.masterWeatherPayload(
+                type: type,
+                weatherId: weatherId,
+                version: 9,
+                targetId: targetId
+            )
+            #expect(tracker.shouldPublish(model: targetedRepair))
+            #expect(targetedRepair.isTargetedWeatherJournalRepair)
+        }
+        #expect(broadcast.isFileBackedPresentation)
+    }
+
+    @Test("only Weather reveal show is a presentation intent")
+    func weatherUpdatesAreNotPresentationIntents() {
+        let weatherId = UUID()
+        let reveal = Self.masterWeatherPayload(
+            type: .reveal,
+            weatherId: weatherId,
+            version: 3,
+            targetId: nil
+        )
+        var update = reveal
+        update.type = .update
+        update.subType = .generic
+
+        #expect(reveal.isPresentationIntent)
+        #expect(reveal.isFileBackedPresentation)
+        #expect(!update.isPresentationIntent)
+        #expect(!update.isFileBackedPresentation)
     }
 
     @Test("recent full map publication suppresses matching recovery for 30 seconds")
@@ -751,7 +849,7 @@ struct SharePlayPackageTransportTests {
 }
 
 private extension SharePlayPackageTransportTests {
-    static let fileBackedModules: [NetworkModules] = [.pdf, .audio, .space, .photo, .map]
+    static let fileBackedModules: [NetworkModules] = [.pdf, .audio, .space, .photo, .map, .weather]
     static let journaledMessageTypes: [RPGMessageType] = [.reveal, .store]
 
     static func message(type: RPGMessageType, module: NetworkModules, data: Data?) -> GameNetworkModel {
@@ -790,6 +888,35 @@ private extension SharePlayPackageTransportTests {
                 type: .photo,
                 version: version,
                 data: Data("photo-\(version)".utf8)
+            )
+        )
+    }
+
+    static func masterWeatherPayload(
+        type: RPGMessageType,
+        weatherId: UUID,
+        version: Int,
+        targetId: UUID?
+    ) -> GameNetworkModel {
+        let masterId = UUID()
+        return GameNetworkModel(
+            counter: 14,
+            proxyCounter: 0,
+            type: type,
+            subType: type == .store ? .store : .show,
+            masterId: masterId,
+            sender: GameSenderModel(
+                id: masterId,
+                role: .master,
+                name: "Master",
+                characterId: nil
+            ),
+            targetId: targetId,
+            data: NetworkCodableDataType(
+                id: weatherId,
+                type: .weather,
+                version: version,
+                data: Data("weather-\(version)".utf8)
             )
         )
     }

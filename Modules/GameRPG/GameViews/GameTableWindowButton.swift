@@ -4,11 +4,13 @@
 import CoreRPG
 import SwiftUI
 
-/// Opens the platform's 3D table scene: a TabletopKit volume on visionOS and
-/// a camera-based RealityView window on iOS and macOS.
+/// Toggles the platform's 3D table presentation. visionOS keeps its independent
+/// TabletopKit volume; iOS and macOS replace the 2D map canvas in place.
 @MainActor
 struct GameTableWindowButton: View {
+#if os(visionOS)
     @Environment(ScenesManager.self) private var scenesManager
+#endif
     @Environment(AppSettingsModel.self) private var appSettingsModel
 
     var body: some View {
@@ -26,12 +28,16 @@ struct GameTableWindowButton: View {
     }
 
     private var isPresented: Bool {
+#if os(visionOS)
         switch scenesManager.getSceneState(for: SceneId.gameTable) {
         case .opening, .opened:
             true
         case .closing, .closed:
             false
         }
+#else
+        appSettingsModel.showGameTableVolume
+#endif
     }
 
     private var actionTitle: LocalizedStringResource {
@@ -41,19 +47,21 @@ struct GameTableWindowButton: View {
             : LocalizedStringResource("Show Table Volume", bundle: .module)
 #else
         isPresented
-            ? LocalizedStringResource("Hide 3D Table", bundle: .module)
+            ? LocalizedStringResource("Show 2D Map", bundle: .module)
             : LocalizedStringResource("Show 3D Table", bundle: .module)
 #endif
     }
 
     private func toggleTable() {
-        let shouldOpen = !isPresented
-        appSettingsModel.showGameTableVolume = shouldOpen
-        if shouldOpen {
+        let shouldShow = !isPresented
+        appSettingsModel.showGameTableVolume = shouldShow
+#if os(visionOS)
+        if shouldShow {
             scenesManager.openWindow(SceneId.gameTable)
         } else {
             scenesManager.dismissWindow(SceneId.gameTable)
         }
+#endif
     }
 }
 

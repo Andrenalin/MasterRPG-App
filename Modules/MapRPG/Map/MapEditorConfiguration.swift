@@ -15,18 +15,21 @@ struct MapEditorConfiguration: Equatable, Sendable {
         mode: MapMode,
         displayMode: MapDisplayMode,
         isTileEditor: Bool = false,
-        playerPinId: UUID? = nil
+        playerPinId: UUID? = nil,
+        registersGameToolbarSession: Bool = true
     ) {
         self.mode = mode
         self.displayMode = displayMode
         self.isTileEditor = isTileEditor
         self.playerPinId = playerPinId
+        self.registersGameToolbarSession = registersGameToolbarSession
     }
 
     let mode: MapMode
     let displayMode: MapDisplayMode
     let isTileEditor: Bool
     let playerPinId: UUID?
+    let registersGameToolbarSession: Bool
 }
 
 struct MapEditorActions {

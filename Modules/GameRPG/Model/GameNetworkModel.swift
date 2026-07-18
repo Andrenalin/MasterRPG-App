@@ -222,12 +222,14 @@ extension GameNetworkModel {
         return switch data.type {
         case .map:
             subType == .mapState
-        case .photo, .weather:
-            true
+        case .photo:
+            subType != .photoList
+        case .weather:
+            false
         case .value:
             subType != .generic && subType != .valueResult
         case .space:
-            subType != .spaceTransform
+            subType != .spaceTransform && subType != .spaceList
         default:
             false
         }
@@ -235,7 +237,11 @@ extension GameNetworkModel {
 
     var isFileBackedPresentation: Bool {
         guard isPresentationIntent else { return false }
-        return data.type == .map || data.type == .photo || data.type == .pdf || data.type == .space
+        return data.type == .map ||
+            data.type == .photo ||
+            data.type == .pdf ||
+            data.type == .space ||
+            data.type == .weather
     }
 
     /// A mapState recovery payload is sent as `.reveal/.store`. It can promote
@@ -255,6 +261,17 @@ extension GameNetworkModel {
             data.type == .map
     }
 
+    /// A full Weather answer addressed to one player. SharePlay Journal entries
+    /// are session-visible, but retaining the target keeps this replacement a
+    /// repair for that player instead of a new presentation for the group.
+    var isTargetedWeatherJournalRepair: Bool {
+        sender.isMaster &&
+            targetId != nil &&
+            (type == .reveal || type == .store) &&
+            data.type == .weather &&
+            data.data != nil
+    }
+
     var usesFileJournal: Bool {
         guard type == .reveal || type == .store else { return false }
         return data.usesFileJournal
@@ -265,7 +282,7 @@ extension NetworkCodableDataType {
     var usesFileJournal: Bool {
         guard data != nil else { return false }
         switch type {
-        case .pdf, .audio, .space, .photo, .map:
+        case .pdf, .audio, .space, .photo, .map, .weather:
             return true
         default:
             return false

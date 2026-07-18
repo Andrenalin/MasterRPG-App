@@ -11,6 +11,13 @@ import PdfRPG
 
 enum GameMapContentType: Hashable {
     case master, player, externalPlayer
+
+    /// Keep an external player display on its role-correct 2D renderer. A
+    /// RealityKit entity hierarchy can only be attached to one RealityView,
+    /// and sharing the local table could expose master-only fog and controls.
+    var supportsInlineThreeDTable: Bool {
+        self != .externalPlayer
+    }
 }
 
 struct GameRootViewer: View {
@@ -22,6 +29,9 @@ struct GameRootViewer: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(ScenesManager.self) private var scenesManager
+#if os(iOS) || os(macOS)
+    @Environment(AppSettingsModel.self) private var appSettingsModel
+#endif
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
@@ -47,7 +57,7 @@ struct GameRootViewer: View {
             if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
                 mapView(for: mapId)
                     .id(mapId)
-                    .padding(.trailing, mapTrailingReservation)
+                    .environment(\.mapViewportTrailingInset, mapTrailingReservation)
                     .overlay {
                         if playerController.gameModel.gameUpdateType != .map {
                             ZStack {
@@ -106,6 +116,21 @@ struct GameRootViewer: View {
     
     @ViewBuilder
     private func mapView(for mapId: UUID) -> some View {
+#if os(iOS) || os(macOS)
+        if appSettingsModel.showGameTableVolume,
+           contentType.supportsInlineThreeDTable {
+            GameTableView(root: root, retentionModel: gameScreenModel)
+                .padding(.trailing, mapTrailingReservation)
+        } else {
+            twoDimensionalMapView(for: mapId)
+        }
+#else
+        twoDimensionalMapView(for: mapId)
+#endif
+    }
+
+    @ViewBuilder
+    private func twoDimensionalMapView(for mapId: UUID) -> some View {
         switch contentType {
         case .master:
             root.mapRoot.viewController.gameMasterMapView(root: root.mapRoot, id: mapId)

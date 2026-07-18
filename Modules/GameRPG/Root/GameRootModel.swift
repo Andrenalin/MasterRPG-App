@@ -461,6 +461,9 @@ extension GameRoot {
         await gameModel.playerController?.stop()
         gameModel.playerController = nil
         await adventureRoot.adventureGameControllable.resetGame()
+        #if !os(tvOS)
+        gameModel.gameTableModel = nil
+        #endif
         #if os(visionOS)
         gameModel.shareState = GameShareStateModel()
         #endif
