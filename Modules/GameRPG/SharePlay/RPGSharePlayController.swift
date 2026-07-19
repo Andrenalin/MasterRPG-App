@@ -406,12 +406,20 @@ struct SharePlayJournalTracker: Sendable {
 
     private var processedAttachmentIds: Set<UUID> = []
     private var publications: [NetworkModules: Publication] = [:]
+    /// Developer metadata for currently observed attachments. Remote metadata
+    /// enters the replay set only after the normal participant-attributed
+    /// admission path authenticates it; otherwise the master could accidentally
+    /// launder a forged anonymous attachment when a new player joins.
+    private var observedMetadataByAttachmentId: [UUID: GameNetworkModel] = [:]
+    private var authenticatedMetadataByAttachmentId: [UUID: GameNetworkModel] = [:]
     private var attachmentArrivalEpochs: [UUID: UInt64] = [:]
     private var nextArrivalEpoch: UInt64 = 0
 
     mutating func reconcile(attachmentIds: Set<UUID>) {
         processedAttachmentIds.formIntersection(attachmentIds)
         publications = publications.filter { attachmentIds.contains($0.value.attachmentId) }
+        observedMetadataByAttachmentId = observedMetadataByAttachmentId.filter { attachmentIds.contains($0.key) }
+        authenticatedMetadataByAttachmentId = authenticatedMetadataByAttachmentId.filter { attachmentIds.contains($0.key) }
         attachmentArrivalEpochs = attachmentArrivalEpochs.filter { attachmentIds.contains($0.key) }
 
         let newlyObservedAttachmentIds = attachmentIds.subtracting(Set(attachmentArrivalEpochs.keys))
@@ -449,14 +457,46 @@ struct SharePlayJournalTracker: Sendable {
         )
     }
 
-    mutating func didPublish(module: NetworkModules, itemId: UUID, version: Int, attachmentId: UUID) {
+    mutating func didPublish(
+        module: NetworkModules,
+        itemId: UUID,
+        version: Int,
+        attachmentId: UUID,
+        metadata: GameNetworkModel? = nil
+    ) {
         publications[module] = Publication(attachmentId: attachmentId, itemId: itemId, version: version)
         processedAttachmentIds.insert(attachmentId)
+        if let metadata {
+            observedMetadataByAttachmentId[attachmentId] = metadata
+            authenticatedMetadataByAttachmentId[attachmentId] = metadata
+        }
+    }
+
+    mutating func didObserve(attachmentId: UUID, metadata: GameNetworkModel) {
+        observedMetadataByAttachmentId[attachmentId] = metadata
+        if publications.values.contains(where: { $0.attachmentId == attachmentId }) {
+            authenticatedMetadataByAttachmentId[attachmentId] = metadata
+        }
+    }
+
+    mutating func didAuthenticate(_ model: GameNetworkModel) {
+        for (attachmentId, metadata) in observedMetadataByAttachmentId
+        where metadata.hasSameJournalFingerprint(as: model) {
+            authenticatedMetadataByAttachmentId[attachmentId] = metadata
+        }
+    }
+
+    func currentJournalMetadata() -> [(attachmentId: UUID, metadata: GameNetworkModel)] {
+        authenticatedMetadataByAttachmentId.map {
+            (attachmentId: $0.key, metadata: $0.value)
+        }
     }
 
     mutating func didRemove(attachmentId: UUID) {
         processedAttachmentIds.remove(attachmentId)
         publications = publications.filter { $0.value.attachmentId != attachmentId }
+        observedMetadataByAttachmentId[attachmentId] = nil
+        authenticatedMetadataByAttachmentId[attachmentId] = nil
         attachmentArrivalEpochs[attachmentId] = nil
     }
 
@@ -471,6 +511,8 @@ struct SharePlayJournalTracker: Sendable {
     mutating func reset() {
         processedAttachmentIds = []
         publications = [:]
+        observedMetadataByAttachmentId = [:]
+        authenticatedMetadataByAttachmentId = [:]
         attachmentArrivalEpochs = [:]
         nextArrivalEpoch = 0
     }
@@ -702,6 +744,40 @@ extension RPGSharePlayController {
             journalAvailable: journal != nil
         ) else { return false }
 
+        // GroupSessionJournal does not expose the participant that authored an
+        // attachment. The publisher therefore sends the same logical message's
+        // lightweight metadata through Messenger first. Receivers bind that
+        // physically attributed announcement to the later Journal callback.
+        // Enqueueing is deliberately before Journal publication; delivery may
+        // still race, and the receiver retains that race in a bounded queue.
+        let journalAnnouncement: GameNetworkModel? = if prepared.usesJournalTransport,
+                                                        journalTracker.shouldPublish(model: prepared.model) {
+            Self.journalAdmissionMetadata(for: prepared.model)
+        } else {
+            nil
+        }
+        let journalAdmissionAlreadyEnqueued: Bool
+        if let journalAnnouncement {
+            let journalAnnouncementEnqueued = enqueueChunkedSend(
+                journalAnnouncement,
+                sessionId: sessionId,
+                participantId: participantId
+            )
+            guard journalAnnouncementEnqueued else {
+                // Never publish an attachment that receivers cannot attribute.
+                // The full Messenger payload preserves the presentation when
+                // the lightweight admission cannot enter the bounded queue.
+                return enqueueChunkedSend(
+                    prepared.model,
+                    sessionId: sessionId,
+                    participantId: participantId
+                )
+            }
+            journalAdmissionAlreadyEnqueued = true
+        } else {
+            journalAdmissionAlreadyEnqueued = false
+        }
+
         if prepared.usesJournalTransport,
            let attachmentData = prepared.model.data.data, let journal {
             let moduleKey = prepared.model.data.type
@@ -724,6 +800,10 @@ extension RPGSharePlayController {
                     // Reusing bytes is a storage optimization, not a screen
                     // intent optimization. Every reveal/show still needs a new
                     // lightweight Messenger event so players present it again.
+                    // The fresh-publication announcement is control-plane only
+                    // and receivers deliberately do not present it. Once this
+                    // queued add turns into byte reuse, enqueue a real metadata
+                    // presentation even if that earlier announcement succeeded.
                     let metadataAdmissionSucceeded = self.enqueueChunkedSend(
                         Self.journalMetadata(for: prepared.model),
                         sessionId: sessionId,
@@ -741,11 +821,40 @@ extension RPGSharePlayController {
                         Logger.sharePlay.debug("Journal ✓: message \(prepared.model.counter, privacy: .public) reused \(attachmentSize, privacy: .public) \(moduleKey.token, privacy: .public) attachment for \(prepared.model.data.id, privacy: .public)")
                         return nil
                     case .publishFreshAttachment:
-                        // A reveal without its lightweight metadata event would
-                        // never be presented. Publish fresh bytes so Journal
-                        // supplies both a new attachment and the reveal intent.
+                        // A reuse reveal that could not enter Messenger must
+                        // fall back to a newly admitted full attachment.
                         Logger.sharePlay.warning("Journal reuse metadata was not admitted for message \(prepared.model.counter, privacy: .public); publishing a fresh \(moduleKey.token, privacy: .public) attachment")
                     }
+                }
+                let freshJournalAdmissionSucceeded: Bool
+                if journalAdmissionAlreadyEnqueued {
+                    freshJournalAdmissionSucceeded = true
+                } else if let lateAdmission = Self.journalAdmissionMetadata(
+                    for: prepared.model
+                ) {
+                    // The tracker can change while this publication waits in
+                    // the per-module queue. If planned reuse becomes a fresh
+                    // add, authenticate that anonymous attachment now.
+                    freshJournalAdmissionSucceeded = self.enqueueChunkedSend(
+                        lateAdmission,
+                        sessionId: sessionId,
+                        participantId: participantId
+                    )
+                } else {
+                    freshJournalAdmissionSucceeded = false
+                }
+                guard freshJournalAdmissionSucceeded else {
+                    self.recordJournalTransport(
+                        state: .failed,
+                        byteCount: attachmentData.count,
+                        for: prepared.model
+                    )
+                    _ = self.enqueueChunkedSend(
+                        prepared.model,
+                        sessionId: sessionId,
+                        participantId: participantId
+                    )
+                    return nil
                 }
                 let model = Self.journalMetadata(for: prepared.model)
                 let outcome = await self.journalAddLimiter.run(
@@ -831,7 +940,8 @@ extension RPGSharePlayController {
                     module: moduleKey,
                     itemId: prepared.model.data.id,
                     version: prepared.model.data.effectiveAssetVersion,
-                    attachmentId: result.id
+                    attachmentId: result.id,
+                    metadata: Self.journalMetadata(for: prepared.model)
                 )
                 self.mapRecoveryTracker.recordFullMapPresentation(
                     prepared.model,
@@ -897,6 +1007,53 @@ extension RPGSharePlayController {
             sessionId: sessionId,
             participantId: participantId
         )
+    }
+
+    /// Authenticates the Journal snapshot already visible to a newly joined
+    /// participant. The authoritative master's metadata is enqueued first so it
+    /// pins the physical master participant before any player-authored
+    /// attachment is announced through that trusted relay.
+    @discardableResult
+    func reannounceCurrentJournalAdmissions(to participantId: UUID) -> Bool {
+        guard let sessionId = groupSession?.id, messenger != nil else { return false }
+
+        let admissions = Self.journalAdmissionsForReplay(
+            from: journalTracker.currentJournalMetadata()
+        )
+
+        for admission in admissions {
+            guard enqueueChunkedSend(
+                admission,
+                sessionId: sessionId,
+                participantId: participantId
+            ) else { return false }
+        }
+        return true
+    }
+
+    static func journalAdmissionsForReplay(
+        from entries: [(attachmentId: UUID, metadata: GameNetworkModel)]
+    ) -> [GameNetworkModel] {
+        entries.compactMap { entry in
+            journalAdmissionMetadata(fromJournalMetadata: entry.metadata).map {
+                (attachmentId: entry.attachmentId, metadata: $0)
+            }
+        }.sorted { lhs, rhs in
+            if lhs.metadata.sender.isMaster != rhs.metadata.sender.isMaster {
+                return lhs.metadata.sender.isMaster
+            }
+            if lhs.metadata.timestamp != rhs.metadata.timestamp {
+                return lhs.metadata.timestamp < rhs.metadata.timestamp
+            }
+            if lhs.metadata.sender.id != rhs.metadata.sender.id {
+                return lhs.metadata.sender.id.uuidString < rhs.metadata.sender.id.uuidString
+            }
+            return lhs.attachmentId.uuidString < rhs.attachmentId.uuidString
+        }.map(\.metadata)
+    }
+
+    func markJournalAttachmentAuthenticated(_ model: GameNetworkModel) {
+        journalTracker.didAuthenticate(model)
     }
 
     @discardableResult
@@ -1101,6 +1258,13 @@ extension RPGSharePlayController {
 
     static func journalMetadata(for model: GameNetworkModel) -> GameNetworkModel {
         var metadata = model
+        if let payload = model.data.data {
+            metadata.journalPayloadDigest = GameNetworkModel.journalDigest(for: payload)
+        }
+        // Journal developer metadata and Messenger reuse events are real
+        // presentations. Only the separate fresh-publication announcement is
+        // marked as admission-only.
+        metadata.journalAdmissionOnly = nil
         if metadata.data.type == .audio, metadata.targetId != nil {
             // GroupSessionJournal attachments are visible to the whole session.
             // Store the audio on every participant without treating a repair as
@@ -1118,6 +1282,65 @@ extension RPGSharePlayController {
             contentVersion: model.data.contentVersion
         )
         return metadata
+    }
+
+    /// Returns the physically attributable Messenger half required before a
+    /// fresh player Photo/PDF/Space Journal attachment. The stable sender and
+    /// message ID are intentionally preserved verbatim for correlation.
+    static func playerJournalAdmissionMetadata(
+        for model: GameNetworkModel
+    ) -> GameNetworkModel? {
+        guard model.isPlayerFilePresentationEvent,
+              model.data.data != nil,
+              model.messageID != nil
+        else { return nil }
+
+        var metadata = journalMetadata(for: model)
+        metadata.journalAdmissionOnly = true
+        return metadata.isPlayerJournalAdmissionMetadata ? metadata : nil
+    }
+
+    static func masterJournalAdmissionMetadata(
+        for model: GameNetworkModel
+    ) -> GameNetworkModel? {
+        guard model.isMasterJournalEnvelope,
+              model.data.data != nil
+        else { return nil }
+
+        // Audio targeting is intentionally normalized by journalMetadata. The
+        // exact normalized envelope is both Messenger's admission fingerprint
+        // and GroupSessionJournal's developer metadata.
+        var metadata = journalMetadata(for: model)
+        metadata.journalAdmissionOnly = true
+        return metadata.isMasterJournalAdmissionMetadata ? metadata : nil
+    }
+
+    static func journalAdmissionMetadata(
+        for model: GameNetworkModel
+    ) -> GameNetworkModel? {
+        if model.sender.isMaster {
+            return masterJournalAdmissionMetadata(for: model)
+        }
+        return playerJournalAdmissionMetadata(for: model)
+    }
+
+    /// Rebuilds the participant-attributed Messenger half for an attachment
+    /// already present in the Journal. Its original sender, message identity,
+    /// timestamp, and payload digest remain unchanged.
+    static func journalAdmissionMetadata(
+        fromJournalMetadata metadata: GameNetworkModel
+    ) -> GameNetworkModel? {
+        guard metadata.data.data == nil,
+              metadata.messageID != nil,
+              metadata.journalPayloadDigest != nil
+        else { return nil }
+
+        var admission = metadata
+        admission.journalAdmissionOnly = true
+        if admission.sender.isMaster {
+            return admission.isMasterJournalAdmissionMetadata ? admission : nil
+        }
+        return admission.isPlayerJournalAdmissionMetadata ? admission : nil
     }
 
     static func shouldRetireJournalPresentationAfterFallback(_ model: GameNetworkModel) -> Bool {
@@ -1822,6 +2045,7 @@ extension RPGSharePlayController {
               sessionLifecycle.isCurrent(sessionId: sessionId)
         else { return }
         journalTracker.reconcile(attachmentIds: Set(attachments.map(\.id)))
+        let timestampAcceptanceNow = Date.now.timeIntervalSince1970
         var currentAttachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
         var entries: [(
             attachment: GroupSessionJournal.Attachment,
@@ -1835,6 +2059,17 @@ extension RPGSharePlayController {
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }
+                guard Self.shouldLoadJournalAttachmentData(
+                    for: metadata,
+                    now: timestampAcceptanceNow
+                ) else {
+                    Logger.sharePlay.warning("Journal: skipped invalid presentation timestamp \(metadata.timestamp, privacy: .public) attachment \(attachment.id, privacy: .public)")
+                    continue
+                }
+                journalTracker.didObserve(
+                    attachmentId: attachment.id,
+                    metadata: metadata
+                )
                 entries.append((
                     attachment,
                     metadata,
@@ -1855,15 +2090,19 @@ extension RPGSharePlayController {
         // late join can observe several publications at once; those entries use
         // sender-local counters only within one sender and a stable attachment-ID
         // tie-break across senders.
-        entries.sort {
-            Self.journalEntryComesBefore(
-                metadata: $0.metadata,
+        let orderedEntries = Self.orderedJournalEntries(in: entries.map {
+            (
                 attachmentId: $0.attachment.id,
-                arrivalEpoch: $0.arrivalEpoch,
-                metadata: $1.metadata,
-                attachmentId: $1.attachment.id,
-                arrivalEpoch: $1.arrivalEpoch
+                metadata: $0.metadata,
+                arrivalEpoch: $0.arrivalEpoch
             )
+        })
+        let orderByAttachmentId = Dictionary(uniqueKeysWithValues:
+            orderedEntries.enumerated().map { ($0.element.attachmentId, $0.offset) }
+        )
+        entries.sort {
+            orderByAttachmentId[$0.attachment.id, default: .max] <
+                orderByAttachmentId[$1.attachment.id, default: .max]
         }
         let latestPresentationAttachmentId = Self.latestJournalPresentationAttachmentId(
             in: entries.map {
@@ -1872,7 +2111,8 @@ extension RPGSharePlayController {
                     metadata: $0.metadata,
                     arrivalEpoch: $0.arrivalEpoch
                 )
-            }
+            },
+            now: timestampAcceptanceNow
         )
 
         for entry in entries {
@@ -1949,12 +2189,10 @@ extension RPGSharePlayController {
         gameModel?.attachments = currentAttachments
     }
 
-    /// Gives transient add-before-remove snapshots a stable total order.
-    /// Arrival epochs preserve the causal order observed by this participant.
-    /// Within one epoch, publisher identity forms stable groups before applying
-    /// sender-local counters. Comparing attachment IDs across publishers before
-    /// sender-local counters can create a comparison cycle and is not a valid
-    /// sorting predicate.
+    /// Pairwise precedence used by focused comparisons. Full snapshots must use
+    /// `orderedJournalEntries(in:)`, which can honor causal reply edges without
+    /// forming a comparison cycle with a third, independently timestamped event.
+    /// Arrival epochs remain the primary causal boundary.
     static func journalEntryComesBefore(
         metadata lhs: GameNetworkModel,
         attachmentId lhsAttachmentId: UUID,
@@ -1966,10 +2204,13 @@ extension RPGSharePlayController {
         if lhsArrivalEpoch != rhsArrivalEpoch {
             return lhsArrivalEpoch < rhsArrivalEpoch
         }
-        if lhs.sender.id != rhs.sender.id {
-            return lhs.sender.id.uuidString < rhs.sender.id.uuidString
+        if isCausalJournalCorrection(lhs, replyingTo: rhs) {
+            return false
         }
-        return senderLocalJournalEntryComesBefore(
+        if isCausalJournalCorrection(rhs, replyingTo: lhs) {
+            return true
+        }
+        return journalMetadataComesBefore(
             metadata: lhs,
             attachmentId: lhsAttachmentId,
             metadata: rhs,
@@ -1977,61 +2218,129 @@ extension RPGSharePlayController {
         )
     }
 
-    static func latestJournalPresentationAttachmentId(
+    /// Produces a stable total order while honoring explicit causal corrections.
+    /// A pairwise comparator alone cannot safely express `player -> master`
+    /// when a third unrelated event has a timestamp between their skewed clocks;
+    /// that would form a comparison cycle. Within each arrival epoch this uses a
+    /// deterministic topological order, with the ordinary timestamp/sender key
+    /// selecting among events whose causal dependencies are already satisfied.
+    static func orderedJournalEntries(
         in entries: [(
             attachmentId: UUID,
             metadata: GameNetworkModel,
             arrivalEpoch: UInt64
         )]
+    ) -> [(
+        attachmentId: UUID,
+        metadata: GameNetworkModel,
+        arrivalEpoch: UInt64
+    )] {
+        var ordered: [(
+            attachmentId: UUID,
+            metadata: GameNetworkModel,
+            arrivalEpoch: UInt64
+        )] = []
+
+        for epoch in Set(entries.map(\.arrivalEpoch)).sorted() {
+            let epochEntries = entries.filter { $0.arrivalEpoch == epoch }
+            let dependencies = Dictionary(uniqueKeysWithValues: epochEntries.map { child in
+                let parentAttachmentIds = Set(epochEntries.compactMap { parent in
+                    isCausalJournalCorrection(child.metadata, replyingTo: parent.metadata) ?
+                        parent.attachmentId : nil
+                })
+                return (child.attachmentId, parentAttachmentIds)
+            })
+            var emittedAttachmentIds: Set<UUID> = []
+            var remaining = epochEntries
+
+            while !remaining.isEmpty {
+                let eligible = remaining.filter {
+                    dependencies[$0.attachmentId, default: []]
+                        .isSubset(of: emittedAttachmentIds)
+                }
+                // A malformed cycle must not make the snapshot unprocessable.
+                // Master-only correction edges cannot form one under normal
+                // admission, but the deterministic base order fails closed.
+                let candidates = eligible.isEmpty ? remaining : eligible
+                guard let next = candidates.min(by: { lhs, rhs in
+                    journalMetadataComesBefore(
+                        metadata: lhs.metadata,
+                        attachmentId: lhs.attachmentId,
+                        metadata: rhs.metadata,
+                        attachmentId: rhs.attachmentId
+                    )
+                }) else { break }
+
+                ordered.append(next)
+                emittedAttachmentIds.insert(next.attachmentId)
+                remaining.removeAll { $0.attachmentId == next.attachmentId }
+            }
+        }
+        return ordered
+    }
+
+    static func latestJournalPresentationAttachmentId(
+        in entries: [(
+            attachmentId: UUID,
+            metadata: GameNetworkModel,
+            arrivalEpoch: UInt64
+        )],
+        now: TimeInterval = Date.now.timeIntervalSince1970
     ) -> UUID? {
-        let presentations = entries.filter { isJournalPresentation($0.metadata) }
+        // Invalid current timestamps are poisoned ordering input, not legacy
+        // envelopes. Remove them before choosing the newest causal epoch.
+        let presentations = entries.filter {
+            isJournalPresentation($0.metadata) &&
+                GameNetworkModel.acceptsEventTimestamp($0.metadata.timestamp, now: now)
+        }
         guard let latestArrivalEpoch = presentations.map(\.arrivalEpoch).max() else {
             return nil
         }
 
-        // Counters are private to their publisher. Collapse every publisher in
-        // the latest causal epoch to its sender-local newest publication first,
-        // then select between those candidates by the same stable publisher
-        // order used by `journalEntryComesBefore`.
-        var newestBySender: [UUID: (
-            attachmentId: UUID,
-            metadata: GameNetworkModel,
-            arrivalEpoch: UInt64
-        )] = [:]
-
-        for entry in presentations where entry.arrivalEpoch == latestArrivalEpoch {
-            guard let current = newestBySender[entry.metadata.sender.id] else {
-                newestBySender[entry.metadata.sender.id] = entry
-                continue
-            }
-            if senderLocalJournalEntryComesBefore(
-                metadata: current.metadata,
-                attachmentId: current.attachmentId,
-                metadata: entry.metadata,
-                attachmentId: entry.attachmentId
-            ) {
-                newestBySender[entry.metadata.sender.id] = entry
-            }
+        // Only publications newly observed together need a cross-publisher
+        // choice. Earlier epochs were already delivered and the player's
+        // presentation-intent state machine retains their ordering.
+        let latestEpochPresentations = presentations.filter {
+            $0.arrivalEpoch == latestArrivalEpoch
         }
-
-        return newestBySender.values.max { lhs, rhs in
-            journalEntryComesBefore(
-                metadata: lhs.metadata,
-                attachmentId: lhs.attachmentId,
-                arrivalEpoch: lhs.arrivalEpoch,
-                metadata: rhs.metadata,
-                attachmentId: rhs.attachmentId,
-                arrivalEpoch: rhs.arrivalEpoch
-            )
-        }?.attachmentId
+        return orderedJournalEntries(in: latestEpochPresentations).last?.attachmentId
     }
 
-    private static func senderLocalJournalEntryComesBefore(
+    /// Metadata is cheap to inspect, so reject poisoned presentation ordering
+    /// before loading any Journal bytes. Non-presentation attachments do not
+    /// participate in wall-clock last-wins ordering and remain unaffected.
+    static func shouldLoadJournalAttachmentData(
+        for metadata: GameNetworkModel,
+        now: TimeInterval = Date.now.timeIntervalSince1970
+    ) -> Bool {
+        !isJournalPresentation(metadata) ||
+            GameNetworkModel.acceptsEventTimestamp(metadata.timestamp, now: now)
+    }
+
+    private static func journalMetadataComesBefore(
         metadata lhs: GameNetworkModel,
         attachmentId lhsAttachmentId: UUID,
         metadata rhs: GameNetworkModel,
         attachmentId rhsAttachmentId: UUID
     ) -> Bool {
+        let lhsTimestamp = currentJournalTimestamp(lhs.timestamp)
+        let rhsTimestamp = currentJournalTimestamp(rhs.timestamp)
+        switch (lhsTimestamp, rhsTimestamp) {
+        case let (.some(lhsTimestamp), .some(rhsTimestamp)) where lhsTimestamp != rhsTimestamp:
+            return lhsTimestamp < rhsTimestamp
+        case (.none, .some):
+            // A current envelope has an explicit intent order. Prefer it when a
+            // late join observes it in the same snapshot as a legacy envelope.
+            return true
+        case (.some, .none):
+            return false
+        default:
+            break
+        }
+
+        if lhs.sender.id != rhs.sender.id {
+            return lhs.sender.id.uuidString < rhs.sender.id.uuidString
+        }
         if lhs.counter != rhs.counter {
             return lhs.counter < rhs.counter
         }
@@ -2039,6 +2348,29 @@ extension RPGSharePlayController {
             return lhs.data.effectiveAssetVersion < rhs.data.effectiveAssetVersion
         }
         return lhsAttachmentId.uuidString < rhsAttachmentId.uuidString
+    }
+
+    private static func currentJournalTimestamp(_ timestamp: TimeInterval) -> TimeInterval? {
+        guard timestamp.isFinite, timestamp > 0 else { return nil }
+        return timestamp
+    }
+
+    /// The master only sets `replyToMessageID` on a canonical file presentation
+    /// emitted because a particular player presentation could not be accepted as
+    /// the baseline. The relationship is stronger than two independent device
+    /// clocks and is constrained to the same session item and module.
+    private static func isCausalJournalCorrection(
+        _ correction: GameNetworkModel,
+        replyingTo presentation: GameNetworkModel
+    ) -> Bool {
+        guard let presentationMessageId = presentation.messageID else { return false }
+        return correction.sender.isMaster &&
+            correction.replyToMessageID == presentationMessageId &&
+            presentation.isPlayerFilePresentationEvent &&
+            correction.isFileBackedPresentation &&
+            correction.masterId == presentation.masterId &&
+            correction.data.type == presentation.data.type &&
+            correction.data.id == presentation.data.id
     }
 
     static func isJournalPresentation(_ metadata: GameNetworkModel) -> Bool {

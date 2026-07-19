@@ -158,6 +158,157 @@ final class MapPlayerSequencingTests {
         #expect(playerMap[entryId].isShown)
     }
 
+    @Test("A player applies peer Map-pin group events and retains the newest pin timestamp")
+    func peerMapPinGroupEventUsesPinTimestamp() async throws {
+        // Given: the master package establishes one Map generation containing
+        // a peer-owned player pin.
+        try await setUp()
+        let itemId = try #require(masterRoot.mapRoot.itemController.itemDataModel.items.first)
+        let peerId = UUID()
+        let masterMap = masterRoot.mapRoot.gameController.gameItem(for: itemId)
+        let initialPin = MapPinModel(
+            id: peerId,
+            name: "Peer pin",
+            location: CGPoint(x: 1, y: 2),
+            isPlayer: true,
+            players: [peerId],
+            timeInterval: 10
+        )
+        masterMap.mapPins.append(initialPin)
+        let fullMap = try await masterRoot.mapRoot.mapGameControllable.createMapGameData(
+            for: itemId
+        )
+        let reveal = masterRoot.gameModel.outgoingMessage(
+            counter: 30,
+            type: .reveal,
+            subType: .show,
+            asMaster: true,
+            data: fullMap
+        )
+        _ = try #require(try await playerController.handleMap(reveal))
+
+        func event(counter: Int, pin: MapPinModel) -> GameNetworkModel {
+            GameNetworkModel(
+                counter: counter,
+                proxyCounter: 0,
+                type: .update,
+                subType: .mapPin,
+                masterId: reveal.masterId,
+                sender: GameSenderModel(
+                    id: peerId,
+                    role: .player,
+                    name: "Peer",
+                    characterId: nil
+                ),
+                data: NetworkCodableDataType(
+                    id: itemId,
+                    type: .map,
+                    version: fullMap.version,
+                    data: pin.encodeData(),
+                    assetVersion: fullMap.assetVersion,
+                    contentVersion: fullMap.contentVersion
+                )
+            )
+        }
+
+        // When: a peer's current group event arrives.
+        var currentPin = initialPin
+        currentPin.location = CGPoint(x: 5, y: 6)
+        currentPin.timeInterval = 20
+        let currentEvent = event(counter: 40, pin: currentPin)
+        #expect(currentEvent.effectiveAudience == .group)
+        let response = try await playerController.handleMap(currentEvent)
+
+        // Then: the receiver applies it directly and sends no response.
+        #expect(response == nil)
+        let playerMap = playerRoot.mapRoot.gameController.gameItem(for: itemId)
+        #expect(playerMap.mapPins.first { $0.id == peerId }?.location == currentPin.location)
+
+        // When: a later delivery carries an older pin timestamp.
+        var stalePin = currentPin
+        stalePin.location = CGPoint(x: 9, y: 10)
+        stalePin.timeInterval = 15
+        _ = try await playerController.handleMap(event(counter: 41, pin: stalePin))
+
+        // Then: timestamp ordering prevents the delayed event from rolling the
+        // peer pin backward.
+        let retainedPin = try #require(playerMap.mapPins.first { $0.id == peerId })
+        #expect(retainedPin.location == currentPin.location)
+        #expect(retainedPin.timeInterval == currentPin.timeInterval)
+    }
+
+    @Test("A peer Map-pin event waits for its Map generation and still keeps the newest timestamp")
+    func peerMapPinBeforeMapGenerationIsRetried() async throws {
+        // Given: a Map package and a peer-owned pin have not reached the player
+        // yet, but the peer's small group events overtake that package.
+        try await setUp()
+        let itemId = try #require(masterRoot.mapRoot.itemController.itemDataModel.items.first)
+        let peerId = UUID()
+        let masterMap = masterRoot.mapRoot.gameController.gameItem(for: itemId)
+        let initialPin = MapPinModel(
+            id: peerId,
+            name: "Peer pin",
+            location: CGPoint(x: 1, y: 2),
+            isPlayer: true,
+            players: [peerId],
+            timeInterval: 10
+        )
+        masterMap.mapPins.append(initialPin)
+        let fullMap = try await masterRoot.mapRoot.mapGameControllable.createMapGameData(for: itemId)
+        let reveal = masterRoot.gameModel.outgoingMessage(
+            counter: 30,
+            type: .reveal,
+            subType: .show,
+            asMaster: true,
+            data: fullMap
+        )
+
+        func event(counter: Int, pin: MapPinModel) -> GameNetworkModel {
+            GameNetworkModel(
+                counter: counter,
+                proxyCounter: 0,
+                type: .update,
+                subType: .mapPin,
+                masterId: reveal.masterId,
+                sender: GameSenderModel(
+                    id: peerId,
+                    role: .player,
+                    name: "Peer",
+                    characterId: nil
+                ),
+                data: NetworkCodableDataType(
+                    id: itemId,
+                    type: .map,
+                    version: fullMap.version,
+                    data: pin.encodeData(),
+                    assetVersion: fullMap.assetVersion,
+                    contentVersion: fullMap.contentVersion
+                )
+            )
+        }
+
+        var newestPin = initialPin
+        newestPin.location = CGPoint(x: 7, y: 8)
+        newestPin.timeInterval = 30
+        var delayedOlderPin = newestPin
+        delayedOlderPin.location = CGPoint(x: 4, y: 5)
+        delayedOlderPin.timeInterval = 20
+
+        // When: the newest event and then an older duplicate arrive before the
+        // Journal-backed full Map.
+        #expect(try await playerController.handleMap(event(counter: 40, pin: newestPin)) == nil)
+        #expect(try await playerController.handleMap(event(counter: 41, pin: delayedOlderPin)) == nil)
+
+        // And the package later establishes the advertised generation.
+        _ = try #require(try await playerController.handleMap(reveal))
+
+        // Then: deferred replay applies only the newest pin intent.
+        let playerMap = playerRoot.mapRoot.gameController.gameItem(for: itemId)
+        let retainedPin = try #require(playerMap.mapPins.first { $0.id == peerId })
+        #expect(retainedPin.location == newestPin.location)
+        #expect(retainedPin.timeInterval == newestPin.timeInterval)
+    }
+
     @Test("Malformed high-counter state does not reserve the sequence")
     func malformedMapStateDoesNotBlockValidState() async throws {
         // Given

@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import CryptoKit
 import Foundation
 
 /// Sender identity — travels with every message. Players send only this;
@@ -63,6 +64,16 @@ struct GameNetworkModel: Codable, Sendable {
     static let currentVersion = 2
 
     var version: Int = GameNetworkModel.currentVersion
+    /// Stable identity for one logical send. Transport retries and bridge copies
+    /// retain this value, allowing admission and delivery receipts to correlate
+    /// without relying on independent per-device counters.
+    var messageID: UUID?
+    /// The master message answered by this acknowledgement or asset request.
+    /// Ordinary player events leave it nil.
+    var replyToMessageID: UUID?
+    /// Wall-clock intent time used only by last-wins peer events. Counter ordering
+    /// remains the compatibility fallback for envelopes produced by older peers.
+    var timestamp: TimeInterval
     var counter: Int
     var proxyCounter: Int
     var type: RPGMessageType
@@ -76,10 +87,21 @@ struct GameNetworkModel: Codable, Sendable {
     var targetId: UUID?
     var audience: GameMessageAudience
     var purpose: GameMessagePurpose
+    /// Control-plane Messenger packet that authenticates a later anonymous
+    /// GroupSessionJournal attachment. `nil` is the backwards-compatible wire
+    /// value for every real presentation, including attachment-reuse events.
+    var journalAdmissionOnly: Bool?
+    /// SHA-256 of the raw GroupSessionJournal attachment. The physically
+    /// attributed Messenger admission carries this value, binding otherwise
+    /// anonymous Journal bytes to the participant that announced them.
+    var journalPayloadDigest: Data?
     var data: NetworkCodableDataType
 
     init(
         version: Int = GameNetworkModel.currentVersion,
+        messageID: UUID? = UUID(),
+        replyToMessageID: UUID? = nil,
+        timestamp: TimeInterval = Date.now.timeIntervalSince1970,
         counter: Int,
         proxyCounter: Int,
         type: RPGMessageType,
@@ -90,9 +112,14 @@ struct GameNetworkModel: Codable, Sendable {
         targetId: UUID? = nil,
         audience: GameMessageAudience = .automatic,
         purpose: GameMessagePurpose = .event,
+        journalAdmissionOnly: Bool? = nil,
+        journalPayloadDigest: Data? = nil,
         data: NetworkCodableDataType
     ) {
         self.version = version
+        self.messageID = messageID
+        self.replyToMessageID = replyToMessageID
+        self.timestamp = timestamp
         self.counter = counter
         self.proxyCounter = proxyCounter
         self.type = type
@@ -103,11 +130,16 @@ struct GameNetworkModel: Codable, Sendable {
         self.targetId = targetId
         self.audience = audience
         self.purpose = purpose
+        self.journalAdmissionOnly = journalAdmissionOnly
+        self.journalPayloadDigest = journalPayloadDigest
         self.data = data
     }
 
     enum CodingKeys: String, CodingKey {
         case version
+        case messageID
+        case replyToMessageID
+        case timestamp
         case counter
         case proxyCounter
         case type
@@ -118,6 +150,8 @@ struct GameNetworkModel: Codable, Sendable {
         case targetId
         case audience
         case purpose
+        case journalAdmissionOnly
+        case journalPayloadDigest
         case data
         // legacy layouts and compatibility superset
         case gameConfig
@@ -128,6 +162,9 @@ struct GameNetworkModel: Codable, Sendable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        messageID = try container.decodeIfPresent(UUID.self, forKey: .messageID)
+        replyToMessageID = try container.decodeIfPresent(UUID.self, forKey: .replyToMessageID)
+        timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .timestamp) ?? 0
         counter = try container.decode(Int.self, forKey: .counter)
         proxyCounter = try container.decode(Int.self, forKey: .proxyCounter)
         type = try container.decode(RPGMessageType.self, forKey: .type)
@@ -135,6 +172,8 @@ struct GameNetworkModel: Codable, Sendable {
         targetId = try container.decodeIfPresent(UUID.self, forKey: .targetId)
         audience = try container.decodeIfPresent(GameMessageAudience.self, forKey: .audience) ?? .automatic
         purpose = try container.decodeIfPresent(GameMessagePurpose.self, forKey: .purpose) ?? .legacy
+        journalAdmissionOnly = try container.decodeIfPresent(Bool.self, forKey: .journalAdmissionOnly)
+        journalPayloadDigest = try container.decodeIfPresent(Data.self, forKey: .journalPayloadDigest)
         data = try container.decode(NetworkCodableDataType.self, forKey: .data)
 
         if let sender = try container.decodeIfPresent(GameSenderModel.self, forKey: .sender) {
@@ -180,6 +219,9 @@ struct GameNetworkModel: Codable, Sendable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(GameNetworkModelV1.wireVersion, forKey: .version)
+        try container.encodeIfPresent(messageID, forKey: .messageID)
+        try container.encodeIfPresent(replyToMessageID, forKey: .replyToMessageID)
+        try container.encode(timestamp, forKey: .timestamp)
         try container.encode(counter, forKey: .counter)
         try container.encode(proxyCounter, forKey: .proxyCounter)
         try container.encode(type, forKey: .type)
@@ -190,11 +232,50 @@ struct GameNetworkModel: Codable, Sendable {
         try container.encodeIfPresent(targetId, forKey: .targetId)
         try container.encode(audience, forKey: .audience)
         try container.encode(purpose, forKey: .purpose)
+        try container.encodeIfPresent(journalAdmissionOnly, forKey: .journalAdmissionOnly)
+        try container.encodeIfPresent(journalPayloadDigest, forKey: .journalPayloadDigest)
         let configV1 = v1Model.gameConfig
         try container.encode(configV1, forKey: .gameConfig)
         try container.encode(GameRosterSuperset(players: configV1.players, controls: configV1.controls, features: configV1.features), forKey: .gameRoster)
         try container.encode(GameControlModel(controls: configV1.controls, features: configV1.features), forKey: .gameControl)
         try container.encode(data, forKey: .data)
+    }
+
+    nonisolated static func journalDigest(for payload: Data) -> Data {
+        Data(SHA256.hash(data: payload))
+    }
+
+    var resolvedJournalPayloadDigest: Data? {
+        if let payload = data.data {
+            return Self.journalDigest(for: payload)
+        }
+        return journalPayloadDigest
+    }
+
+    /// Compares the immutable control-plane identity while binding a full
+    /// callback to the digest recomputed from its loaded bytes. Admission-only
+    /// is deliberately excluded because the Messenger half is marked and the
+    /// real Journal metadata is not.
+    func hasSameJournalFingerprint(as other: GameNetworkModel) -> Bool {
+        version == other.version &&
+            replyToMessageID == other.replyToMessageID &&
+            masterId == other.masterId &&
+            sender == other.sender &&
+            masterState == other.masterState &&
+            counter == other.counter &&
+            proxyCounter == other.proxyCounter &&
+            type == other.type &&
+            subType == other.subType &&
+            audience == other.audience &&
+            purpose == other.purpose &&
+            targetId == other.targetId &&
+            data.id == other.data.id &&
+            data.type == other.data.type &&
+            data.version == other.data.version &&
+            data.assetVersion == other.data.assetVersion &&
+            data.contentVersion == other.data.contentVersion &&
+            timestamp == other.timestamp &&
+            resolvedJournalPayloadDigest == other.resolvedJournalPayloadDigest
     }
 
     /// Derives sender identity and master state from a legacy config + roster.
@@ -233,19 +314,143 @@ struct GameNetworkModel: Codable, Sendable {
 }
 
 extension GameNetworkModel {
+    /// Bounds wall-clock ordering input before it can become the presentation
+    /// baseline. Legacy envelopes use zero; current envelopes must carry a
+    /// finite positive time that is not implausibly ahead of this device.
+    static let maximumFutureEventTimestampSkew: TimeInterval = 300
+
+    nonisolated static func acceptsEventTimestamp(
+        _ timestamp: TimeInterval,
+        now: TimeInterval = Date.now.timeIntervalSince1970
+    ) -> Bool {
+        if timestamp == 0 { return true }
+        return timestamp.isFinite &&
+            timestamp > 0 &&
+            timestamp <= now + maximumFutureEventTimestampSkew
+    }
+
+    /// The complete, peer-visible Dice roll shape. Master-originated Dice
+    /// presentation commands intentionally do not use this predicate: they
+    /// retain their existing `.show`/`.store` behavior.
+    var isDiceRollEvent: Bool {
+        Self.isDiceRollEvent(
+            type: type,
+            subType: subType,
+            purpose: purpose,
+            targetId: targetId,
+            data: data
+        )
+    }
+
+    /// A normal player may publish only a complete Dice roll to the group.
+    /// Legacy is retained for shipped V1 peers, whose envelopes predate the
+    /// explicit event purpose but still carry the same full roll payload.
+    var isPlayerDiceGroupEvent: Bool {
+        sender.role == .player && isDiceRollEvent
+    }
+
+    /// Player-authored, small GroupSession events that may legitimately race
+    /// the next master roster broadcast when a participant is joining. File
+    /// presentations have their own availability/admission protocol and must
+    /// never enter this short-lived transport deferral.
+    var isDeferrablePlayerGroupEvent: Bool {
+        guard sender.role == .player,
+              masterState == nil,
+              replyToMessageID == nil,
+              !isJournalAdmissionOnly,
+              journalPayloadDigest == nil,
+              effectiveAudience == .group,
+              GameNetworkModel.acceptsEventTimestamp(timestamp)
+        else { return false }
+
+        if isPlayerDiceGroupEvent { return true }
+
+        guard type == .update,
+              purpose == .event,
+              targetId == nil,
+              data.data != nil
+        else { return false }
+
+        return (subType == .mapPin && data.type == .map) ||
+            (subType == .spaceTransform && data.type == .space)
+    }
+
+    nonisolated private static func isDiceRollEvent(
+        type: RPGMessageType,
+        subType: RPGMessageActionType,
+        purpose: GameMessagePurpose,
+        targetId: UUID?,
+        data: NetworkCodableDataType
+    ) -> Bool {
+        type == .update &&
+            subType == .generic &&
+            (purpose == .event || purpose == .legacy) &&
+            targetId == nil &&
+            data.type == .dice &&
+            data.data != nil
+    }
+
     /// The only file-backed presentation a player may publish directly to its
     /// peers. An explicit `.group` audience is transport metadata, not authority:
     /// repair requests must remain master-only even when a malformed or hostile
     /// sender stamps them as group-visible.
     var isPlayerFilePresentationEvent: Bool {
         guard sender.role == .player,
-              purpose == .event,
               type == .reveal,
               subType == .show,
               targetId == nil
         else { return false }
 
+        // Current envelopes explicitly distinguish an event from a repair. V1
+        // did not; only its full-payload shape is safe to expose to peers because
+        // a data-less legacy reveal is ambiguous with an asset request.
+        guard purpose == .event || (purpose == .legacy && data.data != nil) else {
+            return false
+        }
+
         return data.type == .photo || data.type == .pdf || data.type == .space
+    }
+
+    /// Lightweight Messenger half of a player Journal presentation. Journal
+    /// callbacks do not expose their physical publisher, so receivers admit
+    /// the later attachment only after seeing this same logical message from a
+    /// concrete GroupSession participant.
+    var isPlayerJournalAdmissionMetadata: Bool {
+        journalAdmissionOnly == true &&
+            isPlayerFilePresentationEvent &&
+            data.data == nil &&
+            journalPayloadDigest != nil &&
+            messageID != nil
+    }
+
+    /// Master file payloads that may use GroupSessionJournal. The participant
+    /// that authored a Journal attachment is not exposed by GroupActivities,
+    /// so even authoritative master bytes require a matching Messenger half.
+    /// Audio and Weather include targeted repairs; the other modules are the
+    /// normal file-backed presentation set.
+    var isMasterJournalEnvelope: Bool {
+        guard sender.isMaster,
+              messageID != nil,
+              type == .reveal || type == .store
+        else { return false }
+
+        return switch data.type {
+        case .audio, .weather, .map, .photo, .pdf, .space:
+            true
+        default:
+            false
+        }
+    }
+
+    var isMasterJournalAdmissionMetadata: Bool {
+        journalAdmissionOnly == true &&
+            isMasterJournalEnvelope &&
+            data.data == nil &&
+            journalPayloadDigest != nil
+    }
+
+    var isJournalAdmissionOnly: Bool {
+        journalAdmissionOnly == true
     }
 
     /// Identifies every player-originated reveal in the peer-file protocol,
@@ -260,12 +465,13 @@ extension GameNetworkModel {
     /// newly-created messages.
     var effectiveAudience: GameMessageAudience {
         if targetId != nil { return .target }
+        if isPlayerFilePresentationEvent { return .group }
         let inferred = Self.inferredAudience(
             sender: sender,
             type: type,
             subType: subType,
             purpose: purpose,
-            dataType: data.type
+            data: data
         )
         // A player may narrow an event to the master, but it cannot widen a
         // protocol-defined master-only message by stamping `.group`. This keeps
@@ -282,7 +488,7 @@ extension GameNetworkModel {
         type: RPGMessageType,
         subType: RPGMessageActionType,
         purpose: GameMessagePurpose,
-        dataType: NetworkModules,
+        data: NetworkCodableDataType,
         targetId: UUID? = nil
     ) -> GameMessageAudience {
         if targetId != nil { return .target }
@@ -291,24 +497,40 @@ extension GameNetworkModel {
             return .master
         }
 
+        if sender.role == .player,
+           purpose == .event,
+           type == .update,
+           data.data != nil,
+           ((subType == .mapPin && data.type == .map) ||
+            (subType == .spaceTransform && data.type == .space)) {
+            return .group
+        }
+
         switch subType {
         case .audioList, .photoList, .pdfList, .spaceList, .screen,
-             .mapPin, .mapState, .battleRound, .spaceTransform, .playAudio:
+             .mapState, .battleRound, .playAudio:
             return .master
         default:
             break
         }
 
-        if dataType == .value || dataType == .audio || dataType == .map ||
-            dataType == .table || dataType == .weather || dataType == .game {
+        if data.type == .value || data.type == .audio || data.type == .map ||
+            data.type == .table || data.type == .weather || data.type == .game {
             return .master
         }
 
-        if dataType == .dice, type == .update {
+        if sender.role == .player,
+           Self.isDiceRollEvent(
+               type: type,
+               subType: subType,
+               purpose: purpose,
+               targetId: targetId,
+               data: data
+           ) {
             return .group
         }
         if type == .reveal, subType == .show,
-           dataType == .photo || dataType == .pdf || dataType == .space {
+           data.type == .photo || data.type == .pdf || data.type == .space {
             return .group
         }
         return .master
@@ -322,7 +544,7 @@ extension GameNetworkModel {
     /// These commands can race payloads delivered by another transport, so the
     /// intent is sequenced independently from transfer completion order.
     var isPresentationIntent: Bool {
-        guard sender.isMaster else { return false }
+        guard sender.isMaster || isPlayerFilePresentationEvent else { return false }
 
         if type == .reveal, subType == .show {
             return switch data.type {
@@ -445,6 +667,8 @@ extension GameNetworkModelV1 {
         )
         return GameNetworkModel(
             version: version,
+            messageID: nil,
+            timestamp: 0,
             counter: counter,
             proxyCounter: proxyCounter,
             type: type,
@@ -580,6 +804,7 @@ enum GameMessageOrigin: Hashable, Sendable {
 }
 
 struct GameMessageKey: Hashable, Sendable {
+    let messageID: UUID?
     let senderId: UUID
     let counter: Int
     let proxyCounter: Int
@@ -595,6 +820,7 @@ struct GameMessageKey: Hashable, Sendable {
     let hasData: Bool
 
     init(model: GameNetworkModel) {
+        messageID = model.messageID
         senderId = model.sender.id
         counter = model.counter
         proxyCounter = model.proxyCounter
@@ -621,10 +847,10 @@ struct GameMessageEvent: Sendable {
     }
 
     var deduplicationKey: GameMessageKey? {
-        guard model.counter > 0,
-              model.subType != .ok,
+        guard model.subType != .ok,
               model.subType != .failed
         else { return nil }
+        guard model.messageID != nil || model.counter > 0 else { return nil }
         return GameMessageKey(model: model)
     }
 }

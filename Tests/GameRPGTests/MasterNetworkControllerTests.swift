@@ -16,14 +16,18 @@ struct MasterNetworkControllerTestEnvironment {
     let listenerSpy: GameListnerAbstractionMock
 
     /// Creates a MasterNetworkController with test dependencies
-    static func create(name: String = "TestMasterTest") async -> MasterNetworkControllerTestEnvironment {
+    static func create(
+        name: String = "TestMasterTest",
+        browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
+    ) async -> MasterNetworkControllerTestEnvironment {
         let delegateSpy = MasterNetworkControllerDelegateMock()
         let listenerSpy = GameListnerAbstractionMock()
 
         let controller = MasterNetworkController(
             name: name,
             delegate: delegateSpy,
-            listnerBuilder: { _, _, _ in listenerSpy as any ListenerManaging }
+            listnerBuilder: { _, _, _ in listenerSpy as any ListenerManaging },
+            browserConnectionBuilder: browserConnectionBuilder
         )
 
         return MasterNetworkControllerTestEnvironment(
@@ -31,6 +35,19 @@ struct MasterNetworkControllerTestEnvironment {
             delegateSpy: delegateSpy,
             listenerSpy: listenerSpy
         )
+    }
+}
+
+@MainActor
+private final class BrowserConnectionFactorySpy {
+    private(set) var endpoints: [NWEndpoint] = []
+    private(set) var connections: [ConnectionControllableSpyingStub] = []
+
+    func makeConnection(endpoint: NWEndpoint) -> any ConnectionControllable {
+        let connection = ConnectionControllableSpyingStub()
+        endpoints.append(endpoint)
+        connections.append(connection)
+        return connection
     }
 }
 
@@ -310,6 +327,64 @@ struct MasterNetworkControllerTests {
         // Assert
         #expect(env.controller.networkModel.connections.isEmpty)
         #expect(env.delegateSpy.calledLostPlayer == 1)
+    }
+
+    @Test("Failed fallback connection releases endpoint for another reconnect")
+    func failedFallbackConnectionAllowsReconnect() async throws {
+        // Arrange
+        let factory = BrowserConnectionFactorySpy()
+        let env = await MasterNetworkControllerTestEnvironment.create(
+            browserConnectionBuilder: { endpoint, _ in
+                factory.makeConnection(endpoint: endpoint)
+            }
+        )
+        let endpoint = NWEndpoint.service(
+            name: "FallbackPlayer",
+            type: GameServiceType.master.serviceName,
+            domain: "local.",
+            interface: nil
+        )
+        env.controller.connectToPlayer(endpoint: endpoint)
+        let firstConnection = try #require(factory.connections.first)
+
+        // Act
+        await env.controller.failed(with: "Connection failed", for: firstConnection.id)
+        env.controller.connectToPlayer(endpoint: endpoint)
+
+        // Assert
+        #expect(factory.endpoints == [endpoint, endpoint])
+        #expect(env.controller.networkModel.browserConnections == [endpoint])
+        #expect(env.controller.networkModel.connections.count == 1)
+        #expect(env.delegateSpy.calledLostPlayer == 1)
+    }
+
+    @Test("Removed fallback service releases endpoint for a later reconnect")
+    func removedFallbackServiceAllowsReconnect() async {
+        // Arrange
+        let factory = BrowserConnectionFactorySpy()
+        let env = await MasterNetworkControllerTestEnvironment.create(
+            browserConnectionBuilder: { endpoint, _ in
+                factory.makeConnection(endpoint: endpoint)
+            }
+        )
+        let game = BrowserGameModel(
+            id: UUID(),
+            endpointName: "FallbackPlayer",
+            connectionMode: .proxy
+        )
+        env.controller.startProxyStreaming()
+
+        // Act
+        env.controller.refresh(games: [game])
+        env.controller.refresh(games: [])
+        env.controller.refresh(games: [game])
+
+        // Assert
+        #expect(factory.endpoints.count == 2)
+        #expect(factory.endpoints.first == factory.endpoints.last)
+        #expect(env.controller.networkModel.browserConnections.count == 1)
+        #expect(env.controller.networkModel.connections.count == 2)
+        env.controller.stopStreaming()
     }
 
     @Test("Cancelled stops streaming")

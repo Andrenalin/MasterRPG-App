@@ -28,7 +28,9 @@ actor MasterNetworkControllerDelegateBox {
 final class MasterNetworkController: Sendable {
     private let delegate: MasterNetworkControllerDelegateBox
     let listnerBuilder: @MainActor @Sendable (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging
+    let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable
     let networkModel: MasterNetworkNodel
+    @MainActor private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
 
     static func gameListnerBuilder() -> @MainActor @Sendable (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging {
         return { name, proxy, delegate in
@@ -38,11 +40,23 @@ final class MasterNetworkController: Sendable {
         }
     }
 
+    static func gameBrowserConnectionBuilder() -> @MainActor @Sendable (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable {
+        return { endpoint, delegate in
+            ConnectionController(id: UUID(), endpoint: endpoint, delegate: delegate)
+        }
+    }
+
     @MainActor
-    init(name: String, delegate: MasterNetworkControllerDelegate? = nil, listnerBuilder: @MainActor @Sendable @escaping (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging) {
+    init(
+        name: String,
+        delegate: MasterNetworkControllerDelegate? = nil,
+        listnerBuilder: @MainActor @Sendable @escaping (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging,
+        browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
+    ) {
         self.networkModel = MasterNetworkNodel(name: name)
         self.delegate = MasterNetworkControllerDelegateBox(delegate)
         self.listnerBuilder = listnerBuilder
+        self.browserConnectionBuilder = browserConnectionBuilder
         Logger.networking.debug("MasterNetworkController: Init")
     }
 
@@ -112,6 +126,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         networkModel.listener?.stopListening()
         networkModel.listener = nil
         networkModel.browserConnections = []
+        browserConnectionEndpoints = [:]
         networkModel.connections = []
     }
 }
@@ -158,7 +173,7 @@ extension MasterNetworkController {
 
 extension MasterNetworkController: ConnectionControllerDelegate {
     func failed(with error: String?, for id: ConnectionController.ID) async {
-        if await networkModel.removeConnection(id: id) {
+        if await removeConnection(id: id) {
             await delegate.masterLostPlayer(with: id)
         }
     }
@@ -229,12 +244,16 @@ extension MasterNetworkController {
         guard let manager = networkModel.browserManager, manager.isBrowsing else {
             networkModel.browserManager = nil
             networkModel.browserConnections = []
+            browserConnectionEndpoints = [:]
             return
         }
-        for game in games {
-            let endpoint = manager.nwEndpoint(for: game)
+        let endpoints = games.map { manager.nwEndpoint(for: $0) }
+        let advertisedEndpoints = Set(endpoints)
+        networkModel.browserConnections.removeAll { !advertisedEndpoints.contains($0) }
+        browserConnectionEndpoints = browserConnectionEndpoints.filter { advertisedEndpoints.contains($0.value) }
+
+        for endpoint in endpoints {
             if !networkModel.browserConnections.contains(endpoint) {
-                networkModel.browserConnections.append(endpoint)
                 connectToPlayer(endpoint: endpoint)
             }
         }
@@ -242,6 +261,18 @@ extension MasterNetworkController {
 }
 
 private extension MasterNetworkController {
+    @MainActor func removeConnection(id: ConnectionController.ID) -> Bool {
+        guard networkModel.removeConnection(id: id) else { return false }
+
+        networkModel.connectionStartTasks[id]?.cancel()
+        networkModel.connectionStartTasks.removeValue(forKey: id)
+        if let endpoint = browserConnectionEndpoints.removeValue(forKey: id),
+           !browserConnectionEndpoints.values.contains(endpoint) {
+            networkModel.browserConnections.removeAll { $0 == endpoint }
+        }
+        return true
+    }
+
     @MainActor func addNew(_ connection: any ConnectionControllable) {
         networkModel.connections.append(connection)
         let id = connection.id
@@ -252,7 +283,14 @@ private extension MasterNetworkController {
         }
     }
 
+}
+
+extension MasterNetworkController {
     @MainActor func connectToPlayer(endpoint: NWEndpoint) {
-        addNew(ConnectionController(id: UUID(), endpoint: endpoint, delegate: self))
+        guard !networkModel.browserConnections.contains(endpoint) else { return }
+        networkModel.browserConnections.append(endpoint)
+        let connection = browserConnectionBuilder(endpoint, self)
+        browserConnectionEndpoints[connection.id] = endpoint
+        addNew(connection)
     }
 }

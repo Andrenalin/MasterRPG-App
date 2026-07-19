@@ -37,6 +37,18 @@ private enum PlayerSpaceRevealValidation: Sendable {
     case mismatch
 }
 
+private enum PlayerSpaceTransformValidation: Sendable {
+    case valid
+    case awaitingAuthoritativeList
+    case mismatch
+}
+
+private enum PlayerMapPinApplication: Sendable {
+    case applied
+    case awaitingMapGeneration
+    case rejected
+}
+
 enum SharePlayMasterParticipantAcceptance: Equatable, Sendable {
     case newlyBound
     case rebound
@@ -61,11 +73,34 @@ final class PlayerControllerModel: Sendable {
         let senderId: UUID
     }
 
+    private struct DeferredMapPinKey: Hashable, Sendable {
+        let itemId: UUID
+        let pinId: UUID
+        let senderId: UUID
+        let version: Int
+        let assetVersion: Int?
+        let contentVersion: Int?
+    }
+
+    private struct DeferredMapPin: Sendable {
+        let model: GameNetworkModel
+        let pinTimestamp: TimeInterval
+    }
+
+    private struct DeferredSpaceTransformKey: Hashable, Sendable {
+        let masterId: UUID
+        let senderId: UUID
+        let itemId: UUID
+        let version: Int
+    }
+
     private struct PresentationIntent {
         let module: NetworkModules
         let counter: Int
         let itemId: UUID
         let version: Int
+        let timestamp: TimeInterval
+        let senderID: UUID
     }
 
     private struct PendingMapContentUpdate: Sendable {
@@ -102,6 +137,10 @@ final class PlayerControllerModel: Sendable {
     private var deferredPdfRevealOrder: [DeferredPdfRevealKey] = []
     private var deferredSpaceReveals: [DeferredSpaceRevealKey: GameNetworkModel] = [:]
     private var deferredSpaceRevealOrder: [DeferredSpaceRevealKey] = []
+    private var deferredMapPins: [DeferredMapPinKey: DeferredMapPin] = [:]
+    private var deferredMapPinOrder: [DeferredMapPinKey] = []
+    private var deferredSpaceTransforms: [DeferredSpaceTransformKey: GameNetworkModel] = [:]
+    private var deferredSpaceTransformOrder: [DeferredSpaceTransformKey] = []
     private var presentationIntents: [UUID: PresentationIntent] = [:]
     /// Physical GroupSession participant that first established the current
     /// logical master. Logical UUIDs travel inside an untrusted envelope, so a
@@ -160,6 +199,10 @@ final class PlayerControllerModel: Sendable {
         return true
     }
 
+    func hasAppliedMasterState(from masterId: UUID, counter: Int) -> Bool {
+        counter == 0 || lastMasterStateCounters[masterId] == counter
+    }
+
     func resetMasterStateSequence() {
         lastMasterStateCounters.removeAll()
     }
@@ -196,6 +239,10 @@ final class PlayerControllerModel: Sendable {
     func resetSharePlayMasterParticipant() {
         sharePlayMasterParticipantId = nil
         resynchronizeAfterSharePlayMasterRebind = false
+    }
+
+    func isSharePlayMasterParticipant(id: UUID) -> Bool {
+        sharePlayMasterParticipantId == id
     }
 
     func canApplyAudioList(from masterId: UUID, counter: Int) -> Bool {
@@ -388,6 +435,137 @@ final class PlayerControllerModel: Sendable {
         authoritativeSpaceListMasters.removeAll()
         deferredSpaceReveals.removeAll()
         deferredSpaceRevealOrder.removeAll()
+        deferredSpaceTransforms.removeAll()
+        deferredSpaceTransformOrder.removeAll()
+    }
+
+    /// Retains one current event for every sender/item/version while the
+    /// authoritative Space availability snapshot is still in flight. Sender is
+    /// part of the key because a temporarily unknown sender must not suppress an
+    /// older transform from a sender the master has already authorized.
+    func deferSpaceTransform(_ model: GameNetworkModel) {
+        guard model.sender.role == .player,
+              model.type == .update,
+              model.subType == .spaceTransform,
+              model.data.type == .space,
+              GameNetworkModel.acceptsEventTimestamp(model.timestamp)
+        else { return }
+
+        let key = DeferredSpaceTransformKey(
+            masterId: model.masterId,
+            senderId: model.sender.id,
+            itemId: model.data.id,
+            version: model.data.effectiveAssetVersion
+        )
+        if let current = deferredSpaceTransforms[key],
+           !Self.groupEvent(current, comesBefore: model) {
+            return
+        }
+
+        deferredSpaceTransformOrder.removeAll { $0 == key }
+        deferredSpaceTransformOrder.append(key)
+        deferredSpaceTransforms[key] = model
+
+        let maximumDeferredSpaceTransforms = 64
+        while deferredSpaceTransformOrder.count > maximumDeferredSpaceTransforms {
+            deferredSpaceTransforms[deferredSpaceTransformOrder.removeFirst()] = nil
+        }
+    }
+
+    func deferredSpaceTransforms(from masterId: UUID) -> [GameNetworkModel] {
+        deferredSpaceTransformOrder.compactMap { key in
+            guard key.masterId == masterId else { return nil }
+            return deferredSpaceTransforms[key]
+        }.sorted { Self.groupEvent($0, comesBefore: $1) }
+    }
+
+    func removeDeferredSpaceTransform(_ model: GameNetworkModel) {
+        let key = DeferredSpaceTransformKey(
+            masterId: model.masterId,
+            senderId: model.sender.id,
+            itemId: model.data.id,
+            version: model.data.effectiveAssetVersion
+        )
+        deferredSpaceTransforms[key] = nil
+        deferredSpaceTransformOrder.removeAll { $0 == key }
+    }
+
+    /// A Map pin can overtake the Journal-backed Map package that establishes
+    /// its generation. Keep only the newest payload timestamp for a pin within
+    /// each advertised generation. Other generations remain bounded in case a
+    /// pin overtook more than one Journal-backed Map update.
+    func deferMapPin(_ model: GameNetworkModel) {
+        guard model.sender.role == .player,
+              model.type == .update,
+              model.subType == .mapPin,
+              model.data.type == .map,
+              let data = model.data.data,
+              let pin = try? JSONDecoder().decode(MapPinModel.self, from: data),
+              GameNetworkModel.acceptsEventTimestamp(pin.timeInterval)
+        else { return }
+
+        let key = DeferredMapPinKey(
+            itemId: model.data.id,
+            pinId: pin.id,
+            senderId: model.sender.id,
+            version: model.data.version,
+            assetVersion: model.data.assetVersion,
+            contentVersion: model.data.contentVersion
+        )
+        if let current = deferredMapPins[key],
+           pin.timeInterval <= current.pinTimestamp {
+            return
+        }
+
+        deferredMapPinOrder.removeAll { $0 == key }
+        deferredMapPinOrder.append(key)
+        deferredMapPins[key] = DeferredMapPin(
+            model: model,
+            pinTimestamp: pin.timeInterval
+        )
+
+        let maximumDeferredMapPins = 64
+        while deferredMapPinOrder.count > maximumDeferredMapPins {
+            deferredMapPins[deferredMapPinOrder.removeFirst()] = nil
+        }
+    }
+
+    func consumeDeferredMapPins(
+        for itemId: UUID,
+        matching generation: NetworkCodableDataType
+    ) -> [GameNetworkModel] {
+        let matchingKeys = deferredMapPinOrder.filter { key in
+            key.itemId == itemId &&
+                key.version == generation.version &&
+                key.assetVersion == generation.assetVersion &&
+                key.contentVersion == generation.contentVersion
+        }
+        let matching = matchingKeys.compactMap { key -> DeferredMapPin? in
+            return deferredMapPins[key]
+        }.sorted { $0.pinTimestamp < $1.pinTimestamp }
+
+        for key in matchingKeys {
+            deferredMapPins[key] = nil
+        }
+        let consumedKeys = Set(matchingKeys)
+        deferredMapPinOrder.removeAll { consumedKeys.contains($0) }
+        return matching.map(\.model)
+    }
+
+    private static func groupEvent(
+        _ lhs: GameNetworkModel,
+        comesBefore rhs: GameNetworkModel
+    ) -> Bool {
+        if lhs.timestamp != rhs.timestamp {
+            return lhs.timestamp < rhs.timestamp
+        }
+        if lhs.sender.id == rhs.sender.id, lhs.counter != rhs.counter {
+            return lhs.counter < rhs.counter
+        }
+        if lhs.sender.id != rhs.sender.id {
+            return lhs.sender.id.uuidString < rhs.sender.id.uuidString
+        }
+        return (lhs.messageID?.uuidString ?? "") < (rhs.messageID?.uuidString ?? "")
     }
 
     /// Accepts presentation content according to the latest master intent, not
@@ -399,19 +577,27 @@ final class PlayerControllerModel: Sendable {
     /// item remains useful as a delayed full-payload delivery.
     func shouldProcessPresentation(
         from masterId: UUID,
+        senderID: UUID = GameDeliveryMessageID.legacySessionID,
         module: NetworkModules,
         itemId: UUID,
         version: Int,
         counter: Int,
+        timestamp: TimeInterval = 0,
         isRepair: Bool,
         allowsUnversionedStateRepair: Bool = false
     ) -> Bool {
+        guard GameNetworkModel.acceptsEventTimestamp(timestamp) else {
+            return false
+        }
+
         guard let current = presentationIntents[masterId] else {
             presentationIntents[masterId] = PresentationIntent(
                 module: module,
                 counter: counter,
                 itemId: itemId,
-                version: version
+                version: version,
+                timestamp: timestamp,
+                senderID: senderID
             )
             return true
         }
@@ -427,28 +613,13 @@ final class PlayerControllerModel: Sendable {
             )
         }
 
-        // Counter zero is the unsequenced legacy format. Preserve compatibility
-        // by treating its latest arrival as the current intent.
-        guard counter > 0 else {
-            presentationIntents[masterId] = PresentationIntent(
-                module: module,
-                counter: counter,
-                itemId: itemId,
-                version: version
-            )
-            return true
-        }
-
-        if counter < current.counter {
-            return acceptsCurrentPresentation(
-                current,
-                from: masterId,
-                module: module,
-                itemId: itemId,
-                version: version
-            )
-        }
-        if counter == current.counter {
+        guard replacesCurrentPresentation(
+            current,
+            from: masterId,
+            senderID: senderID,
+            counter: counter,
+            timestamp: timestamp
+        ) else {
             return acceptsCurrentPresentation(
                 current,
                 from: masterId,
@@ -469,9 +640,81 @@ final class PlayerControllerModel: Sendable {
             module: module,
             counter: counter,
             itemId: itemId,
-            version: recordedVersion
+            version: recordedVersion,
+            timestamp: timestamp,
+            senderID: senderID
         )
         return true
+    }
+
+    /// Decides only whether an incoming intent replaces the retained intent.
+    /// A `false` result can still accept delayed bytes for the retained item in
+    /// `acceptsCurrentPresentation` without changing this causal state.
+    private func replacesCurrentPresentation(
+        _ current: PresentationIntent,
+        from masterId: UUID,
+        senderID: UUID,
+        counter: Int,
+        timestamp: TimeInterval
+    ) -> Bool {
+        let sameSender = senderID == current.senderID
+        let incomingIsCurrentFormat = timestamp > 0
+        let currentIsCurrentFormat = current.timestamp > 0
+
+        if sameSender {
+            switch (incomingIsCurrentFormat, currentIsCurrentFormat) {
+            case (true, true):
+                return timestamp > current.timestamp ||
+                    (timestamp == current.timestamp && counter > current.counter)
+            case (true, false):
+                return true
+            case (false, true):
+                return false
+            case (false, false):
+                // Counters are meaningful only inside one sender's sequence.
+                // Counter zero is unsequenced legacy data, so its latest
+                // arrival remains compatible with the previous behavior.
+                return counter == 0 || counter > current.counter
+            }
+        }
+
+        // Never compare counters from different senders: their sequences are
+        // independent. A timestamped intent carries stronger causal evidence
+        // than a legacy one, irrespective of which participant sent it.
+        switch (incomingIsCurrentFormat, currentIsCurrentFormat) {
+        case (true, false):
+            return true
+        case (false, true):
+            return false
+        case (true, true):
+            let incomingIsMaster = senderID == masterId
+            let currentIsMaster = current.senderID == masterId
+
+            // A master envelope is the canonical relay/correction for a player
+            // presentation. Its arrival is causally later even when the two
+            // devices' bounded wall clocks disagree. In the opposite direction
+            // a player must still carry a strictly newer timestamp.
+            if incomingIsMaster != currentIsMaster {
+                return incomingIsMaster || timestamp > current.timestamp
+            }
+            if timestamp != current.timestamp {
+                return timestamp > current.timestamp
+            }
+
+            // Two player events retain a deterministic tie break so every peer
+            // converges even if transport arrival order differs.
+            return senderID.uuidString > current.senderID.uuidString
+        case (false, false):
+            // Legacy envelopes have no cross-sender causal clock. Prefer the
+            // canonical master when authority differs; otherwise preserve the
+            // documented last-arrival behavior for rare player presentations.
+            let incomingIsMaster = senderID == masterId
+            let currentIsMaster = current.senderID == masterId
+            if incomingIsMaster != currentIsMaster {
+                return incomingIsMaster
+            }
+            return true
+        }
     }
 
     private func acceptsCurrentPresentation(
@@ -496,7 +739,9 @@ final class PlayerControllerModel: Sendable {
                 module: current.module,
                 counter: current.counter,
                 itemId: current.itemId,
-                version: version
+                version: version,
+                timestamp: current.timestamp,
+                senderID: current.senderID
             )
         }
         return true
@@ -706,6 +951,8 @@ final class PlayerControllerModel: Sendable {
         pendingMapRepairs.removeAll()
         pendingMapBackgroundRepairs.removeAll()
         pendingMapRequests.removeAll()
+        deferredMapPins.removeAll()
+        deferredMapPinOrder.removeAll()
     }
 
     func reset(lostMaster: Bool) {
@@ -830,6 +1077,7 @@ extension PlayerController {
         // Players cannot publish Weather and Weather has no live updates yet.
         guard message.type != .table, message.type != .value, message.type != .weather else { return }
         if message.type == .photo, actionType == .generic {
+            guard await root.gameModel.gameControl.features.photoSharing else { return }
             await sharePhoto(message)
             return
         }
@@ -843,6 +1091,12 @@ extension PlayerController {
         }
         if message.type == .space, actionType == .spaceTransform {
             guard await root.gameModel.gameControl.features.spaceSharing else { return }
+        }
+        if message.type == .audio {
+            guard await root.gameModel.gameControl.features.audioSharing else { return }
+        }
+        if message.type == .dice {
+            guard await root.gameModel.gameControl.features.dicePlayers else { return }
         }
         await send(type: .update, subType: actionType, updated: message)
     }
@@ -1017,18 +1271,49 @@ extension PlayerController {
         // carry their versioned canonical package.
         guard type != .update || updated.type != .table else { return }
 
+        let outgoingTimestamp: TimeInterval
+        if type == .update,
+           subType == .spaceTransform,
+           updated.type == .space {
+            guard let timestamp = await root.spaceRoot.spaceGameControllable
+                .causalSpaceTransformTimestamp(
+                    itemId: updated.id,
+                    version: updated.effectiveAssetVersion
+                )
+            else { return }
+            outgoingTimestamp = timestamp
+        } else {
+            outgoingTimestamp = Date.now.timeIntervalSince1970
+        }
+
         let outgoingCounter = await MainActor.run {
             counter ?? gameModel.nextOutgoingMessageCounter()
         }
         Logger.networking.debug("PlayerController: Send \(outgoingCounter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
         let networtData = await MainActor.run {
             root.gameModel.outgoingMessage(
+                timestamp: outgoingTimestamp,
                 counter: outgoingCounter,
                 type: type,
                 subType: subType,
                 asMaster: false,
                 purpose: purpose,
                 data: updated
+            )
+        }
+
+        // Group transports do not echo a sender's own event, and the master no
+        // longer republishes a canonical Space transform. Apply this exact
+        // versioned envelope optimistically so SpaceViewer observes its own
+        // timestamped transform as acknowledged and does not retry forever.
+        if networtData.purpose == .event,
+           networtData.type == .update,
+           networtData.subType == .spaceTransform,
+           networtData.data.type == .space {
+            _ = await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                data: networtData.data,
+                counter: networtData.counter,
+                timestamp: networtData.timestamp
             )
         }
 
@@ -1062,6 +1347,7 @@ extension PlayerController {
         }
         let remapped = await MainActor.run {
             root.gameModel.outgoingMessage(
+                timestamp: source.timestamp,
                 counter: outgoingCounter,
                 type: source.type,
                 subType: source.subType,
@@ -1087,6 +1373,47 @@ extension PlayerController {
         // the host and mirrors in the regular path.
         guard await canApplyRemappedProxyPresentation(remapped) else { return }
         await receivedProcess(remapped, origin: .local)
+        if let connectionId {
+            await root.networkProxyStore.sendPlayer(data: remapped, except: connectionId)
+        } else {
+            await root.networkProxyStore.sendPlayer(data: remapped)
+        }
+    }
+
+    /// Remaps a private mirror's small group event to the host identity once,
+    /// then sends that same envelope upstream and to sibling mirrors. The host
+    /// controller has already applied the event locally.
+    func relayProxyGroupEvent(
+        _ source: GameNetworkModel,
+        excludingProxyConnection connectionId: ConnectionController.ID?
+    ) async {
+        let isSupportedEvent = source.isDiceRollEvent ||
+            (source.purpose == .event &&
+             source.type == .update &&
+             ((source.subType == .mapPin && source.data.type == .map) ||
+              (source.subType == .spaceTransform && source.data.type == .space)))
+        guard isSupportedEvent else { return }
+
+        let outgoingCounter = await MainActor.run {
+            gameModel.nextOutgoingMessageCounter()
+        }
+        let remapped = await MainActor.run {
+            root.gameModel.outgoingMessage(
+                timestamp: source.timestamp,
+                counter: outgoingCounter,
+                type: source.type,
+                subType: source.subType,
+                asMaster: false,
+                purpose: source.purpose,
+                data: source.data
+            )
+        }
+        await root.statisticsModel.record(
+            remapped,
+            direction: .outgoing,
+            origin: .proxy(connectionId)
+        )
+        await root.networkStore.sendMaster(data: remapped, fileJournal: false)
         if let connectionId {
             await root.networkProxyStore.sendPlayer(data: remapped, except: connectionId)
         } else {
@@ -1146,7 +1473,7 @@ extension PlayerController {
             await root.networkProxyStore.sendMaster(data: model)
         } else {
             await root.networkStore.sendMaster(data: model, fileJournal: useJournal)
-            if relayToProxyClients {
+            if relayToProxyClients, model.effectiveAudience == .group {
                 await root.networkProxyStore.sendPlayer(data: model)
             }
         }
@@ -1226,9 +1553,87 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         await receivedProcess(model, origin: .sharePlay(participantId))
     }
 
+    func acceptsSharePlayPeerMessage(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool {
+        guard model.sender.role == .player,
+              model.effectiveAudience == .group,
+              GameNetworkModel.acceptsEventTimestamp(model.timestamp),
+              await acceptsSessionMessage(
+                  model,
+                  origin: .sharePlay(participantId)
+              )
+        else { return false }
+
+        // The master-authored roster is the logical identity authority on a
+        // player-only device. Validate it before GameNetworkController commits
+        // the physical participant binding, preventing an unknown or wrong-role
+        // first packet from poisoning that immutable transport identity.
+        return await root.gameModel.gameRoster.players.contains {
+            $0.id == model.sender.id && $0.type == .player
+        }
+    }
+
+    func shouldDeferSharePlayPeerGroupEvent(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool {
+        guard model.isDeferrablePlayerGroupEvent,
+              await acceptsSessionMessage(
+                  model,
+                  origin: .sharePlay(participantId)
+              )
+        else { return false }
+
+        // An existing non-player roster entry is an authoritative rejection,
+        // not an ordering race. Only an entirely absent identity gets one
+        // opportunity to wait for the next master roster update.
+        return await !root.gameModel.gameRoster.players.contains {
+            $0.id == model.sender.id
+        }
+    }
+
+    func didAcceptSharePlayMasterState(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool {
+        guard model.sender.isMaster,
+              model.sender.id == model.masterId,
+              model.masterState != nil,
+              await gameModel.isSharePlayMasterParticipant(id: participantId),
+              await root.gameModel.gameConfig.master.id == model.masterId
+        else { return false }
+
+        return await gameModel.hasAppliedMasterState(
+            from: model.masterId,
+            counter: model.counter
+        )
+    }
+
+    func acceptsSharePlayMasterJournalAdmission(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool {
+        guard model.isMasterJournalAdmissionMetadata else { return false }
+        return await acceptsSessionMessage(
+            model,
+            origin: .sharePlay(participantId)
+        )
+    }
+
+    func isLocalSharePlayTarget(_ targetId: UUID?) async -> Bool {
+        guard let targetId else { return true }
+        return await root.gameModel.gameConfig.id == targetId
+    }
+
     func receivedSharePlayFile(_ model: GameNetworkModel) async {
         guard await root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
         await receivedProcess(model, origin: .file)
+    }
+
+    func isPinnedSharePlayMasterParticipant(id: UUID) async -> Bool {
+        await gameModel.isSharePlayMasterParticipant(id: id)
     }
 
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {
@@ -1263,6 +1668,9 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     }
 
     private func receivedProcess(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
+        // Admission-only metadata is consumed by GameNetworkController after
+        // physical SharePlay attribution. It is never a gameplay message.
+        guard !model.isJournalAdmissionOnly else { return }
         guard await acceptsSessionMessage(model, origin: origin) else {
             Logger.networking.debug("PlayerController: Message rejected because its sender does not belong to this game session")
             return
@@ -1348,7 +1756,11 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         }
 
         if await !gameModel.asGameMaster {
-            let controls = model.masterState?.controls ?? []
+            let controls = if let authoritativeControls = model.masterState?.controls {
+                authoritativeControls
+            } else {
+                await root.gameModel.gameControl.controls
+            }
             if let masterState = model.masterState,
                model.sender.isMaster,
                await gameModel.shouldApplyMasterState(from: model.masterId, counter: model.counter) {
@@ -1365,6 +1777,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             let type = await root.gameModel.gameType
             let photoSharing = await root.gameModel.gameControl.features.photoSharing
             let spaceSharing = await root.gameModel.gameControl.features.spaceSharing
+            let dicePlayers = await root.gameModel.gameControl.features.dicePlayers
             guard type == .proxy || type == .observer || controls.isEmpty || controls.contains(where: { $0.id == localId && $0.show == true }) else {
                 Logger.networking.debug("PlayerController: Message will be ignored because of controls \(controls, privacy: .public)")
                 return false
@@ -1384,10 +1797,21 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             let acceptsPlayerSpaceReveal = model.isPlayerFilePresentationEvent &&
                 model.data.type == .space &&
                 spaceSharing
-            let acceptsPlayerDice = model.sender.role == .player &&
-                model.data.type == .dice &&
+            let acceptsPlayerDice = model.isPlayerDiceGroupEvent &&
+                dicePlayers &&
                 model.effectiveAudience == .group
-            guard await root.gameModel.gameType == .proxy || model.sender.isMaster || acceptsPlayerDice || acceptsPlayerPhotoReveal || acceptsPlayerPdfReveal || acceptsPlayerSpaceReveal else {
+            let acceptsPlayerMapPin = model.sender.role == .player &&
+                model.type == .update &&
+                model.subType == .mapPin &&
+                model.data.type == .map &&
+                model.effectiveAudience == .group
+            let acceptsPlayerSpaceTransform = model.sender.role == .player &&
+                model.type == .update &&
+                model.subType == .spaceTransform &&
+                model.data.type == .space &&
+                spaceSharing &&
+                model.effectiveAudience == .group
+            guard await root.gameModel.gameType == .proxy || model.sender.isMaster || acceptsPlayerDice || acceptsPlayerPhotoReveal || acceptsPlayerPdfReveal || acceptsPlayerSpaceReveal || acceptsPlayerMapPin || acceptsPlayerSpaceTransform else {
                 Logger.networking.debug("PlayerController: Message will be ignored because it is send from Player \(model.senderName, privacy: .public)")
                 return false
             }
@@ -1396,7 +1820,6 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         // Value messages synchronize the joining player's Character and are
         // not part of the presentation ordering state machine.
         if model.data.type != .value,
-           !isRemappedProxyPresentation(event),
            (model.isPresentationIntent || model.isMapPresentationRepair) {
             let presentationVersion: Int
             let allowsUnversionedMapState: Bool
@@ -1420,10 +1843,12 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             }
             let shouldProcess = await gameModel.shouldProcessPresentation(
                 from: model.masterId,
+                senderID: model.sender.id,
                 module: model.data.type,
                 itemId: model.data.id,
                 version: presentationVersion,
                 counter: model.counter,
+                timestamp: model.timestamp,
                 isRepair: model.targetId != nil || model.isMapPresentationRepair,
                 allowsUnversionedStateRepair: model.isTargetedMapStatePresentationRepair || allowsUnversionedMapState
             )
@@ -1709,6 +2134,7 @@ extension PlayerController {
                 await gameModel.removeDeferredPhotoReveal(model)
             case .valid:
                 await gameModel.removeDeferredPhotoReveal(model)
+                guard await deferredPresentationIsCurrent(model) else { continue }
                 do {
                     if let response = try await handlePhoto(model) {
                         await sendUpstream(model: response)
@@ -1783,6 +2209,7 @@ extension PlayerController {
                 await gameModel.removeDeferredPdfReveal(model)
             case .valid:
                 await gameModel.removeDeferredPdfReveal(model)
+                guard await deferredPresentationIsCurrent(model) else { continue }
                 do {
                     if let response = try await handlePdf(model) {
                         await sendUpstream(model: response)
@@ -1855,6 +2282,7 @@ extension PlayerController {
                 await gameModel.removeDeferredSpaceReveal(model)
             case .valid:
                 await gameModel.removeDeferredSpaceReveal(model)
+                guard await deferredPresentationIsCurrent(model) else { continue }
                 do {
                     if let response = try await handleSpace(model) {
                         await sendUpstream(model: response)
@@ -1866,6 +2294,66 @@ extension PlayerController {
                 }
             }
         }
+    }
+
+    private func playerSpaceTransformValidation(
+        for model: GameNetworkModel
+    ) async -> PlayerSpaceTransformValidation {
+        guard await root.gameModel.gameControl.features.spaceSharing else {
+            return .mismatch
+        }
+        if await !gameModel.asGameMaster,
+           await !gameModel.hasAuthoritativeSpaceList(from: model.masterId) {
+            return .awaitingAuthoritativeList
+        }
+        guard let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+            for: model.data.id,
+            masterId: model.masterId
+        ) else {
+            return .awaitingAuthoritativeList
+        }
+        guard baseline == model.data.effectiveAssetVersion else {
+            return .mismatch
+        }
+        guard let senderVersion = await root.spaceRoot.spaceGameControllable.reportedVersion(
+            for: model.data.id,
+            playerId: model.sender.id
+        ) else {
+            return .awaitingAuthoritativeList
+        }
+        return senderVersion == baseline ? .valid : .mismatch
+    }
+
+    private func retryDeferredSpaceTransforms(from masterId: UUID) async {
+        let deferred = await gameModel.deferredSpaceTransforms(from: masterId)
+        for model in deferred {
+            switch await playerSpaceTransformValidation(for: model) {
+            case .awaitingAuthoritativeList:
+                continue
+            case .mismatch:
+                await gameModel.removeDeferredSpaceTransform(model)
+            case .valid:
+                await gameModel.removeDeferredSpaceTransform(model)
+                _ = await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                    data: model.data,
+                    counter: model.counter,
+                    timestamp: model.timestamp
+                )
+            }
+        }
+    }
+
+    private func deferredPresentationIsCurrent(_ model: GameNetworkModel) async -> Bool {
+        await gameModel.shouldProcessPresentation(
+            from: model.masterId,
+            senderID: model.sender.id,
+            module: model.data.type,
+            itemId: model.data.id,
+            version: model.data.version,
+            counter: model.counter,
+            timestamp: model.timestamp,
+            isRepair: false
+        )
     }
 
     @MainActor
@@ -1886,14 +2374,23 @@ extension PlayerController {
                 (features.diceMaster || !model.sender.isMaster) &&
                 (features.dicePlayers || model.sender.isMaster)
         else { return await response(for: model, isSuccess: false, requestData: false) }
+
+        // Peers may contribute only a complete roll. Dice focus/visibility and
+        // package commands remain master-authoritative even if a player stamps
+        // the envelope with a group audience.
+        guard model.sender.isMaster || model.isPlayerDiceGroupEvent else {
+            return nil
+        }
         
         switch model.type {
         case .reveal:
             if try await !root.diceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
+            return await response(for: model, isSuccess: true, requestData: false)
         case .store:
             try await root.diceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: model.subType == .show)
+            return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
             case .show, .store:
@@ -1909,10 +2406,24 @@ extension PlayerController {
     }
     
     func handleMap(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        guard model.sender.isMaster,
-              model.subType != .ok,
-              model.subType != .failed
-        else { return nil }
+        guard model.subType != .ok, model.subType != .failed else { return nil }
+
+        let isPlayerMapPin = model.sender.role == .player &&
+            model.type == .update &&
+            model.subType == .mapPin &&
+            model.data.type == .map &&
+            model.effectiveAudience == .group
+        if isPlayerMapPin {
+            switch await applyPlayerMapPin(model) {
+            case .applied, .rejected:
+                break
+            case .awaitingMapGeneration:
+                await gameModel.deferMapPin(model)
+            }
+            return nil
+        }
+
+        guard model.sender.isMaster else { return nil }
 
         switch model.type {
         case .reveal:
@@ -2098,6 +2609,7 @@ extension PlayerController {
 
             _ = await applyPendingMapContentUpdate(itemId: model.data.id)
             _ = await applyPendingMapState(itemId: model.data.id)
+            await retryDeferredMapPins(itemId: model.data.id)
             guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: model.data.id) else {
                 return await requestFullMap(
                     for: model,
@@ -2158,11 +2670,12 @@ extension PlayerController {
                 ) else { return nil }
                 await gameModel.markMapStateApplied(itemId: model.data.id, counter: model.counter)
                 _ = await completeMapRepairIfSatisfied(itemId: model.data.id)
+                await retryDeferredMapPins(itemId: model.data.id)
                 await MainActor.run { gameModel.gameUpdateType = .map }
                 await refreshMapVisuals(itemId: model.data.id)
 
             case .mapPin:
-                // master will never send mapPin updates, they come only from players.
+                // Player pin events are handled before the master-only switch.
                 return nil
             case .battleRound:
                 guard await root.mapRoot.mapGameControllable.applyBattleRoundUpdate(
@@ -2214,6 +2727,7 @@ extension PlayerController {
             contentVersion: model.data.contentVersion
         )
         _ = await applyPendingMapState(itemId: model.data.id)
+        await retryDeferredMapPins(itemId: model.data.id)
         let completesPresentation = await completeMapRepairIfSatisfied(itemId: model.data.id)
         if completesPresentation == true {
             await presentMap(itemId: model.data.id)
@@ -2332,6 +2846,7 @@ extension PlayerController {
 
         return await MainActor.run {
             root.gameModel.outgoingMessage(
+                replyToMessageID: model.messageID,
                 counter: model.counter,
                 proxyCounter: model.proxyCounter,
                 type: requestType,
@@ -2364,6 +2879,7 @@ extension PlayerController {
 
         return await MainActor.run {
             root.gameModel.outgoingMessage(
+                replyToMessageID: model.messageID,
                 counter: model.counter,
                 proxyCounter: model.proxyCounter,
                 type: .update,
@@ -2384,8 +2900,57 @@ extension PlayerController {
 
     func presentMap(itemId: UUID) async {
         _ = await root.mapRoot.gameControllable.setCurrent(itemId: itemId)
+        await retryDeferredMapPins(itemId: itemId)
         await MainActor.run { gameModel.gameUpdateType = .map }
         await refreshMapVisuals(itemId: itemId)
+    }
+
+    @MainActor
+    private func applyPlayerMapPin(_ model: GameNetworkModel) -> PlayerMapPinApplication {
+        guard root.mapRoot.gameControllable.gameModel.currentItemId == model.data.id else {
+            return .awaitingMapGeneration
+        }
+        let generation = root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id)
+        guard model.data.version == generation.version,
+              model.data.assetVersion == generation.assetVersion,
+              model.data.contentVersion == generation.contentVersion
+        else {
+            return .awaitingMapGeneration
+        }
+        guard root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
+            itemId: model.data.id,
+            data: model.data,
+            playerId: model.sender.id
+        ) else {
+            return .rejected
+        }
+
+        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(itemId: model.data.id)
+        #if !os(tvOS)
+        root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+        #endif
+        return .applied
+    }
+
+    @MainActor
+    private func retryDeferredMapPins(itemId: UUID) {
+        guard root.mapRoot.gameControllable.gameModel.currentItemId == itemId else { return }
+        let generation = root.mapRoot.mapGameControllable.networkMapUpdate(for: itemId)
+        let deferred = gameModel.consumeDeferredMapPins(for: itemId, matching: generation)
+        var didApplyPin = false
+        for model in deferred {
+            didApplyPin = root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
+                itemId: itemId,
+                data: model.data,
+                playerId: model.sender.id
+            ) || didApplyPin
+        }
+        guard didApplyPin else { return }
+
+        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(itemId: itemId)
+        #if !os(tvOS)
+        root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+        #endif
     }
 
     func refreshMapVisuals(itemId: UUID) async {
@@ -2410,7 +2975,13 @@ extension PlayerController {
         for idType in missingImages {
             let isFirstRequest = await MainActor.run { gameModel.requestedRepairIds.insert(idType.id).inserted }
             guard isFirstRequest else { continue }
-            await send(type: .store, subType: .store, updated: idType)
+            await send(
+                type: .store,
+                subType: .store,
+                updated: idType,
+                relayToProxyClients: false,
+                purpose: .assetRequest
+            )
         }
     }
 
@@ -2785,7 +3356,15 @@ extension PlayerController {
             }
         }
 
-        guard model.sender.isMaster || model.type == .store || validPlayerReveal else { return nil }
+        let isPlayerSpaceTransform = model.sender.role == .player &&
+            model.type == .update &&
+            model.subType == .spaceTransform &&
+            model.data.type == .space &&
+            model.effectiveAudience == .group
+
+        guard model.sender.isMaster || model.type == .store || validPlayerReveal || isPlayerSpaceTransform else {
+            return nil
+        }
 
         switch model.type {
         case .reveal:
@@ -2858,17 +3437,29 @@ extension PlayerController {
             case .spaceList:
                 guard await applySpaceList(model) else { return nil }
                 await retryDeferredSpaceReveals(from: model.masterId)
+                await retryDeferredSpaceTransforms(from: model.masterId)
                 return nil
             case .spaceTransform:
-                guard model.sender.isMaster else { return nil }
                 let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
                     for: model.data.id,
                     masterId: model.masterId
                 )
                 guard baseline == nil || baseline == model.data.effectiveAssetVersion else { return nil }
+                if !model.sender.isMaster {
+                    switch await playerSpaceTransformValidation(for: model) {
+                    case .valid:
+                        break
+                    case .awaitingAuthoritativeList:
+                        await gameModel.deferSpaceTransform(model)
+                        return nil
+                    case .mismatch:
+                        return nil
+                    }
+                }
                 _ = await root.spaceRoot.spaceGameControllable.applySpaceTransform(
                     data: model.data,
-                    counter: model.counter
+                    counter: model.counter,
+                    timestamp: model.timestamp
                 )
                 return nil
             default:
@@ -2940,6 +3531,7 @@ extension PlayerController {
         // leave "missing players", on every transport, not just file sharing.
         return await MainActor.run {
             root.gameModel.outgoingMessage(
+                replyToMessageID: model.messageID,
                 counter: model.counter,
                 proxyCounter: model.proxyCounter,
                 type: model.type,

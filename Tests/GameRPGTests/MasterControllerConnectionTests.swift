@@ -47,24 +47,41 @@ struct MasterControllerModelConnectionTests {
         #expect(registered == playerId)
     }
 
-    @Test("add evicts the stale connectionId when the same player reconnects")
-    func addEvictsStaleConnectionOnReconnect() async {
+    @Test("a live player identity cannot be seized by a second connection")
+    func addRejectsCompetingConnectionForSamePlayer() async {
         let model = MasterControllerModel()
         let oldConnId = UUID()
         let newConnId = UUID()
         let playerId = UUID()
 
-        await MainActor.run { model.add(connectionId: oldConnId, playerId: playerId) }
-        await MainActor.run { model.add(connectionId: newConnId, playerId: playerId) }
+        let firstAccepted = await MainActor.run {
+            model.add(connectionId: oldConnId, playerId: playerId)
+        }
+        let competingAccepted = await MainActor.run {
+            model.add(connectionId: newConnId, playerId: playerId)
+        }
 
         let oldEntry = await MainActor.run { model.connectIDPlayers[oldConnId] }
         let newEntry = await MainActor.run { model.connectIDPlayers[newConnId] }
-        #expect(oldEntry == nil, "old connectionId must be evicted when the same player reconnects")
-        #expect(newEntry == playerId)
+        #expect(firstAccepted)
+        #expect(!competingAccepted)
+        #expect(oldEntry == playerId)
+        #expect(newEntry == nil)
     }
 
-    @Test("add preserves unrelated players when one player reconnects")
-    func addPreservesOtherPlayersOnReconnect() async {
+    @Test("a retired physical connection cannot resurrect its player")
+    func retiredConnectionRejectsInFlightMessages() async {
+        let model = MasterControllerModel()
+        let connectionID = UUID()
+        let playerID = UUID()
+
+        #expect(model.accepts(connectionId: connectionID, playerId: playerID))
+        #expect(model.remove(connectionId: connectionID) == playerID)
+        #expect(!model.accepts(connectionId: connectionID, playerId: playerID))
+    }
+
+    @Test("retiring the old connection permits a player to reconnect")
+    func removeThenAddPreservesOtherPlayersOnReconnect() async {
         let model = MasterControllerModel()
         let connA = UUID(); let playerA = UUID()
         let connBOld = UUID(); let connBNew = UUID(); let playerB = UUID()
@@ -72,6 +89,7 @@ struct MasterControllerModelConnectionTests {
         await MainActor.run {
             model.add(connectionId: connA, playerId: playerA)
             model.add(connectionId: connBOld, playerId: playerB)
+            _ = model.remove(connectionId: connBOld)
             model.add(connectionId: connBNew, playerId: playerB)
         }
 
@@ -79,9 +97,89 @@ struct MasterControllerModelConnectionTests {
         let bOldEntry = await MainActor.run { model.connectIDPlayers[connBOld] }
         let bNewEntry = await MainActor.run { model.connectIDPlayers[connBNew] }
         #expect(aEntry == playerA, "unrelated player's mapping must be untouched")
-        #expect(bOldEntry == nil, "old connectionId for reconnecting player must be evicted")
+        #expect(bOldEntry == nil)
         #expect(bNewEntry == playerB)
     }
+
+    @Test("Peer file acknowledgements require an admitted presentation fingerprint")
+    func peerAvailabilityReceiptRequiresExactPresentation() {
+        let model = MasterControllerModel()
+        let masterID = UUID()
+        let presenterID = UUID()
+        let recipientID = UUID()
+        let messageID = UUID()
+        let itemID = UUID()
+        let presentation = GameNetworkModel(
+            messageID: messageID,
+            counter: 17,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: masterID,
+            sender: GameSenderModel(
+                id: presenterID,
+                role: .player,
+                name: "Presenter",
+                characterId: nil
+            ),
+            audience: .group,
+            purpose: .event,
+            data: NetworkCodableDataType(
+                id: itemID,
+                type: .photo,
+                version: 3,
+                data: Data("photo".utf8),
+                assetVersion: 5,
+                contentVersion: 8
+            )
+        )
+        model.trackPeerAvailabilitySource(
+            presentation,
+            recipients: [presenterID, recipientID]
+        )
+        #expect(model.trackedPeerAvailabilitySourceCount == 1)
+
+        var receipt = presentation
+        receipt.messageID = UUID()
+        receipt.replyToMessageID = messageID
+        receipt.sender = GameSenderModel(
+            id: recipientID,
+            role: .player,
+            name: "Recipient",
+            characterId: nil
+        )
+        receipt.subType = .ok
+        receipt.data = NetworkCodableDataType(
+            id: receipt.data.id,
+            type: receipt.data.type,
+            version: receipt.data.version,
+            assetVersion: receipt.data.assetVersion,
+            contentVersion: receipt.data.contentVersion
+        )
+
+        var wrongVersion = receipt
+        wrongVersion.data = NetworkCodableDataType(
+            id: wrongVersion.data.id,
+            type: wrongVersion.data.type,
+            version: wrongVersion.data.version,
+            assetVersion: 6,
+            contentVersion: wrongVersion.data.contentVersion
+        )
+        #expect(!model.acceptsPeerAvailabilityReceipt(wrongVersion))
+
+        var unexpectedPlayer = receipt
+        unexpectedPlayer.sender.id = UUID()
+        #expect(!model.acceptsPeerAvailabilityReceipt(unexpectedPlayer))
+
+        var presenterReceipt = receipt
+        presenterReceipt.sender.id = presenterID
+        #expect(!model.acceptsPeerAvailabilityReceipt(presenterReceipt))
+
+        #expect(model.acceptsPeerAvailabilityReceipt(receipt))
+        #expect(model.trackedPeerAvailabilitySourceCount == 0)
+        #expect(!model.acceptsPeerAvailabilityReceipt(receipt))
+    }
+
 }
 
 // MARK: - GameMessagePipeline unit tests
@@ -118,13 +216,30 @@ struct GameMessagePipelineTests {
     @Test("counter zero messages are not deduplicated")
     func counterZeroMessagesAreNotDeduplicated() async {
         let pipeline = GameMessagePipeline()
-        let message = Self.message(counter: 0, senderId: UUID())
+        var message = Self.message(counter: 0, senderId: UUID())
+        message.messageID = nil
 
         let first = await pipeline.enqueue(GameMessageEvent(model: message, origin: .direct(UUID())))
         let second = await pipeline.enqueue(GameMessageEvent(model: message, origin: .sharePlay(UUID())))
 
         #expect(first)
         #expect(second)
+    }
+
+    @Test("message identity deduplicates current counter-zero retries")
+    func currentCounterZeroMessagesAreDeduplicated() async {
+        let pipeline = GameMessagePipeline()
+        let message = Self.message(counter: 0, senderId: UUID())
+
+        let first = await pipeline.enqueue(
+            GameMessageEvent(model: message, origin: .direct(UUID()))
+        )
+        let duplicate = await pipeline.enqueue(
+            GameMessageEvent(model: message, origin: .sharePlay(UUID()))
+        )
+
+        #expect(first)
+        #expect(!duplicate)
     }
 
     @Test("cancelled pipeline rejects new messages")
@@ -277,6 +392,84 @@ struct MasterControllerDirectProxyTests {
         case space
     }
 
+    private static func transportMessage(
+        role: GameType,
+        senderID: UUID,
+        masterID: UUID
+    ) -> GameNetworkModel {
+        GameNetworkModel(
+            counter: 1,
+            proxyCounter: 0,
+            type: .store,
+            subType: .store,
+            masterId: masterID,
+            sender: GameSenderModel(
+                id: senderID,
+                role: role,
+                name: String(describing: role),
+                characterId: nil
+            ),
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: .setting,
+                version: 0
+            )
+        )
+    }
+
+    @Test("Master Space transform advances beyond retained peer time")
+    func masterSpaceTransformUsesCausalTimestamp() async throws {
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let itemID = UUID()
+        let version = 9
+        let retainedTimestamp = Date.now.timeIntervalSince1970 + 60
+        let retainedTransform = SpaceTransformModel(
+            position: SIMD3<Float>(repeating: 0),
+            scale: SIMD3<Float>(repeating: 1),
+            yaw: 0,
+            pitch: 0
+        )
+        let newTransform = SpaceTransformModel(
+            position: SIMD3<Float>(1, 2, 3),
+            scale: SIMD3<Float>(repeating: 2),
+            yaw: 0.5,
+            pitch: 0.25
+        )
+        #expect(env.root.spaceRoot.gameController.spaceGameModel.applyTransform(
+            itemId: itemID,
+            version: version,
+            counter: 50_000,
+            timestamp: retainedTimestamp,
+            transform: retainedTransform
+        ))
+        let data = NetworkCodableDataType(
+            id: itemID,
+            type: .space,
+            version: version,
+            data: newTransform.encodeData()
+        )
+
+        await env.master.send(
+            type: .update,
+            subtype: .spaceTransform,
+            updated: data
+        )
+
+        let outgoing = try #require(
+            env.directMasterSpy.sendResponseData as? GameNetworkModel
+        )
+        let retained = try #require(
+            env.root.spaceRoot.gameController.spaceGameModel.transformState(
+                for: itemID,
+                version: version
+            )
+        )
+        #expect(outgoing.timestamp > retainedTimestamp)
+        #expect(retained.timestamp == outgoing.timestamp)
+        #expect(retained.counter == outgoing.counter)
+        #expect(retained.transform == newTransform)
+    }
+
     @Test("LAN rejects a remote master claim before relaying it")
     func lanRejectsRemoteMasterClaimBeforeRelay() async throws {
         // Given
@@ -405,6 +598,280 @@ struct MasterControllerDirectProxyTests {
         #expect(env.master.gameModel.connectIDPlayers[connectionId] == firstPlayerId)
         #expect(env.root.gameModel.gameRoster.players.contains { $0.id == firstPlayerId })
         #expect(!env.root.gameModel.gameRoster.players.contains { $0.id == secondPlayerId })
+    }
+
+    @Test("An observer connection cannot promote itself to player")
+    func physicalOriginCannotSwitchRole() async throws {
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let connectionID = UUID()
+        let observerID = UUID()
+        let masterID = env.root.gameModel.gameConfig.master.id
+        let bootstrap = GameNetworkModel(
+            counter: 1,
+            proxyCounter: 0,
+            type: .store,
+            subType: .store,
+            masterId: masterID,
+            sender: GameSenderModel(
+                id: observerID,
+                role: .observer,
+                name: "Observer",
+                characterId: nil
+            ),
+            data: NetworkCodableDataType(id: UUID(), type: .setting, version: 0)
+        )
+        var promoted = bootstrap
+        promoted.counter = 2
+        promoted.messageID = UUID()
+        promoted.sender.role = .player
+
+        await env.master.received(bootstrap, origin: .direct(connectionID))
+        await env.master.received(promoted, origin: .direct(connectionID))
+
+        let rosterPlayer = env.root.gameModel.gameRoster.players.first {
+            $0.id == observerID
+        }
+        #expect(rosterPlayer?.type == .observer)
+    }
+
+    @Test("Main master accepts only roles supported by each transport")
+    func mainMasterEnforcesTransportRoleMatrix() async throws {
+        // Given
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let masterID = env.root.gameModel.gameConfig.master.id
+        let fileObserverID = UUID()
+        let fileProxyID = UUID()
+        env.root.gameModel.gameRoster = GameRosterModel(players: [
+            PlayerGameModel(id: fileObserverID, type: .observer, name: "File observer"),
+            PlayerGameModel(id: fileProxyID, type: .proxy, name: "File proxy")
+        ])
+
+        // When / Then: Bonjour supports game players and observers.
+        #expect(await env.master.accepts(
+            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            origin: .direct(UUID())
+        ))
+        #expect(await env.master.accepts(
+            Self.transportMessage(role: .observer, senderID: UUID(), masterID: masterID),
+            origin: .direct(UUID())
+        ))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            origin: .direct(UUID())
+        )))
+
+        // When / Then: SharePlay Messenger and Journal are player-only.
+        #expect(await env.master.accepts(
+            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            origin: .sharePlay(UUID())
+        ))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .observer, senderID: UUID(), masterID: masterID),
+            origin: .sharePlay(UUID())
+        )))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            origin: .sharePlay(UUID())
+        )))
+        // Journal has no physical publisher. Even a player role is rejected
+        // until an exact Messenger admission has been observed.
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            origin: .file
+        )))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .observer, senderID: fileObserverID, masterID: masterID),
+            origin: .file
+        )))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .proxy, senderID: fileProxyID, masterID: masterID),
+            origin: .file
+        )))
+
+        // A private proxy connection never enters the main master's ingress.
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            origin: .proxy(UUID())
+        )))
+    }
+
+    @Test("Player Journal payload requires its exact physical Messenger admission")
+    func playerJournalPayloadRequiresMessengerAdmission() async throws {
+        // Given
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let masterID = env.root.gameModel.gameConfig.master.id
+        let playerID = UUID()
+        let participantID = UUID()
+        let messageID = UUID()
+        let timestamp = Date.now.timeIntervalSince1970
+        let sender = GameSenderModel(
+            id: playerID,
+            role: .player,
+            name: "Journal player",
+            characterId: nil
+        )
+        let full = GameNetworkModel(
+            messageID: messageID,
+            timestamp: timestamp,
+            counter: 21,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: masterID,
+            sender: sender,
+            audience: .group,
+            purpose: .event,
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: .photo,
+                version: 4,
+                data: Data("photo".utf8),
+                assetVersion: 7,
+                contentVersion: 9
+            )
+        )
+        let metadata = try #require(
+            RPGSharePlayController.playerJournalAdmissionMetadata(for: full)
+        )
+
+        // When / Then - a roster entry or copied logical identity is not proof
+        // that this Journal attachment came from that participant.
+        #expect(!(await env.master.accepts(full, origin: .file)))
+        #expect(!(await env.master.accepts(
+            metadata,
+            origin: .direct(UUID())
+        )))
+
+        #expect(await env.master.accepts(
+            metadata,
+            origin: .sharePlay(participantID)
+        ))
+        var forgedPayload = full
+        forgedPayload.journalPayloadDigest = metadata.journalPayloadDigest
+        forgedPayload.data = NetworkCodableDataType(
+            id: full.data.id,
+            type: full.data.type,
+            version: full.data.version,
+            data: Data("forged photo".utf8),
+            assetVersion: full.data.assetVersion,
+            contentVersion: full.data.contentVersion
+        )
+        #expect(!(await env.master.accepts(forgedPayload, origin: .file)))
+        #expect(await env.master.accepts(full, origin: .file))
+
+        // A conflicting second control packet cannot replace the immutable
+        // first fingerprint, and rejecting it does not poison the valid one.
+        var conflictingMetadata = metadata
+        conflictingMetadata.timestamp += 1
+        #expect(!(await env.master.accepts(
+            conflictingMetadata,
+            origin: .sharePlay(participantID)
+        )))
+        #expect(await env.master.accepts(full, origin: .file))
+
+        // The admission is an exact fingerprint, not a reusable sender token.
+        var changedVersion = full
+        changedVersion.data = NetworkCodableDataType(
+            id: full.data.id,
+            type: full.data.type,
+            version: full.data.version + 1,
+            data: full.data.data,
+            assetVersion: full.data.assetVersion,
+            contentVersion: full.data.contentVersion
+        )
+        #expect(!(await env.master.accepts(changedVersion, origin: .file)))
+
+        var copiedMessageID = full
+        copiedMessageID.sender.id = UUID()
+        #expect(!(await env.master.accepts(copiedMessageID, origin: .file)))
+    }
+
+    @Test("Proxy host accepts only proxy-role messages from its proxy transport")
+    func proxyMasterEnforcesTransportRoleMatrix() async throws {
+        // Given
+        let env = try await MasterControllerHarness.make(asProxy: true)
+        let masterID = env.root.gameModel.gameConfig.master.id
+
+        // When / Then
+        #expect(await env.master.accepts(
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            origin: .proxy(UUID())
+        ))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            origin: .proxy(UUID())
+        )))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .observer, senderID: UUID(), masterID: masterID),
+            origin: .proxy(UUID())
+        )))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            origin: .direct(UUID())
+        )))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            origin: .sharePlay(UUID())
+        )))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            origin: .file
+        )))
+    }
+
+    @Test("A disconnected proxy mirror can reconnect without changing the public player state")
+    func proxyDisconnectReleasesOnlyItsPhysicalMapping() async throws {
+        // Given
+        let env = try await MasterControllerHarness.make(asProxy: true)
+        let proxyID = UUID()
+        let oldConnectionID = UUID()
+        let newConnectionID = UUID()
+        let audioID = UUID()
+        let publicPlayer = PlayerGameModel(
+            id: proxyID,
+            type: .player,
+            name: "Public host player"
+        )
+        env.root.gameModel.gameRoster = GameRosterModel(players: [publicPlayer])
+        env.root.audioRoot.audioGameControllable.applyAudio(
+            id: audioID,
+            for: [proxyID]
+        )
+        var firstMessage = Self.transportMessage(
+            role: .proxy,
+            senderID: proxyID,
+            masterID: env.root.gameModel.gameConfig.master.id
+        )
+
+        // When: the first physical mirror connects, then disappears.
+        await env.root.networkProxyStore.masterReceived(
+            data: firstMessage.encodeData(),
+            for: oldConnectionID,
+            fileJournal: false
+        )
+        #expect(env.master.gameModel.connectIDPlayers[oldConnectionID] == proxyID)
+        await env.root.networkProxyStore.masterLostPlayer(with: oldConnectionID)
+
+        // Then: only the private connection binding is retired. The proxy is
+        // invisible to public roster/report lifecycle and may reconnect under
+        // a fresh physical connection ID.
+        #expect(env.master.gameModel.connectIDPlayers[oldConnectionID] == nil)
+        #expect(env.root.gameModel.gameRoster.players.map(\.id) == [proxyID])
+        #expect(
+            env.root.audioRoot.gameControllable.gameModel
+                .playerReport(for: audioID) == [proxyID]
+        )
+
+        firstMessage.counter += 1
+        firstMessage.messageID = UUID()
+        await env.root.networkProxyStore.masterReceived(
+            data: firstMessage.encodeData(),
+            for: newConnectionID,
+            fileJournal: false
+        )
+
+        #expect(env.master.gameModel.connectIDPlayers[newConnectionID] == proxyID)
+        #expect(env.root.gameModel.gameRoster.players.map(\.id) == [proxyID])
     }
 
     @Test("Observer policy permits only passive data-less asset repairs")

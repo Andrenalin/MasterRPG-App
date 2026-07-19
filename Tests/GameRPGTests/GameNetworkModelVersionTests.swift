@@ -324,6 +324,10 @@ struct GameNetworkModelVersionTests {
     @Test func roundTripKeepsAllFields() throws {
         var message = masterMessage
         message.targetId = playerId
+        message.journalAdmissionOnly = true
+        message.journalPayloadDigest = GameNetworkModel.journalDigest(
+            for: Data("journal payload".utf8)
+        )
         let encoded = try #require(message.encodeData())
 
         let decoded = try #require(GameNetworkModel.decodeData(of: encoded))
@@ -337,6 +341,8 @@ struct GameNetworkModelVersionTests {
         #expect(decoded.sender == message.sender)
         #expect(decoded.masterState == message.masterState)
         #expect(decoded.targetId == playerId)
+        #expect(decoded.journalAdmissionOnly == true)
+        #expect(decoded.journalPayloadDigest == message.journalPayloadDigest)
         #expect(decoded.data == message.data)
     }
 
@@ -388,6 +394,7 @@ struct GameNetworkModelVersionTests {
         var request = playerMessage
         request.audience = .master
         request.purpose = .assetRequest
+        request.replyToMessageID = UUID()
 
         // When
         let encoded = try #require(request.encodeData())
@@ -397,6 +404,9 @@ struct GameNetworkModelVersionTests {
         #expect(decoded.audience == .master)
         #expect(decoded.purpose == .assetRequest)
         #expect(decoded.effectiveAudience == .master)
+        #expect(decoded.messageID == request.messageID)
+        #expect(decoded.replyToMessageID == request.replyToMessageID)
+        #expect(decoded.timestamp == request.timestamp)
     }
 
     @Test("Legacy envelope infers routing without changing its wire format")
@@ -411,6 +421,35 @@ struct GameNetworkModelVersionTests {
         #expect(decoded.audience == .automatic)
         #expect(decoded.purpose == .legacy)
         #expect(decoded.effectiveAudience == .master)
+        #expect(decoded.messageID == nil)
+        #expect(decoded.timestamp == 0)
+        #expect(decoded.journalAdmissionOnly == nil)
+        #expect(decoded.journalPayloadDigest == nil)
+    }
+
+    @Test("A full V1 player file reveal remains a group presentation")
+    func legacyPlayerFilePresentationIsReachable() throws {
+        var presentation = v1PlayerMessage
+        presentation.subType = .show
+
+        let decoded = try #require(
+            GameNetworkModel.decodeData(of: JSONEncoder().encode(presentation))
+        )
+
+        #expect(decoded.purpose == .legacy)
+        #expect(decoded.isPlayerFilePresentationEvent)
+        #expect(decoded.effectiveAudience == .group)
+
+        presentation.data = NetworkCodableDataType(
+            id: payload.id,
+            type: .photo,
+            version: payload.version
+        )
+        let dataLess = try #require(
+            GameNetworkModel.decodeData(of: JSONEncoder().encode(presentation))
+        )
+        #expect(!dataLess.isPlayerFilePresentationEvent)
+        #expect(dataLess.effectiveAudience == .master)
     }
 
     @Test func dedupKeySeparatesMetadataOnlyFromFullPayload() {

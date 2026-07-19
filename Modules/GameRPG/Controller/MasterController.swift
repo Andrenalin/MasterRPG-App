@@ -22,8 +22,130 @@ final class MasterControllerModel: Sendable {
         let version: Int
     }
 
+    private struct PlayerJournalAdmissionKey: Hashable, Sendable {
+        let senderId: UUID
+        let messageId: UUID
+    }
+
+    private struct PlayerJournalAdmission: Equatable, Sendable {
+        let envelopeVersion: Int
+        let replyToMessageId: UUID?
+        let masterId: UUID
+        let sender: GameSenderModel
+        let masterState: GameMasterStateModel?
+        let counter: Int
+        let proxyCounter: Int
+        let type: RPGMessageType
+        let subType: RPGMessageActionType
+        let audience: GameMessageAudience
+        let purpose: GameMessagePurpose
+        let targetId: UUID?
+        let itemId: UUID
+        let module: NetworkModules
+        let version: Int
+        let assetVersion: Int?
+        let contentVersion: Int?
+        let timestamp: TimeInterval
+        let journalPayloadDigest: Data?
+
+        init(_ model: GameNetworkModel) {
+            envelopeVersion = model.version
+            replyToMessageId = model.replyToMessageID
+            masterId = model.masterId
+            sender = model.sender
+            masterState = model.masterState
+            counter = model.counter
+            proxyCounter = model.proxyCounter
+            type = model.type
+            subType = model.subType
+            audience = model.audience
+            purpose = model.purpose
+            targetId = model.targetId
+            itemId = model.data.id
+            module = model.data.type
+            version = model.data.version
+            assetVersion = model.data.assetVersion
+            contentVersion = model.data.contentVersion
+            timestamp = model.timestamp
+            if let payload = model.data.data {
+                journalPayloadDigest = GameNetworkModel.journalDigest(for: payload)
+            } else {
+                journalPayloadDigest = model.journalPayloadDigest
+            }
+        }
+    }
+
+    private struct PeerAvailabilitySource: Equatable, Sendable {
+        let wireId: UUID?
+        let presenterId: UUID
+        let masterId: UUID
+        let counter: Int
+        let proxyCounter: Int
+        let type: RPGMessageType
+        let itemId: UUID
+        let module: NetworkModules
+        let version: Int
+        let assetVersion: Int?
+        let contentVersion: Int?
+        var pendingRecipients: Set<UUID>
+
+        init(_ model: GameNetworkModel, recipients: Set<UUID>) {
+            wireId = model.messageID
+            presenterId = model.sender.id
+            masterId = model.masterId
+            counter = model.counter
+            proxyCounter = model.proxyCounter
+            type = model.type
+            itemId = model.data.id
+            module = model.data.type
+            version = model.data.version
+            assetVersion = model.data.assetVersion
+            contentVersion = model.data.contentVersion
+            pendingRecipients = recipients
+        }
+
+        func matches(_ receipt: GameNetworkModel) -> Bool {
+            let hasMatchingIdentity = if let wireId {
+                receipt.replyToMessageID == wireId
+            } else {
+                // Shipped V1 envelopes have no message identity. Their echoed
+                // counter plus the complete asset fingerprint is the strongest
+                // correlation available to a mixed-version session.
+                receipt.replyToMessageID == nil && receipt.counter == counter
+            }
+            return hasMatchingIdentity &&
+                receipt.masterId == masterId &&
+                receipt.counter == counter &&
+                receipt.proxyCounter == proxyCounter &&
+                receipt.type == type &&
+                receipt.data.id == itemId &&
+                receipt.data.type == module &&
+                receipt.data.version == version &&
+                receipt.data.assetVersion == assetVersion &&
+                receipt.data.contentVersion == contentVersion
+        }
+
+        func identifiesSamePresentation(as other: Self) -> Bool {
+            wireId == other.wireId &&
+                presenterId == other.presenterId &&
+                masterId == other.masterId &&
+                counter == other.counter &&
+                proxyCounter == other.proxyCounter &&
+                type == other.type &&
+                itemId == other.itemId &&
+                module == other.module &&
+                version == other.version &&
+                assetVersion == other.assetVersion &&
+                contentVersion == other.contentVersion
+        }
+    }
+
     var messageCounter: Int = 1
     var connectIDPlayers: [ConnectionController.ID: UUID] = [:]
+    private var connectionRoles: [ConnectionController.ID: GameType] = [:]
+    private var retiredConnectionIDs: Set<ConnectionController.ID> = []
+    let deliverySessionID = UUID()
+    private var deliveryMessagesByWireID: [UUID: GameDeliveryMessageID] = [:]
     var asProxy = false
     var pendingAudioPlays: [UUID: NetworkCodableDataType] = [:]
     var audioTransferPlayers: [UUID: Set<UUID>] = [:]
@@ -32,6 +154,11 @@ final class MasterControllerModel: Sendable {
     private var lastPdfListCounters: [UUID: Int] = [:]
     private var lastSpaceListCounters: [UUID: Int] = [:]
     private var lastSpaceTransformCounters: [SpaceTransformSequenceKey: Int] = [:]
+    private var playerJournalAdmissions: [PlayerJournalAdmissionKey: PlayerJournalAdmission] = [:]
+    private var playerJournalAdmissionOrder: [PlayerJournalAdmissionKey] = []
+    private static let maximumPlayerJournalAdmissions = 256
+    private var peerAvailabilitySources: [PeerAvailabilitySource] = []
+    private static let maximumPeerAvailabilitySources = 256
     /// Latest file-backed item versions whose full package already went out in
     /// the current game. A changed version must be broadcast in full again;
     /// otherwise a new map is reduced to a reference and unnecessarily falls
@@ -54,32 +181,173 @@ final class MasterControllerModel: Sendable {
         return messageCounter
     }
 
-    func add(connectionId: ConnectionController.ID, playerId: UUID) {
-        // Evict any stale entry for this player from a previous connection,
-        // so lostPlayer(oldConnectionId) doesn't remove a player who has already reconnected.
-        connectIDPlayers = connectIDPlayers.filter { $0.value != playerId }
+    @discardableResult
+    func add(
+        connectionId: ConnectionController.ID,
+        playerId: UUID,
+        role: GameType = .player
+    ) -> Bool {
+        guard !retiredConnectionIDs.contains(connectionId) else { return false }
+        if let existingPlayerID = connectIDPlayers[connectionId] {
+            return existingPlayerID == playerId && connectionRoles[connectionId] == role
+        }
+        // A live physical source owns its public UUID until that source is
+        // explicitly retired. A second connection cannot seize the identity.
+        guard !connectIDPlayers.contains(where: { $0.key != connectionId && $0.value == playerId }) else {
+            return false
+        }
         connectIDPlayers[connectionId] = playerId
+        connectionRoles[connectionId] = role
+        return true
     }
 
     /// Binds one physical LAN/SharePlay/proxy connection to one logical sender.
     /// A connection may reconnect under a new physical ID, but an established
     /// physical origin cannot change identities mid-stream.
-    func accepts(connectionId: ConnectionController.ID, playerId: UUID) -> Bool {
+    func accepts(connectionId: ConnectionController.ID, sender: GameSenderModel) -> Bool {
+        guard !retiredConnectionIDs.contains(connectionId) else { return false }
         if let existingPlayerId = connectIDPlayers[connectionId] {
-            return existingPlayerId == playerId
+            return existingPlayerId == sender.id && connectionRoles[connectionId] == sender.role
         }
-        add(connectionId: connectionId, playerId: playerId)
-        return true
+        return add(
+            connectionId: connectionId,
+            playerId: sender.id,
+            role: sender.role
+        )
+    }
+
+    /// Compatibility helper for focused model tests and older direct callers.
+    func accepts(connectionId: ConnectionController.ID, playerId: UUID) -> Bool {
+        accepts(
+            connectionId: connectionId,
+            sender: GameSenderModel(id: playerId, role: .player, name: "", characterId: nil)
+        )
     }
 
     func remove(connectionId: ConnectionController.ID) -> UUID? {
+        retiredConnectionIDs.insert(connectionId)
+        connectionRoles[connectionId] = nil
         guard let playerId = connectIDPlayers.removeValue(forKey: connectionId) else { return nil }
         lastAudioListCounters[playerId] = nil
         lastPhotoListCounters[playerId] = nil
         lastPdfListCounters[playerId] = nil
         lastSpaceListCounters[playerId] = nil
         lastSpaceTransformCounters = lastSpaceTransformCounters.filter { $0.key.playerId != playerId }
+        removePlayerJournalAdmissions(for: playerId)
+        for index in peerAvailabilitySources.indices {
+            peerAvailabilitySources[index].pendingRecipients.remove(playerId)
+        }
+        peerAvailabilitySources.removeAll { $0.pendingRecipients.isEmpty }
         return playerId
+    }
+
+    @discardableResult
+    func admitPlayerJournalMetadata(_ model: GameNetworkModel) -> Bool {
+        guard model.isPlayerJournalAdmissionMetadata,
+              let messageId = model.messageID
+        else { return false }
+
+        let key = PlayerJournalAdmissionKey(
+            senderId: model.sender.id,
+            messageId: messageId
+        )
+        let admission = PlayerJournalAdmission(model)
+        if let existing = playerJournalAdmissions[key] {
+            // Never let a copied sender/message ID replace the first
+            // physically attributed Journal fingerprint.
+            return existing == admission
+        }
+        playerJournalAdmissionOrder.append(key)
+        playerJournalAdmissions[key] = admission
+        while playerJournalAdmissionOrder.count > Self.maximumPlayerJournalAdmissions {
+            playerJournalAdmissions[playerJournalAdmissionOrder.removeFirst()] = nil
+        }
+        return true
+    }
+
+    func acceptsPlayerJournal(_ model: GameNetworkModel) -> Bool {
+        guard model.isPlayerFilePresentationEvent,
+              let messageId = model.messageID
+        else { return false }
+
+        let key = PlayerJournalAdmissionKey(
+            senderId: model.sender.id,
+            messageId: messageId
+        )
+        return playerJournalAdmissions[key] == PlayerJournalAdmission(model)
+    }
+
+    func resetPlayerJournalAdmissions() {
+        playerJournalAdmissions.removeAll()
+        playerJournalAdmissionOrder.removeAll()
+    }
+
+    private func removePlayerJournalAdmissions(for playerId: UUID) {
+        playerJournalAdmissions = playerJournalAdmissions.filter {
+            $0.key.senderId != playerId
+        }
+        playerJournalAdmissionOrder.removeAll { $0.senderId == playerId }
+    }
+
+    func trackDelivery(wireID: UUID, counter: Int) -> GameDeliveryMessageID {
+        let messageID = GameDeliveryMessageID(
+            sessionID: deliverySessionID,
+            counter: counter
+        )
+        deliveryMessagesByWireID[wireID] = messageID
+        return messageID
+    }
+
+    func deliveryMessageID(replyingTo wireID: UUID) -> GameDeliveryMessageID? {
+        deliveryMessagesByWireID[wireID]
+    }
+
+    func resetDeliveryMessages() {
+        deliveryMessagesByWireID.removeAll()
+    }
+
+    func trackPeerAvailabilitySource(
+        _ model: GameNetworkModel,
+        recipients: Set<UUID>
+    ) {
+        // The presenting player was already required to report the canonical
+        // asset before its event was accepted. Only the other recipients need
+        // to prove that this peer-origin transfer reached them.
+        let pendingRecipients = recipients.subtracting([model.sender.id])
+        guard model.isPlayerFilePresentationEvent, !pendingRecipients.isEmpty else {
+            return
+        }
+        let source = PeerAvailabilitySource(model, recipients: pendingRecipients)
+        guard !peerAvailabilitySources.contains(where: {
+            $0.identifiesSamePresentation(as: source)
+        }) else { return }
+        peerAvailabilitySources.append(source)
+        while peerAvailabilitySources.count > Self.maximumPeerAvailabilitySources {
+            peerAvailabilitySources.removeFirst()
+        }
+    }
+
+    func acceptsPeerAvailabilityReceipt(_ model: GameNetworkModel) -> Bool {
+        guard model.subType == .ok,
+              let index = peerAvailabilitySources.firstIndex(where: {
+                  $0.pendingRecipients.contains(model.sender.id) &&
+                      $0.matches(model)
+              })
+        else { return false }
+
+        peerAvailabilitySources[index].pendingRecipients.remove(model.sender.id)
+        if peerAvailabilitySources[index].pendingRecipients.isEmpty {
+            peerAvailabilitySources.remove(at: index)
+        }
+        return true
+    }
+
+    var trackedPeerAvailabilitySourceCount: Int {
+        peerAvailabilitySources.count
+    }
+
+    func resetPeerAvailabilitySources() {
+        peerAvailabilitySources.removeAll()
     }
 
     func canApplyAudioList(from playerId: UUID, counter: Int) -> Bool {
@@ -209,6 +477,9 @@ extension MasterController {
     @MainActor
     func start() async {
         Logger.networking.debug("MasterController: Start")
+        gameModel.resetPlayerJournalAdmissions()
+        gameModel.resetPeerAvailabilitySources()
+        root.logGameController.beginDeliverySession(gameModel.deliverySessionID)
         await root.networkStore.startMasterGame(game: root.gameModel.gameConfig, titleImage: root.adventureRoot.titleImage(for: root.gameModel.gameConfig.master.adventureId!))
     }
     
@@ -224,6 +495,9 @@ extension MasterController {
         gameModel.resetPdfListSequence()
         gameModel.resetSpaceListSequence()
         gameModel.resetSpaceTransformSequence()
+        gameModel.resetDeliveryMessages()
+        gameModel.resetPlayerJournalAdmissions()
+        gameModel.resetPeerAvailabilitySources()
         await root.networkStore.stopGame()
         await root.networkProxyStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
@@ -424,11 +698,14 @@ extension MasterController {
         guard updated.type != .value else { return }
         await send(type: .store, subtype: .store, updated: updated)
     }
-    
+
     func send(
         type: RPGMessageType,
         subtype: RPGMessageActionType,
         updated: NetworkCodableDataType,
+        replyToMessageID: UUID? = nil,
+        timestamp: TimeInterval? = nil,
+        appliesLocalSpaceTransform: Bool = true,
         connectionId: ConnectionController.ID? = nil,
         origin: GameMessageOrigin? = nil,
         playerId: UUID? = nil,
@@ -439,26 +716,76 @@ extension MasterController {
         // the versioned canonical-package handshake.
         guard type != .update || updated.type != .table else { return }
 
+        let outgoingTimestamp: TimeInterval
+        if let timestamp {
+            outgoingTimestamp = timestamp
+        } else if appliesLocalSpaceTransform,
+                  type == .update,
+                  subtype == .spaceTransform,
+                  updated.type == .space {
+            guard let causalTimestamp = await root.spaceRoot.spaceGameControllable
+                .causalSpaceTransformTimestamp(
+                    itemId: updated.id,
+                    version: updated.effectiveAssetVersion
+                )
+            else { return }
+            outgoingTimestamp = causalTimestamp
+        } else {
+            outgoingTimestamp = Date.now.timeIntervalSince1970
+        }
+
         let counter = await gameModel.nextMessageCounter()
         Logger.networking.debug("MasterController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subtype.debugDescription, privacy: .public) for \(updated.type.token, privacy: .public) -> \(updated.id, privacy: .public)")
 
         // Built from local state in one MainActor hop; a playerId becomes the
         // message target so only the addressee processes it.
         let networtData = await MainActor.run {
-            root.gameModel.outgoingMessage(counter: counter, type: type, subType: subtype, asMaster: authoritativeMaster ?? !asProxy, targetId: playerId, data: updated)
+            root.gameModel.outgoingMessage(
+                replyToMessageID: replyToMessageID,
+                timestamp: outgoingTimestamp,
+                counter: counter,
+                type: type,
+                subType: subtype,
+                asMaster: authoritativeMaster ?? !asProxy,
+                targetId: playerId,
+                data: updated
+            )
         }
 
         if !asProxy,
+           appliesLocalSpaceTransform,
            networtData.sender.isMaster,
            type == .update,
            subtype == .spaceTransform {
             guard await root.spaceRoot.spaceGameControllable.applySpaceTransform(
                 data: networtData.data,
-                counter: networtData.counter
+                counter: networtData.counter,
+                timestamp: networtData.timestamp
             ) else { return }
         }
 
-        await root.logGameController.addMessage(counter: counter, type: type, subType: subtype, module: updated.type, itemId: updated.id)
+        if let wireID = networtData.messageID {
+            let deliveryID = await gameModel.trackDelivery(
+                wireID: wireID,
+                counter: counter
+            )
+            await root.logGameController.addMessage(
+                messageID: deliveryID,
+                type: type,
+                subType: subtype,
+                module: updated.type,
+                itemId: updated.id,
+                targetID: networtData.targetId
+            )
+        } else {
+            await root.logGameController.addMessage(
+                counter: counter,
+                type: type,
+                subType: subtype,
+                module: updated.type,
+                itemId: updated.id
+            )
+        }
         let deliveryOrigin = origin ?? (asProxy ? .proxy(connectionId) : .direct(connectionId))
         await root.statisticsModel.record(
             networtData,
@@ -507,6 +834,11 @@ extension MasterController: MasterNetworkStoreDelegate {
             return false
         }
 
+        guard acceptsTransportRole(model.sender.role, origin: origin) else {
+            Logger.networking.debug("MasterController: Rejected \(String(describing: model.sender.role), privacy: .public) sender on incompatible transport")
+            return false
+        }
+
         // Players do not know the master's UUID before the first authoritative
         // response. Preserve only the exact master-only bootstrap packets sent
         // at join; every gameplay/peer-visible event must already name this
@@ -516,13 +848,68 @@ extension MasterController: MasterNetworkStoreDelegate {
             return false
         }
 
+        guard !model.isPlayerFilePresentationEvent ||
+                GameNetworkModel.acceptsEventTimestamp(model.timestamp)
+        else {
+            Logger.networking.debug("MasterController: Rejected player presentation with invalid timestamp")
+            return false
+        }
+
+        if model.isJournalAdmissionOnly {
+            guard case .sharePlay = origin else {
+                Logger.networking.debug("MasterController: Rejected Journal admission on a non-SharePlay transport")
+                return false
+            }
+        }
+
         if let connectionId = origin.participantConnectionId {
-            return await gameModel.accepts(
+            guard await gameModel.accepts(
                 connectionId: connectionId,
-                playerId: model.sender.id
-            )
+                sender: model.sender
+            ) else { return false }
+
+            // A player Journal attachment has no physical source identity.
+            // Admit its exact fingerprint only after the same message arrives
+            // through participant-attributed SharePlay Messenger.
+            if case .sharePlay = origin,
+               model.isPlayerJournalAdmissionMetadata {
+                guard await gameModel.admitPlayerJournalMetadata(model) else {
+                    Logger.networking.debug("MasterController: Rejected conflicting player Journal admission")
+                    return false
+                }
+            }
+            return true
+        }
+
+        if origin == .file {
+            guard await gameModel.acceptsPlayerJournal(model) else {
+                Logger.networking.debug("MasterController: Rejected uncorrelated Journal sender \(model.sender.id, privacy: .public)")
+                return false
+            }
         }
         return true
+    }
+
+    /// Transport topology is part of sender authority, not merely a routing
+    /// detail. Bonjour players and observers connect to the main master;
+    /// SharePlay and Journal accept only players; private LAN mirrors connect
+    /// only to the host player's proxy master.
+    private func acceptsTransportRole(
+        _ role: GameType,
+        origin: GameMessageOrigin
+    ) -> Bool {
+        switch (asProxy, origin) {
+        case (false, .direct(_)):
+            role == .player || role == .observer
+        case (false, .sharePlay(_)), (false, .file):
+            role == .player
+        case (true, .proxy(_)):
+            role == .proxy
+        case (false, .proxy(_)), (false, .local),
+             (true, .direct(_)), (true, .sharePlay(_)),
+             (true, .file), (true, .local):
+            false
+        }
     }
 
     private static func isPlayerBootstrapEnvelope(_ model: GameNetworkModel) -> Bool {
@@ -600,11 +987,6 @@ extension MasterController: MasterNetworkStoreDelegate {
     private func process(_ event: GameMessageEvent) async -> Bool {
         let receivedModel = event.model
 
-        await root.logGameController.updateMessage(counter: receivedModel.counter, player: receivedModel.sender.id)
-        if let connectionId = event.origin.participantConnectionId {
-            await gameModel.add(connectionId: connectionId, playerId: receivedModel.sender.id)
-        }
-
         // Before the roster add: a proxy client is a private mirror of the host
         // player and must never appear as a player of its own — not in the
         // host's roster and never upstream at the master.
@@ -625,6 +1007,28 @@ extension MasterController: MasterNetworkStoreDelegate {
         guard let model = normalizedObserverMessage(receivedModel) else {
             Logger.networking.debug("MasterController: Observer action ignored \(receivedModel.debugDescription, privacy: .public)")
             return true
+        }
+
+        if await shouldTrackPeerAvailabilitySource(model) {
+            let recipients = await root.logGameController.recipientIDs()
+            await gameModel.trackPeerAvailabilitySource(
+                model,
+                recipients: recipients
+            )
+        }
+
+        let masterDeliveryAuthorizesAvailability = await recordDeliveryReceipt(model)
+        if model.subType == .ok {
+            let peerPresentationAuthorizesAvailability = if masterDeliveryAuthorizesAvailability {
+                false
+            } else {
+                await gameModel.acceptsPeerAvailabilityReceipt(model)
+            }
+            guard masterDeliveryAuthorizesAvailability || peerPresentationAuthorizesAvailability else {
+                Logger.networking.debug("MasterController: Ignored uncorrelated availability acknowledgement from \(model.sender.id, privacy: .public)")
+                await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
+                return true
+            }
         }
 
         do {
@@ -658,6 +1062,83 @@ extension MasterController: MasterNetworkStoreDelegate {
             Logger.networking.error("MasterController: Failed to process \(model.debugDescription, privacy: .public): \(error.localizedDescription, privacy: .public)")
             return false
         }
+    }
+
+    private func shouldTrackPeerAvailabilitySource(
+        _ model: GameNetworkModel
+    ) async -> Bool {
+        guard model.isPlayerFilePresentationEvent,
+              GameNetworkModel.acceptsEventTimestamp(model.timestamp)
+        else { return false }
+
+        let baseline: Int
+        switch model.data.type {
+        case .photo:
+            guard await root.gameModel.gameControl.features.photoSharing else {
+                return false
+            }
+            baseline = await root.photoRoot.gameControllable.networkVersion(
+                for: model.data.id
+            )
+        case .pdf:
+            baseline = await root.pdfRoot.gameControllable.networkVersion(
+                for: model.data.id
+            )
+        case .space:
+            guard await root.gameModel.gameControl.features.spaceSharing else {
+                return false
+            }
+            baseline = await root.spaceRoot.gameControllable.networkVersion(
+                for: model.data.id
+            )
+        default:
+            return false
+        }
+        return model.data.effectiveAssetVersion == baseline
+    }
+
+    /// Records every valid delivery acknowledgement, and returns whether the
+    /// original master packet is a file-bearing reveal/store whose receipt may
+    /// also update an asset-availability report.
+    private func recordDeliveryReceipt(_ model: GameNetworkModel) async -> Bool {
+        // A failed transfer and a request for missing bytes both prove the
+        // opposite of delivery. Only an explicit successful acknowledgement
+        // may complete the master's delivery row.
+        guard model.subType == .ok else { return false }
+
+        let deliveryID: GameDeliveryMessageID?
+        if let replyToMessageID = model.replyToMessageID {
+            deliveryID = await gameModel.deliveryMessageID(replyingTo: replyToMessageID)
+        } else if model.messageID == nil {
+            // V1 has no stable wire identity. Retain its counter compatibility,
+            // but only for an exact module/item receipt shape.
+            deliveryID = await root.gameModel.logData[model.counter]?.messageID
+        } else {
+            deliveryID = nil
+        }
+
+        guard let deliveryID else { return false }
+        let deliveryMatch = await MainActor.run {
+            guard let log = root.gameModel.logData[deliveryID.counter] else {
+                return (matches: false, authorizesAvailability: false)
+            }
+            let matches = log.messageID == deliveryID &&
+                log.type == model.type &&
+                log.module == model.data.type &&
+                log.itemId == model.data.id
+            return (
+                matches: matches,
+                authorizesAvailability: matches &&
+                    (log.type == .reveal || log.type == .store)
+            )
+        }
+        guard deliveryMatch.matches else { return false }
+
+        let recorded = await root.logGameController.updateMessage(
+            messageID: deliveryID,
+            player: model.sender.id
+        )
+        return recorded && deliveryMatch.authorizesAvailability
     }
 
     /// Observers participate in availability/repair handshakes but cannot issue
@@ -790,9 +1271,11 @@ extension MasterController {
         case .update:
             switch model.subType {
             case .generic:
+                guard await root.gameModel.gameControl.features.audioSharing else { return nil }
                 try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
                 await send(type: .reveal, subtype: .show, updated: model.data)
             case .playAudio:
+                guard await root.gameModel.gameControl.features.audioSharing else { return nil }
                 await requestAudioPlay(model.data)
             case .audioList:
                 guard await applyAudioList(model) else { return nil }
@@ -910,6 +1393,8 @@ extension MasterController {
         case .reveal, .store:
             return try await root.diceRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
+            guard await root.gameModel.gameControl.features.dicePlayers else { return nil }
+            guard model.sender.isMaster || model.isPlayerDiceGroupEvent else { return nil }
             if let diceResult = DiceResultModel.decodeData(of: model.data.data) {
                 await root.recordBattleDiceResult(
                     diceResult,
@@ -1040,6 +1525,10 @@ extension MasterController {
                 // never get from players mapState updates, only as resend from SharePlay?
                 break
             case .mapPin:
+                guard model.sender.role == .player,
+                      model.purpose == .event,
+                      model.effectiveAudience == .group
+                else { return nil }
                 if await root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
                     itemId: model.data.id,
                     data: model.data,
@@ -1053,7 +1542,6 @@ extension MasterController {
                         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
                     }
                     #endif
-                    await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id))
                 }
             default:
                 break
@@ -1217,7 +1705,12 @@ extension MasterController {
                     id: canonical.id,
                     version: canonical.effectiveAssetVersion
                 )
-                await send(type: .reveal, subtype: .show, updated: canonical)
+                await send(
+                    type: .reveal,
+                    subtype: .show,
+                    updated: canonical,
+                    replyToMessageID: model.messageID
+                )
             }
             return nil
         case .store:
@@ -1294,6 +1787,7 @@ extension MasterController {
 
         switch model.type {
         case .reveal:
+            guard await root.gameModel.gameControl.features.photoSharing else { return nil }
             let reference = await root.photoRoot.gameControllable.share(id: model.data.id)
             await root.photoRoot.photoGameControllable.setMasterVersion(
                 itemId: reference.id,
@@ -1331,7 +1825,12 @@ extension MasterController {
                     id: canonical.id,
                     version: canonical.effectiveAssetVersion
                 )
-                await send(type: .reveal, subtype: .show, updated: canonical)
+                await send(
+                    type: .reveal,
+                    subtype: .show,
+                    updated: canonical,
+                    replyToMessageID: model.messageID
+                )
             }
             return nil
         case .store:
@@ -1348,6 +1847,7 @@ extension MasterController {
             case .generic:
                 // Compatibility with older players that uploaded a generic
                 // photo update. Their bytes are never authoritative.
+                guard await root.gameModel.gameControl.features.photoSharing else { return nil }
                 if let canonical = try? await root.photoRoot.gameControllable.createGameData(for: model.data.id) {
                     await gameModel.markSentGameItem(
                         type: .photo,
@@ -1553,7 +2053,12 @@ extension MasterController {
                     id: canonical.id,
                     version: canonical.effectiveAssetVersion
                 )
-                await send(type: .reveal, subtype: .show, updated: canonical)
+                await send(
+                    type: .reveal,
+                    subtype: .show,
+                    updated: canonical,
+                    replyToMessageID: model.messageID
+                )
             }
             return nil
         case .store:
@@ -1569,6 +2074,8 @@ extension MasterController {
                 await send(type: .update, subtype: .spaceList, updated: spaceList)
             case .spaceTransform:
                 guard model.sender.role == .player,
+                      model.purpose == .event,
+                      model.effectiveAudience == .group,
                       await root.gameModel.gameControl.features.spaceSharing,
                       await root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data)
                 else { return nil }
@@ -1593,19 +2100,17 @@ extension MasterController {
                       )
                 else { return nil }
 
+                guard await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                    data: model.data,
+                    counter: model.counter,
+                    timestamp: model.timestamp
+                ) else { return nil }
                 await gameModel.recordSpaceTransform(
                     from: model.sender.id,
                     itemId: model.data.id,
                     version: baseline,
                     counter: model.counter
                 )
-                let canonical = NetworkCodableDataType(
-                    id: model.data.id,
-                    type: .space,
-                    version: baseline,
-                    data: model.data.data
-                )
-                await send(type: .update, subtype: .spaceTransform, updated: canonical)
             case .generic:
                 // Compatibility with older players. Peer bytes never replace the
                 // game master's canonical Space asset.
@@ -1645,6 +2150,11 @@ extension MasterController {
 // MARK: - MasterNetworkProxyStoreDelegate
 
 extension MasterController: MasterNetworkProxyControllerDelegate {
+    func lostProxy(for connectionId: ConnectionController.ID) async {
+        Logger.networking.debug("MasterController: Lost Proxy for \(connectionId, privacy: .public)")
+        _ = await gameModel.remove(connectionId: connectionId)
+    }
+
     func readyProxy(for connectionId: ConnectionController.ID) async {
         Logger.networking.debug("MasterController: Proxy Ready for \(connectionId, privacy: .public)")
         await replayCurrentPresentation(to: .proxy(connectionId))
@@ -1687,14 +2197,22 @@ private extension MasterController {
         }
 
         if model.data.type == .dice, model.type == .update {
+            guard model.isDiceRollEvent else { return true }
+            guard await root.gameModel.gameControl.features.dicePlayers else { return true }
             // The proxy rolls as the host player — show it on the host as well.
             let hostName = await root.gameModel.gamePlayer.name
             _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: hostName, isGameMaster: false)
-            await remapUpstream(model)
+            await root.gameModel.playerController?.relayProxyGroupEvent(
+                model,
+                excludingProxyConnection: connectionId
+            )
             return true
         }
 
-        if model.data.type == .map, model.type == .update, model.subType == .mapPin {
+        if model.data.type == .map,
+           model.type == .update,
+           model.subType == .mapPin,
+           model.purpose == .event {
             // Update the host's own map first, then tell the master.
             let hostId = await root.gameModel.gameConfig.id
             guard await root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
@@ -1704,15 +2222,30 @@ private extension MasterController {
             ) else {
                 return true
             }
-            await remapUpstream(model)
+            await root.gameModel.playerController?.relayProxyGroupEvent(
+                model,
+                excludingProxyConnection: connectionId
+            )
             return true
         }
 
-        if model.data.type == .space, model.type == .update, model.subType == .spaceTransform {
-            // Remap upstream without applying the peer counter locally. The real
-            // master sends the canonical, globally ordered pose back to the host
-            // and every proxy client.
-            await remapUpstream(model)
+        if model.data.type == .space,
+           model.type == .update,
+           model.subType == .spaceTransform,
+           model.purpose == .event {
+            guard await root.gameModel.gameControl.features.spaceSharing,
+                  await root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data),
+                  await root.spaceRoot.gameControllable.networkVersion(for: model.data.id) == model.data.effectiveAssetVersion,
+                  await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                      data: model.data,
+                      counter: model.counter,
+                      timestamp: model.timestamp
+                  )
+            else { return true }
+            await root.gameModel.playerController?.relayProxyGroupEvent(
+                model,
+                excludingProxyConnection: connectionId
+            )
             return true
         }
 
@@ -1940,7 +2473,7 @@ private extension MasterController {
                 authoritativeMaster: true
             )
         } else if presentation == .space,
-                  let transform = await root.spaceRoot.spaceGameControllable.latestSpaceTransform(
+                  let transformReplay = await root.spaceRoot.spaceGameControllable.latestSpaceTransformReplay(
                       for: reference.id,
                       version: reference.effectiveAssetVersion
                   ) {
@@ -1950,7 +2483,9 @@ private extension MasterController {
             await send(
                 type: .update,
                 subtype: .spaceTransform,
-                updated: transform,
+                updated: transformReplay.data,
+                timestamp: transformReplay.timestamp,
+                appliesLocalSpaceTransform: false,
                 origin: origin,
                 authoritativeMaster: true
             )

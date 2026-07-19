@@ -200,6 +200,43 @@ struct PhotoMessageFlowTests {
         #expect(env.masterNetworkSpy.sendResponseHistory.count == broadcastCount)
     }
 
+    @Test("Master canonical Photo correction identifies the player presentation it supersedes")
+    func masterPhotoCorrectionCarriesCausalReply() async throws {
+        // Given
+        let env = try await Self.preparedEnvironment()
+        let photoId = try #require(env.masterRoot.photoRoot.itemController.itemDataModel.items.first)
+        let reference = await env.masterRoot.photoRoot.gameControllable.share(id: photoId)
+        var playerReveal = Self.playerPhotoReveal(
+            from: env.player1Config,
+            masterId: env.masterConfig.id,
+            counter: 7,
+            data: NetworkCodableDataType(
+                id: photoId,
+                type: .photo,
+                version: reference.effectiveAssetVersion + 1
+            )
+        )
+        playerReveal.timestamp = Date.now.timeIntervalSince1970 + 60
+        let playerMessageId = try #require(playerReveal.messageID)
+        let baseline = env.masterNetworkSpy.sendResponseHistory.count
+
+        // When
+        _ = try await env.master.handlePhoto(playerReveal)
+
+        // Then
+        let correction = try #require(
+            env.masterNetworkSpy.sendResponseHistory
+                .dropFirst(baseline)
+                .compactMap { $0 as? GameNetworkModel }
+                .last
+        )
+        #expect(correction.sender.isMaster)
+        #expect(correction.type == .reveal)
+        #expect(correction.subType == .show)
+        #expect(correction.data.id == photoId)
+        #expect(correction.replyToMessageID == playerMessageId)
+    }
+
     @Test("Player retries a peer reveal after a matching authoritative photo list arrives")
     func playerRetriesRevealAfterAuthoritativeList() async throws {
         let env = try await Self.preparedEnvironment()

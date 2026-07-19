@@ -1088,6 +1088,7 @@ final class MasterPlayerControllerTests {
     // MARK: - Invisible proxy routing
 
     private func proxyMessage(
+        timestamp: TimeInterval = Date.now.timeIntervalSince1970,
         counter: Int = 3,
         type: RPGMessageType,
         subType: RPGMessageActionType,
@@ -1096,6 +1097,7 @@ final class MasterPlayerControllerTests {
         purpose: GameMessagePurpose = .event
     ) -> GameNetworkModel {
         GameNetworkModel(
+            timestamp: timestamp,
             counter: counter,
             proxyCounter: 1,
             type: type,
@@ -1316,8 +1318,10 @@ final class MasterPlayerControllerTests {
         let connectionId = ConnectionController.ID()
         let proxyMaster = try #require(sutPlayer.proxyMasterController)
         let upstreamBefore = playerStoreAbstractionMock.calledRequest
+        let sourceTimestamp = Date.now.timeIntervalSince1970 - 5
         await proxyMaster.receivedServerProxy(
             proxyMessage(
+                timestamp: sourceTimestamp,
                 type: .reveal,
                 subType: .show,
                 data: fullData,
@@ -1337,6 +1341,8 @@ final class MasterPlayerControllerTests {
         let sibling = try #require(proxyMasterSpy.sendResponseExceptData as? GameNetworkModel)
         #expect(sibling.sender.id == gameConfigModelPlayer.id)
         #expect(sibling.counter == upstream.counter)
+        #expect(upstream.timestamp == sourceTimestamp)
+        #expect(sibling.timestamp == sourceTimestamp)
         #expect(sibling.data.id == itemId)
         #expect(sibling.data.type == module)
 
@@ -1352,6 +1358,90 @@ final class MasterPlayerControllerTests {
             nil
         }
         #expect(currentItemId == itemId)
+    }
+
+    @Test func remappedProxyPresentationDoesNotOverrideNewerMasterPresentation() async throws {
+        try await setUp()
+        try await importPhotoTestData(into: rootPlayer)
+        rootPlayer.adventureRoot.startGame()
+        rootPlayer.gameModel.playerController = sutPlayer
+
+        let masterId = gameConfigModelSut.id
+        let playerId = gameConfigModelPlayer.id
+        let playerConfig = GameConfigModel(
+            id: playerId,
+            state: .started,
+            master: MasterGameModel(
+                id: masterId,
+                type: .master,
+                name: "Andrenalin"
+            )
+        )
+        rootPlayer.gameModel.reset(
+            gameConfig: playerConfig,
+            gameRoster: GameRosterModel(players: [
+                PlayerGameModel(
+                    id: playerId,
+                    type: .player,
+                    name: "AndrenalinPlayer"
+                )
+            ])
+        )
+
+        let photoIds = rootPlayer.photoRoot.itemController.itemDataModel.items
+        let proxyPhotoId = try #require(photoIds.first)
+        let masterPhotoId = try #require(photoIds.dropFirst().first)
+        let proxyReference = await rootPlayer.photoRoot.gameControllable.share(id: proxyPhotoId)
+        let masterReference = await rootPlayer.photoRoot.gameControllable.share(id: masterPhotoId)
+        rootPlayer.photoRoot.photoGameControllable.setMasterVersion(
+            itemId: proxyPhotoId,
+            version: proxyReference.effectiveAssetVersion,
+            masterId: masterId
+        )
+
+        let now = Date.now.timeIntervalSince1970
+        let masterReveal = GameNetworkModel(
+            timestamp: now + 60,
+            counter: 40,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: masterId,
+            sender: GameSenderModel(
+                id: masterId,
+                role: .master,
+                name: "Andrenalin",
+                characterId: nil
+            ),
+            audience: .group,
+            purpose: .event,
+            data: masterReference
+        )
+        await sutPlayer.receivedProcess(masterReveal)
+        #expect(await rootPlayer.photoRoot.gameControllable.currentId == masterPhotoId)
+
+        let requestsAfterMaster = playerStoreAbstractionMock.calledRequest
+        let olderProxyReveal = GameNetworkModel(
+            timestamp: now,
+            counter: 400,
+            proxyCounter: 1,
+            type: .reveal,
+            subType: .show,
+            masterId: masterId,
+            sender: GameSenderModel(
+                id: playerId,
+                role: .player,
+                name: "AndrenalinPlayer",
+                characterId: nil
+            ),
+            audience: .group,
+            purpose: .event,
+            data: proxyReference
+        )
+        await sutPlayer.receivedProcess(olderProxyReveal, fromProxy: true)
+
+        #expect(await rootPlayer.photoRoot.gameControllable.currentId == masterPhotoId)
+        #expect(playerStoreAbstractionMock.calledRequest == requestsAfterMaster)
     }
 
     @Test func staleProxyPhotoRequestIsRemappedToMaster() async throws {
@@ -1631,7 +1721,14 @@ final class MasterPlayerControllerTests {
         // Before any acknowledgement travels back, the row the master logged
         // for this send shows nobody has confirmed it yet.
         let pendingRow = try #require(rootSut.logGameController.logRows.first)
+        let originalLog = try #require(rootSut.gameModel.logData[pendingRow.id])
         #expect(pendingRow.deliveryState == .missingPlayers)
+        let masterId = rootSut.gameModel.gameConfig.id
+        #expect(!rootSut.photoRoot.photoGameControllable.isPhotoAvailable(
+            itemId: photoId,
+            for: gameConfigModelPlayer.id,
+            masterId: masterId
+        ))
 
         // Receiving through the controller pipeline establishes the master
         // session before constructing the acknowledgement. A direct module
@@ -1644,12 +1741,59 @@ final class MasterPlayerControllerTests {
         // player-local counter this round trip silently updates no row at all.
         #expect(ack.counter == sendedShowPhotoData.counter)
 
+        // Copying the item/version into an OK is not enough. Without the
+        // original message identity it may neither complete the delivery row
+        // nor change the player's availability report.
+        var uncorrelated = ack
+        uncorrelated.messageID = UUID()
+        uncorrelated.replyToMessageID = UUID()
+        await sut.receivedProcess(uncorrelated, connectionId: nil)
+        #expect(!originalLog.hasAcknowledgement(from: gameConfigModelPlayer.id))
+        #expect(!rootSut.photoRoot.photoGameControllable.isPhotoAvailable(
+            itemId: photoId,
+            for: gameConfigModelPlayer.id,
+            masterId: masterId
+        ))
+
+        // A failed transfer carries the same correlation identity, but it is
+        // not proof that the player received the asset.
+        var failed = ack
+        failed.messageID = UUID()
+        failed.subType = .failed
+        await sut.receivedProcess(failed, connectionId: nil)
+        #expect(!originalLog.hasAcknowledgement(from: gameConfigModelPlayer.id))
+
+        // Asking the master to repair missing bytes likewise must leave the
+        // original delivery pending. The request may trigger a new response,
+        // but it cannot complete the reveal it says was missing.
+        var assetRequest = ack
+        assetRequest.messageID = UUID()
+        assetRequest.type = .reveal
+        assetRequest.subType = .show
+        assetRequest.purpose = .assetRequest
+        assetRequest.data = NetworkCodableDataType(
+            id: ack.data.id,
+            type: ack.data.type,
+            version: ack.data.version,
+            assetVersion: ack.data.assetVersion,
+            contentVersion: ack.data.contentVersion
+        )
+        await sut.receivedProcess(assetRequest, connectionId: nil)
+        #expect(!originalLog.hasAcknowledgement(from: gameConfigModelPlayer.id))
+
         // Route the ack through the master's full receive pipeline, exactly
         // like the network layer would, so `updateMessage` actually runs.
         await sut.receivedProcess(ack, connectionId: nil)
 
-        let updatedRow = try #require(rootSut.logGameController.logRows.first)
+        let updatedRow = try #require(rootSut.logGameController.logRows.first { row in
+            row.id == pendingRow.id
+        })
         #expect(updatedRow.deliveryState == .allPlayers)
+        #expect(rootSut.photoRoot.photoGameControllable.isPhotoAvailable(
+            itemId: photoId,
+            for: gameConfigModelPlayer.id,
+            masterId: masterId
+        ))
     }
 
     @Test("V2 gamemaster and V1 player exchange dice and photo through controllers")

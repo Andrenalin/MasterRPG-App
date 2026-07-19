@@ -113,6 +113,178 @@ struct LogGameControllerTests {
         #expect(rows.map(\.id) == Array((5..<30).reversed()))
     }
 
+    @Test("duplicate acknowledgements count one player only")
+    func duplicateAcknowledgementsCountOnePlayerOnly() async throws {
+        // Given
+        let root = try await MockRoot.createGameRoot()
+        let sut = LogGameController(root: root, gameModel: root.gameModel)
+        let playerA = UUID()
+        let playerB = UUID()
+        let messageID = GameDeliveryMessageID(sessionID: UUID(), counter: 1)
+        root.gameModel.gameRoster.players = [
+            PlayerGameModel(id: playerA, type: .player, name: "Arin"),
+            PlayerGameModel(id: playerB, type: .player, name: "Borin")
+        ]
+        sut.addMessage(
+            messageID: messageID,
+            type: .reveal,
+            subType: .show,
+            module: .photo,
+            itemId: UUID()
+        )
+
+        // When
+        let firstAcknowledgement = sut.updateMessage(messageID: messageID, player: playerA)
+        let duplicateAcknowledgement = sut.updateMessage(messageID: messageID, player: playerA)
+
+        // Then
+        let row = try #require(sut.logRows.first)
+        let log = try #require(sut.logModels.first)
+        #expect(firstAcknowledgement)
+        #expect(!duplicateAcknowledgement)
+        #expect(log.players == [playerA])
+        #expect(row.deliveryState == .partialPlayers)
+        #expect(row.playerStatuses == [
+            LogMessagePlayerStatus(id: playerA, name: "Arin", received: true),
+            LogMessagePlayerStatus(id: playerB, name: "Borin", received: false)
+        ])
+    }
+
+    @Test("recipient snapshot excludes hidden players and does not change with the roster")
+    func recipientSnapshotExcludesHiddenPlayersAndDoesNotChangeWithRoster() async throws {
+        // Given
+        let root = try await MockRoot.createGameRoot()
+        let sut = LogGameController(root: root, gameModel: root.gameModel)
+        let visiblePlayer = UUID()
+        let hiddenPlayer = UUID()
+        let laterPlayer = UUID()
+        let messageID = GameDeliveryMessageID(sessionID: UUID(), counter: 4)
+        root.gameModel.gameRoster.players = [
+            PlayerGameModel(id: visiblePlayer, type: .player, name: "Visible at send"),
+            PlayerGameModel(id: hiddenPlayer, type: .player, name: "Hidden at send")
+        ]
+        root.gameModel.gameControl.controls = [
+            SharingControlModel(id: visiblePlayer, name: "Visible at send", show: true),
+            SharingControlModel(id: hiddenPlayer, name: "Hidden at send", show: false)
+        ]
+        sut.addMessage(
+            messageID: messageID,
+            type: .reveal,
+            subType: .show,
+            module: .pdf,
+            itemId: UUID()
+        )
+
+        // When
+        root.gameModel.gameRoster.players = [
+            PlayerGameModel(id: hiddenPlayer, type: .player, name: "Now visible"),
+            PlayerGameModel(id: laterPlayer, type: .player, name: "Joined later")
+        ]
+        root.gameModel.gameControl.controls = [
+            SharingControlModel(id: hiddenPlayer, name: "Now visible", show: true),
+            SharingControlModel(id: laterPlayer, name: "Joined later", show: true)
+        ]
+        let laterPlayerAcknowledgement = sut.updateMessage(messageID: messageID, player: laterPlayer)
+        let hiddenPlayerAcknowledgement = sut.updateMessage(messageID: messageID, player: hiddenPlayer)
+        let originalPlayerAcknowledgement = sut.updateMessage(messageID: messageID, player: visiblePlayer)
+
+        // Then
+        let row = try #require(sut.logRows.first)
+        let log = try #require(sut.logModels.first)
+        #expect(!laterPlayerAcknowledgement)
+        #expect(!hiddenPlayerAcknowledgement)
+        #expect(originalPlayerAcknowledgement)
+        #expect(log.expectedRecipients == [
+            LogMessageRecipient(id: visiblePlayer, name: "Visible at send")
+        ])
+        #expect(row.deliveryState == .allPlayers)
+        #expect(row.playerNames == "Visible at send")
+        #expect(row.playerStatuses == [
+            LogMessagePlayerStatus(id: visiblePlayer, name: "Visible at send", received: true)
+        ])
+    }
+
+    @Test("targeted sends track only the addressed visible recipient")
+    func targetedSendsTrackOnlyAddressedVisibleRecipient() async throws {
+        // Given
+        let root = try await MockRoot.createGameRoot()
+        let sut = LogGameController(root: root, gameModel: root.gameModel)
+        let playerA = UUID()
+        let playerB = UUID()
+        let messageID = GameDeliveryMessageID(sessionID: UUID(), counter: 9)
+        root.gameModel.gameRoster.players = [
+            PlayerGameModel(id: playerA, type: .player, name: "Arin"),
+            PlayerGameModel(id: playerB, type: .player, name: "Borin")
+        ]
+        root.gameModel.gameControl.controls = [
+            SharingControlModel(id: playerA, name: "Arin", show: true),
+            SharingControlModel(id: playerB, name: "Borin", show: true)
+        ]
+        sut.addMessage(
+            messageID: messageID,
+            type: .reveal,
+            subType: .show,
+            module: .space,
+            itemId: UUID(),
+            targetID: playerB
+        )
+
+        // When
+        let unrelatedAcknowledgement = sut.updateMessage(messageID: messageID, player: playerA)
+        let pendingRow = try #require(sut.logRows.first)
+        let targetAcknowledgement = sut.updateMessage(messageID: messageID, player: playerB)
+
+        // Then
+        let completeRow = try #require(sut.logRows.first)
+        #expect(!unrelatedAcknowledgement)
+        #expect(pendingRow.deliveryState == .missingPlayers)
+        #expect(targetAcknowledgement)
+        #expect(completeRow.deliveryState == .allPlayers)
+        #expect(completeRow.playerStatuses == [
+            LogMessagePlayerStatus(id: playerB, name: "Borin", received: true)
+        ])
+    }
+
+    @Test("reused counter in a new session cannot collide with old delivery")
+    func reusedCounterInNewSessionCannotCollideWithOldDelivery() async throws {
+        // Given
+        let root = try await MockRoot.createGameRoot()
+        let sut = LogGameController(root: root, gameModel: root.gameModel)
+        let player = UUID()
+        let firstMessageID = GameDeliveryMessageID(sessionID: UUID(), counter: 1)
+        let secondMessageID = GameDeliveryMessageID(sessionID: UUID(), counter: 1)
+        root.gameModel.gameRoster.players = [
+            PlayerGameModel(id: player, type: .player, name: "Arin")
+        ]
+        sut.addMessage(
+            messageID: firstMessageID,
+            type: .reveal,
+            subType: .show,
+            module: .photo,
+            itemId: UUID()
+        )
+        #expect(sut.updateMessage(messageID: firstMessageID, player: player))
+
+        // When
+        sut.addMessage(
+            messageID: secondMessageID,
+            type: .reveal,
+            subType: .show,
+            module: .photo,
+            itemId: UUID()
+        )
+        let staleAcknowledgement = sut.updateMessage(messageID: firstMessageID, player: player)
+
+        // Then
+        let row = try #require(sut.logRows.first)
+        let log = try #require(sut.logModels.first)
+        #expect(!staleAcknowledgement)
+        #expect(sut.logModels.count == 1)
+        #expect(log.messageID == secondMessageID)
+        #expect(log.players.isEmpty)
+        #expect(row.deliveryState == .missingPlayers)
+    }
+
     @Test func nameResolvesKnownModuleItemsAndFallsBackForUnresolvedModules() async throws {
         let root = try await MockRoot.createGameRoot()
         let sut = LogGameController(root: root, gameModel: root.gameModel)
