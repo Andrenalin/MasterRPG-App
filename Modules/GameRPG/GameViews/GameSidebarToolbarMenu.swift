@@ -61,32 +61,24 @@ struct GameSidebarToolbarMenu: View {
             GameTableMenuToggle()
 
             if role == .master {
-                Button(action: toggleBattleRoundSidebar) {
+                Toggle(isOn: battleRoundBinding) {
                     Label {
                         Text("Battle Round", bundle: .module)
                     } icon: {
                         Image(systemName: "shield.lefthalf.filled")
-                            .symbolVariant(
-                                gameScreenModel.showsBattleRoundSidebar ? .fill : .none
-                            )
                     }
                 }
             }
         } label: {
             Label {
-                Text("Game Sidebar", bundle: .module)
+                Text("Game View", bundle: .module)
             } icon: {
                 Image(systemName: NetworkModules.game.icon)
                     .symbolVariant(isSidebarVisible ? .fill : .none)
             }
             .labelStyle(.iconOnly)
         }
-        .help(
-            Text(
-                isSidebarVisible ? "Hide Game Sidebar" : "Show Game Sidebar",
-                bundle: .module
-            )
-        )
+        .help(Text("Game View Menu", bundle: .module))
     }
 
     private var inlineModule: NetworkModules {
@@ -98,7 +90,7 @@ struct GameSidebarToolbarMenu: View {
     }
 
     private var isSidebarVisible: Bool {
-        gameScreenModel.isInlineSidebarVisible
+        gameScreenModel.showMainTab == inlineModule
     }
 
     private var gameSidebarBinding: Binding<Bool> {
@@ -106,6 +98,23 @@ struct GameSidebarToolbarMenu: View {
             get: { isSidebarVisible },
             set: { isVisible in
                 setGameSidebarVisible(isVisible)
+            }
+        )
+    }
+
+    private var battleRoundBinding: Binding<Bool> {
+        Binding(
+            get: {
+                scenesManager.getSceneState(for: .battleRound).isPresentedInGameMenu
+            },
+            set: { isVisible in
+                withAnimation(accessibilityReduceMotion ? nil : .easeInOut) {
+                    if isVisible {
+                        scenesManager.openWindow(.battleRound)
+                    } else {
+                        scenesManager.dismissWindow(.battleRound)
+                    }
+                }
             }
         )
     }
@@ -124,11 +133,7 @@ struct GameSidebarToolbarMenu: View {
         }
 
         withAnimation(accessibilityReduceMotion ? nil : .default) {
-            if nextMode == .inline {
-                gameScreenModel.showMainTab = inlineModule
-            } else {
-                gameScreenModel.hideInlineSidebar()
-            }
+            gameScreenModel.showMainTab = nextMode == .inline ? inlineModule : .none
             gameScreenModel.gameMainTabDisplayMode = nextMode
         }
 
@@ -143,12 +148,6 @@ struct GameSidebarToolbarMenu: View {
     private func toggleSideMenuButtons() {
         withAnimation(accessibilityReduceMotion ? nil : .default) {
             gameScreenModel.isSideMenuVisible.toggle()
-        }
-    }
-
-    private func toggleBattleRoundSidebar() {
-        withAnimation(accessibilityReduceMotion ? nil : .default) {
-            gameScreenModel.toggleBattleRoundSidebar()
         }
     }
 }

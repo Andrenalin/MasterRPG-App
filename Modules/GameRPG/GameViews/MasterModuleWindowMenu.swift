@@ -38,8 +38,6 @@ struct MasterModuleWindowMenu: View {
                     tint: NetworkModules.game.tint,
                     sceneId: .logs
                 )
-
-                BattleRoundSidebarButton()
             }
         }
 #if os(macOS)

@@ -21,18 +21,33 @@ struct GameToolbarContent: ToolbarContent {
             GameQuitToolbarButton()
         }
 
-        ToolbarItemGroup(placement: .navigation) {
-            if role == .master || root.gameModel.gameType != .observer {
+        if role == .master || root.gameModel.gameType != .observer {
+            ToolbarSpacer(.fixed, placement: .navigation)
+
+            ToolbarItem(placement: .navigation) {
                 GameDiceToggleButton()
             }
 
-            if role == .master {
+            ToolbarSpacer(.fixed, placement: .navigation)
+        }
+
+        if role == .master {
+            ToolbarItem(placement: .navigation) {
                 GameElapsedTimerText(startDate: root.gameModel.startGameTime)
             }
         }
 
         ToolbarItemGroup(placement: .principal) {
             root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot)
+
+            if role == .master,
+               root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
+                BattleRoundCounterView(
+                    model: root.mapRoot.mapGameControllable.battleRoundModel,
+                    style: .compact
+                )
+                .allowsHitTesting(false)
+            }
 
             if role == .player {
                 PlayerBattleRoundToolbarStatus(
@@ -47,26 +62,14 @@ struct GameToolbarContent: ToolbarContent {
             }
         }
 
-        if role == .master,
-           root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
-            ToolbarItem(placement: .automatic) {
-                BattleRoundCounterView(
-                    model: root.mapRoot.mapGameControllable.battleRoundModel,
-                    style: .compact
-                )
-                .allowsHitTesting(false)
-            }
-        }
-
         if role == .master || root.gameModel.gameType != .observer {
-            // The fixed spacer starts the trailing control group. The menu is
-            // then adjacent to the native search field added by
-            // `gameWindowSearchable()`.
-            ToolbarSpacer(.fixed, placement: .automatic)
-
             ToolbarItem(placement: .automatic) {
                 GameSidebarToolbarMenu(role: role)
             }
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            GameWindowSearchField()
         }
     }
 }
