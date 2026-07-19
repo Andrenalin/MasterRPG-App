@@ -61,9 +61,7 @@ struct GameSidebarToolbarMenu: View {
             GameTableMenuToggle()
 
             if role == .master {
-                Button {
-                    scenesManager.openWindow(.battleRound)
-                } label: {
+                Toggle(isOn: battleRoundBinding) {
                     Label {
                         Text("Battle Round", bundle: .module)
                     } icon: {
@@ -73,19 +71,14 @@ struct GameSidebarToolbarMenu: View {
             }
         } label: {
             Label {
-                Text("Game Sidebar", bundle: .module)
+                Text("Game View", bundle: .module)
             } icon: {
                 Image(systemName: NetworkModules.game.icon)
                     .symbolVariant(isSidebarVisible ? .fill : .none)
             }
             .labelStyle(.iconOnly)
         }
-        .help(
-            Text(
-                isSidebarVisible ? "Hide Game Sidebar" : "Show Game Sidebar",
-                bundle: .module
-            )
-        )
+        .help(Text("Game View Menu", bundle: .module))
     }
 
     private var inlineModule: NetworkModules {
@@ -105,6 +98,23 @@ struct GameSidebarToolbarMenu: View {
             get: { isSidebarVisible },
             set: { isVisible in
                 setGameSidebarVisible(isVisible)
+            }
+        )
+    }
+
+    private var battleRoundBinding: Binding<Bool> {
+        Binding(
+            get: {
+                scenesManager.getSceneState(for: .battleRound).isPresentedInGameMenu
+            },
+            set: { isVisible in
+                withAnimation(accessibilityReduceMotion ? nil : .easeInOut) {
+                    if isVisible {
+                        scenesManager.openWindow(.battleRound)
+                    } else {
+                        scenesManager.dismissWindow(.battleRound)
+                    }
+                }
             }
         )
     }
