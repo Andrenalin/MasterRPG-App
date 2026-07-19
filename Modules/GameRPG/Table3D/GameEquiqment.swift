@@ -49,7 +49,10 @@ struct Board: EntityEquipment {
             mesh: .generatePlane(width: mapSize, depth: mapSize),
             materials: [SimpleMaterial(color: .white, isMetallic: false)]
         )
-        plane.position.y = GameMetrics.mapSurfaceClearance
+        // Board equipment is positioned at the table origin. The generated
+        // wood mesh extends upward from that origin, so clearance alone puts
+        // the image plane inside the tabletop and leaves only the pins visible.
+        plane.position.y = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
         plane.name = "MapImagePlane"
         plane.isEnabled = false
         boardEntity.addChild(plane)

@@ -25,7 +25,9 @@ struct WindowVisionList: Scene {
                 .gameTableActivityAssociation(root: appModel.gameRoot, sceneId: SceneId.gameTable.rawValue)
         }
         .windowStyle(.volumetric)
-        .defaultSize(width: 1.5, height: 0.5, depth: 2.5, in: .meters)
+        // Keep the system grab handle just outside the 70 cm tabletop instead
+        // of at the front of the former 2.5 m-deep volume.
+        .defaultSize(width: 0.85, height: 0.3, depth: 0.85, in: .meters)
         .defaultWindowPlacement { content, context in
             // Place the game table in front of the user when opened
             return WindowPlacement(.utilityPanel)
