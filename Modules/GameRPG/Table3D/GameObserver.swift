@@ -16,12 +16,14 @@ class GameObserver: TabletopGame.Observer {
     }
 
     func actionIsPending(_ action: some TabletopAction, oldSnapshot: TableSnapshot, newSnapshot: TableSnapshot) {
-        if let action = action as? MoveEquipmentAction {
-            if let (die, _) = newSnapshot.equipment(of: Die.self, matching: action.equipmentID) {
-                Task { @MainActor in
-                    die.playTossSound()
-                }
-                return
+        guard let action = action as? UpdateEquipmentAction<DieState> else { return }
+
+        if let (die20, _) = newSnapshot.equipment(
+            of: Die20.self,
+            matching: action.equipmentID
+        ) {
+            Task { @MainActor in
+                die20.playTossSound()
             }
         }
     }
