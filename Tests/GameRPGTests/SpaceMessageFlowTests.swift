@@ -36,6 +36,40 @@ struct SpaceMessageFlowTests {
         #expect(env.masterNetworkSpy.sendResponseHistory.count == broadcastCount)
     }
 
+    @Test("Completing a requested Space repair presents the imported object")
+    func spaceRepairCompletionPresentsImportedObject() async throws {
+        // Given
+        let env = try await Self.preparedEnvironment()
+        let spaceId = try #require(env.masterRoot.spaceRoot.itemController.itemDataModel.items.first)
+        let reference = await env.masterRoot.spaceRoot.gameControllable.share(id: spaceId)
+        let fullData = try await env.masterRoot.spaceRoot.gameControllable.createGameData(for: spaceId)
+        let reveal = env.masterRoot.gameModel.outgoingMessage(
+            counter: 1,
+            type: .reveal,
+            subType: .show,
+            asMaster: true,
+            data: reference
+        )
+
+        // When - a reference reveal records presentation intent and requests
+        // the missing package, followed by a targeted full store response.
+        _ = try #require(try await env.player1.handleSpace(reveal))
+        #expect(await env.player1Root.spaceRoot.gameControllable.currentId != spaceId)
+        let repair = env.masterRoot.gameModel.outgoingMessage(
+            counter: 2,
+            type: .store,
+            subType: .store,
+            asMaster: true,
+            targetId: env.player1Config.id,
+            data: fullData
+        )
+        _ = try #require(try await env.player1.handleSpace(repair))
+
+        // Then
+        #expect(await env.player1Root.spaceRoot.gameControllable.currentId == spaceId)
+        #expect(env.player1.gameModel.gameUpdateType == .space)
+    }
+
     @Test("Master ignores stale, duplicate, negative, and malformed Space lists")
     func masterIgnoresInvalidSpaceListSequence() async throws {
         // Given

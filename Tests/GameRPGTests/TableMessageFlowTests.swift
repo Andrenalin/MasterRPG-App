@@ -355,6 +355,39 @@ struct TableMessageFlowTests {
         )
     }
 
+    @Test("Showing a Table updates the co-located game-master player")
+    func showUpdatesLocalMasterTablePresentation() async throws {
+        // Given
+        let fixture = try await Self.preparedFixture()
+        let localMasterPlayer = PlayerController(
+            root: fixture.environment.masterRoot,
+            asGameMaster: true
+        )
+        fixture.environment.masterRoot.gameModel.playerController = localMasterPlayer
+        #expect(
+            fixture.environment.masterRoot.tableRoot.gameControllable.gameModel.currentItemId == nil
+        )
+
+        // When
+        await fixture.environment.master.show(for: fixture.reference)
+
+        // Then - the master selects its canonical persistent Table locally,
+        // while remote players still receive the lightweight reference.
+        #expect(
+            fixture.environment.masterRoot.tableRoot.gameControllable.gameModel.currentItemId
+                == fixture.tableId
+        )
+        #expect(localMasterPlayer.gameModel.gameUpdateType == .table)
+        let sent = try #require(
+            fixture.environment.masterNetworkSpy.sendResponseHistory.last as? GameNetworkModel
+        )
+        #expect(sent.type == .reveal)
+        #expect(sent.subType == .show)
+        #expect(sent.data.type == .table)
+        #expect(sent.data.id == fixture.tableId)
+        #expect(sent.data.data == nil)
+    }
+
     @Test("A late SharePlay participant receives the current Table reference without LAN fan-out")
     func lateSharePlayParticipantReceivesCurrentTableReference() async throws {
         // Given

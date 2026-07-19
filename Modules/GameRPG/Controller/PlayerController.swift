@@ -1541,7 +1541,13 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     
     func receivedFile(_ model: GameNetworkModel) async {
         Logger.networking.debug("PlayerController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-        guard await root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
+        let receivesOppositeRole = await root.gameModel.gameConfig.isMaster != model.sender.isMaster
+        // A player-authored file presentation has already been authenticated by
+        // GameNetworkController before it reaches this callback. LAN and
+        // SharePlay both fan that group event out to sibling players, so equal
+        // player roles are expected here; all other same-role file traffic is
+        // still rejected.
+        guard receivesOppositeRole || model.isPlayerFilePresentationEvent else { return }
         await receivedProcess(model, origin: .file)
     }
     
@@ -1628,7 +1634,8 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     }
 
     func receivedSharePlayFile(_ model: GameNetworkModel) async {
-        guard await root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
+        let receivesOppositeRole = await root.gameModel.gameConfig.isMaster != model.sender.isMaster
+        guard receivesOppositeRole || model.isPlayerFilePresentationEvent else { return }
         await receivedProcess(model, origin: .file)
     }
 
@@ -3222,6 +3229,24 @@ extension PlayerController {
 
         switch model.type {
         case .reveal:
+            // The co-located game-master player receives its own Table reveal
+            // as a reference. Its persistent Table is the canonical source, so
+            // an exact-version reference can be selected directly without the
+            // session-availability cache used by remote players. Otherwise the
+            // local echo asks for bytes, but that upstream request is correctly
+            // suppressed to avoid a master/local-player loop and the master UI
+            // never changes.
+            if await gameModel.asGameMaster,
+               model.sender.isMaster,
+               model.data.data == nil,
+               model.data.version != 0,
+               await root.tableRoot.gameControllable.networkVersion(for: model.data.id) == model.data.version,
+               await root.tableRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                await MainActor.run {
+                    gameModel.gameUpdateType = .table
+                }
+                return await response(for: model, isSuccess: true, requestData: false)
+            }
             if try await root.tableRoot.tableGameControllable.receiveTable(
                 itemId: model.data.id,
                 data: model.data,
@@ -3417,7 +3442,21 @@ extension PlayerController {
             try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             let hasLocalData = await root.spaceRoot.gameControllable.hasLocalFileData(for: model.data.id)
             if hasLocalData {
-                await MainActor.run { _ = gameModel.requestedSpaceRepairIds.remove(model.data.id) }
+                let completesReveal = await MainActor.run {
+                    gameModel.requestedSpaceRepairIds.remove(model.data.id) != nil
+                }
+                if completesReveal,
+                   await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                    await MainActor.run {
+                        gameModel.gameUpdateType = .space
+
+                        #if os(visionOS)
+                        if root.networkStore.sharePlayStore.isActive {
+                            root.gameModel.shareState.mode = .immersive
+                        }
+                        #endif
+                    }
+                }
                 let localPlayerId = await root.gameModel.gameConfig.id
                 await root.spaceRoot.spaceGameControllable.markSpaceAvailable(
                     itemId: model.data.id,
