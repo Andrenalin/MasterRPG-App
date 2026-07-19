@@ -206,7 +206,9 @@ private struct BattleRoundHeader: View {
     private var initiativeOrderBinding: Binding<BattleInitiativeOrder> {
         Binding(
             get: { model.initiativeOrder },
-            set: actions.setInitiativeOrder
+            set: { order in
+                actions.setInitiativeOrder(order)
+            }
         )
     }
 }
