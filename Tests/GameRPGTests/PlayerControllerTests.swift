@@ -483,6 +483,311 @@ struct PlayerControllerTests {
         #expect(sut.gameModel.gameUpdateType == .none)
     }
 
+    @Test("Event timestamp admission accepts legacy and bounded wall clocks")
+    func eventTimestampAdmissionBoundsFutureClockSkew() {
+        let now: TimeInterval = 10_000
+
+        #expect(GameNetworkModel.acceptsEventTimestamp(0, now: now))
+        #expect(GameNetworkModel.acceptsEventTimestamp(now, now: now))
+        #expect(GameNetworkModel.acceptsEventTimestamp(
+            now + GameNetworkModel.maximumFutureEventTimestampSkew,
+            now: now
+        ))
+        #expect(!GameNetworkModel.acceptsEventTimestamp(
+            now + GameNetworkModel.maximumFutureEventTimestampSkew + 1,
+            now: now
+        ))
+        #expect(!GameNetworkModel.acceptsEventTimestamp(-1, now: now))
+        #expect(!GameNetworkModel.acceptsEventTimestamp(.nan, now: now))
+        #expect(!GameNetworkModel.acceptsEventTimestamp(.infinity, now: now))
+    }
+
+    @Test("Rejected future presentation cannot poison last-wins ordering")
+    func futurePresentationTimestampDoesNotPoisonOrdering() {
+        let model = PlayerControllerModel()
+        let masterId = UUID()
+        let futureItemId = UUID()
+        let validItemId = UUID()
+        let now = Date.now.timeIntervalSince1970
+
+        let acceptedFuture = model.shouldProcessPresentation(
+            from: masterId,
+            module: .photo,
+            itemId: futureItemId,
+            version: 1,
+            counter: 100,
+            timestamp: now + GameNetworkModel.maximumFutureEventTimestampSkew + 1,
+            isRepair: false
+        )
+        let acceptedValid = model.shouldProcessPresentation(
+            from: masterId,
+            module: .photo,
+            itemId: validItemId,
+            version: 1,
+            counter: 1,
+            timestamp: now,
+            isRepair: false
+        )
+        let acceptedOlderItem = model.shouldProcessPresentation(
+            from: masterId,
+            module: .photo,
+            itemId: futureItemId,
+            version: 1,
+            counter: 101,
+            timestamp: now - 1,
+            isRepair: false
+        )
+
+        #expect(!acceptedFuture)
+        #expect(acceptedValid)
+        #expect(!acceptedOlderItem)
+    }
+
+    @Test("Master canonical presentation wins equal-time player conflicts without comparing counters")
+    func masterCanonicalPresentationWinsEqualTimePlayerConflict() {
+        // Given
+        let model = PlayerControllerModel()
+        let masterId = UUID()
+        let playerId = UUID()
+        let playerItemId = UUID()
+        let masterItemId = UUID()
+        let laterPlayerItemId = UUID()
+        let timestamp = Date.now.timeIntervalSince1970
+
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .photo,
+            itemId: playerItemId,
+            version: 1,
+            counter: 10_000,
+            timestamp: timestamp,
+            isRepair: false
+        ))
+
+        // When / Then - the master's counter belongs to a different sequence;
+        // its equal timestamp and canonical authority decide the conflict.
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: masterId,
+            module: .photo,
+            itemId: masterItemId,
+            version: 2,
+            counter: 1,
+            timestamp: timestamp,
+            isRepair: false
+        ))
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .photo,
+            itemId: playerItemId,
+            version: 1,
+            counter: 20_000,
+            timestamp: timestamp,
+            isRepair: false
+        ))
+
+        // A genuinely later player presentation still follows last-wins. A
+        // canonical master relay then wins even with a slightly smaller clock:
+        // arrival supplies the causal edge across independently skewed devices.
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .photo,
+            itemId: laterPlayerItemId,
+            version: 3,
+            counter: 2,
+            timestamp: timestamp + 1,
+            isRepair: false
+        ))
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: masterId,
+            module: .photo,
+            itemId: masterItemId,
+            version: 2,
+            counter: 30_000,
+            timestamp: timestamp + 0.5,
+            isRepair: false
+        ))
+
+        // Once master intent is established, an equal/older player envelope
+        // cannot roll it back, but a truly later one remains last-wins.
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .photo,
+            itemId: laterPlayerItemId,
+            version: 3,
+            counter: 40_000,
+            timestamp: timestamp + 0.5,
+            isRepair: false
+        ))
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .photo,
+            itemId: laterPlayerItemId,
+            version: 3,
+            counter: 3,
+            timestamp: timestamp + 2,
+            isRepair: false
+        ))
+    }
+
+    @Test("Modern cross-sender intent supersedes legacy state and legacy player data cannot replace master intent")
+    func modernIntentSupersedesLegacyCrossSenderState() {
+        // Given
+        let model = PlayerControllerModel()
+        let masterId = UUID()
+        let playerId = UUID()
+        let legacyPlayerItemId = UUID()
+        let masterItemId = UUID()
+        let timestamp = Date.now.timeIntervalSince1970
+
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .pdf,
+            itemId: legacyPlayerItemId,
+            version: 4,
+            counter: 50_000,
+            timestamp: 0,
+            isRepair: false
+        ))
+
+        // When / Then - a modern master intent is not blocked by the unrelated
+        // high player counter because cross-sender counters are incomparable.
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: masterId,
+            module: .pdf,
+            itemId: masterItemId,
+            version: 5,
+            counter: 1,
+            timestamp: timestamp,
+            isRepair: false
+        ))
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .pdf,
+            itemId: legacyPlayerItemId,
+            version: 4,
+            counter: 100_000,
+            timestamp: 0,
+            isRepair: false
+        ))
+
+        // Matching legacy bytes remain useful as a delayed payload, but do not
+        // replace the retained modern master intent.
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .pdf,
+            itemId: masterItemId,
+            version: 5,
+            counter: 100_001,
+            timestamp: 0,
+            isRepair: false
+        ))
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .pdf,
+            itemId: legacyPlayerItemId,
+            version: 4,
+            counter: 100_002,
+            timestamp: 0,
+            isRepair: false
+        ))
+
+        // The rule is causal rather than role-only: a modern player event also
+        // supersedes legacy cross-sender master state.
+        let reverseModel = PlayerControllerModel()
+        #expect(reverseModel.shouldProcessPresentation(
+            from: masterId,
+            senderID: masterId,
+            module: .space,
+            itemId: masterItemId,
+            version: 6,
+            counter: 90_000,
+            timestamp: 0,
+            isRepair: false
+        ))
+        #expect(reverseModel.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .space,
+            itemId: legacyPlayerItemId,
+            version: 7,
+            counter: 1,
+            timestamp: timestamp,
+            isRepair: false
+        ))
+    }
+
+    @Test("Legacy counters remain ordered within one sender only")
+    func legacyCountersRemainSenderLocal() {
+        // Given
+        let model = PlayerControllerModel()
+        let masterId = UUID()
+        let playerId = UUID()
+        let firstItemId = UUID()
+        let secondItemId = UUID()
+
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .space,
+            itemId: firstItemId,
+            version: 8,
+            counter: 20,
+            isRepair: false
+        ))
+
+        // When / Then
+        #expect(!model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .space,
+            itemId: secondItemId,
+            version: 9,
+            counter: 19,
+            isRepair: false
+        ))
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .space,
+            itemId: firstItemId,
+            version: 8,
+            counter: 19,
+            isRepair: false
+        ))
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .space,
+            itemId: secondItemId,
+            version: 9,
+            counter: 21,
+            isRepair: false
+        ))
+
+        // The master's low counter is not compared with the player's sequence.
+        #expect(model.shouldProcessPresentation(
+            from: masterId,
+            senderID: masterId,
+            module: .space,
+            itemId: firstItemId,
+            version: 8,
+            counter: 1,
+            isRepair: false
+        ))
+    }
+
     @Test("Player connection delegates update state and process master messages")
     func connectionDelegatesUpdateStateAndProcessMessages() async throws {
         let env = try await PlayerControllerTestEnvironment.create()

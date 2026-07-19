@@ -30,18 +30,19 @@ struct LogGameController: Sendable {
 
     @MainActor
     var logRows: [LogMessageRowModel] {
-        let maxPlayers = gameModel.gameRoster.players.count
         let playerNamesById = Dictionary(uniqueKeysWithValues: gameModel.gameRoster.players.map { ($0.id, $0.name) })
 
         var rows: [LogMessageRowModel] = []
         for counter in gameModel.logs.reversed() {
             guard let model = gameModel.logData[counter] else { continue }
+            let snapshotNamesById = Dictionary(uniqueKeysWithValues: model.expectedRecipients.map { ($0.id, $0.name) })
+            let namesById = playerNamesById.merging(snapshotNamesById) { _, snapshotName in snapshotName }
             rows.append(LogMessageRowModel(
                 id: model.id,
                 title: title(for: model),
-                playerNames: logPlayerNames(for: model.players, namesById: playerNamesById),
-                deliveryState: deliveryState(for: model, maxPlayers: maxPlayers),
-                playerStatuses: playerStatuses(for: model.players),
+                playerNames: logPlayerNames(for: model.players, namesById: namesById),
+                deliveryState: deliveryState(for: model),
+                playerStatuses: playerStatuses(for: model),
                 sharePlayTransport: model.sharePlayTransport
             ))
             if rows.count == Self.maximumVisibleMessages {
@@ -72,20 +73,89 @@ struct LogGameController: Sendable {
     
     @MainActor
     func addMessage(counter: Int, type: RPGMessageType, subType: RPGMessageActionType, module: NetworkModules, itemId: UUID) {
-        let log = LogGameModel(id: counter, type: type, subType: subType, module: module, itemId: itemId)
-        gameModel.logs.append(counter)
-        gameModel.logData[counter] = log
+        let sessionID = currentSessionID ?? GameDeliveryMessageID.legacySessionID
+        addMessage(
+            messageID: GameDeliveryMessageID(sessionID: sessionID, counter: counter),
+            type: type,
+            subType: subType,
+            module: module,
+            itemId: itemId
+        )
+    }
+
+    /// Starts a fresh delivery namespace. Existing rows belong to the previous
+    /// game and are removed so a restarted counter can never overwrite or
+    /// complete them.
+    @MainActor
+    func beginDeliverySession(_ sessionID: UUID) {
+        guard currentSessionID != sessionID else { return }
+        gameModel.logs.removeAll()
+        gameModel.logData.removeAll()
+    }
+
+    /// Records a master send together with the exact recipients that can
+    /// process it at send time. The snapshot is never recomputed from the live
+    /// roster.
+    @MainActor
+    func addMessage(
+        messageID: GameDeliveryMessageID,
+        type: RPGMessageType,
+        subType: RPGMessageActionType,
+        module: NetworkModules,
+        itemId: UUID,
+        targetID: UUID? = nil,
+        tracksDelivery: Bool? = nil
+    ) {
+        beginDeliverySession(messageID.sessionID)
+
+        let log = LogGameModel(
+            id: messageID.counter,
+            type: type,
+            subType: subType,
+            module: module,
+            itemId: itemId,
+            messageID: messageID,
+            expectedRecipients: recipientSnapshot(targetID: targetID),
+            tracksDelivery: tracksDelivery
+        )
+
+        if gameModel.logData[messageID.counter] == nil {
+            gameModel.logs.append(messageID.counter)
+        }
+        gameModel.logData[messageID.counter] = log
     }
     
     @MainActor
     func updateMessage(counter: Int, player: UUID) {
-        gameModel.logData[counter]?.players.append(player)
+        guard let messageID = gameModel.logData[counter]?.messageID else { return }
+        updateMessage(messageID: messageID, player: player)
+    }
+
+    /// Applies an acknowledgement only to its exact session-qualified send.
+    /// Duplicate, stale, unexpected, and cross-session acknowledgements are
+    /// ignored.
+    @MainActor
+    @discardableResult
+    func updateMessage(messageID: GameDeliveryMessageID, player: UUID) -> Bool {
+        guard let log = gameModel.logData[messageID.counter],
+              log.messageID == messageID
+        else { return false }
+        return log.acknowledge(playerID: player)
     }
 
     @MainActor
     func updateScreen(counter: Int, player: UUID, data: Data?) {
         guard let data else { return }
         gameModel.playerScreens[player] = data
+    }
+
+    /// Exact logical recipients captured with the same policy as a delivery
+    /// row. Peer-origin file presentations use this snapshot for correlating
+    /// their later acknowledgements even though they do not create a master
+    /// message-log row of their own.
+    @MainActor
+    func recipientIDs(targetID: UUID? = nil) -> Set<UUID> {
+        Set(recipientSnapshot(targetID: targetID).map(\.id))
     }
 
     @MainActor
@@ -147,26 +217,61 @@ struct LogGameController: Sendable {
     }
 
     @MainActor
-    private func playerStatuses(for receivedPlayers: [UUID]) -> [LogMessagePlayerStatus] {
-        let received = Set(receivedPlayers)
-        return gameModel.gameRoster.players
+    private var currentSessionID: UUID? {
+        for counter in gameModel.logs.reversed() {
+            if let messageID = gameModel.logData[counter]?.messageID {
+                return messageID.sessionID
+            }
+        }
+        return nil
+    }
+
+    @MainActor
+    private func recipientSnapshot(targetID: UUID?) -> [LogMessageRecipient] {
+        let controls = gameModel.gameControl.controls
+        let controlsByID = Dictionary(uniqueKeysWithValues: controls.map { ($0.id, $0.show) })
+        var seen = Set<UUID>()
+
+        return gameModel.gameRoster.players.compactMap { player in
+            guard seen.insert(player.id).inserted else { return nil }
+            if let targetID, player.id != targetID { return nil }
+
+            let receivesMasterMessages = switch player.type {
+            case .observer, .proxy:
+                true
+            default:
+                controls.isEmpty || controlsByID[player.id] == true
+            }
+            guard receivesMasterMessages else { return nil }
+            return LogMessageRecipient(id: player.id, name: player.name)
+        }
+    }
+
+    @MainActor
+    private func playerStatuses(for model: LogGameModel) -> [LogMessagePlayerStatus] {
+        model.expectedRecipients
             .map {
                 LogMessagePlayerStatus(
                     id: $0.id,
                     name: $0.name,
-                    received: received.contains($0.id)
+                    received: model.hasAcknowledgement(from: $0.id)
                 )
             }
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
 
     @MainActor
-    private func deliveryState(for model: LogGameModel, maxPlayers: Int) -> LogMessageDeliveryState {
-        guard model.type == .reveal else { return .notTracked }
-        if maxPlayers > 0 && model.players.isEmpty {
+    private func deliveryState(for model: LogGameModel) -> LogMessageDeliveryState {
+        guard model.tracksDelivery else { return .notTracked }
+        let receivedCount = model.expectedRecipients.reduce(into: 0) { count, recipient in
+            if model.hasAcknowledgement(from: recipient.id) {
+                count += 1
+            }
+        }
+        if !model.expectedRecipients.isEmpty && receivedCount == 0 {
             return .missingPlayers
         }
-        if model.players.count < maxPlayers {
+        if receivedCount < model.expectedRecipients.count {
             return .partialPlayers
         }
         return .allPlayers

@@ -180,7 +180,7 @@ struct MapMasterMessageFlowTests {
         )
     }
 
-    @Test("Map pin commands require the current Map and its exact generations")
+    @Test("Map pin group events require the current generation and the newest pin timestamp")
     func mapPinIsCurrentAndGenerationFenced() async throws {
         // Given
         let fixture = try await MapMasterRoutingFixture.makeMaster()
@@ -217,19 +217,21 @@ struct MapMasterMessageFlowTests {
         incomingPin.timeInterval = 2
 
         func command(
+            counter: Int = 50,
+            pin: MapPinModel? = nil,
             id: UUID = currentMapId,
             contentVersion: Int?,
             assetVersion: Int?
         ) -> GameNetworkModel {
             fixture.playerMessage(
-                counter: 50,
+                counter: counter,
                 type: .update,
                 subType: .mapPin,
                 data: NetworkCodableDataType(
                     id: id,
                     type: .map,
                     version: currentMap.version,
-                    data: incomingPin.encodeData(),
+                    data: (pin ?? incomingPin).encodeData(),
                     assetVersion: assetVersion,
                     contentVersion: contentVersion
                 )
@@ -258,51 +260,52 @@ struct MapMasterMessageFlowTests {
         #expect(currentMap.mapPins.first { $0.id == fixture.playerId }?.location == .zero)
         #expect(otherMap.mapPins.first { $0.id == fixture.playerId }?.location == otherPin.location)
 
-        // When
+        // When: the current generation carries the newer pin timestamp.
+        let acceptedCommand = command(
+            contentVersion: contentVersion,
+            assetVersion: assetVersion
+        )
+        #expect(acceptedCommand.effectiveAudience == .group)
+        _ = try await fixture.master.handleMap(acceptedCommand)
+
+        // Then: the master applies the group event locally. It does not emit a
+        // second canonical mapState because the transport relays the raw event.
+        #expect(currentMap.mapPins.first { $0.id == fixture.playerId }?.location == incomingPin.location)
+        #expect(fixture.directMasterSpy.sendResponseHistory.isEmpty)
+
+        // When: a later-delivered event has a newer message counter but an
+        // older pin timestamp.
+        var stalePin = incomingPin
+        stalePin.location = CGPoint(x: 20, y: 22)
+        stalePin.timeInterval = 1.5
         _ = try await fixture.master.handleMap(command(
+            counter: 51,
+            pin: stalePin,
+            contentVersion: contentVersion,
+            assetVersion: assetVersion
+        ))
+
+        // Then: the pin payload timestamp, not delivery order, wins.
+        #expect(currentMap.mapPins.first { $0.id == fixture.playerId }?.location == incomingPin.location)
+
+        // When: a genuinely newer pin event arrives.
+        var newestPin = incomingPin
+        newestPin.location = CGPoint(x: 30, y: 32)
+        newestPin.timeInterval = 3
+        _ = try await fixture.master.handleMap(command(
+            counter: 52,
+            pin: newestPin,
             contentVersion: contentVersion,
             assetVersion: assetVersion
         ))
 
         // Then
-        #expect(currentMap.mapPins.first { $0.id == fixture.playerId }?.location == incomingPin.location)
-        let broadcasts = fixture.directMasterSpy.sendResponseHistory.compactMap {
-            $0 as? GameNetworkModel
-        }
-        #expect(broadcasts.count == 1)
-        let broadcast = try #require(broadcasts.first)
-        #expect(broadcast.type == .update)
-        #expect(broadcast.subType == .mapState)
-        #expect(broadcast.targetId == nil)
-        let expectedBroadcast = fixture.root.mapRoot.gameController.networkMapUpdate(
-            for: currentMapId
+        let retainedPin = try #require(
+            currentMap.mapPins.first { $0.id == fixture.playerId }
         )
-        #expect(broadcast.data.id == expectedBroadcast.id)
-        #expect(broadcast.data.type == expectedBroadcast.type)
-        #expect(broadcast.data.version == expectedBroadcast.version)
-        #expect(broadcast.data.assetVersion == expectedBroadcast.assetVersion)
-        #expect(broadcast.data.contentVersion == expectedBroadcast.contentVersion)
-
-        // `Color` may use a different, but semantically equivalent, JSON
-        // representation each time mapState is encoded. Decode the live-state
-        // payload instead of comparing its bytes so this verifies the pin the
-        // master actually authorized and rebroadcast.
-        let broadcastText = try #require(
-            broadcast.data.data.flatMap { String(data: $0, encoding: .utf8) }
-        )
-        let pinArrayStart = try #require(broadcastText.firstIndex(of: "["))
-        let broadcastPins = try JSONDecoder().decode(
-            [MapPinModel].self,
-            from: Data(broadcastText[pinArrayStart...].utf8)
-        )
-        let broadcastPin = try #require(
-            broadcastPins.dropFirst().first { $0.id == fixture.playerId }
-        )
-        #expect(broadcastPin.id == incomingPin.id)
-        #expect(broadcastPin.location == incomingPin.location)
-        #expect(broadcastPin.timeInterval == incomingPin.timeInterval)
-        #expect(broadcastPin.isPlayer == incomingPin.isPlayer)
-        #expect(broadcastPin.players == incomingPin.players)
+        #expect(retainedPin.location == newestPin.location)
+        #expect(retainedPin.timeInterval == newestPin.timeInterval)
+        #expect(fixture.directMasterSpy.sendResponseHistory.isEmpty)
     }
 
     @Test("A player reuses the accepted Map generation for pin updates")
@@ -447,11 +450,9 @@ struct MapMasterMessageFlowTests {
             masterMap.mapPins.first { $0.id == fixture.playerId }?.isHighlighted
                 == true
         )
-        #expect(
-            fixture.directMasterSpy.sendResponseHistory
-                .compactMap { $0 as? GameNetworkModel }
-                .contains { $0.type == .update && $0.subType == .mapState }
-        )
+        // Map pins are already group events. The master validates and applies
+        // them, but does not duplicate either event as a full mapState.
+        #expect(fixture.directMasterSpy.sendResponseHistory.isEmpty)
     }
 
     @Test("A master battle-round update presents the shared round and attacker on a player")
@@ -548,7 +549,7 @@ struct MapMasterMessageFlowTests {
         #expect(player.gameModel.gameUpdateType == .map)
     }
 
-    @Test("A player pin highlight updates the active defender list and is rebroadcast by the master")
+    @Test("A player pin highlight updates battle defenders without a canonical rebroadcast")
     func playerHighlightSynchronizesBattleDefenders() async throws {
         // Given
         let fixture = try await MapMasterRoutingFixture.makeMaster()
@@ -619,19 +620,15 @@ struct MapMasterMessageFlowTests {
         highlightedDefender.timeInterval = Date.now.timeIntervalSince1970
         _ = try await fixture.master.handleMap(command(for: highlightedDefender, counter: 92))
 
-        // Then: it becomes a defender for the active attacker and the master
-        // immediately rebroadcasts the authoritative map state.
+        // Then: it becomes a defender for the active attacker. The incoming
+        // map-pin event is already relayed to the group, so the master emits no
+        // additional canonical mapState.
         let battle = fixture.root.mapRoot.mapGameControllable.battleRoundModel
         let defender = try #require(battle.combatant(pinId: defenderPin.id))
         let entry = try #require(battle.activeEntry)
         #expect(entry.defenderIds == [defender.id])
         #expect(map.mapPins.first { $0.id == defenderPin.id }?.isHighlighted == true)
-        var broadcasts = fixture.directMasterSpy.sendResponseHistory.compactMap {
-            $0 as? GameNetworkModel
-        }
-        #expect(broadcasts.last?.type == .update)
-        #expect(broadcasts.last?.subType == .mapState)
-        #expect(broadcasts.last?.targetId == nil)
+        #expect(fixture.directMasterSpy.sendResponseHistory.isEmpty)
 
         // When: the active player tries to remove its own mandatory highlight.
         var dehighlightedAttacker = try #require(
@@ -644,14 +641,12 @@ struct MapMasterMessageFlowTests {
         )
         _ = try await fixture.master.handleMap(command(for: dehighlightedAttacker, counter: 93))
 
-        // Then: synchronization repairs the attacker and publishes the repair.
+        // Then: synchronization repairs the attacker locally. Every receiver
+        // performs the same deterministic battle synchronization after
+        // accepting the group event, so no full mapState repair is needed.
         #expect(map.mapPins.first { $0.id == fixture.playerId }?.isHighlighted == true)
         #expect(try #require(battle.activeEntry).defenderIds == [defender.id])
-        broadcasts = fixture.directMasterSpy.sendResponseHistory.compactMap {
-            $0 as? GameNetworkModel
-        }
-        #expect(broadcasts.count == 2)
-        #expect(broadcasts.allSatisfy { $0.subType == .mapState })
+        #expect(fixture.directMasterSpy.sendResponseHistory.isEmpty)
     }
 
     @Test("Proxy serves only a complete Map matching the requested asset and content generations")
@@ -662,6 +657,7 @@ struct MapMasterMessageFlowTests {
         let reference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
         let assetVersion = try #require(reference.assetVersion)
         let contentVersion = try #require(reference.contentVersion)
+        let proxyConnectionId = ConnectionController.ID()
 
         func request(counter: Int, assetVersion: Int, contentVersion: Int) -> GameNetworkModel {
             fixture.proxyMessage(
@@ -685,7 +681,7 @@ struct MapMasterMessageFlowTests {
                 assetVersion: differentVersion(from: assetVersion),
                 contentVersion: contentVersion
             ),
-            connectionId: UUID()
+            connectionId: proxyConnectionId
         )
         await fixture.master.receivedServerProxy(
             request(
@@ -693,7 +689,7 @@ struct MapMasterMessageFlowTests {
                 assetVersion: assetVersion,
                 contentVersion: differentVersion(from: contentVersion)
             ),
-            connectionId: UUID()
+            connectionId: proxyConnectionId
         )
 
         // Then: both requests go to the real master and no stale package is
@@ -708,14 +704,13 @@ struct MapMasterMessageFlowTests {
         #expect(forwarded.last?.data.contentVersion == differentVersion(from: contentVersion))
 
         // When: the exact local generations are requested.
-        let matchingConnectionId = ConnectionController.ID()
         await fixture.master.receivedServerProxy(
             request(
                 counter: 63,
                 assetVersion: assetVersion,
                 contentVersion: contentVersion
             ),
-            connectionId: matchingConnectionId
+            connectionId: proxyConnectionId
         )
 
         // Then

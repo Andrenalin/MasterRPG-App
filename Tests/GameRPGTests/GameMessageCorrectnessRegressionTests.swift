@@ -307,6 +307,45 @@ struct GameMessageCorrectnessRegressionTests {
         #expect(response == nil)
     }
 
+    @Test(
+        "Player Dice presentation commands cannot mutate a peer",
+        arguments: [RPGMessageActionType.show, .store]
+    )
+    func playerDicePresentationCommandsAreIgnored(
+        subType: RPGMessageActionType
+    ) async throws {
+        // Given
+        let environment = try await RoutingEnvironment.make()
+        let originalItems = environment.root.diceRoot.gameController.gameModel.items
+        let peerCommand = GameNetworkModel(
+            counter: 4,
+            proxyCounter: 0,
+            type: .update,
+            subType: subType,
+            masterId: environment.masterId,
+            sender: GameSenderModel(
+                id: UUID(),
+                role: .player,
+                name: "Peer",
+                characterId: nil
+            ),
+            audience: .group,
+            purpose: .event,
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: .dice,
+                version: 1
+            )
+        )
+
+        // When
+        let response = try await environment.player.handleDice(peerCommand)
+
+        // Then
+        #expect(response == nil)
+        #expect(environment.root.diceRoot.gameController.gameModel.items == originalItems)
+    }
+
     @Test("Proxy dice are remapped to the host player identity")
     func proxyDiceIsRemappedToHostIdentity() async throws {
         // Given

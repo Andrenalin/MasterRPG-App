@@ -208,6 +208,170 @@ struct GameControllerTests {
         #expect(Self.decodedTransform(sut.latestSpaceTransform(for: itemId, version: 31)) == nextTransform)
     }
 
+    @Test("Newest Space transform timestamp wins and a future timestamp does not replace state")
+    func newestTransformTimestampWins() async throws {
+        // Given
+        let root = SpaceRootModel.testRoot()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let itemId = UUID()
+        let firstTransform = Self.transform(seed: 7)
+        let newerTransform = Self.transform(seed: 8)
+        let staleTransform = Self.transform(seed: 9)
+        let finalTransform = Self.transform(seed: 10)
+        let firstTimestamp: TimeInterval = 1_000
+        let newerTimestamp: TimeInterval = 2_000
+
+        // When
+        let firstApplied = sut.applySpaceTransform(
+            data: Self.transformData(itemId: itemId, version: 51, transform: firstTransform),
+            counter: 100,
+            timestamp: firstTimestamp
+        )
+        let newerApplied = sut.applySpaceTransform(
+            data: Self.transformData(itemId: itemId, version: 51, transform: newerTransform),
+            counter: 1,
+            timestamp: newerTimestamp
+        )
+        let staleApplied = sut.applySpaceTransform(
+            data: Self.transformData(itemId: itemId, version: 51, transform: staleTransform),
+            counter: 1_000,
+            timestamp: firstTimestamp + 1
+        )
+        let equalTimestampApplied = sut.applySpaceTransform(
+            data: Self.transformData(itemId: itemId, version: 51, transform: staleTransform),
+            counter: 10_000,
+            timestamp: newerTimestamp
+        )
+        let futureApplied = sut.applySpaceTransform(
+            data: Self.transformData(itemId: itemId, version: 51, transform: staleTransform),
+            counter: 2_000,
+            timestamp: Date.now.timeIntervalSince1970 + 3_600
+        )
+        let finalApplied = sut.applySpaceTransform(
+            data: Self.transformData(itemId: itemId, version: 51, transform: finalTransform),
+            counter: 2_000,
+            timestamp: newerTimestamp + 1
+        )
+
+        // Then
+        #expect(firstApplied)
+        #expect(newerApplied)
+        #expect(!staleApplied)
+        #expect(!equalTimestampApplied)
+        #expect(!futureApplied)
+        #expect(finalApplied)
+        #expect(Self.decodedTransform(sut.latestSpaceTransform(for: itemId, version: 51)) == finalTransform)
+    }
+
+    @Test("Local Space transform timestamp advances after retained state within the future bound")
+    func localTransformTimestampIsCausallyBounded() throws {
+        // Given
+        let sut = SpaceGameModel()
+        let itemId = UUID()
+        let saturatedItemId = UUID()
+        let version = 61
+        let now: TimeInterval = 10_000
+        let retainedTimestamp = now + 100
+        let transform = Self.transform(seed: 11)
+
+        #expect(sut.causalTransformTimestamp(
+            for: itemId,
+            version: version,
+            now: now
+        ) == now)
+        #expect(sut.applyTransform(
+            itemId: itemId,
+            version: version,
+            counter: 50_000,
+            timestamp: retainedTimestamp,
+            transform: transform
+        ))
+
+        // When
+        let causalTimestamp = try #require(sut.causalTransformTimestamp(
+            for: itemId,
+            version: version,
+            now: now
+        ))
+        let appliedLocalTransform = sut.applyTransform(
+            itemId: itemId,
+            version: version,
+            counter: 1,
+            timestamp: causalTimestamp,
+            transform: Self.transform(seed: 12)
+        )
+
+        // Then - the retained peer counter is irrelevant once the local event
+        // has a strictly newer, bounded causal timestamp.
+        #expect(causalTimestamp > retainedTimestamp)
+        #expect(causalTimestamp <= now + 300)
+        #expect(appliedLocalTransform)
+        #expect(sut.transformState(for: itemId, version: version)?.timestamp == causalTimestamp)
+
+        let root = SpaceRootModel.testRoot()
+        #expect(root.gameController.spaceGameModel.applyTransform(
+            itemId: itemId,
+            version: version,
+            counter: 2,
+            timestamp: causalTimestamp,
+            transform: Self.transform(seed: 12)
+        ))
+        let replay = try #require(root.gameController.latestSpaceTransformReplay(
+            for: itemId,
+            version: version
+        ))
+        #expect(replay.timestamp == causalTimestamp)
+        #expect(Self.decodedTransform(replay.data) == Self.transform(seed: 12))
+
+        // A retained clock exactly at the admission boundary cannot be safely
+        // advanced yet; returning nil avoids manufacturing an invalid future event.
+        #expect(sut.applyTransform(
+            itemId: saturatedItemId,
+            version: version,
+            counter: 1,
+            timestamp: now + 300,
+            transform: transform
+        ))
+        #expect(sut.causalTransformTimestamp(
+            for: saturatedItemId,
+            version: version,
+            now: now
+        ) == nil)
+    }
+
+    @Test("Legacy Space transform replay adopts the requested asset baseline")
+    func legacyTransformReplayAdoptsRequestedBaseline() throws {
+        // Given
+        let root = SpaceRootModel.testRoot()
+        let sut = root.gameController
+        let itemId = UUID()
+        let requestedVersion = 71
+        let timestamp: TimeInterval = 2_500
+        let transform = Self.transform(seed: 13)
+        #expect(sut.applySpaceTransform(
+            data: Self.transformData(itemId: itemId, version: 0, transform: transform),
+            counter: 3,
+            timestamp: timestamp
+        ))
+
+        // When
+        let replay = try #require(sut.latestSpaceTransformReplay(
+            for: itemId,
+            version: requestedVersion
+        ))
+        let wildcardReplay = try #require(sut.latestSpaceTransformReplay(
+            for: itemId,
+            version: 0
+        ))
+
+        // Then
+        #expect(replay.data.effectiveAssetVersion == requestedVersion)
+        #expect(replay.timestamp == timestamp)
+        #expect(Self.decodedTransform(replay.data) == transform)
+        #expect(wildcardReplay.data.effectiveAssetVersion == 0)
+    }
+
     @Test("Reset clears Space reports and every retained transform")
     func resetClearsReportsAndTransforms() async throws {
         // Given

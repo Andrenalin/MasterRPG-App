@@ -38,6 +38,39 @@ protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
     func receivedSharePlay(_ model: GameNetworkModel, participantId: UUID) async
     func receivedSharePlayFile(_ model: GameNetworkModel) async
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async
+    /// Performs side-effect-free logical session/roster validation before the
+    /// transport layer pins a peer participant to the claimed player sender.
+    func acceptsSharePlayPeerMessage(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool
+    /// Returns true only for a valid small peer event whose logical player is
+    /// not present in the current authoritative roster yet. The transport may
+    /// retain it until one subsequent accepted master-state update.
+    func shouldDeferSharePlayPeerGroupEvent(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool
+    /// Confirms that a complete master-state envelope was applied (or already
+    /// represents the current state), allowing one batch of deferred peer
+    /// events to be revalidated against the resulting roster.
+    func didAcceptSharePlayMasterState(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool
+    /// Authenticates and pins a complete master Journal admission without
+    /// routing its data-less control packet through presentation handlers.
+    func acceptsSharePlayMasterJournalAdmission(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool
+    /// Prevents session-visible Journal repairs for another logical player from
+    /// occupying this player's bounded anonymous-callback queue.
+    func isLocalSharePlayTarget(_ targetId: UUID?) async -> Bool
+    /// Confirms that PlayerController accepted and pinned the physically
+    /// attributed master. That participant may legitimately relay several LAN
+    /// player identities into SharePlay while ordinary participants may not.
+    func isPinnedSharePlayMasterParticipant(id: UUID) async -> Bool
     /// Notifies a player that one physical GroupSession participant left. The
     /// player uses this to release a master-source binding only when that exact
     /// participant was the authenticated master.
@@ -57,14 +90,45 @@ extension PlayerNetworkStoreDelegate {
         await receivedSharePlayFile(model)
     }
 
+    func acceptsSharePlayPeerMessage(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool {
+        model.sender.role == .player && model.effectiveAudience == .group
+    }
+
+    func shouldDeferSharePlayPeerGroupEvent(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool { false }
+
+    func didAcceptSharePlayMasterState(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool { false }
+
+    func acceptsSharePlayMasterJournalAdmission(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async -> Bool { false }
+
+    func isLocalSharePlayTarget(_ targetId: UUID?) async -> Bool { true }
+
+    func isPinnedSharePlayMasterParticipant(id: UUID) async -> Bool { false }
+
     func sharePlayParticipantLeft(id: UUID) async {}
 }
 
 // MARK: - Proxy-mode delegate protocols
 
 protocol MasterNetworkProxyControllerDelegate: Sendable & AnyObject {
+    func lostProxy(for connectionId: ConnectionController.ID) async
     func readyProxy(for connectionId: ConnectionController.ID) async
     func receivedServerProxy(_ model: GameNetworkModel, connectionId: ConnectionController.ID) async
+}
+
+extension MasterNetworkProxyControllerDelegate {
+    func lostProxy(for connectionId: ConnectionController.ID) async {}
 }
 
 protocol PlayerNetworkProxyControllerDelegate: Sendable & AnyObject {

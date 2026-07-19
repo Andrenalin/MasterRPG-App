@@ -1389,6 +1389,46 @@ struct SharePlayPackageTransportTests {
         #expect(tracker.shouldPublish(module: .pdf, itemId: itemId, version: 4))
     }
 
+    @Test("Journal tracker reset excludes prior authenticated metadata from late-join replay")
+    func journalTrackerResetExcludesPriorAdmissionsFromReplay() {
+        // Given
+        let attachmentId = UUID()
+        let masterId = UUID()
+        var full = Self.message(
+            type: .reveal,
+            module: .photo,
+            data: Data("player photo".utf8)
+        )
+        full.masterId = masterId
+        full.sender = GameSenderModel(
+            id: UUID(),
+            role: .player,
+            name: "Player",
+            characterId: nil
+        )
+        full.audience = .group
+        full.purpose = .event
+        let metadata = RPGSharePlayController.journalMetadata(for: full)
+        var tracker = SharePlayJournalTracker()
+        tracker.didObserve(attachmentId: attachmentId, metadata: metadata)
+        tracker.didAuthenticate(full)
+
+        #expect(tracker.currentJournalMetadata().map(\.attachmentId) == [attachmentId])
+        #expect(RPGSharePlayController.journalAdmissionsForReplay(
+            from: tracker.currentJournalMetadata()
+        ).count == 1)
+
+        // When
+        tracker.reset()
+
+        // Then - a replacement SharePlay session cannot replay identities from
+        // the prior session's observed or authenticated attachment maps.
+        #expect(tracker.currentJournalMetadata().isEmpty)
+        #expect(RPGSharePlayController.journalAdmissionsForReplay(
+            from: tracker.currentJournalMetadata()
+        ).isEmpty)
+    }
+
     @Test("reusing Journal bytes preserves a fresh reveal event")
     func reusedJournalBytesPreserveRevealIntent() {
         // Given
@@ -1415,6 +1455,8 @@ struct SharePlayPackageTransportTests {
         #expect(metadataEvent.subType == .show)
         #expect(metadataEvent.data.id == itemId)
         #expect(metadataEvent.data.data == nil)
+        #expect(metadataEvent.journalAdmissionOnly == nil)
+        #expect(!metadataEvent.isMasterJournalAdmissionMetadata)
     }
 
     @Test("Journal byte reuse requires Messenger metadata admission")
@@ -2445,6 +2487,238 @@ struct SharePlayPackageTransportTests {
         #expect(RPGSharePlayController.journalPublicationPolicy(for: audioRepair) == .fifo)
     }
 
+    @Test(
+        "fresh player file Journals publish same-message Messenger admission metadata",
+        arguments: [NetworkModules.photo, .pdf, .space]
+    )
+    func playerJournalPublicationAnnouncesPhysicalSender(
+        module: NetworkModules
+    ) throws {
+        // Given
+        let senderID = UUID()
+        let messageID = UUID()
+        let masterID = UUID()
+        let itemID = UUID()
+        let full = GameNetworkModel(
+            messageID: messageID,
+            timestamp: 1_234,
+            counter: 9,
+            proxyCounter: 2,
+            type: .reveal,
+            subType: .show,
+            masterId: masterID,
+            sender: GameSenderModel(
+                id: senderID,
+                role: .player,
+                name: "Player",
+                characterId: nil
+            ),
+            audience: .group,
+            purpose: .event,
+            data: NetworkCodableDataType(
+                id: itemID,
+                type: module,
+                version: 3,
+                data: Data("asset".utf8),
+                assetVersion: 4,
+                contentVersion: 5
+            )
+        )
+
+        // When
+        let metadata = try #require(
+            RPGSharePlayController.playerJournalAdmissionMetadata(for: full)
+        )
+
+        // Then - only bytes are removed; every correlation and presentation
+        // field remains the exact fingerprint receivers authorize.
+        #expect(metadata.isPlayerJournalAdmissionMetadata)
+        #expect(metadata.journalAdmissionOnly == true)
+        #expect(metadata.messageID == full.messageID)
+        #expect(metadata.sender.id == full.sender.id)
+        #expect(metadata.masterId == full.masterId)
+        #expect(metadata.counter == full.counter)
+        #expect(metadata.proxyCounter == full.proxyCounter)
+        #expect(metadata.timestamp == full.timestamp)
+        #expect(metadata.type == full.type)
+        #expect(metadata.subType == full.subType)
+        #expect(metadata.audience == full.audience)
+        #expect(metadata.purpose == full.purpose)
+        #expect(metadata.targetId == full.targetId)
+        #expect(metadata.data.id == full.data.id)
+        #expect(metadata.data.type == full.data.type)
+        #expect(metadata.data.version == full.data.version)
+        #expect(metadata.data.assetVersion == full.data.assetVersion)
+        #expect(metadata.data.contentVersion == full.data.contentVersion)
+        #expect(metadata.data.data == nil)
+        #expect(metadata.journalPayloadDigest == GameNetworkModel.journalDigest(
+            for: try #require(full.data.data)
+        ))
+
+        // A real data-less player event rides Messenger directly; it is not a
+        // fresh Journal publication that needs a second announcement.
+        var dataLess = full
+        dataLess.data = metadata.data
+        #expect(RPGSharePlayController.playerJournalAdmissionMetadata(for: dataLess) == nil)
+    }
+
+    @Test(
+        "fresh master Journals announce the exact normalized metadata",
+        arguments: [
+            NetworkModules.audio,
+            .weather,
+            .map,
+            .photo,
+            .pdf,
+            .space
+        ]
+    )
+    func masterJournalPublicationAnnouncesPhysicalSender(
+        module: NetworkModules
+    ) throws {
+        // Given
+        let masterID = UUID()
+        let messageID = UUID()
+        let targetID: UUID? = (module == .audio || module == .weather) ? UUID() : nil
+        let full = GameNetworkModel(
+            messageID: messageID,
+            timestamp: 4_321,
+            counter: 12,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: masterID,
+            sender: GameSenderModel(
+                id: masterID,
+                role: .master,
+                name: "Master",
+                characterId: nil
+            ),
+            targetId: targetID,
+            audience: targetID == nil ? .group : .target,
+            purpose: .event,
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: module,
+                version: 6,
+                data: Data("asset".utf8),
+                assetVersion: 7,
+                contentVersion: 8
+            )
+        )
+        #expect(RPGSharePlayController.usesJournalTransport(
+            for: full,
+            fileJournal: true,
+            journalAvailable: true
+        ))
+
+        // When
+        let metadata = try #require(
+            RPGSharePlayController.masterJournalAdmissionMetadata(for: full)
+        )
+
+        // Then
+        #expect(metadata.isMasterJournalAdmissionMetadata)
+        #expect(metadata.journalAdmissionOnly == true)
+        #expect(metadata.messageID == full.messageID)
+        #expect(metadata.sender.id == full.sender.id)
+        #expect(metadata.masterId == full.masterId)
+        #expect(metadata.counter == full.counter)
+        #expect(metadata.timestamp == full.timestamp)
+        #expect(metadata.data.id == full.data.id)
+        #expect(metadata.data.type == full.data.type)
+        #expect(metadata.data.version == full.data.version)
+        #expect(metadata.data.assetVersion == full.data.assetVersion)
+        #expect(metadata.data.contentVersion == full.data.contentVersion)
+        #expect(metadata.data.data == nil)
+        #expect(metadata.journalPayloadDigest == GameNetworkModel.journalDigest(
+            for: try #require(full.data.data)
+        ))
+
+        if module == .audio {
+            // Journal Audio repairs intentionally store on the whole session.
+            #expect(metadata.type == .store)
+            #expect(metadata.subType == .show)
+            #expect(metadata.targetId == nil)
+        } else {
+            #expect(metadata.type == full.type)
+            #expect(metadata.subType == full.subType)
+            #expect(metadata.targetId == full.targetId)
+        }
+    }
+
+    @Test("invalid future Journal presentations cannot suppress a valid candidate")
+    func invalidFutureJournalPresentationIsSkippedBeforeDataLoadAndSelection() {
+        let now: TimeInterval = 10_000
+        let masterId = UUID()
+        let validAttachmentId = UUID()
+        let futureAttachmentId = UUID()
+        let legacyAttachmentId = UUID()
+        var valid = Self.message(type: .reveal, module: .photo, data: nil)
+        valid.timestamp = now
+        valid.masterId = masterId
+        valid.sender = GameSenderModel(
+            id: masterId,
+            role: .master,
+            name: "Master",
+            characterId: nil
+        )
+        var future = valid
+        future.timestamp = now + GameNetworkModel.maximumFutureEventTimestampSkew + 1
+        future.counter += 1
+        future.data = NetworkCodableDataType(
+            id: UUID(),
+            type: .photo,
+            version: valid.data.version + 1
+        )
+        var legacy = valid
+        legacy.timestamp = 0
+        legacy.data = NetworkCodableDataType(
+            id: UUID(),
+            type: .photo,
+            version: valid.data.version
+        )
+
+        #expect(RPGSharePlayController.isJournalPresentation(valid))
+        #expect(RPGSharePlayController.isJournalPresentation(future))
+        #expect(RPGSharePlayController.shouldLoadJournalAttachmentData(
+            for: valid,
+            now: now
+        ))
+        #expect(RPGSharePlayController.shouldLoadJournalAttachmentData(
+            for: legacy,
+            now: now
+        ))
+        #expect(!RPGSharePlayController.shouldLoadJournalAttachmentData(
+            for: future,
+            now: now
+        ))
+
+        let validWinner = RPGSharePlayController.latestJournalPresentationAttachmentId(
+            in: [
+                (attachmentId: validAttachmentId, metadata: valid, arrivalEpoch: 1),
+                (attachmentId: futureAttachmentId, metadata: future, arrivalEpoch: 2)
+            ],
+            now: now
+        )
+        let invalidOnlyWinner = RPGSharePlayController.latestJournalPresentationAttachmentId(
+            in: [
+                (attachmentId: futureAttachmentId, metadata: future, arrivalEpoch: 2)
+            ],
+            now: now
+        )
+        let legacyWinner = RPGSharePlayController.latestJournalPresentationAttachmentId(
+            in: [
+                (attachmentId: legacyAttachmentId, metadata: legacy, arrivalEpoch: 1)
+            ],
+            now: now
+        )
+
+        #expect(validWinner == validAttachmentId)
+        #expect(invalidOnlyWinner == nil)
+        #expect(legacyWinner == legacyAttachmentId)
+    }
+
     @Test("overlapping journal maps are processed with the newest map last")
     func overlappingJournalMapsAreProcessedWithNewestMapLast() {
         let oldAttachmentId = UUID()
@@ -2452,6 +2726,7 @@ struct SharePlayPackageTransportTests {
         let masterId = UUID()
         var oldMap = Self.message(type: .reveal, module: .map, data: nil)
         oldMap.counter = 41
+        oldMap.timestamp = 1_000
         oldMap.masterId = masterId
         oldMap.sender = GameSenderModel(
             id: masterId,
@@ -2461,6 +2736,7 @@ struct SharePlayPackageTransportTests {
         )
         var newMap = oldMap
         newMap.counter = 42
+        newMap.timestamp = 1_001
         newMap.data = NetworkCodableDataType(
             id: UUID(),
             type: .map,
@@ -2503,6 +2779,7 @@ struct SharePlayPackageTransportTests {
         let playerBId = try #require(UUID(uuidString: "20000000-0000-0000-0000-000000000002"))
         var playerA = Self.message(type: .reveal, module: .photo, data: nil)
         playerA.counter = 100
+        playerA.timestamp = 1_000
         playerA.sender = GameSenderModel(
             id: playerAId,
             role: .player,
@@ -2511,6 +2788,7 @@ struct SharePlayPackageTransportTests {
         )
         var playerB = Self.message(type: .reveal, module: .photo, data: nil)
         playerB.counter = 1
+        playerB.timestamp = 1_000
         playerB.sender = GameSenderModel(
             id: playerBId,
             role: .player,
@@ -2550,8 +2828,8 @@ struct SharePlayPackageTransportTests {
         #expect(processesPlayerB)
     }
 
-    @Test("a cross-publisher late-join Journal snapshot has deterministic ordering")
-    func crossPublisherLateJoinOrderingIsDeterministic() throws {
+    @Test("a legacy cross-publisher late-join Journal snapshot has deterministic ordering")
+    func legacyCrossPublisherLateJoinOrderingIsDeterministic() throws {
         // Given
         let playerAAttachmentId = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
         let playerBAttachmentId = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
@@ -2559,9 +2837,11 @@ struct SharePlayPackageTransportTests {
         let playerBId = try #require(UUID(uuidString: "20000000-0000-0000-0000-000000000002"))
         var playerA = Self.message(type: .reveal, module: .photo, data: nil)
         playerA.counter = 100
+        playerA.timestamp = 0
         playerA.sender = GameSenderModel(id: playerAId, role: .player, name: "Player A", characterId: nil)
         var playerB = Self.message(type: .reveal, module: .photo, data: nil)
         playerB.counter = 1
+        playerB.timestamp = 0
         playerB.sender = GameSenderModel(id: playerBId, role: .player, name: "Player B", characterId: nil)
         var tracker = SharePlayJournalTracker()
         tracker.reconcile(attachmentIds: [playerAAttachmentId, playerBAttachmentId])
@@ -2577,11 +2857,229 @@ struct SharePlayPackageTransportTests {
             in: Array(forward.reversed())
         )
 
-        // Then - no cross-sender counter comparison or collection iteration order
-        // can change the selected presentation when causal history is unavailable.
+        // Then - a V1 snapshot has no cross-sender clock. Preserve its stable
+        // sender ordering instead of comparing private counter spaces.
         #expect(tracker.arrivalEpoch(for: playerBAttachmentId) == arrivalEpoch)
         #expect(forwardLatest == playerBAttachmentId)
         #expect(reversedLatest == forwardLatest)
+    }
+
+    @Test("a later master canonical Journal reveal wins over the player reveal that requested it")
+    func laterMasterCanonicalJournalRevealWins() throws {
+        // Given - choose identities that made the old sender-UUID fallback select
+        // the player, even though the master published the canonical package later.
+        let masterId = try #require(
+            UUID(uuidString: "10000000-0000-0000-0000-000000000001")
+        )
+        let playerId = try #require(
+            UUID(uuidString: "F0000000-0000-0000-0000-000000000001")
+        )
+        let playerAttachmentId = try #require(
+            UUID(uuidString: "F0000000-0000-0000-0000-000000000002")
+        )
+        let masterAttachmentId = try #require(
+            UUID(uuidString: "10000000-0000-0000-0000-000000000002")
+        )
+        let photoId = UUID()
+        var playerReveal = Self.message(type: .reveal, module: .photo, data: nil)
+        playerReveal.counter = 900
+        playerReveal.timestamp = 2_000
+        playerReveal.masterId = masterId
+        playerReveal.sender = GameSenderModel(
+            id: playerId,
+            role: .player,
+            name: "Player",
+            characterId: nil
+        )
+        playerReveal.data = NetworkCodableDataType(
+            id: photoId,
+            type: .photo,
+            version: 4
+        )
+        var masterCanonical = playerReveal
+        masterCanonical.counter = 1
+        masterCanonical.timestamp = 2_001
+        masterCanonical.sender = GameSenderModel(
+            id: masterId,
+            role: .master,
+            name: "Master",
+            characterId: nil
+        )
+        let entries = [
+            (
+                attachmentId: playerAttachmentId,
+                metadata: playerReveal,
+                arrivalEpoch: UInt64(1)
+            ),
+            (
+                attachmentId: masterAttachmentId,
+                metadata: masterCanonical,
+                arrivalEpoch: UInt64(1)
+            )
+        ]
+
+        // When
+        let latest = RPGSharePlayController.latestJournalPresentationAttachmentId(
+            in: Array(entries.reversed())
+        )
+        let ordered = entries.sorted { lhs, rhs in
+            RPGSharePlayController.journalEntryComesBefore(
+                metadata: lhs.metadata,
+                attachmentId: lhs.attachmentId,
+                arrivalEpoch: lhs.arrivalEpoch,
+                metadata: rhs.metadata,
+                attachmentId: rhs.attachmentId,
+                arrivalEpoch: rhs.arrivalEpoch
+            )
+        }
+
+        // Then - publisher-local counters and UUID ordering cannot suppress the
+        // later canonical package before PlayerController validates it.
+        #expect(latest == masterAttachmentId)
+        #expect(ordered.map(\.attachmentId) == [playerAttachmentId, masterAttachmentId])
+    }
+
+    @Test("late join honors a canonical reply despite a player-ahead clock without suppressing a later player")
+    func causalMasterJournalCorrectionMatchesLiveOrdering() throws {
+        // Given
+        typealias Entry = (
+            attachmentId: UUID,
+            metadata: GameNetworkModel,
+            arrivalEpoch: UInt64
+        )
+        let masterId = UUID()
+        let playerId = UUID()
+        let photoId = UUID()
+        let laterPhotoId = UUID()
+        let playerAttachmentId = UUID()
+        let masterAttachmentId = UUID()
+        let laterPlayerAttachmentId = UUID()
+        var playerAhead = Self.message(type: .reveal, module: .photo, data: nil)
+        playerAhead.messageID = UUID()
+        playerAhead.counter = 900
+        playerAhead.timestamp = 3_000
+        playerAhead.masterId = masterId
+        playerAhead.sender = GameSenderModel(
+            id: playerId,
+            role: .player,
+            name: "Player",
+            characterId: nil
+        )
+        playerAhead.audience = .group
+        playerAhead.purpose = .event
+        playerAhead.data = NetworkCodableDataType(
+            id: photoId,
+            type: .photo,
+            version: 4
+        )
+        var masterCorrection = playerAhead
+        masterCorrection.messageID = UUID()
+        masterCorrection.replyToMessageID = playerAhead.messageID
+        masterCorrection.counter = 1
+        masterCorrection.timestamp = 2_900
+        masterCorrection.sender = GameSenderModel(
+            id: masterId,
+            role: .master,
+            name: "Master",
+            characterId: nil
+        )
+        masterCorrection.data = NetworkCodableDataType(
+            id: photoId,
+            type: .photo,
+            version: 5
+        )
+        var genuinelyLaterPlayer = playerAhead
+        genuinelyLaterPlayer.messageID = UUID()
+        genuinelyLaterPlayer.counter = 901
+        genuinelyLaterPlayer.timestamp = 3_100
+        genuinelyLaterPlayer.data = NetworkCodableDataType(
+            id: laterPhotoId,
+            type: .photo,
+            version: 6
+        )
+
+        let playerEntry: Entry = (playerAttachmentId, playerAhead, 1)
+        let masterEntry: Entry = (masterAttachmentId, masterCorrection, 1)
+        let laterPlayerEntry: Entry = (laterPlayerAttachmentId, genuinelyLaterPlayer, 1)
+        let permutations: [[Entry]] = [
+            [playerEntry, masterEntry, laterPlayerEntry],
+            [playerEntry, laterPlayerEntry, masterEntry],
+            [masterEntry, playerEntry, laterPlayerEntry],
+            [masterEntry, laterPlayerEntry, playerEntry],
+            [laterPlayerEntry, playerEntry, masterEntry],
+            [laterPlayerEntry, masterEntry, playerEntry]
+        ]
+
+        // When / Then - the explicit reply supplies the causal edge that wall
+        // clocks cannot. The unrelated later player event still remains last.
+        for permutation in permutations {
+            let correctionOnly = permutation.filter {
+                $0.attachmentId != laterPlayerAttachmentId
+            }
+            #expect(RPGSharePlayController.latestJournalPresentationAttachmentId(
+                in: correctionOnly
+            ) == masterAttachmentId)
+            #expect(RPGSharePlayController.orderedJournalEntries(
+                in: permutation
+            ).map(\.attachmentId) == [
+                playerAttachmentId,
+                masterAttachmentId,
+                laterPlayerAttachmentId
+            ])
+            #expect(RPGSharePlayController.latestJournalPresentationAttachmentId(
+                in: permutation
+            ) == laterPlayerAttachmentId)
+        }
+
+        #expect(RPGSharePlayController.journalEntryComesBefore(
+            metadata: playerAhead,
+            attachmentId: playerAttachmentId,
+            arrivalEpoch: 1,
+            metadata: masterCorrection,
+            attachmentId: masterAttachmentId,
+            arrivalEpoch: 1
+        ))
+        #expect(!RPGSharePlayController.journalEntryComesBefore(
+            metadata: masterCorrection,
+            attachmentId: masterAttachmentId,
+            arrivalEpoch: 1,
+            metadata: playerAhead,
+            attachmentId: playerAttachmentId,
+            arrivalEpoch: 1
+        ))
+
+        // The live path reaches the same successive winners.
+        let live = PlayerControllerModel()
+        #expect(live.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .photo,
+            itemId: photoId,
+            version: 4,
+            counter: playerAhead.counter,
+            timestamp: playerAhead.timestamp,
+            isRepair: false
+        ))
+        #expect(live.shouldProcessPresentation(
+            from: masterId,
+            senderID: masterId,
+            module: .photo,
+            itemId: photoId,
+            version: 5,
+            counter: masterCorrection.counter,
+            timestamp: masterCorrection.timestamp,
+            isRepair: false
+        ))
+        #expect(live.shouldProcessPresentation(
+            from: masterId,
+            senderID: playerId,
+            module: .photo,
+            itemId: laterPhotoId,
+            version: 6,
+            counter: genuinelyLaterPlayer.counter,
+            timestamp: genuinelyLaterPlayer.timestamp,
+            isRepair: false
+        ))
     }
 
     @Test("mixed-publisher Journal ordering is stable for every permutation")
@@ -2611,6 +3109,7 @@ struct SharePlayPackageTransportTests {
         )
         var playerAOld = Self.message(type: .reveal, module: .photo, data: nil)
         playerAOld.counter = 10
+        playerAOld.timestamp = 3_000
         playerAOld.sender = GameSenderModel(
             id: playerAId,
             role: .player,
@@ -2621,6 +3120,7 @@ struct SharePlayPackageTransportTests {
         playerANew.counter = 11
         var playerB = Self.message(type: .reveal, module: .photo, data: nil)
         playerB.counter = 1
+        playerB.timestamp = 3_000
         playerB.sender = GameSenderModel(
             id: playerBId,
             role: .player,
@@ -2666,6 +3166,25 @@ struct SharePlayPackageTransportTests {
             #expect(sorted.map(\.attachmentId) == expectedOrder)
             #expect(latest == playerBAttachmentId)
         }
+
+        // The final attachment-ID tie makes otherwise identical metadata stable
+        // even when the Journal snapshot collection changes iteration order.
+        #expect(RPGSharePlayController.journalEntryComesBefore(
+            metadata: playerANew,
+            attachmentId: playerANewAttachmentId,
+            arrivalEpoch: 1,
+            metadata: playerANew,
+            attachmentId: playerAOldAttachmentId,
+            arrivalEpoch: 1
+        ))
+        #expect(!RPGSharePlayController.journalEntryComesBefore(
+            metadata: playerANew,
+            attachmentId: playerAOldAttachmentId,
+            arrivalEpoch: 1,
+            metadata: playerANew,
+            attachmentId: playerANewAttachmentId,
+            arrivalEpoch: 1
+        ))
     }
 
     @Test("presentation intent rejects stale payloads and stale targeted repairs")

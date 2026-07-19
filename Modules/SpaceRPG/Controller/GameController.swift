@@ -5,6 +5,7 @@ import Foundation
 
 @MainActor @Observable
 final class SpaceGameModel: Sendable {
+    private static let maximumFutureTransformTimestampSkew: TimeInterval = 300
     init() {}
 
     var openSpace: Bool = false
@@ -47,19 +48,35 @@ final class SpaceGameModel: Sendable {
         itemId: UUID,
         version: Int,
         counter: Int,
+        timestamp: TimeInterval = 0,
         transform: SpaceTransformModel
     ) -> Bool {
-        guard counter >= 0 else { return false }
+        guard counter >= 0,
+              timestamp.isFinite,
+              timestamp >= 0,
+              timestamp <= Date.now.timeIntervalSince1970 + Self.maximumFutureTransformTimestampSkew
+        else { return false }
         if let current = transformStates[itemId]?[version] {
-            if counter == 0 {
-                guard current.counter == 0 else { return false }
+            if timestamp > 0 {
+                if current.timestamp > 0 {
+                    // Current envelopes are ordered only by their shared wall
+                    // clock. Counters belong to independent senders and cannot
+                    // safely break an equal-timestamp tie.
+                    guard timestamp > current.timestamp else { return false }
+                }
             } else {
-                guard counter > current.counter else { return false }
+                guard current.timestamp == 0 else { return false }
+                if counter == 0 {
+                    guard current.counter == 0 else { return false }
+                } else {
+                    guard counter > current.counter else { return false }
+                }
             }
         }
         transformStates[itemId, default: [:]][version] = SpaceTransformState(
             version: version,
             counter: counter,
+            timestamp: timestamp,
             transform: transform
         )
         return true
@@ -72,9 +89,36 @@ final class SpaceGameModel: Sendable {
     func transformState(for itemId: UUID, version: Int) -> SpaceTransformState? {
         guard let versions = transformStates[itemId] else { return nil }
         if version == 0 {
-            return versions.values.max { $0.counter < $1.counter }
+            return versions.values.max {
+                if $0.timestamp == $1.timestamp {
+                    return $0.counter < $1.counter
+                }
+                return $0.timestamp < $1.timestamp
+            }
         }
         return versions[version] ?? versions[0]
+    }
+
+    /// Returns a current-format timestamp that is causally after the retained
+    /// transform while remaining inside the same admission bound as incoming
+    /// events. `nil` means the retained clock is already at or beyond the safe
+    /// future boundary and a local event must wait for wall time to catch up.
+    func causalTransformTimestamp(
+        for itemId: UUID,
+        version: Int,
+        now: TimeInterval = Date.now.timeIntervalSince1970
+    ) -> TimeInterval? {
+        guard now.isFinite, now > 0 else { return nil }
+        let upperBound = now + Self.maximumFutureTransformTimestampSkew
+        guard upperBound.isFinite else { return nil }
+
+        guard let current = transformState(for: itemId, version: version),
+              current.timestamp > 0
+        else { return now }
+
+        let timestamp = max(now, current.timestamp.nextUp)
+        guard timestamp <= upperBound else { return nil }
+        return timestamp
     }
 
     func removeTransforms(for itemId: UUID, exceptVersion version: Int) {
@@ -97,7 +141,18 @@ final class SpaceGameModel: Sendable {
 struct SpaceTransformState: Equatable, Sendable {
     let version: Int
     let counter: Int
+    let timestamp: TimeInterval
     let transform: SpaceTransformModel
+}
+
+public struct SpaceTransformReplayModel: Sendable {
+    public let data: NetworkCodableDataType
+    public let timestamp: TimeInterval
+
+    public init(data: NetworkCodableDataType, timestamp: TimeInterval) {
+        self.data = data
+        self.timestamp = timestamp
+    }
 }
 
 public protocol SpaceGameControllable: Sendable {
@@ -120,7 +175,17 @@ public protocol SpaceGameControllable: Sendable {
     @MainActor func isValidSpaceTransform(_ data: NetworkCodableDataType) -> Bool
     @discardableResult
     @MainActor func applySpaceTransform(data: NetworkCodableDataType, counter: Int) -> Bool
+    @MainActor func applySpaceTransform(
+        data: NetworkCodableDataType,
+        counter: Int,
+        timestamp: TimeInterval
+    ) -> Bool
+    @MainActor func causalSpaceTransformTimestamp(itemId: UUID, version: Int) -> TimeInterval?
     @MainActor func latestSpaceTransform(for itemId: UUID, version: Int) -> NetworkCodableDataType?
+    @MainActor func latestSpaceTransformReplay(
+        for itemId: UUID,
+        version: Int
+    ) -> SpaceTransformReplayModel?
     @MainActor func resetSpaceTransforms()
 }
 
@@ -259,6 +324,16 @@ extension GameController: SpaceGameControllable {
     @MainActor
     @discardableResult
     func applySpaceTransform(data: NetworkCodableDataType, counter: Int) -> Bool {
+        applySpaceTransform(data: data, counter: counter, timestamp: 0)
+    }
+
+    @MainActor
+    @discardableResult
+    func applySpaceTransform(
+        data: NetworkCodableDataType,
+        counter: Int,
+        timestamp: TimeInterval
+    ) -> Bool {
         guard data.type == .space,
               let transform = SpaceTransformModel.decodeData(of: data.data)
         else { return false }
@@ -266,20 +341,43 @@ extension GameController: SpaceGameControllable {
             itemId: data.id,
             version: data.effectiveAssetVersion,
             counter: counter,
+            timestamp: timestamp,
             transform: transform
         )
     }
 
     @MainActor
+    func causalSpaceTransformTimestamp(itemId: UUID, version: Int) -> TimeInterval? {
+        spaceGameModel.causalTransformTimestamp(for: itemId, version: version)
+    }
+
+    @MainActor
     func latestSpaceTransform(for itemId: UUID, version: Int) -> NetworkCodableDataType? {
+        latestSpaceTransformReplay(for: itemId, version: version)?.data
+    }
+
+    @MainActor
+    func latestSpaceTransformReplay(
+        for itemId: UUID,
+        version: Int
+    ) -> SpaceTransformReplayModel? {
         guard let state = spaceGameModel.transformState(for: itemId, version: version),
               let data = state.transform.encodeData()
         else { return nil }
-        return NetworkCodableDataType(
-            id: itemId,
-            type: .space,
-            version: state.version,
-            data: data
+
+        // A version-zero state is the legacy fallback for a requested asset
+        // baseline. Replays must carry that requested baseline so the receiver
+        // can apply the retained pose to the asset it requested. A zero request
+        // remains a wildcard and preserves the selected state's real version.
+        let replayVersion = version == 0 ? state.version : version
+        return SpaceTransformReplayModel(
+            data: NetworkCodableDataType(
+                id: itemId,
+                type: .space,
+                version: replayVersion,
+                data: data
+            ),
+            timestamp: state.timestamp
         )
     }
 

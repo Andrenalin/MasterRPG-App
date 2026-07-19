@@ -74,16 +74,17 @@ extension PlayerNetworkController: PlayerNetworkControllable {
     @MainActor
     func stop() async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Stop")
+        let connectionController = networkModel.connectionController
         networkModel.observeRemovalTask?.cancel()
         networkModel.observeRemovalTask = nil
         networkModel.connectionStartTask?.cancel()
         networkModel.connectionStartTask = nil
         networkModel.connectionState = .notReady
-        await networkModel.connectionController?.cancel()
         networkModel.connectionController = nil
         networkModel.playerConnectionId = nil
         networkModel.model = nil
         networkModel.isConnected = false
+        await connectionController?.cancel()
     }
 
     func request(with content: MessageMapper?) async {
@@ -123,36 +124,73 @@ private extension PlayerNetworkController {
 
 extension PlayerNetworkController: ConnectionControllerDelegate {
     func failed(with error: String?, for id: ConnectionController.ID) async {
+        guard await isCurrentConnection(id) else {
+            Logger.playerNetworkController.debug("PlayerNetworkController: Ignore failure from replaced connection \(id.uuidString, privacy: .public)")
+            return
+        }
         if await networkModel.connectionState != .notReady {
             await lostConnection(for: id)
         } else {
-            await stop()
+            await stop(connection: id)
         }
     }
 
     func lostConnection(for id: ConnectionController.ID) async {
         Logger.networking.debug("PlayerNetworkController: Lost connection")
 
-        guard await networkModel.playerConnectionId != nil else {
-            Logger.playerNetworkController.debug("PlayerNetworkController: Connection resetted by user")
+        guard await markLostIfCurrent(id) else {
+            Logger.playerNetworkController.debug("PlayerNetworkController: Ignore stale or duplicate loss \(id.uuidString, privacy: .public)")
             return
         }
-        if await networkModel.connectionState != .lost {
-            Logger.playerNetworkController.debug("PlayerNetworkController: Lost connection to server, start own listener")
-            await networkModel.reset(state: .lost)
-            await startPlayerServer()
-            await delegate.playerLostMaster()
-        }
+        Logger.playerNetworkController.debug("PlayerNetworkController: Lost connection to server, start own listener")
+        await startPlayerServer()
+        await delegate.playerLostMaster()
     }
 
     func readyConnection(for id: ConnectionController.ID) async {
-        await networkModel.reset(isConnected: true)
-        await networkModel.reset(state: .ready)
+        guard await markReadyIfCurrent(id) else {
+            Logger.playerNetworkController.debug("PlayerNetworkController: Ignore ready callback from replaced connection \(id.uuidString, privacy: .public)")
+            return
+        }
         await delegate.playerReady()
     }
 
     func received(data: Data?, for id: ConnectionController.ID) async {
+        guard await isCurrentConnection(id) else {
+            Logger.playerNetworkController.debug("PlayerNetworkController: Ignore data from replaced connection \(id.uuidString, privacy: .public)")
+            return
+        }
         await delegate.playerReceived(data: data)
+    }
+}
+
+private extension PlayerNetworkController {
+    @MainActor
+    func isCurrentConnection(_ id: ConnectionController.ID) -> Bool {
+        networkModel.connectionController?.id == id
+    }
+
+    @MainActor
+    func markLostIfCurrent(_ id: ConnectionController.ID) -> Bool {
+        guard isCurrentConnection(id),
+              networkModel.playerConnectionId != nil,
+              networkModel.connectionState != .lost else { return false }
+        networkModel.reset(state: .lost)
+        return true
+    }
+
+    @MainActor
+    func markReadyIfCurrent(_ id: ConnectionController.ID) -> Bool {
+        guard isCurrentConnection(id), networkModel.connectionState != .lost else { return false }
+        networkModel.reset(isConnected: true)
+        networkModel.reset(state: .ready)
+        return true
+    }
+
+    @MainActor
+    func stop(connection id: ConnectionController.ID) async {
+        guard isCurrentConnection(id) else { return }
+        await stop()
     }
 }
 
@@ -193,7 +231,8 @@ extension PlayerNetworkController {
         guard let model = await networkModel.model else { return }
         Logger.playerNetworkController.debug("PlayerNetworkController: RemovedConnection \(endpoint.debugDescription, privacy: .public)")
         if model.endpoint == endpoint {
-            await lostConnection(for: UUID())
+            guard let id = await networkModel.connectionController?.id else { return }
+            await lostConnection(for: id)
         }
     }
 }
@@ -210,11 +249,12 @@ extension PlayerNetworkController: ListenerManagerDelegate {
     func listenerNewConnection(_ connection: NWConnection) async {
         await networkModel.reset(listener: nil)
         await networkModel.reset(isConnected: false)
-        if await networkModel.connectionState == .lost {
+        let shouldRestart = await networkModel.connectionState == .lost
+        await networkModel.reset(state: .notReady)
+        if shouldRestart {
             Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection")
             await restart(connection: connection)
         }
-        await networkModel.reset(state: .notReady)
     }
 }
 

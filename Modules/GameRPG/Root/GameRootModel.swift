@@ -126,6 +126,9 @@ final class GameRootModel: Sendable {
     /// Master messages carry the authoritative `masterState`; player messages
     /// carry only the sender identity.
     func outgoingMessage(
+        messageID: UUID? = UUID(),
+        replyToMessageID: UUID? = nil,
+        timestamp: TimeInterval = Date.now.timeIntervalSince1970,
         counter: Int,
         proxyCounter: Int = 0,
         type: RPGMessageType,
@@ -161,10 +164,13 @@ final class GameRootModel: Sendable {
             type: type,
             subType: subType,
             purpose: purpose,
-            dataType: data.type,
+            data: data,
             targetId: targetId
         )
         return GameNetworkModel(
+            messageID: messageID,
+            replyToMessageID: replyToMessageID,
+            timestamp: timestamp,
             counter: counter,
             proxyCounter: proxyCounter,
             type: type,
@@ -205,6 +211,8 @@ public final class GameRoot {
     let gameCenterModel: GameCenterModel
     let gameCenterController: GameCenterController
     private var networkActionTasks: [UUID: Task<Void, Never>] = [:]
+    private var networkActionTail: Task<Void, Never>?
+    private var networkActionTailID: UUID?
     private var demoTask: Task<Void, Never>?
 
     public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
@@ -308,15 +316,34 @@ public final class GameRoot {
 
     private func scheduleNetworkAction(_ operation: @escaping @MainActor @Sendable () async -> Void) {
         let id = UUID()
-        networkActionTasks[id] = Task { @MainActor [weak self] in
+        let previous = networkActionTail
+        let task = Task { @MainActor [weak self] in
+            await previous?.value
+            guard !Task.isCancelled else {
+                self?.completeNetworkAction(id: id)
+                return
+            }
             await operation()
-            self?.networkActionTasks.removeValue(forKey: id)
+            self?.completeNetworkAction(id: id)
+        }
+        networkActionTasks[id] = task
+        networkActionTail = task
+        networkActionTailID = id
+    }
+
+    private func completeNetworkAction(id: UUID) {
+        networkActionTasks.removeValue(forKey: id)
+        if networkActionTailID == id {
+            networkActionTail = nil
+            networkActionTailID = nil
         }
     }
 
     private func cancelOwnedTasks() {
         networkActionTasks.values.forEach { $0.cancel() }
         networkActionTasks.removeAll()
+        networkActionTail = nil
+        networkActionTailID = nil
         demoTask?.cancel()
         demoTask = nil
     }
