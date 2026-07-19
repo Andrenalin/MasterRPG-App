@@ -13,8 +13,8 @@ import CoreRPG
 enum GameMetrics {
     static let tableEdge: Float = 0.7
     static let tableThickness: Float = 0.0146
+    static let mapSurfaceClearance: Float = 0.0005
     static let playerAreaDistanceFromCenter: Float = 0.29
-    static let boardEdge: Float = 0.4
     static let smallHeight: Float = 0.001
     static let boardHeight: Float = 0.055
     static let playerAreaSize: SIMD2<Float> = SIMD2(0.4, 0.1)
@@ -84,13 +84,9 @@ class GameSetup {
             setup.add(seat: seat)
         }
 
-        // Create board with battle map image
-        // Replace "battleMap" with your actual image asset name
+        // The board owns only the live battle-map surface.
         board = Board(id: EquipmentIdentifier(self.idGenerator.newId()))
         setup.add(equipment: board)
-
-        let die = Die(id: EquipmentIdentifier(self.idGenerator.newId()))
-        setup.add(equipment: die)
 
         let die20 = Die20(id: EquipmentIdentifier(self.idGenerator.newId()))
         setup.add(equipment: die20)
@@ -206,7 +202,7 @@ struct MapTableProjection {
     /// Rendered map size on the board (5 cm border on all sides).
     static let mapSize: Float = GameMetrics.tableEdge - (0.05 * 2)
     /// Token height above the board surface.
-    static let pinHeight: Float = 0.03
+    static let pinHeight: Float = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
 
     let imageSize: CGSize
     let degrees: Double

@@ -20,7 +20,11 @@ extension EquipmentIdentifier {
 }
 
 struct Table: Tabletop {
-    var shape: TabletopShape = .rectangular(width: GameMetrics.tableEdge, height: GameMetrics.tableEdge, thickness: 0)
+    var shape: TabletopShape = .rectangular(
+        width: GameMetrics.tableEdge,
+        height: GameMetrics.tableEdge,
+        thickness: GameMetrics.tableThickness
+    )
     
     var id: EquipmentIdentifier = .tableID
 }
@@ -30,60 +34,24 @@ struct Board: EntityEquipment {
     let entity: Entity
     var initialState: BaseEquipmentState
     
-    // Store the image plane and border as properties so we can update them
+    // The map is a thin image plane directly on the tabletop.
     private let imagePlane: ModelEntity
-    private let borderPlane: ModelEntity
     private let mapSize: Float
-    private let boxHeight: Float = 0.02
     
     @MainActor
     init(id: ID) {
         self.id = id
         
-        // 5cm border on all sides
-        let borderSize: Float = 0.05
-        self.mapSize = GameMetrics.tableEdge - (borderSize * 2)
-        
-        // Create the board entity
+        self.mapSize = MapTableProjection.mapSize
         let boardEntity = Entity()
-        
-        // Create base board mesh (3D box) with 2cm height
-        let boardMesh = MeshResource.generateBox(
-            width: GameMetrics.boardEdge,
-            height: boxHeight,
-            depth: GameMetrics.boardEdge
-        )
-        
-        var boardMaterial = PhysicallyBasedMaterial()
-        boardMaterial.baseColor = .init(tint: UIColor(red: 0.4, green: 0.3, blue: 0.2, alpha: 1.0))
-        let boardModel = ModelEntity(mesh: boardMesh, materials: [boardMaterial])
-        boardEntity.addChild(boardModel)
-        
-        // Create border plane (full size, behind the image)
-        let border = ModelEntity(
-            mesh: .generatePlane(width: mapSize, depth: mapSize),
-            materials: [SimpleMaterial(color: .black, isMetallic: false)]
-        )
-        border.position.y = boxHeight / 2 + 0.0005
-        border.name = "MapBorderPlane"
-        boardEntity.addChild(border)
-        self.borderPlane = border
-        
-        // Create image plane on top of the border (will be sized to aspect ratio)
+
         let plane = ModelEntity(
             mesh: .generatePlane(width: mapSize, depth: mapSize),
             materials: [SimpleMaterial(color: .white, isMetallic: false)]
         )
-        
-        // Position the image plane on top of the border
-        plane.position.y = boxHeight / 2 + 0.001
+        plane.position.y = GameMetrics.mapSurfaceClearance
         plane.name = "MapImagePlane"
-        
-        // Fallback to a green grid pattern on init
-        var mapMaterial = UnlitMaterial()
-        mapMaterial.color = .init(tint: UIColor(red: 0.3, green: 0.6, blue: 0.3, alpha: 1.0))
-        plane.model?.materials = [mapMaterial]
-        
+        plane.isEnabled = false
         boardEntity.addChild(plane)
         self.imagePlane = plane
         
@@ -98,7 +66,7 @@ struct Board: EntityEquipment {
         )
     }
         
-    // Method to update map from PhotoModel data with aspect ratio and border color
+    // Update the map from PhotoModel data while preserving its aspect ratio.
     @MainActor mutating func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool) {
         guard image.cgImage != nil else {
             Logger.gameTable.error("Failed to create a board image from the current photo")
@@ -129,7 +97,6 @@ struct Board: EntityEquipment {
         
         // Update image plane mesh with correct aspect ratio
         imagePlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
-        borderPlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
         
         // Always orient the photo before applying fog. Map entry coordinates are
         // already expressed in this oriented canvas.
@@ -148,6 +115,7 @@ struct Board: EntityEquipment {
             var mapMaterial = UnlitMaterial()
             mapMaterial.color = .init(texture: .init(texture))
             imagePlane.model?.materials = [mapMaterial]
+            imagePlane.isEnabled = true
         } catch {
             Logger.gameTable.error(
                 "Failed to create the visionOS board texture: \(error.localizedDescription, privacy: .public)"
@@ -155,22 +123,15 @@ struct Board: EntityEquipment {
             var mapMaterial = UnlitMaterial()
             mapMaterial.color = .init(tint: .gray)
             imagePlane.model?.materials = [mapMaterial]
+            imagePlane.isEnabled = true
         }
         
-        // Update border color from DisplayConfigModel
-        if let displayConfig = displayConfig {
-            let uiColor = UIColor(displayConfig.color)
-            borderPlane.model?.materials = [SimpleMaterial(color: uiColor, isMetallic: false)]
-        }
     }
 
     /// Removes a previously rendered map when game selection or photo loading
     /// no longer supplies a board image.
     @MainActor mutating func clearMap() {
-        imagePlane.model?.mesh = .generatePlane(width: mapSize, depth: mapSize)
-        var material = UnlitMaterial()
-        material.color = .init(tint: .gray)
-        imagePlane.model?.materials = [material]
+        imagePlane.isEnabled = false
     }
     
     // Generate a composite texture with fog of war overlays drawn on top of the base image
@@ -498,70 +459,56 @@ struct Die20: EntityEquipment {
     
     // Return the orientation of the die entity to a given value face up.
     func restingOrientation(state: DieState) -> Rotation3D {
-        // D20 model - faces arranged on an icosahedron
-        // Testing shows: 1 is default up, 20 is opposite (bottom)
-        // The remaining faces need to be determined by testing the actual 3D model
-        print("**** Rolled: \(state.value)")
-        switch state.value {
-            case 1: // Default orientation - 1 facing up
-                return .init(angle: .init(degrees: 180), axis: .init(x: 1, y: 0, z: 0))
-        case 2:
-        return .init(angle: .init(degrees: 63.4), axis: .init(x: 0.809, y: 0, z: 0.588))
-
-            case 7:
-                return .init(angle: .init(degrees: 116.6), axis: .init(x: 1, y: 0, z: 0))
-        case 9:
-            return .init(angle: .init(degrees: 116.6), axis: .init(x: -0.809, y: 0, z: -0.588))
-        case 10:
-            return .init(angle: .init(degrees: 63.4), axis: .init(x: 0.809, y: 0, z: -0.588))
-        case 14:
-            return .init(angle: .init(degrees: 63.4), axis: .init(x: -1, y: 0, z: 0))
-
-            case 18:
-                return .init(angle: .init(degrees: 63.4), axis: .init(x: -0.309, y: 0, z: 0.951))
-
-        case 20: // Opposite of 1 - flip 180°
-            //return .init(angle: .init(degrees: 180), axis: .init(x: 1, y: 0, z: 0))
-            return .init()
-
-            
-            // Adjacent to 1 (first ring of 5 faces around 1)
-            // Tilt ~63.4° (icosahedron dihedral complement)
-            case 12: 
-                return .init(angle: .init(degrees: 63.4), axis: .init(x: 1, y: 0, z: 0))
-            case 3:
-                return .init(angle: .init(degrees: 63.4), axis: .init(x: 0.309, y: 0, z: 0.951))
-            case 4:
-                return .init(angle: .init(degrees: 63.4), axis: .init(x: -0.809, y: 0, z: 0.588))
-            case 5:
-                return .init(angle: .init(degrees: 63.4), axis: .init(x: -0.809, y: 0, z: -0.588))
-            case 6:
-                return .init(angle: .init(degrees: 63.4), axis: .init(x: 0.309, y: 0, z: -0.951))
-                
-            // Second ring (offset ring) - tilt ~63.4° on different axes
-            case 8:
-                return .init(angle: .init(degrees: 116.6), axis: .init(x: -0.309, y: 0, z: 0.951))
-            case 11:
-                return .init(angle: .init(degrees: 63.4), axis: .init(x: -0.309, y: 0, z: -0.951))
-                
-            // Third ring - larger tilt ~116.6° (icosahedron dihedral angle)
-            case 13:
-                return .init(angle: .init(degrees: 116.6), axis: .init(x: 0.309, y: 0, z: 0.951))
-            case 15:
-                return .init(angle: .init(degrees: 116.6), axis: .init(x: -0.809, y: 0, z: 0.588))
-            case 16:
-                return .init(angle: .init(degrees: 116.6), axis: .init(x: 0.309, y: 0, z: -0.951))
-                
-            // Ring adjacent to 20 (near bottom)
-            case 17:
-                return .init(angle: .init(degrees: 116.6), axis: .init(x: 0.809, y: 0, z: 0.588))
-            case 19:
-                return .init(angle: .init(degrees: 116.6), axis: .init(x: -1, y: 0, z: 0))
-                
-            default:
-                fatalError("Invalid die value: \(state.value). D20 must have value 1-20")
+        guard let normal = Self.faceNormals[state.value] else {
+            fatalError("Invalid die value: \(state.value). D20 must have value 1...20")
         }
+
+        let up = SIMD3<Float>(0, 1, 0)
+        let cosine = min(max(dot(normal, up), -1), 1)
+        let rotationAxis = cross(normal, up)
+        let axisLength = length(rotationAxis)
+        guard axisLength > 0.000_001 else {
+            return cosine > 0
+                ? .init()
+                : .init(angle: .init(degrees: 180), axis: .init(x: 1, y: 0, z: 0))
+        }
+
+        let axis = rotationAxis / axisLength
+        return .init(
+            angle: .init(radians: acos(Double(cosine))),
+            axis: .init(
+                x: Double(axis.x),
+                y: Double(axis.y),
+                z: Double(axis.z)
+            )
+        )
     }
+
+    /// Outward normals measured from the engraved faces in `D20Blue.usdz`.
+    /// They intentionally describe the asset rather than an idealized D20;
+    /// the source mesh includes a small built-in tilt.
+    private static let faceNormals: [Int: SIMD3<Float>] = [
+        1:  .init(-0.00000010, -0.98224616, -0.18759662),
+        2:  .init( 0.57735944,  0.79464918, -0.18758698),
+        3:  .init(-0.93417156, -0.30353564, -0.18758911),
+        4:  .init( 0.57735360,  0.18759663,  0.79465115),
+        5:  .init( 0.93417138, -0.30353573, -0.18758917),
+        6:  .init(-0.35682914, -0.49112195,  0.79465228),
+        7:  .init( 0.00000001, -0.60706472, -0.79465228),
+        8:  .init(-0.57735920,  0.79464918, -0.18758711),
+        9:  .init(-0.57735366,  0.18759674,  0.79465103),
+        10: .init(-0.35682899,  0.49112207, -0.79465228),
+        11: .init( 0.35682896, -0.49112198,  0.79465222),
+        12: .init( 0.35682914,  0.49112195, -0.79465228),
+        13: .init( 0.57735920, -0.79464912,  0.18758705),
+        14: .init(-0.00000001,  0.60706478,  0.79465228),
+        15: .init( 0.57735366, -0.18759671, -0.79465091),
+        16: .init(-0.93417144,  0.30353579,  0.18758918),
+        17: .init(-0.57735354, -0.18759662, -0.79465109),
+        18: .init( 0.93417156,  0.30353567,  0.18758911),
+        19: .init(-0.57735932, -0.79464906,  0.18758710),
+        20: .init( 0.00000004,  0.98224616,  0.18759669)
+    ]
     
     @MainActor
     init(id: ID) {
@@ -576,7 +523,10 @@ struct Die20: EntityEquipment {
         self.audioPlaybackController = self.entity.prepareAudio(audioResource)
         representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
             //.dodecahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
-        let pose: TableVisualState.Pose2D = .init(position: .init(x: -0.2, z: -0.5), rotation: .zero)
+        let pose: TableVisualState.Pose2D = .init(
+            position: .init(x: -0.28, z: -0.28),
+            rotation: .zero
+        )
         initialState = .init(value: 1, parentID: .tableID, seatControl: .any, pose: pose, entity: self.entity)
     }
 

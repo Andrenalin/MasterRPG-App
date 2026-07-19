@@ -28,8 +28,6 @@ public struct GameTableView: View {
             if let loadedGame = game {
                 RealityView { content, attachments in
                     content.add(loadedGame.renderer.root)
-                    content.add(loadedGame.renderer.portalWorld)
-                    content.add(loadedGame.renderer.portal)
 
                     if accessibilitySubscriptions.isEmpty,
                        let gameScene = loadedGame.renderer.root.scene {
