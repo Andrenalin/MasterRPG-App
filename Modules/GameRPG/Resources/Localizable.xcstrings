@@ -80,7 +80,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ถ่ายโอนแล้ว %@"
+            "value" : "%@ โอนแล้ว"
           }
         }
       }
@@ -237,13 +237,13 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld ครั้ง"
+                  "value" : "%lld การทอย"
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld ครั้ง"
+                  "value" : "%lld การทอย"
                 }
               }
             }
@@ -330,11 +330,24 @@
             "state" : "translated",
             "value" : "1 Jahr"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1 ปี"
+          }
         }
       }
     },
     "3D Map" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แผนที่ 3D"
+          }
+        }
+      }
     },
     "6 Months" : {
       "localizations" : {
@@ -342,6 +355,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "6 Monate"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "6 เดือน"
           }
         }
       }
@@ -353,6 +372,12 @@
             "state" : "translated",
             "value" : "30 Tage"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "30 วัน"
+          }
         }
       }
     },
@@ -362,6 +387,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eine Zusammenfassung der während der Spiele erfassten Spielaktivitäten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สรุปกิจกรรมเกมที่รวบรวมระหว่างการเล่นเกม"
           }
         }
       }
@@ -375,6 +406,12 @@
             "state" : "translated",
             "value" : "Aktivität"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กิจกรรม"
+          }
         }
       }
     },
@@ -386,6 +423,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zum Journal hinzugefügt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มในสมุดบันทึกแล้ว"
           }
         }
       }
@@ -399,6 +442,12 @@
             "state" : "translated",
             "value" : "Wird zum Journal hinzugefügt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังเพิ่มในสมุดบันทึก"
+          }
         }
       }
     },
@@ -411,6 +460,12 @@
             "state" : "translated",
             "value" : "Abenteuer"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การผจญภัย"
+          }
         }
       }
     },
@@ -420,6 +475,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abenteuer fehlt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบการผจญภัย"
           }
         }
       }
@@ -433,6 +494,12 @@
             "state" : "translated",
             "value" : "Abenteuer"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การผจญภัย"
+          }
         }
       }
     },
@@ -445,6 +512,12 @@
             "state" : "translated",
             "value" : "Gesamter Zeitraum"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตลอดเวลา"
+          }
         }
       }
     },
@@ -454,6 +527,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anhang in SharePlay"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์แนบใน SharePlay"
           }
         }
       }
@@ -467,6 +546,12 @@
             "state" : "translated",
             "value" : "Durchschnitt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค่าเฉลี่ย"
+          }
         }
       }
     },
@@ -478,6 +563,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Batterie"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แบตเตอรี่"
           }
         }
       }
@@ -493,6 +584,12 @@
             "state" : "translated",
             "value" : "Abbrechen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิก"
+          }
         }
       }
     },
@@ -502,6 +599,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spiel abbrechen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิกเกม"
           }
         }
       }
@@ -515,11 +618,24 @@
             "state" : "translated",
             "value" : "Kategorie"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หมวดหมู่"
+          }
         }
       }
     },
     "Center Pointer" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "จัดกึ่งกลางตัวชี้"
+          }
+        }
+      }
     },
     "Character" : {
       "localizations" : {
@@ -527,6 +643,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charakter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละคร"
           }
         }
       }
@@ -540,6 +662,12 @@
             "state" : "translated",
             "value" : "Charakteransicht"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มุมมองตัวละคร"
+          }
         }
       }
     },
@@ -549,6 +677,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charaktere"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละคร"
           }
         }
       }
@@ -560,6 +694,12 @@
             "state" : "translated",
             "value" : "Wählen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือก"
+          }
         }
       }
     },
@@ -570,15 +710,73 @@
             "state" : "translated",
             "value" : "Wähle aus, welche Diagramme angezeigt werden, und ordne sie in der gewünschten Reihenfolge an."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกว่าแผนภูมิใดจะแสดงและจัดเรียงตามลำดับที่คุณต้องการ"
+          }
         }
       }
     },
     "Chunked %lld" : {
       "localizations" : {
         "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "In %lld Blöcke aufgeteilt"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "In %lld Blöcke aufgeteilt"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Chunked %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Chunked %lld"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "แบ่งเป็น %lld ส่วน"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Clear Search" : {
+      "localizations" : {
+        "th" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "In %lld Blöcke aufgeteilt"
+            "state" : "machine_translated",
+            "value" : "ล้างการค้นหา"
           }
         }
       }
@@ -592,6 +790,12 @@
             "state" : "translated",
             "value" : "Spielstatistiken erfassen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รวบรวมสถิติเกม"
+          }
         }
       }
     },
@@ -602,6 +806,12 @@
             "state" : "translated",
             "value" : "Abgeschlossene Spiele können auch diese Muster sichtbar machen."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมที่สิ้นสุดแล้วยังสามารถเผยให้เห็นรูปแบบเหล่านี้ได้"
+          }
         }
       }
     },
@@ -611,6 +821,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verbinde zu: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เชื่อมต่อกับ: %@"
           }
         }
       }
@@ -624,6 +840,12 @@
             "state" : "translated",
             "value" : "Verbunden"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เชื่อมต่อแล้ว"
+          }
         }
       }
     },
@@ -634,6 +856,12 @@
             "state" : "translated",
             "value" : "Verbindung"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การเชื่อมต่อ"
+          }
         }
       }
     },
@@ -643,6 +871,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verbindung verloren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การเชื่อมต่อขาดหาย"
           }
         }
       }
@@ -656,6 +890,12 @@
             "state" : "translated",
             "value" : "Inhaltstyp"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ประเภทเนื้อหา"
+          }
         }
       }
     },
@@ -665,6 +905,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kritischer Erfolg"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คริติคอล"
           }
         }
       }
@@ -678,6 +924,12 @@
             "state" : "translated",
             "value" : "Kritische Erfolge"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คริติคอล"
+          }
         }
       }
     },
@@ -688,6 +940,12 @@
             "state" : "translated",
             "value" : "Anpassen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปรับแต่ง"
+          }
         }
       }
     },
@@ -697,6 +955,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Statistiken anpassen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปรับแต่งสถิติ"
           }
         }
       }
@@ -710,6 +974,12 @@
             "state" : "translated",
             "value" : "Übersicht"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แดชบอร์ด"
+          }
         }
       }
     },
@@ -721,6 +991,12 @@
             "state" : "translated",
             "value" : "Daten"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อมูล"
+          }
         }
       }
     },
@@ -730,6 +1006,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Datum"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วันที่"
           }
         }
       }
@@ -741,6 +1023,12 @@
             "state" : "translated",
             "value" : "Zeitraum"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ช่วงวันที่"
+          }
         }
       }
     },
@@ -750,6 +1038,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tag"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วัน"
           }
         }
       }
@@ -763,6 +1057,12 @@
             "state" : "translated",
             "value" : "Alle Spielstatistiken löschen?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบสถิติเกมทั้งหมด?"
+          }
         }
       }
     },
@@ -775,6 +1075,12 @@
             "state" : "translated",
             "value" : "Alle Statistiken löschen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบสถิติทั้งหมด"
+          }
         }
       }
     },
@@ -784,6 +1090,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spielstatistik löschen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบสถิติเกม"
           }
         }
       }
@@ -795,6 +1107,12 @@
             "state" : "translated",
             "value" : "Statistik dieses Spiels löschen?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบสถิติของเกมนี้?"
+          }
         }
       }
     },
@@ -805,6 +1123,12 @@
             "state" : "translated",
             "value" : "Demonstration"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สาธิต"
+          }
         }
       }
     },
@@ -814,6 +1138,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Würfel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลูกเต๋า"
           }
         }
       }
@@ -827,6 +1157,12 @@
             "state" : "translated",
             "value" : "Würfe"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การทอยลูกเต๋า"
+          }
         }
       }
     },
@@ -836,6 +1172,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Richtung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทิศทาง"
           }
         }
       }
@@ -847,6 +1189,12 @@
             "state" : "translated",
             "value" : "Trenne Verbindung nach: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิกการเชื่อมต่อจาก: %@"
+          }
         }
       }
     },
@@ -856,6 +1204,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Möchtest du das Spiel wirkich beenden?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คุณต้องการออกจากเกมจริงๆ ใช่ไหม?"
           }
         }
       }
@@ -868,6 +1222,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fertig"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เสร็จสิ้น"
           }
         }
       }
@@ -889,6 +1249,12 @@
             "state" : "translated",
             "value" : "Editorfenster"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หน้าต่างตัวแก้ไข"
+          }
         }
       }
     },
@@ -901,11 +1267,24 @@
             "state" : "translated",
             "value" : "Emberkeep"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Emberkeep"
+          }
         }
       }
     },
     "Enlarge Game Sidebar" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ขยายแถบด้านข้างเกม"
+          }
+        }
+      }
     },
     "Enlarge Sidebar" : {
       "comment" : "A label displayed in the sidebar that enlarges the sidebar.",
@@ -915,6 +1294,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seitenleiste vergrößern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ขยายแถบด้านข้าง"
           }
         }
       }
@@ -928,6 +1313,12 @@
             "state" : "translated",
             "value" : "Text eingeben, um alle Elemente und Einträge zu durchsuchen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พิมพ์ข้อความเพื่อค้นหาในทุกรายการ"
+          }
         }
       }
     },
@@ -937,6 +1328,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Beispiel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวอย่าง"
           }
         }
       }
@@ -948,6 +1345,12 @@
             "state" : "translated",
             "value" : "Beispielspiele"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมตัวอย่าง"
+          }
         }
       }
     },
@@ -957,6 +1360,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Beispiel-Dashboard erkunden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สำรวจแดชบอร์ดตัวอย่าง"
           }
         }
       }
@@ -970,6 +1379,12 @@
             "state" : "translated",
             "value" : "Statistiken exportieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่งออกสถิติ"
+          }
         }
       }
     },
@@ -982,6 +1397,12 @@
             "state" : "translated",
             "value" : "Hinzufügen zum Journal fehlgeschlagen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มในสมุดบันทึกไม่สำเร็จ"
+          }
         }
       }
     },
@@ -991,6 +1412,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dateiübertragung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การโอนไฟล์"
           }
         }
       }
@@ -1002,6 +1429,12 @@
             "state" : "translated",
             "value" : "Ein Spiel finden"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค้นหาเกม"
+          }
         }
       }
     },
@@ -1012,15 +1445,81 @@
             "state" : "translated",
             "value" : "Beende ein mindestens 15 Minuten dauerndes Spiel, um diese Vorschau durch deine eigene Geschichte zu ersetzen."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เล่นเกมให้ครบอย่างน้อย 15 นาทีเพื่อแทนที่ตัวอย่างนี้ด้วยเรื่องราวของคุณเอง"
+          }
         }
       }
     },
     "Found %lld Players" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Spieler gefunden"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld Spieler gefunden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Spieler gefunden"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld Spieler gefunden"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Found %lld Player"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Found %lld Players"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Found %lld Players"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "พบผู้เล่น %lld คน"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "พบผู้เล่น %lld คน"
+                }
+              }
+            }
           }
         }
       }
@@ -1031,6 +1530,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spiel gefunden: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พบเกม: %@"
           }
         }
       }
@@ -1078,6 +1583,12 @@
             "state" : "translated",
             "value" : "Game Center"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Game Center"
+          }
         }
       }
     },
@@ -1108,6 +1619,12 @@
             "state" : "translated",
             "value" : "Spielleiter"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมมาสเตอร์"
+          }
         }
       }
     },
@@ -1123,7 +1640,15 @@
     },
     "Game Master Only" : {
       "comment" : "A label displayed in a window that only the game master can access.",
-      "isCommentAutoGenerated" : true
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมมาสเตอร์เท่านั้น"
+          }
+        }
+      }
     },
     "Game Sidebar" : {
       "localizations" : {
@@ -1131,6 +1656,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spielseitenleiste"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แถบด้านข้างเกม"
           }
         }
       }
@@ -1209,7 +1740,14 @@
 
     },
     "Hidden, Alive, Not Highlighted" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อน, มีชีวิต, ไม่ถูกเน้น"
+          }
+        }
+      }
     },
     "Hidden, Dead, Highlighted" : {
 
@@ -1242,6 +1780,12 @@
             "state" : "translated",
             "value" : "Spielansicht ausblenden"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อนมุมมองเกม"
+          }
         }
       }
     },
@@ -1259,6 +1803,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seitenleiste ausblenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อนแถบด้านข้าง"
           }
         }
       }
@@ -1286,6 +1836,12 @@
             "state" : "translated",
             "value" : "Stunde"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชั่วโมง"
+          }
         }
       }
     },
@@ -1306,6 +1862,12 @@
             "state" : "translated",
             "value" : "Spielstand importieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำเข้าเกมที่บันทึก"
+          }
         }
       }
     },
@@ -1325,6 +1887,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trete dem Spiel bei"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เข้าร่วมเกม"
           }
         }
       }
@@ -1360,6 +1928,12 @@
             "state" : "translated",
             "value" : "Statistiken werden geladen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังโหลดสถิติ"
+          }
         }
       }
     },
@@ -1381,6 +1955,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lokales Netzwerk"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เครือข่ายท้องถิ่น"
           }
         }
       }
@@ -1416,7 +1996,14 @@
       }
     },
     "Mark Pin Dead" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทำเครื่องหมายหมุดว่าตาย"
+          }
+        }
+      }
     },
     "Master" : {
       "localizations" : {
@@ -1436,6 +2023,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "MasterRPG-Spielstatistiken"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG สถิติเกม"
           }
         }
       }
@@ -1489,6 +2082,12 @@
             "state" : "translated",
             "value" : "Monat"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เดือน"
+          }
         }
       }
     },
@@ -1523,6 +2122,12 @@
             "state" : "translated",
             "value" : "Nach unten"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลื่อนลง"
+          }
         }
       }
     },
@@ -1545,6 +2150,12 @@
             "state" : "translated",
             "value" : "Keine Daten für diese Auswahl"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีข้อมูลสำหรับการเลือกนี้"
+          }
         }
       }
     },
@@ -1554,6 +2165,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keine Spieler"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีผู้เล่น"
           }
         }
       }
@@ -1566,6 +2183,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keine Auswahl"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีการเลือก"
           }
         }
       }
@@ -1597,6 +2220,12 @@
             "state" : "translated",
             "value" : "Beobachte: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สังเกต: %@"
+          }
         }
       }
     },
@@ -1606,6 +2235,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Beobachter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้สังเกตการณ์"
           }
         }
       }
@@ -1634,10 +2269,6 @@
       "comment" : "A message displayed when the game master is not in control of the game.",
       "isCommentAutoGenerated" : true
     },
-    "Open Battle Round" : {
-      "comment" : "A hint for the user to open the battle round.",
-      "isCommentAutoGenerated" : true
-    },
     "Open game view in window" : {
       "localizations" : {
         "de" : {
@@ -1647,10 +2278,6 @@
           }
         }
       }
-    },
-    "Opens the battle window" : {
-      "comment" : "A hint for a button that opens a battle round.",
-      "isCommentAutoGenerated" : true
     },
     "Other" : {
       "localizations" : {
@@ -1692,6 +2319,12 @@
             "state" : "translated",
             "value" : "Spiel Pen&Paper RPG"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เล่น Pen&Paper RPG"
+          }
         }
       }
     },
@@ -1731,6 +2364,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spieler fehlt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบผู้เล่น"
           }
         }
       }
@@ -1802,21 +2441,94 @@
             "state" : "translated",
             "value" : "Letzte Spiele"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมล่าสุด"
+          }
         }
       }
     },
     "Recorded games: %lld" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aufgezeichnete Spiele: %lld"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Aufgezeichnete Spiele: %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aufgezeichnete Spiele: %lld"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Aufgezeichnete Spiele: %lld"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Recorded game: %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Recorded games: %lld"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Recorded games: %lld"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "เกมที่บันทึก: %lld"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "เกมที่บันทึก: %lld"
+                }
+              }
+            }
           }
         }
       }
     },
     "Reduce Game Sidebar" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ย่อแถบด้านข้างเกม"
+          }
+        }
+      }
     },
     "Reduce Sidebar" : {
       "localizations" : {
@@ -1824,6 +2536,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seitenleiste verkleinern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ย่อแถบด้านข้าง"
           }
         }
       }
@@ -1836,6 +2554,12 @@
             "state" : "translated",
             "value" : "Neu anordnen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เรียงลำดับใหม่"
+          }
         }
       }
     },
@@ -1846,14 +2570,34 @@
             "state" : "translated",
             "value" : "Zurücksetzen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รีเซ็ต"
+          }
         }
       }
     },
     "Reset Pin Zoom" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รีเซ็ตการซูมหมุด"
+          }
+        }
+      }
     },
     "Resize Pin" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปรับขนาดหมุด"
+          }
+        }
+      }
     },
     "Result" : {
       "comment" : "Label for the result of a dice roll.",
@@ -1868,7 +2612,14 @@
       }
     },
     "Revive Pin" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฟื้นคืนหมุด"
+          }
+        }
+      }
     },
     "Role" : {
       "comment" : "A label for the role of a game session.",
@@ -1912,6 +2663,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Würfe"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การทอย"
           }
         }
       }
@@ -2009,6 +2766,12 @@
             "state" : "translated",
             "value" : "Wähle Karte, Bild, Tabelle, Wetter oder 3D Objekt aus"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกแผนที่, ภาพถ่าย, ตาราง, สภาพอากาศ หรือวัตถุ 3D"
+          }
         }
       }
     },
@@ -2039,6 +2802,12 @@
             "state" : "translated",
             "value" : "Ausgewählter Spielleiter"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมมาสเตอร์ที่เลือก"
+          }
         }
       }
     },
@@ -2048,6 +2817,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ausgewählter Spieler"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้เล่นที่เลือก"
           }
         }
       }
@@ -2089,6 +2864,12 @@
             "state" : "translated",
             "value" : "Teile Spielerleiter Würfel mit den Spielern"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แชร์ลูกเต๋าของเกมมาสเตอร์กับผู้เล่นคนอื่น"
+          }
         }
       }
     },
@@ -2109,6 +2890,12 @@
             "state" : "translated",
             "value" : "Geteilte Inhalte"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เนื้อหาที่แชร์"
+          }
         }
       }
     },
@@ -2120,6 +2907,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geteilte Inhalte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการที่แชร์"
           }
         }
       }
@@ -2138,7 +2931,15 @@
     },
     "Show 2D Map" : {
       "comment" : "A button to show the 2D map.",
-      "isCommentAutoGenerated" : true
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงแผนที่ 2D"
+          }
+        }
+      }
     },
     "Show 3D Table" : {
 
@@ -2156,7 +2957,14 @@
       }
     },
     "Show All Rooms" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงห้องทั้งหมด"
+          }
+        }
+      }
     },
     "Show Dice" : {
       "comment" : "A label for the button.",
@@ -2166,6 +2974,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Würfel anzeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงลูกเต๋า"
           }
         }
       }
@@ -2196,7 +3010,14 @@
       }
     },
     "Show Pin" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงหมุด"
+          }
+        }
+      }
     },
     "Show Pointer" : {
 
@@ -2221,6 +3042,12 @@
             "state" : "translated",
             "value" : "Tischlautstärke anzeigen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงระดับเสียงของโต๊ะ"
+          }
         }
       }
     },
@@ -2228,6 +3055,7 @@
 
     },
     "Side Menu" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2267,6 +3095,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Melde dich an, um Erfolge zu erhalten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลงชื่อเข้าใช้เพื่อรับรางวัลความสำเร็จ"
           }
         }
       }
@@ -2310,6 +3144,12 @@
             "state" : "translated",
             "value" : "Statistiken nicht verfügbar"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สถิติไม่พร้อมใช้งาน"
+          }
         }
       }
     },
@@ -2334,6 +3174,12 @@
             "state" : "translated",
             "value" : "Diese Aktion kann nicht rückgängig gemacht werden."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การกระทำนี้ไม่สามารถยกเลิกได้"
+          }
         }
       }
     },
@@ -2345,6 +3191,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dadurch werden alle lokal gespeicherten und über iCloud synchronisierten Spielstatistiken aus dieser Datenbank entfernt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การดำเนินการนี้จะลบสถิติเกมทั้งหมดที่เก็บไว้ในเครื่องและที่ซิงค์กับ iCloud ออกจากฐานข้อมูลนี้"
           }
         }
       }
@@ -2360,7 +3212,14 @@
       }
     },
     "Toggle Pin Zoom" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สลับการซูมหมุด"
+          }
+        }
+      }
     },
     "Total" : {
       "localizations" : {
@@ -2368,6 +3227,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gesamt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รวมทั้งหมด"
           }
         }
       }
@@ -2423,6 +3288,12 @@
             "state" : "translated",
             "value" : "Unbekanntes Abenteuer"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การผจญภัยที่ไม่ทราบชื่อ"
+          }
         }
       }
     },
@@ -2437,10 +3308,24 @@
       }
     },
     "Unnamed Room" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ห้องที่ไม่มีชื่อ"
+          }
+        }
+      }
     },
     "Visible, Alive, Highlighted" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มองเห็น, มีชีวิต, ถูกเน้น"
+          }
+        }
+      }
     },
     "Visible, Alive, Not Highlighted" : {
 
@@ -2449,7 +3334,14 @@
 
     },
     "Visible, Dead, Not Highlighted" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มองเห็น, ตาย, ไม่ถูกเน้น"
+          }
+        }
+      }
     },
     "Waiting for Gamemaster" : {
       "localizations" : {
@@ -2457,6 +3349,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Warte auf den Spielleiter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังรอเกมมาสเตอร์"
           }
         }
       }
@@ -2499,6 +3397,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fenster geschlossen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หน้าต่างปิดอยู่"
           }
         }
       }
