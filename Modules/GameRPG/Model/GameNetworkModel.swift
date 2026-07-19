@@ -29,6 +29,28 @@ struct GameMasterStateModel: Equatable, Codable, Sendable {
     var features: GameFeatureModel = GameFeatureModel()
 }
 
+/// The logical recipient set is independent from the physical transport.
+/// SharePlay may still deliver a master-only message to the whole session, but
+/// peers can reject it before running any module handler and a LAN bridge must
+/// never fan it out.
+enum GameMessageAudience: Int, Codable, Hashable, Sendable {
+    /// Used only when decoding an older envelope that did not carry an audience.
+    case automatic = 0
+    case master = 1
+    case group = 2
+    case target = 3
+}
+
+/// Separates a user action from a request for missing bytes. Historically both
+/// used a data-less reveal/store, which made a proxy host swallow presentations
+/// as if they were local cache repairs.
+enum GameMessagePurpose: Int, Codable, Hashable, Sendable {
+    /// Used only for envelopes produced before `purpose` was introduced.
+    case legacy = 0
+    case event = 1
+    case assetRequest = 2
+}
+
 struct GameNetworkModel: Codable, Sendable {
     /// Wire format generations:
     /// - 1: shipped 2.6 app — players/controls/features travel inside
@@ -52,6 +74,8 @@ struct GameNetworkModel: Codable, Sendable {
     /// When set, only the addressed participant processes the message —
     /// responses to a data request no longer flip everyone's screen.
     var targetId: UUID?
+    var audience: GameMessageAudience
+    var purpose: GameMessagePurpose
     var data: NetworkCodableDataType
 
     init(
@@ -64,6 +88,8 @@ struct GameNetworkModel: Codable, Sendable {
         sender: GameSenderModel,
         masterState: GameMasterStateModel? = nil,
         targetId: UUID? = nil,
+        audience: GameMessageAudience = .automatic,
+        purpose: GameMessagePurpose = .event,
         data: NetworkCodableDataType
     ) {
         self.version = version
@@ -75,6 +101,8 @@ struct GameNetworkModel: Codable, Sendable {
         self.sender = sender
         self.masterState = masterState
         self.targetId = targetId
+        self.audience = audience
+        self.purpose = purpose
         self.data = data
     }
 
@@ -88,6 +116,8 @@ struct GameNetworkModel: Codable, Sendable {
         case sender
         case masterState
         case targetId
+        case audience
+        case purpose
         case data
         // legacy layouts and compatibility superset
         case gameConfig
@@ -103,6 +133,8 @@ struct GameNetworkModel: Codable, Sendable {
         type = try container.decode(RPGMessageType.self, forKey: .type)
         subType = try container.decode(RPGMessageActionType.self, forKey: .subType)
         targetId = try container.decodeIfPresent(UUID.self, forKey: .targetId)
+        audience = try container.decodeIfPresent(GameMessageAudience.self, forKey: .audience) ?? .automatic
+        purpose = try container.decodeIfPresent(GameMessagePurpose.self, forKey: .purpose) ?? .legacy
         data = try container.decode(NetworkCodableDataType.self, forKey: .data)
 
         if let sender = try container.decodeIfPresent(GameSenderModel.self, forKey: .sender) {
@@ -156,6 +188,8 @@ struct GameNetworkModel: Codable, Sendable {
         try container.encode(sender, forKey: .sender)
         try container.encodeIfPresent(masterState, forKey: .masterState)
         try container.encodeIfPresent(targetId, forKey: .targetId)
+        try container.encode(audience, forKey: .audience)
+        try container.encode(purpose, forKey: .purpose)
         let configV1 = v1Model.gameConfig
         try container.encode(configV1, forKey: .gameConfig)
         try container.encode(GameRosterSuperset(players: configV1.players, controls: configV1.controls, features: configV1.features), forKey: .gameRoster)
@@ -199,6 +233,87 @@ struct GameNetworkModel: Codable, Sendable {
 }
 
 extension GameNetworkModel {
+    /// The only file-backed presentation a player may publish directly to its
+    /// peers. An explicit `.group` audience is transport metadata, not authority:
+    /// repair requests must remain master-only even when a malformed or hostile
+    /// sender stamps them as group-visible.
+    var isPlayerFilePresentationEvent: Bool {
+        guard sender.role == .player,
+              purpose == .event,
+              type == .reveal,
+              subType == .show,
+              targetId == nil
+        else { return false }
+
+        return data.type == .photo || data.type == .pdf || data.type == .space
+    }
+
+    /// Identifies every player-originated reveal in the peer-file protocol,
+    /// including malformed shapes. Callers use this to fail closed instead of
+    /// letting an explicit audience override the protocol tuple.
+    var isPlayerFileReveal: Bool {
+        guard sender.role == .player, type == .reveal else { return false }
+        return data.type == .photo || data.type == .pdf || data.type == .space
+    }
+
+    /// Resolves legacy/automatic envelopes into the same routing policy used by
+    /// newly-created messages.
+    var effectiveAudience: GameMessageAudience {
+        if targetId != nil { return .target }
+        let inferred = Self.inferredAudience(
+            sender: sender,
+            type: type,
+            subType: subType,
+            purpose: purpose,
+            dataType: data.type
+        )
+        // A player may narrow an event to the master, but it cannot widen a
+        // protocol-defined master-only message by stamping `.group`. This keeps
+        // repair requests, acknowledgements, availability reports, screens, and
+        // other canonicalization inputs off peer and bridge paths before module
+        // handlers inspect them.
+        if !sender.isMaster, inferred == .master { return .master }
+        if audience != .automatic { return audience }
+        return inferred
+    }
+
+    nonisolated static func inferredAudience(
+        sender: GameSenderModel,
+        type: RPGMessageType,
+        subType: RPGMessageActionType,
+        purpose: GameMessagePurpose,
+        dataType: NetworkModules,
+        targetId: UUID? = nil
+    ) -> GameMessageAudience {
+        if targetId != nil { return .target }
+        if sender.isMaster { return .group }
+        if purpose == .assetRequest || subType == .ok || subType == .failed {
+            return .master
+        }
+
+        switch subType {
+        case .audioList, .photoList, .pdfList, .spaceList, .screen,
+             .mapPin, .mapState, .battleRound, .spaceTransform, .playAudio:
+            return .master
+        default:
+            break
+        }
+
+        if dataType == .value || dataType == .audio || dataType == .map ||
+            dataType == .table || dataType == .weather || dataType == .game {
+            return .master
+        }
+
+        if dataType == .dice, type == .update {
+            return .group
+        }
+        if type == .reveal, subType == .show,
+           dataType == .photo || dataType == .pdf || dataType == .space {
+            return .group
+        }
+        return .master
+    }
+
     var isAcknowledgement: Bool {
         subType == .ok || subType == .failed
     }
@@ -337,6 +452,8 @@ extension GameNetworkModelV1 {
             masterId: identity.masterId,
             sender: identity.sender,
             masterState: identity.masterState,
+            audience: .automatic,
+            purpose: .legacy,
             data: data
         )
     }
@@ -414,14 +531,37 @@ private struct LegacyGameControlModel: Decodable {
 
 enum GameMessageOrigin: Hashable, Sendable {
     case direct(ConnectionController.ID?)
-    case proxy
+    case proxy(ConnectionController.ID?)
     case sharePlay(UUID)
     case file
     case local
 
     var connectionId: ConnectionController.ID? {
-        guard case let .direct(connectionId) = self else { return nil }
-        return connectionId
+        switch self {
+        case let .direct(connectionId), let .proxy(connectionId):
+            connectionId
+        case .sharePlay, .file, .local:
+            nil
+        }
+    }
+
+    var sharePlayParticipantId: UUID? {
+        guard case let .sharePlay(participantId) = self else { return nil }
+        return participantId
+    }
+
+    /// Identity used only to associate a transport peer with its game player so
+    /// disconnect cleanup works for both Bonjour and SharePlay. It must not be
+    /// reused as a physical response route.
+    var participantConnectionId: UUID? {
+        switch self {
+        case let .direct(connectionId), let .proxy(connectionId):
+            connectionId
+        case let .sharePlay(participantId):
+            participantId
+        case .file, .local:
+            nil
+        }
     }
 
     var isProxy: Bool {
@@ -448,6 +588,7 @@ struct GameMessageKey: Hashable, Sendable {
     let dataId: UUID
     let dataType: NetworkModules
     let dataVersion: Int
+    let purpose: GameMessagePurpose
     /// A metadata-only delivery (failed journal transfer) and the later full
     /// payload share every other field — payload presence keeps the real bytes
     /// from being dropped as a duplicate.
@@ -462,6 +603,7 @@ struct GameMessageKey: Hashable, Sendable {
         dataId = model.data.id
         dataType = model.data.type
         dataVersion = model.data.version
+        purpose = model.purpose
         hasData = model.data.data != nil
     }
 }
@@ -586,6 +728,11 @@ extension GameNetworkModel: MessageMapper {
 
     func encodeData() -> Data? {
         let encoder = JSONEncoder()
+        // NetworkCodableDataType stores file bytes as Base64. Escaping every
+        // slash can nearly double valid Base64 output and unnecessarily halves
+        // the Messenger fallback limit. All supported decoders accept literal
+        // JSON slashes, so keep the canonical payload compact.
+        encoder.outputFormatting = .withoutEscapingSlashes
         return try? encoder.encode(self)
     }
 }

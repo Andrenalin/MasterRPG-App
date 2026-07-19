@@ -25,7 +25,11 @@ extension MultiConnectionAudioTests {
         await env.player1.ready()
 
         // Then
-        let report = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        let report = try #require(
+            env.playerNetworkSpy.requestHistory
+                .compactMap { $0 as? GameNetworkModel }
+                .first { $0.subType == .audioList }
+        )
         let list = try #require(AudioListRequest.decodeData(of: report.data.data))
         #expect(report.subType == .audioList)
         #expect(Set(list.list) == databaseIds)

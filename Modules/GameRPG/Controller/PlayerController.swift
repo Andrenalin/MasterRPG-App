@@ -37,6 +37,13 @@ private enum PlayerSpaceRevealValidation: Sendable {
     case mismatch
 }
 
+enum SharePlayMasterParticipantAcceptance: Equatable, Sendable {
+    case newlyBound
+    case rebound
+    case alreadyBound
+    case rejected
+}
+
 @MainActor @Observable
 final class PlayerControllerModel: Sendable {
     private struct DeferredPhotoRevealKey: Hashable, Sendable {
@@ -96,6 +103,12 @@ final class PlayerControllerModel: Sendable {
     private var deferredSpaceReveals: [DeferredSpaceRevealKey: GameNetworkModel] = [:]
     private var deferredSpaceRevealOrder: [DeferredSpaceRevealKey] = []
     private var presentationIntents: [UUID: PresentationIntent] = [:]
+    /// Physical GroupSession participant that first established the current
+    /// logical master. Logical UUIDs travel inside an untrusted envelope, so a
+    /// different SharePlay peer must not impersonate that master after learning
+    /// its UUID from a broadcast.
+    private var sharePlayMasterParticipantId: UUID?
+    private var resynchronizeAfterSharePlayMasterRebind = false
     var lostMaster: Bool = true
     var hasSendPlayer = false
     var asGameMaster = false
@@ -149,6 +162,40 @@ final class PlayerControllerModel: Sendable {
 
     func resetMasterStateSequence() {
         lastMasterStateCounters.removeAll()
+    }
+
+    func acceptSharePlayMasterParticipant(
+        id: UUID,
+        isCompleteMasterBroadcast: Bool
+    ) -> SharePlayMasterParticipantAcceptance {
+        guard let sharePlayMasterParticipantId else {
+            // A physical source may establish authority only with the complete
+            // state that production master broadcasts attach. In particular,
+            // after the pinned participant leaves, a peer that merely copied
+            // the public logical master UUID cannot win the rebind race with a
+            // state-less command.
+            guard isCompleteMasterBroadcast else { return .rejected }
+            self.sharePlayMasterParticipantId = id
+            if resynchronizeAfterSharePlayMasterRebind {
+                resynchronizeAfterSharePlayMasterRebind = false
+                return .rebound
+            }
+            return .newlyBound
+        }
+        return sharePlayMasterParticipantId == id ? .alreadyBound : .rejected
+    }
+
+    @discardableResult
+    func removeSharePlayMasterParticipant(id: UUID) -> Bool {
+        guard sharePlayMasterParticipantId == id else { return false }
+        sharePlayMasterParticipantId = nil
+        resynchronizeAfterSharePlayMasterRebind = true
+        return true
+    }
+
+    func resetSharePlayMasterParticipant() {
+        sharePlayMasterParticipantId = nil
+        resynchronizeAfterSharePlayMasterRebind = false
     }
 
     func canApplyAudioList(from masterId: UUID, counter: Int) -> Bool {
@@ -713,6 +760,11 @@ extension PlayerController {
     @MainActor
     func start(to model: BrowserGameModel?) async -> Bool {
         Logger.networking.debug("PlayerController: Start")
+        // Observers are a read-only local-network role. Do not let a nil Bonjour
+        // target silently turn an observer into a SharePlay participant.
+        if root.gameModel.gameType == .observer, model == nil {
+            return false
+        }
         if root.gameModel.gameType == .player {
             root.networkProxyStore.startProxyServer()
         } else if root.gameModel.gameType == .proxy {
@@ -747,6 +799,7 @@ extension PlayerController {
         gameModel.resetSpaceListSequence()
         gameModel.resetPresentationSequence()
         gameModel.resetMapContentSequence()
+        gameModel.resetSharePlayMasterParticipant()
     }
     
     @MainActor
@@ -767,11 +820,13 @@ extension PlayerController {
 
 extension PlayerController {
     func send(updated: NetworkCodableDataType) async {
+        guard await root.gameModel.gameType != .observer else { return }
         guard updated.type != .value else { return }
         await send(type: .store, subType: .store, updated: updated)
     }
     
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType) async {
+        guard await root.gameModel.gameType != .observer else { return }
         // Players cannot publish Weather and Weather has no live updates yet.
         guard message.type != .table, message.type != .value, message.type != .weather else { return }
         if message.type == .photo, actionType == .generic {
@@ -955,7 +1010,8 @@ extension PlayerController {
         subType: RPGMessageActionType = .show,
         updated: NetworkCodableDataType,
         useJournal: Bool = false,
-        relayToProxyClients: Bool = true
+        relayToProxyClients: Bool = true,
+        purpose: GameMessagePurpose = .event
     ) async {
         // Tables have no live-update protocol. Only reveal/store messages may
         // carry their versioned canonical package.
@@ -966,10 +1022,17 @@ extension PlayerController {
         }
         Logger.networking.debug("PlayerController: Send \(outgoingCounter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
         let networtData = await MainActor.run {
-            root.gameModel.outgoingMessage(counter: outgoingCounter, type: type, subType: subType, asMaster: false, data: updated)
+            root.gameModel.outgoingMessage(
+                counter: outgoingCounter,
+                type: type,
+                subType: subType,
+                asMaster: false,
+                purpose: purpose,
+                data: updated
+            )
         }
 
-        let origin: GameMessageOrigin = await root.gameModel.gameType == .proxy ? .proxy : .direct(nil)
+        let origin: GameMessageOrigin = await root.gameModel.gameType == .proxy ? .proxy(nil) : .direct(nil)
         await root.statisticsModel.record(networtData, direction: .outgoing, origin: origin)
 
         let useOnTypeJournal = useJournal || Self.usesFileJournal(for: networtData)
@@ -978,6 +1041,84 @@ extension PlayerController {
             useJournal: useOnTypeJournal,
             relayToProxyClients: relayToProxyClients
         )
+    }
+
+    /// Turns one private mirror's presentation into one canonical host-player
+    /// event. The same remapped envelope is used for the upstream send, sibling
+    /// mirrors, and the co-located host player so transport retries cannot mint
+    /// independent counters or identities for a single user gesture.
+    func relayProxyPresentation(
+        _ source: GameNetworkModel,
+        excludingProxyConnection connectionId: ConnectionController.ID?
+    ) async {
+        guard source.purpose == .event,
+              source.type == .reveal,
+              source.subType == .show,
+              (source.data.type == .photo || source.data.type == .pdf || source.data.type == .space)
+        else { return }
+
+        let outgoingCounter = await MainActor.run {
+            gameModel.nextOutgoingMessageCounter()
+        }
+        let remapped = await MainActor.run {
+            root.gameModel.outgoingMessage(
+                counter: outgoingCounter,
+                type: source.type,
+                subType: source.subType,
+                asMaster: false,
+                purpose: source.purpose,
+                data: source.data
+            )
+        }
+
+        Logger.networking.debug("PlayerController: Relay proxy presentation \(outgoingCounter, privacy: .public) for \(source.data.type.token, privacy: .public) -> \(source.data.id, privacy: .public)")
+        await root.statisticsModel.record(remapped, direction: .outgoing, origin: .proxy(connectionId))
+
+        // Upstream exactly once. In particular, local application below must
+        // never manufacture an acknowledgement or repair request of its own.
+        await root.networkStore.sendMaster(
+            data: remapped,
+            fileJournal: Self.usesFileJournal(for: remapped)
+        )
+
+        // A private mirror cannot establish a new asset generation. Apply the
+        // optimistic local presentation only when it matches the authoritative
+        // master baseline; otherwise the master's canonical response will drive
+        // the host and mirrors in the regular path.
+        guard await canApplyRemappedProxyPresentation(remapped) else { return }
+        await receivedProcess(remapped, origin: .local)
+        if let connectionId {
+            await root.networkProxyStore.sendPlayer(data: remapped, except: connectionId)
+        } else {
+            await root.networkProxyStore.sendPlayer(data: remapped)
+        }
+    }
+
+    private func canApplyRemappedProxyPresentation(_ model: GameNetworkModel) async -> Bool {
+        let masterId = await root.gameModel.gameConfig.master.id
+        let version = model.data.effectiveAssetVersion
+
+        switch model.data.type {
+        case .photo:
+            guard await root.gameModel.gameControl.features.photoSharing else { return false }
+            return await root.photoRoot.photoGameControllable.masterVersion(
+                for: model.data.id,
+                masterId: masterId
+            ) == version
+        case .pdf:
+            return await root.pdfRoot.pdfGameControllable.masterVersion(
+                for: model.data.id,
+                masterId: masterId
+            ) == version
+        case .space:
+            guard await root.gameModel.gameControl.features.spaceSharing else { return false }
+            return await root.spaceRoot.spaceGameControllable.masterVersion(
+                for: model.data.id,
+                masterId: masterId
+            ) == version
+        default:
+            return false
+        }
     }
 
     static func usesFileJournal(for model: GameNetworkModel) -> Bool {
@@ -1024,6 +1165,17 @@ extension PlayerController {
 
 extension PlayerController: PlayerNetworkStoreDelegate {
     func lostConnection() async {
+        await resetForLostConnection(preservingSharePlayRebind: false)
+    }
+
+    func sharePlayParticipantLeft(id: UUID) async {
+        guard await gameModel.removeSharePlayMasterParticipant(id: id) else { return }
+        await resetForLostConnection(preservingSharePlayRebind: true)
+    }
+
+    private func resetForLostConnection(
+        preservingSharePlayRebind: Bool
+    ) async {
         Logger.networking.debug("PlayerController: Lost Connection - Reset State")
         await MainActor.run {
             gameModel.sendCharacterTask?.cancel()
@@ -1041,6 +1193,9 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             gameModel.resetSpaceListSequence()
             gameModel.resetPresentationSequence()
             gameModel.resetMapContentSequence()
+            if !preservingSharePlayRebind {
+                gameModel.resetSharePlayMasterParticipant()
+            }
         }
         await root.spaceRoot.spaceGameControllable.resetSpaceTransforms()
         await gameModel.reset(lostMaster: true)
@@ -1078,7 +1233,8 @@ extension PlayerController: PlayerNetworkStoreDelegate {
 
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {
         guard model.sender.isMaster,
-              await !root.gameModel.gameConfig.isMaster
+              await !root.gameModel.gameConfig.isMaster,
+              await acceptsSessionMessage(model, origin: .file)
         else { return }
 
         if model.type == .reveal {
@@ -1102,11 +1258,15 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     func receivedProcess(_ model: GameNetworkModel, fromProxy: Bool = false) async {
         Logger.networking.debug("PlayerController: Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
 
-        let origin: GameMessageOrigin = fromProxy ? .proxy : .direct(nil)
+        let origin: GameMessageOrigin = fromProxy ? .proxy(nil) : .direct(nil)
         await receivedProcess(model, origin: origin)
     }
 
     private func receivedProcess(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
+        guard await acceptsSessionMessage(model, origin: origin) else {
+            Logger.networking.debug("PlayerController: Message rejected because its sender does not belong to this game session")
+            return
+        }
         guard await messagePipeline.enqueue(GameMessageEvent(model: model, origin: origin)) else {
             Logger.networking.debug("PlayerController: Duplicate ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
             return
@@ -1114,17 +1274,75 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         await processMessages()
     }
 
+    /// Establishes authority from the first complete master broadcast and then
+    /// pins every remote envelope to that session. A locally remapped proxy
+    /// presentation is already authenticated by the proxy host controller.
+    private func acceptsSessionMessage(
+        _ model: GameNetworkModel,
+        origin: GameMessageOrigin
+    ) async -> Bool {
+        let config = await root.gameModel.gameConfig
+        let acceptsLogicalAuthority: Bool
+
+        if origin == .local {
+            acceptsLogicalAuthority = model.masterId == config.master.id
+        } else if config.master.type == .master {
+            guard model.masterId == config.master.id else { return false }
+            if model.sender.isMaster {
+                acceptsLogicalAuthority = model.sender.id == config.master.id
+            } else {
+                acceptsLogicalAuthority = model.sender.id != config.master.id &&
+                    model.masterState == nil
+            }
+        } else {
+            // Before discovery, only a self-consistent full master broadcast may
+            // establish the authoritative master UUID. Player-to-player traffic
+            // cannot race that first message and nominate a different session.
+            acceptsLogicalAuthority = model.sender.isMaster &&
+                model.sender.id == model.masterId &&
+                model.masterState != nil
+        }
+
+        guard acceptsLogicalAuthority else { return false }
+        guard model.sender.isMaster,
+              case let .sharePlay(participantId) = origin
+        else { return true }
+
+        // Messenger exposes the physical source participant. Pin that source
+        // as well as the logical master UUID so another peer cannot copy the
+        // public master identity into a forged envelope. Journal callbacks do
+        // not expose a publisher and therefore remain logically authenticated.
+        switch await gameModel.acceptSharePlayMasterParticipant(
+            id: participantId,
+            isCompleteMasterBroadcast: model.masterState != nil
+        ) {
+        case .newlyBound, .alreadyBound:
+            return true
+        case .rebound:
+            // The GroupSession can survive while the master's participant ID
+            // changes. Re-announce availability and Character exactly as on a
+            // fresh session so the rejoined master rebuilds its reports.
+            await ready()
+            return true
+        case .rejected:
+            return false
+        }
+    }
+
+    private func isRemappedProxyPresentation(_ event: GameMessageEvent) -> Bool {
+        let model = event.model
+        guard event.origin == .local || event.fromProxy else { return false }
+        return model.isPlayerFilePresentationEvent
+    }
+
     private func prepareForProcessing(_ event: GameMessageEvent) async -> Bool {
         let model = event.model
 
-        // Targeted messages are only processed by the addressee — including the
-        // master's own local player. A message addressed to someone else is
-        // still forwarded to local proxy clients: the addressee may sit behind
-        // this player's proxy server.
+        // Targeted messages are only processed by the addressee. Proxy clients
+        // are deliberately invisible upstream and every proxy request is remapped
+        // to its host ID, so a target belonging to another host can never live
+        // behind this device.
         if let targetId = model.targetId, await targetId != root.gameModel.gameConfig.id {
-            if !event.fromProxy, !model.isAcknowledgement, model.data.type != .value {
-                await root.networkProxyStore.sendPlayer(data: model)
-            }
             Logger.networking.debug("PlayerController: Message ignored, targeted at \(targetId, privacy: .public)")
             return false
         }
@@ -1151,18 +1369,25 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 Logger.networking.debug("PlayerController: Message will be ignored because of controls \(controls, privacy: .public)")
                 return false
             }
-            let acceptsPlayerPhotoReveal = model.data.type == .photo &&
-                model.type == .reveal &&
-                model.subType == .show &&
+            // SharePlay physically broadcasts player-to-master repair requests.
+            // Reject them before any module handler; only genuine player group
+            // events may use the peer-to-peer presentation path.
+            if !model.sender.isMaster, model.effectiveAudience == .master {
+                Logger.networking.debug("PlayerController: Master-only player message ignored")
+                return false
+            }
+            let acceptsPlayerPhotoReveal = model.isPlayerFilePresentationEvent &&
+                model.data.type == .photo &&
                 photoSharing
-            let acceptsPlayerPdfReveal = model.data.type == .pdf &&
-                model.type == .reveal &&
-                model.subType == .show
-            let acceptsPlayerSpaceReveal = model.data.type == .space &&
-                model.type == .reveal &&
-                model.subType == .show &&
+            let acceptsPlayerPdfReveal = model.isPlayerFilePresentationEvent &&
+                model.data.type == .pdf
+            let acceptsPlayerSpaceReveal = model.isPlayerFilePresentationEvent &&
+                model.data.type == .space &&
                 spaceSharing
-            guard await root.gameModel.gameType == .proxy || model.sender.isMaster || model.data.type == .dice || acceptsPlayerPhotoReveal || acceptsPlayerPdfReveal || acceptsPlayerSpaceReveal else {
+            let acceptsPlayerDice = model.sender.role == .player &&
+                model.data.type == .dice &&
+                model.effectiveAudience == .group
+            guard await root.gameModel.gameType == .proxy || model.sender.isMaster || acceptsPlayerDice || acceptsPlayerPhotoReveal || acceptsPlayerPdfReveal || acceptsPlayerSpaceReveal else {
                 Logger.networking.debug("PlayerController: Message will be ignored because it is send from Player \(model.senderName, privacy: .public)")
                 return false
             }
@@ -1170,7 +1395,9 @@ extension PlayerController: PlayerNetworkStoreDelegate {
 
         // Value messages synchronize the joining player's Character and are
         // not part of the presentation ordering state machine.
-        if model.data.type != .value, model.isPresentationIntent || model.isMapPresentationRepair {
+        if model.data.type != .value,
+           !isRemappedProxyPresentation(event),
+           (model.isPresentationIntent || model.isMapPresentationRepair) {
             let presentationVersion: Int
             let allowsUnversionedMapState: Bool
             if model.data.type == .map,
@@ -1206,12 +1433,12 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             }
         }
 
-        if !event.fromProxy, !model.isAcknowledgement {
+        if !event.fromProxy, event.origin != .local, !model.isAcknowledgement {
             if model.data.type != .value {
                 // Proxy clients mirror this player: an answer addressed to this
                 // device must be processed by them too, so clear the target before
-                // forwarding. (Messages targeted at OTHERS were already forwarded
-                // above and never reach this point.) Character bootstrap bypasses
+                // forwarding. Messages targeted at other hosts were already
+                // rejected above and never reach this point. Character bootstrap bypasses
                 // this path and is sent directly by the proxy master controller.
                 var forwarded = model
                 if await forwarded.targetId == root.gameModel.gameConfig.id {
@@ -1235,10 +1462,11 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 try Task.checkCancellation()
                 let response = try await handle(
                     event.model,
-                    usesSharePlayPlaybackCoordination: event.origin.usesSharePlayFileTransport
+                    usesSharePlayPlaybackCoordination: event.origin.usesSharePlayFileTransport,
+                    locallyMirroredProxyPresentation: isRemappedProxyPresentation(event)
                 )
                 try Task.checkCancellation()
-                if let response {
+                if let response, event.origin != .local {
                     await sendUpstream(model: response)
                     if response.subType == .ok {
                         await gameModel.increaseMessageCounter()
@@ -1257,8 +1485,10 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 return
             } catch {
                 Logger.networking.error("PlayerController: Failed to process \(event.model.debugDescription, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                let failure = await response(for: event.model, isSuccess: false, requestData: false)
-                await sendUpstream(model: failure)
+                if event.origin != .local {
+                    let failure = await response(for: event.model, isSuccess: false, requestData: false)
+                    await sendUpstream(model: failure)
+                }
                 await messagePipeline.processed(success: false)
             }
         }
@@ -1292,7 +1522,8 @@ extension PlayerController: PlayerNetworkProxyControllerDelegate {
 extension PlayerController {
     func handle(
         _ model: GameNetworkModel,
-        usesSharePlayPlaybackCoordination: Bool = false
+        usesSharePlayPlaybackCoordination: Bool = false,
+        locallyMirroredProxyPresentation: Bool = false
     ) async throws -> GameNetworkModel? {
         switch model.data.type {
         case .none, .game, .setting, .editor, .generator, .search:
@@ -1307,9 +1538,15 @@ extension PlayerController {
         case .dice:
             return try await handleDice(model)
         case .pdf:
-            return try await handlePdf(model)
+            return try await handlePdf(
+                model,
+                locallyMirroredProxyPresentation: locallyMirroredProxyPresentation
+            )
         case .photo:
-            return try await handlePhoto(model)
+            return try await handlePhoto(
+                model,
+                locallyMirroredProxyPresentation: locallyMirroredProxyPresentation
+            )
         case .map:
             return try await handleMap(model)
         case .table:
@@ -1319,7 +1556,10 @@ extension PlayerController {
         case .value:
             return try await handleValue(model)
         case .space:
-            return try await handleSpace(model)
+            return try await handleSpace(
+                model,
+                locallyMirroredProxyPresentation: locallyMirroredProxyPresentation
+            )
         @unknown default:
             fatalError()
         }
@@ -2092,6 +2332,7 @@ extension PlayerController {
                 type: requestType,
                 subType: action,
                 asMaster: false,
+                purpose: .assetRequest,
                 data: NetworkCodableDataType(
                     id: model.data.id,
                     type: .map,
@@ -2123,6 +2364,7 @@ extension PlayerController {
                 type: .update,
                 subType: .generic,
                 asMaster: false,
+                purpose: .assetRequest,
                 data: NetworkCodableDataType(
                     id: model.data.id,
                     type: .map,
@@ -2167,7 +2409,10 @@ extension PlayerController {
         }
     }
 
-    func handlePdf(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+    func handlePdf(
+        _ model: GameNetworkModel,
+        locallyMirroredProxyPresentation: Bool = false
+    ) async throws -> GameNetworkModel? {
         guard model.subType != .ok, model.subType != .failed else { return nil }
 
         let masterId = model.masterId
@@ -2194,7 +2439,9 @@ extension PlayerController {
         }
 
         let validPlayerReveal: Bool
-        if model.sender.isMaster || model.type != .reveal || model.subType != .show {
+        if locallyMirroredProxyPresentation, model.isPlayerFilePresentationEvent {
+            validPlayerReveal = true
+        } else if model.sender.isMaster || !model.isPlayerFilePresentationEvent {
             validPlayerReveal = false
         } else {
             switch await playerPdfRevealValidation(for: model) {
@@ -2283,7 +2530,10 @@ extension PlayerController {
         }
     }
 
-    func handlePhoto(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+    func handlePhoto(
+        _ model: GameNetworkModel,
+        locallyMirroredProxyPresentation: Bool = false
+    ) async throws -> GameNetworkModel? {
         guard model.subType != .ok, model.subType != .failed else { return nil }
 
         let masterId = model.masterId
@@ -2305,7 +2555,9 @@ extension PlayerController {
         }
 
         let validPlayerReveal: Bool
-        if model.sender.isMaster || model.type != .reveal || model.subType != .show {
+        if locallyMirroredProxyPresentation, model.isPlayerFilePresentationEvent {
+            validPlayerReveal = true
+        } else if model.sender.isMaster || !model.isPlayerFilePresentationEvent {
             validPlayerReveal = false
         } else {
             switch await playerPhotoRevealValidation(for: model) {
@@ -2482,7 +2734,10 @@ extension PlayerController {
         return nil
     }
     
-    func handleSpace(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+    func handleSpace(
+        _ model: GameNetworkModel,
+        locallyMirroredProxyPresentation: Bool = false
+    ) async throws -> GameNetworkModel? {
         guard model.subType != .ok, model.subType != .failed else { return nil }
 
         let masterId = model.masterId
@@ -2509,7 +2764,9 @@ extension PlayerController {
         }
 
         let validPlayerReveal: Bool
-        if model.sender.isMaster || model.type != .reveal || model.subType != .show {
+        if locallyMirroredProxyPresentation, model.isPlayerFilePresentationEvent {
+            validPlayerReveal = true
+        } else if model.sender.isMaster || !model.isPlayerFilePresentationEvent {
             validPlayerReveal = false
         } else {
             switch await playerSpaceRevealValidation(for: model) {
@@ -2677,7 +2934,15 @@ extension PlayerController {
         // was counter-space garbage and the log's delivery indicator could never
         // leave "missing players", on every transport, not just file sharing.
         return await MainActor.run {
-            root.gameModel.outgoingMessage(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: subType, asMaster: false, data: payload)
+            root.gameModel.outgoingMessage(
+                counter: model.counter,
+                proxyCounter: model.proxyCounter,
+                type: model.type,
+                subType: subType,
+                asMaster: false,
+                purpose: requestData ? .assetRequest : .event,
+                data: payload
+            )
         }
     }
 

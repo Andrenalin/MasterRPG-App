@@ -1,288 +1,184 @@
 {
-  "configurations" : [
+  "configurations": [
     {
-      "id" : "8372B7B5-51BB-4FCF-975A-D3687BFA7504",
-      "name" : "All Tests",
-      "options" : {
-        "addressSanitizer" : {
-          "enabled" : false
-        }
+      "id": "10153497-77D4-2E09-3521-BDC3CD234337",
+      "name": "Default",
+      "options": {
       }
     }
   ],
-  "defaultOptions" : {
-    "codeCoverage" : {
-      "targets" : [
+  "defaultOptions": {
+    "codeCoverage": {
+      "targets": [
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8E79C4A12E6AEE0400893928",
-          "name" : "AdventureRPG"
+          "name": "AdventureRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8E79C4A12E6AEE0400893928"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "593D0D2B2E31F2D000410232",
-          "name" : "AudioRPG"
+          "name": "AudioRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "593D0D2B2E31F2D000410232"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8EA5A7D22E6A8EDB00E70E9C",
-          "name" : "CharacterRPG"
+          "name": "CharacterRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8EA5A7D22E6A8EDB00E70E9C"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8E3620AC2E1A80FF00E5C99A",
-          "name" : "CoreRPG"
+          "name": "CoreRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8E3620AC2E1A80FF00E5C99A"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8EB640052E47471400799690",
-          "name" : "DiceRPG"
+          "name": "DiceRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8EB640052E47471400799690"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "59CE1E9B2E84F011009C6CB5",
-          "name" : "GameRPG"
+          "name": "GameRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "59CE1E9B2E84F011009C6CB5"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "599DCACF2E8E30C00056E46C",
-          "name" : "GeneratorRPG"
+          "name": "GeneratorRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "599DCACF2E8E30C00056E46C"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8E79C4812E6AEDD500893928",
-          "name" : "MapRPG"
+          "name": "MapRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8E79C4812E6AEDD500893928"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8EC4E46828DDA29600D0279F",
-          "name" : "MasterRPG"
+          "name": "PdfRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8EEF8E042E3639E200393DAD"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8EEF8E042E3639E200393DAD",
-          "name" : "PdfRPG"
+          "name": "PhotoRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8E3620DA2E1A9EAF00E5C99A"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8E3620DA2E1A9EAF00E5C99A",
-          "name" : "PhotoRPG"
+          "name": "RolePlayGameKit",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8ED3AB982E2B45AE00FF3AE8"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8ED3AB982E2B45AE00FF3AE8",
-          "name" : "RolePlayGameKit"
+          "name": "SpaceRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8E983DA52E27D057002B25C2"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8E983DA52E27D057002B25C2",
-          "name" : "SpaceRPG"
+          "name": "TableRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8EA804502E62EBC60009479F"
         },
         {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8EA804502E62EBC60009479F",
-          "name" : "TableRPG"
-        },
-        {
-          "containerPath" : "container:MasterRPG.xcodeproj",
-          "identifier" : "8EF512862E5E03C200B4CE44",
-          "name" : "WeatherRPG"
+          "name": "WeatherRPG",
+          "containerPath": "container:MasterRPG.xcodeproj",
+          "identifier": "8EF512862E5E03C200B4CE44"
         }
       ]
     },
-    "commandLineArgumentEntries" : [
-      {
-        "argument" : "-com.apple.CoreData.ConcurrencyDebug 1"
-      }
-    ],
-    "language" : "en",
-    "mainThreadCheckerDetectionPolicy" : {
-      "severity" : "failure"
-    },
-    "region" : "US",
-    "runtimeIssueDetection" : {
-      "severity" : "failure"
-    },
-    "targetForVariableExpansion" : {
-      "containerPath" : "container:MasterRPG.xcodeproj",
-      "identifier" : "8EC4E46828DDA29600D0279F",
-      "name" : "MasterRPG"
-    },
-    "testExecutionOrdering" : "random",
-    "threadPerformanceCheckerRuntimeIssueDetection" : {
-      "severity" : "failure"
-    }
+    "language": "en",
+    "region": "US",
+    "testExecutionOrdering": "random",
+    "testTimeoutsEnabled": true
   },
-  "testTargets" : [
+  "testTargets": [
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8E8EE8502CD8EA5D0010A25B",
-        "name" : "AudioRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8E4B218C2CD78EF3009AB4D1",
+        "name": "CoreRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE642CD8EE9D004E7103",
-        "name" : "CharacterRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8EBED0942CD8EF68004E7103",
+        "name": "AdventureRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8E4B218C2CD78EF3009AB4D1",
-        "name" : "CoreRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8E8EE8502CD8EA5D0010A25B",
+        "name": "AudioRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECD972CD8EDED004E7103",
-        "name" : "DiceRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8EBECE642CD8EE9D004E7103",
+        "name": "CharacterRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBED0B52CD8EF94004E7103",
-        "name" : "GameRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8EBECD972CD8EDED004E7103",
+        "name": "DiceRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "599DCAD72E8E30C00056E46C",
-        "name" : "GeneratorRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8EBED0B52CD8EF94004E7103",
+        "name": "GameRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBED0D62CD8EFA5004E7103",
-        "name" : "MapRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "599DCAD72E8E30C00056E46C",
+        "name": "GeneratorRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8E8EE87A2CD8EB430010A25B",
-        "name" : "PdfRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8EBED0D62CD8EFA5004E7103",
+        "name": "MapRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8E8EE89B2CD8EB620010A25B",
-        "name" : "PhotoRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8E8EE87A2CD8EB430010A25B",
+        "name": "PdfRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE222CD8EE85004E7103",
-        "name" : "SpaceRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8E8EE89B2CD8EB620010A25B",
+        "name": "PhotoRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE432CD8EE92004E7103",
-        "name" : "TableRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8EBECE222CD8EE85004E7103",
+        "name": "SpaceRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBECE852CD8EEA9004E7103",
-        "name" : "WeatherRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8EBECE432CD8EE92004E7103",
+        "name": "TableRPGTests"
       }
     },
     {
-      "skippedTags" : {
-        "mode" : "or",
-        "tags" : [
-          ".snapshot"
-        ]
-      },
-      "target" : {
-        "containerPath" : "container:MasterRPG.xcodeproj",
-        "identifier" : "8EBED0942CD8EF68004E7103",
-        "name" : "AdventureRPGTests"
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8EBECE852CD8EEA9004E7103",
+        "name": "WeatherRPGTests"
       }
     }
   ],
-  "version" : 1
+  "version": 1
 }

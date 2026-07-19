@@ -34,6 +34,39 @@ struct MasterNetworkControllerTestEnvironment {
     }
 }
 
+/// Access to the count is serialized by `lock`, making the test mapper safe to
+/// call from any task used by the controller.
+private final class MessageEncodingCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedValue = 0
+
+    var value: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return storedValue
+    }
+
+    func increment() {
+        lock.lock()
+        storedValue += 1
+        lock.unlock()
+    }
+}
+
+private struct MessageMapperEncodingSpy: MessageMapper {
+    let encodedData: Data
+    let counter: MessageEncodingCounter
+
+    func encodeData() -> Data? {
+        counter.increment()
+        return encodedData
+    }
+
+    static func decodeData(of data: Data?) -> MessageMapperEncodingSpy? {
+        nil
+    }
+}
+
 @Suite("Master network controller tests")
 @MainActor
 struct MasterNetworkControllerTests {
@@ -142,6 +175,97 @@ struct MasterNetworkControllerTests {
         await env.controller.sendResponse(data: nil, except: connectionId)
     }
 
+    @Test("Broadcast encodes once and reuses the payload for every connection")
+    func broadcastEncodesOnce() async {
+        // Arrange
+        let env = await MasterNetworkControllerTestEnvironment.create()
+        let firstConnection = ConnectionControllableSpyingStub()
+        let secondConnection = ConnectionControllableSpyingStub()
+        env.controller.networkModel.connections = [firstConnection, secondConnection]
+        let counter = MessageEncodingCounter()
+        let expectedData = Data([0x01, 0x02, 0x03])
+        let mapper = MessageMapperEncodingSpy(encodedData: expectedData, counter: counter)
+
+        // Act
+        await env.controller.sendResponse(data: mapper)
+
+        // Assert
+        let firstContents = await firstConnection.responseEncodedContents
+        let secondContents = await secondConnection.responseEncodedContents
+        #expect(counter.value == 1)
+        #expect(firstContents.count == 1)
+        #expect(secondContents.count == 1)
+        #expect(firstContents.compactMap { $0 } == [expectedData])
+        #expect(secondContents.compactMap { $0 } == [expectedData])
+        #expect(await firstConnection.responseTypes == [.gameData])
+        #expect(await secondConnection.responseTypes == [.gameData])
+    }
+
+    @Test("Broadcast excluding a connection still encodes only once")
+    func broadcastExceptEncodesOnce() async {
+        // Arrange
+        let includedConnection = ConnectionControllableSpyingStub()
+        let excludedConnection = ConnectionControllableSpyingStub()
+        let otherIncludedConnection = ConnectionControllableSpyingStub()
+        let env = await MasterNetworkControllerTestEnvironment.create()
+        env.controller.networkModel.connections = [
+            includedConnection,
+            excludedConnection,
+            otherIncludedConnection
+        ]
+        let counter = MessageEncodingCounter()
+        let expectedData = Data([0x04, 0x05, 0x06])
+        let mapper = MessageMapperEncodingSpy(encodedData: expectedData, counter: counter)
+
+        // Act
+        await env.controller.sendResponse(data: mapper, except: excludedConnection.id)
+
+        // Assert
+        #expect(counter.value == 1)
+        #expect(await includedConnection.responseEncodedContents.count == 1)
+        #expect(await excludedConnection.responseEncodedContents.isEmpty)
+        #expect(await otherIncludedConnection.responseEncodedContents.count == 1)
+    }
+
+    @Test("Targeted response encodes only after finding the exact connection")
+    func targetedResponsePreservesExactDelivery() async {
+        // Arrange
+        let targetConnection = ConnectionControllableSpyingStub()
+        let otherConnection = ConnectionControllableSpyingStub()
+        let env = await MasterNetworkControllerTestEnvironment.create()
+        env.controller.networkModel.connections = [targetConnection, otherConnection]
+        let counter = MessageEncodingCounter()
+        let mapper = MessageMapperEncodingSpy(encodedData: Data([0x07]), counter: counter)
+
+        // Act
+        let unknownDelivered = await env.controller.sendResponse(data: mapper, id: UUID())
+        let targetDelivered = await env.controller.sendResponse(data: mapper, id: targetConnection.id)
+
+        // Assert
+        #expect(!unknownDelivered)
+        #expect(targetDelivered)
+        #expect(counter.value == 1)
+        #expect(await targetConnection.responseEncodedContents.count == 1)
+        #expect(await otherConnection.responseEncodedContents.isEmpty)
+    }
+
+    @Test("Broadcast does not encode when no connection can receive it")
+    func broadcastWithoutRecipientDoesNotEncode() async {
+        // Arrange
+        let onlyConnection = ConnectionControllableSpyingStub()
+        let env = await MasterNetworkControllerTestEnvironment.create()
+        env.controller.networkModel.connections = [onlyConnection]
+        let counter = MessageEncodingCounter()
+        let mapper = MessageMapperEncodingSpy(encodedData: Data([0x08]), counter: counter)
+
+        // Act
+        await env.controller.sendResponse(data: mapper, except: onlyConnection.id)
+
+        // Assert
+        #expect(counter.value == 0)
+        #expect(await onlyConnection.responseEncodedContents.isEmpty)
+    }
+
     @Test("Lost connection with unknown ID does not trigger delegate")
     func lostConnectionUnknownId() async throws {
         // Arrange
@@ -201,6 +325,27 @@ struct MasterNetworkControllerTests {
         let isStreaming = env.controller.networkModel.isStreaming
         #expect(!isStreaming)
         #expect(env.controller.networkModel.connections.isEmpty)
+    }
+}
+
+@Suite("Player join options tests")
+struct PlayerJoinOptionsTests {
+    @Test("SharePlay availability does not hide the local network option")
+    func sharePlayAndLocalNetworkAreBothAvailable() {
+        // Arrange and act
+        let options = PlayerJoinOptions(canActivateSharePlay: true, hasLocalNetwork: true)
+
+        // Assert
+        #expect(options.availableTransports == [.sharePlay, .localNetwork])
+    }
+
+    @Test("Local network remains available without SharePlay")
+    func localNetworkIsAvailableWithoutSharePlay() {
+        // Arrange and act
+        let options = PlayerJoinOptions(canActivateSharePlay: false, hasLocalNetwork: true)
+
+        // Assert
+        #expect(options.availableTransports == [.localNetwork])
     }
 }
 #endif

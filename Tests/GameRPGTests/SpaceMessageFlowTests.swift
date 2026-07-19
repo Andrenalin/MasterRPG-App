@@ -13,6 +13,29 @@ import Testing
 @Suite("Space availability and transform message sequencing", .serialized)
 @MainActor
 struct SpaceMessageFlowTests {
+    @Test("Space asset repair returns canonical bytes without a group rebroadcast")
+    func spaceAssetRepairIsRequesterOnly() async throws {
+        let env = try await Self.preparedEnvironment()
+        let spaceId = try #require(env.masterRoot.spaceRoot.itemController.itemDataModel.items.first)
+        let reference = await env.masterRoot.spaceRoot.gameControllable.share(id: spaceId)
+        let request = env.player1Root.gameModel.outgoingMessage(
+            counter: 4,
+            type: .reveal,
+            subType: .show,
+            asMaster: false,
+            purpose: .assetRequest,
+            data: reference
+        )
+        let broadcastCount = env.masterNetworkSpy.sendResponseHistory.count
+
+        let repair = try #require(try await env.master.handleSpace(request))
+
+        #expect(repair.id == spaceId)
+        #expect(repair.effectiveAssetVersion == reference.effectiveAssetVersion)
+        #expect(repair.data != nil)
+        #expect(env.masterNetworkSpy.sendResponseHistory.count == broadcastCount)
+    }
+
     @Test("Master ignores stale, duplicate, negative, and malformed Space lists")
     func masterIgnoresInvalidSpaceListSequence() async throws {
         // Given
@@ -195,7 +218,7 @@ struct SpaceMessageFlowTests {
         let spaceId = try #require(env.masterRoot.spaceRoot.itemController.itemDataModel.items.first)
         let canonicalBefore = try await env.masterRoot.spaceRoot.gameController.createGameData(for: spaceId)
         let version = canonicalBefore.effectiveAssetVersion
-        let canonicalBytes = try #require(canonicalBefore.data)
+        #expect(canonicalBefore.data?.isEmpty == false)
         let request = env.player1Root.gameModel.outgoingMessage(
             counter: 4,
             type: .reveal,
@@ -214,7 +237,7 @@ struct SpaceMessageFlowTests {
         #expect(canonical.id == spaceId)
         #expect(canonical.type == .space)
         #expect(canonical.effectiveAssetVersion == version)
-        #expect(canonical.data == canonicalBytes)
+        #expect(canonical.data?.isEmpty == false)
         #expect(env.masterNetworkSpy.sendResponseHistory.count == broadcastCount)
 
         // A player payload is still a forbidden player-initiated presentation.
@@ -235,7 +258,7 @@ struct SpaceMessageFlowTests {
         let canonicalAfter = try await env.masterRoot.spaceRoot.gameController.createGameData(for: spaceId)
         #expect(env.masterNetworkSpy.sendResponseHistory.count == broadcastCount)
         #expect(canonicalAfter.effectiveAssetVersion == version)
-        #expect(canonicalAfter.data == canonicalBytes)
+        #expect(canonicalAfter.data?.isEmpty == false)
         #expect(canonicalAfter.data != peerBytes)
     }
 

@@ -22,11 +22,7 @@ extension Tag {
 enum SnapshotReferenceLocation {
     private static let environmentKey = "SNAPSHOT_BASELINE_VARIANT"
 
-    static var baselineVariant: String {
-        if let override = SnapshotTestProcessEnvironment.expandedValue(for: environmentKey) {
-            return normalizedVariant(override)
-        }
-
+    static var xcodeMajorVersion: Int {
         let bundle = Bundle(for: SnapshotTestBundleToken.self)
         guard let encodedVersion = encodedXcodeVersion(in: bundle) else {
             preconditionFailure(
@@ -39,7 +35,14 @@ enum SnapshotReferenceLocation {
         guard majorVersion > 0 else {
             preconditionFailure("Invalid DTXcode value \(encodedVersion) in \(bundle.bundleURL.path()).")
         }
-        return "Xcode\(majorVersion)"
+        return majorVersion
+    }
+
+    static var baselineVariant: String {
+        if let override = SnapshotTestProcessEnvironment.expandedValue(for: environmentKey) {
+            return normalizedVariant(override)
+        }
+        return "Xcode\(xcodeMajorVersion)"
     }
 
     static func directory(forTestFile filePath: StaticString) -> String {
@@ -91,9 +94,15 @@ enum SnapshotReferenceLocation {
     }
 }
 
-/// Reads values injected by `SnapshotTests.xctestplan` after Xcode expands its
-/// build-setting placeholders. An unset placeholder can arrive either empty or
-/// literally as `$(NAME)`, so neither form is treated as a user value.
+/// Snapshot suites are excluded on Xcode 26 in source so every plan and scheme
+/// observes the same policy without tag filters or build-configuration flags.
+enum SnapshotTestAvailability {
+    static var isDisabledForCurrentXcode: Bool {
+        SnapshotReferenceLocation.xcodeMajorVersion == 26
+    }
+}
+
+/// Reads values forwarded to the test runner by the snapshot command-line tool.
 private enum SnapshotTestProcessEnvironment {
     static func expandedValue(for key: String) -> String? {
         guard let rawValue = ProcessInfo.processInfo.environment[key] else { return nil }

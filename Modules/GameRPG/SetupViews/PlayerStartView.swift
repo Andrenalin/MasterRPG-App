@@ -4,6 +4,26 @@ import CoreRPG
 import CharacterRPG
 import SwiftUI
 
+enum PlayerJoinTransport: Hashable, Sendable {
+    case sharePlay
+    case localNetwork
+}
+
+struct PlayerJoinOptions: Sendable {
+    let availableTransports: Set<PlayerJoinTransport>
+
+    init(canActivateSharePlay: Bool, hasLocalNetwork: Bool) {
+        var transports: Set<PlayerJoinTransport> = []
+        if canActivateSharePlay {
+            transports.insert(.sharePlay)
+        }
+        if hasLocalNetwork {
+            transports.insert(.localNetwork)
+        }
+        availableTransports = transports
+    }
+}
+
 struct PlayerStartView: View {
     let root: GameRoot
     
@@ -19,8 +39,17 @@ struct PlayerStartView: View {
     
     var body: some View {
         if root.characterRoot.linkControllable.validateLink(itemId: root.gameModel.selectedCharacter ?? UUID()) {
-            Group {
-                if sharePlayStore.canActivateSharePlay {
+            let playerNetworkController = root.networkStore.model.playerStore
+            let joinOptions = PlayerJoinOptions(
+                canActivateSharePlay: sharePlayStore.canActivateSharePlay,
+                hasLocalNetwork: playerNetworkController != nil
+            )
+
+            VStack {
+                if joinOptions.availableTransports.contains(.sharePlay) {
+                    Text("SharePlay", bundle: .module)
+                        .bold()
+                        .accessibilityAddTraits(.isHeader)
                     Button {
                         appGameStateModel.gameModus = .player
 
@@ -52,18 +81,20 @@ struct PlayerStartView: View {
                     .padding(.top, 24)
 #endif
                     .padding(.bottom, 16)
-                } else {
-                    if let playerNetworkController = root.networkStore.model.playerStore {
-                        BrowserView(root: root, playerNetworkControllable: playerNetworkController)
-                            .onChange(of: playerNetworkController.networkModel.isConnected) {
-                                if playerNetworkController.networkModel.isConnected {
-                                    appGameStateModel.gameModus = .player
+                }
 
-                                } else {
-                                    appGameStateModel.gameModus = .edit
-                                }
+                if joinOptions.availableTransports.contains(.localNetwork), let playerNetworkController {
+                    Text("Local Network", bundle: .module)
+                        .bold()
+                        .accessibilityAddTraits(.isHeader)
+                    BrowserView(root: root, playerNetworkControllable: playerNetworkController)
+                        .onChange(of: playerNetworkController.networkModel.isConnected) {
+                            if playerNetworkController.networkModel.isConnected {
+                                appGameStateModel.gameModus = .player
+                            } else {
+                                appGameStateModel.gameModus = .edit
                             }
-                    }
+                        }
                 }
             }
         }

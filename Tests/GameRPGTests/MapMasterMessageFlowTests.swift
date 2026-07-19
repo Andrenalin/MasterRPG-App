@@ -679,16 +679,22 @@ struct MapMasterMessageFlowTests {
         }
 
         // When: either requested generation differs from the host copy.
-        await fixture.master.receivedServerProxy(request(
-            counter: 61,
-            assetVersion: differentVersion(from: assetVersion),
-            contentVersion: contentVersion
-        ))
-        await fixture.master.receivedServerProxy(request(
-            counter: 62,
-            assetVersion: assetVersion,
-            contentVersion: differentVersion(from: contentVersion)
-        ))
+        await fixture.master.receivedServerProxy(
+            request(
+                counter: 61,
+                assetVersion: differentVersion(from: assetVersion),
+                contentVersion: contentVersion
+            ),
+            connectionId: UUID()
+        )
+        await fixture.master.receivedServerProxy(
+            request(
+                counter: 62,
+                assetVersion: assetVersion,
+                contentVersion: differentVersion(from: contentVersion)
+            ),
+            connectionId: UUID()
+        )
 
         // Then: both requests go to the real master and no stale package is
         // served to the proxy client.
@@ -702,15 +708,20 @@ struct MapMasterMessageFlowTests {
         #expect(forwarded.last?.data.contentVersion == differentVersion(from: contentVersion))
 
         // When: the exact local generations are requested.
-        await fixture.master.receivedServerProxy(request(
-            counter: 63,
-            assetVersion: assetVersion,
-            contentVersion: contentVersion
-        ))
+        let matchingConnectionId = ConnectionController.ID()
+        await fixture.master.receivedServerProxy(
+            request(
+                counter: 63,
+                assetVersion: assetVersion,
+                contentVersion: contentVersion
+            ),
+            connectionId: matchingConnectionId
+        )
 
         // Then
         #expect(fixture.directPlayerSpy.calledRequest == 2)
-        #expect(fixture.proxyMasterSpy.calledSendResponseAll == 1)
+        #expect(fixture.proxyMasterSpy.calledSendResponseId == 1)
+        #expect(fixture.proxyMasterSpy.calledSendResponseAll == 0)
         let localResponse = try #require(fixture.proxyMasterSpy.sendResponseData as? GameNetworkModel)
         #expect(localResponse.sender.isMaster)
         #expect(localResponse.targetId == fixture.proxyPlayerId)
@@ -751,7 +762,7 @@ struct MapMasterMessageFlowTests {
         )
 
         // When
-        await fixture.master.receivedServerProxy(request)
+        await fixture.master.receivedServerProxy(request, connectionId: UUID())
 
         // Then
         #expect(fixture.proxyMasterSpy.calledSendResponseAll == 0)
@@ -814,7 +825,7 @@ struct MapMasterMessageFlowTests {
         )
 
         // When
-        await fixture.master.receivedServerProxy(request)
+        await fixture.master.receivedServerProxy(request, connectionId: UUID())
 
         // Then
         #expect(fixture.proxyMasterSpy.calledSendResponseAll == 0)
@@ -1087,6 +1098,7 @@ private struct MapMasterRoutingFixture {
                 name: "Proxy mirror",
                 characterId: nil
             ),
+            purpose: .assetRequest,
             data: data
         )
     }
