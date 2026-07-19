@@ -528,18 +528,23 @@ struct PlayerMasterControllerTests {
     func characterJoinHandshake() async throws {
         // Given
         let env = try await PlayerMasterControllerTestEnvironment.create()
-        try await MockRoot.importTestData(into: env.playerRoot.adventureRoot)
+        try await MockRoot.importTestData(
+            into: env.playerRoot.adventureRoot,
+            name: ResourcesDebug.photoTestData,
+            itemCounter: 0
+        )
         env.masterRoot.adventureRoot.startGame()
         env.playerRoot.adventureRoot.startGame()
 
-        let characterId = try #require(
-            env.playerRoot.characterRoot.itemController.itemDataModel.items.first {
-                let item = env.playerRoot.characterRoot.itemController.itemOrEmpty(for: $0)
-                return item.category == .character && item.photoId != nil
+        let photoId = try #require(
+            env.playerRoot.photoRoot.itemController.itemDataModel.items.first {
+                env.playerRoot.photoRoot.itemController.itemSync(for: $0)?.fileUrl != nil
             }
         )
+        let characterId = await env.playerRoot.characterRoot.itemController.addNew(type: .character)
         let playerCharacter = env.playerRoot.characterRoot.itemController.itemOrEmpty(for: characterId)
-        let photoId = try #require(playerCharacter.photoId)
+        playerCharacter.name = "Portrait Character"
+        playerCharacter.photoId = photoId
         env.playerRoot.gameModel.reset(
             gameConfig: GameConfigModel(
                 id: env.playerGameConfig.id,
@@ -560,10 +565,13 @@ struct PlayerMasterControllerTests {
         // When: the player advertises only ID and version.
         await env.player.sendCharacter()
         let reference = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        let advertisedVersion = reference.data.version
+        let playerVersion = await env.playerRoot.characterRoot.gameControllable.networkVersion(for: characterId)
 
         // Then: a missing Character makes the master request the package.
         #expect(reference.data.data == nil)
-        #expect(reference.data.version != 0)
+        #expect(advertisedVersion != 0)
+        #expect(advertisedVersion == playerVersion)
         let requestedData = try #require(try await env.master.handle(reference))
         #expect(requestedData == reference.data)
 
@@ -588,9 +596,10 @@ struct PlayerMasterControllerTests {
         let importResponse = try await env.master.handle(package)
         #expect(importResponse == nil)
         let masterCharacter = try #require(await env.masterRoot.characterRoot.itemController.item(for: characterId))
+        let importedMasterVersion = await env.masterRoot.characterRoot.gameControllable.networkVersion(for: characterId)
         #expect(masterCharacter.name == playerCharacter.name)
         #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.contains(photoId))
-        #expect(await env.masterRoot.characterRoot.gameControllable.networkVersion(for: characterId) == reference.data.version)
+        #expect(importedMasterVersion == advertisedVersion)
 
         // And: the same metadata now needs no package request.
         let matchingResponse = try await env.master.handle(reference)

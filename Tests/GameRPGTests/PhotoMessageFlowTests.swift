@@ -177,6 +177,29 @@ struct PhotoMessageFlowTests {
         ))
     }
 
+    @Test("Photo asset repair returns canonical bytes without a group rebroadcast")
+    func photoAssetRepairIsRequesterOnly() async throws {
+        let env = try await Self.preparedEnvironment()
+        let photoId = try #require(env.masterRoot.photoRoot.itemController.itemDataModel.items.first)
+        let reference = await env.masterRoot.photoRoot.gameControllable.share(id: photoId)
+        let request = env.player1Root.gameModel.outgoingMessage(
+            counter: 4,
+            type: .reveal,
+            subType: .show,
+            asMaster: false,
+            purpose: .assetRequest,
+            data: reference
+        )
+        let broadcastCount = env.masterNetworkSpy.sendResponseHistory.count
+
+        let repair = try #require(try await env.master.handlePhoto(request))
+
+        #expect(repair.id == photoId)
+        #expect(repair.effectiveAssetVersion == reference.effectiveAssetVersion)
+        #expect(repair.data != nil)
+        #expect(env.masterNetworkSpy.sendResponseHistory.count == broadcastCount)
+    }
+
     @Test("Player retries a peer reveal after a matching authoritative photo list arrives")
     func playerRetriesRevealAfterAuthoritativeList() async throws {
         let env = try await Self.preparedEnvironment()

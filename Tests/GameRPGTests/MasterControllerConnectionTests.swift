@@ -5,10 +5,29 @@ import Foundation
 import RPGResourcesDebug
 import Testing
 
+@testable import AdventureRPG
 @testable import GameRPG
 @testable import AudioRPG
 @testable import CharacterRPG
+@testable import PdfRPG
+@testable import PhotoRPG
+@testable import SpaceRPG
 @testable import WeatherRPG
+
+@Suite("Player fallback Bonjour role")
+@MainActor
+struct PlayerFallbackServiceTests {
+    @Test("Direct and proxy players advertise the service their host browses")
+    func fallbackServiceMatchesConnectionTopology() {
+        // Given / When
+        let direct = PlayerNetworkController(name: "Direct player")
+        let proxy = PlayerNetworkController(name: "Proxy player", proxy: true)
+
+        // Then
+        #expect(direct.fallbackServiceType.serviceName == GameServiceType.master.serviceName)
+        #expect(proxy.fallbackServiceType.serviceName == GameServiceType.proxyClient.serviceName)
+    }
+}
 
 // MARK: - MasterControllerModel unit tests
 
@@ -252,6 +271,429 @@ struct MasterControllerLostPlayerTests {
 @MainActor
 struct MasterControllerDirectProxyTests {
 
+    enum ObserverFilePresentationAttack: CaseIterable, Sendable {
+        case photo
+        case pdf
+        case space
+    }
+
+    @Test("LAN rejects a remote master claim before relaying it")
+    func lanRejectsRemoteMasterClaimBeforeRelay() async throws {
+        // Given
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let connectionId = UUID()
+        let attackerId = UUID()
+        let expectedMasterId = env.root.gameModel.gameConfig.master.id
+        let malicious = GameNetworkModel(
+            counter: 91,
+            proxyCounter: 0,
+            type: .update,
+            subType: .generic,
+            masterId: expectedMasterId,
+            sender: GameSenderModel(
+                id: attackerId,
+                role: .master,
+                name: "Impostor",
+                characterId: nil
+            ),
+            masterState: GameMasterStateModel(
+                state: .started,
+                adventureId: nil,
+                adventureTitle: "Spoofed game",
+                players: [],
+                controls: [],
+                features: GameFeatureModel()
+            ),
+            audience: .group,
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: .dice,
+                version: 1,
+                data: Data([0x01])
+            )
+        )
+
+        // When
+        await env.root.networkStore.masterReceived(
+            data: malicious.encodeData(),
+            for: connectionId,
+            fileJournal: false
+        )
+
+        // Then
+        #expect(env.directMasterSpy.calledSendResponseExcept == 0)
+        #expect(env.master.gameModel.connectIDPlayers[connectionId] == nil)
+        #expect(!env.root.gameModel.gameRoster.players.contains { $0.id == attackerId })
+    }
+
+    @Test("LAN rejects a player group event addressed to another master")
+    func lanRejectsWrongMasterGroupEventBeforeRelay() async throws {
+        // Given
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let connectionId = UUID()
+        let playerId = UUID()
+        let malicious = GameNetworkModel(
+            counter: 92,
+            proxyCounter: 0,
+            type: .update,
+            subType: .generic,
+            masterId: UUID(),
+            sender: GameSenderModel(
+                id: playerId,
+                role: .player,
+                name: "Wrong session player",
+                characterId: nil
+            ),
+            audience: .group,
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: .dice,
+                version: 1,
+                data: Data([0x01])
+            )
+        )
+
+        // When
+        await env.root.networkStore.masterReceived(
+            data: malicious.encodeData(),
+            for: connectionId,
+            fileJournal: false
+        )
+
+        // Then
+        #expect(env.directMasterSpy.calledSendResponseExcept == 0)
+        #expect(env.master.gameModel.connectIDPlayers[connectionId] == nil)
+        #expect(!env.root.gameModel.gameRoster.players.contains { $0.id == playerId })
+    }
+
+    @Test("An established physical origin cannot switch logical sender")
+    func physicalOriginCannotSwitchSender() async throws {
+        // Given
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let connectionId = UUID()
+        let masterId = env.root.gameModel.gameConfig.master.id
+        let firstPlayerId = UUID()
+        let secondPlayerId = UUID()
+        let first = GameNetworkModel(
+            counter: 93,
+            proxyCounter: 0,
+            type: .store,
+            subType: .store,
+            masterId: masterId,
+            sender: GameSenderModel(
+                id: firstPlayerId,
+                role: .player,
+                name: "First player",
+                characterId: nil
+            ),
+            data: NetworkCodableDataType(id: UUID(), type: .setting, version: 0)
+        )
+        var identitySwitch = first
+        identitySwitch.counter = 94
+        identitySwitch.sender = GameSenderModel(
+            id: secondPlayerId,
+            role: .player,
+            name: "Second player",
+            characterId: nil
+        )
+
+        // When
+        await env.master.received(first, origin: .direct(connectionId))
+        await env.master.received(identitySwitch, origin: .direct(connectionId))
+
+        // Then
+        #expect(env.master.gameModel.connectIDPlayers[connectionId] == firstPlayerId)
+        #expect(env.root.gameModel.gameRoster.players.contains { $0.id == firstPlayerId })
+        #expect(!env.root.gameModel.gameRoster.players.contains { $0.id == secondPlayerId })
+    }
+
+    @Test("Observer policy permits only passive data-less asset repairs")
+    func observerPolicyPermitsOnlyPassiveRepairs() async throws {
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let observerId = UUID()
+        let sender = GameSenderModel(
+            id: observerId,
+            role: .observer,
+            name: "Observer",
+            characterId: nil
+        )
+        let photoId = UUID()
+
+        let legacyPhotoRepair = GameNetworkModel(
+            counter: 1,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: env.root.gameModel.gameConfig.id,
+            sender: sender,
+            purpose: .legacy,
+            data: NetworkCodableDataType(id: photoId, type: .photo, version: 3)
+        )
+        let normalized = try #require(env.master.normalizedObserverMessage(legacyPhotoRepair))
+        #expect(normalized.purpose == .assetRequest)
+        #expect(normalized.audience == .master)
+        #expect(normalized.data.data == nil)
+
+        var uploadedPhoto = legacyPhotoRepair
+        uploadedPhoto.purpose = .assetRequest
+        uploadedPhoto.data = NetworkCodableDataType(
+            id: photoId,
+            type: .photo,
+            version: 3,
+            data: Data("observer upload".utf8)
+        )
+        #expect(env.master.normalizedObserverMessage(uploadedPhoto) == nil)
+
+        let disguisedAudioPlay = GameNetworkModel(
+            counter: 2,
+            proxyCounter: 0,
+            type: .update,
+            subType: .playAudio,
+            masterId: env.root.gameModel.gameConfig.id,
+            sender: sender,
+            purpose: .assetRequest,
+            data: NetworkCodableDataType(id: UUID(), type: .audio, version: 1)
+        )
+        #expect(env.master.normalizedObserverMessage(disguisedAudioPlay) == nil)
+
+        var mapContentRepair = disguisedAudioPlay
+        mapContentRepair.type = .update
+        mapContentRepair.subType = .generic
+        mapContentRepair.data = NetworkCodableDataType(id: UUID(), type: .map, version: 1)
+        #expect(env.master.normalizedObserverMessage(mapContentRepair)?.purpose == .assetRequest)
+
+        var disguisedMapPin = mapContentRepair
+        disguisedMapPin.subType = .mapPin
+        #expect(env.master.normalizedObserverMessage(disguisedMapPin) == nil)
+    }
+
+    @Test("Observer reports and screens require their exact protocol envelope")
+    func observerReportAndScreenAllowlistUsesExactTuples() async throws {
+        // Given
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let sender = GameSenderModel(
+            id: UUID(),
+            role: .observer,
+            name: "Observer",
+            characterId: nil
+        )
+        let masterId = env.root.gameModel.gameConfig.master.id
+        let allowed = [
+            GameNetworkModel(
+                counter: 1,
+                proxyCounter: 0,
+                type: .update,
+                subType: .audioList,
+                masterId: masterId,
+                sender: sender,
+                data: NetworkCodableDataType(
+                    id: UUID(),
+                    type: .audio,
+                    version: 0,
+                    data: AudioListRequest(list: [], players: [:]).encodeData()
+                )
+            ),
+            GameNetworkModel(
+                counter: 2,
+                proxyCounter: 0,
+                type: .update,
+                subType: .photoList,
+                masterId: masterId,
+                sender: sender,
+                data: NetworkCodableDataType(
+                    id: UUID(),
+                    type: .photo,
+                    version: 0,
+                    data: PhotoListRequest(list: [:], players: [:]).encodeData()
+                )
+            ),
+            GameNetworkModel(
+                counter: 3,
+                proxyCounter: 0,
+                type: .update,
+                subType: .pdfList,
+                masterId: masterId,
+                sender: sender,
+                data: NetworkCodableDataType(
+                    id: UUID(),
+                    type: .pdf,
+                    version: 0,
+                    data: PdfListRequest(list: [:], players: [:]).encodeData()
+                )
+            ),
+            GameNetworkModel(
+                counter: 4,
+                proxyCounter: 0,
+                type: .update,
+                subType: .spaceList,
+                masterId: masterId,
+                sender: sender,
+                data: NetworkCodableDataType(
+                    id: UUID(),
+                    type: .space,
+                    version: 0,
+                    data: SpaceListRequest(list: [:], players: [:]).encodeData()
+                )
+            ),
+            GameNetworkModel(
+                counter: 5,
+                proxyCounter: 0,
+                type: .store,
+                subType: .screen,
+                masterId: masterId,
+                sender: sender,
+                data: NetworkCodableDataType(
+                    id: UUID(),
+                    type: .game,
+                    version: 0,
+                    data: Data([0x01])
+                )
+            )
+        ]
+
+        // When / Then - legitimate observer reports and screen samples remain accepted.
+        for message in allowed {
+            #expect(env.master.normalizedObserverMessage(message) != nil)
+        }
+
+        // When / Then - the same benign-looking actions cannot be paired with
+        // a presentation type, a different module, or an absent payload.
+        var revealList = allowed[1]
+        revealList.type = .reveal
+        #expect(env.master.normalizedObserverMessage(revealList) == nil)
+
+        var mismatchedListModule = allowed[1]
+        mismatchedListModule.data = NetworkCodableDataType(
+            id: UUID(),
+            type: .pdf,
+            version: 0,
+            data: PdfListRequest(list: [:], players: [:]).encodeData()
+        )
+        #expect(env.master.normalizedObserverMessage(mismatchedListModule) == nil)
+
+        var revealScreen = allowed[4]
+        revealScreen.type = .reveal
+        #expect(env.master.normalizedObserverMessage(revealScreen) == nil)
+
+        var dataLessScreen = allowed[4]
+        dataLessScreen.data = NetworkCodableDataType(id: UUID(), type: .game, version: 0)
+        #expect(env.master.normalizedObserverMessage(dataLessScreen) == nil)
+    }
+
+    @Test(
+        "Malformed observer list or screen envelope cannot reveal a canonical file",
+        arguments: ObserverFilePresentationAttack.allCases
+    )
+    func malformedObserverEnvelopeCannotRevealCanonicalFile(
+        attack: ObserverFilePresentationAttack
+    ) async throws {
+        // Given
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let reference: NetworkCodableDataType
+        let subType: RPGMessageActionType
+
+        switch attack {
+        case .photo:
+            try await MockRoot.importTestData(
+                into: env.root.adventureRoot,
+                name: ResourcesDebug.photoTestData,
+                itemCounter: 0
+            )
+            env.root.adventureRoot.startGame()
+            let id = try #require(env.root.photoRoot.itemController.itemDataModel.items.first)
+            reference = await env.root.photoRoot.gameControllable.share(id: id)
+            subType = .photoList
+        case .pdf:
+            try await MockRoot.importTestData(
+                into: env.root.adventureRoot,
+                name: ResourcesDebug.pdfTestData,
+                itemCounter: 0
+            )
+            env.root.adventureRoot.startGame()
+            let id = try #require(env.root.pdfRoot.itemController.itemDataModel.items.first)
+            reference = await env.root.pdfRoot.gameControllable.share(id: id)
+            subType = .screen
+        case .space:
+            try await MockRoot.importTestData(
+                into: env.root.adventureRoot,
+                name: ResourcesDebug.spaceTestData,
+                itemCounter: 0
+            )
+            env.root.adventureRoot.startGame()
+            let id = try #require(env.root.spaceRoot.itemController.itemDataModel.items.first)
+            reference = await env.root.spaceRoot.gameControllable.share(id: id)
+            subType = .spaceList
+        }
+
+        let observerId = UUID()
+        let observer = PlayerGameModel(id: observerId, type: .observer, name: "Observer")
+        _ = env.root.gameModel.add(
+            playerId: observerId,
+            playerModel: observer,
+            sharingModel: SharingControlModel(id: observerId, name: observer.name, show: true)
+        )
+        let malicious = GameNetworkModel(
+            counter: 41,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: subType,
+            masterId: env.root.gameModel.gameConfig.master.id,
+            sender: GameSenderModel(
+                id: observerId,
+                role: .observer,
+                name: observer.name,
+                characterId: nil
+            ),
+            data: NetworkCodableDataType(
+                id: reference.id,
+                type: reference.type,
+                version: reference.version,
+                assetVersion: reference.assetVersion,
+                contentVersion: reference.contentVersion
+            )
+        )
+        let sendCount = env.directMasterSpy.sendResponseHistory.count
+
+        // When
+        await env.master.received(malicious, connectionId: UUID())
+
+        // Then
+        #expect(env.directMasterSpy.sendResponseHistory.count == sendCount)
+    }
+
+    @Test("Observer cannot trigger audio play even when labelling it an asset request")
+    func observerCannotTriggerAudioPlay() async throws {
+        let env = try await MasterControllerHarness.make(asProxy: false)
+        let observerId = UUID()
+        _ = env.root.gameModel.add(
+            playerId: observerId,
+            playerModel: PlayerGameModel(id: observerId, type: .observer, name: "Observer"),
+            sharingModel: SharingControlModel(id: observerId, name: "Observer", show: true)
+        )
+        let audioId = UUID()
+        let malicious = GameNetworkModel(
+            counter: 7,
+            proxyCounter: 0,
+            type: .update,
+            subType: .playAudio,
+            masterId: env.root.gameModel.gameConfig.id,
+            sender: GameSenderModel(
+                id: observerId,
+                role: .observer,
+                name: "Observer",
+                characterId: nil
+            ),
+            purpose: .assetRequest,
+            data: NetworkCodableDataType(id: audioId, type: .audio, version: 1)
+        )
+        let sendCount = env.directMasterSpy.sendResponseHistory.count
+
+        await env.master.received(malicious, connectionId: UUID())
+
+        #expect(env.master.gameModel.pendingAudioPlays[audioId] == nil)
+        #expect(env.directMasterSpy.sendResponseHistory.count == sendCount)
+    }
+
     @Test("start, stop, and send use the injected network stores")
     func startStopAndSendUseNetworkStores() async throws {
         let env = try await MasterControllerHarness.make(asProxy: false, directStreaming: true)
@@ -277,7 +719,7 @@ struct MasterControllerDirectProxyTests {
         await env.master.stop()
 
         #expect(env.directMasterSpy.calledStartStreaming == 1)
-        #expect(env.proxyMasterSpy.calledStartProxyStreaming == 1)
+        #expect(env.proxyMasterSpy.calledStartProxyStreaming == 0)
         #expect(env.directMasterSpy.calledSendResponseAll == 2)
         #expect(env.directMasterSpy.calledStopStreaming == 1)
         #expect(env.directPlayerSpy.calledStop == 1)
@@ -368,7 +810,7 @@ struct MasterControllerDirectProxyTests {
             data: NetworkCodableDataType(id: UUID(), type: .photo, version: 1, data: nil)
         )
 
-        await env.master.receivedServerProxy(message)
+        await env.master.receivedServerProxy(message, connectionId: UUID())
 
         // The proxy stays invisible: nothing goes upstream with its identity,
         // and it never enters the host's roster.

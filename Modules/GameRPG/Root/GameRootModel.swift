@@ -125,7 +125,17 @@ final class GameRootModel: Sendable {
     /// message never carries a torn combination from a concurrent update.
     /// Master messages carry the authoritative `masterState`; player messages
     /// carry only the sender identity.
-    func outgoingMessage(counter: Int, proxyCounter: Int = 0, type: RPGMessageType, subType: RPGMessageActionType, asMaster: Bool, targetId: UUID? = nil, data: NetworkCodableDataType) -> GameNetworkModel {
+    func outgoingMessage(
+        counter: Int,
+        proxyCounter: Int = 0,
+        type: RPGMessageType,
+        subType: RPGMessageActionType,
+        asMaster: Bool,
+        targetId: UUID? = nil,
+        audience: GameMessageAudience? = nil,
+        purpose: GameMessagePurpose = .event,
+        data: NetworkCodableDataType
+    ) -> GameNetworkModel {
         let sender: GameSenderModel
         var masterState: GameMasterStateModel?
         if asMaster {
@@ -146,7 +156,27 @@ final class GameRootModel: Sendable {
                 sender = GameSenderModel(id: gameConfig.id, role: .notSet, name: gameName, characterId: nil)
             }
         }
-        return GameNetworkModel(counter: counter, proxyCounter: proxyCounter, type: type, subType: subType, masterId: gameConfig.master.id, sender: sender, masterState: masterState, targetId: targetId, data: data)
+        let resolvedAudience = audience ?? GameNetworkModel.inferredAudience(
+            sender: sender,
+            type: type,
+            subType: subType,
+            purpose: purpose,
+            dataType: data.type,
+            targetId: targetId
+        )
+        return GameNetworkModel(
+            counter: counter,
+            proxyCounter: proxyCounter,
+            type: type,
+            subType: subType,
+            masterId: gameConfig.master.id,
+            sender: sender,
+            masterState: masterState,
+            targetId: targetId,
+            audience: resolvedAudience,
+            purpose: purpose,
+            data: data
+        )
     }
 
     var gameType: GameType { gameConfig.type(in: gameRoster) }
@@ -385,6 +415,10 @@ extension GameRoot {
     }
 
     func startGame(to model: BrowserGameModel?, mode: GameType) async {
+        // Observer is intentionally Bonjour/LAN-only. Enforce this at the domain
+        // boundary as well as in the setup UI so programmatic callers cannot join
+        // SharePlay by passing a nil target.
+        guard mode != .observer || model != nil else { return }
         if (mode == .proxy || mode == .observer || mode == .demo) {
             gameModel.selectedCharacter = nil
         }

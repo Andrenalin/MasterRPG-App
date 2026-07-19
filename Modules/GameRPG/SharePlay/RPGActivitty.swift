@@ -7,10 +7,11 @@ import Foundation
 import GroupActivities
 
 public struct RPGActivity: GroupActivity, Sendable {
-    public init(adventureTitle: String? = nil) {
+    public init(adventureTitle: String? = nil, activationId: UUID? = nil) {
         if let adventureTitle {
             self.adventureTitle = adventureTitle
         }
+        self.activationId = activationId
     }
     
     public static let activityIdentifier = "de.andretrettin.MasterRPG.play-rpg-together"
@@ -21,6 +22,9 @@ public struct RPGActivity: GroupActivity, Sendable {
         bundle: .module,
         comment: "Title of group activity"
     )
+    /// Identifies a local activation attempt so a late session from a cancelled
+    /// start can be left without rejecting unrelated remote invitations.
+    var activationId: UUID?
 
     @MainActor public var metadata: GroupActivityMetadata {
         var metadata = GroupActivityMetadata()

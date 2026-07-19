@@ -6,25 +6,38 @@ import Network
 @testable import GameRPG
 
 final class MasterNetworkStoreDelegateMock: MasterNetworkStoreDelegate, @unchecked Sendable {
+    var acceptsMessages = true
+    var acceptedOrigins: [GameMessageOrigin] = []
     var calledLostPlayer = 0
     var calledReady = 0
+    var readyOrigins: [GameMessageOrigin] = []
     var calledReceived = 0
     var calledFileReceived = 0
+    var receivedHandler: ((GameNetworkModel, GameMessageOrigin) -> Void)?
+    var receivedFileHandler: ((GameNetworkModel) -> Void)?
+
+    func accepts(_ model: GameNetworkModel, origin: GameMessageOrigin) -> Bool {
+        acceptedOrigins.append(origin)
+        return acceptsMessages
+    }
     
     func lostPlayer(for connectionId: ConnectionController.ID) {
         calledLostPlayer += 1
     }
     
-    func ready(for _: ConnectionController.ID) {
+    func ready(for origin: GameMessageOrigin) {
         calledReady += 1
+        readyOrigins.append(origin)
     }
     
-    func received(_: GameNetworkModel, connectionId: ConnectionController.ID?) {
+    func received(_ model: GameNetworkModel, origin: GameMessageOrigin) {
         calledReceived += 1
+        receivedHandler?(model, origin)
     }
     
     func receivedFile(_ model: GameNetworkModel) {
         calledFileReceived += 1
+        receivedFileHandler?(model)
     }
 
 }

@@ -308,7 +308,7 @@ struct TableMessageFlowTests {
         let proxyBroadcastsBeforeRequest = hostProxySpy.calledSendResponseAll
 
         // When
-        await proxyMaster.receivedServerProxy(request)
+        await proxyMaster.receivedServerProxy(request, connectionId: UUID())
 
         // Then - It is remapped as the host's request and sent upstream instead
         // of exporting the host's merged Table to the proxy.
@@ -353,6 +353,40 @@ struct TableMessageFlowTests {
         #expect(
             fixture.environment.masterNetworkSpy.calledSendResponseId == sendsBeforeReady
         )
+    }
+
+    @Test("A late SharePlay participant receives the current Table reference without LAN fan-out")
+    func lateSharePlayParticipantReceivesCurrentTableReference() async throws {
+        // Given
+        let fixture = try await Self.preparedFixture()
+        #expect(
+            await fixture.environment.masterRoot.tableRoot.gameControllable
+                .setCurrent(itemId: fixture.tableId)
+        )
+        let localMasterPlayer = PlayerController(
+            root: fixture.environment.masterRoot,
+            asGameMaster: true
+        )
+        localMasterPlayer.gameModel.gameUpdateType = .table
+        fixture.environment.masterRoot.gameModel.playerController = localMasterPlayer
+        let logsBeforeReady = fixture.environment.masterRoot.gameModel.logs.count
+        let lanTargetedSendsBeforeReady = fixture.environment.masterNetworkSpy.calledSendResponseId
+        let lanBroadcastsBeforeReady = fixture.environment.masterNetworkSpy.calledSendResponseAll
+
+        // When
+        await fixture.environment.master.ready(for: .sharePlay(UUID()))
+
+        // Then - Building the fresh reveal proves Table supersedes any stale
+        // Journal presentation. Its SharePlay origin keeps delivery off LAN.
+        #expect(fixture.environment.masterRoot.gameModel.logs.count == logsBeforeReady + 1)
+        let counter = try #require(fixture.environment.masterRoot.gameModel.logs.last)
+        let replay = try #require(fixture.environment.masterRoot.gameModel.logData[counter])
+        #expect(replay.type == .reveal)
+        #expect(replay.subType == .show)
+        #expect(replay.module == .table)
+        #expect(replay.itemId == fixture.tableId)
+        #expect(fixture.environment.masterNetworkSpy.calledSendResponseId == lanTargetedSendsBeforeReady)
+        #expect(fixture.environment.masterNetworkSpy.calledSendResponseAll == lanBroadcastsBeforeReady)
     }
 }
 

@@ -382,6 +382,37 @@ struct GameNetworkModelVersionTests {
 
     // MARK: - Deduplication
 
+    @Test("Current envelope preserves routing audience and purpose")
+    func currentEnvelopePreservesRoutingMetadata() throws {
+        // Given
+        var request = playerMessage
+        request.audience = .master
+        request.purpose = .assetRequest
+
+        // When
+        let encoded = try #require(request.encodeData())
+        let decoded = try #require(GameNetworkModel.decodeData(of: encoded))
+
+        // Then
+        #expect(decoded.audience == .master)
+        #expect(decoded.purpose == .assetRequest)
+        #expect(decoded.effectiveAudience == .master)
+    }
+
+    @Test("Legacy envelope infers routing without changing its wire format")
+    func legacyEnvelopeInfersRoutingMetadata() throws {
+        // Given
+        let encoded = try JSONEncoder().encode(v1PlayerMessage)
+
+        // When
+        let decoded = try #require(GameNetworkModel.decodeData(of: encoded))
+
+        // Then
+        #expect(decoded.audience == .automatic)
+        #expect(decoded.purpose == .legacy)
+        #expect(decoded.effectiveAudience == .master)
+    }
+
     @Test func dedupKeySeparatesMetadataOnlyFromFullPayload() {
         var metadataOnly = masterMessage
         metadataOnly.data = NetworkCodableDataType(id: payload.id, type: payload.type, version: payload.version, data: nil)
@@ -392,6 +423,30 @@ struct GameNetworkModelVersionTests {
         // A failed journal transfer delivers metadata first; the later full
         // payload must not be dropped as a duplicate.
         #expect(metadataKey != payloadKey)
+    }
+
+    @Test("Deduplication keeps a presentation distinct from an asset request")
+    func dedupKeySeparatesPurpose() {
+        // Given
+        var event = playerMessage
+        event.data = NetworkCodableDataType(
+            id: payload.id,
+            type: .photo,
+            version: payload.version,
+            data: nil
+        )
+        event.type = .reveal
+        event.subType = .show
+        event.purpose = .event
+        var request = event
+        request.purpose = .assetRequest
+
+        // When
+        let eventKey = GameMessageKey(model: event)
+        let requestKey = GameMessageKey(model: request)
+
+        // Then
+        #expect(eventKey != requestKey)
     }
 }
 

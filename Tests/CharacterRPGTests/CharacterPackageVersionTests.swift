@@ -56,6 +56,107 @@ struct CharacterPackageVersionTests {
         let photoChangedVersion = await root.gameController.networkVersion(for: characterId)
         #expect(photoChangedVersion != childChangedVersion)
         #expect(photoChangedVersion != 0)
+
+        character.tags = character.tags + ["Veteran"]
+        let tagChangedVersion = await root.gameController.networkVersion(for: characterId)
+        #expect(tagChangedVersion != photoChangedVersion)
+    }
+
+    @Test("Import category normalization preserves the recursive package version")
+    func importCategoryNormalizationPreservesVersion() async {
+        // Given
+        let characterId = UUID()
+        let childId = UUID()
+        let portraitId = UUID()
+        let characterEntryId = UUID()
+        let childEntryId = UUID()
+        let legacyRoot = Self.makeRoot()
+        legacyRoot.itemController.replace(
+            model: ValueModel(
+                id: characterId,
+                name: "Mira",
+                tags: ["Zeta", "Alpha"],
+                category: .character,
+                photoId: portraitId,
+                entries: [
+                    ValueEntryModel(
+                        id: characterEntryId,
+                        name: "Inventory",
+                        type: .text,
+                        value: "",
+                        valueId: childId
+                    ),
+                ]
+            ),
+            isInsert: true
+        )
+        legacyRoot.itemController.replace(
+            model: ValueModel(
+                id: childId,
+                name: "Inventory",
+                tags: ["Equipment"],
+                category: .item,
+                entries: [
+                    ValueEntryModel(
+                        id: childEntryId,
+                        name: "Coins",
+                        type: .number,
+                        value: "12"
+                    ),
+                ]
+            ),
+            isInsert: true
+        )
+        let importedRoot = Self.makeRoot()
+        importedRoot.itemController.replace(
+            model: ValueModel(
+                id: characterId,
+                name: "Mira",
+                tags: ImportItemRepair.normalizedTags(
+                    legacyCategory: .character,
+                    tags: ["Zeta", "Alpha"]
+                ),
+                category: .entry,
+                photoId: portraitId,
+                entries: [
+                    ValueEntryModel(
+                        id: characterEntryId,
+                        name: "Inventory",
+                        type: .text,
+                        value: "",
+                        valueId: childId
+                    ),
+                ]
+            ),
+            isInsert: true
+        )
+        importedRoot.itemController.replace(
+            model: ValueModel(
+                id: childId,
+                name: "Inventory",
+                tags: ImportItemRepair.normalizedTags(
+                    legacyCategory: .item,
+                    tags: ["Equipment"]
+                ),
+                category: .entry,
+                entries: [
+                    ValueEntryModel(
+                        id: childEntryId,
+                        name: "Coins",
+                        type: .number,
+                        value: "12"
+                    ),
+                ]
+            ),
+            isInsert: true
+        )
+
+        // When
+        let advertisedVersion = await legacyRoot.gameController.networkVersion(for: characterId)
+        let importedVersion = await importedRoot.gameController.networkVersion(for: characterId)
+
+        // Then
+        #expect(importedVersion == advertisedVersion)
     }
 
     private static func makeRoot() -> CharacterRootModel {

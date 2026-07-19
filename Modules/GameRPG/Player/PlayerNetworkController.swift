@@ -32,6 +32,13 @@ final class PlayerNetworkController {
     let browserManager: BrowserManager
     let networkModel: PlayerNetworkNodel
 
+    /// Bonjour role advertised after the outbound connection is lost. Direct
+    /// players wait for the game master to reconnect, while proxy clients wait
+    /// for their private proxy host.
+    var fallbackServiceType: GameServiceType {
+        proxy ? .proxyClient : .master
+    }
+
     @MainActor
     init(name: String, proxy: Bool = false, delegate: PlayerNetworkControllerDelegate? = nil) {
         self.networkModel = PlayerNetworkNodel(name: name)
@@ -104,7 +111,7 @@ private extension PlayerNetworkController {
         Logger.networking.debug("PlayerNetworkController: Create Listener")
         await MainActor.run { [weak self] in
             guard let self else { return }
-            let manager = ListenerManager(name: networkModel.name, serviceType: .master)
+            let manager = ListenerManager(name: networkModel.name, serviceType: fallbackServiceType)
             manager.delegate = self
             networkModel.reset(listener: manager)
             manager.startListening()

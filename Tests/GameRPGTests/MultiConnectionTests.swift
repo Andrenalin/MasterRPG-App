@@ -1035,7 +1035,7 @@ struct MultiConnectionPhotoTests {
             #expect(host.network.proxyMasterSpy.calledSendResponseAll > 0)
         }
 
-        var fullDataResponses: [GameNetworkModel] = []
+        var fullDataResponses: [(role: MultiplayerPhotoRole, message: GameNetworkModel)] = []
         for role in testCase.missingRolesInTopologyOrder {
             let missingResponse = try #require(initialResponses[role])
             await env.master.receivedProcess(missingResponse, connectionId: nil)
@@ -1046,21 +1046,26 @@ struct MultiConnectionPhotoTests {
             #expect(fullData.data.type == .photo)
             #expect(fullData.data.version == version)
             #expect(fullData.data.data != nil)
-            fullDataResponses.append(fullData)
+            let requester = try env.participant(for: role)
+            #expect(fullData.targetId == requester.config.id)
+            fullDataResponses.append((role, fullData))
         }
 
         #expect(fullDataResponses.count == testCase.missingRoles.count)
 
-        for fullData in fullDataResponses {
-            // A missing or mismatched participant requests the master's
-            // canonical baseline. The master republishes it as a group reveal
-            // so every transport, including SharePlay Journal, sees the same
-            // authoritative event.
-            #expect(fullData.targetId == nil)
+        for (requestingRole, fullData) in fullDataResponses {
+            // A missing participant receives the master's canonical baseline
+            // as an exact repair. SharePlay may physically expose the envelope
+            // to every peer, but target filtering prevents it from replaying
+            // the reveal or producing duplicate acknowledgements elsewhere.
             for participant in env.participants {
-                let response = try await participant.receive(fullData)
-                #expect(response.subType == .ok)
-                await env.master.receivedProcess(response, connectionId: nil)
+                if participant.role == requestingRole {
+                    let response = try await participant.receive(fullData)
+                    #expect(response.subType == .ok)
+                    await env.master.receivedProcess(response, connectionId: nil)
+                } else {
+                    #expect(await participant.receiveIgnored(fullData))
+                }
             }
         }
 

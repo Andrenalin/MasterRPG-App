@@ -122,27 +122,32 @@ extension MasterNetworkController {
     @discardableResult
     func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async -> Bool {
         guard let connection = await networkModel.connections.first(where: { $0.id == id }) else { return false }
-        await connection.sendResponse(data: data)
+        let encodedData = data?.encodeData()
+        await connection.response(type: .gameData, encodedContent: encodedData)
         return true
     }
 
     func sendResponse(data: MessageMapper?) async {
         let connections = await networkModel.connections
+        guard !connections.isEmpty else { return }
+        let encodedData = data?.encodeData()
         await withDiscardingTaskGroup { group in
             for connection in connections {
                 group.addTask {
-                    await connection.sendResponse(data: data)
+                    await connection.response(type: .gameData, encodedContent: encodedData)
                 }
             }
         }
     }
 
     func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async {
-        let connections = await networkModel.connections
+        let connections = await networkModel.connections.filter { $0.id != except }
+        guard !connections.isEmpty else { return }
+        let encodedData = data?.encodeData()
         await withDiscardingTaskGroup { group in
-            for connection in connections where connection.id != except {
+            for connection in connections {
                 group.addTask {
-                    await connection.sendResponse(data: data)
+                    await connection.response(type: .gameData, encodedContent: encodedData)
                 }
             }
         }
@@ -237,7 +242,7 @@ extension MasterNetworkController {
 }
 
 private extension MasterNetworkController {
-    @MainActor func addNew(_ connection: ConnectionController) {
+    @MainActor func addNew(_ connection: any ConnectionControllable) {
         networkModel.connections.append(connection)
         let id = connection.id
         networkModel.connectionStartTasks[id]?.cancel()
