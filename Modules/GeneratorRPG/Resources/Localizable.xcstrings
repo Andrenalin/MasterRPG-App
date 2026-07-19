@@ -208,6 +208,12 @@
             "state" : "translated",
             "value" : "🔧 Tool wird aufgerufen: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "🔧 กำลังเรียกใช้เครื่องมือ: %@"
+          }
         }
       }
     },
@@ -233,6 +239,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Referenzcharakter hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มตัวละครอ้างอิง"
           }
         }
       }
@@ -264,6 +276,12 @@
             "state" : "translated",
             "value" : "Notiz zu „%@“ hinzugefügt."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มโน้ตไปยัง \"%@\" แล้ว"
+          }
         }
       }
     },
@@ -289,6 +307,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abenteuerblock %lld"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บล็อกการผจญภัย %lld"
           }
         }
       }
@@ -360,7 +384,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ปฏิเสธการวิเคราะห์: %@ (หมวดหมู่: %@). เนื้อหา PDF อาจละเมิดนโยบายเนื้อหา"
+            "value" : "ปฏิเสธการวิเคราะห์: %@ (หมวดหมู่: %@) เนื้อหา PDF อาจละเมิดนโยบายเนื้อหา"
           }
         }
       }
@@ -402,6 +426,12 @@
             "state" : "translated",
             "value" : "Analyse mit Apple Intelligence läuft …"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังวิเคราะห์ด้วย Apple Intelligence..."
+          }
         }
       }
     },
@@ -442,6 +472,12 @@
             "state" : "translated",
             "value" : "Apple Intelligence ist nicht aktiviert. Bitte aktiviere es in den Einstellungen."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apple Intelligence ยังไม่ได้เปิดใช้งาน โปรดเปิดใช้งานในการตั้งค่า"
+          }
         }
       }
     },
@@ -471,6 +507,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple Intelligence ist nicht verfügbar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apple Intelligence ไม่พร้อมใช้งาน"
           }
         }
       }
@@ -502,6 +544,12 @@
             "state" : "translated",
             "value" : "Ausgewählte Eigenschaften anwenden"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำคุณสมบัติที่เลือกไปใช้"
+          }
         }
       }
     },
@@ -521,6 +569,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Der Assistent gibt gerade eine Antwort ein"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้ช่วยกำลังพิมพ์การตอบกลับ"
           }
         }
       }
@@ -610,6 +664,12 @@
             "state" : "translated",
             "value" : "Kampagne: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แคมเปญ: %@"
+          }
         }
       }
     },
@@ -619,6 +679,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abbrechen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิก"
           }
         }
       }
@@ -662,6 +728,12 @@
             "state" : "translated",
             "value" : "Modellverfügbarkeit wird geprüft …"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังตรวจสอบความพร้อมใช้งานของโมเดล..."
+          }
         }
       }
     },
@@ -687,6 +759,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Inhaltsrichtlinie hat die Analyse verhindert."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นโยบายเนื้อหาขัดขวางการวิเคราะห์"
           }
         }
       }
@@ -728,6 +806,12 @@
             "state" : "translated",
             "value" : "Kontext"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บริบท"
+          }
         }
       }
     },
@@ -738,6 +822,12 @@
             "state" : "translated",
             "value" : "Kontext zusammengefasst"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สรุปบริบทแล้ว"
+          }
         }
       }
     },
@@ -747,6 +837,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kontextzusammenfassungsanzeige"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวบ่งชี้สรุปบริบท"
           }
         }
       }
@@ -767,6 +863,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nachricht kopieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คัดลอกข้อความ"
           }
         }
       }
@@ -824,6 +926,12 @@
             "state" : "translated",
             "value" : "Dekodierungsfehler: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การถอดรหัสล้มเหลว: %@"
+          }
         }
       }
     },
@@ -844,6 +952,12 @@
             "state" : "translated",
             "value" : "Antworten löschen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบคำตอบ"
+          }
         }
       }
     },
@@ -860,9 +974,69 @@
     "Deleted ^[%lld generator](inflect: true)." : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld Generator](inflect: true) gelöscht."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "^[%lld Generator](inflect: true) gelöscht."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "^[%lld Generator](inflect: true) gelöscht."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "^[%lld Generator](inflect: true) gelöscht."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Deleted %lld generator."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Deleted %lld generators."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Deleted %lld generators."
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ลบตัวสร้าง %lld รายการแล้ว"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ลบตัวสร้าง %lld รายการแล้ว"
+                }
+              }
+            }
           }
         }
       }
@@ -889,6 +1063,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Beschreibung extrahiert"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดึงคำอธิบายแล้ว"
           }
         }
       }
@@ -940,6 +1120,12 @@
             "state" : "translated",
             "value" : "Aktiviere Apple Intelligence in den Systemeinstellungen, um Datenblattinhalte zu generieren."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดใช้งาน Apple Intelligence ในการตั้งค่าระบบเพื่อสร้างเนื้อหาชีท"
+          }
         }
       }
     },
@@ -949,6 +1135,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aktiviere Apple Intelligence in den Systemeinstellungen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดใช้งาน Apple Intelligence ในการตั้งค่าระบบ"
           }
         }
       }
@@ -969,6 +1161,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Extrahieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดึง"
           }
         }
       }
@@ -1016,6 +1214,12 @@
             "state" : "translated",
             "value" : "%lld Blöcke extrahiert"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดึงข้อมูลแล้ว %lld บล็อก"
+          }
         }
       }
     },
@@ -1046,6 +1250,12 @@
             "state" : "translated",
             "value" : "Extraktor"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวดึงข้อมูล"
+          }
         }
       }
     },
@@ -1055,6 +1265,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Sprachmodellsitzung konnte nicht erstellt werden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถสร้างเซสชันโมเดลภาษาได้"
           }
         }
       }
@@ -1136,6 +1352,12 @@
             "state" : "translated",
             "value" : "Generieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้าง"
+          }
         }
       }
     },
@@ -1145,6 +1367,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abenteuer generieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างการผจญภัย"
           }
         }
       }
@@ -1196,6 +1424,12 @@
             "state" : "translated",
             "value" : "Generierungstyp"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ประเภทการสร้าง"
+          }
         }
       }
     },
@@ -1232,9 +1466,69 @@
     "Identified %lld sections" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Abschnitte erkannt"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld Abschnitte erkannt"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Abschnitte erkannt"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld Abschnitte erkannt"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Identified %lld section"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Identified %lld sections"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Identified %lld sections"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ระบุได้ %lld ส่วน"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ระบุได้ %lld ส่วน"
+                }
+              }
+            }
           }
         }
       }
@@ -1246,6 +1540,12 @@
             "state" : "translated",
             "value" : "Anweisungen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำแนะนำ"
+          }
         }
       }
     },
@@ -1255,6 +1555,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ungültige Anfrage: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำขอไม่ถูกต้อง: %@"
           }
         }
       }
@@ -1286,6 +1592,12 @@
             "state" : "translated",
             "value" : "Eingabe fehlt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบพรอมต์"
+          }
         }
       }
     },
@@ -1306,6 +1618,12 @@
             "state" : "translated",
             "value" : "Modellressourcen nicht verfügbar: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แอสเซตของโมเดลไม่พร้อมใช้งาน: %@"
+          }
         }
       }
     },
@@ -1315,6 +1633,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modellressourcen nicht verfügbar: %@. Stelle sicher, dass Apple Intelligence geladen wurde."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แอสเซตของโมเดลไม่พร้อมใช้งาน: %@ โปรดตรวจสอบว่าดาวน์โหลด Apple Intelligence แล้ว"
           }
         }
       }
@@ -1335,6 +1659,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Modell hat die Antwort verweigert: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โมเดลปฏิเสธที่จะตอบกลับ: %@"
           }
         }
       }
@@ -1365,6 +1695,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keine Blöcke"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีบล็อก"
           }
         }
       }
@@ -1418,6 +1754,12 @@
             "state" : "translated",
             "value" : "Notiz"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โน้ต"
+          }
         }
       }
     },
@@ -1427,6 +1769,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "OK"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตกลง"
           }
         }
       }
@@ -1463,6 +1811,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sonstiger Fehler: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อผิดพลาดอื่น: %@"
           }
         }
       }
@@ -1503,6 +1857,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das PDF-Extraktionsschema enthält eine nicht unterstützte Einschränkung: %@. Dies ist ein Entwicklungsfehler."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สกีมาการดึง PDF มีข้อจำกัดที่ไม่รองรับ: %@ นี่คือข้อผิดพลาดของนักพัฒนา"
           }
         }
       }
@@ -1550,6 +1910,12 @@
             "state" : "translated",
             "value" : "Ratenlimit überschritten: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกินขีดจำกัดอัตราการใช้งาน: %@"
+          }
         }
       }
     },
@@ -1559,6 +1925,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ratenlimit überschritten. Versuche es in %@ Sekunden erneut."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกินขีดจำกัดอัตราการใช้งาน โปรดลองอีกครั้งใน %@ วินาที"
           }
         }
       }
@@ -1590,6 +1962,12 @@
             "state" : "translated",
             "value" : "Überlegung: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เหตุผล: %@"
+          }
         }
       }
     },
@@ -1599,6 +1977,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Referenz hinzugefügt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มการอ้างอิงแล้ว"
           }
         }
       }
@@ -1682,6 +2066,12 @@
             "state" : "translated",
             "value" : "Wähle aus, welche extrahierten Werte auf %@ angewendet werden sollen."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกค่าที่ดึงมาเพื่อนำไปใช้กับ %@"
+          }
         }
       }
     },
@@ -1728,6 +2118,12 @@
             "state" : "translated",
             "value" : "Nachricht teilen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แชร์ข้อความ"
+          }
         }
       }
     },
@@ -1748,6 +2144,12 @@
             "state" : "translated",
             "value" : "Datenblattblöcke"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บล็อกชีท"
+          }
         }
       }
     },
@@ -1758,6 +2160,12 @@
             "state" : "translated",
             "value" : "Datenblattblöcke und generierte Blöcke werden hier angezeigt."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บล็อกจากชีทและบล็อกที่สร้างขึ้นจะปรากฏที่นี่"
+          }
         }
       }
     },
@@ -1767,6 +2175,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Start"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่ม"
           }
         }
       }
@@ -1842,7 +2256,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เนื้อหาในตารางมีขนาดใหญ่เกินไป ลองใช้ตารางที่มีรายการน้อยกว่านี้"
+            "value" : "เนื้อหาในตารางมีขนาดใหญ่เกินไป ลองใช้ตารางที่มีรายการน้อยลง"
           }
         }
       }
@@ -1853,6 +2267,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tags"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แท็ก"
           }
         }
       }
@@ -1873,6 +2293,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Sprachmodell ist noch nicht bereit. Versuche es später erneut."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โมเดลภาษายังไม่พร้อมใช้งาน โปรดลองอีกครั้งในภายหลัง"
           }
         }
       }
@@ -1899,6 +2325,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Der PDF-Inhalt ist zu groß. Nur der erste Teil wird verarbeitet."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เนื้อหา PDF มีขนาดใหญ่เกินไป ประมวลผลเฉพาะส่วนแรกเท่านั้น"
           }
         }
       }
@@ -1990,6 +2422,12 @@
             "state" : "translated",
             "value" : "Titel ausstehend"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รอชื่อเรื่อง"
+          }
         }
       }
     },
@@ -2000,6 +2438,12 @@
             "state" : "translated",
             "value" : "Titel nicht verfügbar"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบชื่อเรื่อง"
+          }
         }
       }
     },
@@ -2009,6 +2453,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Titel: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชื่อเรื่อง: %@"
           }
         }
       }
@@ -2029,6 +2479,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zu viele gleichzeitige Extraktionsanfragen. Maximal zulässig: %@. Warte, bis die aktuellen Extraktionen abgeschlossen sind."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มีคำขอดึงข้อมูลพร้อมกันมากเกินไป จำนวนสูงสุดที่อนุญาต: %@ โปรดรอให้การดึงข้อมูลที่กำลังดำเนินการเสร็จสิ้นก่อน"
           }
         }
       }
@@ -2066,6 +2522,12 @@
             "state" : "translated",
             "value" : "Tool „%@“ fehlgeschlagen: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เครื่องมือ '%@' ล้มเหลว: %@"
+          }
         }
       }
     },
@@ -2086,15 +2548,81 @@
             "state" : "translated",
             "value" : "Tool-Aufruf fehlgeschlagen: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การเรียกใช้เครื่องมือล้มเหลว: %@"
+          }
         }
       }
     },
     "Total: %lld pages" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gesamt: %lld Seiten"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Gesamt: %lld Seiten"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gesamt: %lld Seiten"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Gesamt: %lld Seiten"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Total: %lld page"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Total: %lld pages"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Total: %lld pages"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "รวม: %lld หน้า"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "รวม: %lld หน้า"
+                }
+              }
+            }
           }
         }
       }
@@ -2106,6 +2634,12 @@
             "state" : "translated",
             "value" : "Erneut versuchen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลองอีกครั้ง"
+          }
         }
       }
     },
@@ -2116,6 +2650,12 @@
             "state" : "translated",
             "value" : "Nachricht eingeben …"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พิมพ์ข้อความของคุณ..."
+          }
         }
       }
     },
@@ -2125,6 +2665,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anfrage eingeben …"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พิมพ์คำขอของคุณ..."
           }
         }
       }
@@ -2166,6 +2712,12 @@
             "state" : "translated",
             "value" : "Nicht unterstützte Umgebung: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สภาพแวดล้อมที่ไม่รองรับ: %@"
+          }
         }
       }
     },
@@ -2175,6 +2727,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht unterstützte Generierungsanleitung: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คู่มือการสร้างที่ไม่รองรับ: %@"
           }
         }
       }
@@ -2186,6 +2744,12 @@
             "state" : "translated",
             "value" : "Nicht unterstützte Sprache oder Region: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ภาษา/ภูมิภาคที่ไม่รองรับ: %@"
+          }
         }
       }
     },
@@ -2195,6 +2759,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ohne Titel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีชื่อ"
           }
         }
       }
@@ -2258,6 +2828,12 @@
             "state" : "translated",
             "value" : "Welche Generatoranweisungen?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำแนะนำตัวสร้างใด?"
+          }
         }
       }
     },
@@ -2268,6 +2844,12 @@
             "state" : "translated",
             "value" : "Welcher Generator?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวสร้างใด?"
+          }
         }
       }
     },
@@ -2277,6 +2859,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ihre Nachricht, %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คุณพูด, %@"
           }
         }
       }
@@ -2302,7 +2890,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "คุณพูดว่า, ตัวบ่งชี้การพิมพ์, %@"
+            "value" : "คุณพูด, ตัวบ่งชี้การพิมพ์, %@"
           }
         }
       }
@@ -2313,6 +2901,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aktuelle Sprache: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ภาษาปัจจุบันของคุณ: %@"
           }
         }
       }
