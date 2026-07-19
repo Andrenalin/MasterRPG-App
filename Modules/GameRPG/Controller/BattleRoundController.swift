@@ -204,6 +204,9 @@ extension GameRoot {
     }
 
     private func broadcastBattleRound(mapId: UUID, includeMapState: Bool) {
+        #if !os(tvOS)
+        gameModel.gameTableModel?.syncPawnsWithMapPins()
+        #endif
         if includeMapState {
             networkActions.game(
                 mapRoot.mapGameControllable.networkMapUpdate(for: mapId),

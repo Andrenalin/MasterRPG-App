@@ -95,7 +95,13 @@ class GameSetup {
     /// Syncs pin tokens (players and monsters) with the current map pins,
     /// id-matched: updates existing, creates missing, removes stale tokens.
     /// Returns pinId → photoId for tokens that still need their photo texture.
-    func syncPins(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, isGameMaster: Bool) -> [UUID: UUID] {
+    func syncPins(
+        mapModel: MapModel?,
+        mapImage: AKImage?,
+        degrees: Double,
+        isGameMaster: Bool,
+        activeAttackerPinId: UUID?
+    ) -> [UUID: UUID] {
         let allPins: [MapPinModel]
         if let mapModel {
             let pointerPins = mapModel.pointer.isShown ? [mapModel.pointer] : []
@@ -150,13 +156,23 @@ class GameSetup {
             }
             let hiddenForMaster = isGameMaster && !pin.isShown
             if let pawn = existingPawns[pin.id] {
-                pawn.update(pin: pin, position: position, hiddenForMaster: hiddenForMaster)
+                pawn.update(
+                    pin: pin,
+                    position: position,
+                    hiddenForMaster: hiddenForMaster,
+                    activeAttackerPinId: activeAttackerPinId
+                )
                 if pawn.loadedPhotoId != pin.photoId, let photoId = pin.photoId {
                     photoLoads[pin.id] = photoId
                 }
             } else {
                 let pawn = PinPawn(pin: pin)
-                pawn.update(pin: pin, position: position, hiddenForMaster: hiddenForMaster)
+                pawn.update(
+                    pin: pin,
+                    position: position,
+                    hiddenForMaster: hiddenForMaster,
+                    activeAttackerPinId: activeAttackerPinId
+                )
                 pinPawns.append(pawn)
                 pinContainer.addChild(pawn.entity)
                 if let photoId = pin.photoId {
@@ -186,7 +202,15 @@ extension GameTableModel {
     @MainActor
     func syncPawnsWithMapPins() {
         let mapModel = currentMapModel()
-        let photoLoads = setup.syncPins(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees, isGameMaster: isGameMaster)
+        let battleRound = mapRoot.mapGameControllable.battleRoundModel
+        let activeAttackerPinId = battleRound.isRunning ? battleRound.activePinId : nil
+        let photoLoads = setup.syncPins(
+            mapModel: mapModel,
+            mapImage: currentMapImage,
+            degrees: currentMapDegrees,
+            isGameMaster: isGameMaster,
+            activeAttackerPinId: activeAttackerPinId
+        )
         updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {
             guard beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }

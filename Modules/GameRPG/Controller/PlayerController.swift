@@ -2169,7 +2169,12 @@ extension PlayerController {
                     for: model.data.id,
                     with: model.data
                 ) else { return nil }
-                await MainActor.run { gameModel.gameUpdateType = .map }
+                await MainActor.run {
+                    gameModel.gameUpdateType = .map
+                    #if !os(tvOS)
+                    root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+                    #endif
+                }
             default:
                 return nil
             }

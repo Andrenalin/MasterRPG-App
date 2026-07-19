@@ -382,7 +382,8 @@ final class PinPawn {
     func update(
         pin: MapPinModel,
         position: SIMD3<Float>,
-        hiddenForMaster: Bool
+        hiddenForMaster: Bool,
+        activeAttackerPinId: UUID? = nil
     ) {
         entity.position = position
         entity.scale = SIMD3<Float>(repeating: pin.isZoom ? 4 : 1)
@@ -396,7 +397,13 @@ final class PinPawn {
             tint: pin.isDead ? .black : GameTablePlatformColor(pin.color)
         )
         baseModel.model?.materials = [baseMaterial]
-        highlightModel.isEnabled = pin.isHighlighted
+        let isActiveAttacker = pin.id == activeAttackerPinId
+        var highlightMaterial = UnlitMaterial()
+        highlightMaterial.color = .init(
+            tint: isActiveAttacker ? .systemBlue : .systemRed
+        )
+        highlightModel.model?.materials = [highlightMaterial]
+        highlightModel.isEnabled = pin.isHighlighted || isActiveAttacker
         deathMarkModels.forEach { $0.isEnabled = pin.isDead }
         if hiddenForMaster {
             entity.components.set(OpacityComponent(opacity: 0.5))

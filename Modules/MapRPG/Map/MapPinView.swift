@@ -393,6 +393,11 @@ struct MapPinView: View {
 
     private var pin: MapPinModel { model.presentedPin }
 
+    private var isActiveBattleAttacker: Bool {
+        let battleRound = root.mapGameControllable.battleRoundModel
+        return battleRound.isRunning && battleRound.activePinId == pin.id
+    }
+
     var body: some View {
         pinView
     }
@@ -438,13 +443,13 @@ struct MapPinView: View {
             }
         }
         .overlay {
-            if pin.isHighlighted {
-                Circle()
-                    .stroke(.red, lineWidth: 4)
-                    .padding(-4)
-                    .accessibilityHidden(true)
-            }
+            Circle()
+                .stroke(isActiveBattleAttacker ? .blue : .red, lineWidth: 4)
+                .padding(-4)
+                .opacity(pin.isHighlighted || isActiveBattleAttacker ? 1 : 0)
+                .accessibilityHidden(true)
         }
+        .animation(reduceMotion ? nil : .easeInOut, value: isActiveBattleAttacker)
         .shadow(color: .black, radius: 4, x: 4, y: 4)
 #if os(visionOS)
         .hoverEffect(.highlight)

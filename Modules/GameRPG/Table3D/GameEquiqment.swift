@@ -383,10 +383,14 @@ final class PinPawn {
         }
     }
 
-    /// Applies pin state without recreating the entity. The highlight is a red
-    /// disc behind the token, so only its outer edge is visible as a ring. Dead
-    /// pins use the base as a black inner border while the photo remains opaque.
-    func update(pin: MapPinModel, position: SIMD3<Float>, hiddenForMaster: Bool) {
+    /// Applies pin state without recreating the entity. A battle attacker uses
+    /// a blue ring while selected defenders retain the standard red ring.
+    func update(
+        pin: MapPinModel,
+        position: SIMD3<Float>,
+        hiddenForMaster: Bool,
+        activeAttackerPinId: UUID? = nil
+    ) {
         entity.position = position
         entity.scale = SIMD3<Float>(repeating: pin.isZoom ? 4.0 : 1.0)
         if pin.size != currentSize {
@@ -396,7 +400,11 @@ final class PinPawn {
         var baseMaterial = UnlitMaterial()
         baseMaterial.color = .init(tint: pin.isDead ? .black : UIColor(pin.color))
         baseModel.model?.materials = [baseMaterial]
-        highlightModel.isEnabled = pin.isHighlighted
+        let isActiveAttacker = pin.id == activeAttackerPinId
+        var highlightMaterial = UnlitMaterial()
+        highlightMaterial.color = .init(tint: isActiveAttacker ? .systemBlue : .systemRed)
+        highlightModel.model?.materials = [highlightMaterial]
+        highlightModel.isEnabled = pin.isHighlighted || isActiveAttacker
         deathMarkModels.forEach { $0.isEnabled = pin.isDead }
         if hiddenForMaster {
             entity.components.set(OpacityComponent(opacity: 0.5))
