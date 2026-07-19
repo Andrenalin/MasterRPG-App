@@ -334,6 +334,12 @@
             "state" : "translated",
             "value" : "Die KI hat keinen verwendbaren Datenblattinhalt generiert."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "AI ไม่สร้างเนื้อหาชีทที่ใช้งานได้"
+          }
         }
       }
     },
@@ -585,6 +591,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Der Assistent schreibt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้ช่วยกำลังพิมพ์"
           }
         }
       }
@@ -906,6 +918,12 @@
             "state" : "translated",
             "value" : "Generator mit dem Namen ${name} erstellen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวสร้างชื่อ ${name}"
+          }
         }
       }
     },
@@ -915,6 +933,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "„%@“ erstellt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้าง “%@” แล้ว"
           }
         }
       }
@@ -1090,6 +1114,12 @@
             "state" : "translated",
             "value" : "Schließen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด"
+          }
         }
       }
     },
@@ -1099,6 +1129,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fertig"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เสร็จสิ้น"
           }
         }
       }
@@ -1338,9 +1374,69 @@
     "Found %lld tags" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Tags gefunden"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld Tags gefunden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Tags gefunden"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld Tags gefunden"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Found %lld tag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Found %lld tags"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Found %lld tags"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "พบ %lld แท็ก"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "พบ %lld แท็ก"
+                }
+              }
+            }
           }
         }
       }
@@ -1828,6 +1924,12 @@
             "state" : "translated",
             "value" : "Ausgabesprache"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ภาษาผลลัพธ์"
+          }
         }
       }
     },
@@ -1883,6 +1985,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bitte warte, bis der Assistent die Eingabe beendet hat"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โปรดรอให้ผู้ช่วยพิมพ์เสร็จก่อน"
           }
         }
       }
@@ -2020,6 +2128,12 @@
             "state" : "translated",
             "value" : "Speichern"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บันทึก"
+          }
         }
       }
     },
@@ -2133,6 +2247,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Teilen-Dialog geöffnet"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดชีทแชร์แล้ว"
           }
         }
       }
@@ -2401,6 +2521,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diese Nachricht enthält eine Zusammenfassung des vorherigen Gesprächskontexts"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อความนี้มีสรุปบริบทการสนทนาก่อนหน้า"
           }
         }
       }
