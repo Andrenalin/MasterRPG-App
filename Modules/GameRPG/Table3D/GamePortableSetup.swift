@@ -43,7 +43,8 @@ final class GameSetup {
         mapModel: MapModel?,
         mapImage: AKImage?,
         degrees: Double,
-        isGameMaster: Bool
+        isGameMaster: Bool,
+        activeAttackerPinId: UUID?
     ) -> [UUID: UUID] {
         let allPins: [MapPinModel]
         if let mapModel {
@@ -103,7 +104,8 @@ final class GameSetup {
                 pawn.update(
                     pin: pin,
                     position: position,
-                    hiddenForMaster: hiddenForMaster
+                    hiddenForMaster: hiddenForMaster,
+                    activeAttackerPinId: activeAttackerPinId
                 )
                 if pawn.loadedPhotoId != pin.photoId, let photoId = pin.photoId {
                     photoLoads[pin.id] = photoId
@@ -113,7 +115,8 @@ final class GameSetup {
                 pawn.update(
                     pin: pin,
                     position: position,
-                    hiddenForMaster: hiddenForMaster
+                    hiddenForMaster: hiddenForMaster,
+                    activeAttackerPinId: activeAttackerPinId
                 )
                 pinPawns.append(pawn)
                 pinContainer.addChild(pawn.entity)
@@ -142,11 +145,14 @@ extension GameTableModel {
 
     func syncPawnsWithMapPins() {
         let mapModel = currentMapModel()
+        let battleRound = mapRoot.mapGameControllable.battleRoundModel
+        let activeAttackerPinId = battleRound.isRunning ? battleRound.activePinId : nil
         let photoLoads = setup.syncPins(
             mapModel: mapModel,
             mapImage: currentMapImage,
             degrees: currentMapDegrees,
-            isGameMaster: isGameMaster
+            isGameMaster: isGameMaster,
+            activeAttackerPinId: activeAttackerPinId
         )
         updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {

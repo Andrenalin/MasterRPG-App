@@ -331,13 +331,33 @@ private struct BattleRoundEmptyState: View {
 }
 
 private struct BattleRoundList: View {
+    private static let dragPayloadPrefix = "masterrpg-battle-entry:"
+
     let model: BattleRoundModel
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Turn Order", bundle: .module)
+                        .font(.headline)
+
+                    Spacer()
+
+                    Label {
+                        Text("Drag to reorder", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.up.arrow.down")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+
                 ForEach(model.entries) { entry in
                     BattleRoundCard(
                         model: model,
@@ -347,30 +367,49 @@ private struct BattleRoundList: View {
                         showCharacter: showCharacter,
                         assignCharacter: actions.assignCharacter
                     )
-                    .listRowBackground(Color.clear)
-                    .battleHiddenRowSeparator()
-                    .listRowInsets(
-                        EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12)
-                    )
-                }
-                .onMove(perform: actions.moveEntries)
-            } header: {
-                HStack {
-                    Text("Turn Order", bundle: .module)
-                    Spacer()
-                    Text("Drag to reorder", bundle: .module)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .textCase(nil)
+                    .frame(maxWidth: .infinity)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                    #if !os(tvOS)
+                    .draggable(dragPayload(for: entry))
+                    .dropDestination(for: String.self) { payloads, _ in
+                        return reorder(payloads, over: entry)
+                    }
+                    #endif
                 }
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(
+                accessibilityReduceMotion ? nil : .snappy,
+                value: model.entries.map(\.id)
+            )
         }
-        .battleInitiativeListStyle()
-        .battleAlwaysEditableList()
     }
 
     private func rank(for entry: BattleRoundEntry) -> Int {
         (model.entries.firstIndex(where: { $0.id == entry.id }) ?? 0) + 1
+    }
+
+    private func dragPayload(for entry: BattleRoundEntry) -> String {
+        Self.dragPayloadPrefix + entry.id.uuidString
+    }
+
+    private func reorder(_ payloads: [String], over target: BattleRoundEntry) -> Bool {
+        guard let payload = payloads.first,
+              payload.hasPrefix(Self.dragPayloadPrefix),
+              let sourceId = UUID(
+                  uuidString: String(payload.dropFirst(Self.dragPayloadPrefix.count))
+              ),
+              let sourceIndex = model.entries.firstIndex(where: { $0.id == sourceId }),
+              let targetIndex = model.entries.firstIndex(where: { $0.id == target.id }) else {
+            return false
+        }
+        guard sourceIndex != targetIndex else { return true }
+
+        let destination = sourceIndex < targetIndex ? targetIndex + 1 : targetIndex
+        actions.moveEntries(IndexSet(integer: sourceIndex), destination)
+        return true
     }
 }
 
@@ -929,40 +968,11 @@ private struct BattleCharacterSheetFactory {
 
 private extension View {
     @ViewBuilder
-    func battleInitiativeListStyle() -> some View {
-#if os(iOS) || os(visionOS)
-        listStyle(.insetGrouped)
-#elseif os(tvOS)
-        listStyle(.plain)
-#else
-        listStyle(.inset)
-#endif
-    }
-
-    @ViewBuilder
-    func battleHiddenRowSeparator() -> some View {
-#if os(tvOS)
-        self
-#else
-        listRowSeparator(.hidden)
-#endif
-    }
-
-    @ViewBuilder
     func battleInitiativeTextFieldStyle() -> some View {
 #if os(tvOS)
         self
 #else
         textFieldStyle(.roundedBorder)
-#endif
-    }
-
-    @ViewBuilder
-    func battleAlwaysEditableList() -> some View {
-#if os(iOS) || os(visionOS)
-        environment(\.editMode, .constant(.active))
-#else
-        self
 #endif
     }
 
