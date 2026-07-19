@@ -204,6 +204,41 @@ struct BattleRoundModelTests {
         #expect(Set(entry.rolls.map(\.id)).count == 3)
     }
 
+    @Test("Surprise accepts new combatants and records rolls on their own rows")
+    func preparesSurpriseCombatantsAndRolls() throws {
+        // Given
+        let sut = BattleRoundModel()
+        let player = combatant(name: "Player", isPlayer: true)
+        let monster = combatant(name: "Monster")
+        sut.begin(
+            mapId: UUID(),
+            players: [player],
+            roomCombatants: [],
+            initiativeOrder: .descending
+        )
+
+        // When / Then
+        #expect(sut.isPreparingSurprise)
+        #expect(sut.addCombatant(monster))
+        #expect(!sut.addCombatant(monster))
+        #expect(sut.entries.map(\.attackerId).contains(monster.id))
+        #expect(sut.addRoll(combatantId: player.id, total: 14, expression: "d20"))
+        #expect(sut.addRoll(combatantId: monster.id, total: 9, expression: "d20"))
+        #expect(!sut.selectRollRecipient(player.id))
+        #expect(sut.selectRollRecipient(monster.id))
+        #expect(sut.masterRollRecipientCombatantId == monster.id)
+
+        let playerEntry = try #require(sut.entries.first { $0.attackerId == player.id })
+        let monsterEntry = try #require(sut.entries.first { $0.attackerId == monster.id })
+        #expect(sut.rolls(for: player.id, in: playerEntry).map(\.total) == [14])
+        #expect(sut.rolls(for: monster.id, in: monsterEntry).map(\.total) == [9])
+
+        // Once a real round starts, the surprise roster is closed.
+        #expect(sut.nextRound())
+        #expect(!sut.isPreparingSurprise)
+        #expect(!sut.addCombatant(combatant(name: "Late arrival")))
+    }
+
     @Test("Player initiative and runtime identity survive closing while monsters refresh")
     func retainsPlayersAndRefreshesMonsters() throws {
         // Given

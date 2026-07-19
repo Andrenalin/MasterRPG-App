@@ -437,14 +437,16 @@ final class GameTableModel: Sendable {
     }
 
     /// A tap toggles the shared highlight for both roles. On the master this
-    /// immediately feeds the active battle row's defender set and broadcasts
-    /// the authoritative map state; a player asks the master to authorize the
-    /// same pin mutation through the existing `.mapPin` route.
+    /// first adds a missing combatant while Surprise is being prepared. Once
+    /// the row exists, taps feed the active battle row's defender set.
     func pinTapped(pinId: UUID) {
         guard let mapId = currentMapId,
               let mapModel = currentMapModel(),
               pinId != mapModel.pointer.id,
               setup.pinPawns.contains(where: { $0.pinId == pinId }) else { return }
+        if addPinToBattleRound(pinId: pinId) {
+            return
+        }
         guard mapRoot.mapGameControllable.toggleHighlightPin(itemId: mapId, pinId: pinId) else { return }
         syncPawnsWithMapPins()
         if isGameMaster {
@@ -490,6 +492,21 @@ final class GameTableModel: Sendable {
         broadcastMapState(for: mapId)
     }
 
+    var canAddSelectedPinToBattleRound: Bool {
+        guard isGameMaster,
+              let selectedPinId else {
+            return false
+        }
+        let battleRound = mapRoot.mapGameControllable.battleRoundModel
+        return battleRound.isPreparingSurprise
+            && battleRound.combatant(pinId: selectedPinId) == nil
+    }
+
+    func addSelectedPinToBattleRound() {
+        guard let selectedPinId else { return }
+        _ = addPinToBattleRound(pinId: selectedPinId)
+    }
+
     func toggleSelectedPinVisibility() {
         guard isGameMaster, let mapId = currentMapId, let selectedPinId,
               mapRoot.mapGameControllable.togglePin(itemId: mapId, pinId: selectedPinId) else { return }
@@ -509,6 +526,22 @@ final class GameTableModel: Sendable {
               mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: selectedPinId) else { return }
         syncPawnsWithMapPins()
         broadcastMapState(for: mapId)
+    }
+
+    @discardableResult
+    private func addPinToBattleRound(pinId: UUID) -> Bool {
+        guard isGameMaster,
+              let mapId = currentMapId,
+              mapRoot.mapGameControllable.addBattleCombatant(
+                  itemId: mapId,
+                  pinId: pinId
+              ) else {
+            return false
+        }
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+        broadcastBattleRoundState(for: mapId)
+        return true
     }
 
     private func mapModel(for mapId: UUID) async -> MapModel? {
@@ -546,6 +579,15 @@ final class GameTableModel: Sendable {
             .mapState,
             nil
         )
+    }
+
+    private func broadcastBattleRoundState(for mapId: UUID) {
+        guard let battleUpdate = mapRoot.mapGameControllable.networkBattleRoundUpdate(
+            for: mapId
+        ) else {
+            return
+        }
+        networkActions?.game(battleUpdate, .battleRound, nil)
     }
 
     private func sendPlayerPinUpdate(mapId: UUID, pinId: UUID) {

@@ -124,6 +124,7 @@ public protocol MapGameStorable {
     @MainActor func activateBattleAttacker(itemId: UUID, combatantId: UUID) -> Bool
     @MainActor func nextBattleAttacker(itemId: UUID) -> Bool
     @MainActor func nextBattleRound(itemId: UUID) -> Bool
+    @MainActor func addBattleCombatant(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func addBattleRoll(
         itemId: UUID,
         combatantId: UUID,
@@ -764,6 +765,20 @@ extension GameController: MapGameStorable {
             return false
         }
         applyActiveBattleHighlights(itemId: itemId)
+        return true
+    }
+
+    /// Adds a pin that was outside the initially focused room while the
+    /// surprise round is still being prepared.
+    @MainActor
+    func addBattleCombatant(itemId: UUID, pinId: UUID) -> Bool {
+        guard battleRoundModel.mapId == itemId,
+              battleRoundModel.isPreparingSurprise,
+              battleRoundModel.combatant(pinId: pinId) == nil,
+              let combatant = makeBattleCombatant(itemId: itemId, pinId: pinId),
+              battleRoundModel.addCombatant(combatant) else {
+            return false
+        }
         return true
     }
 

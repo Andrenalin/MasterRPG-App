@@ -101,6 +101,15 @@ struct BattleRoundControllerTests {
         #expect(copiedCharacter.id == monsterGameId)
         #expect(copiedCharacter.name == monsterCombatant.name)
         #expect(sut.gameItem(for: mapId)[MapPinId.id, roomMonster.id].characterId == monsterGameId)
+
+        // A map tap/action can add a pin outside the focused room while the
+        // surprise roster is still open.
+        #expect(sut.addBattleCombatant(itemId: mapId, pinId: outsideMonster.id))
+        let addedOutsideMonster = try #require(
+            model.combatant(pinId: outsideMonster.id)
+        )
+        #expect(model.entries.contains { $0.attackerId == addedOutsideMonster.id })
+        #expect(!sut.addBattleCombatant(itemId: mapId, pinId: outsideMonster.id))
     }
 
     @Test("Active attacker is authoritative and highlights synchronize defenders, death, and network state")

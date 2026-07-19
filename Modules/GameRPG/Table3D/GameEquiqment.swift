@@ -29,29 +29,29 @@ struct Table: Tabletop {
     var id: EquipmentIdentifier = .tableID
 }
 
-struct Board: EntityEquipment {
-    let id: ID
+/// Static map surface rendered in the same coordinate space as the wood table
+/// and synchronized pins. It deliberately isn't TabletopKit equipment:
+/// TabletopKit rests equipment against its centered table shape, while this
+/// scene's generated table uses its bottom as y = 0.
+@MainActor
+final class Board {
     let entity: Entity
-    var initialState: BaseEquipmentState
     
     // The map is a thin image plane directly on the tabletop.
     private let imagePlane: ModelEntity
     private let mapSize: Float
     
-    @MainActor
-    init(id: ID) {
-        self.id = id
-        
+    init() {
         self.mapSize = MapTableProjection.mapSize
         let boardEntity = Entity()
+        boardEntity.name = "MapSurface"
 
         let plane = ModelEntity(
             mesh: .generatePlane(width: mapSize, depth: mapSize),
             materials: [SimpleMaterial(color: .white, isMetallic: false)]
         )
-        // Board equipment is positioned at the table origin. The generated
-        // wood mesh extends upward from that origin, so clearance alone puts
-        // the image plane inside the tabletop and leaves only the pins visible.
+        // The map surface shares the bottom-origin coordinate space used by
+        // the generated wood mesh and the synchronized pin container.
         plane.position.y = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
         plane.name = "MapImagePlane"
         plane.isEnabled = false
@@ -59,18 +59,10 @@ struct Board: EntityEquipment {
         self.imagePlane = plane
         
         self.entity = boardEntity
-        
-        // Align with table (no rotation)
-        self.initialState = .init(
-            parentID: .tableID,
-            seatControl: .restricted([]),
-            pose: .init(position: .init(), rotation: .degrees(0)),
-            entity: self.entity
-        )
     }
         
     // Update the map from PhotoModel data while preserving its aspect ratio.
-    @MainActor mutating func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool) {
+    func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool) {
         guard image.cgImage != nil else {
             Logger.gameTable.error("Failed to create a board image from the current photo")
             return
@@ -133,7 +125,7 @@ struct Board: EntityEquipment {
 
     /// Removes a previously rendered map when game selection or photo loading
     /// no longer supplies a board image.
-    @MainActor mutating func clearMap() {
+    func clearMap() {
         imagePlane.isEnabled = false
     }
     

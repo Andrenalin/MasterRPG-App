@@ -455,7 +455,7 @@ private struct BattleRoundCard: View {
             }
             .padding(10)
             .background(
-                isActive ? attacker.color.opacity(0.14) : Color.secondary.opacity(0.07),
+                isActive ? Color.blue.opacity(0.14) : Color.gray.opacity(0.07),
                 in: .rect(cornerRadius: 12)
             )
             .overlay(alignment: .leading) {
@@ -463,14 +463,14 @@ private struct BattleRoundCard: View {
                     topLeadingRadius: 12,
                     bottomLeadingRadius: 12
                 )
-                .fill(isActive ? attacker.color : .clear)
+                .fill(isActive ? .blue : .clear)
                 .frame(width: 4)
                 .accessibilityHidden(true)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(
-                        isActive ? attacker.color.opacity(0.65) : .clear,
+                        isActive ? Color.blue.opacity(0.65) : .clear,
                         lineWidth: 1
                     )
                     .accessibilityHidden(true)
@@ -498,7 +498,7 @@ private struct BattleRoundWideCardLayout: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            BattleRankBadge(rank: rank, color: attacker.color, isActive: isActive)
+            BattleRankBadge(rank: rank, isActive: isActive)
             BattleAttackerPhoto(
                 model: model,
                 entry: entry,
@@ -541,7 +541,7 @@ private struct BattleRoundCompactCardLayout: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 10) {
-                BattleRankBadge(rank: rank, color: attacker.color, isActive: isActive)
+                BattleRankBadge(rank: rank, isActive: isActive)
                 BattleAttackerPhoto(
                     model: model,
                     entry: entry,
@@ -592,8 +592,9 @@ private struct BattleAttackerPhoto: View {
             rolls: model.rolls(for: attacker.id, in: entry),
             isAttacker: true,
             isActive: isActive,
-            canReceiveRoll: isActive,
-            isRollRecipient: model.rollRecipientCombatantId == attacker.id,
+            tint: isActive ? .blue : .gray,
+            canReceiveRoll: !attacker.isPlayer && (isActive || model.isPreparingSurprise),
+            isRollRecipient: model.masterRollRecipientCombatantId == attacker.id,
             showCharacter: showCharacter,
             assignCharacter: assignCharacter,
             selectRollRecipient: actions.selectRollRecipient,
@@ -604,15 +605,14 @@ private struct BattleAttackerPhoto: View {
 
 private struct BattleRankBadge: View {
     let rank: Int
-    let color: Color
     let isActive: Bool
 
     var body: some View {
         Text(rank, format: .number)
             .font(.callout.bold().monospacedDigit())
-            .foregroundStyle(isActive ? .white : color)
+            .foregroundStyle(isActive ? .white : .gray)
             .frame(minWidth: 28, minHeight: 28)
-            .background(isActive ? color : color.opacity(0.14), in: .circle)
+            .background(isActive ? Color.blue : Color.gray.opacity(0.14), in: .circle)
             .padding(.top, 8)
             .accessibilityLabel(Text("Initiative position \(rank)", bundle: .module))
     }
@@ -640,7 +640,7 @@ private struct BattleAttackerDetails: View {
                         .foregroundStyle(.red)
                         .accessibilityLabel(Text("Dead", bundle: .module))
                 }
-                if combatant.isHighlighted {
+                if isActive {
                     Image(systemName: "scope")
                         .foregroundStyle(.blue)
                         .accessibilityLabel(Text("Highlighted", bundle: .module))
@@ -749,9 +749,10 @@ private struct BattleDefenderStrip: View {
                             combatant: defender,
                             rolls: model.rolls(for: defender.id, in: entry),
                             isAttacker: false,
-                            isActive: false,
-                            canReceiveRoll: isActiveEntry,
-                            isRollRecipient: model.rollRecipientCombatantId == defender.id,
+                            isActive: isActiveEntry,
+                            tint: isActiveEntry ? .red : .gray,
+                            canReceiveRoll: isActiveEntry && !defender.isPlayer,
+                            isRollRecipient: model.masterRollRecipientCombatantId == defender.id,
                             showCharacter: showCharacter,
                             assignCharacter: assignCharacter,
                             selectRollRecipient: actions.selectRollRecipient,
@@ -771,6 +772,7 @@ private struct BattleParticipantColumn: View {
     let rolls: [BattleRollResult]
     let isAttacker: Bool
     let isActive: Bool
+    let tint: Color
     let canReceiveRoll: Bool
     let isRollRecipient: Bool
     let showCharacter: @MainActor (BattleCombatant) -> Void
@@ -815,7 +817,7 @@ private struct BattleParticipantColumn: View {
                         .strokeBorder(haloColor, lineWidth: haloWidth)
                 }
                 .shadow(
-                    color: isActive ? combatant.color.opacity(0.5) : .black.opacity(0.2),
+                    color: isActive ? tint.opacity(0.5) : .black.opacity(0.2),
                     radius: isActive ? 6 : 2,
                     y: 2
                 )
@@ -846,26 +848,43 @@ private struct BattleParticipantColumn: View {
             }
 #endif
 
-            if canReceiveRoll {
-                Button {
-                    selectRollRecipient(combatant.id)
-                } label: {
-                    Label {
-                        Text("Roll Target", bundle: .module)
-                    } icon: {
-                        Image(systemName: isRollRecipient ? "dice.fill" : "dice")
+            HStack(spacing: 6) {
+                if canReceiveRoll {
+                    Button {
+                        selectRollRecipient(combatant.id)
+                    } label: {
+                        Label {
+                            Text("Roll Target", bundle: .module)
+                        } icon: {
+                            Image(systemName: isRollRecipient ? "dice.fill" : "dice")
+                        }
+                        .labelStyle(.iconOnly)
                     }
-                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(isRollRecipient ? tint : .secondary)
+                    .help(Text("Assign the next master roll to this combatant", bundle: .module))
+                    .accessibilityValue(
+                        Text(isRollRecipient ? "Selected" : "Not selected", bundle: .module)
+                    )
                 }
+
+                Button(
+                    combatant.isDead ? "Mark Alive" : "Mark Dead",
+                    systemImage: combatant.isDead ? "heart.fill" : "skull.fill",
+                    action: toggleDead
+                )
+                .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
-                .foregroundStyle(isRollRecipient ? combatant.color : .secondary)
-                .help(Text("Assign the next master roll to this combatant", bundle: .module))
-                .accessibilityValue(
-                    Text(isRollRecipient ? "Selected" : "Not selected", bundle: .module)
+                .foregroundStyle(combatant.isDead ? .green : .red)
+                .help(
+                    Text(
+                        combatant.isDead ? "Mark Alive" : "Mark Dead",
+                        bundle: .module
+                    )
                 )
             }
 
-            BattleRollResults(results: rolls, tint: combatant.color)
+            BattleRollResults(results: rolls, tint: tint)
 
             if !isAttacker {
                 Text(combatant.name)
@@ -878,14 +897,12 @@ private struct BattleParticipantColumn: View {
     }
 
     private var haloColor: Color {
-        if isRollRecipient { return combatant.color }
-        if combatant.isHighlighted { return .blue }
-        if isActive { return combatant.color }
-        return .secondary.opacity(0.45)
+        if isRollRecipient || isActive { return tint }
+        return .gray.opacity(0.45)
     }
 
     private var haloWidth: CGFloat {
-        isRollRecipient || combatant.isHighlighted || isActive ? 3 : 1
+        isRollRecipient || isActive ? 3 : 1
     }
 
     private var hasCharacter: Bool {
