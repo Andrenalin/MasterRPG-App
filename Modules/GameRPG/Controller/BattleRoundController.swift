@@ -119,6 +119,20 @@ extension GameRoot {
     }
 
     @discardableResult
+    func addBattleCombatant(pinId: UUID) -> Bool {
+        guard gameModel.gameConfig.isMaster,
+              let mapId = battleRoundModel.mapId,
+              mapRoot.mapGameControllable.addBattleCombatant(
+                  itemId: mapId,
+                  pinId: pinId
+              ) else {
+            return false
+        }
+        broadcastBattleRound(mapId: mapId, includeMapState: true)
+        return true
+    }
+
+    @discardableResult
     func addBattleRoll(
         combatantId: UUID,
         total: Int,
@@ -178,23 +192,30 @@ extension GameRoot {
         return true
     }
 
-    /// Associates a normal game dice message with the active battle row. A
-    /// player roll resolves through that player's map pin; a master roll is
-    /// assigned to the active attacker unless the battle UI explicitly records
-    /// it for a selected defender.
+    /// Associates a normal game dice message with the matching battle photo.
+    /// Character-linked dice are exact, player rolls fall back to the sender's
+    /// pin, and an unlinked master roll uses the selected non-player target.
     func recordBattleDiceResult(
         _ diceResult: DiceResultModel,
         senderId: UUID,
         isMaster: Bool
     ) {
         guard battleRoundModel.isRunning else { return }
-        let combatantId: UUID?
-        if isMaster {
-            combatantId = battleRoundModel.rollRecipientCombatantId
-                ?? battleRoundModel.activeAttackerId
-        } else {
-            combatantId = battleRoundModel.combatant(pinId: senderId)?.id
+        let eligible = battleRoundModel.rollEligibleCombatants
+        let characterId = diceResult.diceModel.resultCategory.flatMap { category in
+            category.module == .value ? category.id : nil
         }
+        let characterCombatant = characterId.flatMap { characterId in
+            eligible.first { $0.gameCharacterId == characterId }
+                ?? eligible.first { $0.sourceCharacterId == characterId }
+        }
+        let playerCombatant = eligible.first { combatant in
+            combatant.isPlayer
+                && (combatant.pinId == senderId
+                    || combatant.pin.players.contains(senderId))
+        }
+        let combatantId = characterCombatant?.id
+            ?? (isMaster ? battleRoundModel.masterRollRecipientCombatantId : playerCombatant?.id)
         guard let combatantId else { return }
         _ = addBattleRoll(
             combatantId: combatantId,

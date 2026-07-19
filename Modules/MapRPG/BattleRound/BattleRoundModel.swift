@@ -151,6 +151,39 @@ public final class BattleRoundModel: Sendable {
         return combatant(id: activeAttackerId)?.pinId ?? presentedActivePinId
     }
 
+    /// The surprise round remains open for adding combatants until the master
+    /// explicitly activates an attacker or advances to the first round.
+    public var isPreparingSurprise: Bool {
+        isRunning && roundCounter == 0 && activeAttackerId == nil
+    }
+
+    /// Combatants whose photos can receive a roll in the current battle UI.
+    /// During Surprise every combatant receives rolls on its own row. Once a
+    /// turn is active, rolls are limited to that attacker and its defenders.
+    public var rollEligibleCombatants: [BattleCombatant] {
+        if let activeEntry,
+           let attacker = attacker(for: activeEntry) {
+            return [attacker] + defenders(for: activeEntry)
+        }
+        guard isPreparingSurprise else { return [] }
+        return entries.compactMap(attacker(for:))
+    }
+
+    /// A generic master roll always belongs to a non-player combatant. A
+    /// character-linked roll can still resolve more precisely before this
+    /// fallback is used.
+    public var masterRollRecipientCombatantId: UUID? {
+        let eligible = rollEligibleCombatants
+        if let rollRecipientCombatantId,
+           eligible.contains(where: {
+               $0.id == rollRecipientCombatantId && !$0.isPlayer
+           }) {
+            return rollRecipientCombatantId
+        }
+        guard activeAttackerId != nil else { return nil }
+        return eligible.first(where: { !$0.isPlayer })?.id
+    }
+
     public func combatant(id: UUID) -> BattleCombatant? {
         combatants.first { $0.id == id }
     }
@@ -169,6 +202,21 @@ public final class BattleRoundModel: Sendable {
 
     public func rolls(for combatantId: UUID, in entry: BattleRoundEntry) -> [BattleRollResult] {
         entry.rolls.filter { $0.combatantId == combatantId }
+    }
+
+    @discardableResult
+    func addCombatant(_ combatant: BattleCombatant) -> Bool {
+        guard isPreparingSurprise,
+              self.combatant(pinId: combatant.pinId) == nil else {
+            return false
+        }
+        combatants.append(combatant)
+        entries.append(BattleRoundEntry(attackerId: combatant.id))
+        if combatant.isPlayer {
+            retainedPlayerCombatants[combatant.pinId] = combatant
+        }
+        sortEntries()
+        return true
     }
 
     func begin(
@@ -352,13 +400,23 @@ public final class BattleRoundModel: Sendable {
         expression: String?,
         timestamp: Date = .now
     ) -> Bool {
-        guard let activeAttackerId,
-              let entryIndex = entries.firstIndex(where: { $0.attackerId == activeAttackerId }) else {
-            return false
-        }
-        let entry = entries[entryIndex]
-        guard combatantId == activeAttackerId || entry.defenderIds.contains(combatantId) else {
-            return false
+        let entryIndex: Int
+        if let activeAttackerId,
+           let activeIndex = entries.firstIndex(where: { $0.attackerId == activeAttackerId }) {
+            let entry = entries[activeIndex]
+            guard combatantId == activeAttackerId
+                    || entry.defenderIds.contains(combatantId) else {
+                return false
+            }
+            entryIndex = activeIndex
+        } else {
+            guard isPreparingSurprise,
+                  let surpriseIndex = entries.firstIndex(where: {
+                      $0.attackerId == combatantId
+                  }) else {
+                return false
+            }
+            entryIndex = surpriseIndex
         }
         entries[entryIndex].rolls.append(
             BattleRollResult(
@@ -373,8 +431,18 @@ public final class BattleRoundModel: Sendable {
 
     @discardableResult
     func selectRollRecipient(_ combatantId: UUID) -> Bool {
+        if isPreparingSurprise {
+            guard combatant(id: combatantId)?.isPlayer == false,
+                  entries.contains(where: { $0.attackerId == combatantId }),
+                  rollRecipientCombatantId != combatantId else {
+                return false
+            }
+            rollRecipientCombatantId = combatantId
+            return true
+        }
         guard let activeAttackerId,
               let entry = activeEntry,
+              combatant(id: combatantId)?.isPlayer == false,
               combatantId == activeAttackerId || entry.defenderIds.contains(combatantId),
               rollRecipientCombatantId != combatantId else {
             return false

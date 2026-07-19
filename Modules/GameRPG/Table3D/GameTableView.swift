@@ -49,11 +49,6 @@ public struct GameTableView: View {
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
 
-                    if let panel = attachments.entity(for: "toolbar") {
-                        panel.position = SIMD3<Float>(0, 0, Float(GameMetrics.tableEdge) + 0.1)
-                        loadedGame.renderer.root.addChild(panel)
-                    }
-
                     if let pinMenu = attachments.entity(for: "pin-menu") {
                         loadedGame.registerPinMenuAttachment(pinMenu)
                     }
@@ -64,9 +59,6 @@ public struct GameTableView: View {
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
                     loadedGame.updatePinMenuAttachmentPosition()
                 } attachments: {
-                    Attachment(id: "toolbar") {
-                        GameTableToolbar(game: loadedGame)
-                    }
                     Attachment(id: "pin-menu") {
                         GamePinActionMenu(game: loadedGame)
                     }

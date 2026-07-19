@@ -188,7 +188,16 @@ final class MapEditorActionRouter {
         switch session.mapMode {
         case .gameMaster:
             performGameMasterMutation(pinId: pinId) {
-                root.gameController.toggleHighlightPin(itemId: session.mapId, pinId: pinId)
+                if root.gameController.addBattleCombatant(
+                    itemId: session.mapId,
+                    pinId: pinId
+                ) {
+                    return true
+                }
+                return root.gameController.toggleHighlightPin(
+                    itemId: session.mapId,
+                    pinId: pinId
+                )
             }
         case .player:
             performPlayerMutation(pinId: pinId) {
@@ -282,6 +291,13 @@ final class MapEditorActionRouter {
         case .zoom:
             performGameMasterMutation(pinId: pin.id) {
                 root.gameController.zoomPin(itemId: session.mapId, pinId: pin.id)
+            }
+        case .battle:
+            performGameMasterMutation(pinId: pin.id) {
+                root.gameController.addBattleCombatant(
+                    itemId: session.mapId,
+                    pinId: pin.id
+                )
             }
         case .remove, .copy, .photo:
             break

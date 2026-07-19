@@ -25,7 +25,7 @@ enum GameMetrics {
 class GameSetup {
     let root: Entity
     var setup: TableSetup
-    var board: Board
+    let board: Board
     var pinPawns: [PinPawn] = []
     var seats: [PlayerSeat] = []
     /// Container for dynamically-added pin entities. Parented to root so they
@@ -84,9 +84,11 @@ class GameSetup {
             setup.add(seat: seat)
         }
 
-        // The board owns only the live battle-map surface.
-        board = Board(id: EquipmentIdentifier(self.idGenerator.newId()))
-        setup.add(equipment: board)
+        // The board is a static root-owned surface. Keeping it out of
+        // TabletopKit prevents its automatic tabletop resting transform from
+        // moving the plane inside the bottom-origin wood mesh.
+        board = Board()
+        root.addChild(board.entity)
 
         let die20 = Die20(id: EquipmentIdentifier(self.idGenerator.newId()))
         setup.add(equipment: die20)

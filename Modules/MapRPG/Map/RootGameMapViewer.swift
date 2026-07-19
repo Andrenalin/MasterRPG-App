@@ -65,6 +65,10 @@ struct RootGameMapViewer: View {
         if mode == .master {
             _ = root.mapGameControllable.synchronizeBattleDefenders(itemId: itemId)
             networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
+            if root.mapGameControllable.battleRoundModel.isRunning,
+               let battleUpdate = root.mapGameControllable.networkBattleRoundUpdate(for: itemId) {
+                networkActions?.game(battleUpdate, .battleRound, nil)
+            }
         } else if mapModel.pointer.isShown {
             networkActions?.game(root.gameController.networkPin(itemId: itemId, position: mapModel.pointer), .mapPin, nil)
         } else if let pin = mapModel.mapPins.first(where: { $0.id == playerPinId }) {

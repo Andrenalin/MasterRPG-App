@@ -15,6 +15,7 @@ struct OverlayMasterTabBar: View {
             TabGameView(root: root, adventureId: adventureId)
             TabSecondGameView(root: root)
 #endif
+            BattleRoundSideOverlay(root: root)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
     }

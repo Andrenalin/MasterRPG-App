@@ -22,7 +22,18 @@ enum Spatial3DImageState {
     var spatial3DImage: ImagePresentationComponent.Spatial3DImage? = nil
 
     func createImagePresentationComponent(root: PhotoRootModel) async {
-        guard let selectedItemId, let url = await root.itemController.loadableUrl(itemId: selectedItemId) else {
+        guard let requestedItemId = selectedItemId else {
+            return
+        }
+
+        // Reset synchronously for this selection. No state is mutated by this
+        // load after an await until the selected item is validated again.
+        spatial3DImageState = .notGenerated
+        spatial3DImage = nil
+
+        guard let url = await root.itemController.loadableUrl(itemId: requestedItemId),
+              !Task.isCancelled,
+              selectedItemId == requestedItemId else {
             print("ImageURL is nil.")
             return
         }
@@ -30,23 +41,40 @@ enum Spatial3DImageState {
         _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         
-        spatial3DImageState = .notGenerated
-        spatial3DImage = nil
+        let loadedSpatial3DImage: ImagePresentationComponent.Spatial3DImage
         do {
-            spatial3DImage = try await ImagePresentationComponent.Spatial3DImage(contentsOf: url)
+            loadedSpatial3DImage = try await ImagePresentationComponent.Spatial3DImage(contentsOf: url)
         } catch {
             print("Unable to initialize spatial 3D image: \(error.localizedDescription)")
-        }
-
-        guard let spatial3DImage else {
-            print("Spatial3DImage is nil.")
             return
         }
-        
-        let imagePresentationComponent = ImagePresentationComponent(spatial3DImage: spatial3DImage)
+
+        // Ignore a completed load when another received photo has replaced it.
+        guard !Task.isCancelled, selectedItemId == requestedItemId else {
+            return
+        }
+
+        spatial3DImage = loadedSpatial3DImage
+        let imagePresentationComponent = ImagePresentationComponent(spatial3DImage: loadedSpatial3DImage)
         contentEntity.components.set(imagePresentationComponent)
         if let aspectRatio = imagePresentationComponent.aspectRatio(for: .mono) {
             imageAspectRatio = CGFloat(aspectRatio)
+        }
+    }
+
+    /// Loads a received photo, converts it, and presents it in spatial 3D.
+    func createAndShowSpatial3DImage(root: PhotoRootModel) async {
+        await createImagePresentationComponent(root: root)
+        guard !Task.isCancelled, spatial3DImageState == .notGenerated, spatial3DImage != nil else {
+            return
+        }
+
+        do {
+            try await generateSpatial3DImage()
+        } catch is CancellationError {
+            // A new photo superseded this conversion.
+        } catch {
+            print("Spatial3DImage generation failed: \(error.localizedDescription)")
         }
     }
 
@@ -70,10 +98,28 @@ enum Spatial3DImageState {
         
         // Generate the Spatial3DImage scene.
         spatial3DImageState = .generating
-        try await spatial3DImage.generate()
+        do {
+            try await spatial3DImage.generate()
+        } catch {
+            if self.spatial3DImage === spatial3DImage {
+                spatial3DImageState = .notGenerated
+            }
+            throw error
+        }
+
+        // A selection change can finish while the old conversion is running.
+        guard !Task.isCancelled, self.spatial3DImage === spatial3DImage else {
+            return
+        }
+
         spatial3DImageState = .generated
 
-        if let aspectRatio = imagePresentationComponent.aspectRatio(for: .spatialStereo) {
+        // Generation begins in spatial stereo to show RealityKit's conversion
+        // animation. Once ready, transition directly to the full spatial 3D view.
+        imagePresentationComponent.desiredViewingMode = .spatial3D
+        contentEntity.components.set(imagePresentationComponent)
+
+        if let aspectRatio = imagePresentationComponent.aspectRatio(for: .spatial3D) {
             imageAspectRatio = CGFloat(aspectRatio)
         }
     }

@@ -48,6 +48,13 @@ private struct GamePinActionMenuContent: View {
                 systemImage: pin.isZoom ? "minus.magnifyingglass" : "plus.magnifyingglass",
                 action: game.toggleSelectedPinZoom
             )
+            if game.canAddSelectedPinToBattleRound {
+                GamePinMenuButton(
+                    title: LocalizedStringResource("Add Pin to Battle Round", bundle: .module),
+                    systemImage: "person.badge.plus",
+                    action: game.addSelectedPinToBattleRound
+                )
+            }
         }
         .padding(12)
         .modifier(GamePinMenuBackground())

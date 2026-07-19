@@ -16,7 +16,6 @@ struct ImagePresentationView: View {
     var body: some View {
         GeometryReader3D { geometry in
             RealityView { content in
-                await model.createImagePresentationComponent(root: root)
                 // Scale the entity to fit in the bounds.
                 let availableBounds = content.convert(geometry.frame(in: .local), from: .local, to: .scene)
                 scaleImagePresentationToFit(in: availableBounds)
@@ -37,7 +36,10 @@ struct ImagePresentationView: View {
                 let availableBounds = content.convert(geometry.frame(in: .local), from: .local, to: .scene)
                 scaleImagePresentationToFit(in: availableBounds)
             }
-            .onAppear() {
+            .task(id: model.selectedItemId) {
+                await model.createAndShowSpatial3DImage(root: root)
+            }
+            .onAppear {
                 guard let windowScene = navigationModel.sceneModel?.windowScene else {
                     print("Unable to get the window scene. Unable to set the resizing restrictions.")
                     return
@@ -63,11 +65,6 @@ struct ImagePresentationView: View {
                 UIView.performWithoutAnimation {
                     // Update the scene size.
                     windowScene.requestGeometryUpdate(.Vision(size: size))
-                }
-            }
-            .onChange(of: model.selectedItemId) {
-                Task {
-                    await model.createImagePresentationComponent(root: root)
                 }
             }
         }

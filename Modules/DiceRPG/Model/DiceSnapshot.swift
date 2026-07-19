@@ -29,7 +29,9 @@ public struct DiceSnapshot: Sendable, Identifiable {
     let rerollOptions: [DiceModel.RerollOption]
     let reorderDice: Bool
     let addDiceEvery: Int
-    let resultCategory: ResultCategory?
+    /// Identifies the sheet item that originated a roll. Game features use
+    /// this value to associate a character-linked die with its participant.
+    public let resultCategory: ResultCategory?
     let entries_: CRDTDataUpdate<[ChildEntryModel]>
     let parentId: UUID?
 

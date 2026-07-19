@@ -10,7 +10,6 @@ struct IOSGameSidebarMenu: View {
 
     @Environment(AppSettingsModel.self) private var appSettingsModel
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
@@ -63,13 +62,14 @@ struct IOSGameSidebarMenu: View {
             GameTableMenuToggle()
 
             if isMaster {
-                Button {
-                    scenesManager.openWindow(.battleRound)
-                } label: {
+                Button(action: toggleBattleRoundSidebar) {
                     Label {
                         Text("Battle Round", bundle: .module)
                     } icon: {
                         Image(systemName: "shield.lefthalf.filled")
+                            .symbolVariant(
+                                gameScreenModel.showsBattleRoundSidebar ? .fill : .none
+                            )
                     }
                 }
             }
@@ -100,10 +100,13 @@ struct IOSGameSidebarMenu: View {
     }
 
     private var isSidebarVisible: Bool {
-        gameScreenModel.showMainTab != .none || gameScreenModel.showSettingTab != .none
+        gameScreenModel.isInlineSidebarVisible
     }
 
     private var isShowingPrimaryView: Bool {
+        if gameScreenModel.showsBattleRoundSidebar {
+            return false
+        }
         if gameScreenModel.showMainTab != .none {
             return true
         }
@@ -114,6 +117,9 @@ struct IOSGameSidebarMenu: View {
     }
 
     private var currentSidebarViewTitle: String {
+        if gameScreenModel.showsBattleRoundSidebar {
+            return String(localized: "Battle Round", bundle: .module)
+        }
         if isShowingPrimaryView {
             return isMaster
                 ? String(localized: "Game View", bundle: .module)
@@ -123,7 +129,10 @@ struct IOSGameSidebarMenu: View {
     }
 
     private var currentSidebarViewIcon: String {
-        isShowingPrimaryView ? primaryModule.icon : NetworkModules.setting.icon
+        if gameScreenModel.showsBattleRoundSidebar {
+            return "shield.lefthalf.filled"
+        }
+        return isShowingPrimaryView ? primaryModule.icon : NetworkModules.setting.icon
     }
 
     private var sidebarVisibilityBinding: Binding<Bool> {
@@ -157,8 +166,7 @@ struct IOSGameSidebarMenu: View {
             if isVisible {
                 showSelectedSidebarView()
             } else {
-                gameScreenModel.showMainTab = .none
-                gameScreenModel.showSettingTab = .none
+                gameScreenModel.hideInlineSidebar()
             }
         }
     }
@@ -179,6 +187,12 @@ struct IOSGameSidebarMenu: View {
         } else {
             gameScreenModel.showMainTab = .none
             gameScreenModel.showSettingTab = .setting
+        }
+    }
+
+    private func toggleBattleRoundSidebar() {
+        withAnimation(accessibilityReduceMotion ? nil : .default) {
+            gameScreenModel.toggleBattleRoundSidebar()
         }
     }
 }
