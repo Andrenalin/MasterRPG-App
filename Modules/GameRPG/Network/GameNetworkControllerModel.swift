@@ -8,10 +8,26 @@ import SwiftUI
 // MARK: - Direct-mode delegate protocols
 
 protocol MasterNetworkStoreDelegate: Sendable & AnyObject {
-    func ready(for connectionId: ConnectionController.ID) async
-    func received(_ model: GameNetworkModel, connectionId: ConnectionController.ID?) async
+    /// Authenticates an inbound transport envelope before the network bridge
+    /// relays it to another transport or any sibling LAN connection.
+    func accepts(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool
+    func ready(for origin: GameMessageOrigin) async
+    func received(_ model: GameNetworkModel, origin: GameMessageOrigin) async
     func receivedFile(_ model: GameNetworkModel) async
     func lostPlayer(for connectionId: ConnectionController.ID) async
+}
+
+extension MasterNetworkStoreDelegate {
+    func ready(for connectionId: ConnectionController.ID) async {
+        await ready(for: .direct(connectionId))
+    }
+
+    /// Compatibility convenience for direct-network callers. Keeping only the
+    /// origin-aware method as a protocol requirement avoids mutually recursive
+    /// default implementations when a conformer accidentally implements neither.
+    func received(_ model: GameNetworkModel, connectionId: ConnectionController.ID?) async {
+        await received(model, origin: .direct(connectionId))
+    }
 }
 
 protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
@@ -22,6 +38,10 @@ protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
     func receivedSharePlay(_ model: GameNetworkModel, participantId: UUID) async
     func receivedSharePlayFile(_ model: GameNetworkModel) async
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async
+    /// Notifies a player that one physical GroupSession participant left. The
+    /// player uses this to release a master-source binding only when that exact
+    /// participant was the authenticated master.
+    func sharePlayParticipantLeft(id: UUID) async
 }
 
 extension PlayerNetworkStoreDelegate {
@@ -36,13 +56,15 @@ extension PlayerNetworkStoreDelegate {
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {
         await receivedSharePlayFile(model)
     }
+
+    func sharePlayParticipantLeft(id: UUID) async {}
 }
 
 // MARK: - Proxy-mode delegate protocols
 
 protocol MasterNetworkProxyControllerDelegate: Sendable & AnyObject {
     func readyProxy(for connectionId: ConnectionController.ID) async
-    func receivedServerProxy(_ model: GameNetworkModel) async
+    func receivedServerProxy(_ model: GameNetworkModel, connectionId: ConnectionController.ID) async
 }
 
 protocol PlayerNetworkProxyControllerDelegate: Sendable & AnyObject {

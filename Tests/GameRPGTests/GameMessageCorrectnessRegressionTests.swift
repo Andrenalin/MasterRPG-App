@@ -10,12 +10,130 @@ import AdventureRPG
 @testable import DiceRPG
 @testable import GameRPG
 @testable import MapRPG
+@testable import PdfRPG
 @testable import PhotoRPG
 @testable import SpaceRPG
 
 @Suite("Game message correctness regressions")
 @MainActor
 struct GameMessageCorrectnessRegressionTests {
+    @Test(
+        "Peer file reveals require event purpose before presentation",
+        arguments: [NetworkModules.photo, .pdf, .space]
+    )
+    func peerFileRevealRequiresEventPurpose(module: NetworkModules) async throws {
+        // Given
+        let environment = try await MultiConnectionTestEnvironment.create()
+        let resource: String
+        switch module {
+        case .photo:
+            resource = ResourcesDebug.photoTestData
+        case .pdf:
+            resource = ResourcesDebug.pdfTestData
+        case .space:
+            resource = ResourcesDebug.spaceTestData
+        default:
+            Issue.record("Unsupported peer-file module \(module)")
+            return
+        }
+        try await MockRoot.importTestData(
+            into: environment.masterRoot.adventureRoot,
+            name: resource,
+            itemCounter: 0
+        )
+        environment.masterRoot.adventureRoot.startGame()
+
+        let itemId: UUID
+        let package: NetworkCodableDataType
+        switch module {
+        case .photo:
+            itemId = try #require(environment.masterRoot.photoRoot.itemController.itemDataModel.items.first)
+            package = try await environment.masterRoot.photoRoot.gameControllable.createGameData(for: itemId)
+        case .pdf:
+            itemId = try #require(environment.masterRoot.pdfRoot.itemController.itemDataModel.items.first)
+            package = try await environment.masterRoot.pdfRoot.gameControllable.createGameData(for: itemId)
+        case .space:
+            itemId = try #require(environment.masterRoot.spaceRoot.itemController.itemDataModel.items.first)
+            package = try await environment.masterRoot.spaceRoot.gameControllable.createGameData(for: itemId)
+        default:
+            return
+        }
+        let version = package.effectiveAssetVersion
+        let playerVersions = [
+            itemId: [
+                environment.masterConfig.id: version,
+                environment.player2Config.id: version
+            ]
+        ]
+        let listData: Data
+        let listAction: RPGMessageActionType
+        switch module {
+        case .photo:
+            listData = try #require(
+                PhotoListRequest(list: [itemId: version], players: playerVersions).encodeData()
+            )
+            listAction = .photoList
+        case .pdf:
+            listData = try #require(
+                PdfListRequest(list: [itemId: version], players: playerVersions).encodeData()
+            )
+            listAction = .pdfList
+        case .space:
+            listData = try #require(
+                SpaceListRequest(list: [itemId: version], players: playerVersions).encodeData()
+            )
+            listAction = .spaceList
+        default:
+            return
+        }
+        let authoritativeList = environment.masterRoot.gameModel.outgoingMessage(
+            counter: 1,
+            type: .update,
+            subType: listAction,
+            asMaster: true,
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: module,
+                version: 0,
+                data: listData
+            )
+        )
+        _ = try await environment.player1.handle(authoritativeList)
+
+        let request = GameNetworkModel(
+            counter: 2,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: environment.masterConfig.id,
+            sender: GameSenderModel(
+                id: environment.player2Config.id,
+                role: .player,
+                name: "Peer",
+                characterId: nil
+            ),
+            audience: .group,
+            purpose: .assetRequest,
+            data: package
+        )
+
+        // When
+        let response = try await environment.player1.handle(request)
+
+        // Then
+        #expect(response == nil)
+        switch module {
+        case .photo:
+            #expect(await environment.player1Root.photoRoot.gameControllable.currentId != itemId)
+        case .pdf:
+            #expect(await environment.player1Root.pdfRoot.gameControllable.currentId != itemId)
+        case .space:
+            #expect(await environment.player1Root.spaceRoot.gameControllable.currentId != itemId)
+        default:
+            break
+        }
+    }
+
     @Test("Player acknowledgement travels upstream but not back to proxy clients")
     func acknowledgementIsNotForwardedToProxyClients() async throws {
         // Given
@@ -208,7 +326,7 @@ struct GameMessageCorrectnessRegressionTests {
         )
 
         // When
-        await proxyMaster.receivedServerProxy(remoteMessage)
+        await proxyMaster.receivedServerProxy(remoteMessage, connectionId: UUID())
 
         // Then — the proxy stays invisible: its roll leaves as the host's own.
         let forwarded = try #require(environment.directPlayerSpy.requestData as? GameNetworkModel)
@@ -239,6 +357,26 @@ struct GameMessageCorrectnessRegressionTests {
         #expect(relayed.targetId == nil)
         #expect(relayed.counter == command.counter)
         #expect(relayed.data.id == command.data.id)
+    }
+
+    @Test("An answer for a different host is not forwarded to local proxy clients")
+    func otherHostTargetedAnswerIsNotForwardedToProxy() async throws {
+        // Given
+        let environment = try await RoutingEnvironment.make()
+        var command = environment.masterMessage(
+            counter: 6,
+            type: .reveal,
+            subType: .show,
+            data: NetworkCodableDataType(id: UUID(), type: .photo, version: 1)
+        )
+        command.targetId = UUID()
+
+        // When
+        await environment.player.receivedProcess(command)
+
+        // Then
+        #expect(environment.proxyMasterSpy.calledSendResponseAll == 0)
+        #expect(environment.proxyMasterSpy.sendResponseHistory.isEmpty)
     }
 
     @Test("Failed receipts never update master player reports")

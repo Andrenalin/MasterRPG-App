@@ -19,6 +19,8 @@ extension GameNetworkModel {
         gameConfig: GameConfigModel,
         gameRoster: GameRosterModel = .empty,
         gameControl: GameControlModel = .empty,
+        audience: GameMessageAudience = .automatic,
+        purpose: GameMessagePurpose = .event,
         data: NetworkCodableDataType
     ) {
         let identity = GameNetworkModel.legacyIdentity(
@@ -36,6 +38,8 @@ extension GameNetworkModel {
             masterId: identity.masterId,
             sender: identity.sender,
             masterState: identity.masterState,
+            audience: audience,
+            purpose: purpose,
             data: data
         )
     }

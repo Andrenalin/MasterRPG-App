@@ -18,13 +18,25 @@ final class GameNetworkController: Sendable {
 
     @MainActor
     let sharePlayStore: RPGSharePlayController
-    @MainActor
-    private var delegateTasks: [UUID: Task<Void, Never>] = [:]
 
-    /// A player's Character package is master-only. Master-origin requests may
-    /// still cross a LAN bridge so they can reach the targeted player.
+    /// Only accepted peer-visible events cross a transport bridge. Reports,
+    /// acknowledgements, repair requests, screens, and canonicalization inputs
+    /// are master-only and must stop at the game master.
     nonisolated static func shouldRelayToLAN(_ model: GameNetworkModel) -> Bool {
-        model.sender.isMaster || model.data.type != .value
+        if model.sender.isMaster {
+            return model.effectiveAudience == .group
+        }
+        guard model.sender.role == .player,
+              model.effectiveAudience == .group
+        else { return false }
+
+        // Player Photo/PDF/Space reveals have one peer-visible protocol shape.
+        // In particular, `.assetRequest` remains master-only even if a sender
+        // explicitly stamps the envelope with `.group`.
+        if model.isPlayerFileReveal {
+            return model.isPlayerFilePresentationEvent
+        }
+        return true
     }
 
     // MARK: Static builders
@@ -144,8 +156,6 @@ extension GameNetworkController {
     func stopGame() async {
         let name = model.name
         Logger.networking.debug("GameNetworkController: stop game \(name, privacy: .public)")
-        delegateTasks.values.forEach { $0.cancel() }
-        delegateTasks.removeAll()
         if await isStreaming() {
             model.masterStore?.stopStreaming()
             await model.playerStore?.stop()
@@ -176,17 +186,43 @@ extension GameNetworkController {
 
     @MainActor
     func sendPlayer(_ data: GameNetworkModel, to connectionId: ConnectionController.ID) async {
-        // The master receives SharePlay messages through the same delegate with
-        // the participant id in the connection slot. The store reports whether
-        // it could deliver to that id; if not, fall back to the broadcast path —
-        // the message's targetId keeps other peers from processing it.
         let delivered = await model.masterStore?.sendResponse(data: data, id: connectionId) ?? false
         guard delivered else {
-            await sendPlayer(data: data, fileJournal: data.usesFileJournal)
+            Logger.networking.debug("GameNetworkController: Target connection \(connectionId, privacy: .public) is no longer available")
             return
         }
-        if !proxy && model.hasLocalPlayer {
-            await model.playerDelegate?.received(data)
+    }
+
+    /// Sends a response back over the transport that carried the request. A
+    /// SharePlay participant UUID is not a LAN connection UUID and must never
+    /// fall through to a cross-transport broadcast.
+    @MainActor
+    func sendPlayer(_ data: GameNetworkModel, to origin: GameMessageOrigin) async {
+        switch origin {
+        case let .direct(connectionId):
+            if let connectionId {
+                await sendPlayer(data, to: connectionId)
+            } else {
+                await sendPlayer(data: data, fileJournal: data.usesFileJournal)
+            }
+        case let .sharePlay(participantId):
+            sharePlayStore.sendData(
+                data,
+                fileJournal: data.usesFileJournal,
+                participantId: participantId
+            )
+        case .file:
+            // Journal callbacks do not expose the originating participant. The
+            // targetId still prevents unrelated peers from applying the repair.
+            sharePlayStore.sendData(data, fileJournal: data.usesFileJournal)
+        case .local:
+            if model.hasLocalPlayer {
+                await model.playerDelegate?.received(data)
+            }
+        case let .proxy(connectionId):
+            if let connectionId {
+                await sendPlayer(data, to: connectionId)
+            }
         }
     }
 
@@ -199,6 +235,16 @@ extension GameNetworkController {
                 await model.playerDelegate?.received(data)
             }
         }
+    }
+
+    /// Relays a host-remapped proxy presentation to every private mirror except
+    /// the one that originated it. The originating mirror has already applied
+    /// its own action and sending it back there would manufacture a second
+    /// receipt for the same user gesture.
+    @MainActor
+    func sendPlayer(data: GameNetworkModel, except connectionId: ConnectionController.ID) async {
+        guard proxy else { return }
+        await model.masterStore?.sendResponse(data: data, except: connectionId)
     }
 }
 
@@ -215,7 +261,7 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
         if proxy {
             await model.masterProxyDelegate?.readyProxy(for: connectionId)
         } else {
-            await model.masterDelegate?.ready(for: connectionId)
+            await model.masterDelegate?.ready(for: .direct(connectionId))
         }
     }
 
@@ -226,17 +272,21 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
         }
         if proxy {
             // Don't resend in proxy mode — would cause an endless relay loop
-            await model.masterProxyDelegate?.receivedServerProxy(gameData)
+            await model.masterProxyDelegate?.receivedServerProxy(gameData, connectionId: connectionId)
         } else {
-            // A player's Character is private input for the game master. Do not
-            // fan it out to other LAN peers. It still crosses SharePlay via the
-            // Messenger, where non-master players reject the player-origin Value.
+            let origin = GameMessageOrigin.direct(connectionId)
+            guard await model.masterDelegate?.accepts(gameData, origin: origin) == true else {
+                Logger.networking.debug("GameNetworkController: Rejected unauthenticated LAN message from \(connectionId)")
+                return
+            }
             if Self.shouldRelayToLAN(gameData) {
                 await model.masterStore?.sendResponse(data: gameData, except: connectionId)
+                let useFileJournal = fileJournal || gameData.usesFileJournal
+                await MainActor.run {
+                    _ = sharePlayStore.sendData(gameData, fileJournal: useFileJournal)
+                }
             }
-            let useFileJournal = fileJournal || gameData.usesFileJournal
-            await MainActor.run { sharePlayStore.sendData(gameData, fileJournal: useFileJournal) }
-            await model.masterDelegate?.received(gameData, connectionId: connectionId)
+            await model.masterDelegate?.received(gameData, origin: origin)
         }
     }
 }
@@ -317,59 +367,101 @@ extension GameNetworkController: SharePlayControllerDelegate {
     }
 
     @MainActor
-    func sharePlayLostPlayer(id: UUID) {
-        scheduleDelegateTask {
-            await self.model.masterDelegate?.lostPlayer(for: id)
-        }
+    func sharePlayLostPlayer(id: UUID) async {
+        await model.masterDelegate?.lostPlayer(for: id)
+        await model.playerDelegate?.sharePlayParticipantLeft(id: id)
     }
 
     @MainActor
-    func sharePlayLostConnection() {
-        scheduleDelegateTask {
-            await self.model.playerDelegate?.lostConnection()
-        }
+    func sharePlayLostConnection() async {
+        await model.playerDelegate?.lostConnection()
     }
 
     @MainActor
-    func sharePlaySessionConfigured() {
-        scheduleDelegateTask {
-            guard !self.model.hasLocalPlayer else { return }
-            await self.model.playerDelegate?.ready()
-        }
+    func sharePlaySessionConfigured() async {
+        guard !model.hasLocalPlayer else { return }
+        // Keep ready() in the GroupSession state loop. If list reporting
+        // suspends, invalidation cannot overtake it and then be clobbered by
+        // the obsolete ready operation resuming afterward.
+        await model.playerDelegate?.ready()
+    }
+
+    @MainActor
+    func sharePlayJoinedPlayer(id: UUID) async {
+        // `id` is a GroupActivities transport participant, not the player's
+        // later in-game sender ID. Preserve that origin so replay is physically
+        // addressed through Messenger and can never fall through to Bonjour.
+        await model.masterDelegate?.ready(for: .sharePlay(id))
     }
 
     @MainActor
     func routeSharePlayUpdate(_ message: GameNetworkModel, id: UUID) async {
+        let origin = GameMessageOrigin.sharePlay(id)
+        // GroupSessionMessenger does not echo this device's own sends. On the
+        // game-master device, authoritative messages reach the co-located
+        // PlayerController through sendPlayer/sendLocalPlayer instead. Therefore
+        // any inbound peer envelope claiming to be the master is necessarily a
+        // forged logical identity and must not get the first physical binding.
+        if message.sender.isMaster, model.hasLocalPlayer {
+            Logger.networking.debug("GameNetworkController: Rejected inbound SharePlay master message on the game-master device")
+            return
+        }
+        if !message.sender.isMaster,
+           let masterDelegate = model.masterDelegate,
+           await !masterDelegate.accepts(message, origin: origin) {
+            Logger.networking.debug("GameNetworkController: Rejected unauthenticated SharePlay message from \(id)")
+            return
+        }
+
         if message.sender.isMaster {
             await model.playerDelegate?.receivedSharePlay(message, participantId: id)
         } else {
-            await model.masterDelegate?.received(message, connectionId: id)
-            if !model.hasLocalPlayer {
+            // Match the LAN-ingress ordering: once the physical SharePlay
+            // sender is authenticated, peer-visible player intent must cross
+            // the bridge before the master canonicalizes it. Otherwise a
+            // mismatched Photo/PDF/Space reveal can make the master broadcast
+            // its canonical asset first and then leave LAN peers displaying
+            // the stale raw player event that is relayed afterward.
+            if model.hasLocalPlayer, Self.shouldRelayToLAN(message) {
+                await model.masterStore?.sendResponse(data: message)
+            }
+            await model.masterDelegate?.received(message, origin: origin)
+            if !model.hasLocalPlayer, Self.shouldRelayToLAN(message) {
                 await model.playerDelegate?.receivedSharePlay(message, participantId: id)
             }
-        }
-
-        // Never bridge a player Character from SharePlay into the LAN. It is a
-        // master-only join payload; SharePlay peers have already received and
-        // ignored the original message.
-        if model.hasLocalPlayer, Self.shouldRelayToLAN(message) {
-            await model.masterStore?.sendResponse(data: message)
         }
     }
 
     @MainActor
     func routeSharePlayFileUpdate(_ message: GameNetworkModel) async {
+        // Journal snapshots can include locally published attachments, but the
+        // master already delivered those to its local player at send time. Do
+        // not let either a duplicate snapshot or a peer-forged master envelope
+        // enter the local player's authority path.
+        if message.sender.isMaster, model.hasLocalPlayer {
+            Logger.networking.debug("GameNetworkController: Rejected inbound SharePlay master file message on the game-master device")
+            return
+        }
+        if !message.sender.isMaster,
+           let masterDelegate = model.masterDelegate,
+           await !masterDelegate.accepts(message, origin: .file) {
+            Logger.networking.debug("GameNetworkController: Rejected unauthenticated SharePlay file message")
+            return
+        }
+
         if message.sender.isMaster {
             await model.playerDelegate?.receivedSharePlayFile(message)
         } else {
+            // Journal delivery uses the same bridge ordering as Messenger.
+            // `shouldRelayToLAN` still excludes Character synchronization,
+            // reports, acknowledgements, and repair requests.
+            if model.hasLocalPlayer, Self.shouldRelayToLAN(message) {
+                await model.masterStore?.sendResponse(data: message)
+            }
             await model.masterDelegate?.receivedFile(message)
-            if !model.hasLocalPlayer {
+            if !model.hasLocalPlayer, Self.shouldRelayToLAN(message) {
                 await model.playerDelegate?.receivedSharePlayFile(message)
             }
-        }
-
-        if model.hasLocalPlayer, Self.shouldRelayToLAN(message) {
-            await model.masterStore?.sendResponse(data: message)
         }
     }
 }
@@ -387,12 +479,4 @@ extension GameNetworkController {
         model.playerStore?.networkModel.name = name
     }
 
-    @MainActor
-    private func scheduleDelegateTask(_ operation: @escaping @MainActor @Sendable () async -> Void) {
-        let id = UUID()
-        delegateTasks[id] = Task { @MainActor [weak self] in
-            await operation()
-            self?.delegateTasks.removeValue(forKey: id)
-        }
-    }
 }

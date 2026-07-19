@@ -44,9 +44,16 @@ struct SharePlayJournalTransportLog: Equatable, Sendable {
     var state: SharePlayJournalTransportState
 }
 
+enum SharePlayChunkTransportState: Equatable, Sendable {
+    case pending
+    case succeeded
+    case failed
+}
+
 struct SharePlayChunkTransportLog: Equatable, Sendable {
     let count: Int
     let byteCount: Int
+    var state: SharePlayChunkTransportState = .pending
 }
 
 struct SharePlayTransportLog: Equatable, Sendable {

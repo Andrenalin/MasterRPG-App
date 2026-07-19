@@ -13,6 +13,29 @@ import Testing
 @Suite("PDF availability message sequencing", .serialized)
 @MainActor
 struct PdfMessageFlowTests {
+    @Test("PDF asset repair returns canonical bytes without a group rebroadcast")
+    func pdfAssetRepairIsRequesterOnly() async throws {
+        let env = try await Self.preparedEnvironment()
+        let pdfId = try #require(env.masterRoot.pdfRoot.itemController.itemDataModel.items.first)
+        let reference = await env.masterRoot.pdfRoot.gameControllable.share(id: pdfId)
+        let request = env.player1Root.gameModel.outgoingMessage(
+            counter: 4,
+            type: .reveal,
+            subType: .show,
+            asMaster: false,
+            purpose: .assetRequest,
+            data: reference
+        )
+        let broadcastCount = env.masterNetworkSpy.sendResponseHistory.count
+
+        let repair = try #require(try await env.master.handlePdf(request))
+
+        #expect(repair.id == pdfId)
+        #expect(repair.effectiveAssetVersion == reference.effectiveAssetVersion)
+        #expect(repair.data != nil)
+        #expect(env.masterNetworkSpy.sendResponseHistory.count == broadcastCount)
+    }
+
     @Test("Master ignores stale, duplicate, negative, and malformed PDF lists")
     func masterIgnoresInvalidPdfListSequence() async throws {
         // Given

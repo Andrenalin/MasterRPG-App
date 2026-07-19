@@ -28,6 +28,8 @@ final class MasterNetworkControllableMock: MasterNetworkControllable, @unchecked
     var calledSendResponseId = 0
     var calledSendResponseAll = 0
     var calledSendResponseExcept = 0
+    var sendResponseExceptData: MessageMapper?
+    var lastExceptId: ConnectionController.ID?
 
     func startStreaming() {
         calledStartStreaming += 1
@@ -68,8 +70,10 @@ final class MasterNetworkControllableMock: MasterNetworkControllable, @unchecked
         }
     }
 
-    func sendResponse(data _: MessageMapper?, except _: ConnectionController.ID) {
+    func sendResponse(data netData: MessageMapper?, except connectionId: ConnectionController.ID) {
         calledSendResponseExcept += 1
+        sendResponseExceptData = netData
+        lastExceptId = connectionId
     }
 }
 

@@ -18,14 +18,18 @@ protocol SharePlayControllerDelegate: AnyObject {
     func handleUpdate(_ model: GameNetworkModel, id: UUID) async -> Void
     func handleFileUpdate(_ model: GameNetworkModel) async -> Void
     func handleFileLoadFailure(_ model: GameNetworkModel) async -> Void
-    func sharePlayLostPlayer(id: UUID)
+    func sharePlayLostPlayer(id: UUID) async
     /// Called when the local SharePlay session is invalidated so the player
     /// controller can reset `hasSendPlayer` and mark the master as lost.
-    func sharePlayLostConnection()
+    func sharePlayLostConnection() async
     /// Called each time a session is fully configured and joined. On a player
     /// device this triggers `ready()` so audio availability and the selected
     /// character are re-announced after an automatic re-join.
-    func sharePlaySessionConfigured()
+    func sharePlaySessionConfigured() async
+    /// Called on the game-master device when a remote participant becomes
+    /// active in the joined session. Messenger has no history, so the current
+    /// presentation must be replayed directly to this transport participant.
+    func sharePlayJoinedPlayer(id: UUID) async
 }
 
 @MainActor
@@ -66,6 +70,333 @@ struct SharePlaySessionLifecycle: Sendable {
     }
 }
 
+struct SharePlaySessionOperationToken: Equatable, Sendable {
+    let sessionId: UUID
+    let generation: UInt64
+
+    func canCommit(
+        lifecycle: SharePlaySessionLifecycle,
+        currentGeneration: UInt64,
+        taskIsCancelled: Bool
+    ) -> Bool {
+        !taskIsCancelled &&
+            lifecycle.isCurrent(sessionId: sessionId) &&
+            generation == currentGeneration
+    }
+}
+
+struct SharePlayActivationToken: Equatable, Sendable {
+    let activityId: UUID
+    let generation: UInt64
+}
+
+struct SharePlaySessionObserverToken: Equatable, Sendable {
+    let generation: UInt64
+}
+
+struct SharePlaySessionObserverLifecycle: Sendable {
+    private var generation: UInt64 = 0
+    private(set) var acceptsSessions = false
+
+    mutating func start(acceptsSessions: Bool) -> SharePlaySessionObserverToken {
+        generation &+= 1
+        self.acceptsSessions = acceptsSessions
+        return SharePlaySessionObserverToken(generation: generation)
+    }
+
+    mutating func stop() {
+        generation &+= 1
+        acceptsSessions = false
+    }
+
+    func isCurrent(
+        token: SharePlaySessionObserverToken,
+        taskIsCancelled: Bool
+    ) -> Bool {
+        !taskIsCancelled && token.generation == generation
+    }
+
+    func canConfigure(
+        token: SharePlaySessionObserverToken,
+        taskIsCancelled: Bool
+    ) -> Bool {
+        acceptsSessions && isCurrent(token: token, taskIsCancelled: taskIsCancelled)
+    }
+}
+
+enum SharePlayActivationSessionDisposition: Equatable, Sendable {
+    case configure
+    case leave
+    case leaveAndStopCleanup
+}
+
+/// Binds local activation attempts to the exact RPGActivity later delivered by
+/// sessions(). Cancellation cannot always abort the system activation await, so
+/// an obsolete successful attempt is rejected when its tagged session arrives.
+struct SharePlayActivationLifecycle: Sendable {
+    private enum State: Equatable, Sendable {
+        case active
+        case obsolete
+    }
+
+    private var generation: UInt64 = 0
+    private var currentToken: SharePlayActivationToken?
+    private var states: [UUID: State] = [:]
+
+    var hasObsoleteActivities: Bool {
+        states.values.contains(.obsolete)
+    }
+
+    mutating func begin(activityId: UUID) -> SharePlayActivationToken {
+        if let currentToken {
+            states[currentToken.activityId] = .obsolete
+        }
+        generation &+= 1
+        let token = SharePlayActivationToken(
+            activityId: activityId,
+            generation: generation
+        )
+        currentToken = token
+        states[activityId] = .active
+        return token
+    }
+
+    mutating func cancelCurrent() {
+        if let currentToken {
+            states[currentToken.activityId] = .obsolete
+        }
+        currentToken = nil
+        generation &+= 1
+    }
+
+    func canCommit(
+        token: SharePlayActivationToken,
+        taskIsCancelled: Bool
+    ) -> Bool {
+        !taskIsCancelled &&
+            token.generation == generation
+    }
+
+    mutating func didFinish(
+        token: SharePlayActivationToken,
+        activated: Bool
+    ) {
+        guard !activated else { return }
+        states.removeValue(forKey: token.activityId)
+        if currentToken == token {
+            currentToken = nil
+        }
+    }
+
+    mutating func dispositionForSession(
+        activityId: UUID?,
+        acceptsSessions: Bool
+    ) -> SharePlayActivationSessionDisposition {
+        var rejectedObsoleteActivity = false
+        if let activityId, let state = states.removeValue(forKey: activityId) {
+            if currentToken?.activityId == activityId {
+                currentToken = nil
+            }
+            rejectedObsoleteActivity = state == .obsolete
+        }
+
+        if acceptsSessions {
+            return rejectedObsoleteActivity ? .leave : .configure
+        }
+        return hasObsoleteActivities ? .leave : .leaveAndStopCleanup
+    }
+}
+
+/// Revalidates a session-scoped loop on both sides of delegate suspension and
+/// lets teardown await callbacks that were already admitted before reset.
+/// Main-actor isolation makes admission plus active-count registration atomic
+/// with respect to lifecycle reset.
+@MainActor
+final class SharePlaySessionCallbackCoordinator {
+    private var activeCounts: [UUID: Int] = [:]
+    private var idleWaiters: [UUID: [CheckedContinuation<Void, Never>]] = [:]
+
+    func perform(
+        sessionId: UUID,
+        shouldContinue: @MainActor () -> Bool,
+        operation: @MainActor () async -> Void
+    ) async -> Bool {
+        guard !Task.isCancelled, shouldContinue() else { return false }
+        activeCounts[sessionId, default: 0] += 1
+        defer { finishCallback(sessionId: sessionId) }
+
+        await operation()
+        return !Task.isCancelled && shouldContinue()
+    }
+
+    func waitUntilIdle(sessionId: UUID) async {
+        guard activeCounts[sessionId, default: 0] > 0 else { return }
+        await withCheckedContinuation { continuation in
+            idleWaiters[sessionId, default: []].append(continuation)
+        }
+    }
+
+    private func finishCallback(sessionId: UUID) {
+        let remainingCount = activeCounts[sessionId, default: 0] - 1
+        guard remainingCount <= 0 else {
+            activeCounts[sessionId] = remainingCount
+            return
+        }
+
+        activeCounts.removeValue(forKey: sessionId)
+        idleWaiters.removeValue(forKey: sessionId)?.forEach { $0.resume() }
+    }
+}
+
+/// Keeps teardown callbacks alive independently of the session task being
+/// cancelled, and gives a replacement configuration one operation to await.
+/// The token prevents an older waiter from clearing a newer teardown.
+@MainActor
+final class SharePlaySessionTeardownCoordinator {
+    struct Operation {
+        fileprivate let token: UUID
+        fileprivate let task: Task<Void, Never>
+    }
+
+    private struct PendingTeardown {
+        let token: UUID
+        let task: Task<Void, Never>
+    }
+
+    private var pendingTeardown: PendingTeardown?
+
+    func waitForPendingTeardown() async {
+        while let pendingTeardown {
+            await pendingTeardown.task.value
+            clearPendingTeardown(matching: pendingTeardown.token)
+        }
+    }
+
+    /// Registration is synchronous so a caller can publish the pending token
+    /// before reset opens the main-actor reentrancy window.
+    func start(
+        _ operation: @escaping @MainActor @Sendable () async -> Void
+    ) -> Operation {
+        let precedingTask = pendingTeardown?.task
+        let token = UUID()
+        let task = Task { @MainActor in
+            if let precedingTask {
+                await precedingTask.value
+            }
+            await operation()
+        }
+        pendingTeardown = PendingTeardown(token: token, task: task)
+        return Operation(token: token, task: task)
+    }
+
+    func waitForCompletion(of operation: Operation) async {
+        await operation.task.value
+        clearPendingTeardown(matching: operation.token)
+    }
+
+    private func clearPendingTeardown(matching token: UUID) {
+        guard pendingTeardown?.token == token else { return }
+        pendingTeardown = nil
+    }
+}
+
+enum SharePlaySessionTeardownEvent: Equatable, Sendable {
+    case lostParticipant(UUID)
+    case lostConnection
+}
+
+/// Tracks transport participants independently of in-game player identities.
+///
+/// `Participant.id` is the address used by `GroupSessionMessenger`; it is not
+/// the UUID a player announces later in `GameSenderModel`. Keeping those two
+/// identities separate lets the master physically target an initial replay
+/// before the player's normal join handshake has completed.
+struct SharePlayParticipantTracker: Sendable {
+    struct Change: Equatable, Sendable {
+        let added: Set<UUID>
+        let removed: Set<UUID>
+    }
+
+    private var activeRemoteParticipantIds: Set<UUID> = []
+    private var replayedParticipantIds: Set<UUID> = []
+
+    mutating func sessionDidJoin(
+        activeParticipantIds: Set<UUID>,
+        localParticipantId: UUID
+    ) -> Set<UUID> {
+        let remoteParticipantIds = activeParticipantIds.subtracting([localParticipantId])
+        activeRemoteParticipantIds = remoteParticipantIds
+        replayedParticipantIds.formIntersection(remoteParticipantIds)
+
+        let added = remoteParticipantIds.subtracting(replayedParticipantIds)
+        replayedParticipantIds.formUnion(added)
+        return added
+    }
+
+    mutating func participantsChanged(
+        activeParticipantIds: Set<UUID>,
+        localParticipantId: UUID,
+        sessionIsJoined: Bool
+    ) -> Change {
+        let remoteParticipantIds = activeParticipantIds.subtracting([localParticipantId])
+        let removed = activeRemoteParticipantIds.subtracting(remoteParticipantIds)
+        activeRemoteParticipantIds = remoteParticipantIds
+        replayedParticipantIds.subtract(removed)
+
+        guard sessionIsJoined else {
+            return Change(added: [], removed: removed)
+        }
+
+        let added = remoteParticipantIds.subtracting(replayedParticipantIds)
+        replayedParticipantIds.formUnion(added)
+        return Change(added: added, removed: removed)
+    }
+
+    /// Captures every old transport participant before a session reset clears
+    /// the tracker. The connection event is deliberately last so participant-
+    /// scoped availability is removed before the player performs its complete
+    /// lost-master reset.
+    mutating func drainSessionTeardownEvents() -> [SharePlaySessionTeardownEvent] {
+        let participantEvents = activeRemoteParticipantIds
+            .sorted(by: { $0.uuidString < $1.uuidString })
+            .map(SharePlaySessionTeardownEvent.lostParticipant)
+        reset()
+        return participantEvents + [.lostConnection]
+    }
+
+    mutating func reset() {
+        activeRemoteParticipantIds = []
+        replayedParticipantIds = []
+    }
+}
+
+private enum SharePlayPackageDeliveryError: LocalizedError {
+    case participantNotActive(UUID)
+
+    var errorDescription: String? {
+        switch self {
+        case .participantNotActive(let id):
+            "SharePlay participant \(id) is no longer active"
+        }
+    }
+}
+
+private enum SharePlayChunkedDeliveryOutcome: Equatable, Sendable {
+    case succeeded
+    case retryableFailure
+    case terminalFailure
+    case cancelled
+}
+
+enum SharePlayJournalReuseDisposition: Equatable, Sendable {
+    case reuseExistingAttachment
+    case publishFreshAttachment
+
+    init(metadataAdmissionSucceeded: Bool) {
+        self = metadataAdmissionSucceeded ? .reuseExistingAttachment : .publishFreshAttachment
+    }
+}
+
 struct SharePlayJournalTracker: Sendable {
     struct Publication: Equatable, Sendable {
         let attachmentId: UUID
@@ -75,10 +406,24 @@ struct SharePlayJournalTracker: Sendable {
 
     private var processedAttachmentIds: Set<UUID> = []
     private var publications: [NetworkModules: Publication] = [:]
+    private var attachmentArrivalEpochs: [UUID: UInt64] = [:]
+    private var nextArrivalEpoch: UInt64 = 0
 
     mutating func reconcile(attachmentIds: Set<UUID>) {
         processedAttachmentIds.formIntersection(attachmentIds)
         publications = publications.filter { attachmentIds.contains($0.value.attachmentId) }
+        attachmentArrivalEpochs = attachmentArrivalEpochs.filter { attachmentIds.contains($0.key) }
+
+        let newlyObservedAttachmentIds = attachmentIds.subtracting(Set(attachmentArrivalEpochs.keys))
+        guard !newlyObservedAttachmentIds.isEmpty else { return }
+        nextArrivalEpoch &+= 1
+        for attachmentId in newlyObservedAttachmentIds {
+            attachmentArrivalEpochs[attachmentId] = nextArrivalEpoch
+        }
+    }
+
+    func arrivalEpoch(for attachmentId: UUID) -> UInt64 {
+        attachmentArrivalEpochs[attachmentId] ?? 0
     }
 
     func shouldPublish(module: NetworkModules, itemId: UUID, version: Int) -> Bool {
@@ -86,12 +431,15 @@ struct SharePlayJournalTracker: Sendable {
         return publication.itemId != itemId || publication.version != version
     }
 
-    /// A targeted Weather repair must replace the current journal attachment
-    /// even when it carries the same item and photo-derived asset version. The
-    /// repair's recipient may have missed or failed to load that attachment;
-    /// reusing it would deliver no new journal event to that player.
+    /// A targeted Audio or Weather repair must replace the current journal
+    /// attachment even when it carries the same item and asset version. The
+    /// recipient may have missed or failed to load that attachment; reusing it
+    /// would deliver no new journal event to that player.
     func shouldPublish(model: GameNetworkModel) -> Bool {
-        if model.isTargetedWeatherJournalRepair {
+        if model.sender.isMaster,
+           model.targetId != nil,
+           model.data.data != nil,
+           (model.data.type == .audio || model.data.type == .weather) {
             return true
         }
         return shouldPublish(
@@ -109,6 +457,7 @@ struct SharePlayJournalTracker: Sendable {
     mutating func didRemove(attachmentId: UUID) {
         processedAttachmentIds.remove(attachmentId)
         publications = publications.filter { $0.value.attachmentId != attachmentId }
+        attachmentArrivalEpochs[attachmentId] = nil
     }
 
     mutating func shouldProcess(attachmentId: UUID) -> Bool {
@@ -122,36 +471,8 @@ struct SharePlayJournalTracker: Sendable {
     mutating func reset() {
         processedAttachmentIds = []
         publications = [:]
-    }
-}
-
-/// Coalesces full photo repairs that are physically broadcast by SharePlay.
-/// A `.store/.store` update imports without changing the current presentation,
-/// so clearing its target lets one chunk stream satisfy every participant.
-struct SharePlayPhotoRepairTracker: Sendable {
-    private var sentVersions: [UUID: Int] = [:]
-
-    mutating func prepareMessengerModel(_ model: GameNetworkModel) -> GameNetworkModel? {
-        guard model.sender.isMaster,
-              model.type == .store,
-              model.subType == .store,
-              model.data.type == .photo,
-              model.data.data != nil,
-              model.targetId != nil
-        else {
-            return model
-        }
-
-        guard sentVersions[model.data.id] != model.data.effectiveAssetVersion else { return nil }
-        sentVersions[model.data.id] = model.data.effectiveAssetVersion
-
-        var broadcast = model
-        broadcast.targetId = nil
-        return broadcast
-    }
-
-    mutating func reset() {
-        sentVersions = [:]
+        attachmentArrivalEpochs = [:]
+        nextArrivalEpoch = 0
     }
 }
 
@@ -172,9 +493,11 @@ struct SharePlayMapRecoveryTracker: Sendable {
 
     mutating func recordFullMapPresentation(
         _ model: GameNetworkModel,
+        transportSucceeded: Bool,
         at now: ContinuousClock.Instant? = nil
     ) {
-        guard model.sender.isMaster,
+        guard transportSucceeded,
+              model.sender.isMaster,
               model.type == .reveal,
               model.subType == .show,
               model.data.type == .map,
@@ -229,6 +552,12 @@ struct SharePlayMapRecoveryTracker: Sendable {
 
 @MainActor @Observable
 final class RPGSharePlayController {
+    private struct PendingSendOperation {
+        let id: UUID
+        let byteCount: Int
+        let operation: @MainActor () async -> Void
+    }
+
     var groupSession: GroupSession<RPGActivity>?
     var isActive: Bool = false
     var canActivateSharePlay: Bool = false
@@ -242,6 +571,9 @@ final class RPGSharePlayController {
     // when SharePlay becomes available again for a running game. Only cancelled
     // by stopJoin() when the game itself ends.
     private var joinTask: Task<Void, Never>?
+    private var sessionObserverLifecycle = SharePlaySessionObserverLifecycle()
+    private var activationTask: Task<Void, Never>?
+    private var activationLifecycle = SharePlayActivationLifecycle()
 
     #if os(visionOS)
     private var systemCoordinator: SystemCoordinator?
@@ -251,17 +583,32 @@ final class RPGSharePlayController {
 
     private var messenger: GroupSessionMessenger?
     private var sessionLifecycle = SharePlaySessionLifecycle()
+    private var participantTracker = SharePlayParticipantTracker()
     private var journalTracker = SharePlayJournalTracker()
-    private var photoRepairTracker = SharePlayPhotoRepairTracker()
     private var mapRecoveryTracker = SharePlayMapRecoveryTracker()
-    // Session-scoped tasks (state/participant/message/journal loops and in-flight
-    // sends), cancelled by reset(). Send tasks remove themselves on completion so
-    // the collection stays bounded during a long game.
+    private let sessionCallbackCoordinator = SharePlaySessionCallbackCoordinator()
+    private let sessionTeardownCoordinator = SharePlaySessionTeardownCoordinator()
+    // Session-scoped state/participant/message/journal loops, cancelled by reset().
     private var tasks: [UUID: Task<Void, Never>] = [:]
+    // Normal Messenger sends are admitted before encoding, then processed in
+    // invocation order. This prevents a burst from spawning unbounded parallel
+    // Base64 encodes before the package sender can apply its own bounds.
+    private var pendingSendOperations: [PendingSendOperation] = []
+    private var activeSendOperation: PendingSendOperation?
+    private var sendOperationByteCount = 0
+    private var sendOperationTask: Task<Void, Never>?
+    private var sendOperationGeneration: UInt64 = 0
+    private var deferredDeliveryQueue = SharePlayDeferredDeliveryQueue()
+    private var deferredPromotionTask: Task<Void, Never>?
     // Publications for one module are serialized, but cleanup of the previous
     // attachment never blocks publication of the next map/photo/PDF/space.
     private let journalPublicationQueue = SharePlayJournalPublicationQueue<GroupSessionJournal.Attachment>()
+    private let journalAddLimiter = SharePlayJournalAddLimiter<NetworkModules, GroupSessionJournal.Attachment>()
     private var journal: GroupSessionJournal?
+
+    static let journalAddTimeout: Duration = .seconds(10)
+    private static let maxChunkedDeliveryAttempts = 2
+    private static let chunkedRetryDelay: Duration = .seconds(1)
 
     // Lifetime observers — survive session resets; re-created if setup() runs again.
     private var eligibilityTask: Task<Void, Never>?
@@ -336,24 +683,34 @@ final class RPGSharePlayController {
 }
 
 extension RPGSharePlayController {
-    func sendData(_ gameNetworkModel: GameNetworkModel, fileJournal: Bool) {
+    /// Sends to the whole SharePlay session by default. Supplying a participant
+    /// ID physically addresses Messenger packages to that active participant;
+    /// Journal-backed Audio and Weather repairs remain session-visible by design.
+    /// Returns whether a transport or bounded deferred queue accepted the intent.
+    @discardableResult
+    func sendData(
+        _ gameNetworkModel: GameNetworkModel,
+        fileJournal: Bool,
+        participantId: UUID? = nil
+    ) -> Bool {
         Logger.sharePlay.debug("sendData state: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
-        guard messenger != nil, let sessionId = groupSession?.id else { return }
+        guard messenger != nil, let sessionId = groupSession?.id else { return false }
 
         guard let prepared = Self.prepareForTransport(
             gameNetworkModel,
             fileJournal: fileJournal,
-            journalAvailable: journal != nil,
-            photoRepairTracker: &photoRepairTracker
-        ), let encodedModel = prepared.model.encodeData()
-        else { return }
-
-        mapRecoveryTracker.recordFullMapPresentation(prepared.model)
+            journalAvailable: journal != nil
+        ) else { return false }
 
         if prepared.usesJournalTransport,
            let attachmentData = prepared.model.data.data, let journal {
             let moduleKey = prepared.model.data.type
-            journalPublicationQueue.enqueue(for: moduleKey, priority: .userInitiated) { [weak self] in
+            let publication = journalPublicationQueue.enqueue(
+                for: moduleKey,
+                byteCount: attachmentData.count,
+                policy: Self.journalPublicationPolicy(for: prepared.model),
+                priority: .userInitiated
+            ) { [weak self] in
                 guard let self else { return nil }
                 guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
                 let attachmentSize = Self.formattedByteCount(attachmentData.count)
@@ -363,106 +720,383 @@ extension RPGSharePlayController {
                     for: prepared.model
                 )
                 Logger.sharePlay.debug("Journal: message \(prepared.model.counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(prepared.model.debugDescription, privacy: .public)")
-                guard self.journalTracker.shouldPublish(model: prepared.model) else {
-                    self.recordJournalTransport(
-                        state: .succeeded,
-                        byteCount: attachmentData.count,
-                        for: prepared.model
+                if !self.journalTracker.shouldPublish(model: prepared.model) {
+                    // Reusing bytes is a storage optimization, not a screen
+                    // intent optimization. Every reveal/show still needs a new
+                    // lightweight Messenger event so players present it again.
+                    let metadataAdmissionSucceeded = self.enqueueChunkedSend(
+                        Self.journalMetadata(for: prepared.model),
+                        sessionId: sessionId,
+                        participantId: participantId
                     )
-                    Logger.sharePlay.debug("Journal ✓: message \(prepared.model.counter, privacy: .public) reused \(attachmentSize, privacy: .public) \(moduleKey.token, privacy: .public) attachment for \(prepared.model.data.id, privacy: .public)")
-                    return nil
+                    switch SharePlayJournalReuseDisposition(
+                        metadataAdmissionSucceeded: metadataAdmissionSucceeded
+                    ) {
+                    case .reuseExistingAttachment:
+                        self.recordJournalTransport(
+                            state: .succeeded,
+                            byteCount: attachmentData.count,
+                            for: prepared.model
+                        )
+                        Logger.sharePlay.debug("Journal ✓: message \(prepared.model.counter, privacy: .public) reused \(attachmentSize, privacy: .public) \(moduleKey.token, privacy: .public) attachment for \(prepared.model.data.id, privacy: .public)")
+                        return nil
+                    case .publishFreshAttachment:
+                        // A reveal without its lightweight metadata event would
+                        // never be presented. Publish fresh bytes so Journal
+                        // supplies both a new attachment and the reveal intent.
+                        Logger.sharePlay.warning("Journal reuse metadata was not admitted for message \(prepared.model.counter, privacy: .public); publishing a fresh \(moduleKey.token, privacy: .public) attachment")
+                    }
                 }
                 let model = Self.journalMetadata(for: prepared.model)
-                do {
-                    let result = try await journal.add(attachmentData, metadata: model)
-                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
-                    self.gameModel?.attachments[prepared.model.data.type] = result
-                    self.journalTracker.didPublish(
+                let outcome = await self.journalAddLimiter.run(
+                    for: moduleKey,
+                    scope: sessionId,
+                    timeout: Self.journalAddTimeout
+                ) {
+                    try await journal.add(attachmentData, metadata: model)
+                } discardLateValue: { [weak self] lateAttachment in
+                    guard let self else { return true }
+                    return await self.removeJournalAttachment(
+                        lateAttachment,
+                        from: journal,
                         module: moduleKey,
-                        itemId: prepared.model.data.id,
-                        version: prepared.model.data.effectiveAssetVersion,
-                        attachmentId: result.id
+                        sessionId: sessionId,
+                        reason: "late timed-out"
                     )
-                    self.recordJournalTransport(
-                        state: .succeeded,
-                        byteCount: attachmentData.count,
-                        for: prepared.model
-                    )
-                    Logger.sharePlay.debug("Journal ✓: message \(prepared.model.counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public)")
-                    return result
-                } catch {
-                    self.recordJournalTransport(
-                        state: .failed,
-                        byteCount: attachmentData.count,
-                        for: prepared.model
-                    )
-                    Logger.sharePlay.error("Journal ✕: message \(prepared.model.counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(prepared.model.data.type.token, privacy: .public) and id: \(prepared.model.data.id, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
-                    if self.sessionLifecycle.isCurrent(sessionId: sessionId), let sender = self.packageSender {
-                        await self.sendChunked(encodedModel, for: prepared.model, using: sender)
-                    }
-                    return nil
                 }
-            } remove: { [weak self] oldAttachment in
+
+                switch outcome {
+                case .succeeded(let result):
+                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else {
+                        _ = await self.removeJournalAttachment(
+                            result,
+                            from: journal,
+                            module: moduleKey,
+                            sessionId: sessionId,
+                            reason: "obsolete session"
+                        )
+                        return nil
+                    }
+                    return result
+                case .failed(let errorDescription):
+                    Logger.sharePlay.error("Journal ✕: message \(prepared.model.counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(prepared.model.data.type.token, privacy: .public) and id: \(prepared.model.data.id, privacy: .public) error: \(errorDescription, privacy: .public)")
+                case .timedOut:
+                    Logger.sharePlay.error("Journal ⌛: message \(prepared.model.counter, privacy: .public) timed out adding \(moduleKey.token, privacy: .public) attachment; module is degraded to Messenger until the add returns")
+                case .unavailable:
+                    Logger.sharePlay.warning("Journal bypass: \(moduleKey.token, privacy: .public) still has a quarantined add; using Messenger for message \(prepared.model.counter, privacy: .public)")
+                case .cancelled:
+                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
+                    Logger.sharePlay.warning("Journal add cancelled while session remains active; using Messenger for message \(prepared.model.counter, privacy: .public)")
+                }
+
+                self.recordJournalTransport(
+                    state: .failed,
+                    byteCount: attachmentData.count,
+                    for: prepared.model
+                )
+                guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
+                let fallbackEnqueued = self.enqueueChunkedSend(
+                    prepared.model,
+                    sessionId: sessionId,
+                    participantId: participantId
+                )
+                guard fallbackEnqueued else { return nil }
+                var retired = false
+                if Self.shouldRetireJournalPresentationAfterFallback(prepared.model) {
+                    self.journalPublicationQueue.supersedePresentation(for: moduleKey)
+                    retired = self.journalPublicationQueue.retireCurrentAttachment(
+                        for: moduleKey,
+                        priority: .utility
+                    ) { [weak self] oldAttachment in
+                        guard let self else { return false }
+                        return await self.removeJournalAttachment(
+                            oldAttachment,
+                            from: journal,
+                            module: moduleKey,
+                            sessionId: sessionId,
+                            reason: "Messenger fallback"
+                        )
+                    }
+                }
+                if retired {
+                    self.gameModel?.attachments[moduleKey] = nil
+                }
+                return nil
+            } commit: { [weak self] result in
                 guard let self,
                       self.sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }
-                do {
-                    try await journal.remove(attachment: oldAttachment)
-                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return }
-                    self.journalTracker.didRemove(attachmentId: oldAttachment.id)
-                    Logger.sharePlay.debug("Journal ✓: removed replaced \(moduleKey.token, privacy: .public) attachment \(oldAttachment.id, privacy: .public)")
-                } catch is CancellationError {
-                    // Session reset cancels cleanup tasks. The next session owns
-                    // a different journal, so cancellation needs no recovery.
-                } catch {
-                    Logger.sharePlay.error("Cannot remove replaced attachment from Journal with module \(moduleKey.token, privacy: .public) error: \(error.localizedDescription, privacy: .public)")
-                }
+                self.gameModel?.attachments[moduleKey] = result
+                self.journalTracker.didPublish(
+                    module: moduleKey,
+                    itemId: prepared.model.data.id,
+                    version: prepared.model.data.effectiveAssetVersion,
+                    attachmentId: result.id
+                )
+                self.mapRecoveryTracker.recordFullMapPresentation(
+                    prepared.model,
+                    transportSucceeded: true
+                )
+                self.recordJournalTransport(
+                    state: .succeeded,
+                    byteCount: attachmentData.count,
+                    for: prepared.model
+                )
+                let attachmentSize = Self.formattedByteCount(attachmentData.count)
+                Logger.sharePlay.debug("Journal ✓: message \(prepared.model.counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public)")
+            } remove: { [weak self] oldAttachment in
+                guard let self else { return false }
+                return await self.removeJournalAttachment(
+                    oldAttachment,
+                    from: journal,
+                    module: moduleKey,
+                    sessionId: sessionId,
+                    reason: "replaced"
+                )
             }
-            return
+            if publication.admission == .rejected {
+                recordJournalTransport(
+                    state: .failed,
+                    byteCount: attachmentData.count,
+                    for: prepared.model
+                )
+                Logger.sharePlay.warning("Journal queue full: falling back to chunked transport for message \(prepared.model.counter, privacy: .public)")
+                let fallbackEnqueued = enqueueChunkedSend(
+                    prepared.model,
+                    sessionId: sessionId,
+                    participantId: participantId
+                )
+                guard fallbackEnqueued else { return false }
+                var retired = false
+                if Self.shouldRetireJournalPresentationAfterFallback(prepared.model) {
+                    journalPublicationQueue.supersedePresentation(for: moduleKey)
+                    retired = journalPublicationQueue.retireCurrentAttachment(
+                        for: moduleKey,
+                        priority: .utility
+                    ) { [weak self] oldAttachment in
+                        guard let self else { return false }
+                        return await self.removeJournalAttachment(
+                            oldAttachment,
+                            from: journal,
+                            module: moduleKey,
+                            sessionId: sessionId,
+                            reason: "queue-overload fallback"
+                        )
+                    }
+                }
+                if retired {
+                    gameModel?.attachments[moduleKey] = nil
+                }
+                return true
+            }
+            return true
         }
 
-        // Messenger photo repairs are normalized to one untargeted store, so
-        // every participant caches the bytes without changing presentation.
-        addSendTask { [weak self] in
-            guard let self,
-                  self.sessionLifecycle.isCurrent(sessionId: sessionId),
-                  let sender = self.packageSender
-            else { return }
-            await self.sendChunked(encodedModel, for: prepared.model, using: sender)
+        return enqueueChunkedSend(
+            prepared.model,
+            sessionId: sessionId,
+            participantId: participantId
+        )
+    }
+
+    @discardableResult
+    private func removeJournalAttachment(
+        _ attachment: GroupSessionJournal.Attachment,
+        from journal: GroupSessionJournal,
+        module: NetworkModules,
+        sessionId: UUID,
+        reason: String
+    ) async -> Bool {
+        do {
+            let _: Void = try await SharePlayAttachmentLoadRetry.load {
+                try await journal.remove(attachment: attachment)
+            }
+            if sessionLifecycle.isCurrent(sessionId: sessionId) {
+                journalTracker.didRemove(attachmentId: attachment.id)
+            }
+            Logger.sharePlay.debug("Journal ✓: removed \(reason, privacy: .public) \(module.token, privacy: .public) attachment \(attachment.id, privacy: .public)")
+            return true
+        } catch is CancellationError {
+            // Session reset cancels normal cleanup. A timed-out add is retained
+            // by the limiter and performs late cleanup in a fresh task.
+            return false
+        } catch {
+            Logger.sharePlay.error("Cannot remove \(reason, privacy: .public) Journal attachment for module \(module.token, privacy: .public) after bounded retries: \(error.localizedDescription, privacy: .public)")
+            return false
         }
     }
 
-    /// Chooses transport using the original targeted model, then normalizes a
-    /// photo repair for messenger delivery. Choosing again after clearing the
-    /// target would incorrectly move the repair back onto the journal.
+    @discardableResult
+    private func enqueueChunkedSend(
+        _ model: GameNetworkModel,
+        sessionId: UUID,
+        participantId: UUID?,
+        allowDeferral: Bool = true,
+        deliveryAttempt: Int = 0
+    ) -> Bool {
+        let rawPayloadByteCount = model.data.data?.count ?? 0
+        guard SharePlayMessengerPayloadBudget.accepts(
+            rawPayloadByteCount: rawPayloadByteCount
+        ) else {
+            recordChunkedTransport(
+                count: 0,
+                byteCount: rawPayloadByteCount,
+                state: .failed,
+                for: model
+            )
+            mapRecoveryTracker.recordFullMapPresentation(
+                model,
+                transportSucceeded: false
+            )
+            Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public) raw payload exceeds the safe \(SharePlayMessengerPayloadBudget.maximumRawPayloadByteCount, privacy: .public)-byte Messenger admission limit")
+            return false
+        }
+
+        let operationToken = SharePlaySessionOperationToken(
+            sessionId: sessionId,
+            generation: sendOperationGeneration
+        )
+        let enqueued = addSendTask(
+            byteCount: rawPayloadByteCount
+        ) { [weak self] in
+            guard let self,
+                  operationToken.canCommit(
+                    lifecycle: self.sessionLifecycle,
+                    currentGeneration: self.sendOperationGeneration,
+                    taskIsCancelled: Task.isCancelled
+                  ),
+                  let sender = self.packageSender
+            else { return }
+            guard let encodedModel = await Self.encodedData(for: model) else {
+                guard operationToken.canCommit(
+                    lifecycle: self.sessionLifecycle,
+                    currentGeneration: self.sendOperationGeneration,
+                    taskIsCancelled: Task.isCancelled
+                ) else { return }
+                self.recordChunkedTransport(
+                    count: 0,
+                    byteCount: rawPayloadByteCount,
+                    state: .failed,
+                    for: model
+                )
+                return
+            }
+            guard operationToken.canCommit(
+                lifecycle: self.sessionLifecycle,
+                currentGeneration: self.sendOperationGeneration,
+                taskIsCancelled: Task.isCancelled
+            ) else { return }
+            guard encodedModel.count <= SharePlaySingleQueuePackageSender.maxMessageByteCount else {
+                self.recordChunkedTransport(
+                    count: 0,
+                    byteCount: encodedModel.count,
+                    state: .failed,
+                    for: model
+                )
+                Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public) encoded beyond Messenger's complete-message limit")
+                return
+            }
+            let outcome = await self.sendChunked(
+                encodedModel,
+                for: model,
+                participantId: participantId,
+                using: sender,
+                operationToken: operationToken
+            )
+            guard operationToken.canCommit(
+                lifecycle: self.sessionLifecycle,
+                currentGeneration: self.sendOperationGeneration,
+                taskIsCancelled: Task.isCancelled
+            ) else { return }
+            self.mapRecoveryTracker.recordFullMapPresentation(
+                model,
+                transportSucceeded: outcome == .succeeded
+            )
+            guard outcome == .retryableFailure,
+                  deliveryAttempt + 1 < Self.maxChunkedDeliveryAttempts
+            else { return }
+
+            let retryAt = ContinuousClock().now.advanced(by: Self.chunkedRetryDelay)
+            let admission = self.deferredDeliveryQueue.enqueue(
+                model,
+                sessionId: sessionId,
+                participantId: participantId,
+                deliveryAttempt: deliveryAttempt + 1,
+                retryNotBefore: retryAt
+            )
+            if admission.isAccepted {
+                Logger.sharePlay.warning("Chunked retry deferred after terminal package failure for message \(model.counter, privacy: .public)")
+                self.scheduleDeferredPromotionIfNeeded()
+            } else {
+                Logger.sharePlay.error("Chunked retry could not be retained for message \(model.counter, privacy: .public): \(String(describing: admission), privacy: .public)")
+            }
+        }
+        if !enqueued {
+            if allowDeferral,
+               deferredDeliveryQueue.enqueue(
+                    model,
+                    sessionId: sessionId,
+                    participantId: participantId
+               ).isAccepted {
+                Logger.sharePlay.warning("Chunked queue full: deferred critical message \(model.counter, privacy: .public)")
+                return true
+            }
+            mapRecoveryTracker.recordFullMapPresentation(
+                model,
+                transportSucceeded: false
+            )
+            Logger.sharePlay.warning("Chunked queue full: ignored message \(model.counter, privacy: .public)")
+        }
+        return enqueued
+    }
+
     static func prepareForTransport(
         _ model: GameNetworkModel,
         fileJournal: Bool,
-        journalAvailable: Bool,
-        photoRepairTracker: inout SharePlayPhotoRepairTracker
+        journalAvailable: Bool
     ) -> (model: GameNetworkModel, usesJournalTransport: Bool)? {
-        let usesJournal = usesJournalTransport(
-            for: model,
-            fileJournal: fileJournal,
-            journalAvailable: journalAvailable
+        (
+            model,
+            usesJournalTransport(
+                for: model,
+                fileJournal: fileJournal,
+                journalAvailable: journalAvailable
+            )
         )
-        guard !usesJournal else { return (model, true) }
-        guard let preparedModel = photoRepairTracker.prepareMessengerModel(model) else { return nil }
-        return (preparedModel, false)
     }
 
     /// The journal slot per module carries broadcast content — the master's
     /// current presentation — plus audio and Weather repairs. Audio repairs are
     /// morphed into untargeted stores, while Weather retains its recipient so a
     /// repair cannot re-present the content on unrelated players. Targeted
-    /// answers of the other modules ride the messenger; full photo stores are
-    /// normalized there into one coalesced group repair.
+    /// answers of the other modules ride a physically participant-targeted
+    /// Messenger stream.
     static func usesJournalTransport(for model: GameNetworkModel, fileJournal: Bool, journalAvailable: Bool) -> Bool {
         model.data.type != .value &&
             fileJournal &&
             journalAvailable &&
             model.data.data != nil &&
             (model.targetId == nil || model.data.type == .audio || model.data.type == .weather)
+    }
+
+    /// Full reveal/show publications represent screen intent. Once one is
+    /// waiting behind an active publication, a newer reveal for the same module
+    /// makes that pending intent stale. Repairs and stores remain FIFO because
+    /// each may satisfy a different participant or asset request.
+    static func journalPublicationPolicy(
+        for model: GameNetworkModel
+    ) -> SharePlayJournalPublicationPolicy {
+        guard model.targetId == nil,
+              model.type == .reveal,
+              model.subType == .show
+        else { return .fifo }
+
+        return switch model.data.type {
+        case .map, .photo, .pdf, .space, .weather:
+            .latestWins
+        default:
+            .fifo
+        }
     }
 
     static func journalMetadata(for model: GameNetworkModel) -> GameNetworkModel {
@@ -486,13 +1120,103 @@ extension RPGSharePlayController {
         return metadata
     }
 
-    /// Runs a send operation as a session-scoped task that is cancellable by
-    /// reset() but removes itself when finished, so `tasks` stays bounded.
-    private func addSendTask(priority: TaskPriority? = nil, _ operation: @escaping @MainActor () async -> Void) {
-        let id = UUID()
-        tasks[id] = Task(priority: priority) { [weak self] in
-            await operation()
-            self?.tasks.removeValue(forKey: id)
+    static func shouldRetireJournalPresentationAfterFallback(_ model: GameNetworkModel) -> Bool {
+        model.isFileBackedPresentation || model.isPlayerFilePresentationEvent
+    }
+
+    /// Bounds work before encoding and preserves the same FIFO order that the
+    /// package sender enforces once bytes have been produced.
+    @discardableResult
+    private func addSendTask(
+        byteCount: Int,
+        _ operation: @escaping @MainActor () async -> Void
+    ) -> Bool {
+        let safeByteCount = max(0, byteCount)
+        let outstandingCount = pendingSendOperations.count + (activeSendOperation == nil ? 0 : 1)
+        guard outstandingCount < SharePlaySingleQueuePackageSender.maxOutstandingMessages,
+              safeByteCount <= SharePlayMessengerPayloadBudget.maximumRawPayloadByteCount,
+              sendOperationByteCount <=
+                SharePlayMessengerPayloadBudget.maximumOutstandingRawPayloadByteCount - safeByteCount
+        else { return false }
+
+        pendingSendOperations.append(PendingSendOperation(
+            id: UUID(),
+            byteCount: safeByteCount,
+            operation: operation
+        ))
+        sendOperationByteCount += safeByteCount
+        startSendOperationTaskIfNeeded()
+        return true
+    }
+
+    private func startSendOperationTaskIfNeeded() {
+        guard sendOperationTask == nil else { return }
+        let generation = sendOperationGeneration
+        sendOperationTask = Task { @MainActor [weak self] in
+            await self?.drainSendOperations(generation: generation)
+        }
+    }
+
+    private func drainSendOperations(generation: UInt64) async {
+        while !Task.isCancelled,
+              sendOperationGeneration == generation,
+              !pendingSendOperations.isEmpty {
+            let pendingOperation = pendingSendOperations.removeFirst()
+            activeSendOperation = pendingOperation
+            await pendingOperation.operation()
+            guard sendOperationGeneration == generation,
+                  activeSendOperation?.id == pendingOperation.id
+            else { return }
+            sendOperationByteCount = max(0, sendOperationByteCount - pendingOperation.byteCount)
+            activeSendOperation = nil
+            promoteDeferredDeliveries()
+        }
+        guard sendOperationGeneration == generation else { return }
+        activeSendOperation = nil
+        sendOperationTask = nil
+    }
+
+    private func promoteDeferredDeliveries() {
+        while let delivery = deferredDeliveryQueue.first {
+            guard sessionLifecycle.isCurrent(sessionId: delivery.sessionId) else {
+                deferredDeliveryQueue.removeFirst()
+                continue
+            }
+            guard delivery.isReady(at: ContinuousClock().now) else {
+                scheduleDeferredPromotionIfNeeded()
+                return
+            }
+            guard enqueueChunkedSend(
+                delivery.model,
+                sessionId: delivery.sessionId,
+                participantId: delivery.participantId,
+                allowDeferral: false,
+                deliveryAttempt: delivery.deliveryAttempt
+            ) else { return }
+            deferredDeliveryQueue.removeFirst()
+        }
+    }
+
+    private func scheduleDeferredPromotionIfNeeded() {
+        guard deferredPromotionTask == nil,
+              let delivery = deferredDeliveryQueue.first,
+              let retryNotBefore = delivery.retryNotBefore
+        else { return }
+        let generation = sendOperationGeneration
+        let delay = ContinuousClock().now.duration(to: retryNotBefore)
+        deferredPromotionTask = Task { @MainActor [weak self] in
+            do {
+                if delay > .zero {
+                    try await Task.sleep(for: delay)
+                }
+            } catch {
+                return
+            }
+            guard let self,
+                  self.sendOperationGeneration == generation
+            else { return }
+            self.deferredPromotionTask = nil
+            self.promoteDeferredDeliveries()
         }
     }
 
@@ -504,24 +1228,99 @@ extension RPGSharePlayController {
         tasks[key] = task
     }
 
+    /// Encoding can include multi-megabyte Base64 payloads and has no UI
+    /// dependency. Defer it until Messenger is actually needed and keep it off
+    /// the main actor.
+    @concurrent
+    private static func encodedData(for model: GameNetworkModel) async -> Data? {
+        guard !Task.isCancelled else { return nil }
+        return model.encodeData()
+    }
+
+    /// Reassembly and JSON decoding are both proportional to the encoded byte
+    /// count and can be multi-megabyte work. Keep the complete operation off
+    /// the main actor and return only the decoded value plus its log size.
+    @concurrent
+    static func decodedMessage(
+        from package: SharePlayCompletedPackage
+    ) async -> (model: GameNetworkModel, byteCount: Int)? {
+        guard !Task.isCancelled else { return nil }
+        let data = package.reassembledData()
+        guard !Task.isCancelled,
+              let model = GameNetworkModel.decodeData(of: data)
+        else { return nil }
+        return (model, data.count)
+    }
+
+    @discardableResult
     private func sendChunked(
         _ data: Data,
         for model: GameNetworkModel,
-        using sender: SharePlaySingleQueuePackageSender
-    ) async {
+        participantId: UUID?,
+        using sender: SharePlaySingleQueuePackageSender,
+        operationToken: SharePlaySessionOperationToken
+    ) async -> SharePlayChunkedDeliveryOutcome {
+        guard operationToken.canCommit(
+            lifecycle: sessionLifecycle,
+            currentGeneration: sendOperationGeneration,
+            taskIsCancelled: Task.isCancelled
+        ) else { return .cancelled }
         let packageCount = sender.packageCount(for: data)
         let size = Self.formattedByteCount(data.count)
-        recordChunkedTransport(count: packageCount, byteCount: data.count, for: model)
+        recordChunkedTransport(
+            count: packageCount,
+            byteCount: data.count,
+            state: .pending,
+            for: model
+        )
         Logger.sharePlay.debug("Chunked: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public), encoded size \(size, privacy: .public)")
         do {
-            try await sender.send(data: data)
+            try await sender.send(data: data, participantId: participantId)
+            guard operationToken.canCommit(
+                lifecycle: sessionLifecycle,
+                currentGeneration: sendOperationGeneration,
+                taskIsCancelled: Task.isCancelled
+            ) else { return .cancelled }
+            recordChunkedTransport(
+                count: packageCount,
+                byteCount: data.count,
+                state: .succeeded,
+                for: model
+            )
             Logger.sharePlay.debug("Chunked ✓: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public)")
+            return .succeeded
         } catch is CancellationError {
-            Logger.sharePlay.debug("Chunked cancelled: message \(model.counter, privacy: .public)")
+            return .cancelled
+        } catch SharePlayPackageSenderError.messageTooLarge {
+            guard operationToken.canCommit(
+                lifecycle: sessionLifecycle,
+                currentGeneration: sendOperationGeneration,
+                taskIsCancelled: Task.isCancelled
+            ) else { return .cancelled }
+            recordChunkedTransport(
+                count: packageCount,
+                byteCount: data.count,
+                state: .failed,
+                for: model
+            )
+            Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public) exceeds Messenger's complete-message limit")
+            return .terminalFailure
         } catch {
+            guard operationToken.canCommit(
+                lifecycle: sessionLifecycle,
+                currentGeneration: sendOperationGeneration,
+                taskIsCancelled: Task.isCancelled
+            ) else { return .cancelled }
             // Missing one package leaves the receiver waiting forever. Keep the
             // failure visible after the sender has exhausted its bounded retry.
+            recordChunkedTransport(
+                count: packageCount,
+                byteCount: data.count,
+                state: .failed,
+                for: model
+            )
             Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public), error: \(error.localizedDescription, privacy: .public)")
+            return .retryableFailure
         }
     }
 
@@ -535,9 +1334,18 @@ extension RPGSharePlayController {
         }
     }
 
-    private func recordChunkedTransport(count: Int, byteCount: Int, for model: GameNetworkModel) {
+    private func recordChunkedTransport(
+        count: Int,
+        byteCount: Int,
+        state: SharePlayChunkTransportState,
+        for model: GameNetworkModel
+    ) {
         updateTransportLog(for: model) { transport in
-            transport.chunked = SharePlayChunkTransportLog(count: count, byteCount: byteCount)
+            transport.chunked = SharePlayChunkTransportLog(
+                count: count,
+                byteCount: byteCount,
+                state: state
+            )
         }
     }
 
@@ -563,15 +1371,27 @@ extension RPGSharePlayController {
 
     func reset() {
         Logger.sharePlay.debug("SharePlay: reset state: \(self.printState(), privacy: .public)")
+        cancelActivation()
         isActive = false
         messenger = nil
+        sendOperationGeneration &+= 1
+        sendOperationTask?.cancel()
+        sendOperationTask = nil
+        deferredPromotionTask?.cancel()
+        deferredPromotionTask = nil
+        pendingSendOperations = []
+        activeSendOperation = nil
+        sendOperationByteCount = 0
+        deferredDeliveryQueue.reset()
+        packageSender?.cancelAll()
         packageSender = nil
         journal = nil
         sessionLifecycle.reset()
+        participantTracker.reset()
         journalTracker.reset()
-        photoRepairTracker.reset()
         mapRecoveryTracker.reset()
         journalPublicationQueue.cancelAll()
+        journalAddLimiter.cancelAll()
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
         packageReceiver.reset()
@@ -599,16 +1419,46 @@ extension RPGSharePlayController {
         #else
             RPGActivity.titleImage = image?.cgImage
         #endif
-        let activity = RPGActivity(adventureTitle: name ?? "Adventure")
+        activationTask?.cancel()
         if let groupSession {
+            activationLifecycle.cancelCurrent()
+            activationTask = nil
+            let activity = RPGActivity(adventureTitle: name ?? "Adventure")
             Logger.sharePlay.debug("GroupSession active state: \(self.printState(), privacy: .public)")
             groupSession.activity = activity
         } else {
-            Task {
+            let activityId = UUID()
+            let token = activationLifecycle.begin(activityId: activityId)
+            let activity = RPGActivity(
+                adventureTitle: name ?? "Adventure",
+                activationId: activityId
+            )
+            activationTask = Task { [weak self] in
                 do {
-                    _ = try await activity.activate()
+                    let activated = try await activity.activate()
+                    guard let self else { return }
+                    let canCommit = self.activationLifecycle.canCommit(
+                        token: token,
+                        taskIsCancelled: Task.isCancelled
+                    )
+                    self.activationLifecycle.didFinish(
+                        token: token,
+                        activated: activated
+                    )
+                    self.stopCleanupSessionObserverIfPossible()
+                    guard canCommit else { return }
+                    self.activationTask = nil
                     Logger.sharePlay.debug("Activate state: \(self.printState(), privacy: .public)")
                 } catch {
+                    guard let self else { return }
+                    let canCommit = self.activationLifecycle.canCommit(
+                        token: token,
+                        taskIsCancelled: Task.isCancelled
+                    )
+                    self.activationLifecycle.didFinish(token: token, activated: false)
+                    self.stopCleanupSessionObserverIfPossible()
+                    guard canCommit else { return }
+                    self.activationTask = nil
                     Logger.sharePlay.error("Activate error \(error.localizedDescription) state: \(self.printState(), privacy: .public)")
                 }
             }
@@ -618,41 +1468,146 @@ extension RPGSharePlayController {
     func joinGame() {
         Logger.sharePlay.debug("Join state: \(self.printState(), privacy: .public)")
         joinTask?.cancel()
+        let observerToken = sessionObserverLifecycle.start(acceptsSessions: true)
+        startSessionObserver(token: observerToken)
+    }
+
+    private func startSessionObserver(token observerToken: SharePlaySessionObserverToken) {
         // Store in joinTask (not tasks) so reset() does not cancel it.
         // The for-await loop stays alive across session invalidations and picks
         // up the next session automatically when the player re-joins the call.
         joinTask = Task { [weak self] in
             for await session in RPGActivity.sessions() {
                 guard let self else { return }
+                guard self.sessionObserverLifecycle.isCurrent(
+                    token: observerToken,
+                    taskIsCancelled: Task.isCancelled
+                ) else { return }
+                switch self.activationLifecycle.dispositionForSession(
+                    activityId: session.activity.activationId,
+                    acceptsSessions: self.sessionObserverLifecycle.acceptsSessions
+                ) {
+                case .configure:
+                    break
+                case .leave:
+                    Logger.sharePlay.debug("Leaving session rejected by activation lifecycle \(session.id, privacy: .public)")
+                    session.leave()
+                    continue
+                case .leaveAndStopCleanup:
+                    Logger.sharePlay.debug("Leaving final session from stopped activation \(session.id, privacy: .public)")
+                    session.leave()
+                    self.sessionObserverLifecycle.stop()
+                    self.joinTask = nil
+                    return
+                }
+                guard self.sessionObserverLifecycle.canConfigure(
+                    token: observerToken,
+                    taskIsCancelled: Task.isCancelled
+                ) else {
+                    session.leave()
+                    return
+                }
                 Logger.sharePlay.debug("Session \(session.description, privacy: .public) state: \(self.printState(), privacy: .public)")
 
+                await self.configureGroupSession(session)
+                guard self.sessionObserverLifecycle.canConfigure(
+                    token: observerToken,
+                    taskIsCancelled: Task.isCancelled
+                ) else { return }
                 #if os(visionOS)
                 await self.configureSystemCoordinator(for: session)
                 #endif
-                self.configureGroupSession(session)
             }
         }
     }
 
     func stopJoin() {
         Logger.sharePlay.debug("SharePlay: stopJoin")
+        // Revoke and cancel the normal observer before creating a cleanup-only
+        // replacement. An already-admitted configure await cannot commit with
+        // its obsolete generation afterward.
+        sessionObserverLifecycle.stop()
+        joinTask?.cancel()
+        joinTask = nil
+        cancelActivation()
+        if activationLifecycle.hasObsoleteActivities {
+            // Keep at most one sessions() subscriber alive in cleanup-only
+            // mode so a non-cooperative late activation can be explicitly left.
+            let cleanupToken = sessionObserverLifecycle.start(acceptsSessions: false)
+            startSessionObserver(token: cleanupToken)
+        }
+    }
+
+    private func cancelActivation() {
+        activationTask?.cancel()
+        activationTask = nil
+        activationLifecycle.cancelCurrent()
+    }
+
+    private func stopCleanupSessionObserverIfPossible() {
+        guard !sessionObserverLifecycle.acceptsSessions,
+              !activationLifecycle.hasObsoleteActivities
+        else { return }
+        sessionObserverLifecycle.stop()
         joinTask?.cancel()
         joinTask = nil
     }
 
-    func configureGroupSession(_ groupSession: GroupSession<RPGActivity>) {
+    func configureGroupSession(_ groupSession: GroupSession<RPGActivity>) async {
         Logger.sharePlay.debug("Configure Session \(groupSession.description, privacy: .public) state: \(self.printState(), privacy: .public)")
 
+        // An invalidated-state worker resets synchronously, then performs its
+        // delegate cleanup asynchronously. Do not let sessions() configure a
+        // replacement inside that suspension window.
+        await sessionTeardownCoordinator.waitForPendingTeardown()
+        guard !Task.isCancelled else { return }
+
+        if self.groupSession?.id == groupSession.id,
+           messenger != nil,
+           journal != nil,
+           packageSender != nil {
+            Logger.sharePlay.debug("Configure Session ignored duplicate \(groupSession.id, privacy: .public)")
+            return
+        }
+        if self.groupSession != nil || messenger != nil || journal != nil || packageSender != nil {
+            // RPGActivity.sessions() can yield a replacement before the old
+            // state loop reports invalidation. Capture its physical roster,
+            // cancel every old worker, then await all loss handling before any
+            // replacement loop can announce ready/replay state.
+            let previousSessionId = self.groupSession?.id
+            let teardownEvents = participantTracker.drainSessionTeardownEvents()
+            let teardownDelegate = delegate
+            let callbackCoordinator = sessionCallbackCoordinator
+            let teardown = sessionTeardownCoordinator.start {
+                if let previousSessionId {
+                    await callbackCoordinator.waitUntilIdle(sessionId: previousSessionId)
+                }
+                await Self.reportSessionTeardown(teardownEvents, to: teardownDelegate)
+            }
+            reset()
+            await sessionTeardownCoordinator.waitForCompletion(of: teardown)
+            guard !Task.isCancelled else { return }
+        }
+
         sessionLifecycle.prepare(sessionId: groupSession.id)
+        participantTracker.reset()
         mapRecoveryTracker.reset()
+        isActive = false
         self.groupSession = groupSession
         let messenger = GroupSessionMessenger(session: groupSession)
         self.messenger = messenger
         // Bind every in-flight package stream to the messenger for this exact
         // session. A later session replacement must not split one UUID stream
         // across two GroupSessionMessenger instances.
-        packageSender = SharePlaySingleQueuePackageSender { package in
-            try await messenger.send(package)
+        packageSender = SharePlaySingleQueuePackageSender { package, participantId in
+            if let participantId {
+                guard let participant = groupSession.activeParticipants.first(where: { $0.id == participantId }) else {
+                    throw SharePlayPackageDeliveryError.participantNotActive(participantId)
+                }
+                try await messenger.send(package, to: .only([participant]))
+            } else {
+                try await messenger.send(package)
+            }
         }
         let journal = GroupSessionJournal(session: groupSession)
         self.journal = journal
@@ -663,7 +1618,9 @@ extension RPGSharePlayController {
         let stateTask = Task { [weak self] in
             for await state in groupSession.$state.values {
                 guard let self else { return }
-                guard self.sessionLifecycle.isCurrent(sessionId: groupSession.id) else { return }
+                guard !Task.isCancelled,
+                      self.sessionLoopIsCurrent(sessionId: groupSession.id)
+                else { return }
                 let stateDescription = self.printState()
                 Logger.sharePlay.debug("Session state: \(stateDescription, privacy: .public)")
                 self.stateText = stateDescription
@@ -676,14 +1633,34 @@ extension RPGSharePlayController {
                     self.gameModel?.shareState.isSharePlayActive = true
                     #endif
                     if self.sessionLifecycle.didEnterJoinedState(sessionId: groupSession.id) {
-                        self.delegate?.sharePlaySessionConfigured()
+                        guard await self.performSessionCallback(sessionId: groupSession.id, operation: {
+                            await self.delegate?.sharePlaySessionConfigured()
+                        }) else { return }
+
+                        let added = self.participantTracker.sessionDidJoin(
+                            activeParticipantIds: Set(groupSession.activeParticipants.map(\.id)),
+                            localParticipantId: groupSession.localParticipant.id
+                        )
+                        for participantId in added.sorted(by: { $0.uuidString < $1.uuidString }) {
+                            guard await self.performSessionCallback(sessionId: groupSession.id, operation: {
+                                await self.delegate?.sharePlayJoinedPlayer(id: participantId)
+                            }) else { return }
+                        }
                     }
                 case .invalidated:
+                    let teardownEvents = self.participantTracker.drainSessionTeardownEvents()
+                    let teardownDelegate = self.delegate
+                    let callbackCoordinator = self.sessionCallbackCoordinator
+                    // Publish the pending operation before reset. A replacement
+                    // yielded by sessions() will now observe and await it even
+                    // while the first delegate callback is suspended.
+                    let teardown = self.sessionTeardownCoordinator.start {
+                        await callbackCoordinator.waitUntilIdle(sessionId: groupSession.id)
+                        await Self.reportSessionTeardown(teardownEvents, to: teardownDelegate)
+                    }
                     self.groupSession = nil
                     self.reset()
-                    // Notify the player controller so it resets hasSendPlayer
-                    // and marks the master as lost — required for re-sync on rejoin.
-                    self.delegate?.sharePlayLostConnection()
+                    await self.sessionTeardownCoordinator.waitForCompletion(of: teardown)
                     return
                 @unknown default:
                     break
@@ -692,27 +1669,30 @@ extension RPGSharePlayController {
         }
         tasks[UUID()] = stateTask
 
-        // Combine's .receive(on:) introduces an async hop that lets the @Published property
-        // update before the sink runs — so groupSession.activeParticipants equals activeParticipants
-        // by the time the closure fires, making the subtracting() always empty.
-        // Apple's recommended approach (WWDC visionOS SharePlay sample) is to use
-        // `for await .values` with an explicit previousParticipants local that is updated
-        // via defer, which is unambiguous regardless of scheduling.
+        // Track transport identities directly. An initial participant snapshot
+        // may arrive before `.joined`; the tracker retains it and the state loop
+        // replays those participants exactly once after Messenger is ready.
         let participantTask = Task { [weak self] in
             guard let self else { return }
-            var previousParticipants = Set<Participant>()
             for await activeParticipants in groupSession.$activeParticipants.values {
-                let removed = previousParticipants.subtracting(activeParticipants)
-                let added = activeParticipants.subtracting(previousParticipants)
-                defer { previousParticipants = activeParticipants }
-                Logger.sharePlay.debug("Session Participants active: \(activeParticipants.debugDescription, privacy: .public) added: \(added.debugDescription, privacy: .public) removed: \(removed.debugDescription, privacy: .public)")
-                if !added.isEmpty {
-                    // A joining participant may legitimately lack a photo that
-                    // was repaired for the previous group membership.
-                    self.photoRepairTracker.reset()
+                guard !Task.isCancelled,
+                      self.sessionLoopIsCurrent(sessionId: groupSession.id)
+                else { return }
+                let change = self.participantTracker.participantsChanged(
+                    activeParticipantIds: Set(activeParticipants.map(\.id)),
+                    localParticipantId: groupSession.localParticipant.id,
+                    sessionIsJoined: self.isActive
+                )
+                Logger.sharePlay.debug("Session Participants active: \(activeParticipants.debugDescription, privacy: .public) added: \(change.added.debugDescription, privacy: .public) removed: \(change.removed.debugDescription, privacy: .public)")
+                for participantId in change.removed.sorted(by: { $0.uuidString < $1.uuidString }) {
+                    guard await self.performSessionCallback(sessionId: groupSession.id, operation: {
+                        await self.delegate?.sharePlayLostPlayer(id: participantId)
+                    }) else { return }
                 }
-                for participant in removed {
-                    self.delegate?.sharePlayLostPlayer(id: participant.id)
+                for participantId in change.added.sorted(by: { $0.uuidString < $1.uuidString }) {
+                    guard await self.performSessionCallback(sessionId: groupSession.id, operation: {
+                        await self.delegate?.sharePlayJoinedPlayer(id: participantId)
+                    }) else { return }
                 }
             }
         }
@@ -725,18 +1705,27 @@ extension RPGSharePlayController {
                       self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
                 else { return }
                 Logger.sharePlay.debug("Received Update Message \(message.uuid, privacy: .public): \(message.count, privacy: .public) - \(message.total, privacy: .public) from \(context.source.id, privacy: .public)")
-                if let data = self.packageReceiver.received(package: message)?.data {
-                    let size = Self.formattedByteCount(data.count)
+                if let completedPackage = self.packageReceiver.received(
+                    package: message,
+                    from: context.source.id
+                ),
+                   let decodedMessage = await Self.decodedMessage(from: completedPackage) {
+                    let size = Self.formattedByteCount(decodedMessage.byteCount)
                     Logger.sharePlay.debug("Chunked ✓: received \(message.total, privacy: .public) packages, assembled size \(size, privacy: .public) from \(context.source.id, privacy: .public)")
-                    guard let gameModel = GameNetworkModel.decodeData(of: data) else { continue }
                     guard !Task.isCancelled,
                           self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
                     else { return }
+                    let gameModel = decodedMessage.model
                     if self.mapRecoveryTracker.shouldSuppressRecoveryRequest(gameModel) {
                         Logger.sharePlay.debug("Ignored recent map recovery request for \(gameModel.data.id, privacy: .public) from \(context.source.id, privacy: .public)")
                         continue
                     }
-                    await self.delegate?.handleUpdate(gameModel, id: context.source.id)
+                    guard await self.performSessionCallback(sessionId: groupSession.id, operation: {
+                        await self.delegate?.handleUpdate(
+                            gameModel,
+                            id: completedPackage.sourceParticipantId
+                        )
+                    }) else { return }
                 }
             }
         }
@@ -758,15 +1747,27 @@ extension RPGSharePlayController {
         // Called via Task.detached to avoid blocking the main thread while the
         // audio session is active (SessionCore warning).
         let sessionToJoin = groupSession
-        Task.detached {
+        let sessionJoinTask = Task.detached {
+            guard !Task.isCancelled else { return }
             sessionToJoin.join()
+            if Task.isCancelled {
+                // Cancellation can race the synchronous join after its preflight
+                // check. Restore the reset postcondition for the obsolete session.
+                sessionToJoin.leave()
+            }
         }
+        // reset() now owns cancellation of a delayed join for this session.
+        tasks[UUID()] = sessionJoinTask
         sessionLifecycle.didRequestJoin(sessionId: groupSession.id)
         playBack?.coordinateWithSession(groupSession)
         #if os(visionOS)
-        Task {
-            tabletopGame?.coordinateWithSession(groupSession)
-        }
+        // This API is synchronous. Calling it directly keeps coordination in
+        // the configured session's lifetime instead of spawning an obsolete,
+        // untracked task that reset() cannot cancel.
+        guard !Task.isCancelled,
+              sessionLoopIsCurrent(sessionId: groupSession.id)
+        else { return }
+        tabletopGame?.coordinateWithSession(groupSession)
         
         if tabletopGame != nil {
             if let gameTableModel = gameModel?.gameTableModel {
@@ -778,13 +1779,55 @@ extension RPGSharePlayController {
         #endif
     }
 
+    private func sessionLoopIsCurrent(sessionId: UUID) -> Bool {
+        sessionLifecycle.isCurrent(sessionId: sessionId) &&
+            groupSession?.id == sessionId
+    }
+
+    private func performSessionCallback(
+        sessionId: UUID,
+        operation: @MainActor () async -> Void
+    ) async -> Bool {
+        await sessionCallbackCoordinator.perform(
+            sessionId: sessionId,
+            shouldContinue: { [weak self] in
+                self?.sessionLoopIsCurrent(sessionId: sessionId) == true
+            },
+            operation: operation
+        )
+    }
+
+    func reportSessionTeardown(
+        _ events: [SharePlaySessionTeardownEvent]
+    ) async {
+        await Self.reportSessionTeardown(events, to: delegate)
+    }
+
+    static func reportSessionTeardown(
+        _ events: [SharePlaySessionTeardownEvent],
+        to delegate: (any SharePlayControllerDelegate)?
+    ) async {
+        for event in events {
+            switch event {
+            case .lostParticipant(let participantId):
+                await delegate?.sharePlayLostPlayer(id: participantId)
+            case .lostConnection:
+                await delegate?.sharePlayLostConnection()
+            }
+        }
+    }
+
     func handle(_ attachments: GroupSessionJournal.Attachments.Element, sessionId: UUID) async {
         guard !Task.isCancelled,
               sessionLifecycle.isCurrent(sessionId: sessionId)
         else { return }
         journalTracker.reconcile(attachmentIds: Set(attachments.map(\.id)))
         var currentAttachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
-        var entries: [(attachment: GroupSessionJournal.Attachment, metadata: GameNetworkModel)] = []
+        var entries: [(
+            attachment: GroupSessionJournal.Attachment,
+            metadata: GameNetworkModel,
+            arrivalEpoch: UInt64
+        )] = []
 
         for attachment in attachments {
             do {
@@ -792,7 +1835,11 @@ extension RPGSharePlayController {
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }
-                entries.append((attachment, metadata))
+                entries.append((
+                    attachment,
+                    metadata,
+                    journalTracker.arrivalEpoch(for: attachment.id)
+                ))
             } catch is CancellationError {
                 return
             } catch let error {
@@ -803,19 +1850,29 @@ extension RPGSharePlayController {
             }
         }
 
-        // Add-before-remove intentionally creates a short snapshot containing
-        // both the old and new map. Process counters oldest-to-newest so a late
-        // join or transient overlap cannot finish by presenting the old map.
+        // A live snapshot gives newly observed attachments a later causal epoch,
+        // regardless of which player's private counter happens to be larger. A
+        // late join can observe several publications at once; those entries use
+        // sender-local counters only within one sender and a stable attachment-ID
+        // tie-break across senders.
         entries.sort {
             Self.journalEntryComesBefore(
                 metadata: $0.metadata,
                 attachmentId: $0.attachment.id,
+                arrivalEpoch: $0.arrivalEpoch,
                 metadata: $1.metadata,
-                attachmentId: $1.attachment.id
+                attachmentId: $1.attachment.id,
+                arrivalEpoch: $1.arrivalEpoch
             )
         }
         let latestPresentationAttachmentId = Self.latestJournalPresentationAttachmentId(
-            in: entries.map { (attachmentId: $0.attachment.id, metadata: $0.metadata) }
+            in: entries.map {
+                (
+                    attachmentId: $0.attachment.id,
+                    metadata: $0.metadata,
+                    arrivalEpoch: $0.arrivalEpoch
+                )
+            }
         )
 
         for entry in entries {
@@ -862,7 +1919,9 @@ extension RPGSharePlayController {
                     assetVersion: metadata.data.assetVersion,
                     contentVersion: metadata.data.contentVersion
                 )
-                await delegate?.handleFileUpdate(metadata)
+                guard await performSessionCallback(sessionId: sessionId, operation: {
+                    await delegate?.handleFileUpdate(metadata)
+                }) else { return }
             } catch is CancellationError {
                 return
             } catch let error {
@@ -878,7 +1937,9 @@ extension RPGSharePlayController {
                 // Reveal metadata can still use an exact-version local copy.
                 // Store/update metadata needs an explicit byte request because
                 // its normal handlers may ACK or fail without asking again.
-                await delegate?.handleFileLoadFailure(metadata)
+                guard await performSessionCallback(sessionId: sessionId, operation: {
+                    await delegate?.handleFileLoadFailure(metadata)
+                }) else { return }
             }
         }
 
@@ -888,11 +1949,84 @@ extension RPGSharePlayController {
         gameModel?.attachments = currentAttachments
     }
 
-    /// Gives transient add-before-remove snapshots a stable processing order.
-    /// Message counters are authoritative for successive publications from the
-    /// master; version and attachment ID only make malformed/equal-counter
-    /// snapshots deterministic.
+    /// Gives transient add-before-remove snapshots a stable total order.
+    /// Arrival epochs preserve the causal order observed by this participant.
+    /// Within one epoch, publisher identity forms stable groups before applying
+    /// sender-local counters. Comparing attachment IDs across publishers before
+    /// sender-local counters can create a comparison cycle and is not a valid
+    /// sorting predicate.
     static func journalEntryComesBefore(
+        metadata lhs: GameNetworkModel,
+        attachmentId lhsAttachmentId: UUID,
+        arrivalEpoch lhsArrivalEpoch: UInt64,
+        metadata rhs: GameNetworkModel,
+        attachmentId rhsAttachmentId: UUID,
+        arrivalEpoch rhsArrivalEpoch: UInt64
+    ) -> Bool {
+        if lhsArrivalEpoch != rhsArrivalEpoch {
+            return lhsArrivalEpoch < rhsArrivalEpoch
+        }
+        if lhs.sender.id != rhs.sender.id {
+            return lhs.sender.id.uuidString < rhs.sender.id.uuidString
+        }
+        return senderLocalJournalEntryComesBefore(
+            metadata: lhs,
+            attachmentId: lhsAttachmentId,
+            metadata: rhs,
+            attachmentId: rhsAttachmentId
+        )
+    }
+
+    static func latestJournalPresentationAttachmentId(
+        in entries: [(
+            attachmentId: UUID,
+            metadata: GameNetworkModel,
+            arrivalEpoch: UInt64
+        )]
+    ) -> UUID? {
+        let presentations = entries.filter { isJournalPresentation($0.metadata) }
+        guard let latestArrivalEpoch = presentations.map(\.arrivalEpoch).max() else {
+            return nil
+        }
+
+        // Counters are private to their publisher. Collapse every publisher in
+        // the latest causal epoch to its sender-local newest publication first,
+        // then select between those candidates by the same stable publisher
+        // order used by `journalEntryComesBefore`.
+        var newestBySender: [UUID: (
+            attachmentId: UUID,
+            metadata: GameNetworkModel,
+            arrivalEpoch: UInt64
+        )] = [:]
+
+        for entry in presentations where entry.arrivalEpoch == latestArrivalEpoch {
+            guard let current = newestBySender[entry.metadata.sender.id] else {
+                newestBySender[entry.metadata.sender.id] = entry
+                continue
+            }
+            if senderLocalJournalEntryComesBefore(
+                metadata: current.metadata,
+                attachmentId: current.attachmentId,
+                metadata: entry.metadata,
+                attachmentId: entry.attachmentId
+            ) {
+                newestBySender[entry.metadata.sender.id] = entry
+            }
+        }
+
+        return newestBySender.values.max { lhs, rhs in
+            journalEntryComesBefore(
+                metadata: lhs.metadata,
+                attachmentId: lhs.attachmentId,
+                arrivalEpoch: lhs.arrivalEpoch,
+                metadata: rhs.metadata,
+                attachmentId: rhs.attachmentId,
+                arrivalEpoch: rhs.arrivalEpoch
+            )
+        }?.attachmentId
+    }
+
+    private static func senderLocalJournalEntryComesBefore(
         metadata lhs: GameNetworkModel,
         attachmentId lhsAttachmentId: UUID,
         metadata rhs: GameNetworkModel,
@@ -907,31 +2041,9 @@ extension RPGSharePlayController {
         return lhsAttachmentId.uuidString < rhsAttachmentId.uuidString
     }
 
-    static func latestJournalPresentationAttachmentId(
-        in entries: [(attachmentId: UUID, metadata: GameNetworkModel)]
-    ) -> UUID? {
-        var latest: (attachmentId: UUID, metadata: GameNetworkModel)?
-
-        for entry in entries where isJournalPresentation(entry.metadata) {
-            guard let current = latest else {
-                latest = entry
-                continue
-            }
-            if journalEntryComesBefore(
-                metadata: current.metadata,
-                attachmentId: current.attachmentId,
-                metadata: entry.metadata,
-                attachmentId: entry.attachmentId
-            ) {
-                latest = entry
-            }
-        }
-
-        return latest?.attachmentId
-    }
-
     static func isJournalPresentation(_ metadata: GameNetworkModel) -> Bool {
-        metadata.isFileBackedPresentation
+        (metadata.isFileBackedPresentation || metadata.isPlayerFilePresentationEvent) &&
+            !(metadata.data.type == .weather && metadata.targetId != nil)
     }
 }
 
@@ -947,13 +2059,26 @@ private extension RPGSharePlayController {
 #if os(visionOS)
 extension RPGSharePlayController {
     private func configureSystemCoordinator(for session: GroupSession<RPGActivity>) async {
-        guard let coordinator = await session.systemCoordinator else { return }
+        let sessionId = session.id
+        guard !Task.isCancelled,
+              sessionLifecycle.isCurrent(sessionId: sessionId),
+              groupSession?.id == sessionId
+        else { return }
+        guard let coordinator = await session.systemCoordinator,
+              !Task.isCancelled,
+              sessionLifecycle.isCurrent(sessionId: sessionId),
+              groupSession?.id == sessionId
+        else { return }
         systemCoordinator = coordinator
         applyShareState()
         
         let immersionTask = Task { [weak self] in
             for await immersionStyle in coordinator.groupImmersionStyle {
-                guard let self else { return }
+                guard let self,
+                      !Task.isCancelled,
+                      self.sessionLifecycle.isCurrent(sessionId: sessionId),
+                      self.groupSession?.id == sessionId
+                else { return }
                 self.gameModel?.shareState.groupImmersionActive = immersionStyle != nil
             }
         }

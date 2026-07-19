@@ -34,7 +34,7 @@ final class MasterNetworkNodel {
     }
     
     var name: String
-    var connections: [ConnectionController] = []
+    var connections: [any ConnectionControllable] = []
     var isStreaming: Bool = false
     
     @ObservationIgnored var browserManager: BrowserManager? = nil

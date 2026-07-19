@@ -226,6 +226,8 @@ final class MapPlayerSequencingTests {
         // exact proxy-safe versions and no bytes uploaded by the player.
         #expect(request.type == .update)
         #expect(request.subType == .generic)
+        #expect(request.purpose == .assetRequest)
+        #expect(request.effectiveAudience == .master)
         #expect(request.data.data == nil)
         #expect(request.data.assetVersion == state.data.assetVersion)
         #expect(request.data.contentVersion == state.data.contentVersion)

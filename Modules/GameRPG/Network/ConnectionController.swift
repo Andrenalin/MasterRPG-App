@@ -5,12 +5,16 @@ import Network
 import os.log
 import CoreRPG
 
-protocol ConnectionControllable {
+protocol ConnectionControllable: Sendable {
+    var id: UUID { get }
+
     func startConnection() async
     func cancel() async
 
     func request(type: GameMessageType, with content: MessageMapper?) async
     func response(type: GameMessageType, with content: MessageMapper?) async
+    func request(type: GameMessageType, encodedContent: Data?) async
+    func response(type: GameMessageType, encodedContent: Data?) async
 }
 
 protocol ConnectionControllerDelegate: Sendable & AnyObject {
@@ -52,14 +56,10 @@ actor ConnectionController: Identifiable {
 extension ConnectionController: ConnectionControllable {
 
     func sendResponse(data: MessageMapper?) {
-        let uuid = id.uuidString
-        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Send data")
         response(type: .gameData, with: data)
     }
 
     func request(with content: MessageMapper?) {
-        let uuid = id.uuidString
-        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Send request")
         request(type: .gameData, with: content)
     }
 
@@ -82,17 +82,73 @@ extension ConnectionController: ConnectionControllable {
     }
 
     func request(type: GameMessageType, with content: MessageMapper?) {
-        let message = NWProtocolFramer.Message(gameMessageType: type)
-        let context = NWConnection.ContentContext(identifier: "PlayerRequest", metadata: [message])
-        connection.send(content: content?.encodeData(), contentContext: context, isComplete: true, completion: .idempotent)
+        request(type: type, encodedContent: content?.encodeData())
     }
 
     func response(type: GameMessageType, with content: MessageMapper?) {
+        response(type: type, encodedContent: content?.encodeData())
+    }
+
+    func request(type: GameMessageType, encodedContent: Data?) {
+        let uuid = id.uuidString
+        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Send request")
+        let message = NWProtocolFramer.Message(gameMessageType: type)
+        let context = NWConnection.ContentContext(identifier: "PlayerRequest", metadata: [message])
+        connection.send(content: encodedContent, contentContext: context, isComplete: true, completion: .idempotent)
+    }
+
+    func response(type: GameMessageType, encodedContent: Data?) {
+        let uuid = id.uuidString
+        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Send response")
         let message = NWProtocolFramer.Message(gameMessageType: type)
         let context = NWConnection.ContentContext(identifier: "MasterResponse", metadata: [message])
-        connection.send(content: content?.encodeData(), contentContext: context, isComplete: true, completion: .idempotent)
+        connection.send(content: encodedContent, contentContext: context, isComplete: true, completion: .idempotent)
     }
 }
+
+#if DEBUG
+/// Test-only spy that records the already encoded payload handed to a connection.
+actor ConnectionControllableSpyingStub: ConnectionControllable {
+    nonisolated let id: UUID
+
+    private(set) var calledStartConnection = 0
+    private(set) var calledCancel = 0
+    private(set) var requestTypes: [GameMessageType] = []
+    private(set) var responseTypes: [GameMessageType] = []
+    private(set) var requestEncodedContents: [Data?] = []
+    private(set) var responseEncodedContents: [Data?] = []
+
+    init(id: UUID = UUID()) {
+        self.id = id
+    }
+
+    func startConnection() {
+        calledStartConnection += 1
+    }
+
+    func cancel() {
+        calledCancel += 1
+    }
+
+    func request(type: GameMessageType, with content: MessageMapper?) {
+        request(type: type, encodedContent: content?.encodeData())
+    }
+
+    func response(type: GameMessageType, with content: MessageMapper?) {
+        response(type: type, encodedContent: content?.encodeData())
+    }
+
+    func request(type: GameMessageType, encodedContent: Data?) {
+        requestTypes.append(type)
+        requestEncodedContents.append(encodedContent)
+    }
+
+    func response(type: GameMessageType, encodedContent: Data?) {
+        responseTypes.append(type)
+        responseEncodedContents.append(encodedContent)
+    }
+}
+#endif
 
 private extension ConnectionController {
     func stateChanged(_ newState: NWConnection.State) async {
