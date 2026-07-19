@@ -1,0 +1,110 @@
+{
+  "configurations": [
+    {
+      "id": "B92755BE-07C5-44CB-408D-EFE56AC43AE5",
+      "name": "Default",
+      "options": {
+      }
+    }
+  ],
+  "defaultOptions": {
+    "language": "en",
+    "region": "US",
+    "testExecutionOrdering": "random",
+    "testTimeoutsEnabled": true
+  },
+  "testTargets": [
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "24D765619EC3C244002A63FE",
+        "name": "CoreRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "F6DE2DCCEC29DA7EB53988DD",
+        "name": "AdventureRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "A9A05238054662FB982E203B",
+        "name": "AudioRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "2C2EB944FF850206E9448720",
+        "name": "CharacterRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "A5812F0F2EBD91019C8B3852",
+        "name": "DiceRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "9761A40B489040D68F45605C",
+        "name": "GameRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "171AD6D0EA3F421460B7D633",
+        "name": "GeneratorRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "D5399B4E2A0261EE8F2C5408",
+        "name": "MapRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "1AEF243FF5FD694FF64F152B",
+        "name": "PdfRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "63BBC16BB27EC00360C34450",
+        "name": "PhotoRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "4AF67BACB1D66C0488B9D195",
+        "name": "SpaceRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "CD2F162E0611B4B900C6D42E",
+        "name": "TableRPGSnapshotTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "493B978948B9B46ED57B5BDE",
+        "name": "WeatherRPGSnapshotTests"
+      }
+    }
+  ],
+  "version": 1
+}
