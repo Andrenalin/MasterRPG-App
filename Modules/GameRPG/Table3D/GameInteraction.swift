@@ -34,7 +34,10 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
     
     @MainActor
     func onPhaseStarted(interaction: TabletopInteraction) {
-        if game.tabletopGame.equipment(of: Die.self, matching: interaction.value.startingEquipmentID) != nil {
+        if game.tabletopGame.equipment(
+            of: Die20.self,
+            matching: interaction.value.startingEquipmentID
+        ) != nil {
             // Don't let the die land on any other equipment, just the table.
             interaction.setConfiguration(.init(allowedDestinations: .restricted([])))
         }
@@ -43,32 +46,7 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
     
     @MainActor
     func onGesturePhaseEnded(interaction: TabletopInteraction) {
-        if let die = game.tabletopGame.equipment(of: Die.self, matching: interaction.value.startingEquipmentID) {
-            // Play a sound when a player tosses a die.
-            Task { @MainActor in
-                if let audioLibraryComponent = die.entity.components[AudioLibraryComponent.self] {
-                    if let soundResource = audioLibraryComponent.resources["dieSoundShort.mp3"] {
-                        die.entity.playAudio(soundResource)
-                    }
-                }
-            }
-            // Pick a random value for the result of the die toss and toss the die.
-            let nextValue = Int.random(in: 1 ... 6)
-            interaction.addAction(.updateEquipment(die, value: nextValue))
-            interaction.toss(equipmentID: interaction.value.startingEquipmentID, as: die.representation)
-            // Move the die back to the starting pose on the table after toss animation finishes.
-            interaction.addAction(.moveEquipment(matching: die.id, childOf: .tableID, pose: die.initialState.pose))
-        }
-        
         if let die20 = game.tabletopGame.equipment(of: Die20.self, matching: interaction.value.startingEquipmentID) {
-            // Play a sound when a player tosses a die.
-            Task { @MainActor in
-                if let audioLibraryComponent = die20.entity.components[AudioLibraryComponent.self] {
-                    if let soundResource = audioLibraryComponent.resources["dieSoundShort.mp3"] {
-                        die20.entity.playAudio(soundResource)
-                    }
-                }
-            }
             // Pick a random value for the result of the die toss and toss the die.
             let nextValue = Int.random(in: 1 ... 20)
             interaction.addAction(.updateEquipment(die20, value: nextValue))

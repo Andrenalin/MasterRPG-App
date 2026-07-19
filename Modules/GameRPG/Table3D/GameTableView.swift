@@ -331,6 +331,7 @@ private struct GameTableRealityContent: View {
         RealityView { content in
             content.camera = .virtual
             content.add(game.renderer.root)
+            content.add(game.renderer.camera)
             content.cameraTarget = game.setup.board.entity
             installAccessibilitySubscriptionsIfNeeded()
         } update: { content in
@@ -338,6 +339,11 @@ private struct GameTableRealityContent: View {
             content.cameraTarget = game.setup.board.entity
         }
         .realityViewCameraControls(.orbit)
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
+            game.renderer.updateCamera(for: size)
+        }
         .simultaneousGesture(pinDragGesture)
         .simultaneousGesture(pinTapGesture)
         .overlay(alignment: .topTrailing) {

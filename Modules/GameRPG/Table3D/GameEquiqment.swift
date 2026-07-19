@@ -453,7 +453,7 @@ final class PinPawn {
 struct Die20: EntityEquipment {
     let id: ID
     let entity: Entity
-    let audioPlaybackController: AudioPlaybackController
+    let audioPlaybackController: AudioPlaybackController?
     var initialState: DieState
     let representation: TossableRepresentation
     
@@ -517,10 +517,22 @@ struct Die20: EntityEquipment {
         self.entity.scale.x = 0.00025
         self.entity.scale.y = 0.00025
         self.entity.scale.z = 0.00025
-        let audioResource = try! AudioFileResource.load(named: "/Root/dieSoundShort_mp3",
-                                                        from: "static_scene.usda",
-                                                        in: tabletopGameContentBunlde)
-        self.audioPlaybackController = self.entity.prepareAudio(audioResource)
+        self.entity.spatialAudio = SpatialAudioComponent()
+        do {
+            // Keep the sound authored in Reality Composer Pro and prepare it
+            // on the die so RealityKit emits it from the moving D20 location.
+            let audioResource = try AudioFileResource.load(
+                named: "/Root/dieSoundLong_mp3",
+                from: "static_scene.usda",
+                in: tabletopGameContentBunlde
+            )
+            self.audioPlaybackController = self.entity.prepareAudio(audioResource)
+        } catch {
+            Logger.gameTable.error(
+                "Failed to prepare the D20 roll sound: \(error.localizedDescription, privacy: .public)"
+            )
+            self.audioPlaybackController = nil
+        }
         representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
             //.dodecahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
         let pose: TableVisualState.Pose2D = .init(
@@ -532,10 +544,9 @@ struct Die20: EntityEquipment {
 
     @MainActor
     func playTossSound() {
-        if !audioPlaybackController.isPlaying {
-            audioPlaybackController.seek(to: .zero)
-            audioPlaybackController.play()
-        }
+        guard let audioPlaybackController else { return }
+        audioPlaybackController.seek(to: .zero)
+        audioPlaybackController.play()
     }
 }
 
