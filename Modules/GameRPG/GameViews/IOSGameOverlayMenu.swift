@@ -17,6 +17,8 @@ struct IOSGameOverlayMenu: View {
             if appWindowSizeModel.mode == .regular {
                 ZStack {
                     HStack(spacing: itemSpacing) {
+                        IOSGameOverlayCloseButton()
+
                         if isMaster || root.gameModel.gameType != .observer {
                             IOSGameDiceToggleButtonField()
                         }
@@ -28,10 +30,13 @@ struct IOSGameOverlayMenu: View {
                             isMaster: isMaster,
                             allowsPrimaryView: isMaster || root.gameModel.gameType != .observer
                         )
-                        IOSGameOverlayCloseButton()
+
+                        if isMaster || root.gameModel.gameType != .observer {
+                            IOSGameSearchField()
+                        }
                     }
 
-                    IOSGameOverlayCenterField(
+                    IOSGameOverlayControlField(
                         root: root,
                         playerController: playerController,
                         isMaster: isMaster,
@@ -40,9 +45,10 @@ struct IOSGameOverlayMenu: View {
                 }
             } else {
                 HStack(spacing: itemSpacing) {
+                    IOSGameOverlayCloseButton()
+
                     if isMaster || root.gameModel.gameType != .observer {
                         IOSGameDiceToggleButtonField()
-                        IOSGameSearchField()
                     }
                     Spacer(minLength: 0)
                     IOSGameOverlayControlField(
@@ -55,7 +61,10 @@ struct IOSGameOverlayMenu: View {
                         isMaster: isMaster,
                         allowsPrimaryView: isMaster || root.gameModel.gameType != .observer
                     )
-                    IOSGameOverlayCloseButton()
+
+                    if isMaster || root.gameModel.gameType != .observer {
+                        IOSGameSearchField()
+                    }
                 }
             }
         }
@@ -64,37 +73,6 @@ struct IOSGameOverlayMenu: View {
 
     private var itemSpacing: CGFloat {
         appWindowSizeModel.mode == .compact ? 4 : 8
-    }
-}
-
-private struct IOSGameOverlayCenterField: View {
-    let root: GameRoot
-    let playerController: PlayerController?
-    let isMaster: Bool
-    let spacing: CGFloat
-
-    @Environment(GameScreenModel.self) private var gameScreenModel
-
-    var body: some View {
-        let battleModel = root.mapRoot.mapGameControllable.battleRoundModel
-
-        HStack(spacing: spacing) {
-            if isMaster || root.gameModel.gameType != .observer {
-                IOSGameSearchField()
-            }
-
-            if battleModel.isRunning && !gameScreenModel.showsBattleRoundAnnouncement {
-                BattleRoundCounterView(model: battleModel, style: .compact)
-                    .allowsHitTesting(false)
-            }
-
-            IOSGameOverlayControlField(
-                root: root,
-                playerController: playerController,
-                isMaster: isMaster,
-                spacing: spacing
-            )
-        }
     }
 }
 

@@ -17,6 +17,10 @@ struct GameToolbarContent: ToolbarContent {
     let playerController: PlayerController?
 
     var body: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            GameQuitToolbarButton()
+        }
+
         ToolbarItemGroup(placement: .navigation) {
             if role == .master || root.gameModel.gameType != .observer {
                 GameDiceToggleButton()
@@ -30,12 +34,21 @@ struct GameToolbarContent: ToolbarContent {
         ToolbarItemGroup(placement: .principal) {
             root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot)
 
+            if role == .player {
+                PlayerBattleRoundToolbarStatus(
+                    model: root.mapRoot.mapGameControllable.battleRoundModel
+                )
+            }
+
             if let playerController {
-                PlayerConnectionStatusView(playerController: playerController)
+                if !root.networkStore.sharePlayStore.isActive {
+                    PlayerConnectionStatusView(playerController: playerController)
+                }
             }
         }
 
-        if root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
+        if role == .master,
+           root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
             ToolbarItem(placement: .automatic) {
                 BattleRoundCounterView(
                     model: root.mapRoot.mapGameControllable.battleRoundModel,
@@ -46,15 +59,39 @@ struct GameToolbarContent: ToolbarContent {
         }
 
         if role == .master || root.gameModel.gameType != .observer {
+            // The fixed spacer starts the trailing control group. The menu is
+            // then adjacent to the native search field added by
+            // `gameWindowSearchable()`.
+            ToolbarSpacer(.fixed, placement: .automatic)
+
             ToolbarItem(placement: .automatic) {
                 GameSidebarToolbarMenu(role: role)
             }
         }
+    }
+}
 
-        ToolbarSpacer(.fixed, placement: .automatic)
+private struct PlayerBattleRoundToolbarStatus: View {
+    let model: BattleRoundModel
 
-        ToolbarItem(placement: .automatic) {
-            GameQuitToolbarButton()
+    var body: some View {
+        Group {
+            if model.isRunning {
+                Text(model.roundCounter, format: .number)
+            } else {
+                Text(verbatim: "-")
+            }
+        }
+        .monospacedDigit()
+        .help(accessibilityText)
+        .accessibilityLabel(accessibilityText)
+    }
+
+    private var accessibilityText: Text {
+        if model.isRunning {
+            Text("Round \(model.roundCounter)", bundle: .module)
+        } else {
+            Text("No active battle", bundle: .module)
         }
     }
 }

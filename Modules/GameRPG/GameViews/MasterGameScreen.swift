@@ -32,18 +32,11 @@ struct MasterGameScreen: View {
                 gameScreenModel: gameScreenModel
             )
         } chrome: {
-            ZStack {
-#if !os(tvOS)
-                // Keep the assistant beneath all game chrome. Its full-sized
-                // panel can cover the map, but never the menu or bottom tools.
-                MasterGameAIAssistantOverlay(root: root, adventureId: adventureId)
-#endif
-                MasterOverlayMenu(
-                    root: root,
-                    adventureId: adventureId,
-                    playerController: playerController
-                )
-            }
+            MasterOverlayMenu(
+                root: root,
+                adventureId: adventureId,
+                playerController: playerController
+            )
             .environment(diceShowOptionModel)
             .environment(gameScreenModel)
         }

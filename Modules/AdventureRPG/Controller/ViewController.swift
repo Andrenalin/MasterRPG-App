@@ -93,7 +93,11 @@ public extension ViewController {
                 viewer(
                     root: root,
                     itemId: select,
-                    configuration: ViewerConfiguration(closeButton: false, addToolbar: addsSearchable),
+                    configuration: ViewerConfiguration(
+                        closeButton: false,
+                        addToolbar: addsSearchable,
+                        isGame: true
+                    ),
                     searchContext: searchContext
                 )
             } else {

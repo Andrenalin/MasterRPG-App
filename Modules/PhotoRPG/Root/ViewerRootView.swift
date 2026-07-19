@@ -26,9 +26,6 @@ struct ViewerRootView: View {
                 contentView
                     .overlay(alignment: .bottomLeading) {
                         rotateButton
-#if !os(visionOS)
-                            .buttonStyle(.glass)
-#endif
                             .padding()
                     }
             } else {
@@ -132,6 +129,9 @@ private extension ViewerRootView {
             }
             .labelStyle(.iconOnly)
         }
+#if !os(visionOS)
+        .buttonStyle(.glass)
+#endif
         .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
         .transaction { transaction in
             if reduceMotion {

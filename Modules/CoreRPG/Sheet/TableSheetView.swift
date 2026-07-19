@@ -2,12 +2,14 @@
 
 import SwiftUI
 
-struct TableSheetView: View {
+struct TableSheetView<LinkType: LinkDataTransferable>: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     let root: ItemRootController
     let model: SheetRootModel
     var addSearchable: Bool = true
+    let isEditor: Bool
+    let linkTypes: LinkType.Type
 
     var body: some View {
         @Bindable var model = model
@@ -23,7 +25,12 @@ private extension TableSheetView {
     var listContentView: some View {
         ScrollView {
             LazyVStack(spacing: 4) {
-                SheetRootView(root: root, rootModel: model)
+                SheetRootView(
+                    root: root,
+                    rootModel: model,
+                    isEditor: isEditor,
+                    linkTypes: linkTypes
+                )
                     .animation(accessibilityReduceMotion ? nil : .default, value: model.searchText)
             }
         }
@@ -38,5 +45,10 @@ private extension TableSheetView {
 }
 
 #Preview {
-    TableSheetView(root: ItemRootController.fake, model: .fake)
+    TableSheetView(
+        root: ItemRootController.fake,
+        model: .fake,
+        isEditor: false,
+        linkTypes: LinkDiceData.self
+    )
 }

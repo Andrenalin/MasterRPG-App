@@ -38,6 +38,15 @@ struct MasterModuleWindowMenu: View {
                     tint: NetworkModules.game.tint,
                     sceneId: .logs
                 )
+
+#if os(macOS)
+                GameWindowButtonView(
+                    title: String(localized: "Battle Round", bundle: .module),
+                    systemImage: "shield.lefthalf.filled",
+                    tint: NetworkModules.game.tint,
+                    sceneId: .battleRound
+                )
+#endif
             }
         }
 #if os(macOS)
