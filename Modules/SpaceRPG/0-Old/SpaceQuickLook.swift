@@ -45,7 +45,14 @@ struct SpaceQuickLook: View {
     func loader() {
 #if os(visionOS)
         Task {
-            await scenesManager.toggleSpaceViewer(selection: item)
+            if gameMode {
+                // A network reveal is an idempotent presentation request.
+                // SharePlay may already be opening or displaying this same
+                // immersive scene, so toggling here would close it again.
+                await scenesManager.openSpaceViewer(selection: item)
+            } else {
+                await scenesManager.toggleSpaceViewer(selection: item)
+            }
         }
 #endif
     }

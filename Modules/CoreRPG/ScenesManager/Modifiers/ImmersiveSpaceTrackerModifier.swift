@@ -32,10 +32,10 @@ private struct ImmersiveSpaceTrackerModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear {
-                scenesManager.immersiveSpaceState = .open
+                scenesManager.setImmersiveSpaceState(.open)
             }
             .onDisappear {
-                scenesManager.immersiveSpaceState = .closed
+                scenesManager.setImmersiveSpaceState(.closed)
             }
     }
 }

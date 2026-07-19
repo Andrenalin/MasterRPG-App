@@ -13,6 +13,11 @@ import Testing
 @Suite("PDF availability message sequencing", .serialized)
 @MainActor
 struct PdfMessageFlowTests {
+    enum PlayerFileIngress: CaseIterable, Sendable {
+        case localNetwork
+        case sharePlay
+    }
+
     @Test("PDF asset repair returns canonical bytes without a group rebroadcast")
     func pdfAssetRepairIsRequesterOnly() async throws {
         let env = try await Self.preparedEnvironment()
@@ -210,6 +215,53 @@ struct PdfMessageFlowTests {
         #expect(model.type == .update)
         #expect(model.subType == .pdfList)
         #expect(!model.isPresentationIntent)
+    }
+
+    @Test(
+        "Authenticated player PDF file presentations update a sibling player's UI",
+        arguments: PlayerFileIngress.allCases
+    )
+    func playerPdfFilePresentationUpdatesSiblingUi(ingress: PlayerFileIngress) async throws {
+        // Given - the network layer has authenticated a player-authored full
+        // presentation, and the master's availability matrix confirms that the
+        // sender owns this exact PDF generation.
+        let env = try await Self.preparedEnvironment()
+        let pdfId = try #require(env.masterRoot.pdfRoot.itemController.itemDataModel.items.first)
+        let fullData = try await env.masterRoot.pdfRoot.gameControllable.createGameData(for: pdfId)
+        let version = fullData.effectiveAssetVersion
+        env.player1Root.gameModel.reset(master: env.masterConfig.master)
+        _ = try await env.player1.handlePdf(
+            Self.authoritativePdfList(
+                from: env.masterRoot,
+                counter: 1,
+                list: [pdfId: version],
+                players: [
+                    pdfId: [
+                        env.masterConfig.id: version,
+                        env.player2Config.id: version
+                    ]
+                ]
+            )
+        )
+        let reveal = Self.playerPdfReveal(
+            from: env.player2Config,
+            masterId: env.masterConfig.id,
+            counter: 2,
+            data: fullData
+        )
+        #expect(reveal.isPlayerFilePresentationEvent)
+
+        // When
+        switch ingress {
+        case .localNetwork:
+            await env.player1.receivedFile(reveal)
+        case .sharePlay:
+            await env.player1.receivedSharePlayFile(reveal)
+        }
+
+        // Then
+        #expect(await env.player1Root.pdfRoot.gameControllable.currentId == pdfId)
+        #expect(env.player1.gameModel.gameUpdateType == .pdf)
     }
 
     @Test("Master and player ignore failed PDF messages")
