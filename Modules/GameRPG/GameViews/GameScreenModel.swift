@@ -47,8 +47,11 @@ final class GameScreenModel {
 
     var showMainTab: NetworkModules = .none {
         didSet {
-            if showMainTab == .none {
+            if showMainTab == .none, !showsBattleRoundSidebar {
                 isSideMenuVisible = true
+            } else if showMainTab != .none {
+                showSettingTab = .none
+                showsBattleRoundSidebar = false
             }
         }
     }
@@ -59,7 +62,13 @@ final class GameScreenModel {
         showSettingTab = .none
     }
 
-    var showSettingTab: NetworkModules = .none
+    var showSettingTab: NetworkModules = .none {
+        didSet {
+            guard showSettingTab != .none else { return }
+            showMainTab = .none
+            showsBattleRoundSidebar = false
+        }
+    }
     func resetToSettingsTab(toggle: Bool = true) {
         if toggle || showSettingTab == .none {
             showSettingTab = showSettingTab == .setting ? .none : .setting
@@ -79,8 +88,30 @@ final class GameScreenModel {
     // Retains the selected iOS sidebar content while the sidebar is hidden.
     var iOSSidebarShowsPrimaryView: Bool = true
 
+    /// Battle management uses the same inline sidebar slot as the Adventure,
+    /// Character, and module-list content. Keeping this state separate from
+    /// `NetworkModules` avoids adding a presentation-only case to the network
+    /// protocol while the property observers preserve exclusive presentation.
+    var showsBattleRoundSidebar: Bool = false {
+        didSet {
+            guard showsBattleRoundSidebar else { return }
+            showMainTab = .none
+            showSettingTab = .none
+        }
+    }
+
     var isInlineSidebarVisible: Bool {
-        showMainTab != .none || showSettingTab != .none
+        showMainTab != .none || showSettingTab != .none || showsBattleRoundSidebar
+    }
+
+    func toggleBattleRoundSidebar() {
+        showsBattleRoundSidebar.toggle()
+    }
+
+    func hideInlineSidebar() {
+        showMainTab = .none
+        showSettingTab = .none
+        showsBattleRoundSidebar = false
     }
 
     /// The actual rendered width of the inline adventure/character overlay.
@@ -90,7 +121,8 @@ final class GameScreenModel {
     private(set) var topGameMenuHeight: CGFloat = 0
 
     var mapTrailingViewportReservation: CGFloat {
-        guard showMainTab != .none, inlineMainOverlayWidth > 0 else { return 0 }
+        guard (showMainTab != .none || showsBattleRoundSidebar),
+              inlineMainOverlayWidth > 0 else { return 0 }
         return inlineMainOverlayWidth + Self.mapOverlaySpacing
     }
 

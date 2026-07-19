@@ -14,9 +14,10 @@ struct BattleRoundWindowView: View {
             BattleRoundView(
                 model: root.battleRoundModel,
                 actions: BattleRoundActionFactory.actions(
-                    for: root,
-                    scenesManager: scenesManager
-                )
+                    for: root
+                ) {
+                    scenesManager.dismissWindow(.battleRound)
+                }
             )
             .environment(root.mapRoot)
         } else {
@@ -34,10 +35,10 @@ struct BattleRoundWindowView: View {
 }
 
 @MainActor
-private enum BattleRoundActionFactory {
+enum BattleRoundActionFactory {
     static func actions(
         for root: GameRoot,
-        scenesManager: ScenesManager
+        dismiss: @escaping @MainActor () -> Void
     ) -> BattleRoundActions {
         BattleRoundActions(
             start: {
@@ -49,7 +50,7 @@ private enum BattleRoundActionFactory {
             },
             end: {
                 guard root.endBattleRound() else { return }
-                scenesManager.dismissWindow(.battleRound)
+                dismiss()
             },
             nextAttacker: {
                 _ = root.nextBattleAttacker()
