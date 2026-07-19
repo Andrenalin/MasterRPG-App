@@ -376,6 +376,12 @@
             "state" : "translated",
             "value" : "Analyse abgelehnt: %@ (Kategorie: %@)."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปฏิเสธการวิเคราะห์: %@ (หมวดหมู่: %@)"
+          }
         }
       }
     },
@@ -411,6 +417,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Texteinträge analysieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วิเคราะห์รายการข้อความ"
           }
         }
       }
@@ -493,6 +505,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple Intelligence bereitet das Sprachmodell noch vor. Versuche es später erneut."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apple Intelligence กำลังเตรียมโมเดลภาษาอยู่ โปรดลองอีกครั้งในภายหลัง"
           }
         }
       }
@@ -992,6 +1010,12 @@
             "state" : "translated",
             "value" : "Generator löschen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบตัวสร้าง"
+          }
         }
       }
     },
@@ -1145,6 +1169,48 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doppeltippen, um Nachrichtenoptionen wie Kopieren und Teilen aufzurufen"
+          }
+        },
+        "th" : {
+          "variations" : {
+            "device" : {
+              "appletv" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "กดสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
+                }
+              },
+              "applevision" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "แตะสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
+                }
+              },
+              "ipad" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "แตะสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
+                }
+              },
+              "iphone" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "แตะสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
+                }
+              },
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ดับเบิลคลิกเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "แตะสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
+                }
+              }
+            }
           }
         }
       }
@@ -1328,6 +1394,12 @@
             "state" : "translated",
             "value" : "Die PDF-Zusammenfassung konnte nicht dekodiert werden: %@. Das Dokument hat möglicherweise eine ungewöhnliche Formatierung."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ถอดรหัสสรุป PDF ไม่สำเร็จ: %@ เอกสารอาจมีรูปแบบที่ผิดปกติ"
+          }
         }
       }
     },
@@ -1480,6 +1552,12 @@
             "state" : "translated",
             "value" : "Generiertes Abenteuer"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การผจญภัยที่สร้างขึ้น"
+          }
         }
       }
     },
@@ -1500,6 +1578,12 @@
             "state" : "translated",
             "value" : "Datenblattinhalt wird generiert"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังสร้างเนื้อหาชีท"
+          }
         }
       }
     },
@@ -1509,6 +1593,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Generierungsfehler: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อผิดพลาดในการสร้าง: %@"
           }
         }
       }
@@ -1536,6 +1626,12 @@
             "state" : "translated",
             "value" : "Generator"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวสร้าง"
+          }
         }
       }
     },
@@ -1555,6 +1651,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Guardrail-Verstoß: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การละเมิด Guardrail: %@"
           }
         }
       }
@@ -1677,6 +1779,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nachricht in die Zwischenablage kopiert"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คัดลอกข้อความไปยังคลิปบอร์ดแล้ว"
           }
         }
       }
@@ -1882,6 +1990,12 @@
             "state" : "translated",
             "value" : "Generator öffnen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดตัวสร้าง"
+          }
         }
       }
     },
@@ -1940,6 +2054,12 @@
             "state" : "translated",
             "value" : "Seite %lld"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หน้า %lld"
+          }
         }
       }
     },
@@ -1975,6 +2095,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das PDF-Zusammenfassungsschema enthält eine nicht unterstützte Einschränkung: %@. Dies ist ein Entwicklungsfehler."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สกีมาสรุป PDF มีข้อจำกัดที่ไม่รองรับ: %@ นี่คือข้อผิดพลาดของนักพัฒนา"
           }
         }
       }
@@ -2050,6 +2176,12 @@
             "state" : "translated",
             "value" : "Ratenlimit überschritten. Versuche es in %@ Sekunden erneut."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกินขีดจำกัดอัตราการใช้งาน ลองอีกครั้งใน %@ วินาที"
+          }
         }
       }
     },
@@ -2101,6 +2233,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Antwortgenerierung ist fehlgeschlagen: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การสร้างการตอบกลับล้มเหลว: %@"
           }
         }
       }
@@ -2362,6 +2500,12 @@
             "state" : "translated",
             "value" : "Unterstützt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รองรับแล้ว"
+          }
         }
       }
     },
@@ -2492,6 +2636,12 @@
             "state" : "translated",
             "value" : "Dieses Gerät unterstützt Apple Intelligence nicht."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อุปกรณ์นี้ไม่รองรับ Apple Intelligence"
+          }
         }
       }
     },
@@ -2501,6 +2651,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dieses Gerät ist nicht für Apple Intelligence geeignet. Verwende bitte ein kompatibles Gerät."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อุปกรณ์นี้ไม่รองรับ Apple Intelligence โปรดใช้อุปกรณ์ที่เข้ากันได้"
           }
         }
       }
@@ -2652,7 +2808,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องมือ '%@' ล้มเหลว: %@"
+            "value" : "เครื่องมือ ‘%@’ ล้มเหลว: %@"
           }
         }
       }
@@ -2807,6 +2963,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht verfügbare Funktion: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ความสามารถที่ไม่พร้อมใช้งาน: %@"
           }
         }
       }

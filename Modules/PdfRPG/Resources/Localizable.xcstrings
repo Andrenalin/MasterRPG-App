@@ -10,6 +10,12 @@
             "state" : "translated",
             "value" : "%@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@"
+          }
         }
       }
     },
@@ -100,6 +106,12 @@
             "state" : "new",
             "value" : "%1$lld/%2$lld"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld/%lld"
+          }
         }
       }
     },
@@ -168,6 +180,12 @@
             "state" : "new",
             "value" : "Added \"%1$@\" to \"%2$@\"."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่ม \"%1$@\" ไปยัง \"%2$@\" แล้ว"
+          }
         }
       }
     },
@@ -177,6 +195,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lesezeichen hinzugefügt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มบุ๊กมาร์กแล้ว"
           }
         }
       }
@@ -204,6 +228,12 @@
             "state" : "translated",
             "value" : "Wendet die ausgewählten Eigenschaften auf das PDF an und schließt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำคุณสมบัติที่เลือกไปใช้กับ PDF และปิด"
+          }
         }
       }
     },
@@ -229,6 +259,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ausgewählte Eigenschaften anwenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำคุณสมบัติที่เลือกไปใช้"
           }
         }
       }
@@ -257,6 +293,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lesezeichen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บุ๊กมาร์ก"
           }
         }
       }
@@ -299,6 +341,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PDF-Extraktion abbrechen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิกการดึงข้อมูล PDF"
           }
         }
       }
@@ -503,6 +551,12 @@
             "state" : "translated",
             "value" : "PDF erstellen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้าง PDF"
+          }
         }
       }
     },
@@ -531,6 +585,12 @@
             "state" : "translated",
             "value" : "„%@“ erstellt."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้าง “%@” แล้ว"
+          }
         }
       }
     },
@@ -542,6 +602,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PDF löschen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบ PDF"
           }
         }
       }
@@ -555,6 +621,12 @@
             "state" : "translated",
             "value" : "^[%lld PDF](inflect: true) gelöscht."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบ PDF %lld รายการแล้ว"
+          }
         }
       }
     },
@@ -565,6 +637,12 @@
             "state" : "translated",
             "value" : "Beschreibung"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำอธิบาย"
+          }
         }
       }
     },
@@ -574,6 +652,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Informationen extrahieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดึงข้อมูล"
           }
         }
       }
@@ -617,6 +701,12 @@
             "state" : "translated",
             "value" : "Miniaturansichten ausblenden"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อนภาพขนาดย่อ"
+          }
         }
       }
     },
@@ -642,6 +732,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PDF wird geladen..."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังโหลด PDF..."
           }
         }
       }
@@ -687,6 +783,12 @@
             "state" : "translated",
             "value" : "Keine Datei ausgewählt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยังไม่ได้ตั้งค่าไฟล์"
+          }
         }
       }
     },
@@ -698,6 +800,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PDF öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิด PDF"
           }
         }
       }
@@ -743,6 +851,12 @@
             "state" : "translated",
             "value" : "Seite %lld"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หน้า %lld"
+          }
         }
       }
     },
@@ -769,6 +883,12 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "PDF"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : "PDF"
           }
         }
@@ -813,6 +933,12 @@
             "state" : "translated",
             "value" : "PDF nicht verfügbar"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PDF ไม่พร้อมใช้งาน"
+          }
         }
       }
     },
@@ -822,6 +948,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PDF nicht verfügbar"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PDF ไม่พร้อมใช้งาน"
           }
         }
       }
@@ -851,6 +983,12 @@
             "state" : "translated",
             "value" : "Vorheriges Suchergebnis"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผลการค้นหาก่อนหน้า"
+          }
         }
       }
     },
@@ -862,6 +1000,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PDFs durchsuchen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค้นหา PDF"
           }
         }
       }
@@ -905,6 +1049,12 @@
             "state" : "translated",
             "value" : "Schlagwörter"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แท็ก"
+          }
         }
       }
     },
@@ -915,6 +1065,12 @@
             "state" : "translated",
             "value" : "Die PDF-Datei konnte nicht geladen werden"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถโหลดไฟล์ PDF ได้"
+          }
         }
       }
     },
@@ -924,6 +1080,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die PDF-Datei konnte nicht geladen werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถโหลดไฟล์ PDF ได้"
           }
         }
       }
@@ -951,6 +1113,12 @@
             "state" : "translated",
             "value" : "Unbenannt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีชื่อ"
+          }
         }
       }
     },
@@ -963,6 +1131,12 @@
             "state" : "translated",
             "value" : "Wie soll das Lesezeichen heißen?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ควรตั้งชื่อบุ๊กมาร์กว่าอะไร?"
+          }
         }
       }
     },
@@ -974,6 +1148,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wie soll das PDF heißen?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ควรตั้งชื่อ PDF ว่าอะไร?"
           }
         }
       }
