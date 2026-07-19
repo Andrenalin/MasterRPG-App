@@ -42,6 +42,20 @@ struct GameSidebarToolbarMenu: View {
             }
             .disabled(!isSidebarVisible)
 
+            Button(action: toggleSideMenuButtons) {
+                Label {
+                    Text(
+                        gameScreenModel.isSideMenuVisible
+                            ? "Hide Side Menu Buttons"
+                            : "Show Side Menu Buttons",
+                        bundle: .module
+                    )
+                } icon: {
+                    Image(systemName: "sidebar.right")
+                        .symbolVariant(gameScreenModel.isSideMenuVisible ? .fill : .none)
+                }
+            }
+
             Divider()
 
             GameTableMenuToggle()
@@ -118,6 +132,12 @@ struct GameSidebarToolbarMenu: View {
             appSettingsModel.masterMainTabDisplayMode = nextMode.rawValue
         case .player:
             appSettingsModel.playerMainTabDisplayMode = nextMode.rawValue
+        }
+    }
+
+    private func toggleSideMenuButtons() {
+        withAnimation(accessibilityReduceMotion ? nil : .default) {
+            gameScreenModel.isSideMenuVisible.toggle()
         }
     }
 }

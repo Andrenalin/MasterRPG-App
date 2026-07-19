@@ -7,7 +7,7 @@ struct GameQuitToolbarButton: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
-        Button {
+        Button(role: .cancel) {
             gameScreenModel.showQuitGameAlert = true
         } label: {
             Label {
