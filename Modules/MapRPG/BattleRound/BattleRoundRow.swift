@@ -2,6 +2,7 @@
 
 import CharacterRPG
 import CoreRPG
+import Observation
 import PhotoRPG
 import SwiftUI
 
@@ -51,18 +52,71 @@ public struct BattleRoundActions {
     let assignCharacter: @MainActor (UUID, UUID) -> Void
 }
 
-public struct BattleRoundView: View {
-    public init(model: BattleRoundModel, actions: BattleRoundActions) {
+/// A resolved Character sheet which can be embedded beside the battle list.
+///
+/// The presentation deliberately exposes CoreRPG sheet primitives instead of
+/// a GameRPG root. This keeps MapRPG usable by itself while allowing a game
+/// container to supply richer inline sheet content without type erasure.
+public struct BattleRoundCharacterDetailPresentation: Identifiable {
+    public struct ID: Hashable, Sendable {
+        public let entryId: UUID
+        public let combatantId: UUID
+
+        public init(entryId: UUID, combatantId: UUID) {
+            self.entryId = entryId
+            self.combatantId = combatantId
+        }
+    }
+
+    public let entryId: UUID
+    public let combatantId: UUID
+    public let characterId: UUID
+    public let name: String
+    public let root: ItemRootController
+    public let sheetRootModel: SheetRootModel
+
+    public var id: ID { ID(entryId: entryId, combatantId: combatantId) }
+}
+
+/// The default inline Character sheet used by existing BattleRoundView
+/// call-sites. A custom detail builder can replace it without changing the
+/// battle list or introducing AnyView into its rows.
+public struct BattleRoundInlineCharacterSheet: View {
+    public init(presentation: BattleRoundCharacterDetailPresentation) {
+        self.presentation = presentation
+    }
+
+    let presentation: BattleRoundCharacterDetailPresentation
+
+    public var body: some View {
+        SheetRootView(
+            root: presentation.root,
+            rootModel: presentation.sheetRootModel,
+            linkTypes: EmptyLinkTransferable.self
+        )
+    }
+}
+
+public struct BattleRoundView<CharacterDetail: View>: View {
+    public init(
+        model: BattleRoundModel,
+        actions: BattleRoundActions,
+        @ViewBuilder characterDetail: @escaping (BattleRoundCharacterDetailPresentation) -> CharacterDetail
+    ) {
         self.model = model
         self.actions = actions
+        self.characterDetail = characterDetail
     }
 
     let model: BattleRoundModel
     let actions: BattleRoundActions
+    let characterDetail: (BattleRoundCharacterDetailPresentation) -> CharacterDetail
 
     @Environment(MapRootModel.self) private var root
     @Environment(ScenesManager.self) private var scenesManager
-    @State private var presentation: BattleRoundPresentation?
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @State private var inlineSelection = BattleRoundInlineCharacterSelection()
+    @State private var characterSelectionPresentation: BattleRoundCharacterSelectionPresentation?
     @State private var pendingCharacterCombatantId: UUID?
     @State private var selectedCharacter = ItemSelectionModel(
         isSingleSelection: true,
@@ -78,7 +132,9 @@ public struct BattleRoundView: View {
                     BattleRoundList(
                         model: model,
                         actions: actions,
-                        showCharacter: showCharacterSheet
+                        inlineCharacter: inlineSelection.presentation,
+                        showCharacter: showCharacter,
+                        characterDetail: inlineSelection.presentation.map(characterDetail)
                     )
                 } else {
                     BattleRoundEmptyState(isRunning: model.isRunning, start: actions.start)
@@ -87,17 +143,12 @@ public struct BattleRoundView: View {
             .navigationTitle(Text("Battle Round", bundle: .module))
             .battleInlineNavigationTitle()
         }
-        .sheet(item: $presentation) { presentation in
-            switch presentation {
-            case .sheet(let sheet):
-                BattleCharacterSheetPresentationView(presentation: sheet)
-            case .selection:
-                ManagedPresentationView {
-                    root.viewController.characterSelection(
-                        root: root,
-                        selectionModel: selectedCharacter
-                    )
-                }
+        .sheet(item: $characterSelectionPresentation) { _ in
+            ManagedPresentationView {
+                root.viewController.characterSelection(
+                    root: root,
+                    selectionModel: selectedCharacter
+                )
             }
         }
         .onChange(of: selectedCharacter.selection) { _, selection in
@@ -106,63 +157,96 @@ public struct BattleRoundView: View {
             actions.assignCharacter(combatantId, characterId)
             pendingCharacterCombatantId = nil
             selectedCharacter.resetSelection(itemId: nil, entryId: nil)
-            if case .selection = presentation {
-                presentation = nil
-            }
+            characterSelectionPresentation = nil
+        }
+        .onChange(of: model.combatants) { _, combatants in
+            inlineSelection.retainSelection(in: combatants, entries: model.entries)
+        }
+        .onChange(of: model.entries) { _, entries in
+            inlineSelection.retainSelection(in: model.combatants, entries: entries)
+        }
+        .onChange(of: model.isRunning) { _, isRunning in
+            guard !isRunning else { return }
+            inlineSelection.clear()
         }
     }
 
-    private func showCharacterSheet(_ combatant: BattleCombatant) {
-        if let sheet = BattleCharacterSheetFactory(root: root).presentation(for: combatant) {
-            presentation = .sheet(sheet)
+    private func showCharacter(entry: BattleRoundEntry, combatant: BattleCombatant) {
+        if inlineSelection.presentation?.entryId == entry.id,
+           inlineSelection.presentation?.combatantId == combatant.id {
+            withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                inlineSelection.clear()
+            }
             return
         }
+
+        if let presentation = BattleRoundCharacterDetailResolver(root: root).presentation(
+            entryId: entry.id,
+            for: combatant
+        ) {
+            withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                inlineSelection.toggle(presentation)
+            }
+            return
+        }
+
+        inlineSelection.clear()
         pendingCharacterCombatantId = combatant.id
         selectedCharacter.resetSelection(itemId: nil, entryId: nil)
 #if os(macOS)
         root.characterRoot.itemSelectionModel = selectedCharacter
         scenesManager.openWindow(SceneId.sceneId(for: .value))
 #else
-        presentation = .selection(combatant.id)
+        characterSelectionPresentation = BattleRoundCharacterSelectionPresentation(
+            combatantId: combatant.id
+        )
 #endif
     }
 }
 
-private enum BattleRoundPresentation: Identifiable {
-    case sheet(BattleCharacterSheetPresentation)
-    case selection(UUID)
-
-    var id: UUID {
-        switch self {
-        case .sheet(let sheet): sheet.id
-        case .selection(let combatantId): combatantId
+public extension BattleRoundView where CharacterDetail == BattleRoundInlineCharacterSheet {
+    init(model: BattleRoundModel, actions: BattleRoundActions) {
+        self.init(model: model, actions: actions) { presentation in
+            BattleRoundInlineCharacterSheet(presentation: presentation)
         }
     }
 }
 
-private struct BattleCharacterSheetPresentationView: View {
-    let presentation: BattleCharacterSheetPresentation
+@MainActor @Observable
+final class BattleRoundInlineCharacterSelection {
+    private(set) var presentation: BattleRoundCharacterDetailPresentation?
 
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            SheetRootView(
-                root: presentation.root,
-                rootModel: presentation.sheet,
-                linkTypes: EmptyLinkTransferable.self
-            )
-            .navigationTitle(Text(verbatim: presentation.name))
-            .battleInlineNavigationTitle()
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", systemImage: "xmark") {
-                        dismiss()
-                    }
-                }
-            }
+    func toggle(_ newPresentation: BattleRoundCharacterDetailPresentation) {
+        if presentation?.entryId == newPresentation.entryId,
+           presentation?.combatantId == newPresentation.combatantId {
+            presentation = nil
+        } else {
+            presentation = newPresentation
         }
     }
+
+    func clear() {
+        presentation = nil
+    }
+
+    func retainSelection(
+        in combatants: [BattleCombatant],
+        entries: [BattleRoundEntry]
+    ) {
+        guard let presentation else { return }
+        guard combatants.contains(where: { $0.id == presentation.combatantId }),
+              let entry = entries.first(where: { $0.id == presentation.entryId }),
+              entry.attackerId == presentation.combatantId
+                || entry.defenderIds.contains(presentation.combatantId) else {
+            self.presentation = nil
+            return
+        }
+    }
+}
+
+private struct BattleRoundCharacterSelectionPresentation: Identifiable {
+    let combatantId: UUID
+    var id: UUID { combatantId }
 }
 
 private struct BattleRoundHeader: View {
@@ -330,10 +414,12 @@ private struct BattleRoundEmptyState: View {
     }
 }
 
-private struct BattleRoundList: View {
+private struct BattleRoundList<CharacterDetail: View>: View {
     let model: BattleRoundModel
     let actions: BattleRoundActions
-    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let inlineCharacter: BattleRoundCharacterDetailPresentation?
+    let showCharacter: @MainActor (BattleRoundEntry, BattleCombatant) -> Void
+    let characterDetail: CharacterDetail?
 
     var body: some View {
         List {
@@ -344,8 +430,10 @@ private struct BattleRoundList: View {
                         entry: entry,
                         rank: rank(for: entry),
                         actions: actions,
+                        inlineCharacter: inlineCharacter,
                         showCharacter: showCharacter,
-                        assignCharacter: actions.assignCharacter
+                        assignCharacter: actions.assignCharacter,
+                        characterDetail: characterDetail
                     )
                     .listRowBackground(Color.clear)
                     .battleHiddenRowSeparator()
@@ -374,13 +462,15 @@ private struct BattleRoundList: View {
     }
 }
 
-private struct BattleRoundCard: View {
+private struct BattleRoundCard<CharacterDetail: View>: View {
     let model: BattleRoundModel
     let entry: BattleRoundEntry
     let rank: Int
     let actions: BattleRoundActions
-    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let inlineCharacter: BattleRoundCharacterDetailPresentation?
+    let showCharacter: @MainActor (BattleRoundEntry, BattleCombatant) -> Void
     let assignCharacter: @MainActor (UUID, UUID) -> Void
+    let characterDetail: CharacterDetail?
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
@@ -389,30 +479,44 @@ private struct BattleRoundCard: View {
             let isActive = model.activeAttackerId == attacker.id
             let defenders = model.defenders(for: entry)
 
-            ViewThatFits(in: .horizontal) {
-                BattleRoundWideCardLayout(
-                    model: model,
-                    entry: entry,
-                    attacker: attacker,
-                    defenders: defenders,
-                    rank: rank,
-                    isActive: isActive,
-                    actions: actions,
-                    showCharacter: showCharacter,
-                    assignCharacter: assignCharacter
-                )
+            VStack(spacing: 0) {
+                ViewThatFits(in: .horizontal) {
+                    BattleRoundWideCardLayout(
+                        model: model,
+                        entry: entry,
+                        attacker: attacker,
+                        defenders: defenders,
+                        rank: rank,
+                        isActive: isActive,
+                        actions: actions,
+                        showCharacter: showCharacter,
+                        assignCharacter: assignCharacter
+                    )
 
-                BattleRoundCompactCardLayout(
-                    model: model,
-                    entry: entry,
-                    attacker: attacker,
-                    defenders: defenders,
-                    rank: rank,
-                    isActive: isActive,
-                    actions: actions,
-                    showCharacter: showCharacter,
-                    assignCharacter: assignCharacter
-                )
+                    BattleRoundCompactCardLayout(
+                        model: model,
+                        entry: entry,
+                        attacker: attacker,
+                        defenders: defenders,
+                        rank: rank,
+                        isActive: isActive,
+                        actions: actions,
+                        showCharacter: showCharacter,
+                        assignCharacter: assignCharacter
+                    )
+                }
+
+                if let inlineCharacter,
+                   inlineCharacter.entryId == entry.id,
+                   let characterDetail {
+                    Divider()
+                        .padding(.vertical, 10)
+
+                    characterDetail
+                        .id(inlineCharacter.id)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
             .padding(10)
             .background(
@@ -454,7 +558,7 @@ private struct BattleRoundWideCardLayout: View {
     let rank: Int
     let isActive: Bool
     let actions: BattleRoundActions
-    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let showCharacter: @MainActor (BattleRoundEntry, BattleCombatant) -> Void
     let assignCharacter: @MainActor (UUID, UUID) -> Void
 
     var body: some View {
@@ -496,7 +600,7 @@ private struct BattleRoundCompactCardLayout: View {
     let rank: Int
     let isActive: Bool
     let actions: BattleRoundActions
-    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let showCharacter: @MainActor (BattleRoundEntry, BattleCombatant) -> Void
     let assignCharacter: @MainActor (UUID, UUID) -> Void
 
     var body: some View {
@@ -544,7 +648,7 @@ private struct BattleAttackerPhoto: View {
     let attacker: BattleCombatant
     let isActive: Bool
     let actions: BattleRoundActions
-    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let showCharacter: @MainActor (BattleRoundEntry, BattleCombatant) -> Void
     let assignCharacter: @MainActor (UUID, UUID) -> Void
 
     var body: some View {
@@ -555,7 +659,7 @@ private struct BattleAttackerPhoto: View {
             isActive: isActive,
             canReceiveRoll: isActive,
             isRollRecipient: model.rollRecipientCombatantId == attacker.id,
-            showCharacter: showCharacter,
+            showCharacter: { showCharacter(entry, attacker) },
             assignCharacter: assignCharacter,
             selectRollRecipient: actions.selectRollRecipient,
             toggleDead: { actions.setDead(attacker.id, !attacker.isDead) }
@@ -688,7 +792,7 @@ private struct BattleDefenderStrip: View {
     let defenders: [BattleCombatant]
     let isActiveEntry: Bool
     let actions: BattleRoundActions
-    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let showCharacter: @MainActor (BattleRoundEntry, BattleCombatant) -> Void
     let assignCharacter: @MainActor (UUID, UUID) -> Void
 
     var body: some View {
@@ -713,7 +817,7 @@ private struct BattleDefenderStrip: View {
                             isActive: false,
                             canReceiveRoll: isActiveEntry,
                             isRollRecipient: model.rollRecipientCombatantId == defender.id,
-                            showCharacter: showCharacter,
+                            showCharacter: { showCharacter(entry, defender) },
                             assignCharacter: assignCharacter,
                             selectRollRecipient: actions.selectRollRecipient,
                             toggleDead: { actions.setDead(defender.id, !defender.isDead) }
@@ -734,7 +838,7 @@ private struct BattleParticipantColumn: View {
     let isActive: Bool
     let canReceiveRoll: Bool
     let isRollRecipient: Bool
-    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let showCharacter: @MainActor () -> Void
     let assignCharacter: @MainActor (UUID, UUID) -> Void
     let selectRollRecipient: @MainActor (UUID) -> Void
     let toggleDead: @MainActor () -> Void
@@ -744,7 +848,7 @@ private struct BattleParticipantColumn: View {
     var body: some View {
         VStack(spacing: 4) {
             Button {
-                showCharacter(combatant)
+                showCharacter()
             } label: {
                 ZStack {
                     root.photoRoot.viewController.mapImage(
@@ -850,7 +954,7 @@ private struct BattleParticipantColumn: View {
     }
 
     private var hasCharacter: Bool {
-        combatant.gameCharacterId != nil || combatant.sourceCharacterId != nil
+        BattleRoundCharacterDetailResolver(root: root).canPresent(combatant)
     }
 }
 
@@ -879,35 +983,31 @@ private struct BattleRollResults: View {
     }
 }
 
-private struct BattleCharacterSheetPresentation: Identifiable {
-    let id: UUID
-    let name: String
-    let root: ItemRootController
-    let sheet: SheetRootModel
-}
-
 @MainActor
-private struct BattleCharacterSheetFactory {
+struct BattleRoundCharacterDetailResolver {
     let root: MapRootModel
 
-    func presentation(for combatant: BattleCombatant) -> BattleCharacterSheetPresentation? {
+    func canPresent(_ combatant: BattleCombatant) -> Bool {
+        resolvedCharacter(for: combatant) != nil
+    }
+
+    func presentation(
+        entryId: UUID,
+        for combatant: BattleCombatant
+    ) -> BattleRoundCharacterDetailPresentation? {
         let characterRoot = root.characterRoot
         guard let baseRootManager = characterRoot.rootManager else { return nil }
+        guard let resolvedCharacter = resolvedCharacter(for: combatant) else { return nil }
 
-        let itemId: UUID
         let sheetRootManager: RootManager
-        if let gameCharacterId = combatant.gameCharacterId,
-           let clone = characterRoot.valueGameControllable.battleCharacterCopy(for: gameCharacterId) {
+        switch resolvedCharacter {
+        case .runtime(_, let clone):
             let items: [UUID: any ItemDataAccessable] = [clone.id: clone]
-            itemId = clone.id
             sheetRootManager = baseRootManager.with(
                 reviewSheetMemory: ReviewSheetMemory(items: [.value: items])
             )
-        } else if let sourceCharacterId = combatant.sourceCharacterId {
-            itemId = sourceCharacterId
+        case .source:
             sheetRootManager = baseRootManager
-        } else {
-            return nil
         }
 
         let controller = characterRoot.rootController
@@ -915,15 +1015,44 @@ private struct BattleCharacterSheetFactory {
             rootManager: sheetRootManager,
             linkControllable: controller.linkControllable,
             sheetControllable: controller.sheetControllable,
-            itemId: itemId,
+            itemId: resolvedCharacter.id,
             isEditor: false
         )
-        return BattleCharacterSheetPresentation(
-            id: combatant.id,
+        return BattleRoundCharacterDetailPresentation(
+            entryId: entryId,
+            combatantId: combatant.id,
+            characterId: resolvedCharacter.id,
             name: combatant.name,
             root: controller,
-            sheet: sheet
+            sheetRootModel: sheet
         )
+    }
+
+    private func resolvedCharacter(for combatant: BattleCombatant) -> ResolvedCharacter? {
+        let characterRoot = root.characterRoot
+        if let gameCharacterId = combatant.gameCharacterId,
+           let clone = characterRoot.valueGameControllable.battleCharacterCopy(
+               for: gameCharacterId
+           ) {
+            return .runtime(gameCharacterId, clone)
+        }
+        if let sourceCharacterId = combatant.sourceCharacterId,
+           characterRoot.itemControllable.itemSync(for: sourceCharacterId) != nil {
+            return .source(sourceCharacterId)
+        }
+        return nil
+    }
+
+    private enum ResolvedCharacter {
+        case runtime(UUID, ValueModel)
+        case source(UUID)
+
+        var id: UUID {
+            switch self {
+            case .runtime(let id, _): id
+            case .source(let id): id
+            }
+        }
     }
 }
 

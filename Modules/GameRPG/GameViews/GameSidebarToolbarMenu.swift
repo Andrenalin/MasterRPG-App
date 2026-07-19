@@ -61,13 +61,14 @@ struct GameSidebarToolbarMenu: View {
             GameTableMenuToggle()
 
             if role == .master {
-                Button {
-                    scenesManager.openWindow(.battleRound)
-                } label: {
+                Button(action: toggleBattleRoundSidebar) {
                     Label {
                         Text("Battle Round", bundle: .module)
                     } icon: {
                         Image(systemName: "shield.lefthalf.filled")
+                            .symbolVariant(
+                                gameScreenModel.showsBattleRoundSidebar ? .fill : .none
+                            )
                     }
                 }
             }
@@ -97,7 +98,7 @@ struct GameSidebarToolbarMenu: View {
     }
 
     private var isSidebarVisible: Bool {
-        gameScreenModel.showMainTab == inlineModule
+        gameScreenModel.isInlineSidebarVisible
     }
 
     private var gameSidebarBinding: Binding<Bool> {
@@ -123,7 +124,11 @@ struct GameSidebarToolbarMenu: View {
         }
 
         withAnimation(accessibilityReduceMotion ? nil : .default) {
-            gameScreenModel.showMainTab = nextMode == .inline ? inlineModule : .none
+            if nextMode == .inline {
+                gameScreenModel.showMainTab = inlineModule
+            } else {
+                gameScreenModel.hideInlineSidebar()
+            }
             gameScreenModel.gameMainTabDisplayMode = nextMode
         }
 
@@ -138,6 +143,12 @@ struct GameSidebarToolbarMenu: View {
     private func toggleSideMenuButtons() {
         withAnimation(accessibilityReduceMotion ? nil : .default) {
             gameScreenModel.isSideMenuVisible.toggle()
+        }
+    }
+
+    private func toggleBattleRoundSidebar() {
+        withAnimation(accessibilityReduceMotion ? nil : .default) {
+            gameScreenModel.toggleBattleRoundSidebar()
         }
     }
 }
