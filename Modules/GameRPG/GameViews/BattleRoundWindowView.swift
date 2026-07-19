@@ -77,6 +77,12 @@ private enum BattleRoundActionFactory {
             },
             setDead: { combatantId, isDead in
                 _ = root.setBattleCombatantDead(combatantId, isDead: isDead)
+            },
+            assignCharacter: { combatantId, characterId in
+                _ = root.assignBattleCharacter(
+                    combatantId: combatantId,
+                    characterId: characterId
+                )
             }
         )
     }

@@ -15,7 +15,12 @@ struct OnlyGameView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
+        root.adventureRoot.viewController.gameView(
+            root: root.adventureRoot,
+            focusedIds: [adventureId],
+            searchContext: gameSearchContext,
+            addsSearchable: addsNestedSearchable
+        )
             .gameOverlayTabBarView(value: NetworkModules.game)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
@@ -30,6 +35,22 @@ struct OnlyGameView: View {
             } action: { width in
                 gameScreenModel.updateInlineMainOverlayWidth(width)
             }
+    }
+
+    private var gameSearchContext: SheetSearchContext? {
+#if os(iOS) || os(macOS)
+        gameScreenModel.searchContext
+#else
+        nil
+#endif
+    }
+
+    private var addsNestedSearchable: Bool {
+#if os(iOS) || os(macOS)
+        false
+#else
+        true
+#endif
     }
 }
 

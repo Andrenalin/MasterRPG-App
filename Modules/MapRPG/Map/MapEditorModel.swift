@@ -180,6 +180,9 @@ final class MapEditorSession {
         case let .tap(pin, _):
             rooms.active.selectNeedle(nil)
             selection.selectPin(pins.isExpandedId == pin.id ? pin.id : nil)
+        case let .longPress(pin, _):
+            rooms.active.selectNeedle(nil)
+            selection.selectPin(pins.isExpandedId == pin.id ? pin.id : nil)
         case .doubleTap:
             rooms.active.selectNeedle(nil)
             selection.selectPin(nil)

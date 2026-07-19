@@ -20,7 +20,8 @@ public struct BattleRoundActions {
         moveEntries: @escaping @MainActor (IndexSet, Int) -> Void,
         activateAttacker: @escaping @MainActor (UUID) -> Void,
         selectRollRecipient: @escaping @MainActor (UUID) -> Void,
-        setDead: @escaping @MainActor (UUID, Bool) -> Void
+        setDead: @escaping @MainActor (UUID, Bool) -> Void,
+        assignCharacter: @escaping @MainActor (UUID, UUID) -> Void
     ) {
         self.start = start
         self.end = end
@@ -33,6 +34,7 @@ public struct BattleRoundActions {
         self.activateAttacker = activateAttacker
         self.selectRollRecipient = selectRollRecipient
         self.setDead = setDead
+        self.assignCharacter = assignCharacter
     }
 
     let start: @MainActor () -> Void
@@ -46,6 +48,7 @@ public struct BattleRoundActions {
     let activateAttacker: @MainActor (UUID) -> Void
     let selectRollRecipient: @MainActor (UUID) -> Void
     let setDead: @MainActor (UUID, Bool) -> Void
+    let assignCharacter: @MainActor (UUID, UUID) -> Void
 }
 
 public struct BattleRoundView: View {
@@ -58,7 +61,13 @@ public struct BattleRoundView: View {
     let actions: BattleRoundActions
 
     @Environment(MapRootModel.self) private var root
-    @State private var selectedSheet: BattleCharacterSheetPresentation?
+    @Environment(ScenesManager.self) private var scenesManager
+    @State private var presentation: BattleRoundPresentation?
+    @State private var pendingCharacterCombatantId: UUID?
+    @State private var selectedCharacter = ItemSelectionModel(
+        isSingleSelection: true,
+        allowCollections: false
+    )
 
     public var body: some View {
         NavigationStack {
@@ -78,13 +87,56 @@ public struct BattleRoundView: View {
             .navigationTitle(Text("Battle Round", bundle: .module))
             .battleInlineNavigationTitle()
         }
-        .sheet(item: $selectedSheet) { presentation in
-            BattleCharacterSheetPresentationView(presentation: presentation)
+        .sheet(item: $presentation) { presentation in
+            switch presentation {
+            case .sheet(let sheet):
+                BattleCharacterSheetPresentationView(presentation: sheet)
+            case .selection:
+                ManagedPresentationView {
+                    root.viewController.characterSelection(
+                        root: root,
+                        selectionModel: selectedCharacter
+                    )
+                }
+            }
+        }
+        .onChange(of: selectedCharacter.selection) { _, selection in
+            guard let combatantId = pendingCharacterCombatantId,
+                  let characterId = selection.first?.itemId else { return }
+            actions.assignCharacter(combatantId, characterId)
+            pendingCharacterCombatantId = nil
+            selectedCharacter.resetSelection(itemId: nil, entryId: nil)
+            if case .selection = presentation {
+                presentation = nil
+            }
         }
     }
 
     private func showCharacterSheet(_ combatant: BattleCombatant) {
-        selectedSheet = BattleCharacterSheetFactory(root: root).presentation(for: combatant)
+        if let sheet = BattleCharacterSheetFactory(root: root).presentation(for: combatant) {
+            presentation = .sheet(sheet)
+            return
+        }
+        pendingCharacterCombatantId = combatant.id
+        selectedCharacter.resetSelection(itemId: nil, entryId: nil)
+#if os(macOS)
+        root.characterRoot.itemSelectionModel = selectedCharacter
+        scenesManager.openWindow(SceneId.sceneId(for: .value))
+#else
+        presentation = .selection(combatant.id)
+#endif
+    }
+}
+
+private enum BattleRoundPresentation: Identifiable {
+    case sheet(BattleCharacterSheetPresentation)
+    case selection(UUID)
+
+    var id: UUID {
+        switch self {
+        case .sheet(let sheet): sheet.id
+        case .selection(let combatantId): combatantId
+        }
     }
 }
 
@@ -292,7 +344,8 @@ private struct BattleRoundList: View {
                         entry: entry,
                         rank: rank(for: entry),
                         actions: actions,
-                        showCharacter: showCharacter
+                        showCharacter: showCharacter,
+                        assignCharacter: actions.assignCharacter
                     )
                     .listRowBackground(Color.clear)
                     .battleHiddenRowSeparator()
@@ -327,6 +380,7 @@ private struct BattleRoundCard: View {
     let rank: Int
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let assignCharacter: @MainActor (UUID, UUID) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
@@ -344,7 +398,8 @@ private struct BattleRoundCard: View {
                     rank: rank,
                     isActive: isActive,
                     actions: actions,
-                    showCharacter: showCharacter
+                    showCharacter: showCharacter,
+                    assignCharacter: assignCharacter
                 )
 
                 BattleRoundCompactCardLayout(
@@ -355,7 +410,8 @@ private struct BattleRoundCard: View {
                     rank: rank,
                     isActive: isActive,
                     actions: actions,
-                    showCharacter: showCharacter
+                    showCharacter: showCharacter,
+                    assignCharacter: assignCharacter
                 )
             }
             .padding(10)
@@ -399,6 +455,7 @@ private struct BattleRoundWideCardLayout: View {
     let isActive: Bool
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let assignCharacter: @MainActor (UUID, UUID) -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -409,7 +466,8 @@ private struct BattleRoundWideCardLayout: View {
                 attacker: attacker,
                 isActive: isActive,
                 actions: actions,
-                showCharacter: showCharacter
+                showCharacter: showCharacter,
+                assignCharacter: assignCharacter
             )
             BattleAttackerDetails(combatant: attacker, isActive: isActive, actions: actions)
             Spacer(minLength: 8)
@@ -423,7 +481,8 @@ private struct BattleRoundWideCardLayout: View {
                 defenders: defenders,
                 isActiveEntry: isActive,
                 actions: actions,
-                showCharacter: showCharacter
+                showCharacter: showCharacter,
+                assignCharacter: assignCharacter
             )
         }
     }
@@ -438,6 +497,7 @@ private struct BattleRoundCompactCardLayout: View {
     let isActive: Bool
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let assignCharacter: @MainActor (UUID, UUID) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -449,7 +509,8 @@ private struct BattleRoundCompactCardLayout: View {
                     attacker: attacker,
                     isActive: isActive,
                     actions: actions,
-                    showCharacter: showCharacter
+                    showCharacter: showCharacter,
+                    assignCharacter: assignCharacter
                 )
                 BattleAttackerDetails(combatant: attacker, isActive: isActive, actions: actions)
                 Spacer(minLength: 0)
@@ -468,7 +529,8 @@ private struct BattleRoundCompactCardLayout: View {
                     defenders: defenders,
                     isActiveEntry: isActive,
                     actions: actions,
-                    showCharacter: showCharacter
+                    showCharacter: showCharacter,
+                    assignCharacter: assignCharacter
                 )
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -483,6 +545,7 @@ private struct BattleAttackerPhoto: View {
     let isActive: Bool
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let assignCharacter: @MainActor (UUID, UUID) -> Void
 
     var body: some View {
         BattleParticipantColumn(
@@ -493,6 +556,7 @@ private struct BattleAttackerPhoto: View {
             canReceiveRoll: isActive,
             isRollRecipient: model.rollRecipientCombatantId == attacker.id,
             showCharacter: showCharacter,
+            assignCharacter: assignCharacter,
             selectRollRecipient: actions.selectRollRecipient,
             toggleDead: { actions.setDead(attacker.id, !attacker.isDead) }
         )
@@ -625,6 +689,7 @@ private struct BattleDefenderStrip: View {
     let isActiveEntry: Bool
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let assignCharacter: @MainActor (UUID, UUID) -> Void
 
     var body: some View {
         if defenders.isEmpty {
@@ -649,6 +714,7 @@ private struct BattleDefenderStrip: View {
                             canReceiveRoll: isActiveEntry,
                             isRollRecipient: model.rollRecipientCombatantId == defender.id,
                             showCharacter: showCharacter,
+                            assignCharacter: assignCharacter,
                             selectRollRecipient: actions.selectRollRecipient,
                             toggleDead: { actions.setDead(defender.id, !defender.isDead) }
                         )
@@ -669,6 +735,7 @@ private struct BattleParticipantColumn: View {
     let canReceiveRoll: Bool
     let isRollRecipient: Bool
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let assignCharacter: @MainActor (UUID, UUID) -> Void
     let selectRollRecipient: @MainActor (UUID) -> Void
     let toggleDead: @MainActor () -> Void
 
@@ -695,6 +762,13 @@ private struct BattleParticipantColumn: View {
                         Image(systemName: "xmark")
                             .font(.title2.bold())
                             .foregroundStyle(.white)
+                    } else if !hasCharacter {
+                        Image(systemName: "person.badge.plus")
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, combatant.color)
+                            .padding(3)
+                            .background(.black.opacity(0.55), in: .circle)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                     }
                 }
                 .overlay {
@@ -708,9 +782,16 @@ private struct BattleParticipantColumn: View {
                 )
             }
             .buttonStyle(.plain)
-            .help(Text("Open character sheet", bundle: .module))
+            .help(
+                Text(
+                    hasCharacter ? "Open character sheet" : "Choose a Character",
+                    bundle: .module
+                )
+            )
             .accessibilityLabel(
-                Text("Open character sheet for \(combatant.name)", bundle: .module)
+                hasCharacter
+                    ? Text("Open character sheet for \(combatant.name)", bundle: .module)
+                    : Text("Choose a Character for \(combatant.name)", bundle: .module)
             )
             .contextMenu {
                 Button(
@@ -719,6 +800,12 @@ private struct BattleParticipantColumn: View {
                     action: toggleDead
                 )
             }
+#if os(iOS) || os(macOS) || os(visionOS)
+            .dropDestination(for: LinkCharacterData.self) { characters, _ in
+                guard let character = characters.first else { return }
+                assignCharacter(combatant.id, character.itemId)
+            }
+#endif
 
             if canReceiveRoll {
                 Button {
@@ -760,6 +847,10 @@ private struct BattleParticipantColumn: View {
 
     private var haloWidth: CGFloat {
         isRollRecipient || combatant.isHighlighted || isActive ? 3 : 1
+    }
+
+    private var hasCharacter: Bool {
+        combatant.gameCharacterId != nil || combatant.sourceCharacterId != nil
     }
 }
 
@@ -899,6 +990,7 @@ private extension View {
     let model = BattleRoundModel.previewCards
     BattleRoundView(model: model, actions: .preview(model: model))
         .environment(root)
+        .environment(ScenesManager())
 }
 
 @MainActor
@@ -944,7 +1036,8 @@ private extension BattleRoundActions {
             moveEntries: model.moveEntries,
             activateAttacker: { _ = model.activateAttacker($0) },
             selectRollRecipient: { model.selectRollRecipient($0) },
-            setDead: { _, _ in }
+            setDead: { _, _ in },
+            assignCharacter: { _, _ in }
         )
     }
 }

@@ -484,7 +484,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เพิ่มลูกเต๋าทุกค่า"
+            "value" : "เพิ่มลูกเต๋าในแต่ละค่า"
           }
         }
       }
@@ -624,7 +624,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เพิ่ม %1$@ ไปยัง “%2$@” แล้ว"
+            "value" : "เพิ่ม %1$@ ไปยัง \"%2$@\" แล้ว"
           }
         }
       }
@@ -2053,12 +2053,6 @@
             "state" : "translated",
             "value" : "Setze Patzer Einstellung"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ตั้งค่าตัวเลือกฟัมเบิลแล้ว"
-          }
         }
       }
     },
@@ -2215,7 +2209,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "รวมค่าลูกเต๋า"
+            "value" : "รวมลูกเต๋า"
           }
         }
       }

@@ -42,6 +42,7 @@ struct IOSGameOverlayMenu: View {
                 HStack(spacing: itemSpacing) {
                     if isMaster || root.gameModel.gameType != .observer {
                         IOSGameDiceToggleButtonField()
+                        IOSGameSearchField()
                     }
                     Spacer(minLength: 0)
                     IOSGameOverlayControlField(
@@ -73,21 +74,18 @@ private struct IOSGameOverlayCenterField: View {
     let spacing: CGFloat
 
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(ScenesManager.self) private var scenesManager
 
     var body: some View {
         let battleModel = root.mapRoot.mapGameControllable.battleRoundModel
 
         HStack(spacing: spacing) {
+            if isMaster || root.gameModel.gameType != .observer {
+                IOSGameSearchField()
+            }
+
             if battleModel.isRunning && !gameScreenModel.showsBattleRoundAnnouncement {
-                if isMaster {
-                    BattleRoundStatusButton(model: battleModel) {
-                        scenesManager.openWindow(.battleRound)
-                    }
-                } else {
-                    BattleRoundCounterView(model: battleModel, style: .compact)
-                        .allowsHitTesting(false)
-                }
+                BattleRoundCounterView(model: battleModel, style: .compact)
+                    .allowsHitTesting(false)
             }
 
             IOSGameOverlayControlField(

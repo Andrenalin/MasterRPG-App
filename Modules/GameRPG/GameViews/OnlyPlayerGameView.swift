@@ -14,7 +14,9 @@ struct OnlyPlayerGameView: View {
         if root.gameModel.gameType != .observer {
             root.characterRoot.viewController.gameView(
                 root: root.characterRoot,
-                select: root.gameModel.selectedCharacter
+                select: root.gameModel.selectedCharacter,
+                searchContext: gameSearchContext,
+                addsSearchable: addsNestedSearchable
             )
             .gameOverlayTabBarView(value: NetworkModules.game)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
@@ -31,6 +33,22 @@ struct OnlyPlayerGameView: View {
                 gameScreenModel.updateInlineMainOverlayWidth(width)
             }
         }
+    }
+
+    private var gameSearchContext: SheetSearchContext? {
+#if os(iOS) || os(macOS)
+        gameScreenModel.searchContext
+#else
+        nil
+#endif
+    }
+
+    private var addsNestedSearchable: Bool {
+#if os(iOS) || os(macOS)
+        false
+#else
+        true
+#endif
     }
 }
 

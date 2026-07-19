@@ -58,6 +58,10 @@ struct PlayerGameScreen: View {
         .onDisappear {
             root.mapRoot.rootModel.clearGameEditorSession()
         }
+        .persistGameDiceVisibility(
+            gameScreenModel: gameScreenModel,
+            diceDisplayModel: diceShowOptionModel
+        )
 #if os(visionOS)
         .gameImmersiveSpaceSync(root: root)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {

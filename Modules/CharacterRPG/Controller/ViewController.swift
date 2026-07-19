@@ -40,9 +40,20 @@ public extension ViewController {
         LinkRootView(type: type, itemSelectionModel: itemSelectionModel)
     }
 
-    @MainActor func viewer(root: CharacterRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
+    @MainActor func viewer(
+        root: CharacterRootModel,
+        itemId: UUID,
+        configuration: ViewerConfiguration,
+        searchContext: SheetSearchContext? = nil,
+        dismissAction: (() -> Void)? = nil
+    ) -> some View {
         let model = root.itemController.itemOrEmpty(for: itemId)
-        return ViewerRootView(model: model, configuration: configuration, dismissAction: dismissAction)
+        return ViewerRootView(
+            model: model,
+            configuration: configuration,
+            searchContext: searchContext,
+            dismissAction: dismissAction
+        )
     }
     
     @MainActor func dropChooseView(model: ItemSelectionModel) -> some View {
@@ -50,10 +61,20 @@ public extension ViewController {
             .environment(model)
     }
     
-    @MainActor func gameView(root: CharacterRootModel, select: UUID? = nil) -> some View {
+    @MainActor func gameView(
+        root: CharacterRootModel,
+        select: UUID? = nil,
+        searchContext: SheetSearchContext? = nil,
+        addsSearchable: Bool = true
+    ) -> some View {
         Group {
             if let select {
-                viewer(root: root, itemId: select, configuration: ViewerConfiguration(closeButton: false))
+                viewer(
+                    root: root,
+                    itemId: select,
+                    configuration: ViewerConfiguration(closeButton: false, addToolbar: addsSearchable),
+                    searchContext: searchContext
+                )
             } else {
                 LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())                
             }

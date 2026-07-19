@@ -66,6 +66,7 @@ struct DiceRPGGeneratedPreviewSnapshotTests {
         try await assertPreviewSnapshot("DicePlayerRoot") {
             DiceRPG.DicePlayerRoot()
                 .environment(DiceRootModel.preview)
+                .environment(DiceDisplayModel(showPlayerDice: true))
         }
     }
 

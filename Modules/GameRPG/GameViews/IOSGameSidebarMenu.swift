@@ -10,6 +10,7 @@ struct IOSGameSidebarMenu: View {
 
     @Environment(AppSettingsModel.self) private var appSettingsModel
     @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
@@ -20,10 +21,6 @@ struct IOSGameSidebarMenu: View {
         }
 
         Menu {
-            GameTableMenuToggle()
-
-            Divider()
-
             Toggle(isOn: sidebarVisibilityBinding) {
                 Label {
                     Text("Sidebar", bundle: .module)
@@ -60,6 +57,22 @@ struct IOSGameSidebarMenu: View {
                 }
             }
             .disabled(!isSidebarVisible)
+
+            Divider()
+
+            GameTableMenuToggle()
+
+            if isMaster {
+                Button {
+                    scenesManager.openWindow(.battleRound)
+                } label: {
+                    Label {
+                        Text("Battle Round", bundle: .module)
+                    } icon: {
+                        Image(systemName: "shield.lefthalf.filled")
+                    }
+                }
+            }
         } label: {
             Label {
                 Text("Sidebar", bundle: .module)

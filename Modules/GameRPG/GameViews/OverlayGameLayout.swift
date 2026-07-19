@@ -52,7 +52,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 .zIndex(20)
 
 #if !os(visionOS)
-            if gameScreenModel.showDice {
+            if !hideDice && gameScreenModel.showDice {
                 root.diceRoot.viewController.overlayGameView(root: root.diceRoot, hideDice: hideDice)
 #if os(iOS)
                     // Dice and character/adventure content begin on the same
@@ -84,10 +84,6 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
         .padding(.trailing, valueFor(iOS: 0, macOS: 0, tvOS: 0, visionOS: 20))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showDice)
-        .onAppear {
-            guard hideDice == false && !gameScreenModel.showDice else { return }
-            gameScreenModel.showDice.toggle()
-        }
     }
 
 #if os(iOS)

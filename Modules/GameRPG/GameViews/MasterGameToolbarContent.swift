@@ -16,8 +16,6 @@ struct GameToolbarContent: ToolbarContent {
     let role: GameToolbarRole
     let playerController: PlayerController?
 
-    @Environment(ScenesManager.self) private var scenesManager
-
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .navigation) {
             if role == .master || root.gameModel.gameType != .observer {
@@ -39,18 +37,11 @@ struct GameToolbarContent: ToolbarContent {
 
         if root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
             ToolbarItem(placement: .automatic) {
-                if role == .master {
-                    BattleRoundStatusButton(
-                        model: root.mapRoot.mapGameControllable.battleRoundModel
-                    ) {
-                        scenesManager.openWindow(.battleRound)
-                    }
-                } else {
-                    BattleRoundCounterView(
-                        model: root.mapRoot.mapGameControllable.battleRoundModel,
-                        style: .compact
-                    )
-                }
+                BattleRoundCounterView(
+                    model: root.mapRoot.mapGameControllable.battleRoundModel,
+                    style: .compact
+                )
+                .allowsHitTesting(false)
             }
         }
 

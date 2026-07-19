@@ -32,9 +32,20 @@ struct MasterGameScreen: View {
                 gameScreenModel: gameScreenModel
             )
         } chrome: {
-            MasterOverlayMenu(root: root, adventureId: adventureId, playerController: playerController)
-                .environment(diceShowOptionModel)
-                .environment(gameScreenModel)
+            ZStack {
+#if !os(tvOS)
+                // Keep the assistant beneath all game chrome. Its full-sized
+                // panel can cover the map, but never the menu or bottom tools.
+                MasterGameAIAssistantOverlay(root: root, adventureId: adventureId)
+#endif
+                MasterOverlayMenu(
+                    root: root,
+                    adventureId: adventureId,
+                    playerController: playerController
+                )
+            }
+            .environment(diceShowOptionModel)
+            .environment(gameScreenModel)
         }
         .overlay {
             BattleRoundGameChrome(root: root)
@@ -81,6 +92,10 @@ struct MasterGameScreen: View {
                 endGame()
             }
         }
+        .persistGameDiceVisibility(
+            gameScreenModel: gameScreenModel,
+            diceDisplayModel: diceShowOptionModel
+        )
 #if os(visionOS)
         .gameImmersiveSpaceSync(root: root)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {

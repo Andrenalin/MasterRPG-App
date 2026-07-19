@@ -8,6 +8,7 @@ import SwiftUI
 /// view. The store is configured once by the owning map surface.
 enum MapPinInteractionEvent: Equatable {
     case tap(pin: MapPinModel, isPointer: Bool)
+    case longPress(pin: MapPinModel, isPointer: Bool)
     case doubleTap(pin: MapPinModel, isPointer: Bool)
     case beginMove(pin: MapPinModel, isPointer: Bool)
     case move(pin: MapPinModel, isPointer: Bool)
@@ -49,6 +50,10 @@ final class MapPinNode: Identifiable {
 
     func handleDoubleTap() {
         store?.handleDoubleTap(on: self)
+    }
+
+    func handleLongPress(context: MapPinActionContext) {
+        store?.handleLongPress(on: self, context: context)
     }
 
     func move(by translation: CGSize) {
@@ -229,10 +234,21 @@ final class MapPinViewModel {
     }
 
     fileprivate func handleTap(on node: MapPinNode, context: MapPinActionContext) {
-        if context != .none {
+        if context == .editor {
             setExpanded(id: node.isExpanded ? nil : node.id)
+        } else if context == .gameMaster {
+            setExpanded(id: nil)
         }
         interactionHandler?(.tap(pin: node.pin, isPointer: node.isPointer))
+    }
+
+    fileprivate func handleLongPress(
+        on node: MapPinNode,
+        context: MapPinActionContext
+    ) {
+        guard context == .gameMaster, !node.isPointer else { return }
+        setExpanded(id: node.isExpanded ? nil : node.id)
+        interactionHandler?(.longPress(pin: node.pin, isPointer: false))
     }
 
     fileprivate func handleDoubleTap(on node: MapPinNode) {
@@ -459,6 +475,12 @@ struct MapPinView: View {
         .accessibilityAction {
             handleTap()
         }
+        .accessibilityAction(named: Text("Open Pin Actions", bundle: .module)) {
+            guard actionContext == .gameMaster else { return }
+            withAnimation(reduceMotion ? nil : .default) {
+                model.handleLongPress(context: actionContext)
+            }
+        }
         .accessibilityAction(named: Text(doubleTapAccessibilityLabel)) {
             withAnimation(reduceMotion ? nil : .default) {
                 model.handleDoubleTap()
@@ -524,19 +546,35 @@ private struct MapPinTapGestureModifier: ViewModifier {
     let reduceMotion: Bool
 
     func body(content: Content) -> some View {
-        if actionContext == .none {
+        switch actionContext {
+        case .none:
             // Player/viewer taps have separate model actions, so preserve exact
             // single-versus-double semantics even though single tap waits.
             content.highPriorityGesture(
                 doubleTapGesture.exclusively(before: singleTapGesture)
             )
-        } else {
-            // Editor/game-master action menus toggle immediately. The
-            // simultaneous double-tap action still closes any open menu before
-            // emitting its domain action.
+        case .editor:
+            // Editor action menus toggle immediately. The simultaneous
+            // double-tap action still closes an open menu before emitting its
+            // domain action.
             content
                 .highPriorityGesture(singleTapGesture)
                 .simultaneousGesture(doubleTapGesture)
+        case .gameMaster:
+            // A master uses the same single-tap highlight behavior as a player.
+            // The action fan is deliberately behind a stationary long press so
+            // tapping and dragging never accidentally expose its hit targets.
+#if os(tvOS)
+            content.highPriorityGesture(
+                doubleTapGesture.exclusively(before: singleTapGesture)
+            )
+#else
+            content.highPriorityGesture(
+                longPressGesture.exclusively(
+                    before: doubleTapGesture.exclusively(before: singleTapGesture)
+                )
+            )
+#endif
         }
     }
 
@@ -555,6 +593,18 @@ private struct MapPinTapGestureModifier: ViewModifier {
             }
         }
     }
+
+#if !os(tvOS)
+    private var longPressGesture: some Gesture {
+        LongPressGesture(minimumDuration: 0.45, maximumDistance: 3)
+            .onEnded { succeeded in
+                guard succeeded else { return }
+                withAnimation(reduceMotion ? nil : .default) {
+                    model.handleLongPress(context: actionContext)
+                }
+            }
+    }
+#endif
 }
 
 #Preview {

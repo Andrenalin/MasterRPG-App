@@ -34,6 +34,7 @@ struct PlayerOverlayMenu: View {
         .toolbar {
             GameToolbarContent(root: root, role: .player, playerController: playerController)
         }
+        .gameWindowSearchable()
 #endif
         .padding(.leading, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
         .id("playerOverlayLayout")

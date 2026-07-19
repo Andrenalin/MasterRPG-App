@@ -20,6 +20,7 @@ final class MapGameModel: Sendable {
 
     var playerPins: [MapPinModel] = []
     let battleRoundModel = BattleRoundModel()
+    private(set) var battleCharacterCopyIds: Set<UUID> = []
     private var authoritativeGenerations: [UUID: AuthoritativeGeneration] = [:]
     private var lastActivatedRoomIds: [UUID: UUID] = [:]
 
@@ -48,11 +49,20 @@ final class MapGameModel: Sendable {
     func lastActivatedRoomId(for mapId: UUID) -> UUID? {
         lastActivatedRoomIds[mapId]
     }
+
+    func registerBattleCharacterCopy(_ id: UUID) {
+        battleCharacterCopyIds.insert(id)
+    }
+
+    func clearBattleCharacterCopies() {
+        battleCharacterCopyIds = []
+    }
     
     func reset() {
         playerPins = []
         authoritativeGenerations = [:]
         lastActivatedRoomIds = [:]
+        battleCharacterCopyIds = []
         battleRoundModel.reset()
     }
 }
@@ -128,6 +138,11 @@ public protocol MapGameStorable {
         itemId: UUID,
         combatantId: UUID,
         isDead: Bool
+    ) -> Bool
+    @MainActor func assignBattleCharacter(
+        itemId: UUID,
+        combatantId: UUID,
+        characterId: UUID
     ) -> Bool
     @MainActor func synchronizeBattleDefenders(itemId: UUID) -> Bool
     @MainActor func networkBattleRoundUpdate(for itemId: UUID) -> NetworkCodableDataType?
@@ -650,24 +665,19 @@ extension GameController: MapGameStorable {
         } ?? []
 
         guard !playerPins.isEmpty || !roomPins.isEmpty else { return false }
-        releaseBattleCharacters(includingPlayers: false)
-
         let playerCombatants = playerPins.map { pin in
-            let gameCharacterId = battleRoundModel.retainedGameCharacterId(
-                forPlayerPinId: pin.id,
-                sourceCharacterId: pin.characterId
-            )
-                ?? pin.characterId.flatMap {
-                    root.characterRoot.valueGameControllable.createBattleCharacterCopy(for: $0)
-                }
             return BattleCombatant(
                 pin: pin,
                 sourceCharacterId: pin.characterId,
-                gameCharacterId: gameCharacterId,
+                // A player's Character is already the authoritative game
+                // identity. Never clone it merely because a battle starts.
+                gameCharacterId: pin.characterId,
                 isPlayer: true
             )
         }
-        let roomCombatants = roomPins.map(makeBattleCombatant(from:))
+        let roomCombatants = roomPins.compactMap { pin in
+            makeBattleCombatant(itemId: itemId, pinId: pin.id)
+        }
 
         clearBattleHighlights(on: map)
         battleRoundModel.begin(
@@ -690,7 +700,6 @@ extension GameController: MapGameStorable {
         clearBattleHighlights(on: map)
         battleRoundModel.end()
         _ = battleRoundModel.synchronize(pins: map.mapPins)
-        releaseBattleCharacters(includingPlayers: false)
         return true
     }
 
@@ -797,6 +806,69 @@ extension GameController: MapGameStorable {
         return true
     }
 
+    /// Associates a Character with a battle token without touching the source
+    /// database. Empty tokens receive an independent runtime copy. Existing
+    /// player identities are reused, while non-player runtime identities are
+    /// reused only when their copy is still present in Character game memory.
+    @MainActor
+    func assignBattleCharacter(
+        itemId: UUID,
+        combatantId: UUID,
+        characterId: UUID
+    ) -> Bool {
+        guard battleRoundModel.isRunning,
+              battleRoundModel.mapId == itemId,
+              let combatant = battleRoundModel.combatant(id: combatantId),
+              let map = gameModel.itemData[itemId] as? MapModel,
+              let pinIndex = map.mapPins.firstIndex(where: { $0.id == combatant.pinId }) else {
+            return false
+        }
+
+        let currentCharacterId = map.mapPins[pinIndex].characterId
+        let sourceCharacterId: UUID
+        let gameCharacterId: UUID
+
+        if combatant.isPlayer, let currentCharacterId {
+            // Player Characters are shared game identities and must not fork
+            // into an isolated monster-style runtime copy.
+            sourceCharacterId = currentCharacterId
+            gameCharacterId = currentCharacterId
+        } else if let currentCharacterId,
+                  root.characterRoot.valueGameControllable.battleCharacterCopy(
+                      for: currentCharacterId
+                  ) != nil {
+            sourceCharacterId = combatant.sourceCharacterId ?? currentCharacterId
+            gameCharacterId = currentCharacterId
+        } else {
+            let source = currentCharacterId ?? characterId
+            guard let copyId = root.characterRoot.valueGameControllable
+                .createBattleCharacterCopy(for: source) else {
+                return false
+            }
+            mapGameModel.registerBattleCharacterCopy(copyId)
+            sourceCharacterId = source
+            gameCharacterId = copyId
+        }
+
+        var updatedPin = map.mapPins[pinIndex]
+        updatedPin.characterId = gameCharacterId
+        updatedPin.timeInterval = max(
+            Date.now.timeIntervalSince1970,
+            updatedPin.timeInterval.nextUp
+        )
+        map.mapPins[pinIndex] = updatedPin
+        if updatedPin.isPlayer,
+           let playerIndex = mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
+            mapGameModel.playerPins[playerIndex] = updatedPin
+        }
+        return battleRoundModel.assignCharacter(
+            combatantId: combatantId,
+            sourceCharacterId: sourceCharacterId,
+            gameCharacterId: gameCharacterId,
+            pin: updatedPin
+        )
+    }
+
     @MainActor
     func synchronizeBattleDefenders(itemId: UUID) -> Bool {
         guard battleRoundModel.isRunning,
@@ -816,13 +888,16 @@ extension GameController: MapGameStorable {
             )
         }
 
-        let additionalDefenders = map.mapPins.compactMap { pin -> BattleCombatant? in
+        let additionalDefenderPinIds = map.mapPins.compactMap { pin -> UUID? in
             guard pin.isHighlighted,
                   pin.id != battleRoundModel.activePinId,
                   battleRoundModel.combatant(pinId: pin.id) == nil else {
                 return nil
             }
-            return makeBattleCombatant(from: pin)
+            return pin.id
+        }
+        let additionalDefenders = additionalDefenderPinIds.compactMap { pinId in
+            makeBattleCombatant(itemId: itemId, pinId: pinId)
         }
         let changed = battleRoundModel.synchronize(
             pins: map.mapPins,
@@ -867,6 +942,7 @@ extension GameController: MapGameStorable {
     @MainActor
     func resetBattleRound() {
         releaseBattleCharacters(includingPlayers: true)
+        mapGameModel.clearBattleCharacterCopies()
         battleRoundModel.reset()
     }
 
@@ -1077,24 +1153,47 @@ private extension GameController {
     }
 
     @MainActor
-    func makeBattleCombatant(from pin: MapPinModel) -> BattleCombatant {
-        BattleCombatant(
+    func makeBattleCombatant(itemId: UUID, pinId: UUID) -> BattleCombatant? {
+        guard let map = gameModel.itemData[itemId] as? MapModel,
+              let pinIndex = map.mapPins.firstIndex(where: { $0.id == pinId }) else {
+            return nil
+        }
+        var pin = map.mapPins[pinIndex]
+        let sourceCharacterId = pin.characterId
+        let gameCharacterId: UUID?
+        if pin.isPlayer {
+            gameCharacterId = sourceCharacterId
+        } else if let sourceCharacterId,
+                  root.characterRoot.valueGameControllable.battleCharacterCopy(
+                      for: sourceCharacterId
+                  ) != nil {
+            gameCharacterId = sourceCharacterId
+        } else if let sourceCharacterId,
+                  let copyId = root.characterRoot.valueGameControllable
+                    .createBattleCharacterCopy(for: sourceCharacterId) {
+            mapGameModel.registerBattleCharacterCopy(copyId)
+            pin.characterId = copyId
+            pin.timeInterval = max(
+                Date.now.timeIntervalSince1970,
+                pin.timeInterval.nextUp
+            )
+            map.mapPins[pinIndex] = pin
+            gameCharacterId = copyId
+        } else {
+            gameCharacterId = nil
+        }
+        return BattleCombatant(
             pin: pin,
-            sourceCharacterId: pin.characterId,
-            gameCharacterId: pin.characterId.flatMap {
-                root.characterRoot.valueGameControllable.createBattleCharacterCopy(for: $0)
-            },
+            sourceCharacterId: sourceCharacterId,
+            gameCharacterId: gameCharacterId,
             isPlayer: pin.isPlayer
         )
     }
 
     @MainActor
     func releaseBattleCharacters(includingPlayers: Bool) {
-        let ids = Set(
-            battleRoundModel.combatants.lazy
-                .filter { includingPlayers || !$0.isPlayer }
-                .compactMap(\.gameCharacterId)
-        )
+        guard includingPlayers else { return }
+        let ids = mapGameModel.battleCharacterCopyIds
         root.characterRoot.valueGameControllable.removeBattleCharacterCopies(ids)
     }
 

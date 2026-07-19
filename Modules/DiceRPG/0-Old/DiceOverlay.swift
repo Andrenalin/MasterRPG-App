@@ -34,13 +34,6 @@ struct DiceOverlay: View {
                 diceDisplayModel.showDiceValueEditor <=> false
             }
         }
-        .onAppear {
-            withAnimation(reduceMotion ? nil : .default) {
-                if canShowPlayer && !root.gameController.gameModel.items.isEmpty {
-                    diceDisplayModel.showPlayerDice <=> true
-                }
-            }
-        }
     }
 
     var diceLayout: any Layout {

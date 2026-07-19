@@ -5,19 +5,18 @@ import CoreRPG
 
 struct DicePlayerRoot: View {
     @Environment(DiceRootModel.self) private var root
+    @Environment(DiceDisplayModel.self) private var diceDisplayModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    @State private var showPlayerDice = true
 
     var body: some View {
         VStack(alignment: .trailing) {
             Button {
                 withAnimation(reduceMotion ? nil : .default) {
-                    showPlayerDice.toggle()
+                    diceDisplayModel.showPlayerDice.toggle()
                 }
             } label: {
                 Label {
-                    if showPlayerDice {
+                    if diceDisplayModel.showPlayerDice {
                         Text("Hide player dice", bundle: .module)
                     } else {
                         Text("Show player dice", bundle: .module)
@@ -31,10 +30,10 @@ struct DicePlayerRoot: View {
             .buttonStyle(.borderedProminent)
 
             DicePlayer(filterout: root.gameController.gameModel.focusItemIds.first ?? UUID(), alignment: .trailing)
-                .opacity(showPlayerDice ? 1 : 0)
-                .offset(x: showPlayerDice ? 0 : -200)
-                .allowsHitTesting(showPlayerDice)
-                .accessibilityHidden(!showPlayerDice)
+                .opacity(diceDisplayModel.showPlayerDice ? 1 : 0)
+                .offset(x: diceDisplayModel.showPlayerDice ? 0 : -200)
+                .allowsHitTesting(diceDisplayModel.showPlayerDice)
+                .accessibilityHidden(!diceDisplayModel.showPlayerDice)
         }
     }
 }
@@ -42,4 +41,5 @@ struct DicePlayerRoot: View {
 #Preview {
     DicePlayerRoot()
         .environment(DiceRootModel.preview)
+        .environment(DiceDisplayModel(showPlayerDice: true))
 }

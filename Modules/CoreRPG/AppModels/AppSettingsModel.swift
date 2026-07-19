@@ -10,6 +10,11 @@ public final class AppSettingsModel: Sendable {
         initSettings(from: .standard)
     }
 
+    init(defaults: UserDefaults) {
+        self.defaults = defaults
+        initSettings(from: defaults)
+    }
+
     private init(previewValues: PreviewValues) {
         self.defaults = nil
         firstLaunch = previewValues.firstLaunch
@@ -19,6 +24,8 @@ public final class AppSettingsModel: Sendable {
         masterMainTabDisplayMode = previewValues.masterMainTabDisplayMode
         playerMainTabDisplayMode = previewValues.playerMainTabDisplayMode
         showGameTableVolume = previewValues.showGameTableVolume
+        showGameDice = previewValues.showGameDice
+        showGamePlayerDice = previewValues.showGamePlayerDice
         needsValidateDatabase = previewValues.needsValidateDatabase
         useCloudKit = previewValues.useCloudKit
     }
@@ -97,6 +104,20 @@ public final class AppSettingsModel: Sendable {
         }
     }
 
+    public var showGameDice: Bool = true {
+        didSet {
+            guard oldValue != showGameDice else { return }
+            defaults?.set(showGameDice, forKey: AppSettingsModel.showGameDiceKey)
+        }
+    }
+
+    public var showGamePlayerDice: Bool = true {
+        didSet {
+            guard oldValue != showGamePlayerDice else { return }
+            defaults?.set(showGamePlayerDice, forKey: AppSettingsModel.showGamePlayerDiceKey)
+        }
+    }
+
     public var needsValidateDatabase: Bool = true {
         didSet {
             guard oldValue != needsValidateDatabase else { return }
@@ -133,6 +154,8 @@ public final class AppSettingsModel: Sendable {
         playerMainTabDisplayMode = defaults.integer(forKey: AppSettingsModel.playerMainTabDisplayModeKey)
         
         showGameTableVolume = defaults.bool(forKey: AppSettingsModel.showGameTableVolumeKey)
+        showGameDice = defaults.value(forKey: AppSettingsModel.showGameDiceKey) as? Bool ?? true
+        showGamePlayerDice = defaults.value(forKey: AppSettingsModel.showGamePlayerDiceKey) as? Bool ?? true
         needsValidateDatabase = defaults.value(forKey: AppSettingsModel.needsValidateDatabaseKey) as? Bool ?? true
 
         // shared App groups
@@ -142,12 +165,16 @@ public final class AppSettingsModel: Sendable {
     public static func previewFixture(
         firstLaunch: Bool = false,
         appColorScheme: AppColorScheme = .system,
+        showGameDice: Bool = true,
+        showGamePlayerDice: Bool = true,
         useCloudKit: Bool = false
     ) -> AppSettingsModel {
         AppSettingsModel(
             previewValues: PreviewValues(
                 firstLaunch: firstLaunch,
                 appColorScheme: appColorScheme,
+                showGameDice: showGameDice,
+                showGamePlayerDice: showGamePlayerDice,
                 useCloudKit: useCloudKit
             )
         )
@@ -161,6 +188,8 @@ public final class AppSettingsModel: Sendable {
         var masterMainTabDisplayMode = 0
         var playerMainTabDisplayMode = 0
         var showGameTableVolume = false
+        var showGameDice = true
+        var showGamePlayerDice = true
         var needsValidateDatabase = false
         var useCloudKit = false
     }
@@ -175,6 +204,8 @@ public final class AppSettingsModel: Sendable {
     private static let masterMainTabDisplayModeKey = "masterMainTabDisplayMode"
     private static let playerMainTabDisplayModeKey = "playerMainTabDisplayMode"
     private static let showGameTableVolumeKey = "showGameTableVolume"
+    private static let showGameDiceKey = "showGameDice"
+    private static let showGamePlayerDiceKey = "showGamePlayerDice"
     private static let needsValidateDatabaseKey = "needsValidate"
 
     private static let useCloudKitKey = "MasterRPGuseCloudKit"

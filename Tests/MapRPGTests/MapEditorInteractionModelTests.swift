@@ -139,6 +139,54 @@ struct MapEditorInteractionModelTests {
         #expect(emittedPin.size == .large)
     }
 
+    @Test("Master tap highlights once while long press only toggles the action menu")
+    func masterTapAndLongPressHaveIndependentActions() throws {
+        let pin = MapPinModel(id: UUID(), name: "Battle target")
+        let map = MapModel(id: UUID(), name: "Game map", mapPins: [pin])
+        let root = MapRootModel.previewFixture(models: [map])
+        let liveMap = map.copy()
+        root.gameController.setGame(item: liveMap, itemId: map.id)
+        var sentMapUpdates = 0
+        let session = MapEditorSession(
+            map: liveMap,
+            image: AKImage(),
+            photoDegrees: 0,
+            containerSize: CGSize(width: 800, height: 600),
+            configuration: MapEditorConfiguration(
+                mode: .gameMaster,
+                displayMode: .master
+            ),
+            actions: MapEditorActions(sendMapUpdates: { sentMapUpdates += 1 })
+        )
+        session.installActionRouter(MapEditorActionRouter(
+            session: session,
+            editController: root.editController,
+            mapEditController: MapEditController(editController: root.editController),
+            map: liveMap,
+            root: root
+        ))
+        let node = try #require(session.pins.pinNode(for: pin.id))
+
+        node.handleTap(context: .gameMaster)
+
+        #expect(root.gameController.gameItem(for: map.id)[MapPinId.id, pin.id].isHighlighted)
+        #expect(node.pin.isHighlighted)
+        #expect(sentMapUpdates == 1)
+        #expect(!node.isExpanded)
+
+        node.handleLongPress(context: .gameMaster)
+
+        #expect(node.isExpanded)
+        #expect(session.selection.pinId == pin.id)
+        #expect(root.gameController.gameItem(for: map.id)[MapPinId.id, pin.id].isHighlighted)
+        #expect(sentMapUpdates == 1)
+
+        node.handleLongPress(context: .gameMaster)
+        #expect(!node.isExpanded)
+        #expect(session.selection.pinId == nil)
+        #expect(sentMapUpdates == 1)
+    }
+
     @Test("A completed editor pin drag creates one working-copy undo step")
     func pinDragCanBeUndoneAndRedone() throws {
         let pin = MapPinModel(

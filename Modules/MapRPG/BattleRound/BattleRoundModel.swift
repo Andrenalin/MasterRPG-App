@@ -54,8 +54,8 @@ public struct BattleCombatant: Identifiable, Codable, Equatable, Sendable {
     /// pin and Character ids. Several pins may use the same Character template.
     public let id: UUID
     public internal(set) var pin: MapPinModel
-    public let sourceCharacterId: UUID?
-    public let gameCharacterId: UUID?
+    public internal(set) var sourceCharacterId: UUID?
+    public internal(set) var gameCharacterId: UUID?
     public internal(set) var initiative: Int?
     public let isPlayer: Bool
 
@@ -449,6 +449,30 @@ public final class BattleRoundModel: Sendable {
             return nil
         }
         return retained.gameCharacterId
+    }
+
+    @discardableResult
+    func assignCharacter(
+        combatantId: UUID,
+        sourceCharacterId: UUID,
+        gameCharacterId: UUID,
+        pin: MapPinModel
+    ) -> Bool {
+        guard let index = combatants.firstIndex(where: { $0.id == combatantId }) else {
+            return false
+        }
+        guard combatants[index].sourceCharacterId != sourceCharacterId
+                || combatants[index].gameCharacterId != gameCharacterId
+                || combatants[index].pin != pin else {
+            return false
+        }
+        combatants[index].sourceCharacterId = sourceCharacterId
+        combatants[index].gameCharacterId = gameCharacterId
+        combatants[index].pin = pin
+        if combatants[index].isPlayer {
+            retainedPlayerCombatants[pin.id] = combatants[index]
+        }
+        return true
     }
 
     func reset() {

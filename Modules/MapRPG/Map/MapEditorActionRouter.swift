@@ -169,6 +169,9 @@ final class MapEditorActionRouter {
         switch event {
         case let .tap(pin, isPointer):
             handlePinSingleTap(pinId: pin.id, isPointer: isPointer)
+        case .longPress:
+            // Menu presentation is local view state owned by MapPinViewModel.
+            break
         case let .doubleTap(pin, isPointer):
             handlePinDoubleTap(pinId: pin.id, isPointer: isPointer)
         case .beginMove:
@@ -181,9 +184,18 @@ final class MapEditorActionRouter {
     }
 
     private func handlePinSingleTap(pinId: UUID, isPointer: Bool) {
-        guard session.mapMode == .player, !isPointer else { return }
-        performPlayerMutation(pinId: pinId) {
-            root.gameController.toggleHighlightPin(itemId: session.mapId, pinId: pinId)
+        guard !isPointer else { return }
+        switch session.mapMode {
+        case .gameMaster:
+            performGameMasterMutation(pinId: pinId) {
+                root.gameController.toggleHighlightPin(itemId: session.mapId, pinId: pinId)
+            }
+        case .player:
+            performPlayerMutation(pinId: pinId) {
+                root.gameController.toggleHighlightPin(itemId: session.mapId, pinId: pinId)
+            }
+        case .edit, .viewer:
+            break
         }
     }
 

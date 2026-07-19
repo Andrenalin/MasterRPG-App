@@ -14,10 +14,6 @@ struct GameSidebarToolbarMenu: View {
 
     var body: some View {
         Menu {
-            GameTableMenuToggle()
-
-            Divider()
-
             Toggle(isOn: gameSidebarBinding) {
                 Label {
                     Text("Game Sidebar", bundle: .module)
@@ -26,35 +22,41 @@ struct GameSidebarToolbarMenu: View {
                 }
             }
 
-            if isSidebarVisible {
-                Button {
-                    withAnimation(accessibilityReduceMotion ? nil : .default) {
-                        gameScreenModel.toggleSideBarWidth()
-                    }
-                } label: {
-                    Label {
-                        Text(
-                            gameScreenModel.isLargeSideBar ? "Reduce Game Sidebar" : "Enlarge Game Sidebar",
-                            bundle: .module
-                        )
-                    } icon: {
-                        Image(
-                            systemName: gameScreenModel.isLargeSideBar
-                                ? "square.resize.down"
-                                : "square.resize.up"
-                        )
-                    }
+            Button {
+                withAnimation(accessibilityReduceMotion ? nil : .default) {
+                    gameScreenModel.toggleSideBarWidth()
                 }
-            }
-
-            Toggle(isOn: sideMenuBinding) {
+            } label: {
                 Label {
-                    Text("Side Menu", bundle: .module)
+                    Text(
+                        gameScreenModel.isLargeSideBar ? "Reduce Game Sidebar" : "Enlarge Game Sidebar",
+                        bundle: .module
+                    )
                 } icon: {
-                    Image(systemName: "sidebar.right")
+                    Image(
+                        systemName: gameScreenModel.isLargeSideBar
+                            ? "square.resize.down"
+                            : "square.resize.up"
+                    )
                 }
             }
             .disabled(!isSidebarVisible)
+
+            Divider()
+
+            GameTableMenuToggle()
+
+            if role == .master {
+                Button {
+                    scenesManager.openWindow(.battleRound)
+                } label: {
+                    Label {
+                        Text("Battle Round", bundle: .module)
+                    } icon: {
+                        Image(systemName: "shield.lefthalf.filled")
+                    }
+                }
+            }
         } label: {
             Label {
                 Text("Game Sidebar", bundle: .module)
@@ -89,18 +91,6 @@ struct GameSidebarToolbarMenu: View {
             get: { isSidebarVisible },
             set: { isVisible in
                 setGameSidebarVisible(isVisible)
-            }
-        )
-    }
-
-    private var sideMenuBinding: Binding<Bool> {
-        Binding(
-            get: { gameScreenModel.isSideMenuVisible },
-            set: { isVisible in
-                guard isSidebarVisible || isVisible else { return }
-                withAnimation(accessibilityReduceMotion ? nil : .default) {
-                    gameScreenModel.isSideMenuVisible = isVisible
-                }
             }
         )
     }

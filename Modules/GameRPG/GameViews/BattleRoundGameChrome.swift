@@ -56,20 +56,6 @@ struct BattleRoundGameChrome: View {
     }
 }
 
-struct BattleRoundStatusButton: View {
-    let model: BattleRoundModel
-    let action: @MainActor () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            BattleRoundCounterView(model: model, style: .compact)
-        }
-        .buttonStyle(.plain)
-        .help(Text("Open Battle Round", bundle: .module))
-        .accessibilityHint(Text("Opens the battle window", bundle: .module))
-    }
-}
-
 private struct BattleRoundAnnouncementID: Equatable {
     let isRunning: Bool
     let round: Int

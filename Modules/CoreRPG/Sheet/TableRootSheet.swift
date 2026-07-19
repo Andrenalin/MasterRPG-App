@@ -3,19 +3,28 @@
 import SwiftUI
 
 public struct TableRootSheet: View {
-    public init(root: ItemRootController, itemId: UUID, module: NetworkModules, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) {
+    public init(
+        root: ItemRootController,
+        itemId: UUID,
+        module: NetworkModules,
+        configuration: ViewerConfiguration,
+        searchContext: SheetSearchContext? = nil,
+        dismissAction: (() -> Void)? = nil
+    ) {
         guard let rootManager = root.rootManager else {
             preconditionFailure("TableRootSheet requires ItemRootController.rootManager to be set before presentation.")
         }
 
         self.root = root
         self.configuration = configuration
+        self.searchContext = searchContext
         self.dismissAction = dismissAction
         self._sheetRootModel = State(wrappedValue: SheetRootModel(rootManager: rootManager, linkControllable: root.linkControllable, sheetControllable: root.sheetControllable, itemId: itemId, isEditor: false))
     }
         
     let root: ItemRootController
     let configuration: ViewerConfiguration
+    let searchContext: SheetSearchContext?
     let dismissAction: (() -> Void)?
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
@@ -40,6 +49,12 @@ public struct TableRootSheet: View {
                 toolbarContent
             }
             .navigationTitle(Text(verbatim: sheetRootModel.sheetModel.name))
+            .onAppear {
+                searchContext?.attachResults(sheetRootModel)
+            }
+            .onDisappear {
+                searchContext?.detachResults(sheetRootModel)
+            }
     }
 }
 

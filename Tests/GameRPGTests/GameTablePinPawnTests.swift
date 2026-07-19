@@ -95,7 +95,7 @@ struct GameTablePinPawnTests {
         fixture.game.registerPinMenuAttachment(attachment)
 
         // When
-        fixture.game.pinTapped(pinId: pin.id)
+        fixture.game.pinLongPressed(pinId: pin.id)
 
         // Then
         let expectedPosition = SIMD3<Float>(
@@ -171,14 +171,15 @@ struct GameTablePinPawnTests {
         #expect(secondSentPin.isZoom)
     }
 
-    @Test("Game-master double tap and every menu mutation broadcast map state")
+    @Test("Game-master tap highlights while long press and menu mutations stay independent")
     func gameMasterMutationsBroadcastMapState() async throws {
         // Given
         let pin = MapPinModel(id: PinPawnTestID.gameMasterPin, name: "Ogre")
         let fixture = try await makeFixture(pin: pin, isGameMaster: true)
-        fixture.game.pinTapped(pinId: pin.id)
+        fixture.game.pinLongPressed(pinId: pin.id)
 
         // When
+        fixture.game.pinTapped(pinId: pin.id)
         fixture.game.pinDoubleTapped(pinId: pin.id)
         fixture.game.toggleSelectedPinDead()
         fixture.game.toggleSelectedPinVisibility()
@@ -189,9 +190,10 @@ struct GameTablePinPawnTests {
         let updatedPin = try #require(fixture.liveMap.mapPins.first { $0.id == pin.id })
         #expect(!updatedPin.isZoom)
         #expect(updatedPin.isDead)
+        #expect(updatedPin.isHighlighted)
         #expect(!updatedPin.isShown)
         #expect(updatedPin.size == .large)
-        #expect(fixture.networkSpy.calls.count == 5)
+        #expect(fixture.networkSpy.calls.count == 6)
         #expect(fixture.networkSpy.calls.allSatisfy { $0.action == .mapState })
         #expect(fixture.networkSpy.calls.allSatisfy { $0.data.id == fixture.liveMap.id })
         #expect(fixture.networkSpy.calls.allSatisfy { $0.data.type == .map })

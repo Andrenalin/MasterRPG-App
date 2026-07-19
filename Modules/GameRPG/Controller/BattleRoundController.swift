@@ -163,6 +163,21 @@ extension GameRoot {
         return true
     }
 
+    @discardableResult
+    func assignBattleCharacter(combatantId: UUID, characterId: UUID) -> Bool {
+        guard gameModel.gameConfig.isMaster,
+              let mapId = battleRoundModel.mapId,
+              mapRoot.mapGameControllable.assignBattleCharacter(
+                  itemId: mapId,
+                  combatantId: combatantId,
+                  characterId: characterId
+              ) else {
+            return false
+        }
+        broadcastBattleRound(mapId: mapId, includeMapState: true)
+        return true
+    }
+
     /// Associates a normal game dice message with the active battle row. A
     /// player roll resolves through that player's map pin; a master roll is
     /// assigned to the active attacker unless the battle UI explicitly records

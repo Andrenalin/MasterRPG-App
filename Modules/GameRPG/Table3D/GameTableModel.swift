@@ -436,26 +436,37 @@ final class GameTableModel: Sendable {
         }
     }
 
-    /// A game-master tap opens the local action menu. A player tap toggles the
-    /// pin's shared highlight state and asks the master to authorize it.
+    /// A tap toggles the shared highlight for both roles. On the master this
+    /// immediately feeds the active battle row's defender set and broadcasts
+    /// the authoritative map state; a player asks the master to authorize the
+    /// same pin mutation through the existing `.mapPin` route.
     func pinTapped(pinId: UUID) {
         guard let mapId = currentMapId,
               let mapModel = currentMapModel(),
               pinId != mapModel.pointer.id,
               setup.pinPawns.contains(where: { $0.pinId == pinId }) else { return }
-        if isGameMaster {
-            if selectedPinId == pinId {
-                clearPinSelection()
-            } else {
-                selectedPinId = pinId
-                updateSelectedPinState(mapModel: mapModel)
-            }
-            return
-        }
-
         guard mapRoot.mapGameControllable.toggleHighlightPin(itemId: mapId, pinId: pinId) else { return }
         syncPawnsWithMapPins()
-        sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
+        if isGameMaster {
+            broadcastMapState(for: mapId)
+        } else {
+            sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
+        }
+    }
+
+    /// The game-master action menu is local presentation state and therefore
+    /// belongs to a long press rather than competing with battle highlighting.
+    func pinLongPressed(pinId: UUID) {
+        guard isGameMaster,
+              let mapModel = currentMapModel(),
+              pinId != mapModel.pointer.id,
+              setup.pinPawns.contains(where: { $0.pinId == pinId }) else { return }
+        if selectedPinId == pinId {
+            clearPinSelection()
+        } else {
+            selectedPinId = pinId
+            updateSelectedPinState(mapModel: mapModel)
+        }
     }
 
     /// Double tap toggles shared zoom for both roles.

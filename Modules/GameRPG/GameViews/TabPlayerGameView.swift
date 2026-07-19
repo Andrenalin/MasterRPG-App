@@ -14,7 +14,12 @@ struct TabPlayerGameView: View {
         if root.gameModel.gameType != .observer {
             NavigationStack {
                 if let characterId = root.gameModel.selectedCharacter {
-                    root.characterRoot.viewController.gameView(root: root.characterRoot, select: characterId)
+                    root.characterRoot.viewController.gameView(
+                        root: root.characterRoot,
+                        select: characterId,
+                        searchContext: gameSearchContext,
+                        addsSearchable: addsNestedSearchable
+                    )
                 }
             }
             .frame(
@@ -50,6 +55,22 @@ struct TabPlayerGameView: View {
                 gameScreenModel.updateInlineMainOverlayWidth(width)
             }
         }
+    }
+
+    private var gameSearchContext: SheetSearchContext? {
+#if os(iOS) || os(macOS)
+        gameScreenModel.searchContext
+#else
+        nil
+#endif
+    }
+
+    private var addsNestedSearchable: Bool {
+#if os(iOS) || os(macOS)
+        false
+#else
+        true
+#endif
     }
 }
 

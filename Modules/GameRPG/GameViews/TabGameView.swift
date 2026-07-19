@@ -13,7 +13,12 @@ struct TabGameView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
-        root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
+        root.adventureRoot.viewController.gameView(
+            root: root.adventureRoot,
+            focusedIds: [adventureId],
+            searchContext: gameSearchContext,
+            addsSearchable: addsNestedSearchable
+        )
             .gameOverlayTabBarView(value: NetworkModules.game)
             .frame(
                 maxWidth: gameScreenModel.sideBarWidth,
@@ -47,6 +52,22 @@ struct TabGameView: View {
             } action: { width in
                 gameScreenModel.updateInlineMainOverlayWidth(width)
             }
+    }
+
+    private var gameSearchContext: SheetSearchContext? {
+#if os(iOS) || os(macOS)
+        gameScreenModel.searchContext
+#else
+        nil
+#endif
+    }
+
+    private var addsNestedSearchable: Bool {
+#if os(iOS) || os(macOS)
+        false
+#else
+        true
+#endif
     }
 }
 

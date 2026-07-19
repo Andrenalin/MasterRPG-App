@@ -10,7 +10,7 @@ import Testing
 @MainActor
 @Suite("Battle round map controller")
 struct BattleRoundControllerTests {
-    @Test("Battle seeds players and only the last activated room pins using independent character copies")
+    @Test("Battle reuses player identity and copies only last-room monsters into game memory")
     func seedsLastRoomAndCopiesCharacters() async throws {
         // Given
         let root = try await MockRoot.importTestData()
@@ -82,16 +82,25 @@ struct BattleRoundControllerTests {
         #expect(model.roundCounter == 0)
         #expect(Set(model.combatants.map(\.pinId)) == Set([playerPin.id, roomMonster.id]))
         #expect(model.combatant(pinId: outsideMonster.id) == nil)
-        for combatant in model.combatants {
-            let sourceId = try #require(combatant.sourceCharacterId)
-            let gameId = try #require(combatant.gameCharacterId)
-            #expect(gameId != sourceId)
-            let copiedCharacter = try #require(
-                root.characterRoot.valueGameControllable.battleCharacterCopy(for: gameId)
-            )
-            #expect(copiedCharacter.id == gameId)
-            #expect(copiedCharacter.name == combatant.name)
-        }
+        let playerCombatant = try #require(model.combatant(pinId: playerPin.id))
+        #expect(playerCombatant.sourceCharacterId == playerCharacterId)
+        #expect(playerCombatant.gameCharacterId == playerCharacterId)
+        #expect(
+            root.characterRoot.valueGameControllable.battleCharacterCopy(
+                for: playerCharacterId
+            ) == nil
+        )
+
+        let monsterCombatant = try #require(model.combatant(pinId: roomMonster.id))
+        let monsterGameId = try #require(monsterCombatant.gameCharacterId)
+        #expect(monsterCombatant.sourceCharacterId == monsterCharacterId)
+        #expect(monsterGameId != monsterCharacterId)
+        let copiedCharacter = try #require(
+            root.characterRoot.valueGameControllable.battleCharacterCopy(for: monsterGameId)
+        )
+        #expect(copiedCharacter.id == monsterGameId)
+        #expect(copiedCharacter.name == monsterCombatant.name)
+        #expect(sut.gameItem(for: mapId)[MapPinId.id, roomMonster.id].characterId == monsterGameId)
     }
 
     @Test("Active attacker is authoritative and highlights synchronize defenders, death, and network state")
@@ -187,8 +196,8 @@ struct BattleRoundControllerTests {
         #expect(BattleRoundNetworkState.decodeData(ended.data)?.isRunning == false)
     }
 
-    @Test("Repeated battles retain the player copy and replace distinct monster copies")
-    func cleansUpAndRefreshesRuntimeCharacters() async throws {
+    @Test("Repeated battles reuse player identity and game-memory monster copies")
+    func reusesRuntimeCharactersUntilGameReset() async throws {
         // Given
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
@@ -247,7 +256,8 @@ struct BattleRoundControllerTests {
         // When: two pins reuse one monster template in the first battle.
         #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
         let firstPlayer = try #require(sut.battleRoundModel.combatant(pinId: playerPin.id))
-        let firstPlayerRuntimeId = try #require(firstPlayer.gameCharacterId)
+        let firstPlayerGameId = try #require(firstPlayer.gameCharacterId)
+        #expect(firstPlayerGameId == playerCharacterId)
         #expect(sut.setBattleInitiative(
             itemId: mapId,
             combatantId: firstPlayer.id,
@@ -268,17 +278,13 @@ struct BattleRoundControllerTests {
             root.characterRoot.valueGameControllable.battleCharacterCopy(for: $0) != nil
         })
 
-        // When: ending and reopening the encounter rebuilds monsters.
+        // When: ending and reopening the encounter keeps game-memory tokens.
         #expect(sut.endBattle(itemId: mapId))
 
-        // Then: player state remains available, while old monster copies are released.
-        #expect(
-            root.characterRoot.valueGameControllable.battleCharacterCopy(
-                for: firstPlayerRuntimeId
-            ) != nil
-        )
+        // Then: monster copies remain valid because the live game-map pins now
+        // reference them. Source database Characters remain untouched.
         #expect(firstMonsterRuntimeIds.allSatisfy {
-            root.characterRoot.valueGameControllable.battleCharacterCopy(for: $0) == nil
+            root.characterRoot.valueGameControllable.battleCharacterCopy(for: $0) != nil
         })
 
         // When
@@ -288,7 +294,7 @@ struct BattleRoundControllerTests {
         let retainedPlayer = try #require(
             sut.battleRoundModel.combatant(pinId: playerPin.id)
         )
-        #expect(retainedPlayer.gameCharacterId == firstPlayerRuntimeId)
+        #expect(retainedPlayer.gameCharacterId == firstPlayerGameId)
         #expect(retainedPlayer.initiative == 17)
         let secondMonsterRuntimeIds = Set(
             sut.battleRoundModel.combatants
@@ -296,25 +302,91 @@ struct BattleRoundControllerTests {
                 .compactMap(\.gameCharacterId)
         )
         #expect(secondMonsterRuntimeIds.count == 2)
-        #expect(secondMonsterRuntimeIds.isDisjoint(with: firstMonsterRuntimeIds))
+        #expect(secondMonsterRuntimeIds == firstMonsterRuntimeIds)
         #expect(root.characterRoot.gameController.gameModel.items == initialCharacterItems)
         #expect(root.characterRoot.gameController.gameModel.currentItemId == initialCharacterId)
 
         // When: the game session resets rather than merely closing a battle.
         sut.resetBattleRound()
 
-        // Then: the retained player copy and current monster copies are all
-        // released, without disturbing the presented Character order.
+        // Then: only runtime monster copies are released. The player's
+        // existing game-memory Character keeps its original identity.
         #expect(
             root.characterRoot.valueGameControllable.battleCharacterCopy(
-                for: firstPlayerRuntimeId
-            ) == nil
+                for: firstPlayerGameId
+            )?.id == playerCharacterId
         )
         #expect(secondMonsterRuntimeIds.allSatisfy {
             root.characterRoot.valueGameControllable.battleCharacterCopy(for: $0) == nil
         })
         #expect(root.characterRoot.gameController.gameModel.items == initialCharacterItems)
         #expect(root.characterRoot.gameController.gameModel.currentItemId == initialCharacterId)
+    }
+
+    @Test("Assigning an empty battle token creates one memory-only Character and reuses it")
+    func assignsCharacterToEmptyCombatant() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let sourceCharacterId = UUID()
+        let source = ValueModel(
+            id: sourceCharacterId,
+            name: "Unassigned Goblin",
+            description: "Persistent template"
+        )
+        root.characterRoot.itemController.replace(model: source, isInsert: true)
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Room",
+            content: "",
+            coordinates: square(x: 0),
+            focused: true
+        )
+        let pin = MapPinModel(
+            id: UUID(),
+            name: "Unknown creature",
+            location: CGPoint(x: 40, y: 40)
+        )
+        let map = MapModel(
+            id: mapId,
+            name: "Dungeon",
+            entries: [room],
+            mapPins: [pin]
+        )
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        let combatant = try #require(sut.battleRoundModel.combatant(pinId: pin.id))
+        #expect(combatant.gameCharacterId == nil)
+
+        #expect(sut.assignBattleCharacter(
+            itemId: mapId,
+            combatantId: combatant.id,
+            characterId: sourceCharacterId
+        ))
+
+        let assigned = try #require(sut.battleRoundModel.combatant(id: combatant.id))
+        let runtimeId = try #require(assigned.gameCharacterId)
+        #expect(runtimeId != sourceCharacterId)
+        #expect(assigned.sourceCharacterId == sourceCharacterId)
+        #expect(sut.gameItem(for: mapId)[MapPinId.id, pin.id].characterId == runtimeId)
+        let runtimeCharacter = try #require(
+            root.characterRoot.valueGameControllable.battleCharacterCopy(for: runtimeId)
+        )
+        #expect(runtimeCharacter.name == source.name)
+        #expect(
+            root.characterRoot.itemController.itemSync(for: sourceCharacterId)?.id
+                == sourceCharacterId
+        )
+
+        // A second selection cannot fork an already-associated non-player.
+        #expect(!sut.assignBattleCharacter(
+            itemId: mapId,
+            combatantId: combatant.id,
+            characterId: UUID()
+        ))
+        #expect(sut.battleRoundModel.combatant(id: combatant.id)?.gameCharacterId == runtimeId)
     }
 
     private func square(x: CGFloat) -> [CGPoint] {
