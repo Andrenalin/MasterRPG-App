@@ -15,64 +15,28 @@ import UIKit
 private typealias GameTablePlatformColor = UIColor
 #endif
 
-/// A plain RealityKit board for camera-based table views. The visionOS board
+/// The map surface used by camera-based table views. The visionOS equivalent
 /// remains an `EntityEquipment` so TabletopKit can own its placement there.
 @MainActor
 final class Board {
     let entity: Entity
 
     private let imagePlane: ModelEntity
-    private let borderPlane: ModelEntity
     private let mapSize = MapTableProjection.mapSize
-    private let boxHeight: Float = 0.02
 
     init() {
         let boardEntity = Entity()
-        boardEntity.name = "MapBoard"
-
-        var boardMaterial = PhysicallyBasedMaterial()
-        boardMaterial.baseColor = .init(
-            tint: GameTablePlatformColor(
-                red: 0.4,
-                green: 0.3,
-                blue: 0.2,
-                alpha: 1
-            )
-        )
-        let boardModel = ModelEntity(
-            mesh: .generateBox(
-                width: GameMetrics.boardEdge,
-                height: boxHeight,
-                depth: GameMetrics.boardEdge
-            ),
-            materials: [boardMaterial]
-        )
-        boardEntity.addChild(boardModel)
-
-        let border = ModelEntity(
-            mesh: .generatePlane(width: mapSize, depth: mapSize),
-            materials: [SimpleMaterial(color: .black, isMetallic: false)]
-        )
-        border.name = "MapBorderPlane"
-        border.position.y = boxHeight / 2 + 0.0005
-        boardEntity.addChild(border)
-        borderPlane = border
+        boardEntity.name = "MapSurface"
 
         var mapMaterial = UnlitMaterial()
-        mapMaterial.color = .init(
-            tint: GameTablePlatformColor(
-                red: 0.3,
-                green: 0.6,
-                blue: 0.3,
-                alpha: 1
-            )
-        )
+        mapMaterial.color = .init(tint: .white)
         let plane = ModelEntity(
             mesh: .generatePlane(width: mapSize, depth: mapSize),
             materials: [mapMaterial]
         )
         plane.name = "MapImagePlane"
-        plane.position.y = boxHeight / 2 + 0.001
+        plane.position.y = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
+        plane.isEnabled = false
         boardEntity.addChild(plane)
         imagePlane = plane
 
@@ -108,7 +72,6 @@ final class Board {
             planeWidth = mapSize * Float(aspectRatio)
         }
         imagePlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
-        borderPlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
 
         guard let compositeImage = GameTableTextureRenderer.render(
             image: image,
@@ -126,28 +89,19 @@ final class Board {
             var material = UnlitMaterial()
             material.color = .init(texture: .init(texture))
             imagePlane.model?.materials = [material]
+            imagePlane.isEnabled = true
         } catch {
             var fallbackMaterial = UnlitMaterial()
             fallbackMaterial.color = .init(tint: .gray)
             imagePlane.model?.materials = [fallbackMaterial]
+            imagePlane.isEnabled = true
         }
 
-        if let displayConfig {
-            borderPlane.model?.materials = [
-                SimpleMaterial(
-                    color: GameTablePlatformColor(displayConfig.color),
-                    isMetallic: false
-                )
-            ]
-        }
     }
 
     /// Clears stale texture state when no live map photo is available.
     func clearMap() {
-        imagePlane.model?.mesh = .generatePlane(width: mapSize, depth: mapSize)
-        var material = UnlitMaterial()
-        material.color = .init(tint: .gray)
-        imagePlane.model?.materials = [material]
+        imagePlane.isEnabled = false
     }
 }
 

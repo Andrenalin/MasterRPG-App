@@ -10,8 +10,8 @@ import os.log
 enum GameMetrics {
     static let tableEdge: Float = 0.7
     static let tableThickness: Float = 0.0146
+    static let mapSurfaceClearance: Float = 0.0005
     static let playerAreaDistanceFromCenter: Float = 0.29
-    static let boardEdge: Float = 0.4
     static let smallHeight: Float = 0.001
     static let boardHeight: Float = 0.055
     static let playerAreaSize = SIMD2<Float>(0.4, 0.1)
@@ -164,7 +164,7 @@ extension GameTableModel {
 /// second time.
 struct MapTableProjection {
     static let mapSize: Float = GameMetrics.tableEdge - 0.1
-    static let pinHeight: Float = 0.03
+    static let pinHeight: Float = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
 
     let imageSize: CGSize
     let degrees: Double
