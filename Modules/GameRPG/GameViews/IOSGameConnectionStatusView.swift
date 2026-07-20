@@ -4,29 +4,28 @@
 import SwiftUI
 
 struct IOSGameConnectionStatusView: View {
-    let playerController: PlayerController
+    let status: GameConnectionStatusPresentation
+
+    init(status: GameConnectionStatusPresentation) {
+        self.status = status
+    }
+
+    init(
+        playerController: PlayerController,
+        sharePlayState: SharePlayConnectionState = .inactive
+    ) {
+        status = GameConnectionStatusPresentation(
+            lostMaster: playerController.gameModel.lostMaster,
+            sharePlayState: sharePlayState
+        )
+    }
 
     var body: some View {
-        Label {
-            Text(
-                playerController.gameModel.lostMaster ? "Connection Lost" : "Connected",
-                bundle: .module
-            )
-        } icon: {
-            Image(systemName: playerController.gameModel.lostMaster ? "wifi.slash" : "wifi")
-        }
-        .labelStyle(.iconOnly)
-        .foregroundStyle(playerController.gameModel.lostMaster ? .red : .teal)
-        .help(
-            Text(
-                playerController.gameModel.lostMaster ? "Connection Lost" : "Connected",
-                bundle: .module
-            )
-        )
+        GameConnectionStatusIndicatorView(status: status)
     }
 }
 
 #Preview {
-    IOSGameConnectionStatusView(playerController: .preview)
+    IOSGameConnectionStatusView(status: .sharePlayWaiting)
 }
 #endif

@@ -18,9 +18,12 @@ public extension AdventureRootModel {
     static let preview: AdventureRootModel = previewFixture()
 
     @MainActor
-    internal static func previewFixture(
-        models: [AdventureModel] = AdventureModel.previewFixtures
-    ) -> AdventureRootModel {
+    static func previewFixture() -> AdventureRootModel {
+        previewFixture(models: AdventureModel.previewFixtures)
+    }
+
+    @MainActor
+    internal static func previewFixture(models: [AdventureModel]) -> AdventureRootModel {
         let root = AdventureRootModel(tagController: .preview, audioRoot: .preview, diceRoot: .preview, generatorRoot: nil, mapRoot: .preview, pdfRoot: .preview, photoRoot: .preview, spaceRoot: .preview, tableRoot: .preview, characterRoot: .preview, weatherRoot: .preview)
         let rootManager = RootManager(adventureRoot: root, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root.mapRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root.spaceRoot, tableRoot: root.tableRoot, weatherRoot: root.weatherRoot)
         root.setUp(root: rootManager, context: nil, batchContext: nil)

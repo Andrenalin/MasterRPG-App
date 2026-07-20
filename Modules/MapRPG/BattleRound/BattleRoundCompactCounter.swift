@@ -1,0 +1,21 @@
+// @copyright André Trettin
+
+import SwiftUI
+
+struct BattleRoundCompactCounter: View {
+    let round: Int
+
+    var body: some View {
+        Label {
+            BattleRoundTitle(round: round)
+                .monospacedDigit()
+        } icon: {
+            Image(systemName: "shield.lefthalf.filled")
+        }
+        .font(.headline)
+        .foregroundStyle(.primary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.regularMaterial, in: .capsule)
+    }
+}

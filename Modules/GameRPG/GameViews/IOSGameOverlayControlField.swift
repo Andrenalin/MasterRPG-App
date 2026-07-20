@@ -17,7 +17,8 @@ struct IOSGameOverlayControlField: View {
         let presentation = GameChromeStatusPresentation(
             isBattleRunning: battleModel.isRunning,
             battleRound: battleModel.roundCounter,
-            isSharePlayActive: root.networkStore.sharePlayStore.isActive
+            lostMaster: playerController?.gameModel.lostMaster ?? false,
+            sharePlayState: root.networkStore.sharePlayStore.connectionState
         )
 
         HStack(spacing: spacing) {
@@ -32,8 +33,8 @@ struct IOSGameOverlayControlField: View {
                     .zIndex(1)
             }
 
-            if let playerController, presentation.showsConnectionStatus {
-                IOSGameConnectionStatusView(playerController: playerController)
+            if playerController != nil {
+                IOSGameConnectionStatusView(status: presentation.connectionStatus)
             }
         }
         .buttonStyle(.plain)

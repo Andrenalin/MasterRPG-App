@@ -27,20 +27,29 @@ extension GameRoot {
             calendar: GamePreviewData.calendar
         )
     ) -> GameRoot {
+        let moduleRoots = GamePreviewModuleRoots()
         let root = GameRoot(
-            adventureRoot: .preview,
-            audioRoot: .preview,
-            diceRoot: .preview,
-            mapRoot: .preview,
-            pdfRoot: .preview,
-            photoRoot: .preview,
-            spaceRoot: .preview,
-            tableRoot: .preview,
-            characterRoot: .preview,
-            weatherRoot: .preview
+            adventureRoot: moduleRoots.adventure,
+            audioRoot: moduleRoots.audio,
+            diceRoot: moduleRoots.dice,
+            mapRoot: moduleRoots.map,
+            pdfRoot: moduleRoots.pdf,
+            photoRoot: moduleRoots.photo,
+            spaceRoot: moduleRoots.space,
+            tableRoot: moduleRoots.table,
+            characterRoot: moduleRoots.character,
+            weatherRoot: moduleRoots.weather
         )
         root.gameModel.applyPreviewFixture(game: game)
         root.statisticsModel.summary = statistics
+        root.gameModel.playerController = PlayerController(
+            root: root,
+            asGameMaster: game.isMaster
+        )
+        if game.isMaster {
+            root.gameModel.masterController = MasterController(root: root, asProxy: false)
+        }
+        BattleRoundPreviewData.apply(to: root.mapRoot)
         return root
     }
 
@@ -249,12 +258,26 @@ enum GamePreviewData {
     static let masterID = identifier(0x11)
     static let playerID = identifier(0x12)
     static let secondPlayerID = identifier(0x13)
-    static let adventureID = identifier(0x21)
-    static let characterID = identifier(0x31)
+    static let adventureID = UUID(
+        uuid: (0x5F, 0x6D, 0x6D, 0x52, 0x3D, 0xDB, 0x4B, 0x20,
+               0x8D, 0x45, 0xDF, 0xB5, 0x43, 0x79, 0x94, 0x17)
+    )
+    static let characterID = UUID(
+        uuid: (0x15, 0x27, 0x14, 0x0F, 0x01, 0x01, 0x46, 0xC3,
+               0x91, 0x2E, 0xB0, 0x2F, 0xE0, 0xFF, 0x76, 0x96)
+    )
     static let secondCharacterID = identifier(0x32)
-    static let mapID = identifier(0x41)
-    static let hiddenMapID = identifier(0x42)
-    static let photoID = identifier(0x51)
+    static let mapID = UUID(
+        uuid: (0x50, 0xDF, 0xDB, 0x6F, 0xE8, 0xB1, 0x41, 0xA4,
+               0xA4, 0x09, 0x91, 0x1D, 0x88, 0x81, 0x19, 0xE8)
+    )
+    static let hiddenMapID = UUID(
+        uuid: (0xB1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
+    )
+    static let photoID = UUID(
+        uuid: (0x12, 0x97, 0x55, 0x03, 0xCC, 0x29, 0x48, 0x37,
+               0x80, 0x18, 0xEF, 0xF7, 0x74, 0xE9, 0x75, 0x95)
+    )
     static let searchItemID = identifier(0x61)
     static let searchEntryID = identifier(0x62)
     static let secondSearchItemID = identifier(0x63)
@@ -262,5 +285,45 @@ enum GamePreviewData {
 
     private static func identifier(_ finalByte: UInt8) -> UUID {
         UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, finalByte))
+    }
+}
+
+@MainActor
+private struct GamePreviewModuleRoots {
+    let adventure: AdventureRootModel
+    let audio: AudioRootModel
+    let dice: DiceRootModel
+    let map: MapRootModel
+    let pdf: PdfRootModel
+    let photo: PhotoRootModel
+    let space: SpaceRootModel
+    let table: TableRootModel
+    let character: CharacterRootModel
+    let weather: WeatherRootModel
+
+    init() {
+        let adventure = AdventureRootModel.previewFixture()
+        guard let rootManager = adventure.rootManager,
+              let audio = rootManager.audioRoot as? AudioRootModel,
+              let dice = rootManager.diceRoot as? DiceRootModel,
+              let map = rootManager.mapRoot as? MapRootModel,
+              let pdf = rootManager.pdfRoot as? PdfRootModel,
+              let photo = rootManager.photoRoot as? PhotoRootModel,
+              let space = rootManager.spaceRoot as? SpaceRootModel,
+              let table = rootManager.tableRoot as? TableRootModel,
+              let character = rootManager.characterRoot as? CharacterRootModel,
+              let weather = rootManager.weatherRoot as? WeatherRootModel else {
+            preconditionFailure("Adventure preview must provide the complete module root graph")
+        }
+        self.adventure = adventure
+        self.audio = audio
+        self.dice = dice
+        self.map = map
+        self.pdf = pdf
+        self.photo = photo
+        self.space = space
+        self.table = table
+        self.character = character
+        self.weather = weather
     }
 }
