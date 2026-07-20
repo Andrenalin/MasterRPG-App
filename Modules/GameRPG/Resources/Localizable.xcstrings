@@ -1671,6 +1671,12 @@
             "state" : "translated",
             "value" : "Spielleiter fehlt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบเกมมาสเตอร์"
+          }
         }
       }
     },
@@ -1751,7 +1757,14 @@
       }
     },
     "Game View Menu" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เมนูมุมมองเกม"
+          }
+        }
+      }
     },
     "GameMaster" : {
       "localizations" : {
@@ -1790,6 +1803,12 @@
             "state" : "translated",
             "value" : "Gruppieren nach"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "จัดกลุ่มตาม"
+          }
         }
       }
     },
@@ -1810,7 +1829,14 @@
 
     },
     "Hidden, Dead, Not Highlighted" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อน, ตาย, ไม่ถูกเน้น"
+          }
+        }
+      }
     },
     "Hide All Rooms" : {
 
@@ -1850,7 +1876,14 @@
       }
     },
     "Hide Pin" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อนหมุด"
+          }
+        }
+      }
     },
     "Hide Pointer" : {
 
@@ -1888,7 +1921,14 @@
       }
     },
     "Hide Table Volume" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อนระดับเสียงของโต๊ะ"
+          }
+        }
+      }
     },
     "Hour" : {
       "comment" : "X-axis label for the game statistics schedule chart.",
@@ -2073,6 +2113,12 @@
             "state" : "translated",
             "value" : "Kartenmarker %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หมุดแผนที่ %@"
+          }
         }
       }
     },
@@ -2131,7 +2177,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "บันทึกข้อความ"
+            "value" : "ล็อกข้อความ"
           }
         }
       }
@@ -2152,6 +2198,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nachrichten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อความ"
           }
         }
       }
@@ -2208,6 +2260,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Weitere Einblicke"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อมูลเชิงลึกเพิ่มเติม"
           }
         }
       }
@@ -2328,7 +2386,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "สังเกตการณ์เกมที่เปิดให้บริการในเครือข่ายท้องถิ่น หรือเชื่อมต่อเป็นตัวกลางเพื่อขยายผู้เล่นไปยังหน้าจอที่สองและแหล่งเสียง"
+            "value" : "สังเกตเกมที่โฮสต์อยู่ในเครือข่ายท้องถิ่น หรือเชื่อมต่อในฐานะตัวกลางเพื่อขยายผู้เล่นไปยังหน้าจอที่สองและแหล่งเสียง"
           }
         }
       }
@@ -2401,6 +2459,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spielansicht in einem Fenster öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดมุมมองเกมในหน้าต่าง"
           }
         }
       }
@@ -2477,6 +2541,12 @@
             "state" : "translated",
             "value" : "Spielzeit nach Wochentag und Stunde"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เวลาเล่นตามวันในสัปดาห์และชั่วโมง"
+          }
         }
       }
     },
@@ -2523,7 +2593,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ตัวเลือกการแชร์สำหรับผู้เล่น"
+            "value" : "ตัวเลือกการแชร์ของผู้เล่น"
           }
         }
       }
@@ -2848,7 +2918,14 @@
       }
     },
     "Room Visibility" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การมองเห็นห้อง"
+          }
+        }
+      }
     },
     "Rooms" : {
       "localizations" : {
@@ -2859,9 +2936,6 @@
           }
         }
       }
-    },
-    "Round %lld" : {
-
     },
     "Round %lld" : {
 
@@ -2948,6 +3022,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ein Suchergebnis auswählen, um Details anzuzeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกผลการค้นหาเพื่อดูรายละเอียด"
           }
         }
       }
@@ -3048,6 +3128,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gesendet und empfangen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่งและรับ"
           }
         }
       }
@@ -3241,16 +3327,6 @@
     "Show Side Menu Buttons" : {
 
     },
-    "Show Side Menu Buttons" : {
-      "localizations" : {
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แสดงปุ่มเมนูด้านข้าง"
-          }
-        }
-      }
-    },
     "Show Sidebar" : {
       "comment" : "A label displayed in the sidebar.",
       "isCommentAutoGenerated" : true,
@@ -3338,12 +3414,6 @@
     "Sidebar shown" : {
 
     },
-    "Sidebar hidden" : {
-
-    },
-    "Sidebar shown" : {
-
-    },
     "Sign In" : {
       "comment" : "A button that signs in to Game Center.",
       "isCommentAutoGenerated" : true,
@@ -3394,6 +3464,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Beginne das Spiel als"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มเกมในฐานะ"
           }
         }
       }
@@ -3487,6 +3563,12 @@
             "state" : "translated",
             "value" : "Dieses Beispiel-Dashboard zeigt, was MasterRPG aus den Aktivitäten während deiner Spiele erkennen kann. Beispieldaten werden niemals gespeichert oder an Game Center gemeldet."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แดชบอร์ดตัวอย่างนี้แสดงสิ่งที่ MasterRPG สามารถค้นพบจากกิจกรรมระหว่างเกมของคุณ ข้อมูลตัวอย่างจะไม่ถูกบันทึกหรือรายงานไปยัง Game Center"
+          }
         }
       }
     },
@@ -3554,6 +3636,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unbekannt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่ทราบ"
           }
         }
       }
