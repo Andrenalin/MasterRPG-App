@@ -161,7 +161,7 @@ struct GameMessageCorrectnessRegressionTests {
     }
 
     @Test("SharePlay routes a player message to one controller on the master device")
-    func sharePlayPlayerMessageIsHandledOnceOnMasterDevice() async {
+    func sharePlayPlayerMessageIsHandledOnceOnMasterDevice() async throws {
         // Given
         let masterSpy = MasterNetworkStoreDelegateMock()
         let playerSpy = PlayerNetworkStoreDelegateMock()
@@ -187,10 +187,31 @@ struct GameMessageCorrectnessRegressionTests {
             gameRoster: GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "Player")]),
             data: NetworkCodableDataType(id: UUID(), type: .setting, version: 0)
         )
+        let fileMessage = GameNetworkModel(
+            counter: 2,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            masterId: playerMessage.masterId,
+            sender: playerMessage.sender,
+            audience: .group,
+            purpose: .event,
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: .photo,
+                version: 1,
+                data: Data("Player photo".utf8)
+            )
+        )
+        let fileAdmission = try #require(
+            RPGSharePlayController.playerJournalAdmissionMetadata(for: fileMessage)
+        )
+        let participantId = UUID()
 
         // When
-        await network.routeSharePlayUpdate(playerMessage, id: UUID())
-        await network.routeSharePlayFileUpdate(playerMessage)
+        await network.routeSharePlayUpdate(playerMessage, id: participantId)
+        await network.routeSharePlayUpdate(fileAdmission, id: participantId)
+        await network.routeSharePlayFileUpdate(fileMessage)
 
         // Then
         #expect(masterSpy.calledReceived == 1)
@@ -361,7 +382,12 @@ struct GameMessageCorrectnessRegressionTests {
             gameRoster: GameRosterModel(players: [
                 PlayerGameModel(id: remoteId, type: .proxy, name: "Remote proxy")
             ]),
-            data: NetworkCodableDataType(id: UUID(), type: .dice, version: 0)
+            data: NetworkCodableDataType(
+                id: UUID(),
+                type: .dice,
+                version: 0,
+                data: Data([1])
+            )
         )
 
         // When

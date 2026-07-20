@@ -466,6 +466,10 @@ extension GameNetworkModel {
     var effectiveAudience: GameMessageAudience {
         if targetId != nil { return .target }
         if isPlayerFilePresentationEvent { return .group }
+        // A data-less legacy player reveal cannot be distinguished from an
+        // asset request. Keep it master-only instead of letting the generic
+        // file-reveal inference expose it to peers.
+        if isPlayerFileReveal { return .master }
         let inferred = Self.inferredAudience(
             sender: sender,
             type: type,

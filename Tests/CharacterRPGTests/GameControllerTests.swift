@@ -55,7 +55,7 @@ struct GameControllerTests {
         #expect(root.diceRoot.diceGameControllable.gameModel.itemData[directDice] != nil)
     }
 
-    @Test("Update player accepts value payloads and rejects wrong modules")
+    @Test("Update player accepts complete value payloads and rejects invalid payloads")
     func updatePlayer() async throws {
         let root = Self.makeRoot()
         let sut = root.gameController
@@ -66,7 +66,9 @@ struct GameControllerTests {
         try await sut.updatePlayer(data: payload)
 
         let idOnlyValue = NetworkCodableDataType(id: itemId, type: .value, version: 0)
-        try await sut.updatePlayer(data: idOnlyValue)
+        await #expect(throws: ItemGameStorableError.wrongData) {
+            try await sut.updatePlayer(data: idOnlyValue)
+        }
 
         await #expect(throws: ItemGameStorableError.wrongData) {
             try await sut.updatePlayer(data: NetworkCodableDataType(id: UUID(), type: .photo, version: 0))

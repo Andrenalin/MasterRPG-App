@@ -1725,7 +1725,12 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     @Test("TableSheetView")
     func snapshotTableSheetView() async throws {
         try await assertPreviewSnapshot("TableSheetView") {
-            CoreRPG.TableSheetView(root: ItemRootController.fake, model: .fake)
+            CoreRPG.TableSheetView(
+                root: ItemRootController.fake,
+                model: .fake,
+                isEditor: false,
+                linkTypes: EmptyLinkTransferable.self
+            )
         }
     }
 

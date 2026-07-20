@@ -852,8 +852,10 @@ extension GameController: MapGameStorable {
                   root.characterRoot.valueGameControllable.battleCharacterCopy(
                       for: currentCharacterId
                   ) != nil {
-            sourceCharacterId = combatant.sourceCharacterId ?? currentCharacterId
-            gameCharacterId = currentCharacterId
+            // This token already owns a live runtime Character. Treat another
+            // selection as a no-op so it cannot advance map state or fork the
+            // association while the battle is running.
+            return false
         } else {
             let source = currentCharacterId ?? characterId
             guard let copyId = root.characterRoot.valueGameControllable

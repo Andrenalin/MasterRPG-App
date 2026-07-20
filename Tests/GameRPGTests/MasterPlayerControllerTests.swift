@@ -87,6 +87,24 @@ final class MasterPlayerControllerTests {
         rootPlayer.gameModel.reset(gameConfig: gameConfigModelPlayer, gameRoster: GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")]))
         sutPlayer = PlayerController(root: rootPlayer, asGameMaster: false)
     }
+
+    private func admitMasterJournal(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async throws {
+        let admission = try #require(
+            RPGSharePlayController.masterJournalAdmissionMetadata(for: model)
+        )
+        await networkMock.handleUpdate(admission, id: participantId)
+    }
+
+    private func deliverMasterJournal(
+        _ model: GameNetworkModel,
+        participantId: UUID
+    ) async throws {
+        try await admitMasterJournal(model, participantId: participantId)
+        await networkMock.handleFileUpdate(model)
+    }
     
     @Test func handleAudio() async throws {
         try await setUp()
@@ -694,10 +712,11 @@ final class MasterPlayerControllerTests {
         // Exercise the same awaited delegate route used by journal attachment
         // delivery, not PlayerController.handle directly.
         networkMock.model.setPlayerDelegate(sutPlayer)
-        await networkMock.handleFileUpdate(showA)
+        let masterParticipantId = UUID()
+        try await deliverMasterJournal(showA, participantId: masterParticipantId)
         #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
 
-        await networkMock.handleFileUpdate(showB)
+        try await deliverMasterJournal(showB, participantId: masterParticipantId)
         #expect(await rootPlayer.mapRoot.gameController.currentId == mapB)
         #expect(sutPlayer.gameModel.gameUpdateType == .map)
     }
@@ -706,11 +725,12 @@ final class MasterPlayerControllerTests {
         try await setUp()
         networkMock.model.setPlayerDelegate(sutPlayer)
         let modules: [NetworkModules] = [.map, .photo, .pdf, .space, .audio]
+        let masterParticipantId = UUID()
 
         for (index, module) in modules.enumerated() {
             let itemId = UUID()
             let version = index + 10
-            let metadata = rootSut.gameModel.outgoingMessage(
+            let full = rootSut.gameModel.outgoingMessage(
                 counter: index + 60,
                 type: .store,
                 subType: .store,
@@ -719,17 +739,19 @@ final class MasterPlayerControllerTests {
                     id: itemId,
                     type: module,
                     version: version,
-                    data: nil
+                    data: Data("Unavailable journal payload".utf8)
                 )
             )
+            let failureMetadata = RPGSharePlayController.journalMetadata(for: full)
             playerStoreAbstractionMock.requestData = nil
             let requestCount = playerStoreAbstractionMock.calledRequest
 
-            await networkMock.handleFileLoadFailure(metadata)
+            try await admitMasterJournal(full, participantId: masterParticipantId)
+            await networkMock.handleFileLoadFailure(failureMetadata)
 
             #expect(playerStoreAbstractionMock.calledRequest == requestCount + 1)
             let request = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)
-            #expect(request.counter == metadata.counter)
+            #expect(request.counter == failureMetadata.counter)
             #expect(request.type == .store)
             #expect(request.subType == .store)
             #expect(request.data.id == itemId)
@@ -753,13 +775,17 @@ final class MasterPlayerControllerTests {
 
         await sut.show(for: rootSut.mapRoot.gameController.share(id: mapA))
         var initialMapA = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        let baseTimestamp = Date.now.timeIntervalSince1970
+        initialMapA.timestamp = baseTimestamp
         initialMapA.counter = 41
 
         await sut.show(for: rootSut.mapRoot.gameController.share(id: mapB))
         var delayedMapB = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        delayedMapB.timestamp = baseTimestamp + 1
         delayedMapB.counter = 42
 
         var reshowMapA = initialMapA
+        reshowMapA.timestamp = baseTimestamp + 2
         reshowMapA.counter = 43
         reshowMapA.data = NetworkCodableDataType(
             id: initialMapA.data.id,
@@ -769,12 +795,14 @@ final class MasterPlayerControllerTests {
         )
 
         networkMock.model.setPlayerDelegate(sutPlayer)
-        await networkMock.handleFileUpdate(initialMapA)
+        let masterParticipantId = UUID()
+        try await deliverMasterJournal(initialMapA, participantId: masterParticipantId)
         #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
 
         // The messenger reference is the newest master intent. Map B's older
         // journal payload finishes afterward and must not restore map B.
-        await networkMock.handleUpdate(reshowMapA, id: UUID())
+        try await admitMasterJournal(delayedMapB, participantId: masterParticipantId)
+        await networkMock.handleUpdate(reshowMapA, id: masterParticipantId)
         #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
         await networkMock.handleFileUpdate(delayedMapB)
 
@@ -787,7 +815,7 @@ final class MasterPlayerControllerTests {
         staleMapStateRepair.counter = 44
         staleMapStateRepair.subType = .store
         staleMapStateRepair.targetId = rootPlayer.gameModel.gameConfig.id
-        await networkMock.handleUpdate(staleMapStateRepair, id: UUID())
+        await networkMock.handleUpdate(staleMapStateRepair, id: masterParticipantId)
 
         #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
     }
@@ -850,13 +878,13 @@ final class MasterPlayerControllerTests {
         )
 
         networkMock.model.setPlayerDelegate(sutPlayer)
-        await networkMock.handleFileUpdate(showA)
+        let masterParticipantId = UUID()
+        try await deliverMasterJournal(showA, participantId: masterParticipantId)
         #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
 
         // Messenger replies from the logical master must keep the same physical
         // GroupSession participant identity. A different identity is correctly
         // rejected as a same-logical-ID spoof by PlayerController.
-        let masterParticipantId = UUID()
         playerStoreAbstractionMock.requestData = nil
         await networkMock.handleUpdate(mapStateB, id: masterParticipantId)
         let requestB = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)

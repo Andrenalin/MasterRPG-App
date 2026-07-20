@@ -12,10 +12,12 @@ struct SheetEntryEditButton: View {
     var body: some View {
         Button {
             withAnimation {
-                rootModel.setSelected(entryModel, parent: parentModel)
-                entryModel.isEditing.toggle()
                 if isEditor {
+                    rootModel.setSelected(entryModel, parent: parentModel)
+                    entryModel.isEditing.toggle()
                     rootModel.editorModel.setEdit(source: entryModel.source)
+                } else {
+                    rootModel.toggleInlineEditing(entryModel, parent: parentModel)
                 }
             }
         } label: {
@@ -28,7 +30,7 @@ struct SheetEntryEditButton: View {
                     .accessibilityHidden(true)
                     .imageScale(.large)
                     .overlay {
-                        Image(systemName: entryModel.isEditing ? "square.and.pencil" : "pencil")
+                        Image(systemName: isEditing ? "square.and.pencil" : "pencil")
                             .imageScale(.large)
                             .foregroundStyle(.tint, .foreground, .tint)
                             .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
@@ -40,6 +42,10 @@ struct SheetEntryEditButton: View {
         }
         .borderLessTVBottonStyle()
         .keyboardShortcutAll("e", modifiers: .shift)
+    }
+
+    private var isEditing: Bool {
+        isEditor ? entryModel.isEditing : rootModel.isInlineEditing(entryModel)
     }
 }
 

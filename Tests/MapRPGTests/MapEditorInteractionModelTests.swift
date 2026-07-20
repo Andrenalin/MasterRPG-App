@@ -165,6 +165,7 @@ struct MapEditorInteractionModelTests {
             map: liveMap,
             root: root
         ))
+        session.isStreaming = true
         let node = try #require(session.pins.pinNode(for: pin.id))
 
         node.handleTap(context: .gameMaster)

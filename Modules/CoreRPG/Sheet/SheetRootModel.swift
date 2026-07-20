@@ -152,6 +152,16 @@ public final class SheetRootModel: Sendable {
     private var selectedEntryModel: SheetModel?
     private var selectedParentModel: SheetModel?
 
+    /// The row whose quick controls are expanded in a non-editor sheet.
+    ///
+    /// Keeping this at the sheet root gives inline editing one source of truth. It also
+    /// lets changing rows close the previous editor in the same state transaction.
+    private var inlineEditingEntryModel: SheetModel?
+
+    var inlineEditingEntryId: String? {
+        inlineEditingEntryModel?.id
+    }
+
     // MARK: - AI generation
 
     public private(set) var isAIModeActive: Bool = false
@@ -189,6 +199,7 @@ public final class SheetRootModel: Sendable {
         selectedEntryId = nil
         selectedEntryModel = nil
         selectedParentModel = nil
+        inlineEditingEntryModel = nil
         pendingGenerationRequest = nil
         pendingGenerationParentModel = nil
         generatedBatch = nil
@@ -317,6 +328,26 @@ public final class SheetRootModel: Sendable {
         self.selectedEntryId = nil
         self.selectedEntryModel = nil
         self.selectedParentModel = nil
+    }
+
+    /// Opens or closes the quick controls for an entry in a viewer sheet.
+    /// Only one entry can be edited at a time.
+    func toggleInlineEditing(_ entryModel: SheetModel, parent: SheetModel) {
+        setSelected(entryModel, parent: parent)
+
+        if inlineEditingEntryModel === entryModel {
+            entryModel.isEditing = false
+            inlineEditingEntryModel = nil
+            return
+        }
+
+        inlineEditingEntryModel?.isEditing = false
+        entryModel.isEditing = true
+        inlineEditingEntryModel = entryModel
+    }
+
+    func isInlineEditing(_ entryModel: SheetModel) -> Bool {
+        inlineEditingEntryModel === entryModel
     }
 
     /// First non-hidden top-level entry — used to select "into" a sheet from the sidebar list.

@@ -352,11 +352,18 @@ struct MasterControllerLostPlayerTests {
         await env.master.receivedProcess(env.playerMessage, connectionId: oldConnId)
         try #require(env.root.gameModel.gameRoster.players.count == 1)
 
-        // Player reconnects on a new connectionId before the old one fires lostPlayer
-        await env.master.receivedProcess(env.playerMessage, connectionId: newConnId)
+        // The live connection owns the identity until it is retired.
+        await env.master.lostPlayer(for: oldConnId)
+
+        // Player reconnects on a new connectionId.
+        var reconnectMessage = env.playerMessage
+        reconnectMessage.messageID = UUID()
+        reconnectMessage.counter += 1
+        await env.master.receivedProcess(reconnectMessage, connectionId: newConnId)
         try #require(env.root.gameModel.gameRoster.players.count == 1)
 
-        // Old connection close event fires — must not evict the still-live player
+        // A duplicate late close event for the old connection must not evict
+        // the player that is now bound to the new connection.
         await env.master.lostPlayer(for: oldConnId)
 
         #expect(
@@ -372,7 +379,11 @@ struct MasterControllerLostPlayerTests {
         let newConnId = UUID()
 
         await env.master.receivedProcess(env.playerMessage, connectionId: oldConnId)
-        await env.master.receivedProcess(env.playerMessage, connectionId: newConnId)
+        await env.master.lostPlayer(for: oldConnId)
+        var reconnectMessage = env.playerMessage
+        reconnectMessage.messageID = UUID()
+        reconnectMessage.counter += 1
+        await env.master.receivedProcess(reconnectMessage, connectionId: newConnId)
         try #require(env.root.gameModel.gameRoster.players.count == 1)
 
         // New connection also drops — player must be removed

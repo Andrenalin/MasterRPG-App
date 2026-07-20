@@ -55,7 +55,9 @@ struct BattleRoundHeader: View {
     private var initiativeOrderBinding: Binding<BattleInitiativeOrder> {
         Binding(
             get: { initiativeOrder },
-            set: actions.setInitiativeOrder
+            set: { newOrder in
+                actions.setInitiativeOrder(newOrder)
+            }
         )
     }
 }

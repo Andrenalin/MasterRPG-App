@@ -140,4 +140,38 @@ struct SheetRootModelSelectionTests {
         #expect(rootModel.sheetModel.isSelected)
         #expect(rootModel.selectedEntryId == rootModel.sheetModel.id)
     }
+
+    @Test func inlineEditingOpensCurrentEntryAndClosesPreviousEntry() {
+        // Given
+        let (rootModel, entries) = makeRootModel(isEditor: false)
+
+        // When
+        rootModel.toggleInlineEditing(entries[0], parent: rootModel.sheetModel)
+
+        // Then
+        #expect(rootModel.isInlineEditing(entries[0]))
+        #expect(entries[0].isEditing)
+
+        // When
+        rootModel.toggleInlineEditing(entries[1], parent: rootModel.sheetModel)
+
+        // Then
+        #expect(!rootModel.isInlineEditing(entries[0]))
+        #expect(!entries[0].isEditing)
+        #expect(rootModel.isInlineEditing(entries[1]))
+        #expect(entries[1].isEditing)
+    }
+
+    @Test func tappingExpandedInlineEditorClosesIt() {
+        // Given
+        let (rootModel, entries) = makeRootModel(entryCount: 1, isEditor: false)
+        rootModel.toggleInlineEditing(entries[0], parent: rootModel.sheetModel)
+
+        // When
+        rootModel.toggleInlineEditing(entries[0], parent: rootModel.sheetModel)
+
+        // Then
+        #expect(rootModel.inlineEditingEntryId == nil)
+        #expect(!entries[0].isEditing)
+    }
 }

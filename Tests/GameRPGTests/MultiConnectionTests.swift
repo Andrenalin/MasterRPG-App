@@ -414,6 +414,46 @@ private struct MultiplayerPhotoTopology {
     func participant(for role: MultiplayerPhotoRole) throws -> MultiplayerPhotoParticipant {
         try #require(participants.first { $0.role == role })
     }
+
+    func fullPhotoResponse(
+        for request: GameNetworkModel,
+        from role: MultiplayerPhotoRole
+    ) async throws -> GameNetworkModel {
+        guard let hostRole = role.proxyHost else {
+            masterNetwork.directMasterSpy.sendResponseData = nil
+            await master.receivedProcess(request, connectionId: nil)
+            return try #require(
+                masterNetwork.directMasterSpy.sendResponseData as? GameNetworkModel
+            )
+        }
+
+        // A proxy is a private mirror and never appears in the master's
+        // topology. Its host either serves the repair locally or remaps one
+        // request upstream under the host identity, then forwards the targeted
+        // master answer back over the private proxy connection.
+        let host = try participant(for: hostRole)
+        let proxyMaster = try #require(host.controller.proxyMasterController)
+        host.network.proxyMasterSpy.sendResponseData = nil
+        host.network.directPlayerSpy.requestData = nil
+        await proxyMaster.receivedServerProxy(request, connectionId: UUID())
+
+        if let localRepair = host.network.proxyMasterSpy.sendResponseData as? GameNetworkModel {
+            return localRepair
+        }
+
+        let remappedRequest = try #require(
+            host.network.directPlayerSpy.requestData as? GameNetworkModel
+        )
+        masterNetwork.directMasterSpy.sendResponseData = nil
+        await master.receivedProcess(remappedRequest, connectionId: nil)
+        let hostRepair = try #require(
+            masterNetwork.directMasterSpy.sendResponseData as? GameNetworkModel
+        )
+        await host.controller.receivedProcess(hostRepair)
+        return try #require(
+            host.network.proxyMasterSpy.sendResponseData as? GameNetworkModel
+        )
+    }
 }
 
 // MARK: - Multi-Connection Audio Tests
@@ -985,11 +1025,15 @@ struct MultiConnectionAudioTests {
 
 // MARK: - Multi-Connection Photo Tests
 
-@Suite("Multi-player photo synchronization")
+@Suite("Multi-player photo synchronization", .serialized)
 @MainActor
 struct MultiConnectionPhotoTests {
 
-    @Test("Master sends photo to players, observers, and proxies", arguments: MultiplayerPhotoScenario.all)
+    @Test(
+        "Master sends photo to players, observers, and proxies",
+        .serialized,
+        arguments: MultiplayerPhotoScenario.all
+    )
     func masterSendsPhotoToPlayersObserversAndProxies(testCase: MultiplayerPhotoScenario) async throws {
         let env = try await MultiplayerPhotoTopology.make()
         let photoId = try await env.importPhotoData()
@@ -1035,11 +1079,13 @@ struct MultiConnectionPhotoTests {
             #expect(host.network.proxyMasterSpy.calledSendResponseAll > 0)
         }
 
-        var fullDataResponses: [(role: MultiplayerPhotoRole, message: GameNetworkModel)] = []
+        var fullDataResponseCount = 0
         for role in testCase.missingRolesInTopologyOrder {
             let missingResponse = try #require(initialResponses[role])
-            await env.master.receivedProcess(missingResponse, connectionId: nil)
-            let fullData = try #require(env.masterNetwork.directMasterSpy.sendResponseData as? GameNetworkModel)
+            let fullData = try await env.fullPhotoResponse(
+                for: missingResponse,
+                from: role
+            )
             #expect(fullData.type == .reveal)
             #expect(fullData.subType == .show)
             #expect(fullData.data.id == photoId)
@@ -1048,18 +1094,20 @@ struct MultiConnectionPhotoTests {
             #expect(fullData.data.data != nil)
             let requester = try env.participant(for: role)
             #expect(fullData.targetId == requester.config.id)
-            fullDataResponses.append((role, fullData))
-        }
+            fullDataResponseCount += 1
 
-        #expect(fullDataResponses.count == testCase.missingRoles.count)
-
-        for (requestingRole, fullData) in fullDataResponses {
             // A missing participant receives the master's canonical baseline
             // as an exact repair. SharePlay may physically expose the envelope
             // to every peer, but target filtering prevents it from replaying
             // the reveal or producing duplicate acknowledgements elsewhere.
+            if role.type == .proxy {
+                let response = try await requester.receive(fullData)
+                #expect(response.subType == .ok)
+                continue
+            }
+
             for participant in env.participants {
-                if participant.role == requestingRole {
+                if participant.role == role {
                     let response = try await participant.receive(fullData)
                     #expect(response.subType == .ok)
                     await env.master.receivedProcess(response, connectionId: nil)
@@ -1069,8 +1117,12 @@ struct MultiConnectionPhotoTests {
             }
         }
 
+        #expect(fullDataResponseCount == testCase.missingRoles.count)
+
         let reports = env.masterRoot.photoRoot.gameController.gameModel.playerReport(for: photoId)
-        let expectedReports = env.participantIds + [env.masterConfig.id]
+        let expectedReports = env.participants
+            .filter { $0.role.type != .proxy }
+            .map(\.config.id) + [env.masterConfig.id]
         #expect(reports.sorted() == expectedReports.sorted())
 
         for participant in env.participants {
