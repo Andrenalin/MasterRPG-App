@@ -12,7 +12,8 @@ struct GameChromeStatusPresentationTests {
         let presentation = GameChromeStatusPresentation(
             isBattleRunning: false,
             battleRound: 7,
-            isSharePlayActive: false
+            lostMaster: false,
+            sharePlayState: .inactive
         )
 
         #expect(presentation.battleRoundIndicator == .inactive)
@@ -23,27 +24,72 @@ struct GameChromeStatusPresentationTests {
         let presentation = GameChromeStatusPresentation(
             isBattleRunning: true,
             battleRound: 1,
-            isSharePlayActive: false
+            lostMaster: false,
+            sharePlayState: .inactive
         )
 
         #expect(presentation.battleRoundIndicator == .round(1))
     }
 
-    @Test("SharePlay replaces the Wi-Fi connection indicator")
-    func sharePlayConnectionVisibility() {
-        let networkPresentation = GameChromeStatusPresentation(
+    struct ConnectionCase: Sendable, CustomTestStringConvertible {
+        let lostMaster: Bool
+        let sharePlayState: SharePlayConnectionState
+        let expected: GameConnectionStatusPresentation
+        let testDescription: String
+    }
+
+    @Test(
+        "Connection indicator represents the selected transport and state",
+        arguments: [
+            ConnectionCase(
+                lostMaster: false,
+                sharePlayState: .inactive,
+                expected: .localNetworkConnected,
+                testDescription: "local network connected"
+            ),
+            ConnectionCase(
+                lostMaster: true,
+                sharePlayState: .inactive,
+                expected: .localNetworkLost,
+                testDescription: "local network lost"
+            ),
+            ConnectionCase(
+                lostMaster: true,
+                sharePlayState: .waiting,
+                expected: .sharePlayWaiting,
+                testDescription: "SharePlay awaiting Open in"
+            ),
+            ConnectionCase(
+                lostMaster: false,
+                sharePlayState: .joined,
+                expected: .sharePlayConnected,
+                testDescription: "SharePlay connected"
+            ),
+            ConnectionCase(
+                lostMaster: true,
+                sharePlayState: .joined,
+                expected: .sharePlayLost,
+                testDescription: "SharePlay joined without the game master"
+            ),
+            ConnectionCase(
+                lostMaster: false,
+                sharePlayState: .disconnected,
+                expected: .sharePlayLost,
+                testDescription: "SharePlay invalidated"
+            )
+        ]
+    )
+    func connectionIndicator(testCase: ConnectionCase) {
+        // Given / When
+        let presentation = GameChromeStatusPresentation(
             isBattleRunning: false,
             battleRound: 0,
-            isSharePlayActive: false
-        )
-        let sharePlayPresentation = GameChromeStatusPresentation(
-            isBattleRunning: false,
-            battleRound: 0,
-            isSharePlayActive: true
+            lostMaster: testCase.lostMaster,
+            sharePlayState: testCase.sharePlayState
         )
 
-        #expect(networkPresentation.showsConnectionStatus)
-        #expect(!sharePlayPresentation.showsConnectionStatus)
+        // Then
+        #expect(presentation.connectionStatus == testCase.expected)
     }
 }
 #endif

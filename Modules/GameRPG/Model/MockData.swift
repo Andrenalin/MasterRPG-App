@@ -25,6 +25,10 @@ struct MockRootViewModifier: ViewModifier {
     @State private var appGameStateModel: AppGameStateModel
     @State private var appNavigationModel: AppNavigationModel
     @State private var diceDisplayModel = DiceDisplayModel()
+    @State private var appWindowSizeModel = AppWindowSizeModel()
+    @State private var cacheItemListModel = CacheItemListModel()
+    @State private var appSettingsModel = AppSettingsModel()
+    @State private var scenesManager = ScenesManager()
 
     init(root: GameRoot) {
         let appGameStateModel = AppGameStateModel()
@@ -49,11 +53,11 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.weatherRoot)
             .environment(diceDisplayModel)
             .environment(appGameStateModel)
-            .environment(AppWindowSizeModel())
-            .environment(CacheItemListModel())
-            .environment(AppSettingsModel())
+            .environment(appWindowSizeModel)
+            .environment(cacheItemListModel)
+            .environment(appSettingsModel)
             .environment(appNavigationModel)
-            .environment(ScenesManager())
+            .environment(scenesManager)
             .setAppSizeMode()
 #if os(macOS)
             .frame(width: 800, height: 600)

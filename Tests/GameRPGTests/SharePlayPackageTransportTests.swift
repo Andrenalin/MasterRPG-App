@@ -1288,6 +1288,32 @@ struct SharePlayPackageTransportTests {
         #expect(!configuredTwice)
     }
 
+    @Test("SharePlay selection remains visible while waiting and reconnecting")
+    func sharePlaySelectionDrivesConnectionPresentation() {
+        // Given
+        let controller = RPGSharePlayController()
+        #expect(controller.connectionState == .inactive)
+
+        // When - the game starts before the system delivers a GroupSession.
+        controller.joinGame()
+
+        // Then - the UI can show SharePlay waiting instead of a Wi-Fi status.
+        #expect(controller.connectionState == .waiting)
+
+        // When - transport resources reset while sessions() keeps listening
+        // for an automatic rejoin.
+        controller.reset()
+
+        // Then
+        #expect(controller.connectionState == .waiting)
+
+        // When
+        controller.stopJoin()
+
+        // Then
+        #expect(controller.connectionState == .inactive)
+    }
+
     @Test("events from an old SharePlay session cannot configure a replacement session")
     func oldSessionEventsCannotConfigureReplacementSession() {
         let oldSessionId = UUID()

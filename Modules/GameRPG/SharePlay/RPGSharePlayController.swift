@@ -305,6 +305,13 @@ enum SharePlaySessionTeardownEvent: Equatable, Sendable {
     case lostConnection
 }
 
+enum SharePlayConnectionState: Equatable, Sendable {
+    case inactive
+    case waiting
+    case joined
+    case disconnected
+}
+
 /// Tracks transport participants independently of in-game player identities.
 ///
 /// `Participant.id` is the address used by `GroupSessionMessenger`; it is not
@@ -602,6 +609,7 @@ final class RPGSharePlayController {
 
     var groupSession: GroupSession<RPGActivity>?
     var isActive: Bool = false
+    private(set) var connectionState: SharePlayConnectionState = .inactive
     var canActivateSharePlay: Bool = false
     var stateText: String = "Not Active"
 
@@ -1690,6 +1698,7 @@ extension RPGSharePlayController {
 
     func joinGame() {
         Logger.sharePlay.debug("Join state: \(self.printState(), privacy: .public)")
+        connectionState = .waiting
         joinTask?.cancel()
         let observerToken = sessionObserverLifecycle.start(acceptsSessions: true)
         startSessionObserver(token: observerToken)
@@ -1746,6 +1755,7 @@ extension RPGSharePlayController {
 
     func stopJoin() {
         Logger.sharePlay.debug("SharePlay: stopJoin")
+        connectionState = .inactive
         // Revoke and cancel the normal observer before creating a cleanup-only
         // replacement. An already-admitted configure await cannot commit with
         // its obsolete generation afterward.
@@ -1817,6 +1827,7 @@ extension RPGSharePlayController {
         mapRecoveryTracker.reset()
         isActive = false
         self.groupSession = groupSession
+        connectionState = .waiting
         let messenger = GroupSessionMessenger(session: groupSession)
         self.messenger = messenger
         // Bind every in-flight package stream to the messenger for this exact
@@ -1849,9 +1860,10 @@ extension RPGSharePlayController {
                 self.stateText = stateDescription
                 switch state {
                 case .waiting:
-                    break
+                    self.connectionState = .waiting
                 case .joined:
                     self.isActive = true
+                    self.connectionState = .joined
                     #if os(visionOS)
                     self.gameModel?.shareState.isSharePlayActive = true
                     #endif
@@ -1871,6 +1883,7 @@ extension RPGSharePlayController {
                         }
                     }
                 case .invalidated:
+                    self.connectionState = .disconnected
                     let teardownEvents = self.participantTracker.drainSessionTeardownEvents()
                     let teardownDelegate = self.delegate
                     let callbackCoordinator = self.sessionCallbackCoordinator

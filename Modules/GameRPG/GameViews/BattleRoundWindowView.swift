@@ -88,3 +88,7 @@ enum BattleRoundActionFactory {
         )
     }
 }
+
+#Preview(traits: .mockData) {
+    BattleRoundWindowView(root: .previewFixture())
+}

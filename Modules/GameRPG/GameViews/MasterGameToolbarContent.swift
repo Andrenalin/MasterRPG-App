@@ -56,9 +56,11 @@ struct GameToolbarContent: ToolbarContent {
             }
 
             if let playerController {
-                if !root.networkStore.sharePlayStore.isActive {
-                    PlayerConnectionStatusView(playerController: playerController)
-                }
+                let connectionStatus = GameConnectionStatusPresentation(
+                    lostMaster: playerController.gameModel.lostMaster,
+                    sharePlayState: root.networkStore.sharePlayStore.connectionState
+                )
+                PlayerConnectionStatusView(status: connectionStatus)
             }
         }
 

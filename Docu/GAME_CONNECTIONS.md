@@ -1,6 +1,6 @@
 # Game Connection And Communication Documentation
 
-Implementation audit: 2026-07-17.
+Implementation audit: 2026-07-19.
 
 This document describes how the game communication layer works in MasterRPG:
 participants, transports, counters, roster/control state, message types, replies,
@@ -12,6 +12,8 @@ For broader controller responsibilities, import/export controllers, and how
 fit into the root graph, see [Controllers](CONTROLLERS.md).
 For the completed redesign record and remaining compatibility/transport work,
 see [Game Communication Redesign](GAME_COMMUNICATION_PLAN.md).
+For the focused topology, state/identity flow, and prioritized code-review
+findings, see [Game Message Communication Flow Review](GAME_MESSAGE_COMMUNICATION_FLOW_REVIEW.md).
 
 Primary source files:
 
@@ -60,6 +62,9 @@ Every game message uses the same current in-memory envelope:
 ```swift
 GameNetworkModel(
     version: Int,
+    messageID: UUID?,
+    replyToMessageID: UUID?,
+    timestamp: TimeInterval,
     counter: Int,
     proxyCounter: Int,
     type: RPGMessageType,
@@ -68,6 +73,10 @@ GameNetworkModel(
     sender: GameSenderModel,
     masterState: GameMasterStateModel?,
     targetId: UUID?,
+    audience: GameMessageAudience,
+    purpose: GameMessagePurpose,
+    journalAdmissionOnly: Bool?,
+    journalPayloadDigest: Data?,
     data: NetworkCodableDataType
 )
 ```
@@ -99,13 +108,14 @@ The master therefore acts as:
 
 - the authoritative server for remote players
 - a local player/participant for the master's own UI
-- a proxy server for proxy clients, through `networkProxyStore.startProxyServer()`
 
 The master starts:
 
 - local network listener for players
 - SharePlay session when available
-- proxy server listener
+
+The real master does not start a proxy listener. Each normal player hosts its
+own private proxy server for that player's mirrors.
 
 ### Player
 
@@ -229,14 +239,15 @@ created it, and session reset clears incomplete receive assemblies.
 - the caller requested file-journal transport
 - a journal exists for the configured session
 - the payload contains bytes
-- the message is untargeted, or the module is audio
+- the message is untargeted, or the module is audio or weather
 
 Automatic file-journal payloads are reveal/store messages for PDF, audio, space,
 photo, and the full map/background asset. A player audio upload
-(`.update/.generic`) also opts in, and a caller can explicitly opt another full
-payload in (the selected-character upload does this). A map metadata update is
-never journaled: its `.update/.generic` envelope goes through the ordered chunked
-messenger.
+(`.update/.generic`) also opts in. Character/value messages never use the
+Journal: a player advertises the selected character ID/version first, and the
+master requests the full package only when its local version differs. A map
+metadata update is never journaled: its `.update/.generic` envelope goes through
+the ordered chunked messenger.
 
 The journal stores the bytes as the attachment and a metadata-only
 `GameNetworkModel`. There is one current journal publication slot per module.
@@ -245,8 +256,9 @@ committed before cleanup of the previous attachment starts; cleanup runs in a
 separate session-scoped task, so a slow `remove(attachment:)` cannot block the
 next map (or every later publication in that module). Attachment IDs are
 processed once per snapshot lifetime. A snapshot can retain old presentation
-slots from different modules; only its single newest map/photo/PDF/space reveal
-is loaded, selected by message counter. File delivery is awaited rather than
+slots from different modules; only its newest eligible map/photo/PDF/space/weather
+presentation is loaded using causal reply relationships and bounded
+timestamp/counter compatibility ordering. File delivery is awaited rather than
 launched as independent tasks, so an old payload or repair cannot race back over
 the current presentation. Because Apple can expose attachment metadata while
 its CloudAsset upload is still in progress, data loading uses bounded,
@@ -273,15 +285,13 @@ match it. Intent state resets with the connection. Messenger and journal handler
 verify their session before delivery so cancellation cannot publish old-session
 data.
 
-Targeted non-audio repair responses stay on the messenger so they do not replace
-a broadcast attachment while another participant is downloading it. One narrow
-exception is a full `.store/.store` photo repair: transport is chosen from the
-original targeted message, then SharePlay clears `targetId` and coalesces the
-photo ID/version. Every participant therefore imports one shared chunk stream
-without changing its current presentation. Targeted audio repairs remain
-journaled, but their metadata is converted to an untargeted `.store/.show`;
-every participant stores the audio without treating the repair as a new
-presentation.
+Targeted repairs outside audio/weather stay on a physically participant-targeted
+Messenger stream, so they do not replace a broadcast attachment while another
+participant is downloading it. Targeted audio repairs remain journaled, but
+their metadata is converted to an untargeted `.store/.show`; every participant
+stores the audio without treating the repair as a new presentation. Targeted
+weather repairs also remain journaled and retain `targetId`, so only the
+requester applies them.
 
 If adding an attachment fails, the sender falls back to messenger packages. If
 loading attachment bytes fails after metadata arrived, the metadata-only model
@@ -313,7 +323,7 @@ Session lifecycle rules:
 7. Starts the adventure game state.
 8. Creates the local player controller and real master controller.
 9. Sets state to `.started`.
-10. Starts network streaming and proxy streaming.
+10. Starts direct network streaming and SharePlay when available.
 11. Focuses dice linked from the selected adventure.
 
 ### Player Start
@@ -380,9 +390,11 @@ Compatibility limit: shipped V1 clients do not have `targetId`. They ignore the
 unknown JSON key and cannot apply logical recipient filtering. A repair sent to
 one direct local-network connection remains physically targeted for every
 version. A SharePlay or fallback broadcast carrying `targetId` is only targeted
-for current peers; a V1 peer may still process it. SharePlay photo
-`.store/.store` repairs intentionally clear the target so every version imports
-the shared cache update.
+for current peers; a V1 peer may still process it. Current targeted photo and
+other non-audio/weather repairs use a physically targeted Messenger stream when
+the originating SharePlay participant is known. Targeted weather Journal
+repairs retain `targetId`; targeted audio Journal repairs intentionally become
+untargeted cache stores.
 
 The compatibility superset preserves the envelope layout, not unknown enum raw
 values. `.photoList` uses the new action raw value `11`; a build that does not
@@ -394,6 +406,9 @@ negotiation for this subtype.
 | Field | Meaning |
 | --- | --- |
 | `version` | In-memory default/current schema is `2`; compatibility encoding writes wire version `1`. Up-mapped and round-tripped envelopes therefore commonly carry `1`. |
+| `messageID` | Stable sender-scoped identity for one logical send across retries and transport bridges. |
+| `replyToMessageID` | Identifies the master command answered by an ACK or asset request. |
+| `timestamp` | Intent time for allowed last-wins peer events; current values must be finite, positive, and not implausibly in the future. |
 | `counter` | Sender-local monotonic message id, or the original master counter copied by a request/ACK. Used by ordering, logs, and deduplication. |
 | `proxyCounter` | Reserved proxy-hop counter. Currently preserved, not incremented in traced code. |
 | `type` | High-level message kind: reveal, store, update. |
@@ -402,6 +417,10 @@ negotiation for this subtype.
 | `sender` | `GameSenderModel`: id, role (`GameType`), name, characterId. The only identity a player ever sends. |
 | `masterState` | `GameMasterStateModel`: state, adventureId/title, players, controls, features. **Only master messages carry it** — players structurally cannot change roster/controls. |
 | `targetId` | When set, only the addressed participant processes the message (data-request responses, map-state recovery). |
+| `audience` | Logical recipient class: automatic/legacy inference, master, group, or target. Protocol-defined master-only tuples cannot be widened by player input. |
+| `purpose` | Distinguishes legacy input, user events, and requests for missing asset bytes. |
+| `journalAdmissionOnly` | Marks the physically attributed Messenger control packet that authenticates a later anonymous Journal callback. |
+| `journalPayloadDigest` | SHA-256 binding between the Messenger admission and the raw Journal attachment bytes. |
 | `data` | Module item id, module type, version, optional payload bytes. |
 
 ### Local `GameConfigModel`, `GameRosterModel`, And `GameControlModel`
@@ -742,12 +761,14 @@ Player imports payload:
   -> .reveal/.ok
 ```
 
-On a local direct connection, the master sends the repair only to that physical
-connection. If no matching connection exists (for example the requester arrived
-through SharePlay), it uses the normal fan-out transport with `targetId`; other
-current player pipelines ignore it. A shipped V1 pipeline cannot enforce that
-field. Targeted non-audio SharePlay repairs use messenger packages rather than
-replacing the journal publication.
+The request retains its `GameMessageOrigin`, so a direct LAN repair returns to
+that connection and a Messenger repair returns to that physical SharePlay
+participant. A Journal callback does not reveal its publisher; that fallback
+must broadcast with `targetId`, which current unrelated player pipelines ignore.
+A shipped V1 pipeline cannot enforce that field. Targeted repairs outside
+audio/weather use physically targeted Messenger packages rather than replacing
+the journal publication. Audio becomes a shared cache store; weather retains its
+logical target in Journal metadata.
 
 ### Pattern C: Master Reveals An Item, Local File Is Missing
 
@@ -774,10 +795,9 @@ Player -> master:
 Master:
   createGameData(for: photoId)
   -> direct connection: requester-only .store/.store photo payload
-  -> SharePlay: one untargeted, coalesced .store/.store chunk stream per
-     photo ID/version
+  -> SharePlay: requester-only .store/.store Messenger stream
 
-SharePlay participants (or the direct requester):
+The SharePlay or direct requester:
   import hidden pin-photo data
   -> .store/.ok
 ```
@@ -785,9 +805,9 @@ SharePlay participants (or the direct requester):
 `requestedRepairIds` permits one photo repair request per item per connection
 lifetime and releases the ID only after a delivered repair verifies local bytes.
 The initial scan is based on photo-model ownership; a separately unavailable
-iCloud/local binary does not cause another map-pin SharePlay request. SharePlay's
-session-scoped coalescer suppresses overlapping requests from other players and
-resets when a participant joins, so a late joiner can request the same version.
+iCloud/local binary does not cause another map-pin SharePlay request. Each
+participant keeps its own bounded request guard and can request the version it
+is missing.
 
 The map background is never added to this repair list. It is embedded in the
 full map package; the first SharePlay map show publishes that package through
@@ -828,13 +848,17 @@ In direct mode, `GameNetworkController.masterReceived(...)` does this before the
 master controller handles the message:
 
 1. decode `GameNetworkModel`
-2. send the same model to all other local-network peers except the sender
-3. send the same model through SharePlay
-4. call `MasterController.received(...)`
+2. authenticate the physical connection and logical sender through
+   `MasterController.accepts(...)`
+3. infer and validate the effective audience and event shape
+4. for an admitted group event only, send it once to other LAN peers and
+   SharePlay
+5. call `MasterController.received(...)` for canonical handling
 
-This means player-origin messages can be seen by other peers immediately.
-However, `PlayerController.prepareForProcessing()` filters most player-origin
-messages. Dice and space transforms are explicit exceptions. Photo
+This means only allowlisted player group events can be seen by other peers
+immediately. ACK/failure, availability, screen, asset-request, and malformed
+messages stop at the master. Dice, map-pin, and space-transform events are
+explicit group exceptions. Photo
 `.reveal/.show` is another tightly validated exception: the authoritative photo
 matrix must say that the sender has the master's exact asset version, and the
 message must name that same version. Pre-fan-out mismatched photo messages are
@@ -851,8 +875,9 @@ Real-master broadcast sends derive `fileJournal` from the envelope: only
 file-backed `.reveal`/`.store` payloads with bytes opt in automatically. A
 targeted local-network response first tries `sendResponse(..., id:)`; on failure
 it falls back to normal transport fan-out while `targetId` preserves logical
-addressing. At the SharePlay boundary, a full photo `.store/.store` repair is the
-exception: it becomes one untargeted, coalesced group store.
+addressing. At the SharePlay boundary, targeted repairs outside audio/weather
+use a physically targeted Messenger stream. Targeted audio repairs become
+untargeted Journal cache stores; targeted weather repairs retain their target.
 
 The real master also has a local `PlayerController(asGameMaster: true)`.
 That controller calls `networkStore.setupLocal()`, which marks the direct
@@ -880,8 +905,9 @@ If validation fails, the master instead broadcasts its own full canonical photo.
 
 Player messages request SharePlay journal automatically for file-backed
 `.reveal`/`.store` payloads (PDF, audio, space, photo, map) and full
-`.update/.generic` audio uploads. `useJournal == true` can opt in another full
-payload, as used by selected-character upload. The SharePlay controller still
+`.update/.generic` audio uploads. Character/value messages never use the
+Journal; selected-character sync sends an ID/version reference and lets the
+master request the full package only on mismatch. The SharePlay controller still
 applies its own journal-availability and targeting rules. Map
 `.update/.generic` payloads contain metadata only and stay on the chunked
 messenger path.
@@ -1107,8 +1133,8 @@ photo version, allowing the master to update exact-version availability.
 ### Presentation And Map-Pin Repair
 
 That rule is for photo presentation repair (`.reveal/.show`). A map-pin cache
-repair uses `.store/.store`; SharePlay can safely broadcast and coalesce that
-response because storing it does not change the current screen.
+repair uses `.store/.store`; over SharePlay its full response stays physically
+targeted to the participant that requested it.
 
 For a proxy client, the host first tries to serve the request from its own
 photo/file state. If it cannot, it remaps the request as the host. The master's
@@ -1332,15 +1358,11 @@ background requests that full map asset.
 
 On SharePlay, both legs use the ordered chunked messenger path. The data-less
 request cannot use the journal because it contains no attachment bytes. The
-full response first selects packages while still targeted, then becomes an
-untargeted `.store/.store` so every member caches it without changing screens.
-Responses for the same photo ID/version are coalesced, so players with different
-photo subsets cause one full group transfer per unique missing photo. The cache
-resets when a participant joins.
+full response retains its logical recipient and is sent as a physically targeted
+Messenger stream, so unrelated members neither import nor acknowledge it.
 
-`pendingMapRequests`, `requestedFullMapIds`, `requestedRepairIds`, and the
-SharePlay photo-repair coalescer bound the recovery paths so bursts cannot create
-a request storm.
+`pendingMapRequests`, `requestedFullMapIds`, and `requestedRepairIds` bound the
+local recovery paths so bursts cannot create a request storm.
 
 visionOS:
 
@@ -1872,9 +1894,10 @@ Master:
   map state in that order. Map-update ordering is independent of presentation
   intent, and a newest update received before its base map is applied after the
   map arrives.
-- SharePlay has one current journal publication per module. Targeted non-audio
-  repairs use packages; full photo `.store/.store` repairs become coalesced group
-  stores on those packages; targeted audio repairs become untargeted stores.
+- SharePlay has one current journal publication per module. Targeted repairs
+  outside audio/weather use physically targeted Messenger packages. Targeted
+  audio repairs become untargeted cache stores; targeted weather repairs retain
+  their logical recipient in Journal metadata.
 - A replacement attachment is published before old-attachment cleanup, and slow
   cleanup never blocks the next publication for that module.
 - Journal metadata can arrive while its CloudAsset is still `uploadInProgress`.
@@ -1888,9 +1911,8 @@ Master:
 - Pin photos absent from both photo controllers are repaired with photo
   `.store/.store` requests after map reveal/update/state application. The
   background remains part of the full journaled map package and is never requested
-  here. Requests are deduplicated locally and SharePlay coalesces replies
-  group-wide, so members with different photo subsets cause one untargeted answer
-  per unique missing photo ID/version rather than duplicate transfers.
+  here. Requests are deduplicated locally, and SharePlay returns a physically
+  targeted Messenger repair to each requester.
 
 ## 19. Suggested Debug Checklist
 
