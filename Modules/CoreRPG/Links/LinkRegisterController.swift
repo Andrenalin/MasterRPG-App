@@ -6,7 +6,7 @@ import os.log
 
 /// Two-layer cross-module link registry: in-memory (`LinkRegisterListModel`) backed by CoreData (`LinkReferenceDataModel`).
 ///
-/// Links are keyed by `destination.itemId`. Registration happens on every item save (via `EditControllable`),
+/// Links are indexed by both `destination.itemId` and `source.itemId`. Registration happens on every item save (via `EditControllable`),
 /// on inline editor link insertion, and on import. The register is rebuilt from CoreData on `setup(context:)`.
 /// Use `linksFrom(source:)` in SheetControllers for O(1) outgoing-link lookup instead of re-parsing entry text.
 @MainActor public struct LinkRegisterController: Sendable {
@@ -18,7 +18,7 @@ import os.log
     let root: RootManager?
     @MainActor public let model: LinkRegisterListModel
 
-    /// Fetches all persisted `LinkReferenceDataModel` rows from CoreData and populates `model.items`. Call once on startup.
+    /// Fetches all persisted `LinkReferenceDataModel` rows from CoreData and populates both indexes. Call once on startup.
     @MainActor public func setup(context: NSManagedObjectContext?) {
         guard let context else { return }
         model.context = context
@@ -34,8 +34,7 @@ import os.log
                         
                         let newModel = LinkRegisterModel(name: linkReferenceModel.name ?? "", source: source, destination: destination)
                         
-                        let keyId = destination.itemId
-                        updateLink(keyId: keyId, addedModel: newModel)
+                        updateLink(addedModel: newModel)
                     }
                 } catch {
                     Logger.coreDataController.error("tagdata error \(error.localizedDescription, privacy: .public)")
@@ -55,9 +54,7 @@ public extension LinkRegisterController {
     
     /// Clears in-memory links whose destination matches `item`. Call before deletion to avoid stale references.
     @MainActor func resetUsedLink(for item: ItemRowModel) {
-        let keyId = item.itemId
-        var itemLinks = model.items[keyId, default: []]
-        itemLinks.removeAll(where: { $0.destination == item })
+        model.pendingAffectedSourceIds.formUnion(model.removeLinks(to: item))
     }
 
     /// Returns all source items that link to `link` as their destination — used to populate "used by" UI.
@@ -76,20 +73,10 @@ public extension LinkRegisterController {
         }
     }
 
-    /// Returns outgoing links from a source entry — all items this entry references. O(n items) lookup; prefer over re-parsing entry text in SheetControllers.
+    /// Returns outgoing links from a source entry — all items this entry references.
     @MainActor func linksFrom(source: ItemRowModel) -> [LinkRegisterModel] {
         guard source.entryId != nil else { return [] }
-
-        // Search through all registered links to find ones from this source
-//        var foundLinks: [LinkRegisterModel] = []
-//        for (_, links) in model.items {
-//        for link in model.items[source.itemId, default: []] {
-//            if link.source == source {
-//                foundLinks.append(link)
-//            }
-//        }
-//        }
-        return model.items[source.itemId, default: []]
+        return model.sourceItems[source.itemId, default: []].filter { $0.source == source }
     }
     
     /// Triggers `validateLinks` on every source module that has a registered link pointing to any of `items` — call on deletion or move.
@@ -108,7 +95,7 @@ public extension LinkRegisterController {
 public extension LinkRegisterController {
     /// Clears all in-memory links and deletes every persisted `LinkReferenceDataModel` row. Call from `resetData()`.
     @MainActor func resetData() async {
-        model.items = [:]
+        model.reset()
         model.pendingAffectedSourceIds = []
         guard let context = model.context else { return }
         await context.perform {
@@ -163,44 +150,38 @@ public extension LinkRegisterController {
 }
 
 public extension LinkRegisterController {
-    /// Adds links to the in-memory store and persists each to CoreData. Called by `EditControllable` on save and on import.
+    /// Adds links to both in-memory indexes and marks their source items for persistence. Called on edit save and import.
     @MainActor func register(links: [LinkRegisterModel]) {
         for link in links {
-            let keyId = link.destination.itemId
-            updateLinkSync(keyId: keyId, addedModel: link)
+            updateLinkSync(addedModel: link)
         }
     }
     
-    /// Removes links from the in-memory store and deletes the matching CoreData rows. Called by `EditControllable` on save when links are removed.
+    /// Removes links from both in-memory indexes and marks their source items for persistence.
     @MainActor func deregister(links: [LinkRegisterModel]) {
         for link in links {
-            let keyId = link.destination.itemId
-            updateLinkSync(keyId: keyId, removedModel: link)
+            updateLinkSync(removedModel: link)
         }
     }
 }
 
 private extension LinkRegisterController {
-    nonisolated func updateLink(keyId: UUID, addedModel: LinkRegisterModel) {
+    nonisolated func updateLink(addedModel: LinkRegisterModel) {
         Task { @MainActor in
-            var current = model.items[keyId, default: []]
-            current.append(addedModel)
-            model.items[keyId] = current
+            model.append(addedModel)
         }
     }
 
-    @MainActor func updateLinkSync(keyId: UUID, addedModel: LinkRegisterModel) {
-        var current = model.items[keyId, default: []]
-        current.append(addedModel)
-        model.items[keyId] = current
-        model.pendingAffectedSourceIds.insert(addedModel.source.itemId)
+    @MainActor func updateLinkSync(addedModel: LinkRegisterModel) {
+        if model.append(addedModel) {
+            model.pendingAffectedSourceIds.insert(addedModel.source.itemId)
+        }
     }
 
-    @MainActor func updateLinkSync(keyId: UUID, removedModel: LinkRegisterModel) {
-        var current = model.items[keyId, default: []]
-        current.removeAll(where: { $0.source == removedModel.source && $0.destination == removedModel.destination })
-        model.items[keyId] = current
-        model.pendingAffectedSourceIds.insert(removedModel.source.itemId)
+    @MainActor func updateLinkSync(removedModel: LinkRegisterModel) {
+        if model.remove(removedModel) {
+            model.pendingAffectedSourceIds.insert(removedModel.source.itemId)
+        }
     }
 }
 

@@ -9,6 +9,7 @@ struct LogMessageList: View {
     @State private var showAttachments = true
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var gameModel = logController.gameModel
         VStack {
             SendControlView(controls: $gameModel.gameControl.controls)

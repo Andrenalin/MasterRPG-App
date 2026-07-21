@@ -19,6 +19,7 @@ struct GameScreenLayer<Surface: View, Chrome: View>: View {
     }
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         ManagedNavigationStack {
             // The clear window-sized view is the only layout participant.
             // Both overlays receive the window proposal, but neither the map's

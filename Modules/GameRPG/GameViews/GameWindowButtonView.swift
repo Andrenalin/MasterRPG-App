@@ -13,6 +13,7 @@ struct GameWindowButtonView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         let isWindowPresented = scenesManager.getSceneState(for: sceneId).isPresentedInGameMenu
 
         Button {

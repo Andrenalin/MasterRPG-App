@@ -8,6 +8,7 @@ struct GameWindowSearchField: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var searchContext = gameScreenModel.searchContext
 
         HStack(spacing: 6) {
@@ -51,6 +52,7 @@ struct IOSGameSearchField: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var searchContext = gameScreenModel.searchContext
 
         HStack(spacing: 6) {

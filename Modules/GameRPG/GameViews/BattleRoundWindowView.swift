@@ -10,6 +10,7 @@ struct BattleRoundWindowView: View {
     @Environment(ScenesManager.self) private var scenesManager
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         if root.gameModel.gameConfig.isMaster {
             BattleRoundView(
                 model: root.battleRoundModel,

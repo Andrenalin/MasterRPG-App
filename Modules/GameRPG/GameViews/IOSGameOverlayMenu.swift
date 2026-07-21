@@ -13,6 +13,7 @@ struct IOSGameOverlayMenu: View {
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         GlassEffectContainerAll {
             if appWindowSizeModel.mode == .regular {
                 ZStack {

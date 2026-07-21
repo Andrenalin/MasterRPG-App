@@ -11,6 +11,7 @@ struct TabSecondGameView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: false)
             .frame(
                 maxWidth: gameScreenModel.sideBarWidth,

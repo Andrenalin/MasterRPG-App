@@ -13,6 +13,7 @@ struct GameSidebarToolbarMenu: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Menu {
             Toggle(isOn: gameSidebarBinding) {
                 Label {

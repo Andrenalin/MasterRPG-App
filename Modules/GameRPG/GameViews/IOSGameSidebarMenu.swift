@@ -13,6 +13,7 @@ struct IOSGameSidebarMenu: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         let glass: Glass = if isSidebarVisible {
             .regular.tint(NetworkModules.game.tint.opacity(0.7)).interactive()
         } else {

@@ -11,6 +11,7 @@ struct OnlyPlayerGameView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         if root.gameModel.gameType != .observer {
             root.characterRoot.viewController.gameView(
                 root: root.characterRoot,

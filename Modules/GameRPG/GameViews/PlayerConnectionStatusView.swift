@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 #if os(macOS)
 import SwiftUI
 
@@ -21,6 +22,7 @@ struct PlayerConnectionStatusView: View {
     }
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         GameConnectionStatusIndicatorView(status: status)
     }
 }

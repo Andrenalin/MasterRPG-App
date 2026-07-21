@@ -7,6 +7,7 @@ struct SharingOptionsSection: View {
     @Binding var features: GameFeatureModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         DisclosureGroupTV {
             Toggle(isOn: $features.diceMaster) {
                 Label {

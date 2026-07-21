@@ -13,6 +13,7 @@ struct TabGameView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         root.adventureRoot.viewController.gameView(
             root: root.adventureRoot,
             focusedIds: [adventureId],

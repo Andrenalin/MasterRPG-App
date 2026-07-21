@@ -24,6 +24,7 @@ struct GameMainTabButtonView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Button {
             withAnimation(accessibilityReduceMotion ? nil : .default) {
                 cycleDisplayMode()

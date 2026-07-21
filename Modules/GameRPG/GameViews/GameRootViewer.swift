@@ -181,6 +181,7 @@ private struct GameContentLayer<Content: View, Presentation: View>: View {
     }
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         // Keep the map/table alive behind temporary presentations without
         // allowing its intrinsic size to become the game window's size.
         Color.clear
@@ -203,6 +204,7 @@ private struct EmptyGameContent: View {
     let showsElapsedTime: Bool
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         ZStack(alignment: .center) {
             MeshAnimationView()
 

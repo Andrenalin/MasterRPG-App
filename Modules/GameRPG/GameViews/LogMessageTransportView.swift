@@ -1,11 +1,13 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct LogMessageTransportView: View {
     let transport: SharePlayTransportLog
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         HStack(spacing: 4) {
             Text("Message:", bundle: .module)
             if let journal = transport.journal {

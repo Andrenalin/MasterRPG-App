@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 #if os(iOS)
 import Foundation
 import SwiftUI
@@ -14,6 +15,7 @@ struct IOSGameElapsedTimerText: View {
     }
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Group {
             if let referenceDate {
                 Text(

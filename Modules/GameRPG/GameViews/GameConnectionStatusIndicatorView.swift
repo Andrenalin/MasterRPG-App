@@ -1,11 +1,13 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct GameConnectionStatusIndicatorView: View {
     let status: GameConnectionStatusPresentation
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Label {
             Text(title, bundle: .module)
         } icon: {

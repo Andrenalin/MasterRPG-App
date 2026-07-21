@@ -14,6 +14,7 @@ struct BattleRoundSideOverlay: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         BattleRoundView(
             model: root.battleRoundModel,
             actions: BattleRoundActionFactory.actions(for: root) {

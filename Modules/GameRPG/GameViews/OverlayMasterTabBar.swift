@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import SwiftUI
 
@@ -8,6 +9,7 @@ struct OverlayMasterTabBar: View {
     let adventureId: UUID
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         ZStack(alignment: .trailing) {
 #if os(macOS) || os(visionOS)
             OnlyGameView(root: root, adventureId: adventureId)

@@ -118,19 +118,6 @@ public extension ViewController {
         trailingViewportReservation: CGFloat = 0
     ) -> some View {
         let itemId = id ?? UUID()
-        let gameController = root.gameController
-        gameController.mapGameModel.playerPins.forEach { pin in
-            if let pinIndex = gameController.gameItem(for: itemId).mapPins.firstIndex(where: { $0.id == pin.id }) {
-                if pin.timeInterval > gameController.gameItem(for: itemId).mapPins[pinIndex].timeInterval {
-                    gameController.gameItem(for: itemId)[MapPinId.id, pin.id] = pin
-                }
-            } else {
-                var resetPin = pin
-                resetPin.location = .zero
-                resetPin.timeInterval = Date.now.timeIntervalSince1970
-                gameController.gameItem(for: itemId).mapPins.append(resetPin)
-            }
-        }
         return RootCanvasMap(
             root: root,
             itemId: itemId,

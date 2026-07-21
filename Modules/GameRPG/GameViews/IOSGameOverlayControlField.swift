@@ -13,6 +13,7 @@ struct IOSGameOverlayControlField: View {
     let spacing: CGFloat
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         let battleModel = root.mapRoot.mapGameControllable.battleRoundModel
         let presentation = GameChromeStatusPresentation(
             isBattleRunning: battleModel.isRunning,
@@ -49,6 +50,7 @@ private struct GameBattleRoundIndicatorView: View {
     let indicator: GameBattleRoundIndicator
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Group {
             switch indicator {
             case .inactive:

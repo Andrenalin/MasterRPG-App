@@ -264,12 +264,12 @@ private extension ImportControllable {
         case .merge:
             let finalItem = await itemController.merge(with: importableItem, forceMerge: forceSave)
             if let finalItem {
-                await itemController.replace(model: finalItem, isInsert: true, forceSave: forceSave)
+                await itemController.replaceImportedModel(model: finalItem, isInsert: true, forceSave: forceSave)
                 await editCtrl.repairFolder(itemId: id)
             }
 
         case .overwrite:
-            await itemController.replace(model: importableItem, isInsert: true, forceSave: forceSave)
+            await itemController.replaceImportedModel(model: importableItem, isInsert: true, forceSave: forceSave)
             await editCtrl.repairFolder(itemId: id)
 
         case .manual:

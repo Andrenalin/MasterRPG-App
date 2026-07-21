@@ -66,6 +66,18 @@ final class MapEditorSession {
         mapMode == .gameMaster && isPointing
     }
 
+    var roomHitTargetsAreEnabled: Bool {
+        guard displayMode == .master, !isPointerInteractionActive else { return false }
+        return switch mapMode {
+        case .edit:
+            editEntries.entries.isEmpty
+        case .gameMaster:
+            true
+        case .player, .viewer:
+            false
+        }
+    }
+
     var iconDisplayMode: String {
         switch displayMode {
         case .master: "rectangle.3.offgrid.fill"

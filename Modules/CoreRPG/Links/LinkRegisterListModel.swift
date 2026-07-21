@@ -48,7 +48,10 @@ public extension ItemLinkRegistable {
     func changedLinkRegisterModels(oldValue: Self) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) { ([], []) }
 }
 
-/// In-memory store for all registered cross-module links. Keyed by `destination.itemId` → all links pointing to that destination.
+/// In-memory store for all registered cross-module links.
+///
+/// `items` is keyed by `destination.itemId` for incoming/"used by" lookups, while
+/// `sourceItems` is keyed by `source.itemId` for outgoing sheet lookups.
 @MainActor
 public final class LinkRegisterListModel: Sendable {
     public init() {}
@@ -56,7 +59,10 @@ public final class LinkRegisterListModel: Sendable {
     var context: NSManagedObjectContext?
 
     /// Dictionary keyed by destination item UUID; each value is the list of `LinkRegisterModel`s pointing to that destination.
-    public var items: [UUID: [LinkRegisterModel]] = [:]
+    public private(set) var items: [UUID: [LinkRegisterModel]] = [:]
+
+    /// Dictionary keyed by source item UUID; each value is the list of links embedded by that source item.
+    public private(set) var sourceItems: [UUID: [LinkRegisterModel]] = [:]
 
     // Source item IDs whose links changed since the last savePendingLinks() call.
     // savePendingLinks() does a delete-and-replace for these source IDs from the current in-memory state.
@@ -64,9 +70,52 @@ public final class LinkRegisterListModel: Sendable {
     
     func reset() {
         items = [:]
+        sourceItems = [:]
     }
-    
-    func setItem(itemId: UUID, with itemLinks: [LinkRegisterModel]) {
-        items[itemId] = itemLinks
+
+    /// Adds a link to both indexes. Returns `false` when the same source-to-destination
+    /// relationship was already registered.
+    @discardableResult
+    func append(_ link: LinkRegisterModel) -> Bool {
+        let destinationKey = link.destination.itemId
+        let alreadyRegistered = items[destinationKey, default: []].contains {
+            $0.source == link.source && $0.destination == link.destination
+        }
+        guard !alreadyRegistered else { return false }
+
+        items[destinationKey, default: []].append(link)
+        sourceItems[link.source.itemId, default: []].append(link)
+        return true
+    }
+
+    /// Removes a source-to-destination relationship from both indexes.
+    @discardableResult
+    func remove(_ link: LinkRegisterModel) -> Bool {
+        let destinationKey = link.destination.itemId
+        let sourceKey = link.source.itemId
+        let previousCount = items[destinationKey, default: []].count
+
+        items[destinationKey, default: []].removeAll {
+            $0.source == link.source && $0.destination == link.destination
+        }
+        sourceItems[sourceKey, default: []].removeAll {
+            $0.source == link.source && $0.destination == link.destination
+        }
+        return items[destinationKey, default: []].count != previousCount
+    }
+
+    /// Removes every link pointing to the exact destination item or entry from both indexes.
+    func removeLinks(to destination: ItemRowModel) -> Set<UUID> {
+        let destinationKey = destination.itemId
+        let removedLinks = items[destinationKey, default: []].filter { $0.destination == destination }
+        guard !removedLinks.isEmpty else { return [] }
+
+        items[destinationKey, default: []].removeAll { $0.destination == destination }
+        for link in removedLinks {
+            sourceItems[link.source.itemId, default: []].removeAll {
+                $0.source == link.source && $0.destination == link.destination
+            }
+        }
+        return Set(removedLinks.map(\.source.itemId))
     }
 }

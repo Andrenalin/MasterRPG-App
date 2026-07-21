@@ -44,6 +44,78 @@ struct MapEditorInteractionModelTests {
         #expect(!session.canReshare)
     }
 
+    @Test("Room hit targets are removed while the immediate pointer plane is active")
+    func roomHitTargetsAreDisabledDuringPointerInteraction() {
+        let gameSession = MapEditorSession(
+            map: .previewEmpty,
+            image: AKImage(),
+            photoDegrees: 0,
+            containerSize: CGSize(width: 800, height: 600),
+            mapMode: .gameMaster
+        )
+
+        #expect(gameSession.roomHitTargetsAreEnabled)
+
+        gameSession.isPointing = true
+        #expect(gameSession.isPointerInteractionActive)
+        #expect(!gameSession.roomHitTargetsAreEnabled)
+
+        gameSession.isPointing = false
+        gameSession.displayMode = .player
+        #expect(!gameSession.roomHitTargetsAreEnabled)
+
+        let editSession = MapEditorSession(
+            map: .previewEmpty,
+            image: AKImage(),
+            photoDegrees: 0,
+            containerSize: CGSize(width: 800, height: 600),
+            mapMode: .edit
+        )
+        #expect(editSession.roomHitTargetsAreEnabled)
+
+        editSession.editEntries.resetEntries(
+            mapId: editSession.mapId,
+            entries: [MapEntryModel(
+                id: UUID(),
+                name: "Active room",
+                content: "",
+                coordinates: [CGPoint(x: 0, y: 0)]
+            )]
+        )
+        #expect(!editSession.roomHitTargetsAreEnabled)
+    }
+
+    @Test("Hex-grid cells are excluded from room interaction targets")
+    func passiveRoomInteractionsExcludeHexGridCells() throws {
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Room",
+            content: "",
+            coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 0), CGPoint(x: 100, y: 100)]
+        )
+        let hexCell = MapEntryModel(
+            id: UUID(),
+            name: "Hex cell",
+            content: "",
+            coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 50, y: 0), CGPoint(x: 25, y: 50)],
+            isHexGrid: true
+        )
+        let model = MapEntryViewerModel(mapId: UUID(), entries: [room, hexCell])
+        let roomNode = try #require(model.roomNode(for: room.id))
+
+        #expect(model.roomInteractionNodes.map(\.id) == [room.id])
+
+        var updatedRoom = room
+        updatedRoom.isHexGrid = true
+        model.setEntry(entry: updatedRoom)
+        #expect(model.roomInteractionNodes.isEmpty)
+
+        updatedRoom.isHexGrid = false
+        model.setEntry(entry: updatedRoom)
+        #expect(model.roomInteractionNodes.count == 1)
+        #expect(model.roomInteractionNodes.first === roomNode)
+    }
+
     @Test("Needles render from top-left to bottom-right without changing persisted indices")
     func needlePainterOrder() {
         let entryId = UUID()

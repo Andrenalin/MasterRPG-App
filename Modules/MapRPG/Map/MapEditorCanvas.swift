@@ -308,7 +308,7 @@ private struct MapLogicalCanvas: View {
                 MapRoomHitLayer(
                     rooms: session.entries,
                     session: session,
-                    isEnabled: roomHitTargetsAreEnabled,
+                    isEnabled: session.roomHitTargetsAreEnabled,
                     excludingEntryId: activeEntryId,
                     interactionTransform: interactionTransform
                 )
@@ -379,17 +379,6 @@ private struct MapLogicalCanvas: View {
         .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
     }
 
-    private var roomHitTargetsAreEnabled: Bool {
-        guard session.displayMode == .master else { return false }
-        return switch session.mapMode {
-        case .edit:
-            session.editEntries.entries.isEmpty
-        case .gameMaster:
-            true
-        case .player, .viewer:
-            false
-        }
-    }
 }
 
 private enum MapPinLayerKind {

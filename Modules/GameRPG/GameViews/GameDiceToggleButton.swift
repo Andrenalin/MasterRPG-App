@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct GameDiceToggleButton: View {
@@ -7,6 +8,7 @@ struct GameDiceToggleButton: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Button {
             withAnimation(accessibilityReduceMotion ? nil : .default) {
                 gameScreenModel.showDice.toggle()

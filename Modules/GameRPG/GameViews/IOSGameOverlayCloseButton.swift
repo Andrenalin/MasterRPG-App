@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 #if os(iOS)
 import SwiftUI
 
@@ -7,6 +8,7 @@ struct IOSGameOverlayCloseButton: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Button(role: .cancel) {
             gameScreenModel.showQuitGameAlert = true
         } label: {

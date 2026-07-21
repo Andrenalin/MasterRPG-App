@@ -11,6 +11,7 @@ struct TabPlayerGameView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         if root.gameModel.gameType != .observer {
             NavigationStack {
                 if let characterId = root.gameModel.selectedCharacter {

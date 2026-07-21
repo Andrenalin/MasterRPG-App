@@ -1,11 +1,13 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct JournalTransportStateImage: View {
     let state: SharePlayJournalTransportState
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         switch state {
         case .pending:
             Image(systemName: "ellipsis")

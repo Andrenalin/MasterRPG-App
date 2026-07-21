@@ -14,6 +14,7 @@ struct GameTableWindowButton: View {
     @Environment(AppSettingsModel.self) private var appSettingsModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Button(action: toggleTable) {
             Label {
                 Text(actionTitle)
@@ -73,6 +74,7 @@ struct GameTableMenuToggle: View {
     @Environment(AppSettingsModel.self) private var appSettingsModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var appSettingsModel = appSettingsModel
 
         Toggle(isOn: $appSettingsModel.showGameTableVolume) {

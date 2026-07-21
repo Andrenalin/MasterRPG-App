@@ -7,6 +7,7 @@ struct MasterModuleWindowButtonView: View {
     let valueType: NetworkModules
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         GameWindowButtonView(
             title: valueType.title,
             systemImage: valueType.icon,

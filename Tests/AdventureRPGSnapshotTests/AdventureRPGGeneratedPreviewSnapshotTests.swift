@@ -22,6 +22,7 @@ struct AdventureRPGGeneratedPreviewSnapshotTests {
             ManagedNavigationStack {
                 AdventureRPG.AdventureRootView(restoresState: false)
             }
+            .environment(\.locale, .init(identifier: "de"))
         }
     }
 

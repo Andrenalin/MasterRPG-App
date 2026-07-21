@@ -18,6 +18,7 @@ struct PlayerSideMenu: View {
     ]
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         GlassEffectContainerAll {
             VStack(spacing: 8) {
                 if root.gameModel.gameType != .observer {

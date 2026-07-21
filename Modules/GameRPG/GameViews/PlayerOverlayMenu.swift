@@ -10,6 +10,7 @@ struct PlayerOverlayMenu: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         OverlayGameLayout(root: root, hideDice: root.gameModel.gameType == .observer) {
 #if os(visionOS) || os(macOS)
             EmptyView()

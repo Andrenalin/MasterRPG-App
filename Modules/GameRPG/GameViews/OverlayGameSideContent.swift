@@ -10,6 +10,7 @@ struct OverlayGameSideContent<Side: View, ToolBar: View, Dice: View>: View {
     let showsDice: Bool
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         ZStack(alignment: .topLeading) {
             side
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)

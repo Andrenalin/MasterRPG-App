@@ -21,6 +21,33 @@ struct LinkRegisterControllerTests {
         return root
     }
 
+    @Test func outgoingLinksAreLookedUpByExactSourceEntry() {
+        // Given
+        let sut = LinkRegisterController(root: nil)
+        let itemId = UUID()
+        let firstSource = ItemRowModel(itemId: itemId, entryId: UUID(), typeId: .value)
+        let secondSource = ItemRowModel(itemId: itemId, entryId: UUID(), typeId: .value)
+        let firstLink = LinkRegisterModel(
+            name: "First",
+            source: firstSource,
+            destination: ItemRowModel(itemId: UUID(), typeId: .photo)
+        )
+        let secondLink = LinkRegisterModel(
+            name: "Second",
+            source: secondSource,
+            destination: ItemRowModel(itemId: UUID(), typeId: .dice)
+        )
+
+        // When
+        sut.register(links: [firstLink, secondLink])
+
+        // Then
+        #expect(sut.linksFrom(source: firstSource) == [firstLink])
+        #expect(sut.linksFrom(source: secondSource) == [secondLink])
+        #expect(sut.isUsed(link: firstLink.destination))
+        #expect(sut.isUsed(link: secondLink.destination))
+    }
+
     @Test func addModelWithLinks() async throws {
         let root = try await setUp()
         let sut = root.editController.linkRegisterController

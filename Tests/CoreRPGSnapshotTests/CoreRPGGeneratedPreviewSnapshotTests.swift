@@ -1096,6 +1096,8 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 searchModel: .preview()
             )
             .padding()
+            .environment(AppGameStateModel())
+            .environment(\.locale, .init(identifier: "de"))
         }
     }
 
@@ -1200,6 +1202,8 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 ),
                 leadingPadding: 8
             )
+            .environment(AppGameStateModel())
+            .environment(\.locale, .init(identifier: "de"))
         }
     }
 
@@ -1690,6 +1694,72 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
+    // snapshot-root: CoreRPG::SheetEntryReviewAlternativesView
+    @Test("SheetEntryReviewAlternativesView")
+    func snapshotSheetEntryReviewAlternativesView() async throws {
+        try await assertPreviewSnapshot("SheetEntryReviewAlternativesView") {
+            let fixture = SheetEntryReviewPreviewFixture()
+            CoreRPG.SheetEntryReviewAlternativesView(reviewModel: fixture.reviewModel)
+                .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::SheetEntryReviewInlineSnapshotView
+    @Test("SheetEntryReviewInlineSnapshotView")
+    func snapshotSheetEntryReviewInlineSnapshotView() async throws {
+        try await assertPreviewSnapshot("SheetEntryReviewInlineSnapshotView") {
+            let fixture = SheetEntryReviewPreviewFixture()
+            CoreRPG.SheetEntryReviewInlineSnapshotView(sheetModel: fixture.inlineSheetModel)
+                .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::SheetEntryReviewPlaceholderView
+    @Test("SheetEntryReviewPlaceholderView")
+    func snapshotSheetEntryReviewPlaceholderView() async throws {
+        try await assertPreviewSnapshot("SheetEntryReviewPlaceholderView") {
+            let fixture = SheetEntryReviewPreviewFixture()
+            CoreRPG.SheetEntryReviewPlaceholderView(
+                entryModel: fixture.sheetModel,
+                reviewModel: fixture.reviewModel
+            )
+            .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::SheetEntryReviewSnapshotView
+    @Test("SheetEntryReviewSnapshotView")
+    func snapshotSheetEntryReviewSnapshotView() async throws {
+        try await assertPreviewSnapshot("SheetEntryReviewSnapshotView") {
+            let fixture = SheetEntryReviewPreviewFixture()
+            CoreRPG.SheetEntryReviewSnapshotView(sheetModel: fixture.sheetModel)
+                .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::SheetEntryReviewVersionButton
+    @Test("SheetEntryReviewVersionButton")
+    func snapshotSheetEntryReviewVersionButton() async throws {
+        try await assertPreviewSnapshot("SheetEntryReviewVersionButton") {
+            let fixture = SheetEntryReviewPreviewFixture()
+            CoreRPG.SheetEntryReviewVersionButton(
+                version: fixture.version,
+                isSelected: true,
+                selectAction: {}
+            )
+            .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::SheetEntryReviewButton
+    @Test("SheetEntryReviewButton")
+    func snapshotSheetEntryReviewButton() async throws {
+        try await assertPreviewSnapshot("SheetEntryReviewButton") {
+            let fixture = SheetEntryReviewPreviewFixture(isExpanded: false)
+            CoreRPG.SheetEntryReviewButton(model: fixture.reviewModel)
+        }
+    }
+
     // snapshot-root: CoreRPG::SheetRootEditorView
     @Test("SheetRootEditorView")
     func snapshotSheetRootEditorView() async throws {
@@ -1732,7 +1802,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 root: ItemRootController.fake,
                 model: .fake,
                 isEditor: false,
-                linkTypes: EmptyLinkTransferable.self
+                linkTypes: LinkDiceData.self
             )
         }
     }

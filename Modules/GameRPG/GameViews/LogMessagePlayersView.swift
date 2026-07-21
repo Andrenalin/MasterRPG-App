@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct LogMessagePlayersView: View {
@@ -30,6 +31,7 @@ struct LogMessagePlayersView: View {
     }
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Text(attributedNames)
             .font(.caption)
     }

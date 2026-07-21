@@ -79,6 +79,7 @@ public protocol MapGameStorable {
 
     @MainActor func setPlayerPin(for playerId: UUID, name: String, characterId: UUID)
     @MainActor func resetPlayerPins(for players: [PlayerGameModel])
+    @MainActor @discardableResult func synchronizePlayerPins(for itemId: UUID) -> Bool
     @MainActor func updatePin(itemId: UUID, data: Data?, playerId: UUID) -> Bool
     @MainActor func updatePinIfCurrentGeneration(
         itemId: UUID,
@@ -369,6 +370,40 @@ extension GameController: MapGameStorable {
                 }
             }
         }
+    }
+
+    /// Reconciles the session roster into one live map as a single observable
+    /// mutation. This is an explicit presentation-state transition rather than
+    /// work performed while SwiftUI constructs the map view.
+    @MainActor
+    @discardableResult
+    func synchronizePlayerPins(for itemId: UUID) -> Bool {
+        guard let map = gameModel.itemData[itemId] as? MapModel else { return false }
+
+        var reconciled = map.mapPins
+        var indices: [UUID: Int] = [:]
+        indices.reserveCapacity(reconciled.count + mapGameModel.playerPins.count)
+        for index in reconciled.indices where indices[reconciled[index].id] == nil {
+            indices[reconciled[index].id] = index
+        }
+
+        let resetTimestamp = Date.now.timeIntervalSince1970
+        for playerPin in mapGameModel.playerPins {
+            if let index = indices[playerPin.id] {
+                guard playerPin.timeInterval > reconciled[index].timeInterval else { continue }
+                reconciled[index] = playerPin
+            } else {
+                var resetPin = playerPin
+                resetPin.location = .zero
+                resetPin.timeInterval = resetTimestamp
+                indices[resetPin.id] = reconciled.endIndex
+                reconciled.append(resetPin)
+            }
+        }
+
+        guard reconciled != map.mapPins else { return false }
+        map.mapPins = reconciled
+        return true
     }
 
     @MainActor

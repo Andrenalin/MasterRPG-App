@@ -13,6 +13,7 @@ struct BattleRoundGameChrome: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         let model = root.mapRoot.mapGameControllable.battleRoundModel
 
         ZStack {

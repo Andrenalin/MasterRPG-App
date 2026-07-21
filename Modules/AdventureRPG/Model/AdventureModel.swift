@@ -134,7 +134,7 @@ extension AdventureModel: nonisolated ItemLinkRegistable {
                 let newEntry = self[$0]
                 if oldEntry != newEntry {
                     removed.append(contentsOf: linkRegisterModels(entry: oldEntry, valueChanged: oldEntry.content != newEntry.content))
-                    added.append(contentsOf: linkRegisterModels(entry: oldEntry, valueChanged: oldEntry.content != newEntry.content))
+                    added.append(contentsOf: linkRegisterModels(entry: newEntry, valueChanged: oldEntry.content != newEntry.content))
                 }
             }
         }

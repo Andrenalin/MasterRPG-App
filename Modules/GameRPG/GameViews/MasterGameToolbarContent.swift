@@ -80,6 +80,7 @@ private struct PlayerBattleRoundToolbarStatus: View {
     let model: BattleRoundModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Group {
             if model.isRunning {
                 Text(model.roundCounter, format: .number)

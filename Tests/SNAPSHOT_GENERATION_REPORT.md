@@ -35,7 +35,7 @@ Generated: 22; skipped: 4.
 
 ## CoreRPG
 
-Generated: 173; skipped: 31.
+Generated: 174; skipped: 30.
 
 - Modules/CoreRPG/Buttons/ControlSharingView.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/Buttons/QuickEditorButtonView.swift — #Preview uses local dynamic state
@@ -57,7 +57,6 @@ Generated: 173; skipped: 31.
 - Modules/CoreRPG/ItemDetail/ItemDetailContentView.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/ItemViews/ModalPresentCloseButton.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/ItemViews/QuickEditorAction.swift — #Preview uses local dynamic state
-- Modules/CoreRPG/LGViews/CachePhotoView.swift — contains 2 View declarations
 - Modules/CoreRPG/LGViews/HeaderContentScrollView.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/LGViews/HeaderFooterContentScrollView.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/LGViews/NameItemNewRow.swift — #Preview uses local dynamic state

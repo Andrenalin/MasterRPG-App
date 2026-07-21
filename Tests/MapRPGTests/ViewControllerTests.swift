@@ -21,6 +21,7 @@ struct ViewControllerTests {
         let sut = MapRPG.ViewController()
         let itemId = UUID()
         let playerId = UUID()
+        let newPlayerId = UUID()
         let map = MapModel(
             id: itemId,
             name: "Viewer Map",
@@ -30,7 +31,7 @@ struct ViewControllerTests {
         root.gameController.setGame(item: map, itemId: itemId)
         root.gameController.mapGameModel.playerPins = [
             MapPinModel(id: playerId, name: "Player", location: CGPoint(x: 4, y: 4), isPlayer: true, timeInterval: 2),
-            MapPinModel(id: UUID(), name: "New Player", location: CGPoint(x: 8, y: 8), isPlayer: true, timeInterval: 3)
+            MapPinModel(id: newPlayerId, name: "New Player", location: CGPoint(x: 8, y: 8), isPlayer: true, timeInterval: 3)
         ]
         let source = ItemRowModel(itemId: itemId, typeId: .map)
         let selectionModel = ItemSelectionModel(selection: [WindowItemSelection(itemId: itemId)])
@@ -55,7 +56,13 @@ struct ViewControllerTests {
         _ = sut.gameToolBarView(root: root, isMaster: true)
 
         let gameMap = root.gameController.gameItem(for: itemId)
+        #expect(gameMap.mapPins.first { $0.id == playerId }?.location == CGPoint(x: 1, y: 1))
+        #expect(!gameMap.mapPins.contains { $0.id == newPlayerId })
+
+        #expect(root.gameController.synchronizePlayerPins(for: itemId))
         #expect(gameMap.mapPins.contains { $0.id == playerId && $0.location == CGPoint(x: 4, y: 4) })
+        #expect(gameMap.mapPins.first { $0.id == newPlayerId }?.location == .zero)
+        #expect(!root.gameController.synchronizePlayerPins(for: itemId))
         #expect(sut.sharingViewType == .share)
         #expect(sut.thumbnailRowViewType == .custom)
         #expect(sut.supportsBatchExtraction)

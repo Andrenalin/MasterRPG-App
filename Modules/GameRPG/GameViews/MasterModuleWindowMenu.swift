@@ -22,6 +22,7 @@ struct MasterModuleWindowMenu: View {
     ]
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         GlassEffectContainerAll {
             VStack(spacing: 8) {
                 ForEach(Self.modules, id: \.self) { module in

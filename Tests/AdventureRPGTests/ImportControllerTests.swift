@@ -20,6 +20,39 @@ import WeatherRPG
 @MainActor
 @Suite(.serialized)
 struct ImportControllerTests {
+    @Test func importingAndValidationRegisterAdventureEntryLinks() async throws {
+        // Given / When: import the package through the real module import workflow.
+        let root = try await MockRoot.importTestData()
+        let linkedEntry = try #require(root.itemController.itemDataModel.items.lazy.compactMap { itemId in
+            root.itemController.itemSync(for: itemId).flatMap { item in
+                item.entries.first { !LinkReplaceController.links(for: $0.content).isEmpty }
+                    .map { (item, $0) }
+            }
+        }.first)
+        let source = ItemRowModel(
+            itemId: linkedEntry.0.id,
+            entryId: linkedEntry.1.id,
+            typeId: .adventure
+        )
+        let parsedDestinations = Set(LinkReplaceController.links(for: linkedEntry.1.content).map {
+            ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module)
+        })
+
+        // Then: import populated the outgoing index.
+        let importedDestinations = Set(root.linkRegisterController.linksFrom(source: source).map(\.destination))
+        #expect(importedDestinations == parsedDestinations)
+
+        // When: simulate an empty/stale register and run the folder validation repair.
+        await root.linkRegisterController.resetData()
+        for itemId in root.itemController.itemDataModel.items {
+            root.linkController.validateLinks(on: itemId)
+        }
+
+        // Then: validation rebuilt the same outgoing links.
+        let validatedDestinations = Set(root.linkRegisterController.linksFrom(source: source).map(\.destination))
+        #expect(validatedDestinations == parsedDestinations)
+    }
+
     @Test func importing() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)

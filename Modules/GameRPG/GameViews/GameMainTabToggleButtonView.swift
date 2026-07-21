@@ -11,6 +11,7 @@ struct GameMainTabToggleButtonView: View {
     @Binding var isShown: Bool
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Button {
             withAnimation(accessibilityReduceMotion ? nil : .default) {
                 isShown.toggle()

@@ -42,9 +42,11 @@ struct DiceRPGGeneratedPreviewSnapshotTests {
     @Test("DiceGameActionBar")
     func snapshotDiceGameActionBar() async throws {
         try await assertPreviewSnapshot("DiceGameActionBar") {
-            DiceRPG.DiceGameActionBar(itemId: DiceModel.previewId, showFocusButton: true, canShowPlayer: false, hideOwnDice: true)
-                .environment(DiceRootModel.preview)
-                .environment(DiceDisplayModel())
+            ZStack {
+                Color.black
+            
+                DiceRPG.DiceGameActionBar(itemId: DiceModel.previewId, showFocusButton: true, canShowPlayer: true, hideOwnDice: false)
+            }
         }
     }
 
@@ -136,7 +138,7 @@ struct DiceRPGGeneratedPreviewSnapshotTests {
     @Test("RootDiceOverlay")
     func snapshotRootDiceOverlay() async throws {
         try await assertPreviewSnapshot("RootDiceOverlay") {
-            Color.red.opacity(0.3).ignoresSafeArea()
+            Rectangle().fill(Color.red.gradient.opacity(0.5)).ignoresSafeArea()
                 .overlay {
                     DiceRPG.RootDiceOverlay(hideDice: false)
                 }

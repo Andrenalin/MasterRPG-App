@@ -185,12 +185,14 @@ struct MapRoomHitLayer: View {
 
     var body: some View {
         if isEnabled {
-            ForEach(rooms.roomNodes.filter { $0.id != excludingEntryId }) { node in
-                MapRoomHitTarget(
-                    node: node,
-                    session: session,
-                    interactionTransform: interactionTransform
-                )
+            ForEach(rooms.roomInteractionNodes) { node in
+                if node.id != excludingEntryId {
+                    MapRoomHitTarget(
+                        node: node,
+                        session: session,
+                        interactionTransform: interactionTransform
+                    )
+                }
             }
         }
     }
@@ -209,20 +211,13 @@ private struct MapRoomHitTarget: View {
             .hoverEffect(.highlight)
 #endif
             .highPriorityGesture(
-                doubleTapGesture.exclusively(before: longPressGesture),
-                including: session.isPointerInteractionActive ? .none : .all
-            )
-            .modifier(
-                MapPointerTapGestureModifier(
-                    session: session,
-                    isEnabled: session.isPointerInteractionActive
-                )
+                doubleTapGesture.exclusively(before: longPressGesture)
             )
             .modifier(
                 MapViewportGestureModifier(
                     session: session,
                     interactionTransform: interactionTransform,
-                    isEnabled: !session.isPointerInteractionActive
+                    isEnabled: true
                 )
             )
             .accessibilityElement(children: .ignore)

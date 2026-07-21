@@ -11,6 +11,7 @@ struct BattleRoundSidebarButton: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Button(action: toggleBattleRoundSidebar) {
             Label {
                 Text("Battle Round", bundle: .module)

@@ -8,6 +8,7 @@ struct AttachmentSection: View {
     @Binding var isExpanded: Bool
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         DisclosureGroupTV(isExpanded: $isExpanded) {
             ForEach(logController.attachments) { attachment in
                 Text("**\(attachment.id)**: \(attachment.itemId)", bundle: .module)

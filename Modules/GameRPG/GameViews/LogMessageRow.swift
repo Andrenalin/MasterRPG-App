@@ -1,11 +1,13 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct LogMessageRow: View, Equatable {
     let row: LogMessageRowModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         VStack(alignment: .leading) {
             Text(row.title)
                 .lineLimit(1)

@@ -118,6 +118,23 @@ public extension ItemControllable {
         }
     }
 
+    /// Replaces an imported item and keeps the cross-module link register in sync with
+    /// the imported value. Import paths bypass `EditControllable.saveChanges`, so they
+    /// must use this method instead of plain `replace(model:isInsert:forceSave:)`.
+    @MainActor func replaceImportedModel(model: ModelType?, isInsert: Bool, forceSave: Bool = false) {
+        guard let model = model as? Model else { return }
+
+        if let previous = itemSync(for: model.id)?.copy() {
+            let changes = model.changedLinkRegisterModels(oldValue: previous)
+            linkRegisterController.deregister(links: changes.removed)
+            linkRegisterController.register(links: changes.added)
+        } else {
+            linkRegisterController.register(links: model.linkRegisterModels)
+        }
+
+        replace(model: model, isInsert: isInsert, forceSave: forceSave)
+    }
+
     @MainActor func replaceForGame(model: ModelType?, isInsert: Bool, policy: GameMutationPolicy) {
         switch policy {
         case .memoryOnly:

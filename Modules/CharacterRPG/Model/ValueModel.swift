@@ -175,7 +175,7 @@ extension ValueModel: nonisolated ItemLinkRegistable {
                 let newEntry = self[$0]
                 if oldEntry != newEntry {
                     removed.append(contentsOf: linkRegisterModels(entry: oldEntry, nameChanged: oldEntry.name != newEntry.name, valueChanged: oldEntry.value != newEntry.value))
-                    added.append(contentsOf: linkRegisterModels(entry: oldEntry, nameChanged: oldEntry.name != newEntry.name, valueChanged: oldEntry.value != newEntry.value))
+                    added.append(contentsOf: linkRegisterModels(entry: newEntry, nameChanged: oldEntry.name != newEntry.name, valueChanged: oldEntry.value != newEntry.value))
                 }
             }
         }

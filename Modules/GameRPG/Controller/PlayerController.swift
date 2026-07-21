@@ -2907,6 +2907,9 @@ extension PlayerController {
 
     func presentMap(itemId: UUID) async {
         _ = await root.mapRoot.gameControllable.setCurrent(itemId: itemId)
+        if await root.gameModel.gameConfig.isMaster {
+            _ = await root.mapRoot.mapGameControllable.synchronizePlayerPins(for: itemId)
+        }
         await retryDeferredMapPins(itemId: itemId)
         await MainActor.run { gameModel.gameUpdateType = .map }
         await refreshMapVisuals(itemId: itemId)

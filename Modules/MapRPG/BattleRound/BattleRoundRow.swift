@@ -2,6 +2,7 @@
 
 import CoreRPG
 import SwiftUI
+import CharacterRPG
 
 public struct BattleRoundView: View {
     public init(model: BattleRoundModel, actions: BattleRoundActions) {
