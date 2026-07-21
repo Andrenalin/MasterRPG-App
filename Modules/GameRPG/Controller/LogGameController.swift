@@ -10,6 +10,7 @@ import DiceRPG
 import WeatherRPG
 import AudioRPG
 import PdfRPG
+import RuleRPG
 import SpaceRPG
 
 struct LogGameController: Sendable {
@@ -171,6 +172,8 @@ struct LogGameController: Sendable {
             return itemId.uuidString
         case .photo:
             return root?.photoRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
+        case .rule:
+            return root?.ruleRoot?.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
         case .map:
             return root?.mapRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
         case .table:

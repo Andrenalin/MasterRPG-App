@@ -22,12 +22,12 @@ struct ExtendedSplitWithDetailView: View {
             }
             .environment(controller)
         } detail: {
-            SplitDetailView(isExtendedRoutes: true)
+            SplitDetailView(module: tab.module)
                 .environment(controller)
         }
         .inspectorAll(isPresented: $model.showInspector) {
             if model.showInspector {
-                AppInspectorView(isExtendedRoutes: true)
+                AppInspectorView(module: tab.module)
             }
         }
     }

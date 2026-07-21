@@ -8,6 +8,7 @@ import GameRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import CharacterRPG
@@ -19,14 +20,14 @@ import GeneratorRPG
 #endif
 
 struct SplitDetailView: View {
-    let isExtendedRoutes: Bool
+    let module: NetworkModules
 
     @Environment(AppModel.self) private var appModel
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        switch selectedModule {
+        switch module {
         case .adventure:
             AdventureFactory.detailView(root: appModel.adventureRoot)
         case .audio:
@@ -46,6 +47,8 @@ struct SplitDetailView: View {
             PdfFactory.detailView(root: appModel.pdfRoot)
         case .photo:
             PhotoFactory.detailView(root: appModel.photoRoot)
+        case .rule:
+            RuleFactory.detailView(root: appModel.ruleRoot)
         case .search: GameFactory.detailSearchView(root: appModel.gameRoot, navigator: appModel.navigator(for: .search))
         case .space:
             SpaceFactory.detailView(root: appModel.spaceRoot)
@@ -59,21 +62,17 @@ struct SplitDetailView: View {
         default:
             ContentUnavailableView {
                 Label {
-                    Text(verbatim: selectedModule.title)
+                    Text(verbatim: module.title)
                 } icon: {
-                    Image(systemName: selectedModule.icon)
+                    Image(systemName: module.icon)
                 }
             }
         }
-    }
-
-    var selectedModule: NetworkModules {
-        isExtendedRoutes ? (appModel.selectedEditorModule ?? AppModel.defaultEditorModule).module : (appModel.selectedModule ?? .game).module
     }
 }
 
 
 #Preview {
-    SplitDetailView(isExtendedRoutes: false)
+    SplitDetailView(module: .adventure)
         .environment(AppModel())
 }

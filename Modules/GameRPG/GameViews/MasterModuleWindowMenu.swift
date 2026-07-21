@@ -15,6 +15,7 @@ struct MasterModuleWindowMenu: View {
         .map,
         .pdf,
         .photo,
+        .rule,
         .space,
         .table,
         .value,

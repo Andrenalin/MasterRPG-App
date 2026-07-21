@@ -17,6 +17,10 @@ public struct RootURLHandler: NavigationURLHandler {
     @MainActor public func handles(_ url: URL, with navigator: Navigator) -> Bool {
         guard appModel.appNavigationModel.initialRouteType == .ready else { return false }
 
+        if url.isVTTImportDocument {
+            return handleVTT(url: url, with: navigator)
+        }
+
         if url.isGmzDocument {
             return handleGmz(url: url, with: navigator)
         }
@@ -40,6 +44,7 @@ public struct RootURLHandler: NavigationURLHandler {
     @MainActor private func handleGmz(url: URL, with navigator: Navigator) -> Bool {
 #if os(macOS)
         let target = appModel.settingsNavigator
+        appModel.scenesManager.openSettingsWindow()
 #else
         let target = appModel.gameNavigator
 #endif
@@ -55,5 +60,33 @@ public struct RootURLHandler: NavigationURLHandler {
 
         _ = appModel.adventureRoot.importControllable.importUrl(from: url)
         return true
+    }
+
+    @MainActor private func handleVTT(url: URL, with navigator: Navigator) -> Bool {
+#if os(macOS)
+        let target = appModel.settingsNavigator
+        appModel.scenesManager.openSettingsWindow()
+#else
+        let target = appModel.gameNavigator
+#endif
+        appModel.pendingVTTImportURL = url
+        Task { @MainActor in
+            if target !== navigator {
+                try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
+            }
+            target.perform(route: KnownRoutes.settings)
+            try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
+            target.navigate(to: SettingsRoute.importData, method: .managedCover)
+        }
+        return true
+    }
+}
+
+private extension URL {
+    var isVTTImportDocument: Bool {
+        switch pathExtension.lowercased() {
+        case "uvtt", "dd2vtt", "mrpgfoundry": true
+        default: false
+        }
     }
 }

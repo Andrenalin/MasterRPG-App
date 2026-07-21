@@ -51,6 +51,7 @@ public protocol ImportControllable: Sendable {
     var editControllable: any EditControllable { get }
 
     func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws
+    func finalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws
 }
 
 public enum ItemDataImportableError: Error {
@@ -65,6 +66,8 @@ public extension ImportControllable {
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
     func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {}
+
+    func finalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {}
 
     // Import from file URL with caller-owned model (progress UI); mode is read from importModel.importMode
     func importUrl(from url: URL, importModel: ItemDataImportModel) -> Task<Void, any Error> {
@@ -91,7 +94,7 @@ public extension ImportControllable {
         var itemCount = 0
         var version = 0
         while inputStream.hasBytesAvailable {
-            let moduleHeader = try inputStream.readHeader()
+            guard let moduleHeader = try inputStream.readOptionalHeader() else { break }
             if moduleHeader.token == token {
                 itemCount = moduleHeader.counter
                 version = moduleHeader.version
@@ -99,7 +102,14 @@ public extension ImportControllable {
             }
             try await skip(itemCount: moduleHeader.counter, from: inputStream, importModel: importModel)
         }
-        guard itemCount > 0 else { return }
+        guard itemCount > 0 else {
+            try await finalImport(
+                from: inputStream,
+                forceSave: forceSave,
+                importModel: importModel
+            )
+            return
+        }
 
         await logImport(title: "importStream", count: itemCount, importModel: importModel)
 
@@ -197,6 +207,12 @@ public extension ImportControllable {
             let cc = ConvertController(itemController: itemControllable, editController: editControllable)
             await cc.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: importedIds)
         }
+
+        try await finalImport(
+            from: inputStream,
+            forceSave: forceSave,
+            importModel: importModel
+        )
     }
 
     // Convenience for game networking imports — no progress tracking needed
@@ -577,6 +593,27 @@ private extension String {
 extension InputStream {
     func readHeader() throws -> GmzFileHeader {
         GmzFileHeader(counter: try readCounter(), token: try readCounter(), version: try readCounter())
+    }
+
+    /// Reads the next module header while treating a clean stream boundary as normal EOF.
+    /// File-backed input streams can report `hasBytesAvailable == true` until one final read,
+    /// so scanning optional trailing modules cannot use that property alone.
+    func readOptionalHeader() throws -> GmzFileHeader? {
+        var readBuffer = [UInt8](repeating: 0, count: 4)
+        let readCount = read(&readBuffer, maxLength: readBuffer.count)
+        guard readCount != 0 else { return nil }
+        guard readCount == readBuffer.count else {
+            throw ItemDataImportableError.notEnoughData
+        }
+
+        let counter = readBuffer.reversed().reduce(UInt32(0)) { result, byte in
+            result << 8 | UInt32(byte)
+        }
+        return GmzFileHeader(
+            counter: Int(counter),
+            token: try readCounter(),
+            version: try readCounter()
+        )
     }
 
     func readItemHeader() throws -> (Int, Int) {

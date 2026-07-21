@@ -152,7 +152,12 @@ public extension FileUrlDataController {
 
 public extension FileUrlDataController {
     /// create a fileUrl with data from an import or on validation / convert data
-    func createNewFileUrl(fileId: UUID, unconvertedFileUrl: FileUrl, pathExtension: String) async throws -> FileUrl? {
+    func createNewFileUrl(
+        fileId: UUID,
+        unconvertedFileUrl: FileUrl,
+        pathExtension: String,
+        requireDurableStorage: Bool = false
+    ) async throws -> FileUrl? {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createNewFileUrl(fileId:unconvertedFileUrl:pathExtension:)", file: "FileUrlDataController.swift")
         
         guard let oldData = unconvertedFileUrl.data else { return nil }
@@ -183,6 +188,9 @@ public extension FileUrlDataController {
             try await cloudDocumentController.write(data: oldData, to: filePath)
         } catch {
             Logger.fileStore.error("Cannot create file in cloud app group \(error.localizedDescription, privacy: .public)")
+            if requireDurableStorage {
+                throw error
+            }
             // Fallback: Keep data in memory when cloud storage fails
             var fileUrl = FileUrl(fileId: fileId, url: fileURL, location: .newCloud, module: unconvertedFileUrl.module, relativeUrl: nil)
             fileUrl.resetData(oldData)

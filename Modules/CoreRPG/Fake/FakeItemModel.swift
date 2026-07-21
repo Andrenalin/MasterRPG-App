@@ -111,5 +111,7 @@ final class FakeItemModel: nonisolated Identifiable, @unchecked Sendable {
     }
 }
 
-extension FakeItemModel: nonisolated ItemDataAccessable, nonisolated ItemDiffComparable, nonisolated ItemDuplicatable, nonisolated ItemLinkRegistable {}
+extension FakeItemModel: nonisolated ItemDataAccessable, nonisolated ItemDiffComparable, nonisolated ItemDuplicatable, nonisolated ItemLinkRegistable {
+    nonisolated static let typeId: NetworkModules = .adventure
+}
 extension FakeItemModel: nonisolated Equatable, nonisolated Hashable, nonisolated Codable {}

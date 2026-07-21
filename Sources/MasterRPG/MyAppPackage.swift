@@ -11,6 +11,7 @@ import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import WeatherRPG
@@ -27,6 +28,7 @@ struct MyAppPackage: AppIntentsPackage {
         MapFrameworkPackage.self,
         PdfFrameworkPackage.self,
         PhotoFrameworkPackage.self,
+        RuleFrameworkPackage.self,
         SpaceFrameworkPackage.self,
         TableFrameworkPackage.self,
         WeatherFrameworkPackage.self,

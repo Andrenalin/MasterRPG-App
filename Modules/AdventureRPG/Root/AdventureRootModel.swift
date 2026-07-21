@@ -11,6 +11,7 @@ import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import SwiftUI
 import TableRPG
@@ -20,7 +21,7 @@ import WeatherRPG
 public final class AdventureRootModel {
 
     @MainActor
-    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel?, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
+    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel?, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, ruleRoot: RuleRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         let config = ModuleConfiguration()
         self.config = config
 
@@ -42,6 +43,7 @@ public final class AdventureRootModel {
         self.mapRoot = mapRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
+        self.ruleRoot = ruleRoot
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
         self.characterRoot = characterRoot
@@ -76,10 +78,11 @@ public final class AdventureRootModel {
             mapSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            ruleSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             spaceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             weatherSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            firstRow: [.adventure, .map, .value, .table, .weather],
+            firstRow: [.adventure, .map, .value, .rule, .table, .weather],
             secondRow: [.audio, .dice, .pdf, .photo, .space],
             selection: .map
         )
@@ -126,6 +129,7 @@ public final class AdventureRootModel {
         diceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
         pdfRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
         photoRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        ruleRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
         spaceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
         weatherRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
         tableRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
@@ -149,6 +153,7 @@ public final class AdventureRootModel {
     let mapRoot: MapRootModel
     let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel
+    let ruleRoot: RuleRootModel
     let spaceRoot: SpaceRootModel
     let tableRoot: TableRootModel
     let characterRoot: CharacterRootModel
@@ -270,6 +275,7 @@ extension AdventureRootModel: StoreManiplable {
         await mapRoot.itemControllable.resetData()
         await pdfRoot.itemControllable.resetData()
         await photoRoot.itemControllable.resetData()
+        await ruleRoot.itemControllable.resetData()
         await spaceRoot.itemControllable.resetData()
         await tableRoot.itemControllable.resetData()
         await characterRoot.itemControllable.resetData()
@@ -288,6 +294,7 @@ extension AdventureRootModel: StoreManiplable {
         await mapRoot.itemControllable.flushPendingOperations()
         await pdfRoot.itemControllable.flushPendingOperations()
         await photoRoot.itemControllable.flushPendingOperations()
+        await ruleRoot.itemControllable.flushPendingOperations()
         await spaceRoot.itemControllable.flushPendingOperations()
         await tableRoot.itemControllable.flushPendingOperations()
         await characterRoot.itemControllable.flushPendingOperations()
@@ -296,6 +303,29 @@ extension AdventureRootModel: StoreManiplable {
         await searchModel.tagController.savePendingTags()
         // One context.save() covers all flushed changes from every module above.
         await itemController.save()
+    }
+
+    /// Flushes a reviewed partial import and surfaces persistence failures to the caller.
+    /// External import uses this boundary so it can roll back newly installed attachments when
+    /// the consolidated Core Data save fails.
+    @Sendable public func saveExternalImport() async throws {
+        try await audioRoot.itemControllable.dataControllable?.flushPendingOperations()
+        try await diceRoot.itemControllable.dataControllable?.flushPendingOperations()
+        #if !os(tvOS)
+        try await generatorRoot?.itemControllable.dataControllable?.flushPendingOperations()
+        #endif
+        try await mapRoot.itemControllable.dataControllable?.flushPendingOperations()
+        try await pdfRoot.itemControllable.dataControllable?.flushPendingOperations()
+        try await photoRoot.itemControllable.dataControllable?.flushPendingOperations()
+        try await ruleRoot.itemControllable.dataControllable?.flushPendingOperations()
+        try await spaceRoot.itemControllable.dataControllable?.flushPendingOperations()
+        try await tableRoot.itemControllable.dataControllable?.flushPendingOperations()
+        try await characterRoot.itemControllable.dataControllable?.flushPendingOperations()
+        try await weatherRoot.itemControllable.dataControllable?.flushPendingOperations()
+        await linkRegisterController.savePendingLinks()
+        await searchModel.tagController.savePendingTags()
+        try await itemController.dataControllable?.save()
+        await AppIntentContentInvalidator.invalidate()
     }
 
     public func validate() {
@@ -309,6 +339,7 @@ extension AdventureRootModel: StoreManiplable {
             await mapRoot.checkFolders(reportModel: report)
             await pdfRoot.checkFolders(reportModel: report)
             await photoRoot.checkFolders(reportModel: report)
+            await ruleRoot.checkFolders(reportModel: report)
             await spaceRoot.checkFolders(reportModel: report)
             await tableRoot.checkFolders(reportModel: report)
             await characterRoot.checkFolders(reportModel: report)
@@ -321,6 +352,7 @@ extension AdventureRootModel: StoreManiplable {
             await mapRoot.validateLinks(reportModel: report)
             await pdfRoot.validateLinks(reportModel: report)
             await photoRoot.validateLinks(reportModel: report)
+            await ruleRoot.validateLinks(reportModel: report)
             await spaceRoot.validateLinks(reportModel: report)
             await tableRoot.validateLinks(reportModel: report)
             await characterRoot.validateLinks(reportModel: report)
@@ -339,6 +371,7 @@ public extension AdventureRootModel {
         mapRoot.itemControllable.itemDataModel.isGameMode = true
         pdfRoot.itemControllable.itemDataModel.isGameMode = true
         photoRoot.itemControllable.itemDataModel.isGameMode = true
+        ruleRoot.itemControllable.itemDataModel.isGameMode = true
         spaceRoot.itemControllable.itemDataModel.isGameMode = true
         tableRoot.itemControllable.itemDataModel.isGameMode = true
         characterRoot.itemControllable.itemDataModel.isGameMode = true

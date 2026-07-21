@@ -1958,7 +1958,7 @@ extension PlayerController {
         locallyMirroredProxyPresentation: Bool = false
     ) async throws -> GameNetworkModel? {
         switch model.data.type {
-        case .none, .game, .setting, .editor, .generator, .search:
+        case .none, .game, .rule, .setting, .editor, .generator, .search:
             return nil
         case .adventure:
             return handleAdventure(model)

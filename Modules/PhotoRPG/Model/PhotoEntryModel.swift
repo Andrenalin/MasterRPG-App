@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 
 public struct PhotoEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
-    init(id: UUID, photoId: UUID, displayState: Int = 0) {
+    public init(id: UUID, photoId: UUID, displayState: Int = 0) {
         self.id = id
         self.photoId = photoId
         self.displayState = displayState

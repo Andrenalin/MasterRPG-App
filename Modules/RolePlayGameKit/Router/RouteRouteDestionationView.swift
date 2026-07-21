@@ -9,6 +9,7 @@ import GameRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import SwiftUI
 import TableRPG
@@ -51,6 +52,8 @@ struct RouteRouteDestionationView: View {
                 PdfFactory.rootView()
             case .photos:
                 PhotoFactory.rootView()
+            case .rules:
+                RuleFactory.rootView()
             case .space:
                 SpaceFactory.rootView()
             case .settings:

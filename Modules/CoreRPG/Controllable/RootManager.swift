@@ -12,6 +12,7 @@ public struct RootManager: Sendable {
         mapRoot: any ItemRootControllable,
         pdfRoot: any ItemRootControllable,
         photoRoot: any ItemRootControllable,
+        ruleRoot: (any ItemRootControllable)? = nil,
         spaceRoot: any ItemRootControllable,
         tableRoot: any ItemRootControllable,
         weatherRoot: any ItemRootControllable,
@@ -28,6 +29,7 @@ public struct RootManager: Sendable {
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
         self.weatherRoot = weatherRoot
+        self.ruleRoot = ruleRoot ?? tableRoot
         self.reviewSheetMemory = reviewSheetMemory
     }
 
@@ -51,6 +53,7 @@ public struct RootManager: Sendable {
         self.photoRoot = tableRoot
         self.spaceRoot = tableRoot
         self.weatherRoot = tableRoot
+        self.ruleRoot = tableRoot
     }
 
     public init(
@@ -70,6 +73,7 @@ public struct RootManager: Sendable {
         self.photoRoot = anyRoot
         self.spaceRoot = anyRoot
         self.weatherRoot = anyRoot
+        self.ruleRoot = anyRoot
     }
 
     
@@ -84,6 +88,7 @@ public struct RootManager: Sendable {
     public let spaceRoot: ItemRootControllable
     public let tableRoot: ItemRootControllable
     public let weatherRoot: ItemRootControllable
+    public let ruleRoot: ItemRootControllable
     public let reviewSheetMemory: ReviewSheetMemory?
     
     public func rootModel(for module: NetworkModules) -> (any ItemRootControllable)? {
@@ -96,6 +101,7 @@ public struct RootManager: Sendable {
         case .map: mapRoot
         case .pdf: pdfRoot
         case .photo: photoRoot
+        case .rule: ruleRoot
         case .space: spaceRoot
         case .table: tableRoot
         case .weather: weatherRoot
@@ -125,6 +131,7 @@ public struct RootManager: Sendable {
             mapRoot: mapRoot,
             pdfRoot: pdfRoot,
             photoRoot: photoRoot,
+            ruleRoot: ruleRoot,
             spaceRoot: spaceRoot,
             tableRoot: tableRoot,
             weatherRoot: weatherRoot,
@@ -133,6 +140,6 @@ public struct RootManager: Sendable {
     }
         
     static public func preview(fake: ItemRootControllable) -> RootManager {
-        RootManager(adventureRoot: fake, audioRoot: fake, characterRoot: fake, diceRoot: fake, generatorRoot: fake, mapRoot: fake, pdfRoot: fake, photoRoot: fake, spaceRoot: fake, tableRoot: fake, weatherRoot: fake)
+        RootManager(adventureRoot: fake, audioRoot: fake, characterRoot: fake, diceRoot: fake, generatorRoot: fake, mapRoot: fake, pdfRoot: fake, photoRoot: fake, ruleRoot: fake, spaceRoot: fake, tableRoot: fake, weatherRoot: fake)
     }
 }

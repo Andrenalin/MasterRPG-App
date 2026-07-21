@@ -11,6 +11,7 @@ import PdfRPG
 import TableRPG
 import AudioRPG
 import PhotoRPG
+import RuleRPG
 import DiceRPG
 import MapRPG
 import SpaceRPG
@@ -28,6 +29,8 @@ struct WindowLinkList: Scene {
             windowGroup(model: appModel, module: .pdf, key: "3", content: appModel.pdfRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.pdfRoot.itemSelectionModel))
 
             windowGroup(model: appModel, module: .table, key: "4", content: appModel.tableRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.tableRoot.linkSelectionModel))
+
+            windowGroup(model: appModel, module: .rule, key: "R", content: appModel.ruleRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.ruleRoot.linkSelectionModel))
 
             windowGroup(model: appModel, module: .map, key: "5", content: appModel.mapRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.mapRoot.linkSelectionModel))
 

@@ -11,6 +11,7 @@ public enum ExtendedTabRoute: String, Hashable, Codable {
     case maps
     case pdfs
     case photos
+    case rules
     case space
     case tables
     case weathers
@@ -24,6 +25,7 @@ public enum ExtendedTabRoute: String, Hashable, Codable {
         case .map: self = .maps
         case .pdf: self = .pdfs
         case .photo: self = .photos
+        case .rule: self = .rules
         case .space: self = .space
         case .table: self = .tables
         case .weather: self = .weathers
@@ -39,6 +41,7 @@ public enum ExtendedTabRoute: String, Hashable, Codable {
         case .generator: .generator
         case .pdfs: .pdf
         case .photos: .photo
+        case .rules: .rule
         case .space: .space
         case .tables: .table
         case .weathers: .weather
@@ -63,10 +66,10 @@ extension ExtendedTabRoute: NavigationDestination {
     }
     
     static var allTabs: [ExtendedTabRoute] {
-        [.pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings]
+        [.rules, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings]
     }
     
     static var limitedTabs: [ExtendedTabRoute] {
-        [.tables, .maps, .photos, .audios, .space, .weathers, .dice]
+        [.rules, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
     }
 }

@@ -175,6 +175,9 @@
         }
       }
     },
+    "MasterRPG Foundry Bridge Export" : {
+
+    },
     "MasterRPG Map Link" : {
       "localizations" : {
         "de" : {
@@ -240,6 +243,9 @@
           }
         }
       }
+    },
+    "MasterRPG Rule Link" : {
+
     },
     "MasterRPG Save Game" : {
       "localizations" : {
@@ -586,6 +592,9 @@
           }
         }
       }
+    },
+    "Universal VTT Map" : {
+
     }
   },
   "version" : "1.3"

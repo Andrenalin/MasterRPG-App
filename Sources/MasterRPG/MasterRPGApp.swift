@@ -50,6 +50,8 @@ struct MasterRPGApp: App {
         AppDependencyManager.shared.add(dependency: pdfRootModel)
         let photoRootModel = appModel.photoRoot
         AppDependencyManager.shared.add(dependency: photoRootModel)
+        let ruleRootModel = appModel.ruleRoot
+        AppDependencyManager.shared.add(dependency: ruleRootModel)
         let spaceRootModel = appModel.spaceRoot
         AppDependencyManager.shared.add(dependency: spaceRootModel)
         let tableRootModel = appModel.tableRoot

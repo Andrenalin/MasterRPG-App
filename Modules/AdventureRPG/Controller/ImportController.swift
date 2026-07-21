@@ -10,6 +10,7 @@ import PhotoRPG
 import PdfRPG
 import DiceRPG
 import MapRPG
+import RuleRPG
 import SpaceRPG
 
 struct ImportController: Sendable {
@@ -43,5 +44,9 @@ extension ImportController: ImportControllable {
         try await root.tableRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
         try await root.characterRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
         try await root.weatherRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+    }
+
+    public func finalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {
+        try await root.ruleRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
     }
 }

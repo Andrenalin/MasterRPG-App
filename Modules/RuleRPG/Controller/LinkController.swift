@@ -1,0 +1,209 @@
+// @copyright André Trettin
+
+import CoreRPG
+import Foundation
+import os
+
+@MainActor
+private final class RuleLinkRootReference: Sendable {
+    var rootManager: RootManager?
+}
+
+struct LinkController: Sendable {
+    @MainActor
+    init(itemController: ItemController, gameController: GameController) {
+        self.itemController = itemController
+        self.gameController = gameController
+        rootReference = RuleLinkRootReference()
+    }
+
+    let itemController: ItemController
+    let gameController: GameController
+    private let rootReference: RuleLinkRootReference
+
+    var itemControllable: any ItemControllable { itemController }
+
+    @MainActor
+    func setUp(rootManager: RootManager) {
+        rootReference.rootManager = rootManager
+    }
+}
+
+extension LinkController: LinkControllable {
+    @MainActor
+    func handleTextLink(
+        url: URL,
+        in text: String,
+        shareResult: ShareValueResult?,
+        toggler: ((UUID, NetworkModules) async -> Void)?,
+        editAction: ((ItemRowModel) -> Bool)?
+    ) -> String {
+        let module = url.moduleIdentifier
+        if module != .rule,
+           let controller = rootReference.rootManager?.rootModel(for: module)?.linkControllable {
+            return controller.handleTextLink(
+                url: url,
+                in: text,
+                shareResult: shareResult,
+                toggler: toggler,
+                editAction: editAction
+            )
+        }
+        guard let itemId = url.itemId else { return text }
+        guard let broken = brokenTextLinkToggle(
+            url: url,
+            itemId: itemId,
+            entryId: url.childId,
+            in: text
+        ) else {
+            return toggleTextLink(
+                linkNumber: url.linkNumber,
+                itemId: itemId,
+                entryId: url.childId,
+                command: url.commandKey,
+                in: text,
+                shareResult: shareResult,
+                toggler: toggler,
+                editAction: editAction
+            )
+        }
+        return broken
+    }
+
+    @MainActor
+    func toggleTextLink(
+        linkNumber: Int,
+        itemId: UUID,
+        entryId: UUID?,
+        command: String?,
+        in text: String,
+        shareResult: ShareValueResult?,
+        toggler: ((UUID, NetworkModules) async -> Void)?,
+        editAction: ((ItemRowModel) -> Bool)?
+    ) -> String {
+        if let command {
+            if command == LinkType.remove.rawValue {
+                let url = generateLink(
+                    linkNumber: linkNumber - LinkType.remove.linkNumberAddition,
+                    itemId: itemId,
+                    entryId: entryId
+                )
+                return text.toggleLink(
+                    url: url,
+                    with: name(for: itemId, entryId: entryId),
+                    remove: true
+                )
+            }
+            Task { @MainActor in
+                if command != LinkType.share.rawValue {
+                    await toggler?(itemId, .rule)
+                }
+            }
+            return text
+        }
+
+        if let toggler, entryId == nil, editAction == nil {
+            Task { @MainActor in await toggler(itemId, .rule) }
+        }
+        let item = itemController.itemOrEmpty(for: itemId)
+        let showAction = toggler != nil && entryId != nil
+            ? specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId)
+            : ""
+        let canEdit = editAction?(
+            ItemRowModel(itemId: itemId, entryId: entryId, typeId: .rule)
+        ) ?? false
+        let removeAction = canEdit
+            ? " \(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))"
+            : ""
+        let detail = if let entryId {
+            item[entryId].content
+        } else {
+            formatInlineDescription(description: item.description, entryCount: item.entries.count)
+        }
+        let expanded = "\(showAction) \(detail)\(removeAction)"
+        return text.toggleLink(
+            url: generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId),
+            with: expanded
+        )
+    }
+
+    @MainActor
+    func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
+        links.reduce(content) { current, link in
+            if link.module == .rule {
+                return repairLink(link, for: current, for: [.all])
+            }
+            return rootReference.rootManager?.rootModel(for: link.module)?.linkControllable
+                .repairLink(link, for: current, for: [.all]) ?? current
+        }
+    }
+
+    @MainActor
+    func validateLinks(on itemId: UUID) {
+        guard let inspected = itemController.itemSync(for: itemId),
+              inspected.displayState != DisplayStateMask.totalHidden.rawValue,
+              let replacement = itemController.copy(of: itemId) else { return }
+
+        replacement.description = repairLinks(
+            LinkReplaceController.links(for: inspected.description),
+            in: inspected.description
+        )
+        for entry in inspected.entries {
+            var updated = entry
+            updated.content = repairLinks(entry.links(for: entry.content), in: entry.content)
+            if updated != entry {
+                replacement[entry.id] = updated
+            }
+        }
+        if !replacement.isSame(inspected) {
+            Logger.linkController.info("Rule links repaired for \(replacement.name, privacy: .public)")
+            itemController.replace(model: replacement, isInsert: false)
+        }
+        resetLinkRegister(replacement)
+    }
+
+    @MainActor
+    func link(for name: String, entryName: String?) -> String? {
+        guard let itemID = itemController.itemDataModel.items.first(where: {
+            itemController.nameSync(itemId: $0) == name
+        }) else { return nil }
+        let item = itemController.itemOrEmpty(for: itemID)
+        guard let entryName else { return item.url(linkNumber: 0) }
+        guard let entry = item.entries.first(where: { $0.name == entryName }) else { return nil }
+        return item.url(linkNumber: 0, entryId: entry.id)
+    }
+
+    @MainActor
+    func link(for module: NetworkModules) -> [LinkEntryModel] {
+        guard module == .rule else { return [] }
+        return itemController.itemDataModel.items
+            .map { itemController.itemOrEmpty(for: $0) }
+            .sorted { $0.name.count > $1.name.count }
+            .map { LinkEntryModel(reference: $0.name, markdownUrl: $0.url(linkNumber: 0)) }
+    }
+
+    @MainActor
+    func linkEntries(for itemId: UUID) -> [LinkEntryModel] {
+        let item = itemController.itemOrEmpty(for: itemId)
+        return item.entries
+            .sorted { $0.name.count > $1.name.count }
+            .map {
+                LinkEntryModel(
+                    reference: $0.name,
+                    markdownUrl: item.url(linkNumber: 0, entryId: $0.id)
+                )
+            }
+    }
+
+    @MainActor
+    func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
+        guard let item = itemController.itemSync(for: itemId) else { return [] }
+        let descriptionLinks = LinkReplaceController.links(for: item.description)
+        let entryLinks = item.entries.flatMap { entry in
+            entry.links(for: entry.content)
+        }
+        return Array(Set((descriptionLinks + entryLinks)
+            .filter { $0.module == module }
+            .map(\.itemId)))
+    }
+}

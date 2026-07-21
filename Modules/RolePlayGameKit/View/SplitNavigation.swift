@@ -105,6 +105,8 @@ private extension SplitNavigation {
             
             
             TabSection {
+                pageTab(for: .rules)
+                    .customizationID("Tab.\(NetworkModules.rule.token)")
                 pageTab(for: .pdfs)
                     .customizationID("Tab.\(NetworkModules.pdf.token)")
                 pageTab(for: .tables)

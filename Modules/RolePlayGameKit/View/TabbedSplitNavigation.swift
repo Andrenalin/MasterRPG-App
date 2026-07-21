@@ -46,12 +46,12 @@ struct TabbedSplitNavigation: View {
                 contentColumnWidth = newWidth
             }
         } detail: {
-            SplitDetailView(isExtendedRoutes: false)
+            SplitDetailView(module: selectedModule)
                 .environment(appModel.itemRootController(for: selectedModule))
         }
         .inspectorAll(isPresented: inspectorBinding) {
             if canShow && model.showInspector {
-                AppInspectorView(isExtendedRoutes: false)
+                AppInspectorView(module: selectedModule)
             }
         }
         .onChange(of: appModel.selectedModule) {

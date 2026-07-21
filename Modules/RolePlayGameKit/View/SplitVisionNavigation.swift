@@ -88,7 +88,7 @@ struct SplitVisionNavigation: View {
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             contentView(tab: tab)
         } detail: {
-            SplitDetailView(isExtendedRoutes: false)
+            SplitDetailView(module: tab.module)
                 .environment(appModel.itemRootController(for: tab.module))
         }
     }
@@ -101,6 +101,7 @@ struct SplitVisionNavigation: View {
             MenuWindowButtonView(valueType: .map)
             MenuWindowButtonView(valueType: .pdf)
             MenuWindowButtonView(valueType: .photo)
+            MenuWindowButtonView(valueType: .rule)
             MenuWindowButtonView(valueType: .space)
             MenuWindowButtonView(valueType: .table)
             MenuWindowButtonView(valueType: .value)

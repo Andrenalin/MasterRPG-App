@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 
 public struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
-    init(id: UUID, audioId: UUID, displayState: Int = 0) {
+    public init(id: UUID, audioId: UUID, displayState: Int = 0) {
         self.id = id
         self.audioId = audioId
         self.displayState = displayState

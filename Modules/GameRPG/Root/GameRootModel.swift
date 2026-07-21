@@ -10,6 +10,7 @@ import AudioRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import CharacterRPG
@@ -201,6 +202,7 @@ public final class GameRoot {
     var networkProxyStore: GameNetworkController
     let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel
+    let ruleRoot: RuleRootModel?
     let spaceRoot: SpaceRootModel
     let tableRoot: TableRootModel
     let characterRoot: CharacterRootModel
@@ -215,13 +217,14 @@ public final class GameRoot {
     private var networkActionTailID: UUID?
     private var demoTask: Task<Void, Never>?
 
-    public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
+    public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, ruleRoot: RuleRootModel? = nil, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
         self.mapRoot = mapRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
+        self.ruleRoot = ruleRoot
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
         self.characterRoot = characterRoot
@@ -635,6 +638,8 @@ extension GameRoot {
             pdfRoot.rootController
         case .photo:
             photoRoot.rootController
+        case .rule:
+            ruleRoot?.rootController ?? adventureRoot.rootController
         case .space:
             spaceRoot.rootController
         case .table:

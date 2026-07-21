@@ -10,6 +10,7 @@ import CharacterRPG
 import PdfRPG
 import DiceRPG
 import PhotoRPG
+import RuleRPG
 import WeatherRPG
 import SpaceRPG
 
@@ -57,6 +58,9 @@ struct SearchGlobalController {
         }
         result[.value] = await searchItems(in: root.characterRoot.rootController)
         result[.table] = await searchItems(in: root.tableRoot.rootController)
+        if let ruleRoot = root.ruleRoot {
+            result[.rule] = await searchItems(in: ruleRoot.rootController)
+        }
 
         result[.audio] = await searchItems(in: root.audioRoot.rootController)
         result[.dice] = await searchItems(in: root.diceRoot.rootController)

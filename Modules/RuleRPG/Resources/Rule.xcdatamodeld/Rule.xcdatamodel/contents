@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24411" systemVersion="25B78" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="RPGRule" representedClassName="RPGRule" syncable="YES" codeGenerationType="class">
+        <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="information" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
+        <attribute name="name" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
+        <attribute name="parentId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="ruleCategory" attributeType="String" defaultValueString=""/>
+        <attribute name="sourceMetadata" attributeType="String" defaultValueString=""/>
+        <attribute name="sourcePayload" attributeType="String" defaultValueString=""/>
+        <attribute name="tags" attributeType="String" defaultValueString=""/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGRuleEntry" inverseName="rule" inverseEntity="RPGRuleEntry"/>
+        <fetchIndex name="byUuid">
+            <fetchIndexElement property="uuid" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="RPGRuleEntry" representedClassName="RPGRuleEntry" syncable="YES" codeGenerationType="class">
+        <attribute name="content" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
+        <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="index" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="kind" attributeType="String" defaultValueString=""/>
+        <attribute name="name" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="rule" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGRule" inverseName="entries" inverseEntity="RPGRule"/>
+    </entity>
+</model>
+

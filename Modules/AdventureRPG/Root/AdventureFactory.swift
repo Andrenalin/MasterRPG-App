@@ -10,6 +10,7 @@ import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import SwiftData
@@ -25,6 +26,7 @@ public enum AdventureFactory {
         mapRoot: MapRootModel,
         pdfRoot: PdfRootModel,
         photoRoot: PhotoRootModel,
+        ruleRoot: RuleRootModel,
         spaceRoot: SpaceRootModel,
         tableRoot: TableRootModel,
         characterRoot: CharacterRootModel,
@@ -38,6 +40,7 @@ public enum AdventureFactory {
             mapRoot: mapRoot,
             pdfRoot: pdfRoot,
             photoRoot: photoRoot,
+            ruleRoot: ruleRoot,
             spaceRoot: spaceRoot,
             tableRoot: tableRoot,
             characterRoot: characterRoot,

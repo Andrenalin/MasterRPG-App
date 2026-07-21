@@ -176,8 +176,8 @@ public extension CoreDataController {
 
     func save() async throws {
         try await flushPendingOperations()
-        await context.perform {
-            saveCoreData()
+        try await context.perform {
+            try saveCoreDataThrowing()
         }
     }
 }
@@ -458,22 +458,29 @@ private extension CoreDataController {
     }
     
     func saveCoreData() {
-        guard context.hasPersistentChanges else { return }
         do {
-            Logger.coreDataController.debug("save changes")
-            
-            // Log CloudKit operation before save
-            Task {
-                await CloudKitOperationCounter.shared.recordOperation(
-                    function: "CoreDataController.saveCoreData() -> context.save()",
-                    file: "CoreDataController.swift"
-                )
-            }
-            
-            try context.save()
+            try saveCoreDataThrowing()
         } catch {
             Logger.coreDataController.error("save error \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    /// Transactional save boundary used by callers which must be able to roll back after a
+    /// persistent-store failure. Legacy fire-and-forget call sites continue through
+    /// `saveCoreData()` and retain their existing logging behavior.
+    func saveCoreDataThrowing() throws {
+        guard context.hasPersistentChanges else { return }
+        Logger.coreDataController.debug("save changes")
+
+        // Log CloudKit operation before save
+        Task {
+            await CloudKitOperationCounter.shared.recordOperation(
+                function: "CoreDataController.saveCoreData() -> context.save()",
+                file: "CoreDataController.swift"
+            )
+        }
+
+        try context.save()
     }
 }
 

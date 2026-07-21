@@ -13,6 +13,7 @@ struct LinkWindowCommandsView: View {
             AltLinkWindowCommandView(title: NetworkModules.value.title, networkModule: .value, key: "2")
             AltLinkWindowCommandView(title: NetworkModules.pdf.title, networkModule: .pdf, key: "3")
             AltLinkWindowCommandView(title: NetworkModules.table.title, networkModule: .table, key: "4")
+            AltLinkWindowCommandView(title: NetworkModules.rule.title, networkModule: .rule, key: "R")
         }
         AltLinkWindowCommandView(title: NetworkModules.map.title, networkModule: .map, key: "5")
         

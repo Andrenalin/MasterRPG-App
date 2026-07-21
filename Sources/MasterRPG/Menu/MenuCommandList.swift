@@ -11,6 +11,7 @@ import GameRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import CharacterRPG
@@ -28,6 +29,7 @@ struct MenuCommandList: Commands {
                     AdventureCommands(root: appModel.adventureRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                     CharacterCommands(root: appModel.characterRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                     PdfCommands(root: appModel.pdfRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
+                    RuleCommands(root: appModel.ruleRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                     TableCommands(root: appModel.tableRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                     MapCommands(root: appModel.mapRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                 }

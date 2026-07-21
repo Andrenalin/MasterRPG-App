@@ -22,6 +22,7 @@ public enum UserActivity {
         case NetworkModules.map.token: return .map
         case NetworkModules.pdf.token: return .pdf
         case NetworkModules.photo.token: return .photo
+        case NetworkModules.rule.token: return .rule
         case NetworkModules.space.token: return .space
         case NetworkModules.table.token: return .table
         case NetworkModules.value.token: return .value

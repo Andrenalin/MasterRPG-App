@@ -13,6 +13,7 @@ public enum RootRoute: Hashable, Codable {
     case maps
     case pdfs
     case photos
+    case rules
     case search
     case settings
     case space
@@ -30,6 +31,7 @@ public enum RootRoute: Hashable, Codable {
         case .map: self = .maps
         case .pdf: self = .pdfs
         case .photo: self = .photos
+        case .rule: self = .rules
         case .setting: self = .settings
         case .space: self = .space
         case .search: self = .search
@@ -51,6 +53,7 @@ public enum RootRoute: Hashable, Codable {
         case .maps: .map
         case .pdfs: .pdf
         case .photos: .photo
+        case .rules: .rule
         case .tables: .table
         case .search: .search
         case .settings: .setting
@@ -84,6 +87,7 @@ extension RootRoute: RawRepresentable {
         case NetworkModules.map.token: self = .maps
         case NetworkModules.pdf.token: self = .pdfs
         case NetworkModules.photo.token: self = .photos
+        case NetworkModules.rule.token: self = .rules
         case NetworkModules.search.token: self = .search
         case NetworkModules.setting.token: self = .settings
         case NetworkModules.space.token: self = .space
@@ -111,7 +115,7 @@ extension RootRoute: NavigationDestination {
     }
     
     public static var allTabs: [RootRoute] {
-        [.game, .adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
+        [.game, .adventures, .values, .rules, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
     }
 
     public static var visionTabs: [RootRoute] {
@@ -119,7 +123,7 @@ extension RootRoute: NavigationDestination {
     }
 
     public static var visionEditorTabs: [RootRoute] {
-        [.pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
+        [.rules, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
     }
 
     static var fiveTabs: [RootRoute] {

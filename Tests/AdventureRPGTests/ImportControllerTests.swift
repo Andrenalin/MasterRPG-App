@@ -8,6 +8,7 @@ import AudioRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+@testable import RuleRPG
 import SpaceRPG
 import TableRPG
 import CharacterRPG
@@ -84,6 +85,49 @@ struct ImportControllerTests {
             root.itemController.itemSync(for: itemId)?.copy()
         }
         #expect(importedItems == existingItems)
+    }
+
+    @Test func aggregateRoundTripPreservesTrailingRules() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let ruleID = try #require(UUID(uuidString: "5B9DF034-22F5-45E6-9483-1BA581A25533"))
+        let rule = RuleModel.fixture(
+            id: ruleID,
+            name: "Trailing aggregate rule",
+            category: .entry,
+            entries: [.fixture(name: "Rule body", content: "A preserved rule payload")]
+        )
+        root.ruleRoot.itemController.replace(model: rule, isInsert: true)
+
+        let exportIDs = root.exportController.exporting(
+            itemIds: ItemModuleIds(ids: [ruleID], module: .rule)
+        )
+        let output = OutputStream.toMemory()
+        output.open()
+        defer { output.close() }
+        _ = try await root.exportController.export(itemIds: exportIDs, into: output)
+        let data = try #require(
+            output.property(forKey: .dataWrittenToMemoryStreamKey) as? Data
+        )
+
+        try await MockRoot.resetTestData(for: root)
+        let input = InputStream(data: data)
+        input.open()
+        defer { input.close() }
+        try await root.importController.importStream(from: input, forceSave: false)
+
+        #expect(Set(root.ruleRoot.itemController.itemDataModel.items) == [ruleID])
+        let importedRule = try #require(root.ruleRoot.itemController.itemSync(for: ruleID))
+        #expect(importedRule.name == rule.name)
+        #expect(importedRule.description == rule.description)
+        #expect(importedRule.tags == rule.tags)
+        #expect(importedRule.category == rule.category)
+        #expect(importedRule.displayState == rule.displayState)
+        #expect(importedRule.entries == rule.entries)
+        #expect(importedRule.sourceMetadata == rule.sourceMetadata)
+        #expect(importedRule.sourcePayload == rule.sourcePayload)
+        #expect(importedRule.parentId == rule.parentId)
     }
 }
 #endif

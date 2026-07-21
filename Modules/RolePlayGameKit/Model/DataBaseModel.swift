@@ -16,6 +16,7 @@ import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import WeatherRPG
@@ -35,6 +36,7 @@ public final class DataBaseModel {
         MapRPG.Resources.bundle,
         PdfRPG.Resources.bundle,
         PhotoRPG.Resources.bundle,
+        RuleRPG.Resources.bundle,
         SpaceRPG.Resources.bundle,
         TableRPG.Resources.bundle,
         WeatherRPG.Resources.bundle
@@ -51,6 +53,7 @@ public final class DataBaseModel {
         MapRPG.Resources.bundle,
         PdfRPG.Resources.bundle,
         PhotoRPG.Resources.bundle,
+        RuleRPG.Resources.bundle,
         SpaceRPG.Resources.bundle,
         TableRPG.Resources.bundle,
         WeatherRPG.Resources.bundle

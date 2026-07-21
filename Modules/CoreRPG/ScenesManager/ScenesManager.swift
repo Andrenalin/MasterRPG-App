@@ -60,6 +60,10 @@ import OSLog
     private var openWindow: OpenWindowAction?
     private var dismissWindow: DismissWindowAction?
 #endif
+
+#if os(macOS)
+    private var openSettings: OpenSettingsAction?
+#endif
     
 #if os(visionOS)
     private var openImmersiveSpace: OpenImmersiveSpaceAction?
@@ -121,6 +125,19 @@ import OSLog
     
     
 #endif
+#endif
+
+#if os(macOS)
+    /// Configures the SwiftUI action that presents the app's Settings scene.
+    public func setOpenSettingsAction(_ openSettings: OpenSettingsAction) {
+        self.openSettings = openSettings
+    }
+
+    /// Presents or brings forward the app's Settings scene.
+    public func openSettingsWindow() {
+        guard let openSettings else { return }
+        openSettings()
+    }
 #endif
     
     /// Represents the current state of a window
