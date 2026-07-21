@@ -56,7 +56,11 @@ struct MapRPGDynamicPreviewSnapshotTests {
         let model = makeEditorModel()
 
         try await assertDynamicSnapshot("HexMapScaleView") {
-            HexMapScaleView(model: model, onScaleChanged: { _ in })
+            HexMapScaleView(
+                model: model,
+                onToggle: { model.isHexMap.toggle() },
+                onScaleChanged: { _ in }
+            )
                 .padding()
                 .background(.black)
         }

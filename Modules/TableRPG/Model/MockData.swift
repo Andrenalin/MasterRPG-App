@@ -4,7 +4,6 @@ import CoreRPG
 #if !os(tvOS)
 import GeneratorRPG
 #endif
-import RPGResources
 import SwiftUI
 import SwiftData
 
@@ -22,16 +21,6 @@ struct MockData: PreviewModifier {
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
-        let bundle = RPGResources.Resources.bundle
-        guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-            print("url nil ")
-            return container
-        }
-
-        let root = TableRootModel.preview
-        let task = root.importController.importUrl(from: url)
-        _ = try await task.value
-
         return container
     }
 }

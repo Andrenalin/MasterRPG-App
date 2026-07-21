@@ -8,7 +8,7 @@ import Testing
 @testable import MapRPG
 
 @MainActor
-@Suite("Battle round inline character details", .serialized)
+@Suite("Battle round character sheets", .serialized)
 struct BattleRoundInlineCharacterTests {
     @Test("A stored source Character resolves when the runtime id is absent or stale")
     func resolvesStoredSourceCharacter() async throws {
@@ -23,18 +23,15 @@ struct BattleRoundInlineCharacterTests {
             sourceCharacterId: sourceId,
             gameCharacterId: UUID()
         )
-        let entryId = UUID()
-        let resolver = BattleRoundCharacterDetailResolver(root: root)
+        let factory = BattleCharacterSheetFactory(root: root)
 
         let presentation = try #require(
-            resolver.presentation(entryId: entryId, for: combatant)
+            factory.presentation(for: combatant)
         )
 
-        #expect(resolver.canPresent(combatant))
-        #expect(presentation.entryId == entryId)
-        #expect(presentation.combatantId == combatant.id)
-        #expect(presentation.characterId == sourceId)
-        #expect(presentation.sheetRootModel.sheetModel.source.itemId == sourceId)
+        #expect(presentation.id == combatant.id)
+        #expect(presentation.name == combatant.name)
+        #expect(presentation.sheet.sheetModel.source.itemId == sourceId)
     }
 
     @Test("A runtime battle copy takes precedence over its stored Character template")
@@ -55,20 +52,19 @@ struct BattleRoundInlineCharacterTests {
             sourceCharacterId: sourceId,
             gameCharacterId: runtimeId
         )
-        let resolver = BattleRoundCharacterDetailResolver(root: root)
+        let factory = BattleCharacterSheetFactory(root: root)
 
         let presentation = try #require(
-            resolver.presentation(entryId: UUID(), for: combatant)
+            factory.presentation(for: combatant)
         )
 
-        #expect(presentation.characterId == runtimeId)
-        #expect(presentation.sheetRootModel.sheetModel.source.itemId == runtimeId)
+        #expect(presentation.sheet.sheetModel.source.itemId == runtimeId)
     }
 
     @Test("Nil and stale Character ids cannot create an empty inline sheet")
     func rejectsMissingAndStaleCharacters() async throws {
         let root = try await emptyRoot()
-        let resolver = BattleRoundCharacterDetailResolver(root: root)
+        let factory = BattleCharacterSheetFactory(root: root)
         let missing = makeCombatant(
             name: "Unassigned token",
             sourceCharacterId: nil,
@@ -80,75 +76,31 @@ struct BattleRoundInlineCharacterTests {
             gameCharacterId: UUID()
         )
 
-        #expect(!resolver.canPresent(missing))
-        #expect(resolver.presentation(entryId: UUID(), for: missing) == nil)
-        #expect(!resolver.canPresent(stale))
-        #expect(resolver.presentation(entryId: UUID(), for: stale) == nil)
+        #expect(factory.presentation(for: missing) == nil)
+        #expect(factory.presentation(for: stale) == nil)
     }
 
-    @Test("Inline detail toggles by battle entry and combatant and clears stale selection")
-    func inlineSelectionLifecycle() async throws {
+    @Test("Sheet and character-selection presentations retain combatant identity")
+    func presentationIdentity() async throws {
         let root = try await emptyRoot()
-        let firstCharacterId = UUID()
-        let secondCharacterId = UUID()
+        let characterId = UUID()
         root.characterRoot.itemController.replace(
-            model: ValueModel(id: firstCharacterId, name: "First"),
+            model: ValueModel(id: characterId, name: "Assigned hero"),
             isInsert: true
         )
-        root.characterRoot.itemController.replace(
-            model: ValueModel(id: secondCharacterId, name: "Second"),
-            isInsert: true
-        )
-        let firstCombatant = makeCombatant(
-            name: "First token",
-            sourceCharacterId: firstCharacterId,
+        let combatant = makeCombatant(
+            name: "Hero token",
+            sourceCharacterId: characterId,
             gameCharacterId: nil
         )
-        let secondCombatant = makeCombatant(
-            name: "Second token",
-            sourceCharacterId: secondCharacterId,
-            gameCharacterId: nil
+        let sheet = try #require(
+            BattleCharacterSheetFactory(root: root).presentation(for: combatant)
         )
-        let resolver = BattleRoundCharacterDetailResolver(root: root)
-        let entryId = UUID()
-        let first = try #require(
-            resolver.presentation(entryId: entryId, for: firstCombatant)
-        )
-        let second = try #require(
-            resolver.presentation(entryId: entryId, for: secondCombatant)
-        )
-        let selection = BattleRoundInlineCharacterSelection()
-        let entry = BattleRoundEntry(
-            id: entryId,
-            attackerId: firstCombatant.id,
-            defenderIds: [secondCombatant.id]
-        )
+        let sheetPresentation = BattleRoundPresentation.sheet(sheet)
+        let selectionPresentation = BattleRoundPresentation.selection(combatant.id)
 
-        selection.toggle(first)
-        #expect(selection.presentation?.combatantId == firstCombatant.id)
-
-        selection.toggle(first)
-        #expect(selection.presentation == nil)
-
-        selection.toggle(first)
-        selection.toggle(second)
-        #expect(selection.presentation?.combatantId == secondCombatant.id)
-
-        selection.retainSelection(
-            in: [firstCombatant, secondCombatant],
-            entries: [entry]
-        )
-        #expect(selection.presentation?.combatantId == secondCombatant.id)
-
-        let entryWithoutDefender = BattleRoundEntry(
-            id: entryId,
-            attackerId: firstCombatant.id
-        )
-        selection.retainSelection(
-            in: [firstCombatant, secondCombatant],
-            entries: [entryWithoutDefender]
-        )
-        #expect(selection.presentation == nil)
+        #expect(sheetPresentation.id == combatant.id)
+        #expect(selectionPresentation.id == combatant.id)
     }
 
     private func emptyRoot() async throws -> MapRootModel {

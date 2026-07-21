@@ -2,46 +2,33 @@
 
 import CoreRPG
 import Foundation
-import RPGResources
 import CoreGraphics
 
 public extension PdfRootModel {
+    static let previewPdfId = PdfModel.previewId
     static let previewSpaceId = PdfModel.previewId
     
     @MainActor
-    static let preview: PdfRootModel = {
+    static var preview: PdfRootModel { previewFixture() }
+
+    @MainActor
+    internal static func previewFixture(
+        models: [PdfModel] = PdfModel.previewFixtures
+    ) -> PdfRootModel {
         let root = PdfRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let realRootManager = RootManager.preview(fake: root.rootController)
         root.setUp(context: nil, batchContext: nil, rootManager: realRootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: realRootManager))
+        for model in models {
+            root.itemController.replace(model: model, isInsert: true)
+        }
         root.editController.setCurrentItem(to: .preview)
         return root
-    }()
+    }
     
     @MainActor
-    static let previewWithData: PdfRootModel = {
-        let root = PdfRootModel.preview
-        let itemController = root.itemController
-        let importController = root.importController
-        let editController = root.editController
-#if DEBUG
-        Task(priority: .userInitiated) {
-            let bundle = RPGResources.Resources.bundle
-            guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-                print("url nil ")
-                return
-            }
-            let task = importController.importUrl(from: url)
-            let _ = try? await task.value
-            let saveTask = Task { @MainActor in
-                editController.setCurrentItem(to: .previewWithData(from: itemController))
-            }
-            _ = await saveTask.result
-        }
-#endif
-        return root
-    }()
+    static var previewWithData: PdfRootModel { previewFixture() }
     
 #if DEBUG
     @MainActor
@@ -115,7 +102,20 @@ extension PdfModel {
     nonisolated static let previewEmptyId = UUID(uuid: (0xB2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
     @MainActor
-    static let preview = PdfModel(id: PdfModel.previewId, name: "Rulebook", description: "Here is a rule book", tags: ["Fanatasy", "DS"], entries: [.preview])
+    static var preview: PdfModel {
+        PdfModel(
+            id: PdfModel.previewId,
+            name: "Game Master Rulebook",
+            description: "A real PDF fixture with bookmarks and extractable text.",
+            tags: ["Fantasy", "Rules"],
+            fileUrl: PreviewAssetFixture.fileUrl(
+                .pdf,
+                fileId: previewId,
+                module: NetworkModules.pdf.token
+            ),
+            entries: [.preview]
+        )
+    }
 
     /// A deterministic PDF record without a file or bookmarks.
     @MainActor
@@ -126,13 +126,18 @@ extension PdfModel {
         tags: ["Preview"],
         entries: []
     )
+
+    @MainActor
+    static var previewFixtures: [PdfModel] {
+        [preview, previewEmpty]
+    }
 }
 
 extension PdfEntryModel {
     nonisolated static let previewId = UUID.fixture("A5AC90DF-36F2-3152-B283-F0CF9D0BAC35")
     
     @MainActor
-    static let preview = PdfEntryModel(id: PdfModel.previewId, name: "First Bookmark", content: "Some Text from the pdf on a page", pageNumber: "3", bounds: .zero)
+    static let preview = PdfEntryModel(id: previewId, name: "First Bookmark", content: "A bookmarked rule from the example PDF.", pageNumber: "1", bounds: .zero)
 }
 
 private extension UUID {

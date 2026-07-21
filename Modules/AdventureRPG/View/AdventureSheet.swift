@@ -39,7 +39,7 @@ struct AdventureSheet: View {
                 configuration: configuration,
                 searchContext: searchContext,
                 dismissAction: dismissAction,
-                isEditor: true,
+                isEditor: false,
                 linkTypes: LinkAdventureModuleTransferable.self
             ) { sheetRootModel in
                 GlassEffectContainerAll {

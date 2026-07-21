@@ -910,9 +910,12 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     @Test("CachePhotoView")
     func snapshotCachePhotoView() async throws {
         try await assertPreviewSnapshot("CachePhotoView") {
-            CoreRPG.CachePhotoView(cacheController: FakeImageCacheController(), model: FakeItemModel(name: "Test"), highResolution: false)
-                .tint(NetworkModules.space.tint)
-                .accentColor(NetworkModules.space.tint)
+            let fixture = PreviewAssetFixture.cachePhotoViewFixture(.adventure)
+            CoreRPG.CachePhotoView(
+                cacheController: fixture.cacheController,
+                model: fixture.model
+            )
+            .tint(NetworkModules.space.tint)
         }
     }
 

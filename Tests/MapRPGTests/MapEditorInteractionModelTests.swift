@@ -25,6 +25,25 @@ struct MapEditorInteractionModelTests {
         #expect(!external.registersGameToolbarSession)
     }
 
+    @Test("Reshare state includes hex-grid visibility changes")
+    func reshareTracksHexGridChanges() {
+        let session = MapEditorSession(
+            map: .previewEmpty,
+            image: AKImage(),
+            photoDegrees: 0,
+            containerSize: CGSize(width: 800, height: 600),
+            mapMode: .gameMaster
+        )
+
+        #expect(!session.canReshare)
+
+        session.isHexMap.toggle()
+        #expect(session.canReshare)
+
+        session.resetReshare()
+        #expect(!session.canReshare)
+    }
+
     @Test("Needles render from top-left to bottom-right without changing persisted indices")
     func needlePainterOrder() {
         let entryId = UUID()

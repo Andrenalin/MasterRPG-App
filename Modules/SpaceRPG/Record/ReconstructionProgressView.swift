@@ -218,7 +218,7 @@ extension PhotogrammetrySession.Output.ProcessingStage {
     @Previewable @State var cancelled = false
 
     ReconstructionProgressView(
-        outputFile: URL(fileURLWithPath: "/dev/null"),
+        outputFile: PreviewAssetFixture.url(.space) ?? URL(filePath: "/dev/null"),
         completed: $completed,
         cancelled: $cancelled
     )

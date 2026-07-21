@@ -2,39 +2,31 @@
 
 import CoreRPG
 import Foundation
-import RPGResources
 
 public extension SpaceRootModel {
     static let previewSpaceId = SpaceModel.previewId
     
     @MainActor
-    static let preview: SpaceRootModel = {
+    static var preview: SpaceRootModel { previewFixture() }
+
+    @MainActor
+    internal static func previewFixture(
+        models: [SpaceModel] = SpaceModel.previewFixtures
+    ) -> SpaceRootModel {
         let root = SpaceRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let realRootManager = RootManager.preview(fake: root.rootController)
         root.setUp(context: nil, batchContext: nil, rootManager: realRootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: realRootManager))
+        for model in models {
+            root.itemController.replace(model: model, isInsert: true)
+        }
         root.editController.setCurrentItem(to: .preview)
         return root
-    }()
+    }
     
     @MainActor
-    static let previewWithData: SpaceRootModel = {
-        let root = SpaceRootModel.preview
-        let importController = root.importController
-#if DEBUG
-        Task(priority: .userInitiated) {
-            let bundle = RPGResources.Resources.bundle
-            guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-                print("url nil ")
-                return
-            }
-            let task = importController.importUrl(from: url, withOverwrite: true)
-            let _ = try? await task.value
-        }
-#endif
-        return root
-    }()
+    static var previewWithData: SpaceRootModel { previewFixture() }
     
 #if DEBUG
     @MainActor
@@ -62,7 +54,22 @@ extension SpaceModel {
     nonisolated static let previewEmptyId = UUID(uuid: (0xB4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
     nonisolated static let previewRotatedId = UUID(uuid: (0xB4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
 
-    static let preview = SpaceModel(id: previewId, name: "ExodusAtlantisMap", description: "Imaginary map of Atlantis for Amber DRPG \"Exodus\", a tabletop roleplaying game. Author: Theresa Thomas. From Wikimedia: [Wikipedia](https://commons.wikimedia.org/wiki/File:ExodusAtlantisMap.jpg)", tags: ["Map", "Fanatasy"], displayState: 0, degrees: 0, entries: [])
+    static var preview: SpaceModel {
+        SpaceModel(
+            id: previewId,
+            name: "Ancient Relic",
+            description: "A real USDZ object used by the 3D viewer preview.",
+            tags: ["3D", "Artifact"],
+            displayState: 0,
+            degrees: 0,
+            fileUrl: PreviewAssetFixture.fileUrl(
+                .space,
+                fileId: previewId,
+                module: NetworkModules.space.token
+            ),
+            entries: []
+        )
+    }
 
     static let previewEmpty = SpaceModel(
         id: previewEmptyId,
@@ -78,8 +85,17 @@ extension SpaceModel {
         description: "A deterministic rotated model fixture.",
         tags: ["Preview", "Rotated"],
         displayState: 0,
-        degrees: 90
+        degrees: 90,
+        fileUrl: PreviewAssetFixture.fileUrl(
+            .space,
+            fileId: previewRotatedId,
+            module: NetworkModules.space.token
+        )
     )
+
+    static var previewFixtures: [SpaceModel] {
+        [preview, previewRotated, previewEmpty]
+    }
 }
 
 extension ItemRowTreeModel {

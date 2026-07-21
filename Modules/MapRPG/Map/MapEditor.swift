@@ -134,6 +134,7 @@ struct MapEditor: View {
         }
         .onChange(of: session.hexScale) {
             guard session.mapMode != .edit,
+                  session.isHexMap,
                   session.hexScale != 0,
                   session.hexScale != map.hexMapScale else { return }
             editController.createHexMap(model: map, hexMapScale: session.hexScale)

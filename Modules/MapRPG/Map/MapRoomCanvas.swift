@@ -208,12 +208,21 @@ private struct MapRoomHitTarget: View {
 #if os(visionOS)
             .hoverEffect(.highlight)
 #endif
-            .highPriorityGesture(doubleTapGesture.exclusively(before: longPressGesture))
+            .highPriorityGesture(
+                doubleTapGesture.exclusively(before: longPressGesture),
+                including: session.isPointerInteractionActive ? .none : .all
+            )
+            .modifier(
+                MapPointerTapGestureModifier(
+                    session: session,
+                    isEnabled: session.isPointerInteractionActive
+                )
+            )
             .modifier(
                 MapViewportGestureModifier(
                     session: session,
                     interactionTransform: interactionTransform,
-                    isEnabled: true
+                    isEnabled: !session.isPointerInteractionActive
                 )
             )
             .accessibilityElement(children: .ignore)

@@ -178,12 +178,12 @@ public struct PdfSummaryAnalysisView: View {
 }
 
 #Preview("Summary Analysis View") {
-    if let url = Bundle.main.url(forResource: "sample", withExtension: "pdf"),
+    if let url = PreviewAssetFixture.url(.pdf),
        let pdfDocument = PDFDocument(url: url) {
         PdfSummaryAnalysisView(pdfDocument: pdfDocument) { content in
             print("Analyzed: \(content.title)")
         }
     } else {
-        Text(verbatim: "No sample PDF available")
+        Text(verbatim: "PDF fixture is available in Debug previews")
     }
 }

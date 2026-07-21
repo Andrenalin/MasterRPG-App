@@ -6,6 +6,8 @@ import SwiftUI
 
 public extension PhotoRootModel {
     static let previewPhotoId = PhotoModel.previewId
+    static let previewPaladinPhotoId = PhotoModel.previewPaladinId
+    static let previewWizardPhotoId = PhotoModel.previewRotatedId
 
     @MainActor
     static var preview: PhotoRootModel {
@@ -27,9 +29,11 @@ public extension PhotoRootModel {
         }
 
         if let cacheController = root.itemController.cacheController {
-            let image = previewFixtureImage()
-            cacheController.setCachedImage(image, for: PhotoModel.previewId)
-            cacheController.setCachedThumbnail(image, for: PhotoModel.previewId)
+            for (id, photo) in PhotoModel.previewAssetFixtures {
+                guard let image = PreviewAssetFixture.image(photo) else { continue }
+                cacheController.setCachedImage(image, for: id)
+                cacheController.setCachedThumbnail(image, for: id)
+            }
         }
 
         root.editController.setCurrentItem(to: .preview)
@@ -64,6 +68,7 @@ extension PhotoRootModel: RootExportControllable {
 // MARK: Preview - Test
 extension PhotoModel {
     nonisolated static let previewId = UUID.fixture("12975503-CC29-4837-8018-EFF774E97595")
+    nonisolated static let previewPaladinId = UUID(uuid: (0xB3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3))
     nonisolated static let previewEmptyId = UUID(uuid: (0xB3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
     nonisolated static let previewRotatedId = UUID(uuid: (0xB3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
 
@@ -73,9 +78,29 @@ extension PhotoModel {
             id: previewId,
             name: "ExodusAtlantisMap",
             description: "Imaginary map of Atlantis for Amber DRPG \"Exodus\", a tabletop roleplaying game. Author: Theresa Thomas. From Wikimedia: [Wikipedia](https://commons.wikimedia.org/wiki/File:ExodusAtlantisMap.jpg)",
-            tags: ["Map", "Fanatasy"],
+            tags: ["Map", "Fantasy"],
             degrees: 0,
+            fileUrl: PreviewAssetFixture.photoFileUrl(
+                .adventure,
+                fileId: previewId,
+                module: NetworkModules.photo.token
+            ),
             entries: []
+        )
+    }
+
+    @MainActor
+    static var previewPaladin: PhotoModel {
+        PhotoModel(
+            id: previewPaladinId,
+            name: "Paladin",
+            description: "A player-character portrait used by previews and snapshots.",
+            tags: ["Character", "Portrait"],
+            fileUrl: PreviewAssetFixture.photoFileUrl(
+                .paladin,
+                fileId: previewPaladinId,
+                module: NetworkModules.photo.token
+            )
         )
     }
 
@@ -96,14 +121,25 @@ extension PhotoModel {
             name: "Rotated Photo",
             description: "A portrait-orientation preview fixture.",
             tags: ["Preview", "Rotated"],
-            degrees: 90
+            degrees: 90,
+            fileUrl: PreviewAssetFixture.photoFileUrl(
+                .wizard,
+                fileId: previewRotatedId,
+                module: NetworkModules.photo.token
+            )
         )
     }
 
     @MainActor
     static var previewFixtures: [PhotoModel] {
-        [preview, previewEmpty, previewRotated]
+        [preview, previewPaladin, previewRotated, previewEmpty]
     }
+
+    nonisolated static let previewAssetFixtures: [(UUID, PreviewAssetFixture.Photo)] = [
+        (previewId, .adventure),
+        (previewPaladinId, .paladin),
+        (previewRotatedId, .wizard),
+    ]
 }
 
 extension ItemRowTreeModel {
@@ -169,15 +205,6 @@ extension LinkController {
     static var preview: LinkController {
         PhotoRootModel.previewFixture().linkController
     }
-}
-
-@MainActor
-private func previewFixtureImage() -> AKImage {
-#if os(macOS)
-    AKImage(systemSymbolName: "photo", accessibilityDescription: "Preview photo") ?? AKImage()
-#else
-    AKImage(systemName: "photo") ?? AKImage()
-#endif
 }
 
 private extension UUID {

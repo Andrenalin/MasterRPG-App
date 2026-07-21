@@ -3,11 +3,10 @@
 import AVFoundation
 import CoreRPG
 import Foundation
-import RPGResources
 
 public extension AudioRootModel {
     @MainActor
-    static let preview: AudioRootModel = previewFixture()
+    static var preview: AudioRootModel { previewFixture() }
 
     @MainActor
     internal static func previewFixture(
@@ -31,26 +30,7 @@ public extension AudioRootModel {
     }
     
     @MainActor
-    static let previewWithData: AudioRootModel = {
-        let root = AudioRootModel.preview
-        let importController = root.importController
-        let editController = root.editController
-#if DEBUG
-        Task(priority: .userInitiated) {
-            let bundle = RPGResources.Resources.bundle
-            guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-                print("url nil ")
-                return
-            }
-            let task = importController.importUrl(from: url)
-            let _ = try? await task.value
-            Task { @MainActor in
-                editController.setCurrentItem(to: .previewWithData)
-            }
-        }
-#endif
-        return root
-    }()
+    static var previewWithData: AudioRootModel { previewFixture() }
     
 #if DEBUG
     @MainActor
@@ -83,7 +63,12 @@ extension AudioModel {
         id: previewId,
         name: "Storm over Emberkeep",
         description: "A dramatic soundtrack for the final encounter.",
-        tags: ["Combat", "Orchestral"]
+        tags: ["Combat", "Orchestral"],
+        fileUrl: PreviewAssetFixture.fileUrl(
+            .audio,
+            fileId: previewId,
+            module: NetworkModules.audio.token
+        )
     )
 
     @MainActor
@@ -93,13 +78,23 @@ extension AudioModel {
                 id: previewId,
                 name: "Storm over Emberkeep",
                 description: "A dramatic soundtrack for the final encounter.",
-                tags: ["Combat", "Orchestral"]
+                tags: ["Combat", "Orchestral"],
+                fileUrl: PreviewAssetFixture.fileUrl(
+                    .audio,
+                    fileId: previewId,
+                    module: NetworkModules.audio.token
+                )
             ),
             AudioModel(
                 id: previewAmbientId,
                 name: "Rain in the Old Forest",
                 description: "Quiet ambience for exploration.",
-                tags: ["Ambient"]
+                tags: ["Ambient"],
+                fileUrl: PreviewAssetFixture.fileUrl(
+                    .audio,
+                    fileId: previewAmbientId,
+                    module: NetworkModules.audio.token
+                )
             ),
             AudioModel(id: previewEmptyId, name: "Audio without File")
         ]
@@ -108,17 +103,19 @@ extension AudioModel {
 
 extension PlaylistItem {
     static var previewFixtures: [PlaylistItem] {
-        [
+        let audioURL = PreviewAssetFixture.url(.audio)
+            ?? URL.temporaryDirectory.appending(path: "masterrpg-preview-audio.mp3")
+        return [
             PlaylistItem(
                 id: AudioModel.previewId,
-                url: URL(filePath: "/tmp/masterrpg-preview-storm.m4a"),
+                url: audioURL,
                 title: "Storm over Emberkeep",
                 artist: "MasterRPG Preview",
                 duration: CMTime(seconds: 180, preferredTimescale: 600)
             ),
             PlaylistItem(
                 id: AudioModel.previewAmbientId,
-                url: URL(filePath: "/tmp/masterrpg-preview-rain.m4a"),
+                url: audioURL,
                 title: "Rain in the Old Forest",
                 artist: "MasterRPG Preview",
                 duration: CMTime(seconds: 240, preferredTimescale: 600)

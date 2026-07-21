@@ -32,21 +32,28 @@ final class MapEditorSession {
     var maxHeightRatio: Double = 1.0
     var lastPinScale: CGFloat = 1
     var lastHexScale: Double = 1
+    var lastIsHexMap: Bool = false
     var isHexMap: Bool = false
     var displayMode: MapDisplayMode = .master
     var hideCloseButton: Bool = false
 
-    var canReshare: Bool { lastHexScale != hexScale || lastPinScale != pinScale }
+    var canReshare: Bool {
+        lastHexScale != hexScale
+            || lastPinScale != pinScale
+            || lastIsHexMap != isHexMap
+    }
 
     func resetScales(from map: MapModel) {
         pinScale = map.pinScale
         hexScale = map.hexMapScale
+        isHexMap = map.entries.contains(where: { $0.isHexGrid })
         resetReshare()
     }
 
     func resetReshare() {
         lastPinScale = pinScale
         lastHexScale = hexScale
+        lastIsHexMap = isHexMap
     }
 
     // MARK: - Game Mode State
@@ -55,6 +62,9 @@ final class MapEditorSession {
     var playerPinId: UUID? { configuration.playerPinId }
     var isStreaming: Bool = false
     var isPointing: Bool = false
+    var isPointerInteractionActive: Bool {
+        mapMode == .gameMaster && isPointing
+    }
 
     var iconDisplayMode: String {
         switch displayMode {
@@ -121,6 +131,7 @@ final class MapEditorSession {
         self.lastPinScale = map.pinScale
         self.lastHexScale = map.hexMapScale
         self.isHexMap = map.entries.contains(where: { $0.isHexGrid })
+        self.lastIsHexMap = map.entries.contains(where: { $0.isHexGrid })
         self.displayMode = configuration.displayMode
         self.mapId = map.id
         self.pendingInitialFitMapId = Self.isValidSize(effectiveContainerSize)
@@ -357,8 +368,8 @@ final class MapEditorSession {
             withAnimation(.bouncy) {
                 entries.resetEntries(mapId: map.id, entries: final)
             }
-            isHexMap = final.contains(where: { $0.isHexGrid })
         }
+        isHexMap = final.contains(where: { $0.isHexGrid })
 
         if focusChanged, appliesFocus, appeared, !isInitialRoomHydration {
             focusedMap()
@@ -372,6 +383,7 @@ final class MapEditorSession {
         mapId = map.id
         hexScale = map.hexMapScale
         pinScale = map.pinScale
+        isHexMap = map.entries.contains(where: { $0.isHexGrid })
         resetReshare()
 
         if changedMap {
@@ -586,6 +598,9 @@ final class MapEditorSession {
 
     func updatePointer(location: CGPoint, map: MapModel, withOutRelocation: Bool = false) {
         guard map.pointer.isShown || isPointing else { return }
+        if mapMode == .gameMaster {
+            map.pointer.isShown = isPointing
+        }
         if withOutRelocation {
             map.pointer.location = location
         } else {
@@ -596,10 +611,6 @@ final class MapEditorSession {
             map.pointer.timeInterval.nextUp
         )
         pins.setPinPointer(updatedPin: map.pointer)
-        if mapMode == .gameMaster {
-            map.pointer.isShown = isPointing
-            pins.setPinPointer(updatedPin: map.pointer)
-        }
         actions.sendMapUpdates?()
     }
 

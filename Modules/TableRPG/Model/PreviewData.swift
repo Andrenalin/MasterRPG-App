@@ -4,51 +4,33 @@ import CoreRPG
 import DiceRPG
 import Foundation
 import PdfRPG
-import RPGResources
 
 // MARK: Preview
 
 public extension TableRootModel {
     @MainActor
-    static let preview: TableRootModel = {
-        let root = TableRootModel(tagController: .preview, diceRoot: DiceFactory.root(tagController: .preview), pdfRoot: .preview)
+    static var preview: TableRootModel { previewFixture() }
+
+    @MainActor
+    internal static func previewFixture(
+        models: [TableModel] = TableModel.previewFixtures
+    ) -> TableRootModel {
+        let root = TableRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root, spaceRoot: root, tableRoot: root, weatherRoot: root)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         root.diceRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         root.pdfRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        for model in models {
+            root.itemController.replace(model: model, isInsert: true)
+        }
         root.editController.setCurrentItem(to: .preview)
         return root
-    }()
+    }
     
     @MainActor
-    static let previewWithData: TableRootModel = {
-        let root = TableRootModel.preview
-        let itemController = root.itemController
-        let importController = root.importController
-        let editController = root.editController
-        let gameController = root.gameController
-#if DEBUG
-        Task { @MainActor in
-            let bundle = RPGResources.Resources.bundle
-            guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-                print("url nil ")
-                return
-            }
-            let task = importController.importUrl(from: url)
-            let _ = try? await task.value
-            let saveTask = Task { @MainActor in
-                editController.setCurrentItem(to: .previewWithData(from: itemController))
-            }
-            _ = await saveTask.result
-            Task {
-                _ = await gameController.setCurrent(itemId: itemController.itemDataModel.items.first!)
-            }
-        }
-#endif
-        return root
-    }()
+    static var previewWithData: TableRootModel { previewFixture() }
     
 #if DEBUG
     @MainActor
@@ -131,7 +113,7 @@ extension TableModel {
         category: .loot,
         displayState: 0,
         tableType: .dice,
-        diceId: UUID.fixture("46339863-D29C-4B28-98BC-C6A20D5BCE0E"),
+        diceId: DiceRootModel.previewDiceId,
         entries: [
             .preview,
             .previewLink,
@@ -306,6 +288,11 @@ extension TableModel {
             )
         ]
     )
+
+    @MainActor
+    static var previewFixtures: [TableModel] {
+        [preview, previewShortList, previewEmpty]
+    }
 }
 
 extension TableEntryModel {

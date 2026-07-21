@@ -40,7 +40,9 @@ struct ReconstructionPrimaryView: View {
 }
 
 #Preview("Reconstruction") {
-    ReconstructionPrimaryView(outputFile: URL(fileURLWithPath: "/dev/null"))
+    ReconstructionPrimaryView(
+        outputFile: PreviewAssetFixture.url(.space) ?? URL(filePath: "/dev/null")
+    )
         .environment(AppDataModel.instance)
 }
 

@@ -61,13 +61,14 @@ struct EditToolBarViewModifier: ViewModifier {
                         VStack(spacing: 8) {
                             PinScaleView(model: editorModel)
 
-                            HStack {
-                                HexMapScaleView(model: editorModel) { scale in
-                                    mapEditController.updateHexScale(scale, editorModel: editorModel)
+                            HexMapScaleView(
+                                model: editorModel,
+                                onToggle: {
+                                    mapEditController.toggleHexMap(editorModel: editorModel)
+                                    hideScales = false
                                 }
-
-                                hexCreationButton
-                                    .buttonStyle(.bordered)
+                            ) { scale in
+                                mapEditController.updateHexScale(scale, editorModel: editorModel)
                             }
 
                             MaxSizeScaleView(model: editorModel) { ratio in
@@ -348,20 +349,6 @@ private extension EditToolBarViewModifier {
     var isSharedMap: Bool {
         guard let mapId = editorModel.workingCopy?.id else { return false }
         return root.gameController.gameModel.itemData[mapId] is MapModel
-    }
-
-    @ViewBuilder var hexCreationButton: some View {
-        Button {
-            withAnimation(reduceMotion ? nil : .default) {
-                mapEditController.toggleHexMap(editorModel: editorModel)
-                hideScales = false
-            }
-        } label: {
-            let symbolName = editorModel.isHexMap ? "hexagon.fill" : "hexagon"
-            Image(systemName: symbolName)
-                .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                .accessibilityLabel(Text("Hex Grid", bundle: .module))
-        }
     }
 
     @ViewBuilder var undoButton: some View {

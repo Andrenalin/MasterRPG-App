@@ -89,8 +89,29 @@ private extension CachePhotoView {
     }
 }
 
-#Preview {
-    CachePhotoView(cacheController: FakeImageCacheController(), model: FakeItemModel(name: "Test"), highResolution: false)
-        .tint(NetworkModules.space.tint)
-        .accentColor(NetworkModules.space.tint)
+#Preview("CachePhotoView · Adventure") {
+    let fixture = PreviewAssetFixture.cachePhotoViewFixture(.adventure)
+    CachePhotoView(
+        cacheController: fixture.cacheController,
+        model: fixture.model
+    )
+    .tint(NetworkModules.space.tint)
+}
+
+#Preview("CachePhotoView · Paladin") {
+    let fixture = PreviewAssetFixture.cachePhotoViewFixture(.paladin)
+    CachePhotoView(
+        cacheController: fixture.cacheController,
+        model: fixture.model
+    )
+    .tint(NetworkModules.space.tint)
+}
+
+#Preview("CachePhotoView · Wizard") {
+    let fixture = PreviewAssetFixture.cachePhotoViewFixture(.wizard)
+    CachePhotoView(
+        cacheController: fixture.cacheController,
+        model: fixture.model
+    )
+    .tint(NetworkModules.space.tint)
 }

@@ -106,7 +106,7 @@ extension MapModel {
             MapEntryModel.previewTreasureRoom,
             MapEntryModel.previewCorridor,
         ],
-        photoId: UUID.fixture("F3CA87E3-940B-402F-B059-F09EC602AC52"),
+        photoId: PhotoRootModel.previewPhotoId,
         width: 1000,
         height: 800,
         mapPins: MapPinModel.previewPins,

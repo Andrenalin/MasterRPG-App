@@ -101,12 +101,8 @@ struct PdfContentView: View {
 
 #Preview {
     @Previewable @State var searchModel: PdfSearchModel = PdfSearchModel(pdfDoc: {
-        if let asset = NSDataAsset(name: "PdfTest") {
-            let data = asset.data
-            return PDFDocument(data: data) ??
-            PDFDocument()
-        }
-        return nil
+        guard let url = PreviewAssetFixture.url(.pdf) else { return PDFDocument() }
+        return PDFDocument(url: url) ?? PDFDocument()
     }())
     
     PdfContentView(searchModel: searchModel, horizontal: false, entry: nil)

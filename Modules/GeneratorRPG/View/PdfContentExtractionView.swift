@@ -138,5 +138,8 @@ public struct PdfContentExtractionView: View {
 }
 
 #Preview {
-    PdfContentExtractionView(pdfDocument: PDFDocument()) { _ in }
+    let document = PreviewAssetFixture.url(.pdf)
+        .flatMap(PDFDocument.init(url:))
+        ?? PDFDocument()
+    PdfContentExtractionView(pdfDocument: document) { _ in }
 }

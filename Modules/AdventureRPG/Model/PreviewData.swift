@@ -72,7 +72,23 @@ public extension AdventureRootModel {
 // MARK: Preview - Test
 extension AdventureModel {
     nonisolated static let previewId = UUID(uuid: (0x5F, 0x6D, 0x6D, 0x52, 0x3D, 0xDB, 0x4B, 0x20, 0x8D, 0x45, 0xDF, 0xB5, 0x43, 0x79, 0x94, 0x17))
-    static let preview = testViewModel
+    @MainActor
+    static var preview: AdventureModel {
+        AdventureModel(
+            id: previewId,
+            name: "Das Geheimnis der Goblinburg",
+            description: "A goblin-held fortress needs a band of heroes.",
+            tags: ["DS", "1-4", "Dungeon"],
+            photoId: PhotoRootModel.previewPhotoId,
+            entries: [
+                AdventureEntryModel(
+                    id: entryUuid,
+                    name: "Ground Floor",
+                    content: "The first room behind the ruined gate."
+                )
+            ]
+        )
+    }
 }
 
 extension ItemRowTreeModel {
@@ -153,24 +169,13 @@ extension AdventureModel {
 
     static var previewFixtures: [AdventureModel] {
         [
-            AdventureModel(
-                id: previewId,
-                name: "Das Geheimnis der Goblinburg",
-                description: "A goblin-held fortress needs a band of heroes.",
-                tags: ["DS", "1-4", "Dungeon"],
-                entries: [
-                    AdventureEntryModel(
-                        id: entryUuid,
-                        name: "Ground Floor",
-                        content: "The first room behind the ruined gate."
-                    )
-                ]
-            ),
+            preview,
             AdventureModel(
                 id: uuid2,
                 name: "Asche der Drachen",
                 description: "A longer adventure fixture for wrapping and list layouts.",
                 tags: ["DS", "5-8", "Original"],
+                photoId: PhotoRootModel.previewPaladinPhotoId,
                 entries: [
                     AdventureEntryModel(
                         id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x12)),
@@ -179,7 +184,13 @@ extension AdventureModel {
                     )
                 ]
             ),
-            AdventureModel(id: uuid3, name: "Empty Adventure")
+            AdventureModel(
+                id: uuid3,
+                name: "Wizard's Tower",
+                description: "A compact fixture with a linked character portrait.",
+                tags: ["Magic", "Tower"],
+                photoId: PhotoRootModel.previewWizardPhotoId
+            )
         ]
     }
 }

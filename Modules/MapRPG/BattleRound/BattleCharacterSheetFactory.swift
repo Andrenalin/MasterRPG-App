@@ -21,7 +21,8 @@ struct BattleCharacterSheetFactory {
             sheetRootManager = baseRootManager.with(
                 reviewSheetMemory: ReviewSheetMemory(items: [.value: items])
             )
-        } else if let sourceCharacterId = combatant.sourceCharacterId {
+        } else if let sourceCharacterId = combatant.sourceCharacterId,
+                  characterRoot.itemControllable.itemSync(for: sourceCharacterId, noGame: true) != nil {
             itemId = sourceCharacterId
             sheetRootManager = baseRootManager
         } else {

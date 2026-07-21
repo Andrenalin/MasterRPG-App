@@ -106,12 +106,21 @@ private struct MapViewportInteractionPlane: View {
             .contentShape(.rect)
             .allowsHitTesting(isActive)
 #if !os(tvOS)
-            .gesture(tapGesture, including: isActive ? .all : .none)
+            .gesture(
+                tapGesture,
+                including: isActive && !session.isPointerInteractionActive ? .all : .none
+            )
+            .modifier(
+                MapPointerTapGestureModifier(
+                    session: session,
+                    isEnabled: session.isPointerInteractionActive
+                )
+            )
             .modifier(
                 MapViewportGestureModifier(
                     session: session,
                     interactionTransform: interactionTransform,
-                    isEnabled: isActive,
+                    isEnabled: isActive && !session.isPointerInteractionActive,
                     surface: surface
                 )
             )
@@ -148,6 +157,30 @@ private struct MapViewportInteractionPlane: View {
     }
 
 #endif
+}
+
+/// Pointer mode owns a direct single-tap recognizer. It deliberately bypasses
+/// double-tap and long-press recognition so the pointer appears without their
+/// failure delay, including when a room hit target covers the map surface.
+struct MapPointerTapGestureModifier: ViewModifier {
+    let session: MapEditorSession
+    let isEnabled: Bool
+
+    func body(content: Content) -> some View {
+#if os(tvOS)
+        content
+#else
+        content.highPriorityGesture(
+            SpatialTapGesture(
+                coordinateSpace: .named(MapViewportCoordinateSpace.name)
+            )
+                .onEnded { value in
+                    session.route(.canvasTap(value.location))
+                },
+            including: isEnabled ? .all : .none
+        )
+#endif
+    }
 }
 
 /// Installs the same combined viewport gesture on the background interaction

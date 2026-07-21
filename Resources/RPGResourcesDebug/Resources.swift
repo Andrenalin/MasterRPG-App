@@ -1,5 +1,15 @@
 import Foundation
 
+#if os(macOS)
+import AppKit
+
+public typealias RPGResourcesDebugImage = NSImage
+#else
+import UIKit
+
+public typealias RPGResourcesDebugImage = UIImage
+#endif
+
 public final class ResourcesDebug {
     
     public static let bundle = Bundle.module
@@ -17,4 +27,43 @@ public final class ResourcesDebug {
     public static let weatherTestData = "Weather-4-TestData"
     
     public static let adventurePhoto = "Adventure"
+    public static let paladinPhoto = "Paladin"
+    public static let wizardPhoto = "Zauberer"
+    public static let wisyardPhoto = wizardPhoto
+
+    public static let audioExample = "AudioExample"
+    public static let pdfExample = "PdfExample"
+    public static let spaceExample = "ScaeExample"
+
+    public static let photoPreviewNames = [
+        adventurePhoto,
+        paladinPhoto,
+        wizardPhoto,
+    ]
+
+    @MainActor
+    public static func previewImage(named name: String) -> RPGResourcesDebugImage? {
+#if os(macOS)
+        bundle.image(forResource: name)
+#else
+        RPGResourcesDebugImage(named: name, in: bundle, with: nil)
+#endif
+    }
+
+    @MainActor
+    public static func cachePhotoPreviewImage(named name: String) -> RPGResourcesDebugImage? {
+        previewImage(named: name)
+    }
+
+    public static var audioExampleURL: URL? {
+        bundle.url(forResource: audioExample, withExtension: "mp3")
+    }
+
+    public static var pdfExampleURL: URL? {
+        bundle.url(forResource: pdfExample, withExtension: "pdf")
+    }
+
+    public static var spaceExampleURL: URL? {
+        bundle.url(forResource: spaceExample, withExtension: "usdz")
+    }
 }

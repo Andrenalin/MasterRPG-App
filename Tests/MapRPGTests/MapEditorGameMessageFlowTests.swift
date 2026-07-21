@@ -153,6 +153,42 @@ struct MapEditorGameMessageFlowTests {
         #expect(fixture.updateSpy.updates.isEmpty)
     }
 
+    @Test("Pointing mode shows and positions the pointer in one canvas action")
+    func pointingModeShowsPointerImmediately() {
+        let fixture = makeFixture(entries: [])
+        let viewportLocation = CGPoint(x: 320, y: 240)
+        let expectedLocation = fixture.session.contentPoint(fromViewport: viewportLocation)
+        fixture.session.isPointing = true
+
+        fixture.session.route(.canvasTap(viewportLocation))
+
+        #expect(fixture.session.isPointerInteractionActive)
+        #expect(fixture.liveMap.pointer.isShown)
+        #expect(fixture.liveMap.pointer.location == expectedLocation)
+        #expect(fixture.session.pins.pointer == fixture.liveMap.pointer)
+        #expect(fixture.updateSpy.updates.count == 1)
+    }
+
+    @Test("Hex toggle mutates the session map and reveals reshare")
+    func hexToggleUsesTheAuthoritativeSessionMap() {
+        let fixture = makeFixture(entries: [], routerUsesLiveMap: false)
+
+        fixture.session.route(.toggleHexGrid)
+
+        #expect(fixture.liveMap.entries.contains(where: { $0.isHexGrid }))
+        #expect(!fixture.routerMap.entries.contains(where: { $0.isHexGrid }))
+        #expect(fixture.session.isHexMap)
+        #expect(fixture.session.canReshare)
+
+        fixture.session.resetReshare()
+        #expect(!fixture.session.canReshare)
+
+        fixture.session.route(.toggleHexGrid)
+        #expect(!fixture.liveMap.entries.contains(where: { $0.isHexGrid }))
+        #expect(!fixture.session.isHexMap)
+        #expect(fixture.session.canReshare)
+    }
+
     private func makeFixture(
         entries: [MapEntryModel],
         mode: MapMode = .gameMaster,

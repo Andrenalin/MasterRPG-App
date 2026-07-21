@@ -7,6 +7,7 @@ enum MapEditorEvent {
     case pin(MapPinInteractionEvent)
     case toggleRoomVisibility(UUID)
     case toggleRoomFocus(UUID)
+    case toggleHexGrid
     case canvasTap(CGPoint)
     case needleCoordinatesChanged(UUID)
 }
@@ -54,6 +55,8 @@ final class MapEditorActionRouter {
             toggleRoomVisibility(entryId)
         case let .toggleRoomFocus(entryId):
             toggleRoomFocus(entryId)
+        case .toggleHexGrid:
+            toggleHexGrid()
         case let .canvasTap(location):
             handleCanvasTap(at: location)
         case let .needleCoordinatesChanged(entryId):
@@ -77,6 +80,14 @@ final class MapEditorActionRouter {
         } else if session.mapMode != .viewer {
             session.updatePointer(location: location, map: interactionMap)
         }
+    }
+
+    private func toggleHexGrid() {
+        guard session.mapMode == .gameMaster else { return }
+        let liveMap = interactionMap
+        _ = editController.toggleHexMap(for: liveMap)
+        session.hexScale = liveMap.hexMapScale
+        session.resetEntries(newEntries: liveMap.entries, map: liveMap, appliesFocus: false)
     }
 
     private func toggleRoomVisibility(_ entryId: UUID) {

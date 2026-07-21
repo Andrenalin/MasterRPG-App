@@ -228,39 +228,14 @@ struct GameToolBar: View {
 
     @ViewBuilder
     var hexMapScaleView: some View {
-        @Bindable var model = model
-        HStack {
-#if !os(tvOS)
-            Button {
-                withAnimation(reduceMotion ? nil : .default) {
-                    let map = root.gameController.currentItem()
-                    let _ = editController.toggleHexMap(for: map)
-                    model.hexScale = map.hexMapScale
-                    model.isHexMap = map.entries.contains(where: { $0.isHexGrid })
-                }
-            } label: {
-                let symbolName = model.isHexMap ? "hexagon.fill" : "hexagon"
-                Image(systemName: symbolName)
-                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                    .frame(width: 24, height: 24)
-                    .accessibilityLabel(Text("Hex Grid", bundle: .module))
-                    .accessibilityValue(
-                        model.isHexMap
-                            ? Text("Enabled", bundle: .module)
-                            : Text("Disabled", bundle: .module)
-                    )
-            }
-            .frame(minWidth: 44, minHeight: 44)
-            .gameOverlayControlStyle(isSelected: model.isHexMap)
-            Text("Hex Map Scale", bundle: .module)
-
-            Slider(value: $model.hexScale, in: 20 ... 200) {
-                Text("Hex Map Scale", bundle: .module)
-            }
-            .labelsHidden()
-            .accessibilityValue(model.hexScale.formatted(.number.precision(.fractionLength(0))))
-#endif
-        }
+        HexMapScaleView(
+            model: model,
+            appearance: .gameOverlay,
+            onToggle: {
+                model.route(.toggleHexGrid)
+            },
+            onScaleChanged: { _ in }
+        )
         .opacity(hideScales ? 0 : 1)
         .allowsHitTesting(!hideScales)
         .accessibilityHidden(hideScales)
@@ -283,7 +258,7 @@ struct GameToolBar: View {
     @ViewBuilder
     var reshareButtonView: some View {
         Button {
-            guard let mapId = root.gameController.gameModel.currentItemId else { return }
+            let mapId = model.mapId
             Task {
                 let update = await root.gameController.networkMapContentUpdate(for: mapId)
                 networkActions?.game(update, .generic, nil)
@@ -298,9 +273,9 @@ struct GameToolBar: View {
                 .accessibilityLabel(Text("Refresh Shared Map", bundle: .module))
         }
         .disabled(!model.canReshare)
-        .opacity(hideScales ? 0 : 1)
-        .allowsHitTesting(!hideScales)
-        .accessibilityHidden(hideScales)
+        .opacity(!hideScales && model.canReshare ? 1 : 0)
+        .allowsHitTesting(!hideScales && model.canReshare)
+        .accessibilityHidden(hideScales || !model.canReshare)
         .frame(minWidth: 44, minHeight: 44)
         .gameOverlayControlStyle()
     }

@@ -313,7 +313,10 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
     @Test("PdfContentExtractionView")
     func snapshotPdfContentExtractionView() async throws {
         try await assertPreviewSnapshot("PdfContentExtractionView") {
-            GeneratorRPG.PdfContentExtractionView(pdfDocument: PDFDocument()) { _ in }
+            let document = PreviewAssetFixture.url(.pdf)
+                .flatMap(PDFDocument.init(url:))
+                ?? PDFDocument()
+            GeneratorRPG.PdfContentExtractionView(pdfDocument: document) { _ in }
         }
     }
 
@@ -321,13 +324,13 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
     @Test("PdfSummaryAnalysisView")
     func snapshotPdfSummaryAnalysisView() async throws {
         try await assertPreviewSnapshot("PdfSummaryAnalysisView") {
-            if let url = Bundle.main.url(forResource: "sample", withExtension: "pdf"),
+            if let url = PreviewAssetFixture.url(.pdf),
                let pdfDocument = PDFDocument(url: url) {
                 GeneratorRPG.PdfSummaryAnalysisView(pdfDocument: pdfDocument) { content in
                     print("Analyzed: \(content.title)")
                 }
             } else {
-                Text(verbatim: "No sample PDF available")
+                Text(verbatim: "PDF fixture is available in Debug previews")
             }
         }
     }

@@ -2,44 +2,32 @@
 
 import CoreRPG
 import Foundation
-import RPGResources
 import PhotoRPG
 
 public extension WeatherRootModel {
     @MainActor
-    static let preview: WeatherRootModel = {
-        let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
+    static var preview: WeatherRootModel { previewFixture() }
+
+    @MainActor
+    internal static func previewFixture(
+        models: [WeatherModel] = WeatherModel.previewFixtures,
+        photoRoot: PhotoRootModel = .preview
+    ) -> WeatherRootModel {
+        let root = WeatherRootModel(tagController: .preview, photoRoot: photoRoot)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root, generatorRoot: root, mapRoot: root, pdfRoot: root, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root, weatherRoot: root)
         root.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.photoRoot.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.photoRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        for model in models {
+            root.itemController.replace(model: model, isInsert: true)
+        }
         root.editController.setCurrentItem(to: .preview)
         return root
-    }()
+    }
     
     @MainActor
-    static let previewWithData: WeatherRootModel = {
-        let root = WeatherRootModel.preview
-        let importController = root.importController
-        let editController = root.editController
-#if DEBUG
-        Task(priority: .userInitiated) {
-            let bundle = RPGResources.Resources.bundle
-            guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-                print("url nil ")
-                return
-            }
-            let task = importController.importUrl(from: url, withOverwrite: true)
-            let _ = try? await task.value
-            let id = await importController.itemController.itemDataModel.items[0]
-            Task { @MainActor in
-                editController.setCurrentItem(to: ItemRowTreeModel.previewWithData(id: id))
-            }
-        }
-#endif
-        return root
-    }()
+    static var previewWithData: WeatherRootModel { previewFixture() }
     
 #if DEBUG
     @MainActor
@@ -80,7 +68,7 @@ extension WeatherModel {
             lightningFrequency: 60,
             lightningMaxBolts: 120,
             lightningForkProbability: 80,
-            photoId: nil
+            photoId: PhotoRootModel.previewPhotoId
         )
     }
 
@@ -99,7 +87,7 @@ extension WeatherModel {
             lightningFrequency: 0,
             lightningMaxBolts: 0,
             lightningForkProbability: 0,
-            photoId: nil
+            photoId: PhotoRootModel.previewPaladinPhotoId
         )
     }
 
@@ -118,7 +106,7 @@ extension WeatherModel {
             lightningFrequency: 0,
             lightningMaxBolts: 0,
             lightningForkProbability: 0,
-            photoId: nil
+            photoId: PhotoRootModel.previewWizardPhotoId
         )
     }
 
@@ -220,6 +208,11 @@ extension WeatherModel {
     @MainActor
     static var preview: WeatherModel {
         .default
+    }
+
+    @MainActor
+    static var previewFixtures: [WeatherModel] {
+        [.default, .nice, .snow, .light, .regular, .heavy, .snowRegular, .thunder]
     }
 
     nonisolated private static func fixtureID(_ value: UInt8) -> UUID {
