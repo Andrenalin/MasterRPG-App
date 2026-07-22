@@ -718,7 +718,7 @@ private extension SheetRootModelAIGenerationTests {
         )
     }
 
-    func flattenedIDs(in snapshot: SheetContentSnapshot) -> [String] {
+    func flattenedIDs(in snapshot: SheetContentSnapshot) -> [UUID] {
         [snapshot.id] + snapshot.children.flatMap(flattenedIDs)
     }
 

@@ -5,13 +5,11 @@ import Foundation
 @MainActor @Observable
 public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(source)
-        hasher.combine(destination)
-        hasher.combine(level)
-        hasher.combine(sheetType)
+        hasher.combine(id)
     }
     
-    public init(source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, isFolded: Bool = false, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
+    public init(id: UUID = UUID(), source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, isFolded: Bool = false, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
+        self.id = id
         self.source = source
         self.destination = destination ?? source
         self.level = level
@@ -28,35 +26,12 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         self.showHeader = showHeader
     }
 
-    /// Computed ID based on source, destination, and type to ensure uniqueness and consistency
-    /// This prevents duplicate ID issues when the same item/entry appears multiple times
-    public var id: String {
-        var components: [String] = []
-        
-        // Add source identifier
-        components.append(source.itemId.uuidString)
-        if let entryId = source.entryId {
-            components.append(entryId.uuidString)
-        }
-        components.append(source.typeId.token)
-        
-        // Add destination if different from source
-        if destination.itemId != source.itemId || destination.entryId != source.entryId {
-            components.append("dest")
-            components.append(destination.itemId.uuidString)
-            if let destEntryId = destination.entryId {
-                components.append(destEntryId.uuidString)
-            }
-        }
-        
-        // Add sheet type for inline entries (dice, photo, etc.)
-        if sheetType != .item {
-            components.append("type")
-            components.append("\(sheetType)")
-        }
-        
-        return components.joined(separator: "-")
-    }
+    /// Stable identity for this occurrence in a sheet tree.
+    ///
+    /// Domain identifiers are deliberately not used: the same item can appear in
+    /// multiple branches, while mutable sources such as inline media can change
+    /// without replacing the occurrence.
+    public let id: UUID
     
     public var source: ItemRowModel
     public var destination: ItemRowModel
@@ -167,31 +142,7 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     }
     
     public static func == (lhs: SheetModel, rhs: SheetModel) -> Bool {
-        return lhs._source == rhs._source &&
-        lhs._destination == rhs._destination &&
-        lhs._level == rhs._level &&
-        lhs._sheetType == rhs._sheetType &&
-        lhs._isShown == rhs._isShown &&
-        lhs._lastIsShown == rhs._lastIsShown &&
-        lhs._isHidden == rhs._isHidden &&
-        lhs._isFolded == rhs._isFolded &&
-        lhs._name == rhs._name &&
-        lhs._description == rhs._description &&
-        lhs._inlineEntries == rhs._inlineEntries &&
-        lhs._entries == rhs._entries &&
-        lhs._editType == rhs._editType &&
-        lhs._isEditing == rhs._isEditing &&
-        lhs._hasChanged == rhs._hasChanged &&
-        lhs._isGeneratedAnswer == rhs._isGeneratedAnswer &&
-        lhs._isGeneratedSelected == rhs._isGeneratedSelected &&
-        lhs._isGeneratedAccepted == rhs._isGeneratedAccepted &&
-        lhs._isGeneratedHidden == rhs._isGeneratedHidden &&
-        lhs._generatedBatchID == rhs._generatedBatchID &&
-        lhs._isSelected == rhs._isSelected &&
-        lhs.entryReviewModel?.id == rhs.entryReviewModel?.id &&
-        lhs._isReviewPlaceholder == rhs._isReviewPlaceholder &&
-        lhs._canAdd == rhs._canAdd &&
-        lhs._showHeader == rhs._showHeader
+        lhs.id == rhs.id
     }
 }
 
@@ -239,7 +190,7 @@ public enum SheetInsertionPosition: Equatable, Hashable, Sendable {
 
 public struct SheetContentSnapshot: Identifiable, Equatable, Hashable, Sendable {
     public init(
-        id: String,
+        id: UUID,
         source: ItemRowModel,
         name: String,
         content: String,
@@ -252,7 +203,7 @@ public struct SheetContentSnapshot: Identifiable, Equatable, Hashable, Sendable 
         self.children = children
     }
 
-    public let id: String
+    public let id: UUID
     public let source: ItemRowModel
     public let name: String
     public let content: String
@@ -267,9 +218,9 @@ public struct SheetContentSnapshot: Identifiable, Equatable, Hashable, Sendable 
 public struct SheetGenerationFocus: Equatable, Hashable, Sendable {
     public init(
         rootItemID: UUID,
-        parentModelID: String,
+        parentModelID: UUID,
         parentSource: ItemRowModel,
-        selectedModelID: String?,
+        selectedModelID: UUID?,
         selectedSource: ItemRowModel?,
         position: SheetInsertionPosition,
         module: NetworkModules
@@ -284,9 +235,9 @@ public struct SheetGenerationFocus: Equatable, Hashable, Sendable {
     }
 
     public let rootItemID: UUID
-    public let parentModelID: String
+    public let parentModelID: UUID
     public let parentSource: ItemRowModel
-    public let selectedModelID: String?
+    public let selectedModelID: UUID?
     public let selectedSource: ItemRowModel?
     public let position: SheetInsertionPosition
     public let module: NetworkModules

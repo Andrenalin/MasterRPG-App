@@ -37,7 +37,7 @@ struct SheetRootModelSelectionTests {
         #expect(rootModel.selectedEntryId == entries[1].id)
     }
 
-    @Test func duplicateModelIDsStillUpdateSelectedIdentityAndParent() async throws {
+    @Test func duplicateDomainIdentifiersReceiveDistinctModelIDsAndSelectIndependently() async throws {
         let sharedItemID = UUID()
         let sharedEntryID = UUID()
         let firstEntry = SheetModel(
@@ -87,6 +87,8 @@ struct SheetRootModelSelectionTests {
             isEditor: true
         )
 
+        #expect(firstEntry.id != secondEntry.id)
+
         rootModel.setSelected(firstEntry, parent: firstParent)
         rootModel.setSelected(secondEntry, parent: secondParent)
 
@@ -95,6 +97,27 @@ struct SheetRootModelSelectionTests {
         #expect(rootModel.selectedEntry === secondEntry)
         #expect(rootModel.selectedSheetEntryFocusValue?.entryModel === secondEntry)
         #expect(rootModel.selectedSheetEntryFocusValue?.parentModel === secondParent)
+    }
+
+    @Test func modelIDAndHashRemainStableWhenMutableSourceFieldsChange() {
+        let model = SheetModel(
+            source: ItemRowModel(itemId: UUID(), typeId: .photo),
+            level: 1,
+            type: .photo,
+            name: "Image",
+            description: "",
+            entries: []
+        )
+        let originalID = model.id
+        let models: Set<SheetModel> = [model]
+
+        model.source = ItemRowModel(itemId: UUID(), typeId: .audio)
+        model.destination = ItemRowModel(itemId: UUID(), entryId: UUID(), typeId: .adventure)
+        model.level = 4
+        model.sheetType = .audio
+
+        #expect(model.id == originalID)
+        #expect(models.contains(model))
     }
 
     @Test func selectedSheetEntryFocusValueCarriesParentAndEntry() async throws {

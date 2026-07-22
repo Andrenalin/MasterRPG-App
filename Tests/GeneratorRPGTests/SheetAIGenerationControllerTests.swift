@@ -153,7 +153,7 @@ struct SheetAIGenerationControllerTests {
 private extension SheetAIGenerationControllerTests {
     var focusedSnapshot: SheetContentSnapshot {
         SheetContentSnapshot(
-            id: "focused-entry",
+            id: IDs.focusedSnapshot,
             source: ItemRowModel(
                 itemId: IDs.rootItem,
                 entryId: IDs.focusedEntry,
@@ -166,7 +166,7 @@ private extension SheetAIGenerationControllerTests {
 
     var rootSnapshot: SheetContentSnapshot {
         SheetContentSnapshot(
-            id: "root-sheet",
+            id: IDs.rootSnapshot,
             source: ItemRowModel(itemId: IDs.rootItem, typeId: .map),
             name: "Ancient Keep",
             content: "A ruined fortress above the valley.",
@@ -202,7 +202,7 @@ private extension SheetAIGenerationControllerTests {
 
     func makeDeepSnapshot(depth: Int) -> SheetContentSnapshot {
         var snapshot = SheetContentSnapshot(
-            id: "deep-leaf",
+            id: UUID(),
             source: ItemRowModel(
                 itemId: IDs.rootItem,
                 entryId: IDs.focusedEntry,
@@ -214,7 +214,7 @@ private extension SheetAIGenerationControllerTests {
 
         for index in (0..<depth).reversed() {
             snapshot = SheetContentSnapshot(
-                id: "depth-\(index)",
+                id: UUID(),
                 source: ItemRowModel(
                     itemId: IDs.rootItem,
                     entryId: IDs.focusedEntry,
@@ -232,6 +232,8 @@ private extension SheetAIGenerationControllerTests {
         static let rootItem = deterministicUUID(1)
         static let focusedEntry = deterministicUUID(2)
         static let request = deterministicUUID(3)
+        static let focusedSnapshot = deterministicUUID(4)
+        static let rootSnapshot = deterministicUUID(5)
     }
 
     static func deterministicUUID(_ finalByte: UInt8) -> UUID {

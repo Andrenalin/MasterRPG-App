@@ -34,7 +34,7 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
     let detailAction: ((SheetModel) -> Void)?
     let detailContent: (SheetModel) -> DetailContent
     
-    @State private var dropTargetEntryId: String?
+    @State private var dropTargetEntryId: UUID?
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()

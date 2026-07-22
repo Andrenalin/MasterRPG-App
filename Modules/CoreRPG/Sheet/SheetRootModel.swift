@@ -9,8 +9,8 @@ enum LinkHighlightTextModelId: Hashable {
 }
 
 enum SheetRowGeometryID: Hashable {
-    case regular(parent: String, row: String)
-    case generated(parent: String, draft: UUID)
+    case regular(parent: UUID, row: UUID)
+    case generated(parent: UUID, draft: UUID)
 }
 
 struct SheetRowGeometryMatch {
@@ -19,7 +19,7 @@ struct SheetRowGeometryMatch {
 }
 
 private struct GeneratedAcceptanceKey: Hashable {
-    let parentModelID: String
+    let parentModelID: UUID
     let persistedEntryID: UUID
 }
 
@@ -148,7 +148,7 @@ public final class SheetRootModel: Sendable {
     }
 
     /// The id (SheetModel.id) of the exclusively selected row in the tree, if any.
-    public private(set) var selectedEntryId: String?
+    public private(set) var selectedEntryId: UUID?
     private var selectedEntryModel: SheetModel?
     private var selectedParentModel: SheetModel?
 
@@ -158,7 +158,7 @@ public final class SheetRootModel: Sendable {
     /// lets changing rows close the previous editor in the same state transaction.
     private var inlineEditingEntryModel: SheetModel?
 
-    var inlineEditingEntryId: String? {
+    var inlineEditingEntryId: UUID? {
         inlineEditingEntryModel?.id
     }
 
@@ -696,7 +696,7 @@ public final class SheetRootModel: Sendable {
         )
     }
 
-    func finishGeneratedAcceptanceTransition(previewID: UUID, parentModelID: String) {
+    func finishGeneratedAcceptanceTransition(previewID: UUID, parentModelID: UUID) {
         let matchingKeys = generatedAcceptanceTransitions.compactMap { key, mappedPreviewID in
             key.parentModelID == parentModelID && mappedPreviewID == previewID ? key : nil
         }
@@ -883,7 +883,7 @@ public final class SheetRootModel: Sendable {
         }
     }
 
-    private func findEntry(id: String, in model: SheetModel) -> SheetModel? {
+    private func findEntry(id: UUID, in model: SheetModel) -> SheetModel? {
         if model.id == id { return model }
         for entry in model.inlineEntries {
             if let found = findEntry(id: id, in: entry) { return found }

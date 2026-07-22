@@ -120,25 +120,69 @@ struct SheetControllerTests {
         #expect(modelHidden.isShown == false)
     }
 
-    @Test func adventureSheetLevelLimit() async throws {
+    @Test func adventureSheetOnlyMaterializesRootLevel() async throws {
         let root = try await MockRoot.importTestData()
 
         let sut = SheetController(itemController: root.itemController)
         let itemId = root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
 
-        // Test isFolded at moduleDepth >= 4
-        let modelFolded = sut.sheet(root: try rootManager(for: root), itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 4, isEditor: false)
+        let modelFolded = sut.sheet(root: try rootManager(for: root), itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 1, isEditor: false)
         #expect(modelFolded.isFolded == true)
         #expect(modelFolded.entries.isEmpty)
 
-        let modelNotFolded = sut.sheet(root: try rootManager(for: root), itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 3, isEditor: false)
+        let modelNotFolded = sut.sheet(root: try rootManager(for: root), itemId: itemId!, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: false)
         #expect(modelNotFolded.isFolded == false)
 
         // Test isFolded in editor mode at level > 0
         let modelFoldedEditor = sut.sheet(root: try rootManager(for: root), itemId: itemId!, destination: nil, level: 1, isShown: true, moduleDepth: 0, isEditor: true)
         #expect(modelFoldedEditor.isFolded == true)
         #expect(modelFoldedEditor.entries.isEmpty)
+    }
+
+    @Test func linkedAdventureMaterializesWhenUnfolded() async throws {
+        let root = try await MockRoot.importTestData()
+        let rootManager = try rootManager(for: root)
+        let childEntry = AdventureEntryModel.fixture(name: "Child scene", content: "Child content")
+        let child = AdventureModel(
+            id: UUID(),
+            name: "Child Adventure",
+            entries: [childEntry]
+        )
+        let parentEntry = AdventureEntryModel.fixture(
+            name: "Child Adventure",
+            content: "Open the child adventure",
+            adventureId: child.id
+        )
+        let parent = AdventureModel(
+            id: UUID(),
+            name: "Parent Adventure",
+            entries: [parentEntry]
+        )
+        root.itemController.replace(model: child, isInsert: true)
+        root.itemController.replace(model: parent, isInsert: true)
+
+        let sut = SheetController(itemController: root.itemController)
+        let parentSheet = sut.sheet(
+            root: rootManager,
+            itemId: parent.id,
+            destination: nil,
+            level: 0,
+            isShown: true,
+            moduleDepth: 0,
+            isEditor: false
+        )
+        let groupSheet = try #require(parentSheet.entries.first)
+        let linkedSheet = try #require(groupSheet.entries.first)
+
+        #expect(linkedSheet.source.itemId == child.id)
+        #expect(linkedSheet.isFolded)
+        #expect(linkedSheet.entries.isEmpty)
+
+        sut.unfold(root: rootManager, sheetModel: linkedSheet)
+
+        #expect(!linkedSheet.isFolded)
+        #expect(linkedSheet.entries.map(\.source.entryId) == [childEntry.id])
     }
 
     @Test func adventureSheetDestination() async throws {
