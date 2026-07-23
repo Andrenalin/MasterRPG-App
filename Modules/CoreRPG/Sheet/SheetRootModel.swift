@@ -355,6 +355,31 @@ public final class SheetRootModel: Sendable {
         sheetModel.entries.first { !$0.isHidden && !$0.isGeneratedHidden }
     }
 
+    /// Selects the next visible top-level entry after the current selection.
+    /// Selects the first entry when nothing is currently selected.
+    func selectNextEntry() {
+        let entries = sheetModel.entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
+        guard !entries.isEmpty else { return }
+        guard let currentId = selectedEntryId,
+              let currentIndex = entries.firstIndex(where: { $0.id == currentId }) else {
+            if let first = entries.first { setSelected(first, parent: sheetModel) }
+            return
+        }
+        let nextIndex = currentIndex + 1
+        guard nextIndex < entries.count else { return }
+        setSelected(entries[nextIndex], parent: sheetModel)
+    }
+
+    /// Selects the previous visible top-level entry before the current selection.
+    func selectPreviousEntry() {
+        let entries = sheetModel.entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
+        guard !entries.isEmpty,
+              let currentId = selectedEntryId,
+              let currentIndex = entries.firstIndex(where: { $0.id == currentId }),
+              currentIndex > 0 else { return }
+        setSelected(entries[currentIndex - 1], parent: sheetModel)
+    }
+
     /// (parent, entry) pair for menu-bar/Commands consumers — see SelectedSheetEntry.
     var selectedSheetEntryFocusValue: SelectedSheetEntry? {
         guard isEditor,

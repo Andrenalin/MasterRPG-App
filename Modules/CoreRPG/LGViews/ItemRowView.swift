@@ -81,13 +81,16 @@ private extension ItemRowView {
                 Image(systemName: model.category.icon)
                     .font(.title)
                     .foregroundStyle(horizontalSizeClass == .compact ? .secondary : .primary)
+                    .accessibilityHidden(true)
             } else {
                 Image(systemName: model.category.icon)
                     .font(.title)
+                    .accessibilityHidden(true)
             }
             #else
             Image(systemName: model.category.icon)
                 .font(.title)
+                .accessibilityHidden(true)
             #endif
         }
     }
@@ -97,6 +100,7 @@ private extension ItemRowView {
             Image(systemName: "checkmark.circle")
                 .font(.title)
                 .padding(.trailing)
+                .accessibilityHidden(true)
         }
     }
 

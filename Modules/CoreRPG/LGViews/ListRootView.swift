@@ -13,6 +13,7 @@ struct ListRootView: View {
     
     @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.switchToDetailColumn) private var switchToDetailColumn
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -42,6 +43,8 @@ struct ListRootView: View {
                           let index = listModel.list.firstIndex(where: { $0.id == sel }) else { return }
                     deleteItems(offsets: IndexSet(integer: index))
                 }
+#endif
+#if !os(tvOS)
                 .onKeyPress(.leftArrow, phases: .down) { _ in
                     if let sheetRootModel = root.editControllable.editorModel.sheetRootModel, sheetRootModel.selectedEntryId != nil {
                         sheetRootModel.clearSelection()
@@ -57,6 +60,7 @@ struct ListRootView: View {
                               sheetRootModel.sheetModel.source.itemId == listModel.selected,
                               let firstEntry = sheetRootModel.firstSelectableEntry {
                         sheetRootModel.setSelected(firstEntry, parent: sheetRootModel.sheetModel)
+                        switchToDetailColumn?()
                     }
                     return .handled
                 }

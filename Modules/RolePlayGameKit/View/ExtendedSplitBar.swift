@@ -68,10 +68,12 @@ private extension ExtendedSplitBar {
     var allCustomTabs: some View {
         ZStack {
             ForEach(ExtendedTabRoute.limitedTabs) { tab in
+                let isActive = appModel.selectedExtendedModule == tab
                 tabView(tab: tab)
-                    .opacity(appModel.selectedExtendedModule == tab ? 1 : 0)
-                    .allowsHitTesting(appModel.selectedExtendedModule == tab)
-                    .accessibilityHidden(appModel.selectedExtendedModule != tab)
+                    .opacity(isActive ? 1 : 0)
+                    .allowsHitTesting(isActive)
+                    .disabled(!isActive)
+                    .accessibilityHidden(!isActive)
             }
         }
 #if os(visionOS)

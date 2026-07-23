@@ -17,3 +17,9 @@ public extension FocusedValues {
     @Entry var listDisplayModel: ListDisplayModel?
     @Entry var selectedSheetEntry: SelectedSheetEntry?
 }
+
+/// Action injected by NavigationSplitView-based layouts so the list can switch
+/// the compact column to the detail pane (iPad compact layout only; no-op elsewhere).
+public extension EnvironmentValues {
+    @Entry var switchToDetailColumn: (() -> Void)? = nil
+}

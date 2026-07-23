@@ -30,6 +30,7 @@ struct SplitWithDetailView: View {
                 tab
             }
             .environment(controller)
+            .environment(\.switchToDetailColumn) { preferredCompactColumn = .detail }
 #if os(iOS)
             .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 800)
 #endif

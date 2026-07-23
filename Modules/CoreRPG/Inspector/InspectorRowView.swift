@@ -57,6 +57,9 @@ struct InspectorRowView: View {
             folderChevron
         }
         .contextMenu { rowContextMenu(model: model) }
+        .accessibilityAction(named: Text("Open Details", bundle: .module)) {
+            openDetail(model: model)
+        }
         .draggableWithOverlay(
             for: root.configurable.module,
             itemId: item.source.itemId,
@@ -68,6 +71,12 @@ struct InspectorRowView: View {
     private func standardItemRow(model: (any ItemDataAccessable)?) -> some View {
         itemRowView(model: model)
             .onTapGesture(count: 2) { openDetail(model: model) }
+#if os(macOS)
+            .onKeyPress(.return, phases: .down) { _ in
+                openDetail(model: model)
+                return .handled
+            }
+#endif
             .accessibilityHint(Text("Double-tap to open details", bundle: .module))
             .accessibilityAction(named: Text("Open Details", bundle: .module)) {
                 openDetail(model: model)

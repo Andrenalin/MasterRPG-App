@@ -30,7 +30,7 @@ struct FocusSectionViewModifier: ViewModifier {
 struct PrefersDefaultFocusViewModifier: ViewModifier {
     let isFocused: Bool
     let namespace: Namespace.ID
-    
+
     func body(content: Content) -> some View {
 #if os(tvOS) || os(macOS)
         content
@@ -43,7 +43,7 @@ struct PrefersDefaultFocusViewModifier: ViewModifier {
 
 struct FocusScopeViewModifier: ViewModifier {
     let namespace: Namespace.ID
-    
+
     func body(content: Content) -> some View {
 #if os(tvOS) || os(macOS)
         content

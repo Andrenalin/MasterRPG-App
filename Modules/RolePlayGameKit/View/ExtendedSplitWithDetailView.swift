@@ -21,6 +21,7 @@ struct ExtendedSplitWithDetailView: View {
                 tab
             }
             .environment(controller)
+            .environment(\.switchToDetailColumn) { preferredCompactColumn = .detail }
         } detail: {
             SplitDetailView(isExtendedRoutes: true)
                 .environment(controller)

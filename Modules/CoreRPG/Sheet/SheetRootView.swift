@@ -44,7 +44,7 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
     let detailContent: (SheetModel) -> DetailContent
 
     @Namespace private var generatedAcceptanceNamespace
-        
+
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
@@ -58,8 +58,28 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
             detailAction: detailAction,
             detailContent: detailContent
         )
-            .id(rootModel.sheetModel.id)
-            .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)
+        .id(rootModel.sheetModel.id)
+        .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)
+#if !os(tvOS)
+        // Makes the sheet a Tab stop so the user can jump here from the sidebar list.
+        // onKeyPress bubbles from any focused descendant, so arrow keys work whether
+        // focus is on this container or on a child button — and TextFields consume
+        // arrow keys themselves, so editing is never interrupted.
+        .focusable()
+        .onKeyPress(.downArrow, phases: .down) { _ in
+            rootModel.selectNextEntry()
+            return .handled
+        }
+        .onKeyPress(.upArrow, phases: .down) { _ in
+            rootModel.selectPreviousEntry()
+            return .handled
+        }
+        .onKeyPress(.escape, phases: .down) { _ in
+            guard rootModel.selectedEntryId != nil else { return .ignored }
+            rootModel.clearSelection()
+            return .handled
+        }
+#endif
     }
 }
 
