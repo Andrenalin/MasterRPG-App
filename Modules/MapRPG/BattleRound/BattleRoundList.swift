@@ -9,6 +9,7 @@ struct BattleRoundList: View {
     let cards: [BattleRoundCardPresentation]
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
@@ -35,7 +36,8 @@ struct BattleRoundList: View {
                     BattleRoundCard(
                         presentation: card,
                         actions: actions,
-                        showCharacter: showCharacter
+                        showCharacter: showCharacter,
+                        selectHitPoints: selectHitPoints
                     )
                     .frame(maxWidth: .infinity)
                     .transition(.move(edge: .trailing).combined(with: .opacity))

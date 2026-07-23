@@ -388,7 +388,14 @@ extension FolderListControllable {
     private func mapResult(_ result: SearchResult, level: Int, cache: FolderListModel? = nil) -> FolderListItemModel {
         let target = cache ?? listModel
         let id = result.entryId ?? result.itemId
-        let canOpen = result.canOpen || (cache == nil && canExpandValueResult(result))
+        // Regular Characters are expandable in the link inspector, where the
+        // disclosure reveals their value entries. The normal ListRootView uses
+        // SearchListController and must reserve its disclosure for folders and
+        // collections only.
+        let canOpen = result.canOpen
+            || (cache == nil
+                && searchRootControllable is SearchLinkController
+                && canExpandValueResult(result))
         if let cached = target.cacheListModels[id] {
             cached.level = level
             cached.canOpen = canOpen

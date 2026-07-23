@@ -28,6 +28,22 @@ public protocol ValueGameStorable {
     /// of another monster placed from the same template.
     @MainActor func createBattleCharacterCopy(for characterId: UUID) -> UUID?
     @MainActor func battleCharacterCopy(for gameCharacterId: UUID) -> ValueModel?
+    @MainActor func gameEntry(
+        named name: String,
+        characterId: UUID
+    ) -> ValueEntryModel?
+    @MainActor func gameEntry(
+        characterId: UUID,
+        entryId: UUID
+    ) -> ValueEntryModel?
+    @MainActor func gameEntryDisplayValue(
+        characterId: UUID,
+        entryId: UUID
+    ) -> String?
+    /// Updates an existing game-memory entry while preserving its links.
+    @MainActor @discardableResult func applyGameValueEntryUpdate(
+        _ update: GameValueEntryUpdate
+    ) -> Bool
     /// Removes battle-only runtime Characters after their non-player
     /// combatants leave the encounter. Persistent templates are never touched.
     @MainActor func removeBattleCharacterCopies(_ gameCharacterIds: Set<UUID>)
@@ -169,6 +185,81 @@ extension GameController: ValueGameStorable {
     @MainActor
     public func battleCharacterCopy(for gameCharacterId: UUID) -> ValueModel? {
         gameModel.itemData[gameCharacterId] as? ValueModel
+    }
+
+    @MainActor
+    public func gameEntry(
+        named name: String,
+        characterId: UUID
+    ) -> ValueEntryModel? {
+        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedName.isEmpty else { return nil }
+        return gameItem(for: characterId).entries.first {
+            $0.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                .localizedCaseInsensitiveCompare(normalizedName) == .orderedSame
+        }
+    }
+
+    @MainActor
+    public func gameEntry(
+        characterId: UUID,
+        entryId: UUID
+    ) -> ValueEntryModel? {
+        gameItem(for: characterId).entries.first { $0.id == entryId }
+    }
+
+    @MainActor
+    public func gameEntryDisplayValue(
+        characterId: UUID,
+        entryId: UUID
+    ) -> String? {
+        guard let entry = gameEntry(characterId: characterId, entryId: entryId) else {
+            return nil
+        }
+        if entry.canCalculate {
+            let expression = entry.value.replacing("|", with: "+")
+            return entry.calculate(on: expression)
+        }
+        return entry.value
+    }
+
+    @MainActor
+    @discardableResult
+    public func applyGameValueEntryUpdate(
+        _ update: GameValueEntryUpdate
+    ) -> Bool {
+        guard let type = ValueEntryModel.ValueType(rawValue: update.typeRawValue) else {
+            return false
+        }
+        let character: ValueModel
+        if let current = gameModel.itemData[update.characterId] as? ValueModel {
+            character = current
+        } else if let stored = itemController.itemSync(for: update.characterId)?.copy() {
+            // A player's Character is normally imported into the master's item
+            // store during join. Promote a copy into game memory on the first
+            // live value update so gameplay changes never mutate persistence.
+            character = stored
+            gameModel.itemData[update.characterId] = stored
+        } else {
+            return false
+        }
+        guard
+              let index = character.entries.firstIndex(where: { $0.id == update.entryId }) else {
+            return false
+        }
+        var entry = character.entries[index]
+        let previous = entry
+        entry.name = update.name
+        entry.type = type
+        entry.isGenerator = update.isGenerator
+        entry.value = update.value
+        entry.displayState = update.displayState
+        if entry != previous {
+            // diceId and valueId intentionally remain those of the master's
+            // existing runtime entry.
+            character.entries[index] = entry
+        }
+        return true
     }
 
     @MainActor

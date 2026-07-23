@@ -39,24 +39,51 @@ struct InlineEditorView: View {
             }
         }
         .onChange(of: selectedValue) {
-            entryDataEditable.updateValue(itemId: entry.source.itemId, entryId: entry.source.entryId, selected: selectedValue)
+            updateValue {
+                entryDataEditable.updateValue(
+                    itemId: entry.source.itemId,
+                    entryId: entry.source.entryId,
+                    selected: selectedValue
+                )
+            }
         }
         .onChange(of: intValue) {
-            entryDataEditable.updateValue(itemId: entry.source.itemId, entryId: entry.source.entryId, number: intValue)
-            updateValue()
+            updateValue {
+                entryDataEditable.updateValue(
+                    itemId: entry.source.itemId,
+                    entryId: entry.source.entryId,
+                    number: intValue
+                )
+            }
         }
         .onChange(of: doubleValue) {
-            entryDataEditable.updateValue(itemId: entry.source.itemId, entryId: entry.source.entryId, decimal: doubleValue)
-            updateValue()
+            updateValue {
+                entryDataEditable.updateValue(
+                    itemId: entry.source.itemId,
+                    entryId: entry.source.entryId,
+                    decimal: doubleValue
+                )
+            }
         }
     }
 }
 
 private extension InlineEditorView {
-    func updateValue() {
+    func updateValue(_ mutation: () -> Void) {
+        let previousValue = entryDataEditable.entryValue(
+            itemId: entry.source.itemId,
+            entryId: entry.source.entryId
+        )
+        mutation()
+        let updatedValue = entryDataEditable.entryValue(
+            itemId: entry.source.itemId,
+            entryId: entry.source.entryId
+        )
         withAnimation {
-            textValue <=> entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId)
-            updateHandler(textValue)
+            textValue <=> updatedValue
+        }
+        if updatedValue != previousValue {
+            updateHandler(updatedValue)
         }
     }
     
@@ -94,8 +121,13 @@ private extension InlineEditorView {
         .padding(.horizontal)
         .onSubmit {
             textValue = textValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            entryDataEditable.updateValue(itemId: entry.source.itemId, entryId: entry.source.entryId, value: textValue)
-            updateValue()
+            updateValue {
+                entryDataEditable.updateValue(
+                    itemId: entry.source.itemId,
+                    entryId: entry.source.entryId,
+                    value: textValue
+                )
+            }
         }
     }
 }

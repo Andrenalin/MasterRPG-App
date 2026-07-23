@@ -7,6 +7,7 @@ struct BattleDefenderStrip: View {
     let isActiveEntry: Bool
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
     var body: some View {
         if defenders.isEmpty {
@@ -29,7 +30,8 @@ struct BattleDefenderStrip: View {
                             isActive: isActiveEntry,
                             tint: isActiveEntry ? .red : .gray,
                             actions: actions,
-                            showCharacter: showCharacter
+                            showCharacter: showCharacter,
+                            selectHitPoints: selectHitPoints
                         )
                     }
                 }

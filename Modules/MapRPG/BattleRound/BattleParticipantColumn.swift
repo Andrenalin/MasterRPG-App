@@ -12,6 +12,7 @@ struct BattleParticipantColumn: View {
     let tint: Color
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
     @Environment(MapRootModel.self) private var root
 
@@ -77,9 +78,42 @@ struct BattleParticipantColumn: View {
                 )
             }
 #if os(iOS) || os(macOS) || os(visionOS)
-            .dropDestination(for: LinkCharacterData.self) { characters, _ in
-                guard let character = characters.first else { return }
+            .battleLinkCharacterDropDestination { characters, _ in
+                guard let character = characters.first else { return false }
                 actions.assignCharacter(combatant.id, character.itemId)
+                return true
+            }
+#endif
+
+            Button(action: selectHitPointsEntry) {
+                HStack(spacing: 2) {
+                    Text("HP", bundle: .module)
+                    Text(verbatim: hitPointsValue ?? "")
+                        .monospacedDigit()
+                }
+                .font(.caption2)
+                .frame(minWidth: 48, minHeight: 20)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(hitPointsValue == nil ? .tertiary : .primary)
+            .help(Text("Choose the Hit Points value", bundle: .module))
+#if os(iOS) || os(macOS) || os(visionOS)
+            .battleLinkCharacterDropDestination { values, _ in
+                guard let value = values.first,
+                      let entryId = value.entryId,
+                      let sourceCharacterId = combatant.sourceCharacterId,
+                      value.itemId == sourceCharacterId,
+                      let mapId = root.mapGameControllable.battleRoundModel.mapId else {
+                    return false
+                }
+                return root.gameController.assignBattleValueEntry(
+                    itemId: mapId,
+                    combatantId: combatant.id,
+                    sourceCharacterId: sourceCharacterId,
+                    sourceEntryId: entryId,
+                    kind: .hitPoints
+                )
             }
 #endif
 
@@ -151,12 +185,27 @@ struct BattleParticipantColumn: View {
         combatant.gameCharacterId != nil || combatant.sourceCharacterId != nil
     }
 
+    private var hitPointsValue: String? {
+        guard let characterId = combatant.gameCharacterId,
+              let entryId = combatant.hitPointsEntryId else {
+            return nil
+        }
+        return root.characterRoot.valueGameControllable.gameEntryDisplayValue(
+            characterId: characterId,
+            entryId: entryId
+        )
+    }
+
     private func openCharacter() {
         showCharacter(combatant)
     }
 
     private func selectRollRecipient() {
         actions.selectRollRecipient(combatant.id)
+    }
+
+    private func selectHitPointsEntry() {
+        selectHitPoints(combatant)
     }
 
     private func toggleDead() {

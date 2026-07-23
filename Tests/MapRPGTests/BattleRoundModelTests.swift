@@ -350,6 +350,56 @@ struct BattleRoundModelTests {
         #expect(!sut.applyRemoteState(decoded))
     }
 
+    @Test("Battle value mappings are retained for player combatants")
+    func retainsPlayerValueMappings() throws {
+        let sut = BattleRoundModel()
+        let player = combatant(name: "Player", isPlayer: true)
+        let initiativeEntryId = UUID()
+        let hitPointsEntryId = UUID()
+        let mapId = UUID()
+        sut.begin(
+            mapId: mapId,
+            players: [player],
+            roomCombatants: [],
+            initiativeOrder: .descending
+        )
+
+        #expect(sut.setValueEntry(initiativeEntryId, kind: .initiative, for: player.id))
+        #expect(sut.setValueEntry(hitPointsEntryId, kind: .hitPoints, for: player.id))
+        sut.end()
+        sut.begin(
+            mapId: mapId,
+            players: [player],
+            roomCombatants: [],
+            initiativeOrder: .descending
+        )
+
+        let retained = try #require(sut.combatant(id: player.id))
+        #expect(retained.initiativeEntryId == initiativeEntryId)
+        #expect(retained.hitPointsEntryId == hitPointsEntryId)
+    }
+
+    @Test("Battle settings persist names and initiative order")
+    func settingsPersist() throws {
+        let suiteName = "BattleRoundModelTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let settings = BattleRoundSettingsModel(defaults: defaults)
+
+        #expect(settings.initiativeName == "Ini")
+        #expect(settings.hitPointsName == "HP")
+        #expect(settings.initiativeOrder == .descending)
+
+        settings.initiativeName = "Speed"
+        settings.hitPointsName = "Health"
+        settings.initiativeOrder = .ascending
+
+        let restored = BattleRoundSettingsModel(defaults: defaults)
+        #expect(restored.initiativeName == "Speed")
+        #expect(restored.hitPointsName == "Health")
+        #expect(restored.initiativeOrder == .ascending)
+    }
+
     private func combatant(
         name: String,
         initiative: Int? = nil,

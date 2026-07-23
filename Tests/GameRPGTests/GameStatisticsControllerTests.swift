@@ -271,6 +271,47 @@ struct GameStatisticsControllerTests {
         #expect(abs(epicSession.percentComplete - expectedProgress) < 0.000_001)
     }
 
+    @Test("Map sharing counts reveals but excludes state and pin updates")
+    func mapSharingCountsOnlyReveals() {
+        let sender = GameSenderModel(
+            id: UUID(),
+            role: .master,
+            name: "Master",
+            characterId: nil
+        )
+        let masterId = sender.id
+        let mapId = UUID()
+        let controller = GameStatisticsController()
+
+        func event(type: RPGMessageType, action: RPGMessageActionType) -> GameStatisticEventDraft {
+            let message = GameNetworkModel(
+                counter: 1,
+                proxyCounter: 0,
+                type: type,
+                subType: action,
+                masterId: masterId,
+                sender: sender,
+                data: NetworkCodableDataType(
+                    id: mapId,
+                    type: .map,
+                    version: 1,
+                    data: Data([1])
+                )
+            )
+            return controller.eventDraft(
+                for: message,
+                sessionID: UUID(),
+                localParticipantID: masterId,
+                direction: .outgoing,
+                origin: .local
+            )
+        }
+
+        #expect(event(type: .reveal, action: .show).kind == .contentShared)
+        #expect(event(type: .update, action: .mapState).kind == .message)
+        #expect(event(type: .update, action: .mapPin).kind == .message)
+    }
+
     @Test("preview data demonstrates the dashboard without persistence")
     func createsDashboardPreview() throws {
         // Given

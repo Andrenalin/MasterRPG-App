@@ -63,8 +63,21 @@ public extension FileUrlDataController {
     func fileDownloaded(for fileUrl: FileUrl) async -> Bool? {
         guard fileUrl.location != .local && fileUrl.location != .other else { return nil }
         guard await hasAccess(for: fileUrl) else { return nil }
-        guard let fullUrl = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) else { return nil }
-        guard let values = try? fullUrl.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]) else { return nil }
+        guard let fullUrl = locationFileManager.absoluteUrl(
+            for: fileUrl.rawUrl,
+            at: fileUrl.location,
+            module: fileUrl.module
+        ) else { return nil }
+        guard let values = try? fullUrl.resourceValues(
+            forKeys: [
+                .isUbiquitousItemKey,
+                .ubiquitousItemDownloadingStatusKey
+            ]
+        ) else { return nil }
+        // `.newCloud` falls back to the shared app-group container when iCloud
+        // Drive is unavailable. Those files are already local and have no
+        // ubiquitous download status.
+        guard values.isUbiquitousItem == true else { return true }
         let status = values.ubiquitousItemDownloadingStatus
         return status == .downloaded || status == .current
     }
@@ -84,7 +97,11 @@ public extension FileUrlDataController {
 
     func hasAccess(for fileUrl: FileUrl) async -> Bool {
         let url = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
-        if let url, url != locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) {
+        if let url, url != locationFileManager.absoluteUrl(
+            for: fileUrl.rawUrl,
+            at: fileUrl.location,
+            module: fileUrl.module
+        ) {
             Logger.bookmarkStore.info("Different URL detected \(url.absoluteString, privacy: .public)")
         }
         guard url != nil || fileUrl.location == .newCloud || fileUrl.location == .local || fileUrl.location == .appCloud else { return false }
@@ -122,7 +139,11 @@ public extension FileUrlDataController {
             return try await action(url)
         }
 
-        let fullUrl = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) ?? fileUrl.rawUrl
+        let fullUrl = locationFileManager.absoluteUrl(
+            for: fileUrl.rawUrl,
+            at: fileUrl.location,
+            module: fileUrl.module
+        ) ?? fileUrl.rawUrl
         let bookmarkedUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
 
         var processUrl = bookmarkedUrl ?? fullUrl
@@ -142,7 +163,11 @@ public extension FileUrlDataController {
             return try action(url)
         }
 
-        let fullUrl = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) ?? fileUrl.rawUrl
+        let fullUrl = locationFileManager.absoluteUrl(
+            for: fileUrl.rawUrl,
+            at: fileUrl.location,
+            module: fileUrl.module
+        ) ?? fileUrl.rawUrl
         var loadedFileUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
 
         if loadedFileUrl == nil, let data = fileUrl.data {

@@ -11,6 +11,11 @@ public enum BattleInitiativeOrder: Int, Codable, CaseIterable, Identifiable, Sen
     public var id: Int { rawValue }
 }
 
+public enum BattleValueKind: Equatable, Sendable {
+    case initiative
+    case hitPoints
+}
+
 public struct BattleRollResult: Identifiable, Codable, Equatable, Sendable {
     public init(
         id: UUID = UUID(),
@@ -40,6 +45,8 @@ public struct BattleCombatant: Identifiable, Codable, Equatable, Sendable {
         sourceCharacterId: UUID?,
         gameCharacterId: UUID?,
         initiative: Int? = nil,
+        initiativeEntryId: UUID? = nil,
+        hitPointsEntryId: UUID? = nil,
         isPlayer: Bool? = nil
     ) {
         self.id = id
@@ -47,6 +54,8 @@ public struct BattleCombatant: Identifiable, Codable, Equatable, Sendable {
         self.sourceCharacterId = sourceCharacterId
         self.gameCharacterId = gameCharacterId
         self.initiative = initiative
+        self.initiativeEntryId = initiativeEntryId
+        self.hitPointsEntryId = hitPointsEntryId
         self.isPlayer = isPlayer ?? pin.isPlayer
     }
 
@@ -57,6 +66,8 @@ public struct BattleCombatant: Identifiable, Codable, Equatable, Sendable {
     public internal(set) var sourceCharacterId: UUID?
     public internal(set) var gameCharacterId: UUID?
     public internal(set) var initiative: Int?
+    public internal(set) var initiativeEntryId: UUID?
+    public internal(set) var hitPointsEntryId: UUID?
     public let isPlayer: Bool
 
     public var pinId: UUID { pin.id }
@@ -294,6 +305,29 @@ public final class BattleRoundModel: Sendable {
         guard initiativeOrder != order else { return false }
         initiativeOrder = order
         sortEntries()
+        return true
+    }
+
+    @discardableResult
+    func setValueEntry(
+        _ entryId: UUID?,
+        kind: BattleValueKind,
+        for combatantId: UUID
+    ) -> Bool {
+        guard let index = combatants.firstIndex(where: { $0.id == combatantId }) else {
+            return false
+        }
+        switch kind {
+        case .initiative:
+            guard combatants[index].initiativeEntryId != entryId else { return false }
+            combatants[index].initiativeEntryId = entryId
+        case .hitPoints:
+            guard combatants[index].hitPointsEntryId != entryId else { return false }
+            combatants[index].hitPointsEntryId = entryId
+        }
+        if combatants[index].isPlayer {
+            retainedPlayerCombatants[combatants[index].pinId] = combatants[index]
+        }
         return true
     }
 

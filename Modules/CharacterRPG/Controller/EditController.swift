@@ -64,6 +64,35 @@ extension EditController: EntryDataEditable {
 
     var canAddGroups: Bool { true }
 }
+
+extension EditController {
+    @MainActor
+    public func gameValueEntryUpdate(
+        itemId: UUID,
+        entryId: UUID?
+    ) -> NetworkCodableDataType? {
+        guard let entryId,
+              let character = itemController.itemSync(for: itemId),
+              let entry = character.entries.first(where: { $0.id == entryId }),
+              let data = GameValueEntryUpdate(
+                  characterId: itemId,
+                  entryId: entry.id,
+                  name: entry.name,
+                  typeRawValue: entry.type.rawValue,
+                  isGenerator: entry.isGenerator,
+                  value: entry.value,
+                  displayState: entry.displayState
+              ).encodeData() else {
+            return nil
+        }
+        return NetworkCodableDataType(
+            id: itemId,
+            type: .value,
+            version: 1,
+            data: data
+        )
+    }
+}
  
 // MARK: - EntryList editor
 

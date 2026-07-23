@@ -1075,7 +1075,24 @@ extension PlayerController {
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType) async {
         guard await root.gameModel.gameType != .observer else { return }
         // Players cannot publish Weather and Weather has no live updates yet.
-        guard message.type != .table, message.type != .value, message.type != .weather else { return }
+        guard message.type != .table, message.type != .weather else { return }
+        if message.type == .value {
+            let playerCharacterId = await root.gameModel.gamePlayer.characterId
+            guard actionType == .valueUpdate,
+                  message.data != nil,
+                  message.id == playerCharacterId else {
+                return
+            }
+            // Value updates are small causal events and deliberately stay on
+            // Messenger/chunked transports, never GroupSessionJournal.
+            await send(
+                type: .update,
+                subType: .valueUpdate,
+                updated: message,
+                useJournal: false
+            )
+            return
+        }
         if message.type == .photo, actionType == .generic {
             guard await root.gameModel.gameControl.features.photoSharing else { return }
             await sharePhoto(message)

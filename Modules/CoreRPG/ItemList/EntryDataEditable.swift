@@ -61,6 +61,9 @@ public protocol EntryDataEditable: EditControllable {
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int)
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, selected: Bool)
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String)
+    /// Encodes an existing entry's link-free game update, when supported by
+    /// the owning module.
+    @MainActor func gameValueEntryUpdate(itemId: UUID, entryId: UUID?) -> NetworkCodableDataType?
 }
 
 public extension EntryDataEditable {
@@ -295,6 +298,7 @@ public extension EntryDataEditable {
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int) {}
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, selected: Bool) {}
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String) {}
+    @MainActor func gameValueEntryUpdate(itemId: UUID, entryId: UUID?) -> NetworkCodableDataType? { nil }
 }
 
 public extension EntryDataEditable {

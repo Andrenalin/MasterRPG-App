@@ -9,6 +9,7 @@ struct BattleRoundHeader: View {
     let activeAttackerName: String?
     let initiativeOrder: BattleInitiativeOrder
     let actions: BattleRoundActions
+    @Binding var isConfigurationExpanded: Bool
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -23,6 +24,7 @@ struct BattleRoundHeader: View {
                     selection: initiativeOrderBinding,
                     isDisabled: isRunning && !hasEntries
                 )
+                configurationButton
                 BattleRoundHeaderActions(isRunning: isRunning, actions: actions)
             }
 
@@ -38,6 +40,7 @@ struct BattleRoundHeader: View {
                         selection: initiativeOrderBinding,
                         isDisabled: isRunning && !hasEntries
                     )
+                    configurationButton
                 }
                 BattleRoundHeaderActions(isRunning: isRunning, actions: actions)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -50,6 +53,19 @@ struct BattleRoundHeader: View {
 #else
         .background(.bar)
 #endif
+    }
+
+    private var configurationButton: some View {
+        Button("Battle Settings", systemImage: "slider.horizontal.3") {
+            isConfigurationExpanded.toggle()
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.bordered)
+        .accessibilityValue(
+            isConfigurationExpanded
+                ? Text("Expanded", bundle: .module)
+                : Text("Collapsed", bundle: .module)
+        )
     }
 
     private var initiativeOrderBinding: Binding<BattleInitiativeOrder> {

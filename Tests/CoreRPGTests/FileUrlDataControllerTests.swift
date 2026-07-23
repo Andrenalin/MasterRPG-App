@@ -181,6 +181,37 @@ struct FileAccessTests {
         // A newCloud file created by the controller should be accessible through its bookmark.
         #expect(hasAccess == true)
     }
+
+    @Test("App-group managed files are available without an iCloud download")
+    func appGroupFileIsImmediatelyAvailable() async throws {
+        let module = uniqueModuleName("Photo")
+        let sut = await FileUrlDataController(
+            moduleFolder: module,
+            fileTypes: [.image],
+            filenameExtension: "jpg"
+        )
+        let fileId = UUID()
+        let data = Data("thumbnail bytes".utf8)
+        let relativeURL = try #require(URL(string: "Example/image.jpg"))
+        var imported = FileUrl(
+            fileId: fileId,
+            url: relativeURL,
+            location: .newCloud,
+            module: module,
+            relativeUrl: nil
+        )
+        imported.resetData(data)
+        let stored = try #require(
+            try await sut.createNewFileUrl(
+                fileId: fileId,
+                unconvertedFileUrl: imported,
+                pathExtension: "jpg"
+            )
+        )
+
+        #expect(await sut.isAvailableWithoutDownloading(stored))
+        #expect(try await sut.loadData(for: stored) == data)
+    }
     
     @Test("loadData returns data when FileUrl has unconverted data")
     func loadDataReturnsUnconvertedData() async throws {

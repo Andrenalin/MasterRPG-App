@@ -20,7 +20,7 @@ struct ViewerRootView: View {
                 .id(model.id)
 #endif
         }
-        .ignoresSafeArea(.container, edges: [.top, .bottom])
+        .ignoresSafeArea(.container, edges: ignoredSafeAreaEdges)
         .applyIf(configuration.addToolbar) {
             $0.toolbar {
                 toolbarContent
@@ -32,6 +32,10 @@ struct ViewerRootView: View {
         .background(.black.gradient)
 #endif
         .environment(CacheItemListModel())
+    }
+
+    private var ignoredSafeAreaEdges: Edge.Set {
+        configuration.addToolbar || configuration.isGame ? [.top, .bottom] : []
     }
 }
 

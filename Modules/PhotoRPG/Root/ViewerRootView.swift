@@ -32,7 +32,7 @@ struct ViewerRootView: View {
                 contentView
             }
         }
-        .ignoresSafeArea(.container, edges: [.top, .bottom])
+        .ignoresSafeArea(.container, edges: ignoredSafeAreaEdges)
 #if !os(visionOS)
         .background(Color.black.gradient)
 #endif
@@ -47,6 +47,10 @@ struct ViewerRootView: View {
 
     private var toolbarConfiguration: PhotoToolbarConfiguration {
         PhotoToolbarConfiguration(photoId: model.id, degrees: model.degrees)
+    }
+
+    private var ignoredSafeAreaEdges: Edge.Set {
+        configuration.addToolbar || configuration.isGame ? [.top, .bottom] : []
     }
 }
 
