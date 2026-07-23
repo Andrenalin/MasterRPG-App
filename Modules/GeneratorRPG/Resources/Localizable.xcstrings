@@ -98,12 +98,6 @@
             "state" : "translated",
             "value" : "%@ Wie kann ich helfen?"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ ฉันช่วยคุณได้อย่างไร?"
-          }
         }
       }
     },
@@ -120,69 +114,9 @@
     "%lld Instructions" : {
       "localizations" : {
         "de" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld Anweisungen"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Anweisungen"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld Anweisungen"
-                }
-              }
-            }
-          }
-        },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld Instruction"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld Instructions"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld Instructions"
-                }
-              }
-            }
-          }
-        },
-        "th" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld คำแนะนำ"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld คำแนะนำ"
-                }
-              }
-            }
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Anweisungen"
           }
         }
       }
@@ -404,7 +338,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "AI ไม่ได้สร้างเนื้อหาชีทที่ใช้งานได้"
+            "value" : "AI ไม่สร้างเนื้อหาชีทที่ใช้งานได้"
           }
         }
       }
@@ -500,12 +434,6 @@
             "state" : "translated",
             "value" : "PDF wird mit Apple Intelligence analysiert …"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กำลังวิเคราะห์ PDF ด้วย Apple Intelligence..."
-          }
         }
       }
     },
@@ -532,12 +460,6 @@
             "state" : "translated",
             "value" : "Analyse läuft …"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กำลังวิเคราะห์..."
-          }
         }
       }
     },
@@ -547,12 +469,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Antworten / Ideen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คำตอบ / แนวคิด"
           }
         }
       }
@@ -667,12 +583,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "KI fragen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ถาม AI"
           }
         }
       }
@@ -896,12 +806,6 @@
             "state" : "translated",
             "value" : "Die Inhaltsrichtlinie hat die Analyse verhindert. Das PDF enthält möglicherweise unangemessene Inhalte."
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "นโยบายเนื้อหาขัดขวางการวิเคราะห์ PDF อาจมีเนื้อหาที่ไม่เหมาะสม"
-          }
         }
       }
     },
@@ -1021,12 +925,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Generator erstellen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างตัวสร้าง"
           }
         }
       }
@@ -1230,12 +1128,6 @@
             "state" : "translated",
             "value" : "Beschreibung ausstehend"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รอคำอธิบาย"
-          }
         }
       }
     },
@@ -1414,12 +1306,6 @@
             "state" : "translated",
             "value" : "PDF-Text extrahieren"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ดึงข้อความ PDF"
-          }
         }
       }
     },
@@ -1445,12 +1331,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PDF-Inhalt wird mit Apple Intelligence extrahiert …"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กำลังดึงเนื้อหา PDF ด้วย Apple Intelligence..."
           }
         }
       }
@@ -1549,12 +1429,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Text konnte nicht aus dem PDF-Dokument extrahiert werden."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ดึงข้อความจากเอกสาร PDF ไม่สำเร็จ"
           }
         }
       }
@@ -2168,7 +2042,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ภาษาเอาต์พุต"
+            "value" : "ภาษาผลลัพธ์"
           }
         }
       }
@@ -2195,12 +2069,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Der PDF-Inhalt ist zu groß für die Verarbeitung. Versuche es mit einem kleineren Dokument oder weniger Seiten."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เนื้อหา PDF มีขนาดใหญ่เกินไปสำหรับการประมวลผล ลองใช้เอกสารขนาดเล็กลงหรือจำนวนหน้าน้อยลง"
           }
         }
       }
@@ -2430,12 +2298,6 @@
             "state" : "translated",
             "value" : "Das Schema enthält eine nicht unterstützte Einschränkung: %@."
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สกีมามีข้อจำกัดที่ไม่รองรับ: %@"
-          }
         }
       }
     },
@@ -2528,7 +2390,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เปิดแผ่นการแชร์แล้ว"
+            "value" : "เปิดชีทแชร์แล้ว"
           }
         }
       }
@@ -2744,12 +2606,6 @@
             "state" : "translated",
             "value" : "Das PDF-Dokument ist leer oder enthält keinen lesbaren Text."
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เอกสาร PDF ว่างเปล่าหรือไม่มีข้อความที่อ่านได้"
-          }
         }
       }
     },
@@ -2759,12 +2615,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Sprache des PDFs wird von Apple Intelligence nicht unterstützt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ภาษาของ PDF ไม่รองรับโดย Apple Intelligence"
           }
         }
       }
@@ -3129,12 +2979,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unerwarteter Fehler: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ข้อผิดพลาดที่ไม่คาดคิด: %@"
           }
         }
       }

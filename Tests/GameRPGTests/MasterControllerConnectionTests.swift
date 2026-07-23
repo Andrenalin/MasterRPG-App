@@ -41,7 +41,7 @@ struct MasterControllerModelConnectionTests {
         let connId = UUID()
         let playerId = UUID()
 
-        await MainActor.run { model.add(connectionId: connId, playerId: playerId) }
+        _ = await MainActor.run { model.add(connectionId: connId, playerId: playerId) }
 
         let registered = await MainActor.run { model.connectIDPlayers[connId] }
         #expect(registered == playerId)

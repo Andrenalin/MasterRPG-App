@@ -212,6 +212,9 @@ extension GameController: MapGameStorable {
     }
 
     func mapAssetVersion(for itemId: UUID) async -> Int {
+        if let generation = await mapGameModel.authoritativeGeneration(for: itemId) {
+            return generation.assetVersion
+        }
         if let metadata = await stablePackageMetadata(for: itemId) {
             return metadata.assetVersion
         }

@@ -175,7 +175,7 @@ struct PlayerControllerTests {
         // An absent/mismatched player report is only a request for the
         // master's canonical baseline; player bytes must not be uploaded.
         let newerMasterBaseline = baseline + 1
-        await env.root.photoRoot.photoGameControllable.setMasterVersion(
+        env.root.photoRoot.photoGameControllable.setMasterVersion(
             itemId: photoId,
             version: newerMasterBaseline,
             masterId: masterId
@@ -192,12 +192,12 @@ struct PlayerControllerTests {
 
         // Once the sender has the exact master version, include bytes while
         // any reported participant is still missing the photo.
-        await env.root.photoRoot.photoGameControllable.setMasterVersion(
+        env.root.photoRoot.photoGameControllable.setMasterVersion(
             itemId: photoId,
             version: baseline,
             masterId: masterId
         )
-        await env.root.photoRoot.photoGameControllable.markPhotoAvailable(
+        env.root.photoRoot.photoGameControllable.markPhotoAvailable(
             itemId: photoId,
             version: baseline,
             for: [masterId, playerId],
@@ -212,7 +212,7 @@ struct PlayerControllerTests {
         #expect(sent.data.effectiveAssetVersion == baseline)
         #expect(sent.data.data == photoData.data)
         #expect(sent.usesFileJournal)
-        #expect(await env.root.photoRoot.photoGameControllable.isPhotoAvailable(
+        #expect(env.root.photoRoot.photoGameControllable.isPhotoAvailable(
             itemId: photoId,
             for: missingPlayerId,
             masterId: masterId

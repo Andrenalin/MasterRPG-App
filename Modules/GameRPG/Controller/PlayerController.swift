@@ -2470,7 +2470,6 @@ extension PlayerController {
                     counter: model.counter
                 )
             }
-            var importedFullPayload = false
             let revealed: Bool
             if model.data.data != nil, model.data.assetVersion != nil {
                 if hasBaseMap, !shouldImportFullPayload {
@@ -2493,7 +2492,11 @@ extension PlayerController {
                     } catch {
                         return nil
                     }
-                    importedFullPayload = true
+                    // Importing the map package establishes the advertised
+                    // generation even when its background bytes are not locally
+                    // readable. Background readiness is checked independently
+                    // before presentation and acknowledgement below.
+                    await recordImportedFullMapGeneration(model)
                     revealed = await hasMatchingMapAsset(model.data)
                 }
             } else if model.data.data == nil, model.data.assetVersion != nil {
@@ -2515,7 +2518,9 @@ extension PlayerController {
                 } catch {
                     return nil
                 }
-                importedFullPayload = revealed && model.data.data != nil
+                if revealed, model.data.data != nil {
+                    await recordImportedFullMapGeneration(model)
+                }
             }
 
             guard revealed else {
@@ -2533,16 +2538,6 @@ extension PlayerController {
                 )
             }
 
-            if importedFullPayload {
-                await root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
-                    model.data
-                )
-                await gameModel.recordFullMapContentVersion(
-                    itemId: model.data.id,
-                    contentVersion: model.data.contentVersion,
-                    counter: model.counter
-                )
-            }
             _ = await applyPendingMapContentUpdate(itemId: model.data.id)
 
             // A metadata-only reveal is complete only when both independent
@@ -2806,6 +2801,17 @@ extension PlayerController {
     func hasMatchingMapAsset(_ data: NetworkCodableDataType) async -> Bool {
         guard let expectedAssetVersion = data.assetVersion else { return true }
         return await root.mapRoot.mapGameControllable.mapAssetVersion(for: data.id) == expectedAssetVersion
+    }
+
+    func recordImportedFullMapGeneration(_ model: GameNetworkModel) async {
+        await root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
+            model.data
+        )
+        await gameModel.recordFullMapContentVersion(
+            itemId: model.data.id,
+            contentVersion: model.data.contentVersion,
+            counter: model.counter
+        )
     }
 
     func completeMapRepairIfSatisfied(itemId: UUID) async -> Bool? {

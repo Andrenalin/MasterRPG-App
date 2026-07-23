@@ -5,9 +5,10 @@ import os.log
 
 actor FileBookmarkModel {
     init(name: String, priority: TaskPriority) {
-        itemController = FileDataController(name: name, priority: priority)
-        Task {
-            await fetch()
+        let itemController = FileDataController<Bookmarks>(name: name, priority: priority)
+        self.itemController = itemController
+        fetchTask = Task(priority: priority) {
+            await itemController.fetch()
         }
     }
 
@@ -16,18 +17,22 @@ actor FileBookmarkModel {
 
     private var fileBookmarks: [UUID: Data] = [:]
     private var folderBookmarks: [UUID: Data] = [:]
+    private var didFetch = false
 
     private struct Bookmarks: Codable, Storeable, Sendable {
         let id: UUID
         let bookmarks: [UUID: Data]
     }
     private let itemController: FileDataController<Bookmarks>
+    private let fetchTask: Task<Void, Never>
 
-    func bookmarkData(for fileId: UUID, folder: Bool) -> Data? {
-        folder ? folderBookmarks[fileId] : fileBookmarks[fileId]
+    func bookmarkData(for fileId: UUID, folder: Bool) async -> Data? {
+        await fetchIfNeeded()
+        return folder ? folderBookmarks[fileId] : fileBookmarks[fileId]
     }
 
     func changeBookmarks(fileId: UUID, data: Data, folder: Bool) async {
+        await fetchIfNeeded()
         if folder {
             folderBookmarks[fileId] = data
         } else {
@@ -36,23 +41,28 @@ actor FileBookmarkModel {
         await save()
     }
 
-    func folders() -> [UUID] {
-        Array(folderBookmarks.keys)
+    func folders() async -> [UUID] {
+        await fetchIfNeeded()
+        return Array(folderBookmarks.keys)
     }
 
     func removeBookmark(fileId: UUID) async {
+        await fetchIfNeeded()
         fileBookmarks.removeValue(forKey: fileId)
         folderBookmarks.removeValue(forKey: fileId)
         await save()
     }
 
-    private func fetch() async {
-        await itemController.fetch()
+    private func fetchIfNeeded() async {
+        guard !didFetch else { return }
+        await fetchTask.value
         let fileData = await itemController.read(id: Self.deviceId)?.bookmarks ?? [:]
         let folderData = await itemController.read(id: Self.folderId)?.bookmarks ?? [:]
 
+        guard !didFetch else { return }
         fileBookmarks = fileData
         folderBookmarks = folderData
+        didFetch = true
     }
 
     private func save() async {

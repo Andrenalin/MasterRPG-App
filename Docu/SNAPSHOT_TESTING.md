@@ -38,14 +38,25 @@ Record and immediately verify the supported Xcode 27 tree:
 ./Scripts/run_snapshot_tests.sh record 27
 ```
 
+Transactionally re-record selected tests without removing unrelated references:
+
+```bash
+./Scripts/run_snapshot_tests.sh update 27 \
+  -only-testing:AdventureRPGSnapshotTests/AdventureRPGDynamicPreviewSnapshotTests
+```
+
+Swift Testing reliably accepts the suite-level filter shown above; function-level filters can select zero tests with `xcodebuild`.
+
 The runner passes `TEST_RUNNER_SNAPSHOT_RECORD_MODE` and `TEST_RUNNER_SNAPSHOT_BASELINE_VARIANT`; Xcode exposes them to the test process as `SNAPSHOT_RECORD_MODE` and `SNAPSHOT_BASELINE_VARIANT`.
 
-A recording is transactional:
+A full `record` is transactional:
 
 1. Point-Free records into an empty `Snapshots/Xcode27Recording` staging tree.
 2. The runner requires at least one PNG and verifies the entire staged tree with record mode `never`. Starting from an empty tree also removes obsolete images and Finder metadata from the result.
 3. The verified tree replaces `Snapshots/Xcode26` or `Snapshots/Xcode27`, while the previous tree is retained as a temporary backup.
 4. A final read-only run removes the baseline override and proves that the test bundle's `DTXcode` selects the promoted tree automatically.
+
+Targeted `update` uses the same verification and rollback flow, but copies the current baseline into staging first so references outside the selected suites remain untouched.
 
 If recording, staged verification, promotion, or final verification fails or is interrupted, the previous canonical tree is restored. Point-Free reports intentionally recorded cases as failures, so a nonzero recording pass is expected; both subsequent verification passes must succeed.
 

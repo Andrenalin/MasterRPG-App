@@ -8,81 +8,15 @@
             "state" : "translated",
             "value" : "%@"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@"
-          }
         }
       }
     },
     "%lld photos" : {
       "localizations" : {
         "de" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld Fotos"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Fotos"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld Fotos"
-                }
-              }
-            }
-          }
-        },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld photo"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld photos"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld photos"
-                }
-              }
-            }
-          }
-        },
-        "th" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld ภาพถ่าย"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "%lld ภาพถ่าย"
-                }
-              }
-            }
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Fotos"
           }
         }
       }
@@ -118,12 +52,6 @@
             "state" : "translated",
             "value" : "Notiz zu „%@“ hinzugefügt."
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เพิ่มโน้ตไปยัง \"%@\" แล้ว"
-          }
         }
       }
     },
@@ -134,12 +62,6 @@
             "state" : "translated",
             "value" : "Kamera"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กล้อง"
-          }
         }
       }
     },
@@ -149,12 +71,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ auswählen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เลือก %@"
           }
         }
       }
@@ -178,12 +94,6 @@
             "state" : "translated",
             "value" : "In 3D umwandeln"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แปลงเป็น 3D"
-          }
         }
       }
     },
@@ -193,12 +103,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In JPEG konvertieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แปลงเป็น JPEG"
           }
         }
       }
@@ -222,12 +126,6 @@
             "state" : "translated",
             "value" : "Foto erstellen"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างภาพถ่าย"
-          }
         }
       }
     },
@@ -237,12 +135,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Foto mit dem Namen ${name} erstellen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างภาพถ่ายชื่อ ${name}"
           }
         }
       }
@@ -255,12 +147,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "„%@“ erstellt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้าง “%@” แล้ว"
           }
         }
       }
@@ -298,12 +184,6 @@
             "state" : "translated",
             "value" : "Beschreibung"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คำอธิบาย"
-          }
         }
       }
     },
@@ -326,12 +206,6 @@
             "state" : "translated",
             "value" : "Bild konnte nicht geladen werden"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถโหลดรูปภาพได้"
-          }
         }
       }
     },
@@ -341,12 +215,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Datei"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไฟล์"
           }
         }
       }
@@ -368,12 +236,6 @@
             "state" : "translated",
             "value" : "Import"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "นำเข้า"
-          }
         }
       }
     },
@@ -385,12 +247,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bild wird geladen …"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กำลังโหลดรูปภาพ..."
           }
         }
       }
@@ -404,12 +260,6 @@
             "state" : "translated",
             "value" : "Name"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ชื่อ"
-          }
         }
       }
     },
@@ -422,12 +272,6 @@
             "state" : "translated",
             "value" : "Keine Notiz hinzugefügt."
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่ได้เพิ่มโน้ต"
-          }
         }
       }
     },
@@ -437,12 +281,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht ausgewählt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ยังไม่ได้เลือก"
           }
         }
       }
@@ -456,24 +294,11 @@
             "state" : "translated",
             "value" : "Notiz"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โน้ต"
-          }
         }
       }
     },
     "Open %@" : {
-      "localizations" : {
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปิด %@"
-          }
-        }
-      }
+
     },
     "Open Photo" : {
       "localizations" : {
@@ -494,12 +319,6 @@
             "state" : "translated",
             "value" : "Nach Erstellung öffnen"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปิดเมื่อสร้าง"
-          }
         }
       }
     },
@@ -510,12 +329,6 @@
             "state" : "translated",
             "value" : "Foto"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ภาพถ่าย"
-          }
         }
       }
     },
@@ -525,12 +338,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotomediathek"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คลังภาพ"
           }
         }
       }
@@ -553,12 +360,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Entfernen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "นำออก"
           }
         }
       }
@@ -584,12 +385,6 @@
             "state" : "translated",
             "value" : "Bild drehen"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "หมุนรูปภาพ"
-          }
         }
       }
     },
@@ -599,12 +394,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Drehung"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การหมุน"
           }
         }
       }
@@ -618,12 +407,6 @@
             "state" : "translated",
             "value" : "Fotos durchsuchen"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ค้นหารูปภาพ"
-          }
         }
       }
     },
@@ -634,12 +417,6 @@
             "state" : "translated",
             "value" : "Ausgewählt"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เลือกแล้ว"
-          }
         }
       }
     },
@@ -649,12 +426,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Als 2D anzeigen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แสดงเป็น 2D"
           }
         }
       }
@@ -690,12 +461,6 @@
             "state" : "translated",
             "value" : "Welche Notiz soll hinzugefügt werden?"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ควรเพิ่มโน้ตอะไร?"
-          }
         }
       }
     },
@@ -718,12 +483,6 @@
             "state" : "translated",
             "value" : "Welches Foto?"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ภาพถ่ายใด?"
-          }
         }
       }
     },
@@ -733,12 +492,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zoom: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ซูม %@"
           }
         }
       }
@@ -752,12 +505,6 @@
             "state" : "translated",
             "value" : "Hineinzoomen"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ซูมเข้า"
-          }
         }
       }
     },
@@ -770,15 +517,9 @@
             "state" : "translated",
             "value" : "Herauszoomen"
           }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ซูมออก"
-          }
         }
       }
     }
   },
-  "version" : "1.3"
+  "version" : "1.1"
 }

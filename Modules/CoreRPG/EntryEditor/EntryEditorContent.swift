@@ -26,17 +26,10 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     @State private var editModel: TextEditModel
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                Spacer()
-                
-                editorCard
-                    .frame(maxWidth: min(geometry.size.width - 64, 800))
-                    .frame(maxHeight: min(geometry.size.height - 64, 600))
-                
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        editorCard
+            .frame(maxWidth: 800)
+            .padding(32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             // Optimization: Combine onChange modifiers to prevent duplicate updates
             .onChange(of: entry.content, initial: true) { _, newContent in
                 // Check if we actually need to update to prevent unnecessary work
@@ -50,26 +43,25 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
                     updateEditModel(entry: entry, itemId: itemId)
                 }
             }
-        }
-        .background {
-            Button {
-                withAnimation(reduceMotion ? nil : .default) {
+            .background {
+                Button {
+                    withAnimation(reduceMotion ? nil : .default) {
                         editorModel.entryId = nil
+                    }
+                } label: {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
                 }
-            } label: {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)
             }
-            .buttonStyle(.plain)
-            .accessibilityHidden(true)
-        }
-        .task {
+            .task {
 #if !os(tvOS)
-            // Small delay to ensure smooth appearance
-            try? await Task.sleep(for: .milliseconds(100))
-            currentFocus = .name
+                // Small delay to ensure smooth appearance
+                try? await Task.sleep(for: .milliseconds(100))
+                currentFocus = .name
 #endif
-        }
+            }
     }
     
     private var editorCard: some View {

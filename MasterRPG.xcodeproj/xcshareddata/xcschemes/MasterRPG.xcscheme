@@ -29,14 +29,14 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:TestPlans/MasterRPG.xctestplan"
-            default = "YES">
+            reference = "container:TestPlans/MasterRPG.xctestplan">
          </TestPlanReference>
          <TestPlanReference
             reference = "container:TestPlans/MasterSnapshot.xctestplan">
          </TestPlanReference>
          <TestPlanReference
-            reference = "container:TestPlans/MasterAll.xctestplan">
+            reference = "container:TestPlans/MasterAll.xctestplan"
+            default = "YES">
          </TestPlanReference>
       </TestPlans>
    </TestAction>

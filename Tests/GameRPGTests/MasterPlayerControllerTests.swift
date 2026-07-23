@@ -1318,7 +1318,7 @@ final class MasterPlayerControllerTests {
         case .photo:
             itemId = try #require(rootPlayer.photoRoot.itemController.itemDataModel.items.first)
             fullData = try await rootPlayer.photoRoot.gameControllable.createGameData(for: itemId)
-            await rootPlayer.photoRoot.photoGameControllable.setMasterVersion(
+            rootPlayer.photoRoot.photoGameControllable.setMasterVersion(
                 itemId: itemId,
                 version: fullData.effectiveAssetVersion,
                 masterId: masterId
@@ -1326,7 +1326,7 @@ final class MasterPlayerControllerTests {
         case .pdf:
             itemId = try #require(rootPlayer.pdfRoot.itemController.itemDataModel.items.first)
             fullData = try await rootPlayer.pdfRoot.gameControllable.createGameData(for: itemId)
-            await rootPlayer.pdfRoot.pdfGameControllable.setMasterVersion(
+            rootPlayer.pdfRoot.pdfGameControllable.setMasterVersion(
                 itemId: itemId,
                 version: fullData.effectiveAssetVersion,
                 masterId: masterId
@@ -1377,11 +1377,11 @@ final class MasterPlayerControllerTests {
         #expect(sutPlayer.gameModel.gameUpdateType == module)
         let currentItemId: UUID? = switch module {
         case .photo:
-            await rootPlayer.photoRoot.gameControllable.gameModel.currentItemId
+            rootPlayer.photoRoot.gameControllable.gameModel.currentItemId
         case .pdf:
-            await rootPlayer.pdfRoot.gameControllable.gameModel.currentItemId
+            rootPlayer.pdfRoot.gameControllable.gameModel.currentItemId
         case .space:
-            await rootPlayer.spaceRoot.gameControllable.gameModel.currentItemId
+            rootPlayer.spaceRoot.gameControllable.gameModel.currentItemId
         default:
             nil
         }

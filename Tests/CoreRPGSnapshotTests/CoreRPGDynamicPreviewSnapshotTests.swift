@@ -243,6 +243,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
             ImportChooseUrlView(
                 showImportFileChooser: .constant(false),
                 loadUrl: .constant(nil),
+                proposedUrl: .constant(nil),
                 urlProvider: FakeExampleUrlProvider(),
                 isSaveGame: false,
                 importModel: ItemDataImportModel()
@@ -270,6 +271,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                 importModel: ItemDataImportModel(),
                 showImportFileChooser: .constant(false),
                 loadUrl: .constant(nil),
+                proposedUrl: .constant(nil),
                 urlProvider: FakeExampleUrlProvider(),
                 isSaveGame: false
             )

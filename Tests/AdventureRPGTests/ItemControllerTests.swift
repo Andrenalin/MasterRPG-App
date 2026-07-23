@@ -46,14 +46,34 @@ struct ItemControllerTests {
     @Test func itemRegisterLinksIsUsedReturnsAlsoEntries() async throws {
         let root = try await MockRoot.importTestData()
         let sut = root.itemController
-        
-        let item = sut.itemOrEmpty(for: sut.itemDataModel.items[0])
-        try #require(item.photoId != nil)
+
+        let photoId = UUID()
+        let photo = PhotoModel(id: photoId, name: "Referenced Photo")
+        root.photoRoot.editController.save(updated: photo, message: "Test")
+
+        let content = root.photoRoot.linkControllable.generateLinks(
+            itemId: photoId,
+            entryId: nil,
+            into: "Entry link: "
+        )
+        let entry = AdventureEntryModel(id: UUID(), name: "Linked Entry", content: content)
+        let item = AdventureModel(
+            id: UUID(),
+            name: "Link Sources",
+            photoId: photoId,
+            entries: [entry]
+        )
+        root.editController.save(updated: item, message: "Test")
+
+        // Re-registering the item's links must remain idempotent.
         sut.linkRegisterController.register(links: item.linkRegisterModels)
-        
-        let isUsed = sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: item.photoId!, typeId: .photo))
+
+        let photoRow = ItemRowModel(itemId: photoId, typeId: .photo)
+        let isUsed = sut.linkRegisterController.isUsed(link: photoRow)
         #expect(isUsed)
-        let effectedLinks = sut.linkRegisterController.used(for: ItemRowModel(itemId: item.photoId!, typeId: .photo))
+        let effectedLinks = sut.linkRegisterController.used(for: photoRow)
         #expect(effectedLinks.count == 2)
+        #expect(effectedLinks.contains { $0.entryName == nil })
+        #expect(effectedLinks.contains { $0.entryName == entry.name })
     }
 }

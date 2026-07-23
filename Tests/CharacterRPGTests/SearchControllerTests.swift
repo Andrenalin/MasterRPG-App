@@ -593,7 +593,7 @@ struct ListSearchResultsTests {
         #expect(!allIds.contains(subValueId), "Sub-value (groupId != nil) must not appear in folder tree")
     }
 
-    @Test("Folder mode empty search: all root characters, sorted A→Z, canOpen for folders")
+    @Test("Folder mode empty search: all root characters, sorted A→Z, empty folders stay closed")
     func folderModeEmptySearchShowsRootCharacters() async throws {
         let root = try await makeRoot()
 
@@ -616,7 +616,7 @@ struct ListSearchResultsTests {
         #expect(names == names.sorted { $0.localizedCompare($1) == .orderedAscending },
                 "Empty folder search must sort root items A→Z")
         let folderResult = try #require(results.first(where: { $0.itemId == folderId }))
-        #expect(folderResult.canOpen == true, "Folder must have canOpen=true on empty search (lazy load)")
+        #expect(folderResult.canOpen == false, "An empty folder must not expose a disclosure that opens nothing")
     }
 }
 

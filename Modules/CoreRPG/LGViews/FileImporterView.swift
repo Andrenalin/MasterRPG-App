@@ -20,23 +20,25 @@ public struct FileImporterView: View {
     
     public var body: some View {
 #if !os(tvOS)
-        GlassButton(isProminent: isProminent) {
-            showImporter.toggle()
-        } label: {
-            Label {
-                Text("Import File", bundle: .module)
-            } icon: {
-                Image(systemName: "folder")
-                    .symbolVariant(showImporter ? .fill : .none)
-                    .imageScale(isProminent ? .large : .medium)
-                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+        if !fileTypes.isEmpty {
+            GlassButton(isProminent: isProminent) {
+                showImporter.toggle()
+            } label: {
+                Label {
+                    Text("Import File", bundle: .module)
+                } icon: {
+                    Image(systemName: "folder")
+                        .symbolVariant(showImporter ? .fill : .none)
+                        .imageScale(isProminent ? .large : .medium)
+                        .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                }
+                .labelStyle(.iconOnly)
             }
-            .labelStyle(.iconOnly)
-        }
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: fileTypes) { result in
-            guard let url = try? result.get() else { return }
-            Task {
-                await editControllable.resetFile(url: url, itemId: itemId)
+            .fileImporter(isPresented: $showImporter, allowedContentTypes: fileTypes) { result in
+                guard let url = try? result.get() else { return }
+                Task {
+                    await editControllable.resetFile(url: url, itemId: itemId)
+                }
             }
         }
 #endif

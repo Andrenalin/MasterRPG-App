@@ -234,6 +234,7 @@ struct MapPinVisibilityTests {
         #expect(cached.version == 71)
         #expect(cached.assetVersion == 72)
         #expect(cached.contentVersion == 73)
+        #expect(await sut.mapAssetVersion(for: mapId) == 72)
 
         sut.resetGameState()
 
@@ -241,6 +242,7 @@ struct MapPinVisibilityTests {
         #expect(reset.version == map.version)
         #expect(reset.assetVersion != 72)
         #expect(reset.contentVersion != 73)
+        #expect(await sut.mapAssetVersion(for: mapId) != 72)
 
         sut.recordAuthoritativeMapGeneration(authoritative)
         sut.recordAuthoritativeMapGeneration(NetworkCodableDataType(
@@ -252,6 +254,7 @@ struct MapPinVisibilityTests {
         #expect(legacy.version == map.version)
         #expect(legacy.assetVersion != 72)
         #expect(legacy.contentVersion != 73)
+        #expect(await sut.mapAssetVersion(for: mapId) != 72)
     }
 
     @Test func movePinUnknownPinReturnsFalse() async throws {
