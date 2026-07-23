@@ -24,7 +24,6 @@ public struct ThumbnailRowPhotoView: View {
     let listDisplayModel: ListDisplayModel
     let entryId: UUID?
 
-    @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
     
     public var body: some View {
@@ -97,12 +96,17 @@ private extension ThumbnailRowPhotoView {
     
     /// Load thumbnail image with proper structured concurrency
     func loadImage() async {
-        // Deduplication: skip if already loading or if URL unchanged with cached image
-        guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage == nil) else { return }
+        guard !isLoading else { return }
+
+        // A newly constructed row can already see the shared observable thumbnail.
+        // Selection reconstructs list-row values, but must not start another file
+        // load when the shared cache already contains the result.
+        if cachedImage != nil {
+            return
+        }
         
-        // Mark as loading and track current URL
+        // Mark as loading; `.task(id:)` owns URL-change cancellation/restart.
         isLoading = true
-        lastFileUrl = model.fileUrl
         
         let fileId = entryId ?? model.id
         
@@ -118,8 +122,11 @@ private extension ThumbnailRowPhotoView {
             return
         }
         
-        // Update observable cache on main actor
-        cacheController.setCachedThumbnail(newImage, for: fileId)
+        // A transient read/cancellation must not erase a thumbnail another row or
+        // detail task already published for this item.
+        if let newImage {
+            cacheController.setCachedThumbnail(newImage, for: fileId)
+        }
         
         // Reset loading state
         isLoading = false

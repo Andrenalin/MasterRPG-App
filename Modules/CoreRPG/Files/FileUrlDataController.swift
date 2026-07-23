@@ -96,18 +96,31 @@ public extension FileUrlDataController {
     }
 
     func hasAccess(for fileUrl: FileUrl) async -> Bool {
-        let url = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
-        if let url, url != locationFileManager.absoluteUrl(
+        let bookmarkedUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
+        let managedUrl = locationFileManager.absoluteUrl(
             for: fileUrl.rawUrl,
             at: fileUrl.location,
             module: fileUrl.module
-        ) {
-            Logger.bookmarkStore.info("Different URL detected \(url.absoluteString, privacy: .public)")
+        )
+        if let bookmarkedUrl, bookmarkedUrl != managedUrl {
+            Logger.bookmarkStore.info("Different URL detected \(bookmarkedUrl.absoluteString, privacy: .public)")
         }
-        guard url != nil || fileUrl.location == .newCloud || fileUrl.location == .local || fileUrl.location == .appCloud else { return false }
-        let checkUrl = url ?? fileUrl.rawUrl
-        defer { checkUrl.stopAccessingSecurityScopedResource() }
-        return checkUrl.startAccessingSecurityScopedResource()
+
+        // Files in containers owned by the app do not require a security-scoped
+        // session. `startAccessingSecurityScopedResource()` legitimately returns
+        // false for these URLs; treating that as denial caused full-image loading
+        // to remove a valid list thumbnail and then refuse to recreate it.
+        switch fileUrl.location {
+        case .newCloud, .local, .appCloud:
+            return managedUrl != nil
+        case .icloud, .other, .url:
+            guard let bookmarkedUrl else { return false }
+            let didStartAccess = bookmarkedUrl.startAccessingSecurityScopedResource()
+            if didStartAccess {
+                bookmarkedUrl.stopAccessingSecurityScopedResource()
+            }
+            return didStartAccess
+        }
     }
 
     /// Whether the file's binary is available on this device — attached in memory

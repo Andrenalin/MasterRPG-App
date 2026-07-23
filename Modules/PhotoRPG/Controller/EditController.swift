@@ -69,7 +69,11 @@ extension EditController {
         }
         await cacheController.thumbnailId(for: itemId, item: item)
         let newThumbnail = await cacheController.thumbnail(for: itemId)
-        await cacheController.setCachedThumbnail(newThumbnail, for: itemId)
+        // Full-resolution detail loading must not clear a list thumbnail when a
+        // thumbnail refresh is temporarily unavailable or the task is cancelled.
+        if let newThumbnail {
+            await cacheController.setCachedThumbnail(newThumbnail, for: itemId)
+        }
         return cacheType == .image ? result : newThumbnail
     }
         

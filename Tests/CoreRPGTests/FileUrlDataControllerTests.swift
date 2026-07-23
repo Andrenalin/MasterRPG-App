@@ -3,6 +3,11 @@
 import Foundation
 import Testing
 import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 @testable import CoreRPG
 
@@ -182,6 +187,62 @@ struct FileAccessTests {
         #expect(hasAccess == true)
     }
 
+    @Test(
+        "App-managed files do not require security-scoped bookmarks",
+        arguments: [FileLocation.newCloud, .local, .appCloud]
+    )
+    func appManagedFileHasAccessWithoutBookmark(location: FileLocation) async throws {
+        let module = uniqueModuleName()
+        let sut = await FileUrlDataController(
+            moduleFolder: module,
+            fileTypes: [.data],
+            filenameExtension: "test"
+        )
+        let fileUrl = FileUrl(
+            fileId: UUID(),
+            url: try #require(URL(string: "Example/managed-file.test")),
+            location: location,
+            module: module,
+            relativeUrl: nil
+        )
+
+        #expect(await sut.hasAccess(for: fileUrl))
+    }
+
+    @Test("Opening detail does not remove an app-managed list thumbnail")
+    @MainActor
+    func detailImageRequestKeepsManagedThumbnail() async throws {
+        let module = uniqueModuleName()
+        let fileController = FileUrlDataController(
+            moduleFolder: module,
+            fileTypes: [.image],
+            filenameExtension: "jpg"
+        )
+        let itemId = UUID()
+        let fileUrl = FileUrl(
+            fileId: itemId,
+            url: try #require(URL(string: "Example/selection.jpg")),
+            location: .newCloud,
+            module: module,
+            relativeUrl: nil
+        )
+        let model = FakeItemModel(id: itemId, name: "Selection", fileUrl: fileUrl)
+        let cacheController = ManagedFileImageCacheController(fileController: fileController)
+        let thumbnail = AKImage()
+
+        await cacheController.thumbnailCacheController.setObject(thumbnail, for: itemId)
+        cacheController.setCachedThumbnail(thumbnail, for: itemId)
+
+        _ = await cacheController.photoId(
+            for: itemId,
+            item: model,
+            shouldDownload: true
+        )
+
+        #expect(await cacheController.thumbnailCacheController.hasObject(for: itemId))
+        #expect(cacheController.cachedThumbnail(for: itemId) != nil)
+    }
+
     @Test("App-group managed files are available without an iCloud download")
     func appGroupFileIsImmediatelyAvailable() async throws {
         let module = uniqueModuleName("Photo")
@@ -238,6 +299,27 @@ struct FileAccessTests {
         
         #expect(isDownloaded == nil, "Local files should return nil for download status")
     }
+}
+
+private struct ManagedFileImageCacheController: ImageCacheControllable {
+    @MainActor
+    init(fileController: FileUrlDataController) {
+        imageCacheController = ImageCacheController()
+        thumbnailCacheController = ImageCacheController()
+        fileUrlDataController = fileController
+        observableImageCache = ObservableImageCache()
+    }
+
+    let imageCacheController: ImageCacheController
+    let thumbnailCacheController: ImageCacheController
+    let fileUrlDataController: FileUrlDataController?
+    let observableImageCache: ObservableImageCache
+
+    @MainActor
+    func createThumbnail(
+        for itemId: UUID,
+        item: any ItemDataAccessable
+    ) async {}
 }
 
 @Suite("File Duplication Tests")
