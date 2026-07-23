@@ -13,7 +13,7 @@ struct ImportChooseUrlView: View {
     var body: some View {
         VStack(spacing: 20) {
             if let proposedUrl {
-                GroupBox {
+                GroupBoxTV {
                     VStack(alignment: .leading) {
                         Label {
                             Text(verbatim: proposedUrl.lastPathComponent)
