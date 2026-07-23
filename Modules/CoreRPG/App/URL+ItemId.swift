@@ -6,11 +6,11 @@ public extension URL {
     static let appScheme: String = "RPG"
 
     var isDeeplink: Bool {
-        return scheme == URL.appScheme
+        scheme?.caseInsensitiveCompare(URL.appScheme) == .orderedSame
     }
 
     var isGmzDocument: Bool {
-        pathExtension == "gmz"
+        pathExtension.caseInsensitiveCompare("gmz") == .orderedSame
     }
 
     var moduleIdentifier: NetworkModules {

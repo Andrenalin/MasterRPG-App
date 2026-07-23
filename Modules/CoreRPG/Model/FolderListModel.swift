@@ -41,6 +41,7 @@ public final class FolderListModel {
     public var lastFolderId: UUID?
     var level: Int = 0
     var addedModelId: UUID?
+    var selectionGeneration: Int = 0
 
     // MARK: - Selection
     private var isSelectionMode: Bool
@@ -125,6 +126,14 @@ public extension FolderListModel {
 // MARK: - Selection
 
 public extension FolderListModel {
+    func resetNavigationSelection() {
+        selectionGeneration &+= 1
+        addedModelId = nil
+        itemRoute = nil
+        resetListSelection()
+        update(selection: Set())
+    }
+
     func resetListSelection() {
         listSelection <=> []
     }

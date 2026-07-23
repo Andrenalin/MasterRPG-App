@@ -14,7 +14,7 @@ public enum UserActivity {
     public static let childKey = "childId"
 
     public static func extractModule(from text: String) -> NetworkModules {
-        switch text {
+        switch text.uppercased() {
         case NetworkModules.adventure.token: return .adventure
         case NetworkModules.audio.token: return .audio
         case NetworkModules.dice.token: return .dice

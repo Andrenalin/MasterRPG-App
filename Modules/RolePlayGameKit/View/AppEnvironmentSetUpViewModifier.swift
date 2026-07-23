@@ -111,6 +111,6 @@ struct AppSettingSetUpViewModifier: ViewModifier {
 
         Logger.bootStrap.info("Handling user activity for module: \(module.rawValue), itemId: \(itemId)")
 
-        appModel.routeToModule(module, itemId: itemId, entryId: childId)
+        appModel.routeToModuleWhenReady(module, itemId: itemId, entryId: childId)
     }
 }

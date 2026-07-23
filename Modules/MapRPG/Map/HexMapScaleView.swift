@@ -55,7 +55,7 @@ struct HexMapScaleView: View {
             )
 
             Text("Hex Scale", bundle: .module)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             Slider(value: $model.hexScale, in: 20 ... 200) {
                 Text("Hex Scale", bundle: .module)
             }

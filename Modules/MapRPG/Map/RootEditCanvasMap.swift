@@ -66,7 +66,7 @@ struct RootEditCanvasMap: View {
         .onChange(of: itemId, initial: true) {
             updateModel()
         }
-        .onChange(of: root.itemController.itemOrEmpty(for: itemId).entries) {
+        .onChange(of: mapPresentationIdentity) {
             updateModel()
         }
         .task(id: imageLoadIdentity) {
@@ -99,6 +99,18 @@ struct RootEditCanvasMap: View {
         EditMapImageLoadIdentity(mapId: model.id, photoId: model.photoId)
     }
 
+    private var mapPresentationIdentity: EditMapPresentationIdentity {
+        let current = root.itemController.itemOrEmpty(for: itemId)
+        return EditMapPresentationIdentity(
+            mapId: current.id,
+            photoId: current.photoId,
+            width: current.width,
+            height: current.height,
+            degrees: current.degrees,
+            entries: current.entries
+        )
+    }
+
     fileprivate func reloadImage(for identity: EditMapImageLoadIdentity) async {
         let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(
             for: identity.photoId,
@@ -113,6 +125,15 @@ struct RootEditCanvasMap: View {
 fileprivate struct EditMapImageLoadIdentity: Hashable {
     let mapId: UUID
     let photoId: UUID?
+}
+
+fileprivate struct EditMapPresentationIdentity: Equatable {
+    let mapId: UUID
+    let photoId: UUID?
+    let width: CGFloat
+    let height: CGFloat
+    let degrees: Double
+    let entries: [MapEntryModel]
 }
 
 #Preview(traits: .mockData) {

@@ -75,7 +75,7 @@ private extension ThumbnailRowPhotoView {
     func placeHolder(size: CGSize) -> some View {
         if isLoading {
             ProgressView()
-                .scaleEffect(2.0) 
+                .controlSize(.small)
                 .tint(Color.accentColor)
         } else {
             Image(systemName: model.fileUrl == nil ? "photo" : "photo.badge.arrow.down")
@@ -108,7 +108,15 @@ private extension ThumbnailRowPhotoView {
         
         // Perform async loading with proper task priority inheritance
         await cacheController.thumbnailId(for: fileId, item: model)
+        guard !Task.isCancelled else {
+            isLoading = false
+            return
+        }
         let newImage = await cacheController.thumbnail(for: fileId)
+        guard !Task.isCancelled else {
+            isLoading = false
+            return
+        }
         
         // Update observable cache on main actor
         cacheController.setCachedThumbnail(newImage, for: fileId)

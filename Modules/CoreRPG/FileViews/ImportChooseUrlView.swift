@@ -5,12 +5,41 @@ import SwiftUI
 struct ImportChooseUrlView: View {
     @Binding var showImportFileChooser: Bool
     @Binding var loadUrl: URL?
+    @Binding var proposedUrl: URL?
     let urlProvider: (any ExampleUrlProvider)?
     let isSaveGame: Bool
     @Bindable var importModel: ItemDataImportModel
 
     var body: some View {
         VStack(spacing: 20) {
+            if let proposedUrl {
+                GroupBox {
+                    VStack(alignment: .leading) {
+                        Label {
+                            Text(verbatim: proposedUrl.lastPathComponent)
+                                .lineLimit(2)
+                        } icon: {
+                            Image(systemName: "doc.badge.arrow.up")
+                        }
+
+                        Button {
+                            loadUrl = proposedUrl
+                            self.proposedUrl = nil
+                        } label: {
+                            Label {
+                                Text("Review Import", bundle: .module)
+                            } icon: {
+                                Image(systemName: "checkmark.shield")
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } label: {
+                    Text("File Ready to Import", bundle: .module)
+                }
+            }
+
             Button {
                 showImportFileChooser = true
             } label: {
@@ -68,9 +97,11 @@ struct ImportChooseUrlView: View {
 #Preview {
     @Previewable @State var showImportFileChooser = false
     @Previewable @State var loadUrl: URL?
+    @Previewable @State var proposedUrl: URL?
     ImportChooseUrlView(
         showImportFileChooser: $showImportFileChooser,
         loadUrl: $loadUrl,
+        proposedUrl: $proposedUrl,
         urlProvider: FakeExampleUrlProvider(),
         isSaveGame: false,
         importModel: ItemDataImportModel()

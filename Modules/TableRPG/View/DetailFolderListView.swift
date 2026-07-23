@@ -30,7 +30,13 @@ struct DetailFolderListView: View {
         ) {
             DetailEditorView(root: root, model: model)
         }
-#if !os(tvOS)
+#if os(iOS)
+        .sheetAIAssistantContext(
+            module: root.configurable.module,
+            itemId: model.id,
+            rootModel: root.editController.editorModel.sheetRootModel
+        )
+#elseif !os(tvOS)
         .applyIf(root.editController.editorModel.sheetRootModel != nil) {
             $0.safeAreaInset(edge: .bottom, alignment: .center) {
                 GlassEffectContainerAll {
@@ -46,7 +52,7 @@ struct DetailFolderListView: View {
 
     // MARK: - Overlays
 
-#if !os(tvOS)
+#if !os(tvOS) && !os(iOS)
     @ViewBuilder private var aiAssistantView: some View {
         if let sheetRootModel = root.editController.editorModel.sheetRootModel {
             SheetAIAssistantOverlayView(module: root.configurable.module, itemId: model.id, rootModel: sheetRootModel)

@@ -18,6 +18,9 @@ struct MapPassiveRoomCanvas: View {
     let canvasSize: CGSize
     var excludingEntryId: UUID? = nil
 
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+
     var body: some View {
         let snapshots = orderedSnapshots
         Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: true) { context, _ in
@@ -55,20 +58,12 @@ struct MapPassiveRoomCanvas: View {
                     snapshot.path,
                     with: .color(.green.opacity(snapshot.isShown ? 0.1 : 0.5))
                 )
-                context.stroke(
-                    snapshot.path,
-                    with: .color(.green.opacity(0.8)),
-                    style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round)
-                )
+                drawBoundary(for: snapshot, in: &context)
             }
 
         case (.base, .reader):
             for snapshot in snapshots {
-                context.stroke(
-                    snapshot.path,
-                    with: .color(.green.opacity(0.8)),
-                    style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round)
-                )
+                drawBoundary(for: snapshot, in: &context)
             }
 
         case (.fog, .player):
@@ -77,6 +72,29 @@ struct MapPassiveRoomCanvas: View {
         case (.base, .player), (.fog, .master), (.fog, .reader):
             break
         }
+    }
+
+    private func drawBoundary(
+        for snapshot: MapRoomSnapshot,
+        in context: inout GraphicsContext
+    ) {
+        if colorSchemeContrast == .increased {
+            context.stroke(
+                snapshot.path,
+                with: .color(.primary.opacity(0.9)),
+                style: StrokeStyle(lineWidth: 12, lineCap: .round, lineJoin: .round)
+            )
+        }
+        context.stroke(
+            snapshot.path,
+            with: .color(.green),
+            style: StrokeStyle(
+                lineWidth: colorSchemeContrast == .increased ? 6 : 8,
+                lineCap: .round,
+                lineJoin: .round,
+                dash: differentiateWithoutColor && snapshot.isShown ? [16, 8] : []
+            )
+        )
     }
 
     private func drawFog(for snapshots: [MapRoomSnapshot], in context: inout GraphicsContext) {

@@ -21,8 +21,6 @@ struct GameStatisticsEntryLabel: View {
                         .font(.caption)
                 }
             }
-
-            Image(systemName: "chevron.forward")
         }
     }
 }

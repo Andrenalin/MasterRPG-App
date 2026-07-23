@@ -51,16 +51,17 @@ extension ImageCacheControllable {
     @MainActor public func photoId(for itemId: UUID, item: any ItemDataAccessable, shouldDownload: Bool = false) async -> UUID? {
         guard let fileUrlDataController, let fileUrl = item.fileUrl else { return nil }
         guard await !imageCacheController.hasObject(for: itemId) else { return itemId }
-        let imageTask = Task(priority: .userInitiated) {
-            if shouldDownload {
-                if await fileUrlDataController.hasAccess(for: fileUrl) == false {
-                    try? await fileUrlDataController.download(fileUrl: fileUrl)
-                    await thumbnailCacheController.removeObject(for: itemId)
-                }
+        guard !Task.isCancelled else { return nil }
+        if shouldDownload {
+            if await fileUrlDataController.hasAccess(for: fileUrl) == false {
+                try? await fileUrlDataController.download(fileUrl: fileUrl)
+                await thumbnailCacheController.removeObject(for: itemId)
             }
-            await self.createImage(for: itemId, item: item)
+        } else if await !fileUrlDataController.isAvailableWithoutDownloading(fileUrl) {
+            return nil
         }
-        _ = await imageTask.value
+        guard !Task.isCancelled else { return nil }
+        await createImage(for: itemId, item: item)
         return await imageCacheController.hasObject(for: itemId) ? itemId : nil
     }
         
@@ -69,10 +70,13 @@ extension ImageCacheControllable {
         guard await !thumbnailCacheController.hasObject(for: itemId) else { return itemId }
         let _ = await thumbnail(for: itemId) // load from disk
         guard await !thumbnailCacheController.hasObject(for: itemId) else { return itemId }
-        let imageTask = Task(priority: .userInitiated) {
-            await self.createThumbnail(for: itemId, item: item)
+        guard !Task.isCancelled else { return nil }
+        if let fileUrlDataController, let fileUrl = await item.fileUrl,
+           await !fileUrlDataController.isAvailableWithoutDownloading(fileUrl) {
+            return nil
         }
-        _ = await imageTask.value
+        guard !Task.isCancelled else { return nil }
+        await createThumbnail(for: itemId, item: item)
         return await thumbnailCacheController.hasObject(for: itemId) ? itemId : nil
     }
     
@@ -145,4 +149,3 @@ public final class ObservableImageCache: Sendable {
         removeThumbnail(for: itemId)
     }
 }
-

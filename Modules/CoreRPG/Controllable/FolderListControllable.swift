@@ -115,6 +115,7 @@ public extension FolderListControllable {
     ///   (context-menu move/add/remove) pass `false` so the list rebuilds immediately and reliably.
     func update(debounce: Bool = true) {
         let previousSelectedId = listModel.selectedItemId
+        let selectionGeneration = listModel.selectionGeneration
         if let addedModelId = listModel.addedModelId,
            let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
             listModel.selected = addedItem.id
@@ -138,12 +139,19 @@ public extension FolderListControllable {
                 await performDetailSearch()
             }
             guard !Task.isCancelled else { return }
-            applyPostUpdateSelection(previousSelectedId: previousSelectedId)
+            applyPostUpdateSelection(
+                previousSelectedId: previousSelectedId,
+                selectionGeneration: selectionGeneration
+            )
         }
     }
 
     /// Restores selection/scroll after `update()`'s search has rebuilt the list.
-    private func applyPostUpdateSelection(previousSelectedId: UUID?) {
+    private func applyPostUpdateSelection(
+        previousSelectedId: UUID?,
+        selectionGeneration: Int
+    ) {
+        guard listModel.selectionGeneration == selectionGeneration else { return }
         if let addedModelId = listModel.addedModelId,
            let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
             Task { @MainActor in

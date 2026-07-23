@@ -38,7 +38,7 @@ struct EditToolBarViewModifier: ViewModifier {
 #if !os(macOS)
                     ToolbarItem(placement: titlePlacement) {
                         Text("Edit Tile", bundle: .module)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                     }
 #endif
                     ToolbarItem(placement: bottomBarPlacement) {
@@ -80,7 +80,7 @@ struct EditToolBarViewModifier: ViewModifier {
                         .padding()
                         .frame(maxWidth: 520)
 #if !os(visionOS)
-                        .glassEffect(.clear)
+                        .glassEffect(.regular)
 #endif
                     }
                     .padding(.horizontal)
@@ -127,12 +127,12 @@ struct EditToolBarViewModifier: ViewModifier {
 #else
                 ToolbarItem(placement: titlePlacement) {
                     Text(verbatim: titlename)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                 }
 
                 ToolbarItem(placement: subtitlePlacement) {
                     Text(verbatim: subtitleName)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.secondary)
                 }
 #endif
 
@@ -343,12 +343,24 @@ private extension EditToolBarViewModifier {
                 Image(systemName: symbolName)
                     .accessibilityLabel(Text("Refresh Shared Map", bundle: .module))
             }
+            .disabled(!sharedMapHasChanges)
+            .opacity(sharedMapHasChanges ? 1 : 0)
+            .allowsHitTesting(sharedMapHasChanges)
+            .accessibilityHidden(!sharedMapHasChanges)
         }
     }
 
     var isSharedMap: Bool {
         guard let mapId = editorModel.workingCopy?.id else { return false }
         return root.gameController.gameModel.itemData[mapId] is MapModel
+    }
+
+    var sharedMapHasChanges: Bool {
+        guard let editedMap = editorModel.workingCopy else { return false }
+        let savedMap = root.itemController.itemOrEmpty(for: editedMap.id)
+        return !editedMap.isSame(savedMap)
+            || editorModel.pinScale != savedMap.pinScale
+            || editorModel.hexScale != savedMap.hexMapScale
     }
 
     @ViewBuilder var undoButton: some View {

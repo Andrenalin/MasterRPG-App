@@ -20,14 +20,22 @@ public struct ImportProgressPanelView: View {
         self.urlProvider = nil
         self.importController = importController
         self.isSaveGame = true
+        self.initialURL = nil
         self.saveDeferredHandler = nil
     }
 
-    public init(rootManager: RootManager?, urlProvider: any ExampleUrlProvider, importController: any ImportControllable, saveDeferredHandler: ((Bool) -> Void)?) {
+    public init(
+        rootManager: RootManager?,
+        urlProvider: any ExampleUrlProvider,
+        importController: any ImportControllable,
+        initialURL: URL? = nil,
+        saveDeferredHandler: ((Bool) -> Void)?
+    ) {
         self.rootManager = rootManager
         self.urlProvider = urlProvider
         self.importController = importController
         self.isSaveGame = false
+        self.initialURL = initialURL
         self.saveDeferredHandler = saveDeferredHandler
     }
 
@@ -35,6 +43,7 @@ public struct ImportProgressPanelView: View {
     let urlProvider: (any ExampleUrlProvider)?
     let importController: any ImportControllable
     let isSaveGame: Bool
+    let initialURL: URL?
     let saveDeferredHandler: ((Bool) -> Void)?
 
     @Environment(\.navigator) private var navigator
@@ -44,6 +53,7 @@ public struct ImportProgressPanelView: View {
     @State private var outcome: ImportOutcome = .notStarted
 
     @State private var loadUrl: URL?
+    @State private var proposedUrl: URL?
     @State private var importTask: Task<Void, any Error>?
 
     public var body: some View {
@@ -66,6 +76,7 @@ public struct ImportProgressPanelView: View {
                         importModel: importModel,
                         showImportFileChooser: $showImportFileChooser,
                         loadUrl: $loadUrl,
+                        proposedUrl: $proposedUrl,
                         urlProvider: urlProvider,
                         isSaveGame: isSaveGame
                     )
@@ -76,6 +87,11 @@ public struct ImportProgressPanelView: View {
                 .padding()
                 .navigationTitle(Text("Importing", bundle: .module))
                 .navigationBarTitleDisplayModeAll(.inline)
+                .onChange(of: initialURL, initial: true) { _, newURL in
+                    guard let newURL, loadUrl == nil else { return }
+                    proposedUrl = newURL
+                    importModel.importMode = .manual
+                }
                 .task(id: loadUrl) {
                     guard let loadUrl else { return }
                     do {

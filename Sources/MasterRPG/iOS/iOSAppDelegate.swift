@@ -1,6 +1,8 @@
 // @copyright André Trettin
 
 #if os(iOS)  || os(visionOS) || os(tvOS)
+import CoreRPG
+import RolePlayGameKit
 import SwiftUI
 
 @MainActor @Observable final class IosAppDelegate: NSObject, UIApplicationDelegate {
@@ -22,7 +24,9 @@ import SwiftUI
     
 #if os(iOS)
     func application(_ application: UIApplication, handleOpen url: URL) -> Bool {
-        return false
+        let appModel = AppModel.shared
+        return RootURLHandler(appModel: appModel, role: .game)
+            .handles(url, with: appModel.gameNavigator)
     }
 #endif
 }

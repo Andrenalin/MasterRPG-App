@@ -16,6 +16,7 @@ public final class ItemDataModel: Sendable {
     // lets ItemController be built eagerly without waiting on it.
     @ObservationIgnored public var dataController: (any DataPersistenceControllable)?
     @ObservationIgnored public var linkRegisterController: LinkRegisterController?
+    @ObservationIgnored public var contentWidgetPublisher: (@MainActor @Sendable () -> Void)?
 
     public var items: [UUID] = []
     public var itemData: [UUID: ModelType] = [:]
@@ -64,5 +65,9 @@ public final class ItemDataModel: Sendable {
         if let index = items.firstIndex(of: id) {
             items.remove(at: index)
         }
+    }
+
+    public func publishContentWidgetSnapshot() {
+        contentWidgetPublisher?()
     }
 }

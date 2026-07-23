@@ -128,6 +128,8 @@ struct ConfigureDiceWidgetIntent: WidgetConfigurationIntent {
 struct DiceRollerWidgetBundle: WidgetBundle {
     var body: some Widget {
         DiceRollerWidget()
+        CharacterContentWidget()
+        AdventureContentWidget()
         #if os(iOS)
         DiceRollerAccessoryWidget()
         DiceRollerControl()

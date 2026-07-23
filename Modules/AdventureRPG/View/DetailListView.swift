@@ -50,8 +50,10 @@ struct DetailListView: View {
         }
 #if os(iOS)
         ToolbarItemGroup(placement: .keyboard) {
-            ForEach(root.editorLinkModel.firstRow, id: \.self) { module in
-                AdventureAddLinkButton(root: root, model: model, module: module)
+            if root.editController.editorModel.sheetRootModel?.isAIModeActive != true {
+                ForEach(root.editorLinkModel.firstRow, id: \.self) { module in
+                    AdventureAddLinkButton(root: root, model: model, module: module)
+                }
             }
         }
 #endif

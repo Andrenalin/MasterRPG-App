@@ -65,7 +65,21 @@ public extension FileUrlDataController {
         guard await hasAccess(for: fileUrl) else { return nil }
         guard let fullUrl = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) else { return nil }
         guard let values = try? fullUrl.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]) else { return nil }
-        return values.ubiquitousItemDownloadingStatus == .downloaded
+        let status = values.ubiquitousItemDownloadingStatus
+        return status == .downloaded || status == .current
+    }
+
+    /// Returns whether reading this file can complete without starting an iCloud download.
+    /// List thumbnails use this to avoid turning a module switch into a bulk download.
+    func isAvailableWithoutDownloading(_ fileUrl: FileUrl) async -> Bool {
+        if fileUrl.hasUnconvertedData { return true }
+
+        switch fileUrl.location {
+        case .appCloud, .icloud, .newCloud:
+            return await fileDownloaded(for: fileUrl) == true
+        case .local, .other, .url:
+            return true
+        }
     }
 
     func hasAccess(for fileUrl: FileUrl) async -> Bool {

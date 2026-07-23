@@ -215,7 +215,7 @@ extension SearchController {
             guard itemMatches || !childNodes.isEmpty else { return nil }
             var node = makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
             node.children = childNodes
-            node.canOpen = childNodes.isEmpty
+            node.canOpen = childNodes.isEmpty && !item.entries.isEmpty
             return node
         } else {
             guard itemMatches else { return nil }
@@ -304,7 +304,7 @@ extension SearchController {
             guard itemMatches || !childNodes.isEmpty else { return nil }
             var node = makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
             node.children = childNodes
-            node.canOpen = childNodes.isEmpty
+            node.canOpen = childNodes.isEmpty && !item.entries.isEmpty
             return node
         } else {
             guard itemMatches else { return nil }

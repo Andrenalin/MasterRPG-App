@@ -40,7 +40,7 @@ private extension AudioPlayerMiniBarView {
             }
             .accessibilityLabel(root.audioPlayerModel.isPlaying ? Text("Pause", bundle: .module) : Text("Play", bundle: .module))
             .accessibilityHint(root.audioPlayerModel.isPlaying ? Text("Pause playback", bundle: .module) : Text("Resume playback", bundle: .module))
-            .disabled(!root.audioPlayerModel.playList.isEmpty)
+            .disabled(root.audioPlayerModel.playList.isEmpty)
 
             if tabViewBottomAccessoryPlacement != .inline {
                 Button {

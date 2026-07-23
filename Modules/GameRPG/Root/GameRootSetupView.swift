@@ -42,14 +42,14 @@ struct GameRootSetupView: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
 #endif
 
-                GameOptionView(root: root)
-
                 Button(action: openStatistics) {
                     GameStatisticsEntryLabel(sessionCount: root.statisticsModel.summary.sessionCount)
                 }
                 .buttonStyle(.borderedProminent)
                 .fixedSize()
                 .padding()
+
+                GameOptionView(root: root)
             }
         }
         .task {

@@ -33,6 +33,40 @@ final class IosSceneDelegate: NSObject, UIWindowSceneDelegate {
         scene.requestGeometryUpdate(preferences)
 #endif
         self.windowScene = scene
+
+        for context in connectionOptions.urlContexts {
+            handleIncomingURL(context.url)
+        }
+        for activity in connectionOptions.userActivities {
+            handleUserActivity(activity)
+        }
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        for context in URLContexts {
+            handleIncomingURL(context.url)
+        }
+    }
+
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        handleUserActivity(userActivity)
+    }
+
+    private func handleIncomingURL(_ url: URL) {
+        let appModel = AppModel.shared
+        _ = RootURLHandler(appModel: appModel, role: .game)
+            .handles(url, with: appModel.gameNavigator)
+    }
+
+    private func handleUserActivity(_ userActivity: NSUserActivity) {
+        guard userActivity.activityType == UserActivity.bundleIdentifierType else { return }
+        let module = UserActivity.module(from: userActivity)
+        guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
+        AppModel.shared.routeToModuleWhenReady(
+            module,
+            itemId: itemId,
+            entryId: UserActivity.childId(from: userActivity)
+        )
     }
 }
 

@@ -179,55 +179,165 @@ extension MapModel {
     }
 
     func resetImage(with photoId: UUID, size: CGSize, degrees: Double) {
+        let previousPhotoId = self.photoId
         self.photoId <=> photoId
-        guard size.width != width || size.height != height || degrees != self.degrees else { return }
-        let oldWidth = width
-        let oldHeight = height
-        if degrees == 0.0 || degrees == 180.0 {
-            width = size.width
-            height = size.height
-        } else {
-            width = size.height
-            height = size.width
-        }
+        let oldCanvasSize = CGSize(width: width, height: height)
+        let oldDegrees = self.degrees
+        let newCanvasSize = Self.canvasSize(for: size, degrees: degrees)
+        guard newCanvasSize != oldCanvasSize || degrees != oldDegrees else { return }
+        width = newCanvasSize.width
+        height = newCanvasSize.height
         self.degrees = degrees
-        resetEntrySize(oldWidth: oldWidth, oldHeight: oldHeight)
+        resetEntryGeometry(
+            oldCanvasSize: oldCanvasSize,
+            oldDegrees: oldDegrees,
+            previousPhotoIdMatches: previousPhotoId == photoId,
+            newImageSize: size,
+            newDegrees: degrees
+        )
     }
 
-    func resetEntrySize(oldWidth: Double, oldHeight: Double) {
-        guard oldWidth != 0 && oldHeight != 0 else { return }
-        var wf = 1.0
-        var hf = 1.0
-        if oldWidth != width {
-            wf = width / oldWidth
-        }
-        if oldHeight != height {
-            hf = height / oldHeight
-        }
+    private func resetEntryGeometry(
+        oldCanvasSize: CGSize,
+        oldDegrees: Double,
+        previousPhotoIdMatches: Bool,
+        newImageSize: CGSize,
+        newDegrees: Double
+    ) {
+        guard oldCanvasSize.width > 0,
+              oldCanvasSize.height > 0,
+              newImageSize.width > 0,
+              newImageSize.height > 0 else { return }
 
-        guard wf != 1.0 || hf != 1.0 else { return }
+        let transform: (CGPoint) -> CGPoint
+        let oldImageSize = Self.imageSize(
+            fromCanvas: oldCanvasSize,
+            degrees: oldDegrees
+        ) ?? (previousPhotoIdMatches ? newImageSize : nil)
+        if let oldImageSize {
+            transform = { point in
+                let oldImagePoint = Self.contentPointFromRotation(
+                    point,
+                    contentSize: oldImageSize,
+                    degrees: oldDegrees
+                )
+                let resizedImagePoint = CGPoint(
+                    x: oldImagePoint.x * newImageSize.width / oldImageSize.width,
+                    y: oldImagePoint.y * newImageSize.height / oldImageSize.height
+                )
+                return Self.rotatedPoint(
+                    resizedImagePoint,
+                    contentSize: newImageSize,
+                    degrees: newDegrees
+                )
+            }
+        } else {
+            let horizontalScale = width / oldCanvasSize.width
+            let verticalScale = height / oldCanvasSize.height
+            transform = { point in
+                CGPoint(
+                    x: point.x * horizontalScale,
+                    y: point.y * verticalScale
+                )
+            }
+        }
 
         entries = entries.map {
             var replacedEntry = $0
-            replacedEntry.coordinates = replacedEntry.coordinates.map {
-                CGPoint(x: $0.x * wf, y: $0.y * hf)
-            }
+            replacedEntry.coordinates = replacedEntry.coordinates.map(transform)
             return replacedEntry
         }
         mapPins = mapPins.map {
             var updatedPin = $0
-            updatedPin.location = CGPoint(x: updatedPin.location.x * wf, y: updatedPin.location.y * hf)
+            updatedPin.location = transform(updatedPin.location)
             return updatedPin
         }
-        pointer.location = CGPoint(
-            x: pointer.location.x * wf,
-            y: pointer.location.y * hf
-        )
+        pointer.location = transform(pointer.location)
         var updatedDisplayConfig = displayConfig
-        updatedDisplayConfig.tileCoordinates = updatedDisplayConfig.tileCoordinates.map {
-            CGPoint(x: $0.x * wf, y: $0.y * hf)
-        }
+        updatedDisplayConfig.tileCoordinates = updatedDisplayConfig.tileCoordinates.map(transform)
         displayConfig = updatedDisplayConfig
+    }
+
+    private static func canvasSize(for imageSize: CGSize, degrees: Double) -> CGSize {
+        switch ViewportGeometry.normalize(rotationDegrees: degrees) {
+        case 0, 180:
+            imageSize
+        case 90, 270:
+            CGSize(width: imageSize.height, height: imageSize.width)
+        default:
+            ViewportGeometry.rotatedContentSize(
+                imageSize,
+                rotationDegrees: degrees
+            )
+        }
+    }
+
+    private static func imageSize(
+        fromCanvas canvasSize: CGSize,
+        degrees: Double
+    ) -> CGSize? {
+        let normalizedDegrees = ViewportGeometry.normalize(rotationDegrees: degrees)
+        switch normalizedDegrees {
+        case 0, 180:
+            return canvasSize
+        case 90, 270:
+            return CGSize(width: canvasSize.height, height: canvasSize.width)
+        default:
+            let radians = normalizedDegrees * .pi / 180
+            let cosine = abs(cos(radians))
+            let sine = abs(sin(radians))
+            let determinant = cosine * cosine - sine * sine
+            guard abs(determinant) > 0.000_001 else { return nil }
+
+            let width = (cosine * canvasSize.width - sine * canvasSize.height) / determinant
+            let height = (cosine * canvasSize.height - sine * canvasSize.width) / determinant
+            guard width.isFinite, height.isFinite, width > 0, height > 0 else { return nil }
+            return CGSize(width: width, height: height)
+        }
+    }
+
+    private static func contentPointFromRotation(
+        _ point: CGPoint,
+        contentSize: CGSize,
+        degrees: Double
+    ) -> CGPoint {
+        switch ViewportGeometry.normalize(rotationDegrees: degrees) {
+        case 90:
+            CGPoint(x: point.y, y: contentSize.height - point.x)
+        case 180:
+            CGPoint(x: contentSize.width - point.x, y: contentSize.height - point.y)
+        case 270:
+            CGPoint(x: contentSize.width - point.y, y: point.x)
+        default:
+            ViewportGeometry.contentPoint(
+                fromRotated: point,
+                contentSize: contentSize,
+                rotationDegrees: degrees
+            )
+        }
+    }
+
+    private static func rotatedPoint(
+        _ point: CGPoint,
+        contentSize: CGSize,
+        degrees: Double
+    ) -> CGPoint {
+        switch ViewportGeometry.normalize(rotationDegrees: degrees) {
+        case 0:
+            point
+        case 90:
+            CGPoint(x: contentSize.height - point.y, y: point.x)
+        case 180:
+            CGPoint(x: contentSize.width - point.x, y: contentSize.height - point.y)
+        case 270:
+            CGPoint(x: point.y, y: contentSize.width - point.x)
+        default:
+            ViewportGeometry.rotatedPoint(
+                fromContent: point,
+                contentSize: contentSize,
+                rotationDegrees: degrees
+            )
+        }
     }
 
     func toggle(_ entryId: UUID) {
@@ -405,12 +515,17 @@ extension MapModel: nonisolated ItemDiffComparable {
             guard basicFieldsMatch else { return false }
 
             let configMatch: Bool = (
+                displayState == other.displayState &&
                 entries_.update == other.entries_.update &&
                 displayConfig == other.displayConfig &&
                 photoId_.update == other.photoId_.update &&
+                width == other.width &&
+                height == other.height &&
                 mapPins_.update == other.mapPins_.update &&
                 hexMapScale == other.hexMapScale &&
                 pinScale == other.pinScale &&
+                scale == other.scale &&
+                degrees == other.degrees &&
                 parentId == other.parentId
             )
             guard configMatch else { return false }

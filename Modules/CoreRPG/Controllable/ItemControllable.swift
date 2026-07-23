@@ -88,6 +88,7 @@ public extension ItemControllable {
         }
         
         itemDataModel.resetModel(id: item.id)
+        itemDataModel.publishContentWidgetSnapshot()
     }
     
     @MainActor func isEqual(with other: ModelType) -> Bool {
@@ -109,6 +110,7 @@ public extension ItemControllable {
                 if resort {
                     resortItem(changed: original)
                 }
+                itemDataModel.publishContentWidgetSnapshot()
             }
         } else {
             if isInsert {
@@ -156,6 +158,7 @@ public extension ItemControllable {
             if resort {
                 resortItem(changed: original)
             }
+            itemDataModel.publishContentWidgetSnapshot()
         }
     }
 }
@@ -211,6 +214,7 @@ public extension ItemControllable {
             // Reset internal state
             itemDataModel.resetModel(id: item.id)
         }
+        itemDataModel.publishContentWidgetSnapshot()
 
         // Batch delete all items from Core Data for better performance
         try? await dataControllable?.batchDelete(ids: allItemIds)
@@ -237,12 +241,14 @@ public extension ItemControllable {
             updatedItems.append(item.id)
         }
         itemDataModel.resetItems(updatedItems)
+        itemDataModel.publishContentWidgetSnapshot()
     }
     
     @MainActor func resetModel(with model: ModelType?) {
         guard let model = model as? Model else { return }
         setModel(with: model)
         insertIntoItems(model: model)
+        itemDataModel.publishContentWidgetSnapshot()
     }
 }
 

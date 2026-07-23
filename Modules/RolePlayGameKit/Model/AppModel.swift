@@ -45,6 +45,14 @@ public final class AppModel: Sendable {
     public let databaseModel: DataBaseModel
 #endif
     @ObservationIgnored var saveIsDeferred: Bool = false
+    /// A document URL handed to the app by the system. The import screen owns
+    /// the explicit user confirmation before any bytes are read or applied.
+    public var pendingImportURL: URL?
+    @ObservationIgnored private var pendingImportNavigator: Navigator?
+    @ObservationIgnored private var securityScopedImportURL: URL?
+    @ObservationIgnored private var pendingExternalRoute: PendingExternalRoute?
+    @ObservationIgnored private var lastExternalRoute: PendingExternalRoute?
+    @ObservationIgnored private var lastExternalRouteDate = Date.distantPast
 
     @ObservationIgnored let inAppModel = InAppModel()
     public let inAppController: InAppController
@@ -220,6 +228,20 @@ public final class AppModel: Sendable {
             weatherRoot: weatherRoot
         )
 #endif        
+
+#if !os(tvOS)
+        let characterDataModel = characterRoot.itemControllable.itemDataModel
+        characterDataModel.contentWidgetPublisher = { [weak characterDataModel] in
+            guard let characterDataModel else { return }
+            ContentWidgetSnapshot.publish(module: .value, from: characterDataModel)
+        }
+
+        let adventureDataModel = adventureRoot.itemControllable.itemDataModel
+        adventureDataModel.contentWidgetPublisher = { [weak adventureDataModel] in
+            guard let adventureDataModel else { return }
+            ContentWidgetSnapshot.publish(module: .adventure, from: adventureDataModel)
+        }
+#endif
     }
     
     static func navigatorLogger(event: NavigationEvent) -> Void {
@@ -345,12 +367,66 @@ extension AppModel {
         self.coreDataInitModel = coreDataInitModel
 
         self.appNavigationModel.initialRouteType = .ready
+        presentPendingExternalNavigationIfNeeded()
     }
 }
 
 // MARK: - Routing
 
 extension AppModel {
+    @MainActor public func presentImport(_ url: URL, with navigator: Navigator) {
+        guard pendingImportURL != url else { return }
+        securityScopedImportURL?.stopAccessingSecurityScopedResource()
+        securityScopedImportURL = url.startAccessingSecurityScopedResource() ? url : nil
+        pendingImportURL = url
+        guard appNavigationModel.initialRouteType == .ready else {
+            pendingImportNavigator = navigator
+            return
+        }
+        navigator.navigate(to: SettingsRoute.importData, method: .managedCover)
+    }
+
+    @MainActor public func finishImportPresentation() {
+        securityScopedImportURL?.stopAccessingSecurityScopedResource()
+        securityScopedImportURL = nil
+        pendingImportNavigator = nil
+        pendingImportURL = nil
+    }
+
+    @MainActor public func routeToModuleWhenReady(
+        _ module: NetworkModules,
+        itemId: UUID? = nil,
+        entryId: UUID? = nil
+    ) {
+        let requestedRoute = PendingExternalRoute(
+            module: module,
+            itemId: itemId,
+            entryId: entryId
+        )
+        let now = Date.now
+        guard requestedRoute != lastExternalRoute
+                || now.timeIntervalSince(lastExternalRouteDate) >= 1 else { return }
+        lastExternalRoute = requestedRoute
+        lastExternalRouteDate = now
+
+        guard appNavigationModel.initialRouteType == .ready else {
+            pendingExternalRoute = requestedRoute
+            return
+        }
+        routeToModule(module, itemId: itemId, entryId: entryId)
+    }
+
+    private func presentPendingExternalNavigationIfNeeded() {
+        if let navigator = pendingImportNavigator, pendingImportURL != nil {
+            pendingImportNavigator = nil
+            navigator.navigate(to: SettingsRoute.importData, method: .managedCover)
+        }
+        if let route = pendingExternalRoute {
+            pendingExternalRoute = nil
+            routeToModule(route.module, itemId: route.itemId, entryId: route.entryId)
+        }
+    }
+
     func itemRootController(for module: NetworkModules) -> ItemRootController? {
         root.itemRootController(for: module)
     }
@@ -435,6 +511,12 @@ extension AppModel {
             rootNavigator.perform(route: route)
         }
     }
+}
+
+private struct PendingExternalRoute: Equatable {
+    let module: NetworkModules
+    let itemId: UUID?
+    let entryId: UUID?
 }
 
 extension AppModel {

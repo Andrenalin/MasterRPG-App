@@ -4,6 +4,9 @@ import AudioRPG
 import CoreRPG
 import SwiftUI
 import AdventureRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 
 struct TabbedNavigation: View {
     @Environment(AppModel.self) private var appModel
@@ -11,6 +14,10 @@ struct TabbedNavigation: View {
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     private let restoresState: Bool
+
+#if os(iOS)
+    @State private var aiAssistantContexts: [SheetAIAssistantContext] = []
+#endif
 
     init(restoresState: Bool = true) {
         self.restoresState = restoresState
@@ -33,14 +40,23 @@ struct TabbedNavigation: View {
             }
         }
 #if os(iOS)
-        .tabBarMinimizeBehavior26(.onScrollDown)
-        .applyIf(appModel.audioRoot.audioPlayerModel.showPlayerToolBar) {
-            $0.tabViewBottomAccessory {
-                if appSizeModel.mode == .compact && appModel.audioRoot.audioPlayerModel.showPlayerToolBar {
-                    AudioPlayerMiniBarView()
-                }
+        .onPreferenceChange(SheetAIAssistantContextPreferenceKey.self) { newContexts in
+            if aiAssistantContexts != newContexts {
+                aiAssistantContexts = newContexts
             }
         }
+        .tabViewBottomAccessory {
+            if appSizeModel.mode == .compact,
+               appModel.audioRoot.audioPlayerModel.showPlayerToolBar || aiAssistantContext != nil {
+                PhoneTabBottomAccessory(
+                    showsAudioPlayer: appModel.audioRoot.audioPlayerModel.showPlayerToolBar,
+                    aiAssistantContext: aiAssistantContext
+                )
+            }
+        }
+        .tabBarMinimizeBehavior26(
+            aiAssistantContext?.rootModel.isAIModeActive == true ? .never : .onScrollDown
+        )
 #endif
         .applyIf(restoresState && rolePlayStateRestorationEnabled) {
             $0.modifier(TabbedNavigationRestorationModifier(appModel: appModel))
@@ -72,7 +88,54 @@ struct TabbedNavigation: View {
         guard let appModule = appModel.selectedModule?.module else { return .game }
         return appModule == .editor ? (appModel.selectedExtendedModule?.module ?? .game) : appModule
     }
+
+#if os(iOS)
+    private var aiAssistantContext: SheetAIAssistantContext? {
+        aiAssistantContexts.last { $0.module == selectedModule }
+    }
+#endif
 }
+
+#if os(iOS)
+private struct PhoneTabBottomAccessory: View {
+    let showsAudioPlayer: Bool
+    let aiAssistantContext: SheetAIAssistantContext?
+
+    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+    var body: some View {
+        if let aiAssistantContext, aiAssistantContext.rootModel.isAIModeActive {
+            aiAssistantView(aiAssistantContext)
+        } else if placement == .inline {
+            HStack(spacing: 0) {
+                if showsAudioPlayer {
+                    AudioPlayerMiniBarView()
+                }
+                if let aiAssistantContext {
+                    aiAssistantView(aiAssistantContext)
+                }
+            }
+        } else {
+            VStack(spacing: 0) {
+                if showsAudioPlayer {
+                    AudioPlayerMiniBarView()
+                }
+                if let aiAssistantContext {
+                    aiAssistantView(aiAssistantContext)
+                }
+            }
+        }
+    }
+
+    private func aiAssistantView(_ context: SheetAIAssistantContext) -> some View {
+        SheetAIAssistantOverlayView(
+            module: context.module,
+            itemId: context.itemId,
+            rootModel: context.rootModel
+        )
+    }
+}
+#endif
 
 #Preview {
     TabbedNavigation(restoresState: false)

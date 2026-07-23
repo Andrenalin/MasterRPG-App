@@ -24,8 +24,8 @@ struct GameStatisticsPreviewHeader: View {
                     .bold()
                     .padding(.horizontal)
                     .padding(.vertical, 6)
-                    .background(.blue, in: .capsule)
-                    .foregroundStyle(.white)
+                    .background(.blue.opacity(0.2), in: .capsule)
+                    .foregroundStyle(.primary)
             }
 
             Text("This sample dashboard shows what MasterRPG can discover from activity during your games. Example data is never saved or reported to Game Center.", bundle: .module)

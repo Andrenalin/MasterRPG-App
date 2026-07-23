@@ -143,10 +143,92 @@ struct MapModelTests {
         #expect(map.width == 100)
         #expect(map.height == 200)
         #expect(map.degrees == 90)
-        #expect(room.coordinates == [CGPoint(x: 10, y: 80)])
-        #expect(pin.location == CGPoint(x: 20, y: 40))
-        #expect(map.pointer.location == CGPoint(x: 25, y: 20))
-        #expect(map.displayConfig.tileCoordinates == [CGPoint(x: 5, y: 40)])
+        #expect(room.coordinates == [CGPoint(x: 60, y: 20)])
+        #expect(pin.location == CGPoint(x: 80, y: 40))
+        #expect(map.pointer.location == CGPoint(x: 90, y: 50))
+        #expect(map.displayConfig.tileCoordinates == [CGPoint(x: 80, y: 10)])
+    }
+
+    @Test func rotationMovesRoomCoordinatesIntoTheRotatedCanvas() throws {
+        let map = MapModel(
+            id: UUID(),
+            name: "Map",
+            entries: [
+                MapEntryModel(
+                    id: UUID(),
+                    name: "Room",
+                    content: "",
+                    coordinates: [CGPoint(x: 20, y: 10)]
+                )
+            ],
+            width: 100,
+            height: 50,
+            degrees: 0
+        )
+
+        map.resetImage(
+            with: UUID(),
+            size: CGSize(width: 100, height: 50),
+            degrees: 90
+        )
+
+        #expect(map.width == 50)
+        #expect(map.height == 100)
+        #expect(map.entries.first?.coordinates == [CGPoint(x: 40, y: 20)])
+    }
+
+    @Test func arbitraryRotationCanBeRemovedWithoutMovingTheRoomOnTheImage() throws {
+        let photoId = UUID()
+        let imageSize = CGSize(width: 100, height: 50)
+        let imagePoint = CGPoint(x: 20, y: 10)
+        let degrees = 30.0
+        let canvasSize = ViewportGeometry.rotatedContentSize(
+            imageSize,
+            rotationDegrees: degrees
+        )
+        let rotatedPoint = ViewportGeometry.rotatedPoint(
+            fromContent: imagePoint,
+            contentSize: imageSize,
+            rotationDegrees: degrees
+        )
+        let map = MapModel(
+            id: UUID(),
+            name: "Map",
+            entries: [
+                MapEntryModel(
+                    id: UUID(),
+                    name: "Room",
+                    content: "",
+                    coordinates: [rotatedPoint]
+                )
+            ],
+            photoId: photoId,
+            width: canvasSize.width,
+            height: canvasSize.height,
+            degrees: degrees
+        )
+
+        map.resetImage(with: photoId, size: imageSize, degrees: 0)
+
+        let result = try #require(map.entries.first?.coordinates.first)
+        #expect(abs(result.x - imagePoint.x) < 0.001)
+        #expect(abs(result.y - imagePoint.y) < 0.001)
+    }
+
+    @Test func geometryChangesAreIncludedInSameness() async throws {
+        let original = try await setUp()
+
+        let resized = original.copy()
+        resized.resetImage(
+            with: try #require(original.photoId),
+            size: CGSize(width: 150, height: 250),
+            degrees: 0
+        )
+        #expect(!original.isSame(resized))
+
+        let scaled = original.copy()
+        scaled.scale += 1
+        #expect(!original.isSame(scaled))
     }
 }
 #endif

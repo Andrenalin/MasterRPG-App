@@ -44,8 +44,10 @@ struct DetailListView: View {
 #if os(iOS)
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .keyboard) {
-            ForEach(root.editorLinkModel.modulesRow, id: \.self) { module in
-                AddLinkButton(root: root, model: model, module: module)
+            if root.editController.editorModel.sheetRootModel?.isAIModeActive != true {
+                ForEach(root.editorLinkModel.modulesRow, id: \.self) { module in
+                    AddLinkButton(root: root, model: model, module: module)
+                }
             }
         }
     }

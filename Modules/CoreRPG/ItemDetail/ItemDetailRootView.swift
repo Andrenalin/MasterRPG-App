@@ -84,16 +84,10 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
         .onChange(of: selectedModel.id, initial: true) {
             handleModelIdChange()
         }
-        .task(id: selectedModel.id) {
-            await openEditorForNewItemIfNeeded()
-        }
-        .onChange(of: selectedModel.name) {
-            handleModelNameChange()
-        }
         .onChange(of: selectedModel.url) { oldValue, _ in
             handleModelUrlChange(oldValue: oldValue)
         }
-        .onChange(of: root.navigationModel.openHeaderEditor) {
+        .onChange(of: root.navigationModel.openHeaderEditor, initial: true) {
             guard root.navigationModel.openHeaderEditor else { return }
             root.navigationModel.openHeaderEditor = false
             openEditingSheet()
@@ -104,6 +98,9 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
                 navigator.navigate(to: folderListController.folderDestination(for: itemId))
                 folderListController.listModel.detailListModel?.subFolderRoute = nil
             }
+        }
+        .onDisappear {
+            clearCompactSelectionAfterPop()
         }
         .sheet(item: $editingItem) { item in
             ManagedPresentationView {
@@ -134,12 +131,6 @@ private extension ItemDetailRootView {
         }
     }
     
-    func openEditorForNewItemIfNeeded() async {
-        await Task.yield()
-        guard selectedModel.name.isEmpty && shouldShowContent else { return }
-        openEditingSheet()
-    }
-
     func handleModelIdChange() {
         editingItem = nil
         folderListController.resetDetail(model: selectedModel)
@@ -153,14 +144,16 @@ private extension ItemDetailRootView {
         }
     }
 
-    func handleModelNameChange() {
-        guard selectedModel.name.isEmpty && shouldShowContent else { return }
-        openEditingSheet()
-    }
-
     func handleModelUrlChange(oldValue: URL?) {
         guard oldValue == nil, itemIdHasUrl != selectedModel.id else { return }
         openEditingSheet()
+    }
+
+    func clearCompactSelectionAfterPop() {
+        guard appSizeModel.mode == .compact, navigator.count == 0 else { return }
+        let listModel = root.folderListControllable.listModel
+        listModel.resetNavigationSelection()
+        root.navigationModel.selectedItemId = nil
     }
 }
 

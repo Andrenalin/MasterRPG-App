@@ -38,6 +38,7 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
     let root: Root
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
+    @Environment(\.navigator) private var navigator
 
     @SceneStorage private var selectedItemId: String?
     @SceneStorage private var displayMode: ListDisplayModel.DisplayMode
@@ -49,13 +50,18 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
         content
             .applyIf(appSizeModel.mode == .compact) {
                 $0.navigate(to: $route)
-                    .onChange(of: route) {
-                        if route == nil && root.navigationModel.selectedItemId != nil {
-                            root.navigationModel.selectedItemId = nil
-                        }
-                    }
             }
             .syncListDisplay(listControllable: root.folderListControllable, displayMode: $displayMode, listMode: $listMode)
+            .onChange(of: navigator.count) { oldCount, newCount in
+                guard appSizeModel.mode == .compact,
+                      oldCount > newCount,
+                      newCount == 0 else { return }
+                route = nil
+                selectedItemId = nil
+                let listModel = root.folderListControllable.listModel
+                listModel.resetNavigationSelection()
+                root.navigationModel.selectedItemId = nil
+            }
             .onChange(of: root.navigationModel.selectedItemId) {
                 if let itemId = root.navigationModel.selectedItemId {
                     route <=> Route.detailRoute(itemId: itemId)

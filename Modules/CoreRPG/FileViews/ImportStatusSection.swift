@@ -7,6 +7,7 @@ struct ImportStatusSection: View {
     let importModel: ItemDataImportModel
     @Binding var showImportFileChooser: Bool
     @Binding var loadUrl: URL?
+    @Binding var proposedUrl: URL?
     let urlProvider: (any ExampleUrlProvider)?
     let isSaveGame: Bool
 
@@ -17,6 +18,7 @@ struct ImportStatusSection: View {
                 ImportChooseUrlView(
                     showImportFileChooser: $showImportFileChooser,
                     loadUrl: $loadUrl,
+                    proposedUrl: $proposedUrl,
                     urlProvider: urlProvider,
                     isSaveGame: isSaveGame,
                     importModel: importModel
@@ -37,11 +39,13 @@ struct ImportStatusSection: View {
 #Preview {
     @Previewable @State var showImportFileChooser = false
     @Previewable @State var loadUrl: URL?
+    @Previewable @State var proposedUrl: URL?
     ImportStatusSection(
         outcome: .notStarted,
         importModel: ItemDataImportModel(),
         showImportFileChooser: $showImportFileChooser,
         loadUrl: $loadUrl,
+        proposedUrl: $proposedUrl,
         urlProvider: FakeExampleUrlProvider(),
         isSaveGame: false
     )

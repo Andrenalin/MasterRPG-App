@@ -15,14 +15,21 @@ public struct RootURLHandler: NavigationURLHandler {
     let role: WindowRole
 
     @MainActor public func handles(_ url: URL, with navigator: Navigator) -> Bool {
-        guard appModel.appNavigationModel.initialRouteType == .ready else { return false }
-
         if url.isGmzDocument {
             return handleGmz(url: url, with: navigator)
         }
 
         let module = url.moduleIdentifier
         guard module != .none else { return false }
+
+        guard appModel.appNavigationModel.initialRouteType == .ready else {
+            appModel.routeToModuleWhenReady(
+                module,
+                itemId: url.itemId,
+                entryId: url.childId
+            )
+            return true
+        }
 
         let target = appModel.navigator(for: module)
         if target === navigator {
@@ -33,27 +40,10 @@ public struct RootURLHandler: NavigationURLHandler {
         return true
     }
 
-    /// GMZ imports surface in the Settings UI so the user sees progress. Where "Settings" lives depends on platform:
-    /// - macOS: dedicated Settings window (`settingsNavigator`).
-    /// - visionOS: Settings tab inside the Game window (`gameNavigator`, via editors→ExtendedTabRoute.settings).
-    /// - iOS / iPadOS / tvOS: Settings tab inside the Game window (`gameNavigator`).
+    /// A document open request presents the import UI but never starts importing.
+    /// The URL is displayed first and the user must explicitly approve it.
     @MainActor private func handleGmz(url: URL, with navigator: Navigator) -> Bool {
-#if os(macOS)
-        let target = appModel.settingsNavigator
-#else
-        let target = appModel.gameNavigator
-#endif
-
-        if target === navigator {
-            navigator.perform(route: KnownRoutes.settings)
-        } else {
-            Task { @MainActor in
-                try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
-                target.perform(route: KnownRoutes.settings)
-            }
-        }
-
-        _ = appModel.adventureRoot.importControllable.importUrl(from: url)
+        appModel.presentImport(url, with: navigator)
         return true
     }
 }

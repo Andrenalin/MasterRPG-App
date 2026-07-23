@@ -10,7 +10,7 @@ struct PinScaleView: View {
         HStack {
 #if !os(tvOS)
             Text("Pin Scale", bundle: .module)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             Slider(value: $model.pinScale, in: 0.5 ... 3.5) {
                 Text("Pin Scale", bundle: .module)
             }

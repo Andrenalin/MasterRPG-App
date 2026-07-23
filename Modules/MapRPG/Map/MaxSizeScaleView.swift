@@ -13,7 +13,7 @@ struct MaxSizeScaleView: View {
 #if !os(tvOS)
             HStack {
                 Text("Max Width", bundle: .module)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                 Slider(value: $model.maxWidthRatio, in: 0.1 ... 1.0) {
                     Text("Max Width", bundle: .module)
                 }
@@ -26,7 +26,7 @@ struct MaxSizeScaleView: View {
 
             HStack {
                 Text("Max Height", bundle: .module)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                 Slider(value: $model.maxHeightRatio, in: 0.1 ... 1.0) {
                     Text("Max Height", bundle: .module)
                 }
