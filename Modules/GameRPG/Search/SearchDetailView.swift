@@ -46,9 +46,9 @@ struct SearchDetailView: View {
                     }
                     .accessibilityLabel(Text(selection.module.localizedTitle))
 #if os(macOS)
-                    .foregroundStyle(selection.module.tint)
+                    .moduleForegroundStyle(selection.module)
 #else
-                    .tint(selection.module.tint)
+                    .moduleTint(selection.module)
 #endif
                 }
             }

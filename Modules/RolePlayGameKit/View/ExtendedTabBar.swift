@@ -6,6 +6,7 @@ import SwiftUI
 
 struct ExtendedTabBar: View {
     @Environment(AppModel.self) private var appModel
+    @Environment(\.appTheme) private var theme
     @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
@@ -89,7 +90,7 @@ private extension ExtendedTabBar {
             appModel.selectedExtendedModule = route
             navigator.navigate(to: route)
         } label: {
-            GridLabelView(value: route.module, color: route.module.tint)
+            GridLabelView(value: route.module, color: theme.tint(for: route.module))
         }
         .modifier(ZoomDestinationViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
     }

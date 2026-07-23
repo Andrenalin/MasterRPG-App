@@ -28,6 +28,7 @@ struct ImportReviewItemListView: View {
                 }
             }
         }
+        .themedListSurface()
     }
 }
 

@@ -191,10 +191,13 @@ extension ScenesManager.SceneState {
 }
 
 struct GameWindowButtonAppearance: ViewModifier {
-    let tint: Color
+    let module: NetworkModules
     let isWindowPresented: Bool
 
+    @Environment(\.appTheme) private var theme
+
     func body(content: Content) -> some View {
+        let tint = theme.tint(for: module)
 #if os(visionOS)
         content
             .buttonStyle(.bordered)

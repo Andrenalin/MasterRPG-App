@@ -10,6 +10,7 @@ import GeneratorRPG
 
 struct TabbedNavigation: View {
     @Environment(AppModel.self) private var appModel
+    @Environment(\.appTheme) private var theme
     @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
@@ -45,17 +46,14 @@ struct TabbedNavigation: View {
                 aiAssistantContexts = newContexts
             }
         }
-        .tabViewBottomAccessory {
-            if appSizeModel.mode == .compact,
-               appModel.audioRoot.audioPlayerModel.showPlayerToolBar || aiAssistantContext != nil {
-                PhoneTabBottomAccessory(
-                    showsAudioPlayer: appModel.audioRoot.audioPlayerModel.showPlayerToolBar,
-                    aiAssistantContext: aiAssistantContext
-                )
-            }
+        .phoneTabBottomAccessory(isEnabled: shouldShowPhoneBottomAccessory) {
+            PhoneTabBottomAccessory(
+                showsAudioPlayer: appModel.audioRoot.audioPlayerModel.showPlayerToolBar,
+                aiAssistantContext: aiAssistantContext
+            )
         }
         .tabBarMinimizeBehavior26(
-            aiAssistantContext?.rootModel.isAIModeActive == true ? .never : .onScrollDown
+            .onScrollDown
         )
 #endif
         .applyIf(restoresState && rolePlayStateRestorationEnabled) {
@@ -77,7 +75,7 @@ struct TabbedNavigation: View {
     }
     
     func color(for tab: RootRoute) -> Color {
-        (tab == .editors ? selectedModule : tab.module).tint
+        theme.tint(for: tab == .editors ? selectedModule : tab.module)
     }
     
     func itemRootController(for tab: RootRoute) -> ItemRootController {
@@ -91,7 +89,30 @@ struct TabbedNavigation: View {
 
 #if os(iOS)
     private var aiAssistantContext: SheetAIAssistantContext? {
-        aiAssistantContexts.last { $0.module == selectedModule }
+        if let publishedContext = aiAssistantContexts.last(where: {
+            $0.module == selectedModule && $0.rootModel.hasAIAssistantContent
+        }) {
+            return publishedContext
+        }
+
+        guard let rootController = appModel.itemRootController(for: selectedModule),
+              let itemId = rootController.navigationModel.selectedItemId,
+              let rootModel = rootController.editControllable.editorModel.sheetRootModel,
+              rootModel.sheetModel.source.itemId == itemId,
+              rootModel.hasAIAssistantContent else {
+            return nil
+        }
+
+        return SheetAIAssistantContext(
+            module: selectedModule,
+            itemId: itemId,
+            rootModel: rootModel
+        )
+    }
+
+    private var shouldShowPhoneBottomAccessory: Bool {
+        appSizeModel.mode == .compact &&
+        (appModel.audioRoot.audioPlayerModel.showPlayerToolBar || aiAssistantContext != nil)
     }
 #endif
 }
@@ -104,9 +125,7 @@ private struct PhoneTabBottomAccessory: View {
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
     var body: some View {
-        if let aiAssistantContext, aiAssistantContext.rootModel.isAIModeActive {
-            aiAssistantView(aiAssistantContext)
-        } else if placement == .inline {
+        if placement == .inline {
             HStack(spacing: 0) {
                 if showsAudioPlayer {
                     AudioPlayerMiniBarView()
@@ -131,8 +150,42 @@ private struct PhoneTabBottomAccessory: View {
         SheetAIAssistantOverlayView(
             module: context.module,
             itemId: context.itemId,
-            rootModel: context.rootModel
+            rootModel: context.rootModel,
+            presentation: .tabAccessory
         )
+    }
+}
+
+private extension View {
+    func phoneTabBottomAccessory<Accessory: View>(
+        isEnabled: Bool,
+        @ViewBuilder accessory: () -> Accessory
+    ) -> some View {
+        modifier(
+            PhoneTabBottomAccessoryModifier(
+                isEnabled: isEnabled,
+                accessory: accessory()
+            )
+        )
+    }
+}
+
+private struct PhoneTabBottomAccessoryModifier<Accessory: View>: ViewModifier {
+    let isEnabled: Bool
+    let accessory: Accessory
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.1, *) {
+            content.tabViewBottomAccessory(isEnabled: isEnabled) {
+                accessory
+            }
+        } else {
+            content.tabViewBottomAccessory {
+                if isEnabled {
+                    accessory
+                }
+            }
+        }
     }
 }
 #endif

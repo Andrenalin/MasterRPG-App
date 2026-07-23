@@ -26,8 +26,7 @@ struct ItemEditorBackgroundView<Editor: View>: View {
                             onlyDescription: true,
                             lines: 3
                         )
-                        .padding(.horizontal, 8)
-                        .padding(6)
+                        .padding(.vertical)
 #if !os(visionOS)
                         .glassEffectAll(.regular)
 #endif
@@ -37,15 +36,13 @@ struct ItemEditorBackgroundView<Editor: View>: View {
             }
             .overlay(alignment: .top) {
                 if !model.specialCategory {
-                    GlassEffectContainerAll {
-                        ItemFileImporterView(
-                            root: root,
-                            model: model,
-                            fileTypes: fileTypes,
-                            isInitial: false
-                        )
-                        .zIndex(10)
-                    }
+                    ItemFileImporterView(
+                        root: root,
+                        model: model,
+                        fileTypes: fileTypes,
+                        isInitial: false
+                    )
+                    .zIndex(10)
                     .padding()
                 }
             }

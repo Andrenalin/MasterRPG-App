@@ -25,8 +25,7 @@ struct DetailListView: View {
             .toolbar {
                 toolbarContent
             }
-            .tint(root.configurable.module.tint)
-            .accentColor(root.configurable.module.tint)
+            .moduleTint(root.configurable.module)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in
                 UserActivity.addPayLoad(for: activity, title: model.name, module: root.config.module, itemId: model.id)
 #if !os(tvOS)

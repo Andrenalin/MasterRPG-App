@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct GameStatisticsCustomizationView: View {
@@ -76,6 +77,7 @@ struct GameStatisticsCustomizationView: View {
                 Text("This removes all locally stored and iCloud-synced game statistics from this database.", bundle: .module)
             }
         }
+        .themedListSurface()
 #if os(iOS) || os(visionOS)
         .listStyle(.insetGrouped)
         .environment(\.editMode, .constant(.active))

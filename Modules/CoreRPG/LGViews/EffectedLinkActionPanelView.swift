@@ -32,6 +32,7 @@ public struct EffectedLinkActionPanelView: View {
                     .listRowBackground(colorBackground(for: item))
                 }
             }
+            .themedListSurface()
             .frame(minHeight: 300)
             .navigationTitle(Text("Mark for remove \(removeEntryList.linkTree.filter { $0.canRemoved }.count) Item", bundle: .module))
             .toolbar {

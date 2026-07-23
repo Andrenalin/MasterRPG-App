@@ -130,6 +130,7 @@ private extension AdventureGenRootView {
             }
         }
         .listStyle(.plain)
+        .themedListSurface()
         .onAppear {
             root.generatorController.generateAdventure(from: model)
         }

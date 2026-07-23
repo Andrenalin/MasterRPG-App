@@ -223,6 +223,6 @@ private extension ItemHeaderEditorView {
             tags: ["Map", "Quest"]
         )
     )
-    .tint(NetworkModules.space.tint)
+    .moduleTint(.space)
     .environment(AppSettingsModel.previewFixture())
 }

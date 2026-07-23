@@ -48,7 +48,7 @@ struct MockRootViewModifier: ViewModifier {
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
-            .tint(NetworkModules.photo.tint)
+            .moduleTint(.photo)
     }
 }
 

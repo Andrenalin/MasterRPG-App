@@ -11,7 +11,7 @@ struct MasterModuleWindowButtonView: View {
         GameWindowButtonView(
             title: valueType.title,
             systemImage: valueType.icon,
-            tint: valueType.tint,
+            module: valueType,
             sceneId: SceneId.sceneId(for: valueType)
         )
     }

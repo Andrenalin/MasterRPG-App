@@ -10,7 +10,6 @@ import SwiftUI
 public protocol GridButtonValue {
     var icon: String { get }
     var title: String { get }
-    var color: Color { get }
 }
 
 extension NetworkModules: GridButtonValue {}

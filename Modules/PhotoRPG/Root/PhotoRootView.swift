@@ -14,7 +14,7 @@ struct PhotoRootView: View {
 
     var body: some View {
         ItemRootView(root: root.rootController)
-            .background {
+            .overlay {
                 if restoresState {
                     ItemStateRestorationView<PhotoRoute, PhotoRootModel>(root: root, keyPrefix: "Photo")
                 }

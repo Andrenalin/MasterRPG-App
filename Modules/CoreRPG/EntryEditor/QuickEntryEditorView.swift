@@ -142,9 +142,7 @@ private extension QuickEntryEditorView {
                 EntryEditRow(root: root, editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel, listDisplayModel: root.folderListControllable.listDisplayModel, searchModel: root.searchModel)
             }
         }
-#if !os(tvOS)
-        .scrollContentBackground(.hidden)
-#endif
+        .themedListSurface()
         .environment(SearchModel.preview())
         .overlay {
             pdfOverlay

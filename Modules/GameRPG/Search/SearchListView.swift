@@ -99,6 +99,7 @@ private extension SearchListView {
                 }
             }
         }
+        .themedListSurface()
 #if !os(visionOS)
         .scrollDismissesKeyboard(.immediately)
 #endif
@@ -111,7 +112,7 @@ private extension SearchListView {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .foregroundStyle(module.tint)
+        .moduleForegroundStyle(module)
     }
     
     @ViewBuilder

@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct GameStatisticsSessionDetailView: View {
@@ -66,6 +67,7 @@ struct GameStatisticsSessionDetailView: View {
                 }
             }
         }
+        .themedListSurface()
         .navigationTitle(Text("Game Summary", bundle: .module))
         .confirmationDialog(
             Text("Delete this game’s statistics?", bundle: .module),

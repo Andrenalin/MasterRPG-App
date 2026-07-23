@@ -21,8 +21,7 @@ public struct ItemSplitDetailRouteRootView<Route: NavigationDestination>: View {
             }
         }
         .environment(root)
-        .tint(root.configurable.module.tint)
-        .accentColor(root.configurable.module.tint)
+        .moduleTint(root.configurable.module)
     }
 
     var listModel: FolderListModel {

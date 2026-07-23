@@ -171,6 +171,12 @@ public final class SheetRootModel: Sendable {
     private var generatedBatchParentModel: SheetModel?
     private var generatedAcceptanceTransitions: [GeneratedAcceptanceKey: UUID] = [:]
 
+    /// Whether the sheet contains non-root content that can give the assistant useful context.
+    /// The root item's title alone does not make an otherwise empty sheet eligible.
+    public var hasAIAssistantContent: Bool {
+        (sheetModel.entries + sheetModel.inlineEntries).contains(where: containsGenerationContent)
+    }
+
     @ObservationIgnored let rootManager: RootManager
     @ObservationIgnored let sheetControllable: SheetControllable
     @ObservationIgnored let linkControllable: any LinkControllable
@@ -407,6 +413,11 @@ public final class SheetRootModel: Sendable {
             pendingGenerationRequest = nil
             pendingGenerationParentModel = nil
         }
+    }
+
+    private func containsGenerationContent(_ model: SheetModel) -> Bool {
+        model.hasGenerationContent ||
+        (model.entries + model.inlineEntries).contains(where: containsGenerationContent)
     }
 
     @discardableResult

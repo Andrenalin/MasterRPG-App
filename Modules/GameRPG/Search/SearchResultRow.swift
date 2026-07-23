@@ -24,7 +24,7 @@ struct SearchResultRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: module.icon)
-                    .foregroundStyle(module.tint)
+                    .moduleForegroundStyle(module)
 
                 Text(result.itemName)
                     .font(.headline)

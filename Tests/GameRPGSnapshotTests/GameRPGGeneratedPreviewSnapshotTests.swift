@@ -122,7 +122,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
             GameRPG.GameWindowButtonView(
                 title: NetworkModules.map.title,
                 systemImage: NetworkModules.map.icon,
-                tint: NetworkModules.map.tint,
+                module: .map,
                 sceneId: SceneId.sceneId(for: .map)
             )
             .environment(ScenesManager())

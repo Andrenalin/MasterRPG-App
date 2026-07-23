@@ -81,8 +81,7 @@ public struct TextSummaryExtractionView: View {
                     }
                 }
             }
-            .tint(module.tint)
-            .accentColor(module.tint)
+            .moduleTint(module)
     }
 
     // MARK: - Content

@@ -251,7 +251,7 @@ struct DiceRPGDynamicPreviewSnapshotTests {
                     transaction.animation = nil
                     transaction.disablesAnimations = true
                 }
-                .tint(root.configurable.module.tint)
+                .moduleTint(root.configurable.module)
                 .deterministicSnapshotEnvironment()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.background),

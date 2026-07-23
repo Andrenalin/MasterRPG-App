@@ -9,6 +9,7 @@ struct AddtionalEntryRow: View, Equatable {
     let textModel: LinkHighlightTextModel?
     
     @Environment(CharacterRootModel.self) private var root
+    @Environment(\.appTheme) private var theme
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -21,7 +22,8 @@ struct AddtionalEntryRow: View, Equatable {
                     .padding(4)
                     .background {
                         Circle().stroke(
-                            root.configurable.module.tint.opacity(0.3))
+                            theme.tint(for: root.configurable.module).opacity(0.3)
+                        )
                     }
                 
                 if let textModel {

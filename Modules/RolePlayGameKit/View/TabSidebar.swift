@@ -18,6 +18,7 @@ struct TabSidebar: View {
         List(selection: $appModel.selectedModule) {
             allTabs
         }
+        .themedListSurface()
         .applyIf(restoresState && rolePlayStateRestorationEnabled) {
             $0.modifier(TabSidebarRestorationModifier(appModel: appModel))
         }
@@ -54,7 +55,7 @@ struct TabSidebar: View {
         NavigationLink(to: tab) {
             ModuleTabLabel(route: tab)
         }
-        .listItemTint(tab.module.tint)
+        .moduleListItemTint(tab.module)
         .tag(tab)
     }
 }

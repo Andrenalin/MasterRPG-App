@@ -7,6 +7,17 @@ import Testing
 
 @MainActor
 struct SheetRootModelAIGenerationTests {
+    @Test("AI accessory requires meaningful non-root sheet content")
+    func aiAssistantContentVisibility() throws {
+        let fixture = try makeFixture()
+
+        #expect(fixture.rootModel.hasAIAssistantContent)
+
+        fixture.rootSheet.entries = [fixture.emptyEntry, fixture.generatedEntry]
+
+        #expect(!fixture.rootModel.hasAIAssistantContent)
+    }
+
     @Test("Root focus appends generation at the end of the root sheet")
     func rootFocusCreatesTrailingRequest() throws {
         // Given

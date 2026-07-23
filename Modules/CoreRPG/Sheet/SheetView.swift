@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
+    @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     init(
@@ -169,7 +170,7 @@ private extension SheetView {
 
     @ViewBuilder var selectionBorder: some View {
         if sheetModel.isSelected {
-            let tint = sheetModel.source.typeId.tint
+            let tint = theme.tint(for: sheetModel.source.typeId)
             ZStack {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(tint.opacity(0.08))

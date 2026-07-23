@@ -16,8 +16,7 @@ public struct ItemRootView: View {
         let _ = Self.printViewChangesOnlyInDebug()
         ItemRootListView(root: root)
             .environment(root)
-            .tint(root.configurable.module.tint)
-            .accentColor(root.configurable.module.tint)
+            .moduleTint(root.configurable.module)
             .task {
                 root.navigationModel.navigator = navigator
             }

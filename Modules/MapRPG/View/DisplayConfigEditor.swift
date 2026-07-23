@@ -56,7 +56,7 @@ struct DisplayConfigEditor: View {
                 Text("Cover color", bundle: .module)
             }
             .labelsHidden()
-            .tint(root.configurable.module.tint)
+            .moduleTint(root.configurable.module)
         } label: {
             Text("Cover color", bundle: .module)
         }
@@ -152,7 +152,7 @@ struct DisplayConfigEditor: View {
                     }
                 }
                 .buttonStyle(.borderless)
-                .tint(root.configurable.module.tint)
+                .moduleTint(root.configurable.module)
                 
             } label: {
                 Text("Cover tile", bundle: .module)

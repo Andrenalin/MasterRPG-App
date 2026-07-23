@@ -25,7 +25,7 @@ struct BattleRoundSidebarButton: View {
         .contentShape(.circle)
         .modifier(
             GameWindowButtonAppearance(
-                tint: NetworkModules.game.tint,
+                module: .game,
                 isWindowPresented: gameScreenModel.showsBattleRoundSidebar
             )
         )

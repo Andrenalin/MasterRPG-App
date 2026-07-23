@@ -33,6 +33,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
     let detailContent: (SheetModel) -> DetailContent
     
     @Environment(\.networkActions) private var networkActions
+    @Environment(\.appTheme) private var theme
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
@@ -242,7 +243,9 @@ private extension SheetEntryView {
                         .foregroundStyle(.foreground, .tint)
                         .padding(4)
                         .background {
-                            Circle().stroke(entryModel.source.typeId.tint.opacity(0.3))
+                            Circle().stroke(
+                                theme.tint(for: entryModel.source.typeId).opacity(0.3)
+                            )
                         }
                 }
                 switch entryModel.sheetType {
@@ -435,7 +438,7 @@ private extension SheetEntryView {
 
     @ViewBuilder var selectionBorder: some View {
         if entryModel.isSelected {
-            let tint = entryModel.source.typeId.tint
+            let tint = theme.tint(for: entryModel.source.typeId)
             ZStack {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(tint.opacity(0.08))

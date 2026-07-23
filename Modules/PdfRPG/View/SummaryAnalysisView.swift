@@ -54,8 +54,7 @@ struct SummaryAnalysisView: View {
             .task {
                 await loadPDF()
             }
-            .tint(root.config.module.tint)
-            .accentColor(root.config.module.tint)
+            .moduleTint(root.config.module)
     }
 
     // MARK: - View Components
