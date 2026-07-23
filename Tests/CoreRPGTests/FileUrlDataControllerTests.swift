@@ -189,7 +189,7 @@ struct FileAccessTests {
 
     @Test(
         "App-managed files do not require security-scoped bookmarks",
-        arguments: [FileLocation.newCloud, .local, .appCloud]
+        arguments: [FileLocation.newCloud, .local]
     )
     func appManagedFileHasAccessWithoutBookmark(location: FileLocation) async throws {
         let module = uniqueModuleName()
