@@ -114,6 +114,25 @@ struct FolderListControllerTests {
         #expect(names == sorted, "Empty-search results must be alphabetically sorted")
     }
 
+    @Test("Only folders and collections expose list-row disclosure")
+    func regularCharactersDoNotExposeFolderDisclosure() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let characterId = await root.itemController.addNew(type: .item)
+        let folderId = await root.itemController.addNew(type: .folder)
+        root.editController.reset(name: "Hero", itemId: characterId)
+        root.editController.reset(name: "Party", itemId: folderId)
+
+        let (sut, _) = makeSUT(for: root)
+        let results = await sut.results(text: "")
+        let character = try #require(results.first { $0.itemId == characterId })
+        let folder = try #require(results.first { $0.itemId == folderId })
+
+        #expect(!character.canOpen)
+        #expect(folder.canOpen)
+    }
+
     // MARK: - Search text filters list
 
     @Test("Non-empty list search returns only matching characters")

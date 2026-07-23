@@ -139,9 +139,13 @@ struct GameStatisticsController: Sendable {
         if model.subType == .failed { return .deliveryFailed }
         if model.subType == .playAudio { return .audioPlayed }
 
-        let sharingActions: Set<RPGMessageActionType> = [
-            .show, .mapState, .mapPin, .spaceTransform
-        ]
+        if model.data.type == .map {
+            return model.type == .reveal && model.subType == .show
+                ? .contentShared
+                : .message
+        }
+
+        let sharingActions: Set<RPGMessageActionType> = [.show, .spaceTransform]
         if sharingActions.contains(model.subType), model.data.type != .game {
             return .contentShared
         }

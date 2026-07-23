@@ -63,6 +63,8 @@ struct GameStatisticsDashboardView: View {
                     )
                 }
             }
+            .frame(maxWidth: 1_200)
+            .frame(maxWidth: .infinity)
             .padding()
         }
         .navigationTitle(Text("Game Statistics", bundle: .module))

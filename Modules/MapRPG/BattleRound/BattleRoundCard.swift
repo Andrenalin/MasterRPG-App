@@ -6,6 +6,7 @@ struct BattleRoundCard: View {
     let presentation: BattleRoundCardPresentation
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
+    let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
@@ -14,13 +15,15 @@ struct BattleRoundCard: View {
             BattleRoundWideCardLayout(
                 presentation: presentation,
                 actions: actions,
-                showCharacter: showCharacter
+                showCharacter: showCharacter,
+                selectHitPoints: selectHitPoints
             )
 
             BattleRoundCompactCardLayout(
                 presentation: presentation,
                 actions: actions,
-                showCharacter: showCharacter
+                showCharacter: showCharacter,
+                selectHitPoints: selectHitPoints
             )
         }
         .padding(10)

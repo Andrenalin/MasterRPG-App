@@ -317,6 +317,43 @@ struct MapEditorInteractionModelTests {
         #expect(session.workingCopy?.mapPins.first?.location == CGPoint(x: 60, y: 80))
     }
 
+    @Test("Saving an older editor working copy preserves the latest map photo")
+    func commitPreservesLatestStoredPhoto() throws {
+        let root = MapRootModel.preview
+        let mapId = UUID()
+        let photoId = UUID()
+        let map = MapModel(id: mapId, name: "Photo map")
+        root.itemController.replace(model: map, isInsert: true)
+
+        let session = MapEditorSession(
+            map: map,
+            image: AKImage(),
+            photoDegrees: 0,
+            containerSize: CGSize(width: 800, height: 600),
+            configuration: MapEditorConfiguration(mode: .edit, displayMode: .master)
+        )
+        let controller = MapEditController(editController: root.editController)
+        controller.prepareWorkingCopy(from: map, editorModel: session)
+
+        let latest = try #require(root.itemController.itemSync(for: mapId)?.copy())
+        latest.photoId = photoId
+        root.itemController.replace(model: latest, isInsert: false)
+        session.workingCopy?.entries = [
+            MapEntryModel(
+                id: UUID(),
+                name: "New room",
+                content: "",
+                coordinates: [CGPoint(x: 20, y: 20)]
+            )
+        ]
+
+        controller.commitChanges(editorModel: session)
+
+        let saved = try #require(root.itemController.itemSync(for: mapId))
+        #expect(saved.photoId == photoId)
+        #expect(saved.entries.map(\.name) == ["New room"])
+    }
+
     @Test("Structural editor pin actions participate in the same undo history")
     func removedPinCanBeUndone() throws {
         let pin = MapPinModel(id: UUID(), name: "Removable token")

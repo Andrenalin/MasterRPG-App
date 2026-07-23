@@ -12,17 +12,17 @@ struct GameStatisticsDiceChart: View {
             title: String(localized: "Dice", bundle: .module),
             systemImage: "dice"
         ) {
-            if points.isEmpty {
+            if chartPoints.isEmpty {
                 GameStatisticsNoChartDataView()
             } else {
-                Chart(points) { point in
+                Chart(chartPoints) { point in
                     SectorMark(
                         angle: .value(String(localized: "Rolls", bundle: .module), point.count),
                         innerRadius: .ratio(0.62),
                         outerRadius: .inset(selectedPoint?.id == point.id ? 0 : 8),
                         angularInset: 1.5
                     )
-                    .clipShape(.rect(cornerRadius: 5))
+                    .cornerRadius(5)
                     .foregroundStyle(by: .value(String(localized: "Result", bundle: .module), point.title))
                     .opacity(selectedPoint == nil || selectedPoint?.id == point.id ? 1 : 0.4)
                     .accessibilityLabel(point.title)
@@ -45,14 +45,18 @@ struct GameStatisticsDiceChart: View {
         }
     }
 
+    private var chartPoints: [GameStatisticCategoryPoint] {
+        points.filter { $0.count > 0 }
+    }
+
     private var total: Int {
-        points.reduce(0) { $0 + $1.count }
+        chartPoints.reduce(0) { $0 + $1.count }
     }
 
     private var selectedPoint: GameStatisticCategoryPoint? {
         guard let selectedAngle else { return nil }
         var runningTotal = 0.0
-        return points.first { point in
+        return chartPoints.first { point in
             let end = runningTotal + Double(point.count)
             defer { runningTotal = end }
             return (runningTotal..<end).contains(selectedAngle)

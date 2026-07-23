@@ -16,10 +16,17 @@ final class MapGameModel: Sendable {
         let contentVersion: Int
     }
 
-    init() {}
+    init() {
+        let settings = BattleRoundSettingsModel()
+        let battleRound = BattleRoundModel()
+        battleRound.initiativeOrder = settings.initiativeOrder
+        battleRoundSettings = settings
+        battleRoundModel = battleRound
+    }
 
     var playerPins: [MapPinModel] = []
-    let battleRoundModel = BattleRoundModel()
+    let battleRoundModel: BattleRoundModel
+    let battleRoundSettings: BattleRoundSettingsModel
     private(set) var battleCharacterCopyIds: Set<UUID> = []
     private var authoritativeGenerations: [UUID: AuthoritativeGeneration] = [:]
     private var lastActivatedRoomIds: [UUID: UUID] = [:]
@@ -69,6 +76,7 @@ final class MapGameModel: Sendable {
 
 public protocol MapGameStorable {
     @MainActor var battleRoundModel: BattleRoundModel { get }
+    @MainActor var battleRoundSettings: BattleRoundSettingsModel { get }
     func mapAssetVersion(for itemId: UUID) async -> Int
     @MainActor func mapContentVersion(for itemId: UUID) -> Int
     @MainActor func recordAuthoritativeMapGeneration(_ data: NetworkCodableDataType)
@@ -146,6 +154,14 @@ public protocol MapGameStorable {
         combatantId: UUID,
         characterId: UUID
     ) -> Bool
+    @MainActor @discardableResult func assignBattleValueEntry(
+        itemId: UUID,
+        combatantId: UUID,
+        sourceCharacterId: UUID,
+        sourceEntryId: UUID,
+        kind: BattleValueKind
+    ) -> Bool
+    @MainActor func refreshBattleConfiguredValues(itemId: UUID)
     @MainActor func synchronizeBattleDefenders(itemId: UUID) -> Bool
     @MainActor func networkBattleRoundUpdate(for itemId: UUID) -> NetworkCodableDataType?
     @MainActor func applyBattleRoundUpdate(for itemId: UUID, with data: NetworkCodableDataType) -> Bool
@@ -209,6 +225,11 @@ extension GameController: MapGameStorable {
     @MainActor
     var battleRoundModel: BattleRoundModel {
         mapGameModel.battleRoundModel
+    }
+
+    @MainActor
+    var battleRoundSettings: BattleRoundSettingsModel {
+        mapGameModel.battleRoundSettings
     }
 
     func mapAssetVersion(for itemId: UUID) async -> Int {
@@ -725,6 +746,8 @@ extension GameController: MapGameStorable {
             roomCombatants: roomCombatants,
             initiativeOrder: initiativeOrder
         )
+        battleRoundSettings.initiativeOrder = initiativeOrder
+        resolveBattleConfiguredValues()
         _ = battleRoundModel.synchronize(pins: map.mapPins)
         return true
     }
@@ -768,6 +791,7 @@ extension GameController: MapGameStorable {
         order: BattleInitiativeOrder
     ) -> Bool {
         guard battleRoundModel.mapId == itemId else { return false }
+        battleRoundSettings.initiativeOrder = order
         return battleRoundModel.setInitiativeOrder(order)
     }
 
@@ -817,6 +841,7 @@ extension GameController: MapGameStorable {
               battleRoundModel.addCombatant(combatant) else {
             return false
         }
+        resolveBattleConfiguredValues(for: combatant.id)
         return true
     }
 
@@ -916,12 +941,65 @@ extension GameController: MapGameStorable {
            let playerIndex = mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
             mapGameModel.playerPins[playerIndex] = updatedPin
         }
-        return battleRoundModel.assignCharacter(
+        let changed = battleRoundModel.assignCharacter(
             combatantId: combatantId,
             sourceCharacterId: sourceCharacterId,
             gameCharacterId: gameCharacterId,
             pin: updatedPin
         )
+        if changed {
+            resolveBattleConfiguredValues(for: combatantId)
+        }
+        return changed
+    }
+
+    @MainActor
+    @discardableResult
+    func assignBattleValueEntry(
+        itemId: UUID,
+        combatantId: UUID,
+        sourceCharacterId: UUID,
+        sourceEntryId: UUID,
+        kind: BattleValueKind
+    ) -> Bool {
+        guard battleRoundModel.mapId == itemId,
+              let combatant = battleRoundModel.combatant(id: combatantId),
+              combatant.sourceCharacterId == sourceCharacterId,
+              let gameCharacterId = combatant.gameCharacterId,
+              let sourceEntry = root.characterRoot.valueGameControllable.gameEntry(
+                  characterId: sourceCharacterId,
+                  entryId: sourceEntryId
+              ),
+              let gameEntry = root.characterRoot.valueGameControllable.gameEntry(
+                  named: sourceEntry.name,
+                  characterId: gameCharacterId
+              ) else {
+            return false
+        }
+
+        let mappingChanged = battleRoundModel.setValueEntry(
+            gameEntry.id,
+            kind: kind,
+            for: combatantId
+        )
+        if kind == .initiative,
+           let value = root.characterRoot.valueGameControllable.gameEntryDisplayValue(
+               characterId: gameCharacterId,
+               entryId: gameEntry.id
+           ),
+           let initiative = battleInitiative(from: value) {
+            return battleRoundModel.setInitiative(
+                initiative,
+                for: combatantId
+            ) || mappingChanged
+        }
+        return mappingChanged
+    }
+
+    @MainActor
+    func refreshBattleConfiguredValues(itemId: UUID) {
+        guard battleRoundModel.mapId == itemId else { return }
+        resolveBattleConfiguredValues(remap: true)
     }
 
     @MainActor
@@ -1243,6 +1321,67 @@ private extension GameController {
             gameCharacterId: gameCharacterId,
             isPlayer: pin.isPlayer
         )
+    }
+
+    @MainActor
+    func resolveBattleConfiguredValues(
+        for combatantId: UUID? = nil,
+        remap: Bool = false
+    ) {
+        for combatant in battleRoundModel.combatants
+        where combatantId == nil || combatant.id == combatantId {
+            guard let gameCharacterId = combatant.gameCharacterId else { continue }
+
+            if remap || combatant.initiativeEntryId == nil,
+               let entry = root.characterRoot.valueGameControllable.gameEntry(
+                   named: battleRoundSettings.initiativeName,
+                   characterId: gameCharacterId
+               ) {
+                _ = battleRoundModel.setValueEntry(
+                    entry.id,
+                    kind: .initiative,
+                    for: combatant.id
+                )
+                // Automatic prefill is intentionally one-shot. A value typed
+                // by the game master is never overwritten on later refreshes.
+                if combatant.initiative == nil,
+                   let value = root.characterRoot.valueGameControllable
+                    .gameEntryDisplayValue(
+                        characterId: gameCharacterId,
+                        entryId: entry.id
+                    ),
+                   let initiative = battleInitiative(from: value) {
+                    _ = battleRoundModel.setInitiative(
+                        initiative,
+                        for: combatant.id
+                    )
+                }
+            }
+
+            if remap || combatant.hitPointsEntryId == nil,
+               let entry = root.characterRoot.valueGameControllable.gameEntry(
+                   named: battleRoundSettings.hitPointsName,
+                   characterId: gameCharacterId
+               ) {
+                _ = battleRoundModel.setValueEntry(
+                    entry.id,
+                    kind: .hitPoints,
+                    for: combatant.id
+                )
+            }
+        }
+    }
+
+    func battleInitiative(from value: String) -> Int? {
+        if let value = Int(value.trimmingCharacters(in: .whitespacesAndNewlines)) {
+            return max(1, value)
+        }
+        guard let value = Double(
+            value.trimmingCharacters(in: .whitespacesAndNewlines)
+        ), value.isFinite else {
+            return nil
+        }
+        return max(1, Int(value))
     }
 
     @MainActor

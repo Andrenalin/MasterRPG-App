@@ -38,6 +38,23 @@ struct LocationFileManagerTests {
         #expect(sut.absoluteUrl(for: docFileUrl, at: .other) == docFileUrl)
     }
 
+    @Test func newCloudUrlIncludesMappedModuleDirectory() throws {
+        let sut = LocationFileManager(moduleFolder: "Photos")
+        let relative = try #require(URL(string: "Example/Elven-Druid.jpg"))
+        let absolute = try #require(
+            sut.absoluteUrl(
+                for: relative,
+                at: .newCloud,
+                module: NetworkModules.photo.token
+            )
+        )
+
+        #expect(
+            absolute.pathComponents.suffix(3)
+                == ["photo", "Example", "Elven-Druid.jpg"]
+        )
+    }
+
     @Test func relativeUrlKeepsLocalPaths() async throws {
         let sut = LocationFileManager(moduleFolder: "TestsRelativeUrl")
         let docFileUrl = URL.documentsDirectory.appending(path: "test.txt")

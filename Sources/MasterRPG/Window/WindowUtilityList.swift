@@ -119,10 +119,10 @@ struct WindowUtilityList: Scene {
                     }
 #if os(macOS)
                     .frame(
-                        minWidth: 900,
-                        idealWidth: 1_000,
-                        minHeight: 600,
-                        idealHeight: 720
+                        minWidth: 680,
+                        idealWidth: 900,
+                        minHeight: 480,
+                        idealHeight: 680
                     )
 #endif
                     .sceneTracker(for: SceneId.gameStatistics)
@@ -131,7 +131,7 @@ struct WindowUtilityList: Scene {
                 .environment(appModel.scenesManager)
                 .environment(appModel)
             }
-            .windowResizability(.contentSize)
+            .windowResizability(.contentMinSize)
             .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))
             .restorationBehaviorAll(.disabled)
             .defaultLaunchBehavior(.suppressed)

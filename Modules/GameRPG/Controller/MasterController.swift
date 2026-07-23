@@ -1899,6 +1899,33 @@ extension MasterController {
     }
 
     func handleValue(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
+        if model.type == .update, model.subType == .valueUpdate {
+            guard model.sender.role == .player,
+                  model.purpose == .event,
+                  model.effectiveAudience == .master,
+                  let characterId = model.sender.characterId,
+                  characterId == model.data.id,
+                  let update = GameValueEntryUpdate.decodeData(model.data.data),
+                  update.characterId == characterId,
+                  await root.gameModel.canApplyValueUpdate(
+                      senderId: model.sender.id,
+                      characterId: characterId,
+                      entryId: update.entryId,
+                      timestamp: model.timestamp
+                  ),
+                  await root.characterRoot.valueGameControllable
+                    .applyGameValueEntryUpdate(update) else {
+                return nil
+            }
+            await root.gameModel.recordValueUpdate(
+                senderId: model.sender.id,
+                characterId: characterId,
+                entryId: update.entryId,
+                timestamp: model.timestamp
+            )
+            return nil
+        }
+
         // Character/Value messages have one normal-game purpose: synchronize
         // the selected Character when a player joins. Presentation, loot,
         // result, acknowledgement, and live-update variants are intentionally

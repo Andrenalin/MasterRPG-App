@@ -31,10 +31,19 @@ extension MapEditController {
         for entry in editorModel.editEntries.entries {
             copy[entry.id] = entry
         }
-        copy.pinScale = editorModel.pinScale
-        copy.mapPins = editorModel.pins.mapPins
+
+        // The editor owns rooms, tile coordinates, pins, and map presentation
+        // scales. Merge only those fields into the latest stored model so a
+        // working copy opened before a photo/cache update cannot clear the
+        // map's photo metadata when the editor is dismissed.
+        let updated = editController.itemController.itemSync(for: copy.id)?.copy() ?? copy.copy()
+        updated.entries = copy.entries
+        updated.displayConfig = copy.displayConfig
+        updated.pinScale = editorModel.pinScale
+        updated.hexMapScale = editorModel.hexScale
+        updated.mapPins = editorModel.pins.mapPins
         editController.save(
-            updated: copy,
+            updated: updated,
             message: String(localized: "map updated", bundle: .module).localizedString
         )
     }

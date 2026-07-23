@@ -19,6 +19,12 @@ import WeatherRPG
 
 @MainActor @Observable
 final class GameRootModel: Sendable {
+    private struct ValueUpdateKey: Hashable {
+        let senderId: UUID
+        let characterId: UUID
+        let entryId: UUID
+    }
+
     var gameConfig: GameConfigModel = .empty
     var gameRoster: GameRosterModel = .empty
     var gameControl: GameControlModel = .empty
@@ -36,6 +42,7 @@ final class GameRootModel: Sendable {
     var playerScreens: [UUID: Data] = [:]
     var attachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
     var metaDataAttachments: [NetworkModules: UUID] = [:]
+    private var latestValueUpdateTimestamps: [ValueUpdateKey: TimeInterval] = [:]
 
     var masterController: MasterController?
     var playerController: PlayerController?
@@ -96,6 +103,7 @@ final class GameRootModel: Sendable {
         self.gameConfig = gameConfig
         self.gameRoster = gameRoster
         self.gameControl = gameControl
+        latestValueUpdateTimestamps = [:]
     }
 
     func reset(master: MasterGameModel) {
@@ -188,6 +196,41 @@ final class GameRootModel: Sendable {
     var gameType: GameType { gameConfig.type(in: gameRoster) }
     var gameName: String { gameConfig.name(in: gameRoster) }
     var gamePlayer: PlayerGameModel { gameConfig.player(in: gameRoster) }
+
+    func canApplyValueUpdate(
+        senderId: UUID,
+        characterId: UUID,
+        entryId: UUID,
+        timestamp: TimeInterval
+    ) -> Bool {
+        guard timestamp.isFinite,
+              timestamp > 0,
+              timestamp <= Date.now.timeIntervalSince1970
+                + GameNetworkModel.maximumFutureEventTimestampSkew else {
+            return false
+        }
+        let key = ValueUpdateKey(
+            senderId: senderId,
+            characterId: characterId,
+            entryId: entryId
+        )
+        return timestamp > (latestValueUpdateTimestamps[key] ?? 0)
+    }
+
+    func recordValueUpdate(
+        senderId: UUID,
+        characterId: UUID,
+        entryId: UUID,
+        timestamp: TimeInterval
+    ) {
+        latestValueUpdateTimestamps[
+            ValueUpdateKey(
+                senderId: senderId,
+                characterId: characterId,
+                entryId: entryId
+            )
+        ] = timestamp
+    }
 }
 
 @MainActor

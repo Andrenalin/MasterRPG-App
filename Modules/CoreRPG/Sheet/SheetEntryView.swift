@@ -280,6 +280,15 @@ private extension SheetEntryView {
             // Show inline editor when in edit mode (not available in editor mode)
             InlineEditorView(entryDataEditable: entryDataEditable, updateHandler: { text in
                 rootModel.updateSheetModel(entryModel: entryModel, updatedText: text)
+                guard appGameStateModel.isGameRunning,
+                      appGameStateModel.gameModus == .player,
+                      let update = entryDataEditable.gameValueEntryUpdate(
+                          itemId: entryModel.source.itemId,
+                          entryId: entryModel.source.entryId
+                      ) else {
+                    return
+                }
+                networkActions?.game(update, .valueUpdate, nil)
             }, entry: entryModel)
         }
     }
