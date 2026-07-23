@@ -156,6 +156,12 @@
         }
       }
     },
+    "adventures" : {
+
+    },
+    "Adventures" : {
+
+    },
     "Attack Roll" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -188,6 +194,12 @@
           }
         }
       }
+    },
+    "characters" : {
+
+    },
+    "Characters" : {
+
     },
     "Clear" : {
       "extractionState" : "stale",
@@ -239,6 +251,9 @@
           }
         }
       }
+    },
+    "Create one in MasterRPG." : {
+
     },
     "Critical Failure!" : {
       "extractionState" : "stale",
@@ -555,6 +570,9 @@
         }
       }
     },
+    "No Items" : {
+
+    },
     "No rolls yet" : {
       "localizations" : {
         "de" : {
@@ -717,6 +735,12 @@
           }
         }
       }
+    },
+    "See your adventures and open them in MasterRPG." : {
+
+    },
+    "See your characters and open them in MasterRPG." : {
+
     },
     "Select Dice" : {
       "extractionState" : "stale",

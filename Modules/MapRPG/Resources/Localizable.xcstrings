@@ -772,6 +772,7 @@
       }
     },
     "Hex Map Scale" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
