@@ -95,7 +95,7 @@ private extension CachePhotoView {
         cacheController: fixture.cacheController,
         model: fixture.model
     )
-    .tint(NetworkModules.space.tint)
+    .moduleTint(.space)
 }
 
 #Preview("CachePhotoView · Paladin") {
@@ -104,7 +104,7 @@ private extension CachePhotoView {
         cacheController: fixture.cacheController,
         model: fixture.model
     )
-    .tint(NetworkModules.space.tint)
+    .moduleTint(.space)
 }
 
 #Preview("CachePhotoView · Wizard") {
@@ -113,5 +113,5 @@ private extension CachePhotoView {
         cacheController: fixture.cacheController,
         model: fixture.model
     )
-    .tint(NetworkModules.space.tint)
+    .moduleTint(.space)
 }

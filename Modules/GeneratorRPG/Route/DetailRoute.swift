@@ -51,7 +51,6 @@ struct ViewerRouteDestinationView: View {
     
     var body: some View {
         root.viewController.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: appSizeModel.mode == .compact))
-            .tint(root.configurable.module.tint)
-            .accentColor(root.configurable.module.tint)
+            .moduleTint(root.configurable.module)
     }
 }

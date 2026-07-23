@@ -81,9 +81,9 @@ private extension ViewerRootView {
         )
         .contentTransition(.symbolEffect(.replace.wholeSymbol))
 #if os(macOS)
-                .foregroundStyle(root.config.module.tint)
+                .moduleForegroundStyle(root.config.module)
 #else
-                .tint(root.config.module.tint)
+                .moduleTint(root.config.module)
 #endif
     }
     
@@ -103,9 +103,9 @@ private extension ViewerRootView {
         }
         .labelStyle(.iconOnly)
 #if os(macOS)
-                .foregroundStyle(root.config.module.tint)
+                .moduleForegroundStyle(root.config.module)
 #else
-                .tint(root.config.module.tint)
+                .moduleTint(root.config.module)
 #endif
     }
 }

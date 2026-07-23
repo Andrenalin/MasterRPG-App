@@ -36,7 +36,7 @@ struct MasterModuleWindowMenu: View {
                 GameWindowButtonView(
                     title: String(localized: "Logs", bundle: .module),
                     systemImage: "doc.text.magnifyingglass",
-                    tint: NetworkModules.game.tint,
+                    module: .game,
                     sceneId: .logs
                 )
             }

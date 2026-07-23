@@ -67,8 +67,7 @@ struct RouteRouteDestionationView: View {
                 GameFactory.rootSearchView(root: appModel.gameRoot, navigator: appModel.navigator(for: .search))
             }
         }
-        .tint(route.module.tint)
-        .accentColor(route.module.tint)
+        .moduleTint(route.module)
     }
 }
 

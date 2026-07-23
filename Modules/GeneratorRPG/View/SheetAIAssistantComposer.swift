@@ -15,6 +15,7 @@ struct SheetAIAssistantComposer: View {
     let submitAction: () -> Void
     let closeAction: () -> Void
 
+    @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -80,10 +81,50 @@ struct SheetAIAssistantComposer: View {
 #if os(visionOS)
         .background(.regularMaterial, in: .capsule)
 #else
-        .glassEffectAll(.regular.tint(module.tint), in: .capsule)
+        .glassEffectAll(.regular.tint(theme.tint(for: module)), in: .capsule)
         .glassEffectID("aiOverlay", in: glassNamespace)
 #endif
         .padding(.horizontal)
+    }
+}
+
+struct SheetAIAssistantMiniComposer: View {
+    let module: NetworkModules
+    @Binding var messageText: String
+    let availability: SheetAIGenerationAvailability
+    let isGenerating: Bool
+    @FocusState.Binding var isTextFieldFocused: Bool
+    let submitAction: () -> Void
+
+    @Environment(\.appTheme) private var theme
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: NetworkModules.generator.icon)
+                .foregroundStyle(theme.tint(for: module))
+                .frame(minWidth: 44, minHeight: 44)
+                .accessibilityHidden(true)
+
+            TextField(
+                availability.message ?? String(localized: "Type your request...", bundle: .module),
+                text: $messageText
+            )
+            .textFieldStyle(.plain)
+            .focused($isTextFieldFocused)
+            .onSubmit(submitAction)
+#if os(iOS)
+            .submitLabel(.send)
+#endif
+            .disabled(!availability.isAvailable || isGenerating)
+            .accessibilityLabel(Text("Ask AI", bundle: .module))
+            .accessibilityHint(
+                isGenerating
+                    ? Text("Generating", bundle: .module)
+                    : Text("Press Return to generate sheet content", bundle: .module)
+            )
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
     }
 }
 

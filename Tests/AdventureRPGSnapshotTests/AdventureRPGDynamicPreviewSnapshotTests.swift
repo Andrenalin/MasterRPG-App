@@ -73,7 +73,7 @@ struct AdventureRPGDynamicPreviewSnapshotTests {
                 .environment(root.weatherRoot)
                 .modifier(MockRootViewModifier())
                 .modelContainer(container)
-                .tint(root.configurable.module.tint)
+                .moduleTint(root.configurable.module)
                 .deterministicSnapshotEnvironment()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.background),

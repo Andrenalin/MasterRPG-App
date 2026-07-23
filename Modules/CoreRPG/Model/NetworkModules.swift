@@ -142,45 +142,4 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
 #endif
     }
 
-    public var color: Color {
-        switch self {
-        case .adventure: Color("AdventureBackground", bundle: .module)
-        case .audio: Color("AudioBackground", bundle: .module)
-        case .dice: Color("DiceBackground", bundle: .module)
-        case .editor: .blue
-        case .game: .blue
-        case .generator: .blue
-        case .map: Color("MapBackground", bundle: .module)
-        case .none: .blue
-        case .pdf: Color("PdfBackground", bundle: .module)
-        case .photo: Color("PhotoBackground", bundle: .module)
-        case .search: .blue
-        case .setting: .blue
-        case .space: Color("SpaceBackground", bundle: .module)
-        case .table: Color("TableBackground", bundle: .module)
-        case .value: Color("CharacterBackground", bundle: .module)
-        case .weather: Color("WeatherBackground", bundle: .module)
-        }
-    }
-    
-    public var tint: Color {
-        switch self {
-        case .adventure: Color("AdventureTint", bundle: .module)
-        case .audio: Color("AudioTint", bundle: .module)
-        case .dice: Color("DiceTint", bundle: .module)
-        case .editor: .blue
-        case .game: .blue
-        case .generator: .blue
-        case .map: Color("MapTint", bundle: .module)
-        case .none: .blue
-        case .pdf: Color("PdfTint", bundle: .module)
-        case .photo: Color("PhotoTint", bundle: .module)
-        case .space: Color("SpaceTint", bundle: .module)
-        case .search: .blue
-        case .setting: .blue
-        case .table: Color("TableTint", bundle: .module)
-        case .value: Color("CharacterTint", bundle: .module)
-        case .weather: Color("WeatherTint", bundle: .module)
-        }
-    }
 }

@@ -9,6 +9,7 @@ struct ViewerRootView: View {
     var dismissAction: (() -> Void)? = nil
 
     @Environment(PhotoRootModel.self) private var root
+    @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
@@ -50,7 +51,7 @@ struct ViewerRootView: View {
     }
 
     private var ignoredSafeAreaEdges: Edge.Set {
-        configuration.addToolbar || configuration.isGame ? [.top, .bottom] : []
+        configuration.addToolbar || configuration.isGame ? [.top, .bottom] : .bottom
     }
 }
 
@@ -93,7 +94,7 @@ private extension ViewerRootView {
 
 private extension ViewerRootView {
     var closeButton: some View {
-        let tintColor = root.config.module.tint
+        let tintColor = theme.tint(for: root.config.module)
         return Button {
             if let dismissAction {
                 dismissAction()
@@ -116,7 +117,7 @@ private extension ViewerRootView {
     }
     
     var rotateButton: some View {
-        let tintColor = root.config.module.tint
+        let tintColor = theme.tint(for: root.config.module)
         return Button {
             withAnimation(reduceMotion ? nil : .default) {
                 toolBarModel.configure(photoId: model.id, degrees: model.degrees)

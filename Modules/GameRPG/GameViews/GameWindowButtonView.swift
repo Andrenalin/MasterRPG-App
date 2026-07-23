@@ -6,7 +6,7 @@ import SwiftUI
 struct GameWindowButtonView: View {
     let title: String
     let systemImage: String
-    let tint: Color
+    let module: NetworkModules
     let sceneId: SceneId
 
     @Environment(ScenesManager.self) private var scenesManager
@@ -31,7 +31,7 @@ struct GameWindowButtonView: View {
         .contentShape(.circle)
         .modifier(
             GameWindowButtonAppearance(
-                tint: tint,
+                module: module,
                 isWindowPresented: isWindowPresented
             )
         )
@@ -56,7 +56,7 @@ struct GameWindowButtonView: View {
     GameWindowButtonView(
         title: NetworkModules.map.title,
         systemImage: NetworkModules.map.icon,
-        tint: NetworkModules.map.tint,
+        module: .map,
         sceneId: SceneId.sceneId(for: .map)
     )
     .environment(ScenesManager())

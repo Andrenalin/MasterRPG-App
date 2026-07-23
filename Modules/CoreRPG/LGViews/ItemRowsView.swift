@@ -9,6 +9,7 @@ struct ItemRowsView: View {
     let listModel: FolderListModel
     let menuController: ContextMenuMultiController
     
+    @Environment(\.appTheme) private var theme
     @Environment(\.navigator) private var navigator
     
     var body: some View {
@@ -37,7 +38,10 @@ struct ItemRowsView: View {
             Text("Drop here", bundle: .module)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding()
-                .background(root.configurable.module.color.gradient, in: .capsule)
+                .background(
+                    theme.background(for: root.configurable.module).gradient,
+                    in: .capsule
+                )
                 .padding()
                 .dropDestination(for: root.configurable.module, isEnabled: true, handler: addLink)
             

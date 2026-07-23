@@ -12,6 +12,14 @@ struct SheetAIAssistantComponentPreview: View {
     var body: some View {
         VStack {
             SheetAIAssistantOpenButton(module: .adventure, glassNamespace: namespace, action: {})
+            SheetAIAssistantMiniComposer(
+                module: .adventure,
+                messageText: $message,
+                availability: SheetAIGenerationController().availability,
+                isGenerating: false,
+                isTextFieldFocused: $isFocused,
+                submitAction: {}
+            )
             SheetAIAssistantComposer(
                 module: .adventure,
                 messageText: $message,

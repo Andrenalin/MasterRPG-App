@@ -33,9 +33,12 @@ struct ItemFileImporterView: View {
     private var overlayStyle: some View {
         HStack(alignment: .bottom, spacing: 0) {
             filePathDisplay
+                .zIndex(0)
+
             Spacer(minLength: 20)
+
             fileImporterContent
-                .zIndex(5)
+                .zIndex(100)
         }
     }
     
@@ -71,7 +74,7 @@ struct ItemFileImporterView: View {
                      String(localized: "No file is set", bundle: .module).localizedString)
                     .font(.callout)
             }
-            .padding(6)
+            .padding(.vertical)
 #if !os(visionOS)
             .glassEffectAll(.regular.interactive())
 #endif

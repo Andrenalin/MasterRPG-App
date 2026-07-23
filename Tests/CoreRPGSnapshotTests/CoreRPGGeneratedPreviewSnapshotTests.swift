@@ -915,7 +915,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 cacheController: fixture.cacheController,
                 model: fixture.model
             )
-            .tint(NetworkModules.space.tint)
+            .moduleTint(.space)
         }
     }
 
@@ -1063,7 +1063,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                     tags: ["Map", "Quest"]
                 )
             )
-            .tint(NetworkModules.space.tint)
+            .moduleTint(.space)
             .environment(AppSettingsModel.previewFixture())
         }
     }
@@ -1604,6 +1604,36 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         try await assertPreviewSnapshot("ColorSchemeView") {
             CoreRPG.ColorSchemeView(colorScheme: .system)
                 .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::ThemePickerView
+    @Test("ThemePickerView")
+    func snapshotThemePickerView() async throws {
+        try await assertPreviewSnapshot("ThemePickerView") {
+            CoreRPG.ThemePickerView()
+                .environment(AppSettingsModel.previewFixture(appThemeID: .midnight))
+        }
+    }
+
+    // snapshot-root: CoreRPG::ThemePreviewCard
+    @Test("ThemePreviewCard")
+    func snapshotThemePreviewCard() async throws {
+        try await assertPreviewSnapshot("ThemePreviewCard") {
+            CoreRPG.ThemePreviewCard(themeID: .neonRealm, showsName: true, isSelected: true)
+                .frame(width: 180)
+                .padding()
+        }
+    }
+
+    // snapshot-root: CoreRPG::ThemeSettingsView
+    @Test("ThemeSettingsView")
+    func snapshotThemeSettingsView() async throws {
+        try await assertPreviewSnapshot("ThemeSettingsView") {
+            List {
+                CoreRPG.ThemeSettingsView()
+            }
+            .environment(AppSettingsModel.previewFixture(appThemeID: .arcane))
         }
     }
 

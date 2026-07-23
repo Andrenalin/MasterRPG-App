@@ -92,7 +92,7 @@ private extension InlineEditorView {
             Label { Text("Selected", bundle: .module) } icon: { Image(systemName: "checkmark.square") }
         }
         .labelsHidden()
-        .tint(entryDataEditable.itemControllable.config.module.tint)
+        .moduleTint(entryDataEditable.itemControllable.config.module)
         .toggleStyle(.automatic)
         .fixedSize(horizontal: true, vertical: true)
     }

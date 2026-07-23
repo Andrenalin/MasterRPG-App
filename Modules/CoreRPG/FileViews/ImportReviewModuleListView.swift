@@ -9,6 +9,7 @@ struct ImportReviewModuleListView: View {
         List(model.modules, selection: $model.selectedModuleID) { module in
             ImportReviewModuleRow(module: module)
         }
+        .themedListSurface()
         .navigationTitle(Text("Modules", bundle: .module))
         .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 280)
         .onChange(of: model.selectedModuleID) { _, newID in

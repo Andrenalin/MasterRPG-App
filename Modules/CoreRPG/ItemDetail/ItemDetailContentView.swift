@@ -13,13 +13,14 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
     @Binding var editingItem: EditingItem?
     let editSheetNamespace: Namespace.ID
 
+    @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         HeaderContentScrollView(
             model: headerModel,
-            backgroundColor: root.configurable.module.color,
+            backgroundColor: theme.background(for: root.configurable.module),
             disableHideHeader: configuration.disableHideHeader || configuration.isSubFolder
         ) {
             ItemDetailHeaderView(

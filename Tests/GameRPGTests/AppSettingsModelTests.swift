@@ -34,4 +34,33 @@ struct AppSettingsModelTests {
         #expect(restoredModel.showGameDice == false)
         #expect(restoredModel.showGamePlayerDice == false)
     }
+
+    @Test("Theme selection and recent themes are restored")
+    func restoreThemeSelection() throws {
+        let suiteName = "AppSettingsModelTests.theme.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let firstModel = AppSettingsModel(defaults: defaults)
+        firstModel.appThemeID = .arcane
+        firstModel.appThemeID = .midnight
+
+        let restoredModel = AppSettingsModel(defaults: defaults)
+
+        #expect(restoredModel.appThemeID == .midnight)
+        #expect(restoredModel.recentThemeIDs == [.midnight, .arcane, .standard])
+    }
+
+    @Test("Unknown stored theme falls back to Standard")
+    func unknownThemeFallback() throws {
+        let suiteName = "AppSettingsModelTests.unknownTheme.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set("missing-theme", forKey: "appThemeID")
+
+        let model = AppSettingsModel(defaults: defaults)
+
+        #expect(model.appThemeID == .standard)
+        #expect(model.recentThemeIDs.first == .standard)
+    }
 }

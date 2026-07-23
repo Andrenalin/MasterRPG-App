@@ -4,23 +4,23 @@ import CoreRPG
 import SwiftUI
 
 struct ModuleTabLabel: View {
-    let title: String
-    let icon: String
-    let color: Color
+    let route: RootRoute
+    let color: Color?
+
+    @Environment(\.appTheme) private var theme
 
     init(route: RootRoute, color: Color? = nil) {
-        title = route.title
-        icon = route.icon
-        self.color = color ?? route.module.tint
+        self.route = route
+        self.color = color
     }
 
     var body: some View {
         Label {
-            Text(verbatim: title)
+            Text(verbatim: route.title)
         } icon: {
-            Image(systemName: icon)
+            Image(systemName: route.icon)
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(color)
+                .foregroundStyle(color ?? theme.tint(for: route.module))
         }
     }
 }

@@ -178,6 +178,7 @@ private extension ListRootView {
 #endif
         }
         .scrollPosition(id: $listModel.scrollId, anchor: .center)
+        .themedListSurface()
     }
     
     /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.
@@ -198,5 +199,3 @@ private extension ListRootView {
     let fixture = FakeItemRootControllerFixture()
     ListRootView(root: fixture.root, listController: fixture.folderListController, parentModel: nil, isSubFolder: false)
 }
-
-

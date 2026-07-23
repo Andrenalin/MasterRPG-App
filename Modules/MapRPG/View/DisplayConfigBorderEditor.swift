@@ -18,7 +18,7 @@ struct DisplayConfigBorderEditor: View {
                     Text("Border color", bundle: .module)
                 }
                 .labelsHidden()
-                .tint(root.configurable.module.tint)
+                .moduleTint(root.configurable.module)
 #else
                 Text("Color Picker not available", bundle: .module)
 #endif

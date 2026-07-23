@@ -145,7 +145,7 @@ private extension SplitNavigation {
     func pageTab(for tab: RootRoute) -> some TabContent<RootRoute?> {
         Tab(value: tab, role: tab.tabRole) {
             tabView(tab: tab)
-                .tint(tab.module.tint)
+                .moduleTint(tab.module)
                 .environment(appModel.itemRootController(for: tab.module))
         } label: {
             ModuleTabLabel(route: tab)

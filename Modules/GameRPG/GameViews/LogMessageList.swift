@@ -20,6 +20,7 @@ struct LogMessageList: View {
                 AttachmentSection(logController: logController, isExpanded: $showAttachments)
                 LogRowsSection(logController: logController)
             }
+            .themedListSurface()
 #if os(tvOS)
             .listStyle(.grouped)
 #else

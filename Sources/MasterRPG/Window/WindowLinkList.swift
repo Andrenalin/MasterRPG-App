@@ -76,7 +76,7 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
             .resetAppColorScheme()
             .frame(minWidth: 350, minHeight: 400)
             .handlesExternalEvents(preferring: [], allowing: [])
-            .tint(module.tint)
+            .moduleTint(module)
             .environmentSetUp(model)
             .environmentActionSetUp(model)
 #if os(macOS)

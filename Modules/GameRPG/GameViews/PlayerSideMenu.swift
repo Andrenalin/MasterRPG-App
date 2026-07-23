@@ -29,7 +29,7 @@ struct PlayerSideMenu: View {
                     GameWindowButtonView(
                         title: module.title,
                         systemImage: module.icon,
-                        tint: module.tint,
+                        module: module,
                         sceneId: SceneId.sceneId(for: module)
                     )
                 }

@@ -28,6 +28,8 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
 #if os(iOS)
             ColorSchemeSettingsView()
 #endif
+
+            ThemeSettingsView()
                         
             importContentView
                         
@@ -65,6 +67,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
                 Text("Becareful this removes all data and resets the database.", bundle: .module)
             }
         }
+        .themedListSurface()
         .navigationTitle(Text("Settings", bundle: .module))
     }
 }

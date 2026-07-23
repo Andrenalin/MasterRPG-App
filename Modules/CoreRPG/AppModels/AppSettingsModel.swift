@@ -19,6 +19,8 @@ public final class AppSettingsModel: Sendable {
         self.defaults = nil
         firstLaunch = previewValues.firstLaunch
         appColorScheme = previewValues.appColorScheme
+        appThemeID = previewValues.appThemeID
+        recentThemeIDs = [previewValues.appThemeID]
         autoShowMasterMainTab = previewValues.autoShowMasterMainTab
         autoShowPlayerMainTab = previewValues.autoShowPlayerMainTab
         masterMainTabDisplayMode = previewValues.masterMainTabDisplayMode
@@ -68,6 +70,16 @@ public final class AppSettingsModel: Sendable {
             defaults?.set(appColorScheme.rawValue, forKey: AppSettingsModel.appColorSchemeKey)
         }
     }
+
+    public var appThemeID: AppThemeID = .standard {
+        didSet {
+            guard oldValue != appThemeID else { return }
+            defaults?.set(appThemeID.rawValue, forKey: AppSettingsModel.appThemeIDKey)
+            recordRecentTheme(appThemeID)
+        }
+    }
+
+    public private(set) var recentThemeIDs: [AppThemeID] = []
     
     public var autoShowMasterMainTab: Bool = true {
         didSet {
@@ -146,6 +158,11 @@ public final class AppSettingsModel: Sendable {
     private func initSettings(from defaults: UserDefaults) {
         firstLaunch = defaults.value(forKey: AppSettingsModel.firstLunchKey) as? Bool ?? true
         appColorScheme = AppColorScheme(rawValue: defaults.integer(forKey: AppSettingsModel.appColorSchemeKey)) ?? .system
+        recentThemeIDs = defaults.stringArray(forKey: AppSettingsModel.recentThemeIDsKey)?
+            .compactMap(AppThemeID.init(rawValue:)) ?? []
+        appThemeID = defaults.string(forKey: AppSettingsModel.appThemeIDKey)
+            .flatMap(AppThemeID.init(rawValue:)) ?? .standard
+        recordRecentTheme(appThemeID)
         
         autoShowMasterMainTab = defaults.value(forKey: AppSettingsModel.autoShowMasterMainTabKey) as? Bool ?? true
         autoShowPlayerMainTab = defaults.value(forKey: AppSettingsModel.autoShowPlayerMainTabKey) as? Bool ?? true
@@ -165,6 +182,7 @@ public final class AppSettingsModel: Sendable {
     public static func previewFixture(
         firstLaunch: Bool = false,
         appColorScheme: AppColorScheme = .system,
+        appThemeID: AppThemeID = .standard,
         showGameDice: Bool = true,
         showGamePlayerDice: Bool = true,
         useCloudKit: Bool = false
@@ -173,6 +191,7 @@ public final class AppSettingsModel: Sendable {
             previewValues: PreviewValues(
                 firstLaunch: firstLaunch,
                 appColorScheme: appColorScheme,
+                appThemeID: appThemeID,
                 showGameDice: showGameDice,
                 showGamePlayerDice: showGamePlayerDice,
                 useCloudKit: useCloudKit
@@ -183,6 +202,7 @@ public final class AppSettingsModel: Sendable {
     private struct PreviewValues {
         var firstLaunch = false
         var appColorScheme: AppColorScheme = .system
+        var appThemeID: AppThemeID = .standard
         var autoShowMasterMainTab = true
         var autoShowPlayerMainTab = true
         var masterMainTabDisplayMode = 0
@@ -199,6 +219,8 @@ public final class AppSettingsModel: Sendable {
     private static let migrationKey = "MasterRPGMigrationAppGroup"
     private static let firstLunchKey = "FirstLunchMasterRPG"
     private static let appColorSchemeKey = "appColorScheme"
+    private static let appThemeIDKey = "appThemeID"
+    private static let recentThemeIDsKey = "recentThemeIDs"
     private static let autoShowMasterMainTabKey = "autoShowMasterMainTab"
     private static let autoShowPlayerMainTabKey = "autoShowPlayerMainTab"
     private static let masterMainTabDisplayModeKey = "masterMainTabDisplayMode"
@@ -209,6 +231,12 @@ public final class AppSettingsModel: Sendable {
     private static let needsValidateDatabaseKey = "needsValidate"
 
     private static let useCloudKitKey = "MasterRPGuseCloudKit"
+
+    private func recordRecentTheme(_ themeID: AppThemeID) {
+        let updatedThemes = [themeID] + recentThemeIDs.filter { $0 != themeID }
+        recentThemeIDs = Array(updatedThemes.prefix(3))
+        defaults?.set(recentThemeIDs.map(\.rawValue), forKey: AppSettingsModel.recentThemeIDsKey)
+    }
 }
 
 public extension View {

@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct TableSheetView<LinkType: LinkDataTransferable>: View {
+    @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     let root: ItemRootController
@@ -35,7 +36,7 @@ private extension TableSheetView {
             }
         }
 #if os(iOS)
-        .background(root.configurable.module.tint.opacity(0.3).gradient)
+        .background(theme.tint(for: root.configurable.module).opacity(0.3).gradient)
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
 #endif

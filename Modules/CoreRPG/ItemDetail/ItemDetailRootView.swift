@@ -80,7 +80,7 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
             editingItem: $editingItem,
             editSheetNamespace: editSheetNamespace
         )
-        .tint(root.configurable.module.tint)
+        .moduleTint(root.configurable.module)
         .onChange(of: selectedModel.id, initial: true) {
             handleModelIdChange()
         }
@@ -168,7 +168,7 @@ private extension ItemDetailRootView {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
             .presentationBackgroundInteraction(.enabled)
-            .tint(root.configurable.module.tint)
+            .moduleTint(root.configurable.module)
 #if os(iOS)
             .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
 #endif

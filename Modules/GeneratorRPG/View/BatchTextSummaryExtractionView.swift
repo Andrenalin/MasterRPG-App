@@ -60,6 +60,7 @@ public struct BatchTextSummaryExtractionView: View {
                         analysisProgressSection(progress)
                     }
                 }
+                .themedListSurface()
             }
             .navigationTitle(Text("Extract Information", bundle: .module))
             .toolbar {
@@ -90,7 +91,7 @@ public struct BatchTextSummaryExtractionView: View {
                     }
                 }
             }
-            .tint(module.tint)
+            .moduleTint(module)
         }
     }
 

@@ -9,6 +9,8 @@ struct SheetAIAssistantOpenButton: View {
     let glassNamespace: Namespace.ID
     let action: () -> Void
 
+    @Environment(\.appTheme) private var theme
+
 #if os(iOS)
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabAccessoryPlacement
 #endif
@@ -36,10 +38,13 @@ struct SheetAIAssistantOpenButton: View {
 #endif
 #if os(visionOS)
         .buttonStyle(.borderedProminent)
-        .tint(module.tint)
+        .moduleTint(module)
 #else
         .buttonStyle(.plain)
-        .glassEffectAll(.regular.tint(module.tint).interactive(), in: .capsule)
+        .glassEffectAll(
+            .regular.tint(theme.tint(for: module)).interactive(),
+            in: .capsule
+        )
         .glassEffectID("aiOverlay", in: glassNamespace)
 #endif
 #if !os(iOS)
